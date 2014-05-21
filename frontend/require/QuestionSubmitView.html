@@ -1,0 +1,23 @@
+{{#testOpen}}
+
+{{#allowSubmit}}
+{{^submitted}}
+<button type="submit" class="btn btn-primary submit" {{^submittable}}disabled="disabled"{{/submittable}}>Submit for points</button>
+{{#allowPractice}}
+<button type="submit" class="btn btn-info submitPractice" {{^submittable}}disabled="disabled"{{/submittable}}>Submit for practice</button>
+{{/allowPractice}}
+{{#overridable}}
+<button type="submit" class="btn btn-success submitCorrect">Submit correct</button>
+<button type="submit" class="btn btn-danger submitIncorrect">Submit incorrect</button>
+{{/overridable}}
+{{/submitted}}
+{{/allowSubmit}}
+
+{{#allowSave}}
+<p>
+  Answer status: {{{saveStatus}}}
+</p>
+<button type="submit" class="btn btn-primary save" {{^saveActive}}disabled="disabled"{{/saveActive}}>Save answer</button>
+{{/allowSave}}
+
+{{/testOpen}}

@@ -1,0 +1,360 @@
+<h1>Statistics</h1>
+<p>
+  Statistics are generated every 10 minutes.
+</p>
+<div>
+  <div id="usersPerHour" class="statsContainer">
+  </div>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{usersPerHourGenDate}}.
+    </small>
+  </p>
+</div>
+<hr />
+<div>
+  <div id="submissionsPerHour" class="statsContainer">
+  </div>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{submissionsPerHourGenDate}}.
+    </small>
+  </p>
+</div>
+
+<!--
+<hr />
+<div>
+  <div id="usersPerStartHourMidterm1" class="statsContainer">
+  </div>
+  <p class="text-right no-bottom-margin">
+    <small>
+      The study duration for a student is the length of time from when
+      they first submit an answer on PrairieLearn until the time of
+      the exam.
+    </small>
+  </p>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{usersPerStartHourMidterm1GenDate}}.
+    </small>
+  </p>
+</div>
+<hr />
+<div>
+  <div id="usersPerStartHourMidterm2" class="statsContainer">
+  </div>
+  <p class="text-right no-bottom-margin">
+    <small>
+      The study duration for a student is the length of time from when
+      they first submit an answer on PrairieLearn until the time of
+      the exam.
+    </small>
+  </p>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{usersPerStartHourMidterm2GenDate}}.
+    </small>
+  </p>
+</div>
+<hr />
+<div>
+  <div id="usersPerSubmissionCount" class="statsContainer">
+  </div>
+  <p class="text-right no-bottom-margin">
+    <small>
+      Submissions are grouped in blocks of 10, so 0 means [0,9], 10 means
+      [10,19], etc.
+    </small>
+  </p>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{usersPerSubmissionCountGenDate}}.
+    </small>
+  </p>
+</div>
+<hr />
+<div class="panel panel-primary" id="stats-questions">
+  <div class="panel-heading">
+    <h3 class="panel-title">Individual Question Statistics</h3>
+  </div>
+  <div class="panel-body">
+    <table class="table table-condensed table-striped table-hover">
+      <thead>
+        <tr>
+          <th>Question</th>
+          <th class="cell-center">Attempts Average</th>
+          <th class="cell-center">Attempts Progress</th>
+          <th class="cell-center">Score Average</th>
+          <th class="cell-center">Score Progress</th>
+          <th class="cell-center">Score Avg. Pred.</th>
+          <th class="cell-center">Score Prog. Pred.</th>
+          <th class="cell-center">Score Done Avg. Pred.</th>
+          <th class="cell-center">Score Done Prog. Pred.</th>
+        </tr>
+      </thead>
+      <tbody>
+        {{#questionList}}
+        <tr>
+          <td><a href="#questions/{{qid}}">#{{number}}. {{title}}</a></td>
+          <td class="cell-center">
+            {{&avgAttempts}}
+          </td>
+          <td class="cell-center">
+            {{&attemptsProgress}}
+          </td>
+          <td class="cell-center">
+            {{&avgScore}}
+          </td>
+          <td class="cell-center">
+            {{&avgScoreProgress}}
+          </td>
+          <td class="cell-center">
+            {{&predScore}}
+          </td>
+          <td class="cell-center">
+            {{&predScoreProgress}}
+          </td>
+          <td class="cell-center">
+            {{&donePredScore}}
+          </td>
+          <td class="cell-center">
+            {{&donePredScoreProgress}}
+          </td>
+        </tr>
+        {{/questionList}}
+      </tbody>
+    </table>
+    <p class="text-right no-bottom-margin">
+      <small>Scores are averaged over the last 5 question attempts,
+      and only include students with at least 1 question
+      attempt. Hover over a bar for details.</small>
+    </p>
+    <p class="text-right no-bottom-margin">
+      <small>
+        Data generated at {{averageQScoresGenDate}}.
+      </small>
+    </p>
+  </div>
+</div>
+<div>
+  <h2>Midterm 1 score versus Midterm 2 score</h2>
+  <div id="Midterm1VsMidterm2" class="statsPlot">
+  </div>
+  <p class="no-bottom-margin text-right">
+    <small>
+      Each dot represents a single user.
+    </small>
+  </p>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{uScoresGenDate}}.
+    </small>
+  </p>
+</div>
+<hr />
+<div>
+  <h2>Predicted versus true question average scores (by submission)</h2>
+  <div id="predScoreVsTrueAvgQSubScore" class="statsPlot">
+  </div>
+  <p class="no-bottom-margin text-right">
+    <small>
+      Each dot represents a single question.
+    </small>
+  </p>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{trueAvgScoresGenDate}}.
+    </small>
+  </p>
+</div>
+<hr />
+<div>
+  <h2>Predicted versus true question average scores (by user)</h2>
+  <div id="predScoreVsTrueAvgQUserScore" class="statsPlot">
+  </div>
+  <p class="no-bottom-margin text-right">
+    <small>
+      Each dot represents a single question.
+    </small>
+  </p>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{trueAvgScoresGenDate}}.
+    </small>
+  </p>
+</div>
+<hr />
+<div>
+  <h2>Predicted versus true user average scores (by submission)</h2>
+  <div id="predScoreVsTrueAvgUSubScore" class="statsPlot">
+  </div>
+  <p class="no-bottom-margin text-right">
+    <small>
+      Each dot represents a single user. Only users with at least
+      {{minPlotUserSubmissions}} submissions are plotted.
+    </small>
+  </p>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{trueAvgScoresGenDate}}.
+    </small>
+  </p>
+</div>
+<hr />
+<div>
+  <h2>Sigma versus true user average scores (by submission)</h2>
+  <div id="sigmaVsTrueAvgUSubScore" class="statsPlot">
+  </div>
+  <p class="no-bottom-margin text-right">
+    <small>
+      Each dot represents a single user. Only users with at least
+      {{minPlotUserSubmissions}} submissions are plotted.
+    </small>
+  </p>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{trueAvgScoresGenDate}}.
+    </small>
+  </p>
+</div>
+<hr />
+<div>
+  <h2>Predicted versus true user average scores (by question)</h2>
+  <div id="predScoreVsTrueAvgUQuestionScore" class="statsPlot">
+  </div>
+  <p class="no-bottom-margin text-right">
+    <small>
+      Each dot represents a single user. Only users with at least
+      {{minPlotUserSubmissions}} submissions are plotted.
+    </small>
+  </p>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{trueAvgScoresGenDate}}.
+    </small>
+  </p>
+</div>
+<hr />
+<div>
+  <h2>Sigma versus true user average scores (by question)</h2>
+  <div id="sigmaVsTrueAvgUQuestionScore" class="statsPlot">
+  </div>
+  <p class="no-bottom-margin text-right">
+    <small>
+      Each dot represents a single user. Only users with at least
+      {{minPlotUserSubmissions}} submissions are plotted.
+    </small>
+  </p>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{trueAvgScoresGenDate}}.
+    </small>
+  </p>
+</div>
+<hr />
+<div>
+  <h2>STEM GPA versus true user average scores (by submission)</h2>
+  <div id="gpaSTEMVsTrueAvgUSubScore" class="statsPlot">
+  </div>
+  <p class="no-bottom-margin text-right">
+    <small>
+      Each dot represents a single user. Only users with at least
+      {{minPlotUserSubmissions}} submissions and a non-zero STEM GPA
+      are plotted.
+    </small>
+  </p>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{trueAvgScoresGenDate}}.
+    </small>
+  </p>
+</div>
+<hr />
+<div>
+  <h2>STEM GPA versus true user average scores (by question)</h2>
+  <div id="gpaSTEMVsTrueAvgUQuestionScore" class="statsPlot">
+  </div>
+  <p class="no-bottom-margin text-right">
+    <small>
+      Each dot represents a single user. Only users with at least
+      {{minPlotUserSubmissions}} submissions and a non-zero STEM GPA
+      are plotted.
+    </small>
+  </p>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{trueAvgScoresGenDate}}.
+    </small>
+  </p>
+</div>
+<hr />
+<div>
+  <h2>Predicted versus true average scores (by user and question)</h2>
+  <div id="predVsTrueAvgUQScore" class="statsPlot">
+  </div>
+  <p class="no-bottom-margin text-right">
+    <small>
+      Each dot represents a single user/question pair. Only
+      user/question pairs with at least
+      {{minPlotUserQuestionAttempts}} attempts are plotted.
+    </small>
+  </p>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{trueAvgScoresGenDate}}.
+    </small>
+  </p>
+</div>
+<hr />
+<div>
+  <h2>STEM GPA versus Midterm total score</h2>
+  <div id="gpaSTEMVsMidterm" class="statsPlot">
+  </div>
+  <p class="no-bottom-margin text-right">
+    <small>
+      Each dot represents a single user.
+    </small>
+  </p>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{uScoresGenDate}}.
+    </small>
+  </p>
+</div>
+<hr />
+<div>
+  <h2>User predicted average score versus Midterm total score</h2>
+  <div id="userPredScoreVsMidterm" class="statsPlot">
+  </div>
+  <p class="no-bottom-margin text-right">
+    <small>
+      Each dot represents a single user. Only users with at least
+      {{minPlotUserSubmissions}} submissions are plotted.
+    </small>
+  </p>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{uScoresGenDate}}.
+    </small>
+  </p>
+</div>
+<hr />
+<div>
+  <h2>Sigma versus Midterm total score</h2>
+  <div id="sigmaVsMidterm" class="statsPlot">
+  </div>
+  <p class="no-bottom-margin text-right">
+    <small>
+      Each dot represents a single user. Only users with at least
+      {{minPlotUserSubmissions}} submissions are plotted.
+    </small>
+  </p>
+  <p class="statsExplain text-right">
+    <small>
+      Data generated at {{uScoresGenDate}}.
+    </small>
+  </p>
+</div>
+<hr />
+-->

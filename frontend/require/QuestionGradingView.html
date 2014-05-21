@@ -1,0 +1,27 @@
+{{#submitted}}
+<div class="panel panel-info">
+  <div class="panel-heading"><h3 class="panel-title">Result</h3></div>
+  <div class="panel-body">
+    {{#scoreLabel}}
+    <p>Score: {{{scoreLabel}}}</p>
+    {{/scoreLabel}}
+    {{^scoreLabel}}
+    {{#submitError}}
+    <div class="alert alert-danger">
+      <p>
+        Error submitting question for grading to server: {{submitError}}
+        <button id="retrySubmit" type="button" class="btn btn-default">Retry</button>
+      </p>
+    </div>
+    {{/submitError}}
+    {{^submitError}}
+    <p>Grading question, please wait...</p>
+    <div id="qgrading-spinner" class="spinner-container"></div>
+    {{/submitError}}
+    {{/scoreLabel}}
+  </div>
+</div>
+{{#scoreLabel}}
+<button class="btn btn-info" id="tryAgain">Do this question again</button>
+{{/scoreLabel}}
+{{/submitted}}

@@ -1,0 +1,74 @@
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">Homework {{number}}: {{title}}</h3>
+  </div>
+  <div class="panel-body">
+
+    <div class="well well-sm small-bottom-margin">
+
+      <div class="row">
+
+        <div class="col-md-2 col-sm-4 col-xs-12">
+          {{{masteryScore}}}
+        </div>
+
+        <div class="col-md-4 col-sm-8 col-xs-12">
+          {{{masteryBar}}}
+        </div>
+
+        <div class="col-md-2 col-sm-4 col-xs-12">
+          {{{hwScore}}}
+        </div>
+
+        <div class="col-md-4 col-sm-8 col-xs-12">
+          {{{dueDate}}}
+        </div>
+
+      </div> <!-- row -->
+    </div> <!-- well -->
+
+    <div class="well well-sm no-bottom-margin">
+
+    <div class="row">
+
+      <div class="col-xs-12 col-sm-4">
+        <p>
+          <a class="btn btn-primary" href="#cq/{{tiid}}/randomMedium" data-toggle="tooltip" data-placement="auto bottom"
+             data-original-title="Randomly chosen question from this homework that is recommended for you.">Do a recommended question</a>
+        </p>
+      </div>
+
+      <div class="col-xs-12 col-sm-8">
+        <p class="no-bottom-margin"><small>Answer questions in any
+        order to get mastery points. Questions can be repeated and not
+        all questions must be completed. Hover over items for
+        details.</small></p>
+      </div>
+
+    </div>
+    </div>
+  </div>
+
+  <table class="table table-condensed table-hover">
+    <thead>
+      <tr>
+        <th>Question</th>
+        <th class="cell-center">Recommend</th>
+        <th class="cell-center">Correct</th>
+        <th class="cell-center">Incorrect</th>
+        <th class="cell-center">Attempts</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#questionList}}
+      <tr>
+        <td><a href="#q/{{tiid}}/{{number}}">{{fullNumber}}. {{title}}</a></td>
+        <td class="cell-center">{{{recommendBar}}}</td>
+        <td class="cell-center">{{{correctPoints}}}</td>
+        <td class="cell-center">{{{incorrectPoints}}}</td>
+        <td class="cell-center">{{{attempts}}}</td>
+      </tr>
+      {{/questionList}}
+    </tbody>
+  </table>
+</div>

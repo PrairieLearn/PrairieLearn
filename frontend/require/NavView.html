@@ -1,0 +1,45 @@
+<nav class="navbar navbar-inverse navbar-static-top" role="navigation">
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+      <span class="sr-only">Toggle navigation</span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" href="index.html#">PrairieLearn</a>
+  </div>
+  <div class="collapse navbar-collapse">
+    <ul class="nav navbar-nav" id="main-nav">
+      <li {{{navHomeAttributes}}}><a href="index.html#">Home</a></li>
+      <li {{{navHomeworksAttributes}}}><a href="index.html#homeworks">Homeworks</a></li>
+      <li {{{navExamsAttributes}}}><a href="index.html#exams">Exams</a></li>
+      {{#seeQuestionsPerm}}
+      <li {{{navQuestionsAttributes}}}><a href="index.html#questions">Questions</a></li>
+      {{/seeQuestionsPerm}}
+      <li {{{navStatsAttributes}}}><a href="index.html#stats">Statistics</a></li>
+      <li {{{navAboutAttributes}}}><a href="index.html#about">About</a></li>
+      {{#seeDebugPerm}}
+      <li {{{navDebugAttributes}}}><a href="index.html#debug">Debug</a></li>
+      {{/seeDebugPerm}}
+      {{#changeUserPerm}}
+      <li class="dropdown">
+        <a href="#" class="dropdown-toggle" data-toggle="dropdown">User <b class="caret"></b></a>
+        <ul class="dropdown-menu">
+          <li>
+            <form class="navbar-form">
+              <div class="form-group">
+                <input id="navChangeUID" type="text" class="form-control" placeholder="UID" />
+              </div>
+              <button class="btn btn-default changeUser">Change user</button>
+            </form>
+          </li>
+        </ul>
+      </li>
+      {{/changeUserPerm}}
+    </ul>
+    <div class="navbar-right">
+      <p class="navbar-text">{{userName}}{{perms}}</p>
+      <a class="btn btn-default navbar-btn" href="https://prairielearn.engr.illinois.edu/Shibboleth.sso/Logout">Log out</a>
+    </div>
+  </div>
+</nav>
