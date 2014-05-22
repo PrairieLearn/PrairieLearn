@@ -19,8 +19,6 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!ExamsView.html']
             var data = {};
             data.testList = [];
             this.tests.each(function(test) {
-                if (test.get("type") !== "exam")
-                    return;
                 data.testList.push({
                     tid: test.get("tid")
                 });
@@ -30,8 +28,6 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!ExamsView.html']
 
             this.subViews = [];
             this.tests.each(function(test) {
-                if (test.get("type") !== "exam")
-                    return;
                 if (!test.has("client"))
                     return;
                 var client = test.get("client");

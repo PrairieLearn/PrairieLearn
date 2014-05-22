@@ -53,6 +53,25 @@ define(["jquery", "underscore", "backbone", "Mustache", "rivets", "PrairieTempla
         return html;
     };
 
+    var renderDueDate = function(dueDate) {
+        var options = {hour: "numeric", minute: "numeric"};
+        var dateString = dueDate.toLocaleTimeString("en-US", options);
+        options = {weekday: "short", year: "numeric", month: "numeric", day: "numeric"};
+        dateString += ", " + dueDate.toLocaleDateString("en-US", options);;
+        var tooltip = "Due at " + dueDate.toString();
+        var html = '<span '
+            + ' data-toggle="tooltip"'
+            + ' data-placement="auto top"'
+            + ' data-original-title="' + tooltip + '"'
+            + '>';
+        html += 'Due&nbsp;Date: ';
+        html += '<strong>';
+        html += dateString;
+        html += '</strong>';
+        html += '</span>';
+        return html;
+    };
+
     var TestView = Backbone.View.extend({
         tagName: 'div',
 
@@ -71,10 +90,15 @@ define(["jquery", "underscore", "backbone", "Mustache", "rivets", "PrairieTempla
             data.title = this.model.get("title");
             data.tid = this.model.get("tid");
 
-            this.tInstances.each(function(tInstance, index) {
+            this.tInstances.each(function(tInstance) {
                 if (tInstance.get("tid") !== that.model.get("tid"))
                     return;
-                data.score = tInstance.score;
+                data.tiid = tInstance.get("tiid");
+                var score = tInstance.get("score");
+                data.score = renderHWScore(score);
+                data.scoreBar = renderScoreBar(score);
+                var dueDate = new Date(that.model.get("dueDate"));
+                data.dueDate = renderDueDate(dueDate);
             });
 
             var html = Mustache.render(template, data);
@@ -109,21 +133,7 @@ define(["jquery", "underscore", "backbone", "Mustache", "rivets", "PrairieTempla
             data.tiid = this.model.get("tiid");
 
             var dueDate = new Date(this.test.get("dueDate"));
-            var options = {hour: "numeric", minute: "numeric"};
-            var dateString = dueDate.toLocaleTimeString("en-US", options);
-            options = {weekday: "short", year: "numeric", month: "numeric", day: "numeric"};
-            dateString += ", " + dueDate.toLocaleDateString("en-US", options);;
-            var tooltip = "Due at " + dueDate.toString();
-            data.dueDate = '<span '
-                + ' data-toggle="tooltip"'
-                + ' data-placement="auto top"'
-                + ' data-original-title="' + tooltip + '"'
-                + '>';
-            data.dueDate += 'Due&nbsp;Date: ';
-            data.dueDate += '<strong>';
-            data.dueDate += dateString;
-            data.dueDate += '</strong>';
-            data.dueDate += '</span>';
+            data.dueDate = renderDueDate(dueDate);
 
             var score = this.model.get("score");
             data.score = renderHWScore(score);
@@ -219,6 +229,7 @@ define(["jquery", "underscore", "backbone", "Mustache", "rivets", "PrairieTempla
     };
 
     return {
+        TestView: TestView,
         TestInstanceView: TestInstanceView,
         TestInstanceSidebarView: TestInstanceSidebarView,
         TestHelper: TestHelper
