@@ -80,6 +80,12 @@ Improve historical activity views
 
 Testing: question tests client-side and unit tests server-side
 
+Make availDate/dueDate inherit tInstance -> test, so that we can update these on a per-test basis, but also override for individual students if necessary.
+
+Rename userData/testData in tests to tInstance/test.
+
+Rename qInstance to questionInst, tInstance to testInst, etc.
+
 ##############################################################################
 ##############################################################################
 Testing: question tests client-side and unit tests server-side
