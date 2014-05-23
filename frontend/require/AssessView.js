@@ -1,7 +1,7 @@
 
-define(['underscore', 'backbone', 'mustache', 'renderer', 'text!ExamsView.html'], function(_, Backbone, Mustache, renderer, ExamsViewTemplate) {
+define(['underscore', 'backbone', 'mustache', 'renderer', 'text!AssessView.html'], function(_, Backbone, Mustache, renderer, AssessViewTemplate) {
 
-    var ExamsView = Backbone.View.extend({
+    var AssessView = Backbone.View.extend({
 
         tagName: 'div',
 
@@ -23,7 +23,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!ExamsView.html']
                     tid: test.get("tid")
                 });
             });
-            var html = Mustache.render(ExamsViewTemplate, data);
+            var html = Mustache.render(AssessViewTemplate, data);
             this.$el.html(html);
 
             this.subViews = [];
@@ -57,5 +57,5 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!ExamsView.html']
         }
     });
 
-    return ExamsView;
+    return AssessView;
 });

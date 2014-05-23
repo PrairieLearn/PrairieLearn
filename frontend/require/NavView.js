@@ -27,7 +27,7 @@ define(['underscore', 'backbone', 'Mustache', 'text!NavView.html'], function(_, 
 
             data.navHomeAttributes = '';
             data.navHomeworksAttributes = '';
-            data.navExamsAttributes = '';
+            data.navAssessAttributes = '';
             data.navQuestionsAttributes = '';
             data.navStatsAttributes = '';
             data.navAboutAttributes = '';
@@ -36,7 +36,7 @@ define(['underscore', 'backbone', 'Mustache', 'text!NavView.html'], function(_, 
             switch (this.model.get("page")) {
             case "home":      data.navHomeAttributes =      'class="active"'; break;
             case "homeworks": data.navHomeworksAttributes = 'class="active"'; break;
-            case "exams":     data.navExamsAttributes =     'class="active"'; break;
+            case "assess":    data.navAssessAttributes =    'class="active"'; break;
             case "questions": data.navQuestionsAttributes = 'class="active"'; break;
             case "stats":     data.navStatsAttributes =     'class="active"'; break;
             case "about":     data.navAboutAttributes =     'class="active"'; break;

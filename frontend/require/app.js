@@ -41,8 +41,8 @@ requirejs.config({
     }
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'NavView', 'HomeView', 'QuestionsView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'HomeworksView', 'ExamsView', 'DebugView', 'AboutView', 'ActivityModel', 'ActivityView', 'spinController'],
-function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   NavView,   HomeView,   QuestionsView,   QuestionDataModel,   QuestionView,   TestInstanceCollection, TestInstanceView, TestModel, StatsModel,   StatsView,   HomeworksView, ExamsView, DebugView, AboutView, ActivityModel,   ActivityView,   spinController) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'NavView', 'HomeView', 'QuestionsView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'HomeworksView', 'AssessView', 'DebugView', 'AboutView', 'ActivityModel', 'ActivityView', 'spinController'],
+function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   NavView,   HomeView,   QuestionsView,   QuestionDataModel,   QuestionView,   TestInstanceCollection, TestInstanceView, TestModel, StatsModel,   StatsView,   HomeworksView, AssessView, DebugView, AboutView, ActivityModel,   ActivityView,   spinController) {
 
     var QScoreModel = Backbone.Model.extend({
         idAttribute: "qid"
@@ -200,8 +200,8 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
             case "homeworks":
                 view = new HomeworksView({tests: this.tests, questions: this.questions, tInstances: this.tInstances});
                 break;
-            case "exams":
-                view = new ExamsView({appModel: this.model, tests: this.tests, tInstances: this.tInstances, router: this.router});
+            case "assess":
+                view = new AssessView({appModel: this.model, tests: this.tests, tInstances: this.tInstances, router: this.router});
                 break;
             case "testInstance":
                 var tiid = this.model.get("pageOptions").tiid;
@@ -283,7 +283,7 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
             "questions": "goQuestions",
             "stats": "goStats",
             "homeworks": "goHomeworks",
-            "exams": "goExams",
+            "assess": "goAssess",
             "q/:tiid/:qNumber": "goTestQuestion",
             "cq/:tiid/:qInfo(/not/:skipQNumbers)": "goChooseTestQuestion",
             "ti/:tiid": "goTestInstance",
@@ -338,9 +338,9 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
             });
         },
 
-        goExams: function() {
+        goAssess: function() {
             this.model.set({
-                "page": "exams",
+                "page": "assess",
                 "pageOptions": {}
             });
         },
