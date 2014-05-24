@@ -41,8 +41,8 @@ requirejs.config({
     }
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'NavView', 'HomeView', 'QuestionsView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'DebugView', 'AboutView', 'ActivityModel', 'ActivityView', 'spinController'],
-function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   NavView,   HomeView,   QuestionsView,   QuestionDataModel,   QuestionView,   TestInstanceCollection, TestInstanceView, TestModel, StatsModel,   StatsView,   AssessView, DebugView, AboutView, ActivityModel,   ActivityView,   spinController) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'DebugView', 'AboutView', 'ActivityModel', 'ActivityView', 'spinController'],
+function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection, TestInstanceView, TestModel, StatsModel,   StatsView,   AssessView, DebugView, AboutView, ActivityModel,   ActivityView,   spinController) {
 
     var QScoreModel = Backbone.Model.extend({
         idAttribute: "qid"
@@ -141,8 +141,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 permission = true;
             if (operation === "seeQID" && _(perms).contains("superuser"))
                 permission = true;
-            if (operation === "seeQuestions" && _(perms).contains("superuser"))
-                permission = true;
             if (operation === "seeDebug" && _(perms).contains("superuser"))
                 permission = true;
             if (operation === "changeUser" && _(perms).contains("superuser"))
@@ -177,17 +175,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
             case "home":
                 view = new HomeView.HomeView({model: this.model});
                 break;
-            case "question":
-                var qid = this.model.get("pageOptions").qid;
-                if (qid === "random") {
-                    var i = Math.floor(Math.random() * this.questions.length);
-                    qid = this.questions.at(i).get("qid");
-                    this.router.navigate("questions/" + qid, {trigger: true});
-                    return;
-                }
-                var questionDataModel = new QuestionDataModel.QuestionDataModel({}, {appModel: this.model, requester: this.requester, qid: this.model.get("pageOptions").qid});
-                view = new QuestionView.QuestionView({model: questionDataModel, qScore: this.qScores.get(this.model.get("pageOptions").qid)});
-                break;
             case "stats":
                 var statsModel = new StatsModel.StatsModel({}, {appModel: this.model, requester: this.requester});
                 view = new StatsView.StatsView({model: statsModel, questions: this.questions});
@@ -195,9 +182,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
             case "activity":
                 var activityModel = new ActivityModel.ActivityModel({}, {appModel: this.model, requester: this.requester});
                 view = new ActivityView.ActivityView({model: activityModel});
-                break;
-            case "questions":
-                view = new QuestionsView.QuestionsView({questions: this.questions, qScores: this.qScores});
                 break;
             case "assess":
                 view = new AssessView({appModel: this.model, tests: this.tests, tInstances: this.tInstances, router: this.router});
@@ -283,9 +267,7 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
 
     var AppRouter = Backbone.Router.extend({
         routes: {
-            "questions/:qid": "goQuestion",
             "activity": "goActivity",
-            "questions": "goQuestions",
             "stats": "goStats",
             "assess": "goAssess",
             "q/:tiid/:qNumber": "goTestQuestion",
@@ -307,13 +289,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
             });
         },
 
-        goQuestion: function(qid) {
-            this.model.set({
-                "page": "question",
-                "pageOptions": {qid: qid}
-            });
-        },
-
         goActivity: function() {
             this.model.set({
                 "page": "activity",
@@ -324,13 +299,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
         goStats: function() {
             this.model.set({
                 "page": "stats",
-                "pageOptions": {}
-            });
-        },
-
-        goQuestions: function(actions) {
-            this.model.set({
-                "page": "questions",
                 "pageOptions": {}
             });
         },
