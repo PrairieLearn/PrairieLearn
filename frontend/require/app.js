@@ -78,6 +78,8 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
         initialize: function() {
             this.set({
                 page: "home",
+                currentAssessmentName: null,
+                currentAssessmentLink: null,
                 pageOptions: {},
                 deployMode: false,
                 apiServer: "http://localhost:3000",
@@ -205,6 +207,8 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
+                this.model.set("currentAssessmentName", test.get("type") + " " + test.get("number"));
+                this.model.set("currentAssessmentLink", "#ti/" + tiid);
                 view = new TestInstanceView({model: tInstance, test: test, appModel: this.model, questions: this.questions});
                 break;
             case "testQuestion":
@@ -214,6 +218,8 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
+                this.model.set("currentAssessmentName", test.get("type") + " " + test.get("number"));
+                this.model.set("currentAssessmentLink", "#ti/" + tiid);
                 var qid;
                 if (tInstance.has("qids"))
                     qid = tInstance.get("qids")[qIndex];
@@ -234,6 +240,8 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
+                this.model.set("currentAssessmentName", test.get("type") + " " + test.get("number"));
+                this.model.set("currentAssessmentLink", "#ti/" + tiid);
                 var qids;
                 if (tInstance.has("qids"))
                     qids = tInstance.get("qids");

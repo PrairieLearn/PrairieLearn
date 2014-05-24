@@ -35,6 +35,9 @@
         </ul>
       </li>
       {{/changeUserPerm}}
+      {{#currentAssessmentName}}
+      <li {{{currentAssessmentAttributes}}}><a href="{{{currentAssessmentLink}}}">{{currentAssessmentName}}</a></li>
+      {{/currentAssessmentName}}
     </ul>
     <div class="navbar-right">
       <p class="navbar-text">{{userName}}{{perms}}</p>
