@@ -21,7 +21,6 @@ define(['underscore', 'backbone', 'Mustache', 'text!NavView.html'], function(_, 
             var perms = this.model.get("authPerms");
             if (perms && perms.length > 0)
                 data.perms = " (" + perms.join(", ") + ")";
-            data.seeDebugPerm = this.model.hasPermission("seeDebug");
             data.changeUserPerm = this.model.hasPermission("changeUser");
             data.currentAssessmentName = this.model.get("currentAssessmentName");
             data.currentAssessmentLink = this.model.get("currentAssessmentLink");
@@ -31,7 +30,6 @@ define(['underscore', 'backbone', 'Mustache', 'text!NavView.html'], function(_, 
             data.navStatsAttributes = '';
             data.navAboutAttributes = '';
             data.navActivityAttributes = '';
-            data.navDebugAttributes = '';
             data.currentAssessmentAttributes = '';
             switch (this.model.get("page")) {
             case "home":               data.navHomeAttributes           = 'class="active"'; break;
@@ -39,7 +37,6 @@ define(['underscore', 'backbone', 'Mustache', 'text!NavView.html'], function(_, 
             case "stats":              data.navStatsAttributes          = 'class="active"'; break;
             case "about":              data.navAboutAttributes          = 'class="active"'; break;
             case "activity":           data.navActivityAttributes       = 'class="active"'; break;
-            case "debug":              data.navDebugAttributes          = 'class="active"'; break;
             case "testInstance":       data.currentAssessmentAttributes = 'class="active"'; break;
             }
 

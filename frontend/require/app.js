@@ -41,8 +41,8 @@ requirejs.config({
     }
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'DebugView', 'AboutView', 'ActivityModel', 'ActivityView', 'spinController'],
-function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection, TestInstanceView, TestModel, StatsModel,   StatsView,   AssessView, DebugView, AboutView, ActivityModel,   ActivityView,   spinController) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'ActivityModel', 'ActivityView', 'spinController'],
+function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection, TestInstanceView, TestModel, StatsModel,   StatsView,   AssessView, AboutView, ActivityModel,   ActivityView,   spinController) {
 
     var QScoreModel = Backbone.Model.extend({
         idAttribute: "qid"
@@ -140,8 +140,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
             if (operation === "overrideScore" && _(perms).contains("superuser"))
                 permission = true;
             if (operation === "seeQID" && _(perms).contains("superuser"))
-                permission = true;
-            if (operation === "seeDebug" && _(perms).contains("superuser"))
                 permission = true;
             if (operation === "changeUser" && _(perms).contains("superuser"))
                 permission = true;
@@ -242,9 +240,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
             case "about":
                 view = new AboutView.AboutView();
                 break;
-            case "debug":
-                view = new DebugView({model: this.model, questions: this.questions, tests: this.tests, tInstances: this.tInstances});
-                break;
             }
             this.showView(view);
             spinController.stopSpinner(spinner);
@@ -274,7 +269,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
             "cq/:tiid/:qInfo(/not/:skipQNumbers)": "goChooseTestQuestion",
             "ti/:tiid": "goTestInstance",
             "about": "goAbout",
-            "debug": "goDebug",
             "*actions": "goHome"
         },
 
@@ -335,13 +329,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
         goAbout: function() {
             this.model.set({
                 "page": "about",
-                "pageOptions": {}
-            });
-        },
-
-        goDebug: function() {
-            this.model.set({
-                "page": "debug",
                 "pageOptions": {}
             });
         },
