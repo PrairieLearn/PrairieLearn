@@ -41,8 +41,8 @@ requirejs.config({
     }
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'NavView', 'HomeView', 'QuestionsView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'HomeworksView', 'ExamsView', 'DebugView', 'AboutView', 'ActivityModel', 'ActivityView', 'spinController'],
-function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   NavView,   HomeView,   QuestionsView,   QuestionDataModel,   QuestionView,   TestInstanceCollection, TestInstanceView, TestModel, StatsModel,   StatsView,   HomeworksView, ExamsView, DebugView, AboutView, ActivityModel,   ActivityView,   spinController) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'ActivityModel', 'ActivityView', 'spinController'],
+function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection, TestInstanceView, TestModel, StatsModel,   StatsView,   AssessView, AboutView, ActivityModel,   ActivityView,   spinController) {
 
     var QScoreModel = Backbone.Model.extend({
         idAttribute: "qid"
@@ -78,6 +78,8 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
         initialize: function() {
             this.set({
                 page: "home",
+                currentAssessmentName: null,
+                currentAssessmentLink: null,
                 pageOptions: {},
                 deployMode: false,
                 apiServer: "http://localhost:3000",
@@ -139,10 +141,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 permission = true;
             if (operation === "seeQID" && _(perms).contains("superuser"))
                 permission = true;
-            if (operation === "seeQuestions" && _(perms).contains("superuser"))
-                permission = true;
-            if (operation === "seeDebug" && _(perms).contains("superuser"))
-                permission = true;
             if (operation === "changeUser" && _(perms).contains("superuser"))
                 permission = true;
             return permission;
@@ -175,17 +173,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
             case "home":
                 view = new HomeView.HomeView({model: this.model});
                 break;
-            case "question":
-                var qid = this.model.get("pageOptions").qid;
-                if (qid === "random") {
-                    var i = Math.floor(Math.random() * this.questions.length);
-                    qid = this.questions.at(i).get("qid");
-                    this.router.navigate("questions/" + qid, {trigger: true});
-                    return;
-                }
-                var questionDataModel = new QuestionDataModel.QuestionDataModel({}, {appModel: this.model, requester: this.requester, qid: this.model.get("pageOptions").qid});
-                view = new QuestionView.QuestionView({model: questionDataModel, qScore: this.qScores.get(this.model.get("pageOptions").qid)});
-                break;
             case "stats":
                 var statsModel = new StatsModel.StatsModel({}, {appModel: this.model, requester: this.requester});
                 view = new StatsView.StatsView({model: statsModel, questions: this.questions});
@@ -194,20 +181,16 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 var activityModel = new ActivityModel.ActivityModel({}, {appModel: this.model, requester: this.requester});
                 view = new ActivityView.ActivityView({model: activityModel});
                 break;
-            case "questions":
-                view = new QuestionsView.QuestionsView({questions: this.questions, qScores: this.qScores});
-                break;
-            case "homeworks":
-                view = new HomeworksView({tests: this.tests, questions: this.questions, tInstances: this.tInstances});
-                break;
-            case "exams":
-                view = new ExamsView({appModel: this.model, tests: this.tests, tInstances: this.tInstances, router: this.router});
+            case "assess":
+                view = new AssessView({appModel: this.model, tests: this.tests, tInstances: this.tInstances, router: this.router});
                 break;
             case "testInstance":
                 var tiid = this.model.get("pageOptions").tiid;
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
+                this.model.set("currentAssessmentName", test.get("type") + " " + test.get("number"));
+                this.model.set("currentAssessmentLink", "#ti/" + tiid);
                 view = new TestInstanceView({model: tInstance, test: test, appModel: this.model, questions: this.questions});
                 break;
             case "testQuestion":
@@ -217,6 +200,8 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
+                this.model.set("currentAssessmentName", test.get("type") + " " + test.get("number"));
+                this.model.set("currentAssessmentLink", "#ti/" + tiid);
                 var qid;
                 if (tInstance.has("qids"))
                     qid = tInstance.get("qids")[qIndex];
@@ -237,6 +222,8 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
+                this.model.set("currentAssessmentName", test.get("type") + " " + test.get("number"));
+                this.model.set("currentAssessmentLink", "#ti/" + tiid);
                 var qids;
                 if (tInstance.has("qids"))
                     qids = tInstance.get("qids");
@@ -252,9 +239,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 return;
             case "about":
                 view = new AboutView.AboutView();
-                break;
-            case "debug":
-                view = new DebugView({model: this.model, questions: this.questions, tests: this.tests, tInstances: this.tInstances});
                 break;
             }
             this.showView(view);
@@ -278,17 +262,13 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
 
     var AppRouter = Backbone.Router.extend({
         routes: {
-            "questions/:qid": "goQuestion",
             "activity": "goActivity",
-            "questions": "goQuestions",
             "stats": "goStats",
-            "homeworks": "goHomeworks",
-            "exams": "goExams",
+            "assess": "goAssess",
             "q/:tiid/:qNumber": "goTestQuestion",
             "cq/:tiid/:qInfo(/not/:skipQNumbers)": "goChooseTestQuestion",
             "ti/:tiid": "goTestInstance",
             "about": "goAbout",
-            "debug": "goDebug",
             "*actions": "goHome"
         },
 
@@ -300,13 +280,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
             this.model.set({
                 "page": "home",
                 "pageOptions": {}
-            });
-        },
-
-        goQuestion: function(qid) {
-            this.model.set({
-                "page": "question",
-                "pageOptions": {qid: qid}
             });
         },
 
@@ -324,23 +297,9 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
             });
         },
 
-        goQuestions: function(actions) {
+        goAssess: function() {
             this.model.set({
-                "page": "questions",
-                "pageOptions": {}
-            });
-        },
-
-        goHomeworks: function() {
-            this.model.set({
-                "page": "homeworks",
-                "pageOptions": {}
-            });
-        },
-
-        goExams: function() {
-            this.model.set({
-                "page": "exams",
+                "page": "assess",
                 "pageOptions": {}
             });
         },
@@ -370,13 +329,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
         goAbout: function() {
             this.model.set({
                 "page": "about",
-                "pageOptions": {}
-            });
-        },
-
-        goDebug: function() {
-            this.model.set({
-                "page": "debug",
                 "pageOptions": {}
             });
         },
