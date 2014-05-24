@@ -11,9 +11,12 @@
   <div class="collapse navbar-collapse">
     <ul class="nav navbar-nav" id="main-nav">
       <li {{{navHomeAttributes}}}><a href="index.html#">Home</a></li>
-      <li {{{navAssessAttributes}}}><a href="index.html#assess">Assessments</a></li>
-      <li {{{navStatsAttributes}}}><a href="index.html#stats">Statistics</a></li>
       <li {{{navAboutAttributes}}}><a href="index.html#about">About</a></li>
+      <li {{{navStatsAttributes}}}><a href="index.html#stats">Statistics</a></li>
+      <li {{{navAssessAttributes}}}><a href="index.html#assess">Assessments</a></li>
+      {{#currentAssessmentName}}
+      <li {{{currentAssessmentAttributes}}}><a href="{{{currentAssessmentLink}}}">{{currentAssessmentName}}</a></li>
+      {{/currentAssessmentName}}
       {{#changeUserPerm}}
       <li class="dropdown">
         <a href="#" class="dropdown-toggle" data-toggle="dropdown">User <b class="caret"></b></a>
@@ -29,9 +32,6 @@
         </ul>
       </li>
       {{/changeUserPerm}}
-      {{#currentAssessmentName}}
-      <li {{{currentAssessmentAttributes}}}><a href="{{{currentAssessmentLink}}}">{{currentAssessmentName}}</a></li>
-      {{/currentAssessmentName}}
     </ul>
     <div class="navbar-right">
       <p class="navbar-text">{{userName}}{{perms}}</p>
