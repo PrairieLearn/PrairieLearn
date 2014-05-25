@@ -29,14 +29,12 @@ define(['underscore', 'backbone', 'Mustache', 'text!NavView.html'], function(_, 
             data.navAssessAttributes = '';
             data.navStatsAttributes = '';
             data.navAboutAttributes = '';
-            data.navActivityAttributes = '';
             data.currentAssessmentAttributes = '';
             switch (this.model.get("page")) {
             case "home":               data.navHomeAttributes           = 'class="active"'; break;
             case "assess":             data.navAssessAttributes         = 'class="active"'; break;
             case "stats":              data.navStatsAttributes          = 'class="active"'; break;
             case "about":              data.navAboutAttributes          = 'class="active"'; break;
-            case "activity":           data.navActivityAttributes       = 'class="active"'; break;
             case "testInstance":       data.currentAssessmentAttributes = 'class="active"'; break;
             }
 

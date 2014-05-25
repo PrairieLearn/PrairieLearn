@@ -41,8 +41,8 @@ requirejs.config({
     }
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'ActivityModel', 'ActivityView', 'spinController'],
-function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection, TestInstanceView, TestModel, StatsModel,   StatsView,   AssessView, AboutView, ActivityModel,   ActivityView,   spinController) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'spinController'],
+function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection, TestInstanceView, TestModel, StatsModel,   StatsView,   AssessView, AboutView, spinController) {
 
     var QScoreModel = Backbone.Model.extend({
         idAttribute: "qid"
@@ -177,10 +177,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 var statsModel = new StatsModel.StatsModel({}, {appModel: this.model, requester: this.requester});
                 view = new StatsView.StatsView({model: statsModel, questions: this.questions});
                 break;
-            case "activity":
-                var activityModel = new ActivityModel.ActivityModel({}, {appModel: this.model, requester: this.requester});
-                view = new ActivityView.ActivityView({model: activityModel});
-                break;
             case "assess":
                 view = new AssessView({appModel: this.model, tests: this.tests, tInstances: this.tInstances, router: this.router});
                 break;
@@ -262,7 +258,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
 
     var AppRouter = Backbone.Router.extend({
         routes: {
-            "activity": "goActivity",
             "stats": "goStats",
             "assess": "goAssess",
             "q/:tiid/:qNumber": "goTestQuestion",
@@ -279,13 +274,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
         goHome: function(actions) {
             this.model.set({
                 "page": "home",
-                "pageOptions": {}
-            });
-        },
-
-        goActivity: function() {
-            this.model.set({
-                "page": "activity",
                 "pageOptions": {}
             });
         },
