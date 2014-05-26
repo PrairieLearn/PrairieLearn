@@ -150,7 +150,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
     var AppView = Backbone.View.extend({
         initialize: function() {
             this.router = this.options.router; // hack to enable random question URL re-writing
-            this.requester = this.options.requester;
             this.qScores = this.options.qScores;
             this.questions = this.options.questions;
             this.eScores = this.options.eScores;
@@ -174,7 +173,7 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 view = new HomeView.HomeView({model: this.model});
                 break;
             case "stats":
-                var statsModel = new StatsModel.StatsModel({}, {appModel: this.model, requester: this.requester});
+                var statsModel = new StatsModel.StatsModel({}, {appModel: this.model});
                 view = new StatsView.StatsView({model: statsModel, questions: this.questions});
                 break;
             case "assess":
@@ -203,7 +202,7 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                     qid = tInstance.get("qids")[qIndex];
                 else
                     qid = test.get("qids")[qIndex];
-                var questionDataModel = new QuestionDataModel.QuestionDataModel({}, {appModel: this.model, requester: this.requester, qid: qid, tiid: tiid, tInstances: this.tInstances});
+                var questionDataModel = new QuestionDataModel.QuestionDataModel({}, {appModel: this.model, qid: qid, tiid: tiid, tInstances: this.tInstances});
                 test.callWithHelper(function() {
                     var helper = test.get("helper");
                     if (helper.adjustQuestionDataModel)
@@ -322,77 +321,8 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
         },
     });
 
-    var Requester = function(options) {
-        this.model = options.model;
-    };
-
-    Requester.prototype.headers = function() {
-        return {
-            "X-Auth-UID": String(this.model.get("authUID")),
-            "X-Auth-Name": String(this.model.get("authName")),
-            "X-Auth-Date": String(this.model.get("authDate")),
-            "X-Auth-Signature": String(this.model.get("authSignature")),
-        };
-    };
-
-    Requester.prototype.getJSON = function(url, successFn) {
-        $.ajax({
-            dataType: "json",
-            url: url,
-            success: successFn,
-            headers: this.headers(),
-            error: function(jqXHR, textStatus, errorThrown) {
-                console.log('ajax error');
-            }
-        });
-    };
-
-    Requester.prototype.postJSON = function(url, data, successFn) {
-        $.ajax({
-            dataType: "json",
-            url: url,
-            type: "POST",
-            processData: false,
-            data: JSON.stringify(data),
-            contentType: 'application/json; charset=UTF-8',
-            success: successFn,
-            headers: this.headers(),
-            error: function(jqXHR, textStatus, errorThrown) {
-                console.log('ajax error: ' + textStatus);
-            }
-        });
-    };
-
-    Requester.prototype.postJSONWithTimeout = function(url, data, timeout, successFn, errorFn) {
-        $.ajax({
-            dataType: "json",
-            url: url,
-            type: "POST",
-            processData: false,
-            data: JSON.stringify(data),
-            contentType: 'application/json; charset=UTF-8',
-            timeout: timeout,
-            success: successFn,
-            error: errorFn,
-            headers: this.headers()
-        });
-    };
-
-    Requester.prototype.getHtml = function(url, successFn) {
-        $.ajax({
-            dataType: "html",
-            url: url,
-            success: successFn,
-            headers: this.headers(),
-            error: function(jqXHR, textStatus, errorThrown) {
-                console.log('ajax error');
-            }
-        });
-    };
-
     $(function() {
         var appModel = new AppModel();
-        var requester = new Requester({model: appModel});
         var appRouter = new AppRouter({model: appModel});
 
         var qScores = new QScoreCollection([], {
@@ -429,7 +359,7 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                     tests.fetch({success: function() {
                         tInstances.fetch({success: function() {
                             users.fetch({success: function() {
-                                var appView = new AppView({model: appModel, qScores: qScores, questions: questions, tests: tests, tInstances: tInstances, requester: requester, router: appRouter, users: users});
+                                var appView = new AppView({model: appModel, qScores: qScores, questions: questions, tests: tests, tInstances: tInstances, router: appRouter, users: users});
                                 appView.render();
                             }});
                         }});

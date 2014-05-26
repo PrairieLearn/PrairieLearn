@@ -1,9 +1,8 @@
 
-define(['underscore', 'backbone'], function(_, Backbone) {
+define(['underscore', 'backbone', 'jquery'], function(_, Backbone, $) {
 
     var QuestionDataModel = Backbone.Model.extend({
         initialize: function(attributes, options) {
-            this.requester = options.requester;
             this.appModel = options.appModel;
             this.tInstances = options.tInstances;
             this.set({
@@ -43,7 +42,7 @@ define(['underscore', 'backbone'], function(_, Backbone) {
             }
             var that = this;
             var qid = this.get("qid");
-            that.requester.getJSON(that.appModel.apiURL("questions/" + qid), function(data) {
+            $.getJSON(that.appModel.apiURL("questions/" + qid), function(data) {
                 that.set({
                     "title": data.title,
                     "number": data.number
@@ -64,13 +63,13 @@ define(['underscore', 'backbone'], function(_, Backbone) {
                 var vid = qInstance.vid;
                 that.set("qiid", qiid);
                 that.set("vid", vid);
-                that.requester.getJSON(that.appModel.apiURL("questions/" + qid + "/" + vid + "/params"), function(params) {
+                $.getJSON(that.appModel.apiURL("questions/" + qid + "/" + vid + "/params"), function(params) {
                     that.set("params", params);
                 });
                 require([that.appModel.apiURL("questions/" + qid + "/" + vid + "/client.js")], function(qClient) {
                     that.set("qClient", qClient);
                 });
-                that.requester.getHtml(that.appModel.apiURL("questions/" + qid + "/" + vid + "/question.html"), function(qTemplate) {
+                $.get(that.appModel.apiURL("questions/" + qid + "/" + vid + "/question.html"), function(qTemplate) {
                     that.set("qTemplate", qTemplate);
                 });
             };
@@ -79,10 +78,18 @@ define(['underscore', 'backbone'], function(_, Backbone) {
                 // already have a QIID, so GET the qInstance
                 var qiidsByQid = tInstance.get("qiidsByQid");
                 var qiid = qiidsByQid[qid];
-                that.requester.getJSON(that.appModel.apiURL("qInstances/" + qiid), processQInstance);
+                $.getJSON(that.appModel.apiURL("qInstances/" + qiid), processQInstance);
             } else {
                 // don't already have a QIID, so POST to create a new qInstance
-                that.requester.postJSON(that.appModel.apiURL("qInstances"), qInstance, processQInstance);
+                $.ajax({
+                    dataType: "json",
+                    url: that.appModel.apiURL("qInstances"),
+                    type: "POST",
+                    processData: false,
+                    data: JSON.stringify(qInstance),
+                    contentType: 'application/json; charset=UTF-8',
+                    success: processQInstance,
+                });
             }
         },
 
@@ -117,17 +124,29 @@ define(['underscore', 'backbone'], function(_, Backbone) {
             this.set("submittable", false);
             this.set("submitted", true);
             var that = this;
-            this.requester.postJSONWithTimeout(that.appModel.apiURL("submissions"), submission, 7000, function(submission) {
+            var successFn = function(submission) {
                 that.set("score", submission.score);
                 if (qClient.showSolution !== undefined && submission.trueAnswer !== undefined) {
                     qClient.showSolution(submission.trueAnswer);
                 }
                 that.trigger("graded");
-            }, function(jqXHR, textStatus, errorThrown) {
+            };
+            var errorFn = function(jqXHR, textStatus, errorThrown) {
                 var e = textStatus ? textStatus : "Unknown error";
                 if (e === "error" && errorThrown)
                     e = errorThrown;
                 that.set("submitError", e);
+            };
+            $.ajax({
+                dataType: "json",
+                url: that.appModel.apiURL("submissions"),
+                type: "POST",
+                processData: false,
+                data: JSON.stringify(submission),
+                contentType: 'application/json; charset=UTF-8',
+                timeout: 7000,
+                success: successFn,
+                error: errorFn,
             });
         },
 
@@ -175,7 +194,7 @@ define(['underscore', 'backbone'], function(_, Backbone) {
             this.set("submitError", false);
             this.set("saveInProgress", true);
             var that = this;
-            this.requester.postJSONWithTimeout(that.appModel.apiURL("submissions"), submission, 7000, function(submission) {
+            var successFn = function(submission) {
                 that.set("saveInProgress", false);
                 var tiid, tInstance;
                 if (that.get("tiid") != null) {
@@ -187,13 +206,25 @@ define(['underscore', 'backbone'], function(_, Backbone) {
                     }
                 }
                 that.updateDirtyStatus();
-            }, function(jqXHR, textStatus, errorThrown) {
+            };
+            var errorFn = function(jqXHR, textStatus, errorThrown) {
                 that.set("saveInProgress", false);
                 var e = textStatus ? textStatus : "Unknown error";
                 if (e === "error" && errorThrown)
                     e = errorThrown;
                 that.set("submitError", e);
                 that.updateDirtyStatus();
+            };
+            $.ajax({
+                dataType: "json",
+                url: that.appModel.apiURL("submissions"),
+                type: "POST",
+                processData: false,
+                data: JSON.stringify(submission),
+                contentType: 'application/json; charset=UTF-8',
+                timeout: 7000,
+                success: successFn,
+                error: errorFn,
             });
         },
     });

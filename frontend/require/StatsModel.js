@@ -3,7 +3,6 @@ define(['underscore', 'backbone'], function(_, Backbone) {
 
     var StatsModel = Backbone.Model.extend({
         initialize: function(attributes, options) {
-            this.requester = options.requester;
             this.appModel = options.appModel;
             this.set({
                 "submissionsPerHour": null,
@@ -23,10 +22,10 @@ define(['underscore', 'backbone'], function(_, Backbone) {
             var that = this;
             var uid = that.appModel.get("userUID");
             if (uid) {
-                that.requester.getJSON(that.appModel.apiURL("stats/submissionsPerHour"), function(submissionsPerHour) {
+                $.getJSON(that.appModel.apiURL("stats/submissionsPerHour"), function(submissionsPerHour) {
                     that.set("submissionsPerHour", submissionsPerHour);
                 });
-                that.requester.getJSON(that.appModel.apiURL("stats/usersPerHour"), function(usersPerHour) {
+                $.getJSON(that.appModel.apiURL("stats/usersPerHour"), function(usersPerHour) {
                     that.set("usersPerHour", usersPerHour);
                 });
                 /*
