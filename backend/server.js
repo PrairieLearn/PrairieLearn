@@ -753,70 +753,6 @@ app.get("/users/:uid", function(req, res) {
     });
 });
 
-app.get("/users/:uid/qScores", function(req, res) {
-    if (!uCollect) {
-        return sendError(res, 500, "Do not have access to the users database collection");
-    }
-    uCollect.findOne({uid: req.params.uid}, function(err, uObj) {
-        if (err) {
-            return sendError(res, 500, "Error accessing users database for uid " + req.params.uid, err);
-        }
-        if (!uObj) {
-            return sendError(res, 404, "No user with uid " + req.params.uid);
-        }
-        var qScores = [], i;
-        _.each(questionDB, function(info, qid) {
-            if (uObj.qScores !== undefined && uObj.qScores[qid] !== undefined) {
-                qScores.push(uObj.qScores[qid]);
-            } else {
-                qScores.push({
-                    uid: req.params.uid,
-                    qid: qid,
-                    n: 0,
-                    avgScore: 0,
-                    maxScore: 0
-                });
-            }
-        });
-        for (i = 0; i < qScores.length; i++) {
-            qScores[i].uid = req.params.uid;
-        }
-        filterObjsByAuth(req, qScores, function(qScores) {
-            res.json(stripPrivateFields(qScores));
-        });
-    });
-});
-
-app.get("/users/:uid/qScores/:qid", function(req, res) {
-    if (!uCollect) {
-        return sendError(res, 500, "Do not have access to the users database collection");
-    }
-    uCollect.findOne({uid: req.params.uid}, function(err, uObj) {
-        if (err) {
-            return sendError(res, 500, "Error accessing users database for uid " + req.params.uid, err);
-        }
-        if (!uObj) {
-            return sendError(res, 404, "No user with uid " + req.params.uid);
-        }
-        var qScore = {
-            uid: req.params.uid,
-            qid: req.params.qid,
-            n: 0,
-            avgScore: 0,
-            maxScore: 0
-        };
-        if (uObj.qScores != null) {
-            if (uObj.qScores[req.params.qid] != null) {
-                qScore = uObj.qScores[req.params.qid];
-            }
-        }
-        qScore.uid = req.params.uid;
-        ensureObjAuth(req, res, qScore, function(qScore) {
-            res.json(stripPrivateFields(qScore));
-        });
-    });
-});
-
 app.get("/qInstances", function(req, res) {
     if (!qiCollect) {
         return sendError(res, 500, "Do not have access to the qInstances database collection");
@@ -1119,51 +1055,7 @@ app.post("/submissions", function(req, res) {
                                 return sendError(res, 500, "Error writing submission to database", err);
                             }
                             updateTest(req, res, submission, function(submission) {
-                                var projection = {};
-                                projection["qScores." + submission.qid] = 1;
-                                uCollect.findOne({uid: submission.uid}, projection, function(err, obj) {
-                                    if (err) {
-                                        return sendError(res, 500, "Error accessing users database for uid " + submission.uid, err);
-                                    }
-                                    if (!obj) {
-                                        return sendError(res, 404, "No user with uid " + submission.uid);
-                                    }
-                                    var newQScore;
-                                    if (obj.qScores != null) {
-                                        if (obj.qScores[submission.qid] != null) {
-                                            var oldQScore = obj.qScores[submission.qid];
-                                            newQScore = {};
-                                            newQScore.n = oldQScore.n + 1;
-                                            newQScore.recentScores = oldQScore.recentScores || [];
-                                            newQScore.recentScores.push(submission.score);
-                                            if (newQScore.recentScores.length > 5) {
-                                                newQScore.recentScores = newQScore.recentScores.slice(newQScore.recentScores.length - 5);
-                                            }
-                                            var totalScore = newQScore.recentScores.reduce(function(a, b) {return a + b;});
-                                            newQScore.avgScore = totalScore / newQScore.recentScores.length;
-                                            newQScore.maxScore = Math.max(oldQScore.maxScore, submission.score);
-                                        }
-                                    }
-                                    if (newQScore == null) {
-                                        newQScore = {};
-                                        newQScore.n = 1;
-                                        newQScore.recentScores = [submission.score];
-                                        newQScore.avgScore = submission.score;
-                                        newQScore.maxScore = submission.score;
-                                    }
-                                    var set = {};
-                                    set["qScores." + submission.qid + ".n"] = newQScore.n;
-                                    set["qScores." + submission.qid + ".qid"] = submission.qid;
-                                    set["qScores." + submission.qid + ".recentScores"] = newQScore.recentScores;
-                                    set["qScores." + submission.qid + ".avgScore"] = newQScore.avgScore;
-                                    set["qScores." + submission.qid + ".maxScore"] = newQScore.maxScore;
-                                    uCollect.update({_id: obj._id}, {$set: set}, {w: 1}, function(err) {
-                                        if (err) {
-                                            return sendError(res, 500, "Error writing qScore to database", err);
-                                        }
-                                        res.json(stripPrivateFields(submission));
-                                    });
-                                });
+                                res.json(stripPrivateFields(submission));
                             });
                         });
                     });

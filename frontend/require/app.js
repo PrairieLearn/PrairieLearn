@@ -44,14 +44,6 @@ requirejs.config({
 requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'spinController'],
 function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection, TestInstanceView, TestModel, StatsModel,   StatsView,   AssessView, AboutView, spinController) {
 
-    var QScoreModel = Backbone.Model.extend({
-        idAttribute: "qid"
-    });
-
-    var QScoreCollection = Backbone.Collection.extend({
-        model: QScoreModel
-    });
-
     var QuestionModel = Backbone.Model.extend({
         idAttribute: "qid"
     });
@@ -150,7 +142,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
     var AppView = Backbone.View.extend({
         initialize: function() {
             this.router = this.options.router; // hack to enable random question URL re-writing
-            this.qScores = this.options.qScores;
             this.questions = this.options.questions;
             this.eScores = this.options.eScores;
             this.tests = this.options.tests;
@@ -325,9 +316,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
         var appModel = new AppModel();
         var appRouter = new AppRouter({model: appModel});
 
-        var qScores = new QScoreCollection([], {
-            url: function() {return appModel.apiURL("users/" + appModel.get("userUID") + "/qScores");}
-        });
         var questions = new QuestionCollection([], {
             url: function() {return appModel.apiURL("questions");}
         });
@@ -354,14 +342,12 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
         });
 
         appModel.on("change:authUID", function() {
-            qScores.fetch({success: function() {
-                questions.fetch({success: function() {
-                    tests.fetch({success: function() {
-                        tInstances.fetch({success: function() {
-                            users.fetch({success: function() {
-                                var appView = new AppView({model: appModel, qScores: qScores, questions: questions, tests: tests, tInstances: tInstances, router: appRouter, users: users});
-                                appView.render();
-                            }});
+            questions.fetch({success: function() {
+                tests.fetch({success: function() {
+                    tInstances.fetch({success: function() {
+                        users.fetch({success: function() {
+                            var appView = new AppView({model: appModel, questions: questions, tests: tests, tInstances: tInstances, router: appRouter, users: users});
+                            appView.render();
                         }});
                     }});
                 }});
