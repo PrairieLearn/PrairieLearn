@@ -28,26 +28,6 @@ define(['underscore', 'backbone'], function(_, Backbone) {
                 $.getJSON(that.appModel.apiURL("stats/usersPerHour"), function(usersPerHour) {
                     that.set("usersPerHour", usersPerHour);
                 });
-                /*
-                that.requester.getJSON(that.appModel.apiURL("stats/usersPerStartHour/Midterm1"), function(usersPerStartHourMidterm1) {
-                    that.set("usersPerStartHourMidterm1", usersPerStartHourMidterm1);
-                });
-                that.requester.getJSON(that.appModel.apiURL("stats/usersPerStartHour/Midterm2"), function(usersPerStartHourMidterm2) {
-                    that.set("usersPerStartHourMidterm2", usersPerStartHourMidterm2);
-                });
-                that.requester.getJSON(that.appModel.apiURL("stats/usersPerSubmissionCount"), function(usersPerSubmissionCount) {
-                    that.set("usersPerSubmissionCount", usersPerSubmissionCount);
-                });
-                that.requester.getJSON(that.appModel.apiURL("stats/averageQScores"), function(averageQScores) {
-                    that.set("averageQScores", averageQScores);
-                });
-                that.requester.getJSON(that.appModel.apiURL("stats/uScores"), function(uScores) {
-                    that.set("uScores", uScores);
-                });
-                that.requester.getJSON(that.appModel.apiURL("stats/trueAvgScores"), function(trueAvgScores) {
-                    that.set("trueAvgScores", trueAvgScores);
-                });
-                */
             }
         }
     });

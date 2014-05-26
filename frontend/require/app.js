@@ -174,7 +174,7 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 break;
             case "stats":
                 var statsModel = new StatsModel.StatsModel({}, {appModel: this.model});
-                view = new StatsView.StatsView({model: statsModel, questions: this.questions});
+                view = new StatsView.StatsView({model: statsModel});
                 break;
             case "assess":
                 view = new AssessView({appModel: this.model, tests: this.tests, tInstances: this.tInstances, router: this.router});
