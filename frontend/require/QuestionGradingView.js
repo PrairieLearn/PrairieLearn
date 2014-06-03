@@ -11,21 +11,27 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'spinController', 'tex
         },
 
         initialize: function() {
-            this.listenTo(this.model, "change:submitted change:score change:submitError", this.render);
+            this.listenTo(this.model, "change:submitted change:score change:submitError change:qClient", this.render);
             this.render();
         },
 
         render: function() {
             var data = {
                 submitted: this.model.get("submitted"),
-                submitError: this.model.get("submitError")
+                submitError: this.model.get("submitError"),
+                showResult: false,
             };
             var score = this.model.get("score");
             if (score != null) {
+                data.showResult = true;
                 data.scoreLabel = renderer.scoreLabel(score) + ((score >= 0.5) ? " Correct!" : " Incorrect.");
             }
             var html = Mustache.render(questionGradingViewTemplate, data);
             this.$el.html(html);
+            var qClient = this.model.get("qClient");
+            if (qClient && data.showResult) {
+                qClient.renderAnswer("#qanswer");
+            }
             if (this.spinner) {
                 spinController.stopSpinner(this.spinner);
             }

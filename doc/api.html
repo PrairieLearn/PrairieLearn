@@ -346,42 +346,6 @@
     <!-------------------------------------------------------------->
     <tr>
       <td>
-        <del><code>/users/&lt;uid&gt;/qScores</code></del>
-      </td>
-      <td>
-        <del>GET</del>
-      </td>
-      <td>
-        —
-      </td>
-      <td>
-        —
-      </td>
-      <td>
-        <del>JSON: List of all <code>&lt;qScore&gt;</code> objects.</del>
-      </td>
-    </tr>
-    <!-------------------------------------------------------------->
-    <tr>
-      <td>
-        <del><code>/users/&lt;uid&gt;/qScores/&lt;qid&gt;</code></del>
-      </td>
-      <td>
-        <del>GET</del>
-      </td>
-      <td>
-        —
-      </td>
-      <td>
-        —
-      </td>
-      <td>
-        <del>JSON: Single <code>&lt;qScore&gt;</code> object.</del>
-      </td>
-    </tr>
-    <!-------------------------------------------------------------->
-    <tr>
-      <td>
         <code>/qInstances</code>
       </td>
       <td>
@@ -787,6 +751,18 @@
     <!-------------------------------------------------------------->
     <tr>
       <td>
+        <code>&lt;questionData&gt;</code>
+      </td>
+      <td>
+        <pre>{
+  "params": &lt;params&gt;,
+  "trueAnswer": &lt;trueAnswer&gt;
+}</pre>
+      </td>
+    </tr>
+    <!-------------------------------------------------------------->
+    <tr>
+      <td>
         <code>&lt;submission&gt;</code>
       </td>
       <td>
@@ -812,23 +788,6 @@
   "score": &lt;number&gt;,
   "trueAnswer": &lt;trueAnswer&gt;
 }</pre>
-      </td>
-    </tr>
-    <!-------------------------------------------------------------->
-    <tr>
-      <td>
-        <del><code>&lt;qScore&gt;</code></del>
-      </td>
-      <td>
-        <del><pre>{
-  "uid": &lt;string&gt;,
-  "qid": &lt;string&gt;,
-  "firstDate": &lt;date&gt;,
-  "lastDate": &lt;date&gt;,
-  "nSubmissions": &lt;number&gt;,
-  "avgScore": &lt;number&gt;,
-  "maxScore": &lt;number&gt;
-}</pre></del>
       </td>
     </tr>
     <!-------------------------------------------------------------->
@@ -911,145 +870,150 @@
     The PrairieLearn Questions consist of <code>server.js</code> and
     <code>client.js</code> components. These present a JavaScript API
     for communication with the PrairieLearn Server and the
-    PrairieLearn WebApp.
-  </p>
-  <p>
-    The Question components <code>server.js</code> and
-    <code>client.js</code> should be loaded with <a
-    href="http://requirejs.org/">RequireJS</a> to obtain the
+    PrairieLearn WebApp. The Question components
+    <code>server.js</code> and <code>client.js</code> should be loaded
+    with <a href="http://requirejs.org/">RequireJS</a> to obtain the
     corresponding <code>&lt;server&gt;</code> and
-    <code>&lt;client&gt;</code> objects. For example, within <a
-    href="http://nodejs.org/">Node.js</a> the server Question
-    component can be used like:
+    <code>&lt;client&gt;</code> objects.
   </p>
-  <pre>requirejs = require('requirejs');
-var serverFile = 'questions/add/server.js';
-requirejs([serverFile], function(server) {
-  var questionData = server.questionData(variant);
-});</pre>
-  <p>
-    Similarly, within client-side JavaScript (with RequireJS loaded),
-    the client Question component can be used like:
-  </p>
-  <pre>require(['http://&lt;webserverIP&gt;/questions/&lt;qid&gt;/&lt;vid&gt;/client.js'], function(client) {
-  client.render(divID, questionData, questionHTML, callbackFcn);
-});</pre>
 
-  <h3>Question API: JavaScript code objects</h3>
+  <h3>Question server API</h3>
 
   <table>
-    <tr><th>Object</th><th>Specification</th></tr>
-    <!-------------------------------------------------------------->
+    <tr><th>Function</th><th>Arguments</th><th>Return</th><th>Description</th></tr>
     <tr>
-      <td>
-        <code>&lt;server&gt;</code>
-      </td>
-      <td>
-        <pre>
-{
-  "getParams": function(&lt;vid&gt;) {return &lt;params&gt;},
-  "gradeAnswer": function(&lt;submittedAnswer&gt;, &lt;params&gt;) {return &lt;grading&gt;}
-}</pre>
-      </td>
-    </tr>
-    <!-------------------------------------------------------------->
-    <tr>
-      <td>
-        <code>&lt;client&gt;</code>
-      </td>
-      <td>
-        <pre>
-{
-  "render": function(&lt;divID&gt;, &lt;params&gt;, &lt;questionHTML&gt;, &lt;callback&gt;) {},
-  "getSubmittedAnswer": function() {return &lt;submittedAnswer&gt;},
-  "showSolution": function(&lt;trueAnswer&gt;) {}
-}</pre>
-      </td>
-    </tr>
-    <!-------------------------------------------------------------->
-  </table>
-
-  <h3>Question API: Function specifications</h3>
-
-  <table>
-    <tr><th>Component</th><th>Function</th><th>Arguments</th><th>Return</th><th>Description</th></tr>
-    <tr>
-      <td><code>&lt;server&gt;</code></td>
-      <td><code>getParams</code></td>
+      <td><code>getData</code></td>
       <td><code>&lt;vid&gt;</code></td>
-      <td><code>&lt;params&gt;</code></td>
+      <td><code>&lt;questionData&gt;</code></td>
       <td>
-        Generate question-specific <code>&lt;params&gt;</code>
+        Generate question-specific <code>&lt;questionData&gt;</code>
         describing the particular instance of the question using the
         random <code>&lt;vid&gt;</code>. This function must be
         deterministic, so that a particular <code>&lt;vid&gt;</code>
-        always generates the same <code>&lt;params&gt;</code>.
+        always generates the same <code>&lt;questionData&gt;</code>.
       </td>
     </tr>
     <tr>
-      <td><code>&lt;server&gt;</code></td>
       <td><code>gradeAnswer</code></td>
       <td>
+        <code>&lt;vid&gt;</code>
         <code>&lt;submittedAnswer&gt;</code>
-        <code>&lt;params&gt;</code>
       </td>
       <td><code>&lt;grading&gt;</code></td>
       <td>
         Determine whether the given
         <code>&lt;submittedAnswer&gt;</code> object is correct for the
         question instance corresponding to the given
-        <code>&lt;params&gt;</code>, and return the correctness
-        information and solution in the <code>&lt;grading&gt;</code>
-        object.
+        <code>&lt;vid&gt;</code>, and return the correctness
+        information in the <code>&lt;grading&gt;</code> object.
       </td>
     </tr>
+  </table>
+
+  <h3>Question client API</h3>
+
+  <table>
+    <tr><th>Function</th><th>Arguments</th><th>Return</th><th>Description</th></tr>
     <tr>
-      <td><code>&lt;client&gt;</code></td>
-      <td><code>render</code></td>
+      <td><code>initialize</code></td>
       <td>
-        <code>&lt;divID&gt;</code>
         <code>&lt;params&gt;</code>
-        <code>&lt;questionHTML&gt;</code>
-        <code>&lt;callback&gt;</code>
       </td>
       <td>—</td>
       <td>
-        Render the question into the DOM <code>div</code> element with
-        ID <code>&lt;divID&gt;</code>. The
-        <code>&lt;params&gt;</code> is the JSON object generated
-        by <code>&lt;server&gt;.params()</code> and transmitted
-        via <code>/questions/&lt;qid&gt;/&lt;vid&gt;/params</code>. The
-        <code>&lt;questionHTML&gt;</code> is the String obtained from
-        <code>/questions/&lt;qid&gt;/&lt;vid&gt;/question.html</code>. The final
-        argument is a function with signature
-        <code>callback(&lt;completed&gt;)</code>, where
-        <code>&lt;completed&gt;</code> is a Boolean that is
-        <code>true</code> when the user has completed the question, so
-        the question is available for grading.
+        Initialize the question client with the given question
+        parameters. This will be called before any other functions on
+        the client.
       </td>
     </tr>
     <tr>
-      <td><code>&lt;client&gt;</code></td>
-      <td><code>getAnswerData</code></td>
+      <td><code>renderQuestion</code></td>
+      <td>
+        <code>&lt;questionDivID&gt;</code>
+        <code>&lt;changeCallback&gt;</code>
+      </td>
       <td>—</td>
       <td>
-        <code>&lt;answerData&gt;</code>
-      </td>
-      <td>
-        Construct the <code>&lt;answerData&gt;</code> object from the
-        webpage and return it.
+        Render the question into the <code>div</code> with the given
+        ID. The <code>&lt;changeCallback&gt;</code> argument is a
+        function that must be called (with no arguments) when the user
+        changes their answer to the question. The
+        <code>renderQuestion()</code> function will not be called
+        multiple times without an intervening call to
+        <code>close()</code>. The <code>setSubmittedAnswer()</code>
+        and <code>setTrueAnswer()</code> functions may be called
+        before or after <code>renderQuestion()</code>.
       </td>
     </tr>
     <tr>
-      <td><code>&lt;client&gt;</code></td>
-      <td><code>showSolution</code></td>
+      <td><code>renderAnswer</code></td>
+      <td>
+        <code>&lt;answerDivID&gt;</code>
+      </td>
+      <td>—</td>
+      <td>
+        Render the true answer into the <code>div</code> with the
+        given ID. The <code>renderAnswer()</code> function will not be
+        called multiple times without an intervening call to
+        <code>close()</code>. The <code>setSubmittedAnswer()</code>
+        and <code>setTrueAnswer()</code> functions may be called
+        before or after <code>renderAnswer()</code>.
+      </td>
+    </tr>
+    <tr>
+      <td><code>close</code></td>
+      <td>—</td>
+      <td>—</td>
+      <td>
+        Remove any listeners or other hooks associated with the
+        client. Called just before the client rendering is removed
+        from the DOM.
+      </td>
+    </tr>
+    <tr>
+      <td><code>isComplete</code></td>
+      <td>—</td>
+      <td>
+        <code>&lt;boolean&gt;</code>
+      </td>
+      <td>
+        Return <code>true</code> if the question can be graded,
+        otherwise <code>false</code>.
+      </td>
+    </tr>
+    <tr>
+      <td><code>getSubmittedAnswer</code></td>
+      <td>—</td>
+      <td>
+        <code>&lt;submittedAnswer&gt;</code>
+      </td>
+      <td>
+        Return the current state of the question input as a
+        <code>&lt;submittedAnswer&gt;</code> object (possibly only
+        partially complete).
+      </td>
+    </tr>
+    <tr>
+      <td><code>setSubmittedAnswer</code></td>
+      <td>
+        <code>&lt;submittedAnswer&gt;</code>
+      </td>
+      <td>—</td>
+      <td>
+        Set the current state of the question input from the provided
+        <code>&lt;submittedAnswer&gt;</code> object (possibly only
+        partially complete).
+      </td>
+    </tr>
+    <tr>
+      <td><code>setTrueAnswer</code></td>
       <td>
         <code>&lt;trueAnswer&gt;</code>
       </td>
       <td>—</td>
       <td>
-        Display the answer data in the <code>&lt;trueAnswer&gt;</code>
-        object on the webpage.
+        Set the current state of the true answer from the provided
+        <code>&lt;trueAnswer&gt;</code> object.
       </td>
     </tr>
   </table>
@@ -1084,17 +1048,21 @@ requirejs([serverFile], function(server) {
 Take the randomly generated variant ID <code>&lt;vid&gt;</code> from here.
     </li>
     <li>
-      GET the question HTML and code from <code>/questions/&lt;qid&gt;/&lt;vid&gt;/*</code>
+      GET the question parameters from <code>/questions/&lt;qid&gt;/&lt;vid&gt;/params</code>
     </li>
     <li>
-      Insert the HTML into the page, then call
-      <code>client.render()</code>, passing a callback to indicate
-      completion.
+      GET the question client code from <code>/questions/&lt;qid&gt;/&lt;vid&gt;/client.js</code>
     </li>
     <li>
-      Wait until the completion callback is called with a
-      <code>true</code> argument and the user indicates the desire to
-      submit the answer for grading.
+      Call <code>client.initialize()</code> and
+      <code>client.renderQuestion()</code>, passing a callback for
+      change notifications.
+    </li>
+    <li>
+      Wait until the change callback fires and
+      <code>client.isComplete()</code> returns <code>true</code>, and
+      then further wait until the user indicates the desire to submit
+      the answer for grading.
     </li>
     <li>
       Call <code>client.getSubmittedAnswer()</code> to obtain a
@@ -1120,13 +1088,13 @@ Take the randomly generated variant ID <code>&lt;vid&gt;</code> from here.
   qiid: &lt;qiid&gt;,
   submittedAnswer: &lt;submittedAnswer&gt;,
   trueAnswer: &lt;trueAnswer&gt;,
-  score: &lt;number&gt;,
+  score: &lt;number&gt;
 }</pre>
     </li>
     <li>
       Show the score to the user and call
-      <code>client.setTrueAnswer(&lt;trueAnswer&gt;)</code> to display
-      the true answer.
+      <code>client.setTrueAnswer()</code> and
+      <code>client.renderAnswer()</code> to display the true answer.
     </li>
   </ol>
 

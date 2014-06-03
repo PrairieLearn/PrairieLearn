@@ -2,10 +2,12 @@
 <div class="panel panel-info">
   <div class="panel-heading"><h3 class="panel-title">Result</h3></div>
   <div class="panel-body">
-    {{#scoreLabel}}
+    {{#showResult}}
     <p>Score: {{{scoreLabel}}}</p>
-    {{/scoreLabel}}
-    {{^scoreLabel}}
+    <div id="qanswer">
+    </div>
+    {{/showResult}}
+    {{^showResult}}
     {{#submitError}}
     <div class="alert alert-danger">
       <p>
@@ -18,10 +20,10 @@
     <p>Grading question, please wait...</p>
     <div id="qgrading-spinner" class="spinner-container"></div>
     {{/submitError}}
-    {{/scoreLabel}}
+    {{/showResult}}
   </div>
 </div>
-{{#scoreLabel}}
+{{#showResult}}
 <button class="btn btn-info" id="tryAgain">Do this question again</button>
-{{/scoreLabel}}
+{{/showResult}}
 {{/submitted}}

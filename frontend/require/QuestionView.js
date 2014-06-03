@@ -62,6 +62,10 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionView.html', 'Questio
         },
 
         close: function() {
+            var qClient = this.model.get("qClient");
+            if (qClient) {
+                qClient.close();
+            }
             if (this.questionBodyView) {
                 this.questionBodyView.close();
             }

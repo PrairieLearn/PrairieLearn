@@ -6,15 +6,13 @@ define(['underscore', 'backbone', 'spinController'], function(_, Backbone, spinC
         tagName: 'div',
 
         initialize: function() {
-            this.listenTo(this.model, "change:params change:qTemplate change:qClient", this.render);
+            this.listenTo(this.model, "change:qClient", this.render);
             this.render();
         },
 
         render: function() {
-            var params = this.model.get("params");
-            var qTemplate = this.model.get("qTemplate");
             var qClient = this.model.get("qClient");
-            if (params == null || qTemplate == null || qClient == null) {
+            if (qClient == null) {
                 if (!this.spinner) {
                     var el = document.getElementById("qbody-spinner");
                     this.spinner = spinController.startSpinner(el);
@@ -25,9 +23,8 @@ define(['underscore', 'backbone', 'spinController'], function(_, Backbone, spinC
                 spinController.stopSpinner(this.spinner);
             }
             var that = this;
-            qClient.render("#qbody", params, qTemplate, function(ready) {
-                that.model.set("submittable", ready);
-            }, function() {
+            qClient.renderQuestion("#qbody", function() {
+                that.model.set("submittable", qClient.isComplete());
                 that.model.trigger("answerChanged");
             });
 
@@ -58,12 +55,6 @@ define(['underscore', 'backbone', 'spinController'], function(_, Backbone, spinC
         },
 
         close: function() {
-            var qClient = this.model.get("qClient");
-            if (qClient) {
-                if (qClient.close) {
-                    qClient.close();
-                }
-            }
             this.remove();
         }
     });

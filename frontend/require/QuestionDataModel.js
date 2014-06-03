@@ -1,5 +1,5 @@
 
-define(['underscore', 'backbone', 'jquery'], function(_, Backbone, $) {
+define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, async) {
 
     var QuestionDataModel = Backbone.Model.extend({
         initialize: function(attributes, options) {
@@ -12,8 +12,6 @@ define(['underscore', 'backbone', 'jquery'], function(_, Backbone, $) {
                 qiid: null,
                 title: null,
                 number: null,
-                params: null,
-                qTemplate: null,
                 qClient: null,
                 showTitle: true,
                 submittable: false,
@@ -63,14 +61,22 @@ define(['underscore', 'backbone', 'jquery'], function(_, Backbone, $) {
                 var vid = qInstance.vid;
                 that.set("qiid", qiid);
                 that.set("vid", vid);
-                $.getJSON(that.appModel.apiURL("questions/" + qid + "/" + vid + "/params"), function(params) {
-                    that.set("params", params);
-                });
-                require([that.appModel.apiURL("questions/" + qid + "/" + vid + "/client.js")], function(qClient) {
-                    that.set("qClient", qClient);
-                });
-                $.get(that.appModel.apiURL("questions/" + qid + "/" + vid + "/question.html"), function(qTemplate) {
-                    that.set("qTemplate", qTemplate);
+                async.parallel({
+                    params: function(callback) {
+                        $.getJSON(that.appModel.apiURL("questions/" + qid + "/" + vid + "/params"), function(params) {
+                            callback(null, params);
+                        });
+                    },
+                    qClient: function(callback) {
+                        require([that.appModel.apiURL("questions/" + qid + "/" + vid + "/client.js")], function(qClient) {
+                            callback(null, qClient);
+                        });
+                    },
+                }, function(err, results) {
+                    if (err)
+                        return;
+                    results.qClient.initialize(results.params);
+                    that.set("qClient", results.qClient);
                 });
             };
 
@@ -125,10 +131,10 @@ define(['underscore', 'backbone', 'jquery'], function(_, Backbone, $) {
             this.set("submitted", true);
             var that = this;
             var successFn = function(submission) {
-                that.set("score", submission.score);
-                if (qClient.showSolution !== undefined && submission.trueAnswer !== undefined) {
-                    qClient.showSolution(submission.trueAnswer);
+                if (submission.trueAnswer !== undefined) {
+                    qClient.setTrueAnswer(submission.trueAnswer);
                 }
+                that.set("score", submission.score);
                 that.trigger("graded");
             };
             var errorFn = function(jqXHR, textStatus, errorThrown) {

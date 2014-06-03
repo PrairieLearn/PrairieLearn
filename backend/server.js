@@ -658,18 +658,6 @@ var sendQuestionFile = function(req, res, filename) {
     });
 };
 
-app.get("/questions/:qid/:vid/question.html", function(req, res) {
-    sendQuestionFile(req, res, "question.html");
-});
-
-app.get("/questions/:qid/:vid/client.js", function(req, res) {
-    sendQuestionFile(req, res, "client.js");
-});
-
-app.get("/questions/:qid/:vid/inc/:filename", function(req, res) {
-    sendQuestionFile(req, res, path.join("inc", req.params.filename));
-});
-
 app.get("/questions/:qid/:vid/params", function(req, res) {
     var qid = req.params.qid;
     var vid = req.params.vid;
@@ -693,6 +681,10 @@ app.get("/questions/:qid/:vid/params", function(req, res) {
             res.json(stripPrivateFields(params));
         });
     });
+});
+
+app.get("/questions/:qid/:vid/:filename", function(req, res) {
+    sendQuestionFile(req, res, req.params.filename);
 });
 
 app.get("/users", function(req, res) {
