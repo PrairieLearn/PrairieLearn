@@ -1,11 +1,9 @@
 {{#submitted}}
 <div class="panel panel-info">
-  <div class="panel-heading"><h3 class="panel-title">Result</h3></div>
+  <div class="panel-heading"><h3 class="panel-title">Score</h3></div>
   <div class="panel-body">
     {{#showResult}}
-    <p>Score: {{{scoreLabel}}}</p>
-    <div id="qanswer">
-    </div>
+    <p>{{{scoreLabel}}}</p>
     {{/showResult}}
     {{^showResult}}
     {{#submitError}}
@@ -23,7 +21,4 @@
     {{/showResult}}
   </div>
 </div>
-{{#showResult}}
-<button class="btn btn-info" id="tryAgain">Do this question again</button>
-{{/showResult}}
 {{/submitted}}

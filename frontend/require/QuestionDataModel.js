@@ -13,6 +13,7 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 title: null,
                 number: null,
                 qClient: null,
+                showAnswer: false,
                 showTitle: true,
                 submittable: false,
                 submitted: false,
@@ -131,10 +132,11 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
             this.set("submitted", true);
             var that = this;
             var successFn = function(submission) {
+                that.set("score", submission.score);
                 if (submission.trueAnswer !== undefined) {
                     qClient.setTrueAnswer(submission.trueAnswer);
+                    that.set("showAnswer", true);
                 }
-                that.set("score", submission.score);
                 that.trigger("graded");
             };
             var errorFn = function(jqXHR, textStatus, errorThrown) {

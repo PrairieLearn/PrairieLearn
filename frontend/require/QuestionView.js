@@ -1,5 +1,5 @@
 
-define(['underscore', 'backbone', 'mustache', 'text!QuestionView.html', 'QuestionBodyView', 'QuestionSubmitView', 'QuestionGradingView'], function(_, Backbone, Mustache, questionViewTemplate, QuestionBodyView, QuestionSubmitView, QuestionGradingView) {
+define(['underscore', 'backbone', 'mustache', 'text!QuestionView.html', 'QuestionBodyView', 'QuestionSubmitView', 'QuestionGradingView', 'QuestionAnswerView'], function(_, Backbone, Mustache, questionViewTemplate, QuestionBodyView, QuestionSubmitView, QuestionGradingView, QuestionAnswerView) {
 
     var QuestionView = Backbone.View.extend({
 
@@ -50,15 +50,18 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionView.html', 'Questio
             this.questionBodyView = new QuestionBodyView.QuestionBodyView({model: this.model});
             this.questionSubmitView = new QuestionSubmitView.QuestionSubmitView({model: this.model, tInstance: this.tInstance});
             this.questionGradingView = new QuestionGradingView.QuestionGradingView({model: this.model});
+            this.questionAnswerView = new QuestionAnswerView.QuestionAnswerView({model: this.model});
             if (this.questionScoreView)
                 this.questionScoreView.render();
             this.questionBodyView.render();
             this.questionSubmitView.render();
             this.questionGradingView.render();
+            this.questionAnswerView.render();
 
             this.$("#qscore").html(this.questionScoreView.el);
             this.$("#qsubmit").html(this.questionSubmitView.el);
             this.$("#qgrading").html(this.questionGradingView.el);
+            this.$("#qanswer").html(this.questionAnswerView.el);
         },
 
         close: function() {
@@ -74,6 +77,9 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionView.html', 'Questio
             }
             if (this.questionGradingView) {
                 this.questionGradingView.close();
+            }
+            if (this.questionAnswerView) {
+                this.questionAnswerView.close();
             }
             this.remove();
         }

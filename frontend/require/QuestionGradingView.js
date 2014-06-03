@@ -6,12 +6,11 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'spinController', 'tex
         tagName: 'div',
 
         events: {
-            "click #tryAgain": "tryAgain",
             "click #retrySubmit": "retrySubmit"
         },
 
         initialize: function() {
-            this.listenTo(this.model, "change:submitted change:score change:submitError change:qClient", this.render);
+            this.listenTo(this.model, "change:submitted change:score change:submitError", this.render);
             this.render();
         },
 
@@ -28,10 +27,6 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'spinController', 'tex
             }
             var html = Mustache.render(questionGradingViewTemplate, data);
             this.$el.html(html);
-            var qClient = this.model.get("qClient");
-            if (qClient && data.showResult) {
-                qClient.renderAnswer("#qanswer");
-            }
             if (this.spinner) {
                 spinController.stopSpinner(this.spinner);
             }
@@ -43,10 +38,6 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'spinController', 'tex
 
         close: function() {
             this.remove();
-        },
-
-        tryAgain: function() {
-            Backbone.trigger("tryAgain");
         },
 
         retrySubmit: function() {
