@@ -551,70 +551,6 @@ app.get("/questions", function(req, res) {
     });
 });
 
-app.get("/questions/:qiids/params", function(req, res) {
-    if (!qiCollect) {
-        return sendError(res, 500, "Do not have access to the qInstances database collection");
-    }
-    var qiidToQInstance = function(qiid, callback) {
-        qiCollect.findOne({qiid: qiid}, function(err, obj) {
-            if (err) {
-                return sendError(res, 500, "Error accessing qInstances database for qiid " + req.params.qiid, err);
-            }
-            ensureObjAuth(req, res, obj, function(obj) {
-                if (!obj) {
-                    return sendError(res, 404, "No qInstance with qiid " + req.params.qiid);
-                }
-                callback(null, obj);
-            });
-        });
-    };
-
-    var dirToQuestion = function(dir, callback) {
-        var infoFile = path.join(questionsDir, dir, "info.json");
-        fs.readFile(infoFile, function(err, data) {
-            if (err) {
-                callback(null, {qid: dir, error: "Unable to read file: " + infoFile});
-                return;
-            }
-            var info;
-            try {
-                info = JSON.parse(data);
-            } catch (e) {
-                var eText = "Error reading file: " + infoFile + ": " + e.name + ": " + e.message;
-                callback(null, {qid: dir, error: eText, title: eText, number: 0});
-                return;
-            }
-            if (info.disabled) {
-                callback(null, null);
-                return;
-            }
-            callback(null, {qid: dir, title: info.title, number: info.number});
-        });
-    };
-    async.map(req.params.qiids, qiidToQInstance, function(err, qInstances) {
-        if (err) {
-            return sendError(res, 500, "Could not find qInstances for qiids", err);
-        }
-        fs.readdir('questions', function(err, files) {
-            if (err) {
-                return sendError(res, 500, "Unable to access questions directory", err);
-            }
-            qids = [];
-            qInstances.each(function(qInstance) {
-                qids.push(qInstance["qid"]);
-            });
-            async.map(qids, dirToQuestion, function(err, questionList) {
-                if (err) {
-                    return sendError(res, 500, "Error reading question data", err);
-                }
-                async.reject(questionList, function(x, cb) {cb(x === null);}, function(questionList) {
-                    res.json(stripPrivateFields(questionList));
-                });
-            });
-        });
-    });
-});
-
 app.get("/questions/:qid", function(req, res) {
     var info = questionDB[req.params.qid];
     if (info === undefined)
@@ -658,32 +594,7 @@ var sendQuestionFile = function(req, res, filename) {
     });
 };
 
-app.get("/questions/:qid/:vid/params", function(req, res) {
-    var qid = req.params.qid;
-    var vid = req.params.vid;
-    var info = questionDB[qid];
-    if (info === undefined) {
-        return sendError(res, 404, "No such QID: " + qid);
-    }
-    questionFilePath(qid, "server.js", function(err, filePath) {
-        if (err)
-            return sendError(res, 404, "Unable to find 'server.js' for qid: " + qid, err);
-        var serverFilePath = path.join(questionsDir, filePath);
-        requirejs([serverFilePath], function(server) {
-            if (server === undefined)
-                return sendError("Unable to load 'server.js' for qid: " + qid);
-            var params;
-            try {
-                params = server.getParams(vid, info);
-            } catch (e) {
-                return sendError(res, 500, "Error in " + serverFilePath + " getParams(): " + e.toString(), {stack: e.stack});
-            }
-            res.json(stripPrivateFields(params));
-        });
-    });
-});
-
-app.get("/questions/:qid/:vid/:filename", function(req, res) {
+app.get("/questions/:qid/:filename", function(req, res) {
     sendQuestionFile(req, res, req.params.filename);
 });
 
@@ -798,6 +709,9 @@ var makeQInstance = function(req, res, qInstance, callback) {
     if (qInstance.qid === undefined) {
         return sendError(res, 400, "No question ID provided");
     }
+    if (qInstance.tiid === undefined) {
+        return sendError(res, 400, "No tInstance ID provided");
+    }
     qInstance.date = new Date();
     var info = questionDB[qInstance.qid];
     if (info === undefined) {
@@ -809,11 +723,21 @@ var makeQInstance = function(req, res, qInstance, callback) {
     ensureObjAuth(req, res, qInstance, function(qInstance) {
         newIDNoError(req, res, "qiid", function(qiid) {
             qInstance.qiid = qiid;
-            qiCollect.insert(qInstance, {w: 1}, function(err) {
-                if (err) {
-                    return sendError(res, 500, "Error writing qInstance to database", err);
+            loadQuestionServer(qInstance.qid, function (server) {
+                var questionData;
+                try {
+                    questionData = server.getData(qInstance.vid, info);
+                    qInstance.params = questionData.params || {};
+                    qInstance.trueAnswer = questionData.trueAnswer || {};
+                } catch (e) {
+                    return sendError(res, 500, "Error in " + qInstance.qid + " getData(): " + e.toString(), {stack: e.stack});
                 }
-                return callback(qInstance);
+                qiCollect.insert(qInstance, {w: 1}, function(err) {
+                    if (err) {
+                        return sendError(res, 500, "Error writing qInstance to database", err);
+                    }
+                    return callback(qInstance);
+                });
             });
         });
     });
@@ -823,12 +747,14 @@ app.post("/qInstances", function(req, res) {
     var qInstance = {
         uid: req.body.uid,
         qid: req.body.qid,
-        vid: req.body.vid,
         tiid: req.body.tiid,
-        tid: req.body.tid,
     };
-    makeQInstance(req, res, qInstance, function(qInstance) {
-        res.json(stripPrivateFields(qInstance));
+    readTInstance(res, qInstance.tiid, function(tInstance) {
+        ensureObjAuth(req, res, tInstance, function(tInstance) {
+            makeQInstance(req, res, qInstance, function(qInstance) {
+                res.json(stripPrivateFields(qInstance));
+            });
+        });
     });
 });
 
@@ -899,6 +825,19 @@ var readQInstance = function(res, qiid, callback) {
     });
 };
 
+var loadQuestionServer = function(qid, callback) {
+    questionFilePath(qid, "server.js", function(err, filePath) {
+        if (err)
+            return sendError(res, 404, "Unable to find 'server.js' for qid: " + qid, err);
+        var serverFilePath = path.join(questionsDir, filePath);
+        requirejs([serverFilePath], function(server) {
+            if (server === undefined)
+                return sendError("Unable to load 'server.js' for qid: " + qid);
+            return callback(server);
+        });
+    });
+};
+
 var readTest = function(res, tid, callback) {
     tCollect.findOne({tid: tid}, function(err, obj) {
         if (err)
@@ -942,10 +881,7 @@ var writeTest = function(req, res, obj, callback) {
     });
 };
 
-var updateTest = function(req, res, submission, callback) {
-    var tiid = submission.tiid;
-    if (tiid === undefined)
-        return callback(submission);
+var updateTest = function(req, res, tiid, submission, callback) {
     readTInstance(res, tiid, function(tInstance) {
         ensureObjAuth(req, res, tInstance, function(tInstance) {
             var tid = tInstance.tid;
@@ -986,7 +922,6 @@ app.post("/submissions", function(req, res) {
     var submission = {
         date: new Date(),
         uid: req.body.uid,
-        tiid: req.body.tiid,
         qiid: req.body.qiid,
         submittedAnswer: req.body.submittedAnswer
     };
@@ -1007,46 +942,37 @@ app.post("/submissions", function(req, res) {
     if (req.body.practice !== undefined) {
         submission.practice = req.body.practice;
     }
-    readQInstance(res, submission.qiid, function(qInstance) {
-        submission.qid = qInstance.qid;
-        submission.vid = qInstance.vid;
-        var info = questionDB[submission.qid];
-        if (info === undefined) {
-            return sendError(res, 404, "No such QID: " + submission.qid);
-        }
-        questionFilePath(submission.qid, "server.js", function(err, filePath) {
-            if (err)
-                return sendError(res, 404, "Unable to find 'server.js' for qid: " + submission.qid, err);
-            var serverFilePath = path.join(questionsDir, filePath);
-            requirejs([serverFilePath], function(server) {
-                if (server === undefined)
-                    return sendError("Unable to load 'server.js' for qid: " + submission.qid);
-                var params;
-                try {
-                    params = server.getParams(submission.vid, info);
-                } catch (e) {
-                    return sendError(res, 500, "Error in " + serverFilePath + " getParams(): " + e.toString(), {stack: e.stack});
+    ensureObjAuth(req, res, submission, function(submission) {
+        readQInstance(res, submission.qiid, function(qInstance) {
+            ensureObjAuth(req, res, qInstance, function(qInstance) {
+                submission.qid = qInstance.qid;
+                submission.vid = qInstance.vid;
+                var tiid = qInstance.tiid;
+                var info = questionDB[submission.qid];
+                if (info === undefined) {
+                    return sendError(res, 404, "No such QID: " + submission.qid);
                 }
-                if (submission.overrideScore !== undefined) {
-                    submission.score = submission.overrideScore;
-                } else {
-                    var grading;
-                    try {
-                        grading = server.gradeAnswer(submission.submittedAnswer, params, submission.vid, info);
-                    } catch (e) {
-                        return sendError(res, 500, "Error in " + serverFilePath + " gradeAnswer(): " + e.toString(), {stack: e.stack});
+                loadQuestionServer(submission.qid, function (server) {
+                    if (submission.overrideScore !== undefined) {
+                        submission.score = submission.overrideScore;
+                    } else {
+                        var grading;
+                        try {
+                            grading = server.gradeAnswer(submission.vid, submission.submittedAnswer, info);
+                        } catch (e) {
+                            return sendError(res, 500, "Error in " + submission.qid + " gradeAnswer(): " + e.toString(), {stack: e.stack});
+                        }
+                        submission.score = grading.score || 0;
+                        submission.feedback = grading.feedback || {};
                     }
-                    submission.score = grading.score;
-                    submission.trueAnswer = grading.trueAnswer;
-                }
-                ensureObjAuth(req, res, submission, function(submission) {
+                    submission.trueAnswer = qInstance.trueAnswer;
                     newIDNoError(req, res, "sid", function(sid) {
                         submission.sid = sid;
                         sCollect.insert(submission, {w: 1}, function(err) {
                             if (err) {
                                 return sendError(res, 500, "Error writing submission to database", err);
                             }
-                            updateTest(req, res, submission, function(submission) {
+                            updateTest(req, res, tiid, submission, function(submission) {
                                 res.json(stripPrivateFields(submission));
                             });
                         });

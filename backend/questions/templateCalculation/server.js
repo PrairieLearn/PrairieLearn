@@ -1,28 +1,33 @@
 
-define(["PrairieRandom"], function(PrairieRandom) {
+define(["PrairieRandom", "PrairieGeom"], function(PrairieRandom, PrairieGeom) {
 
     var server = {};
 
-    server.getParams = function(vid) {
+    server.getData = function(vid) {
         var rand = new PrairieRandom.RandomGenerator(vid);
+        var a = rand.randInt(5, 10);
+        var b = rand.randInt(5, 10);
+        var c = a + b;
         var params = {
-            a: rand.randInt(5, 10),
-            b: rand.randInt(5, 10)
+            a: a,
+            b: b,
         };
-        return params;
+        var trueAnswer = {
+            c: c,
+        };
+        var questionData = {
+            params: params,
+            trueAnswer: trueAnswer,
+        };
+        return questionData;
     };
 
-    server.gradeAnswer = function(submittedAnswer, params) {
-        var cTrue = params.a + params.b;
-        var trueAnswer = {c: cTrue};
-
-        var cSubmitted = Number(submittedAnswer.c);
-
+    server.gradeAnswer = function(vid, submittedAnswer) {
+        var questionData = this.getData(vid);
         var score = 0;
-        if (cTrue === cSubmitted) {
+        if (PrairieGeom.checkEqual(questionData.trueAnswer, submittedAnswer, 1e-2, 1e-8))
             score = 1;
-        }
-        return {score: score, trueAnswer: trueAnswer};
+        return {score: score};
     };
 
     return server;

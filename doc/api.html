@@ -238,25 +238,7 @@
     <!-------------------------------------------------------------->
     <tr>
       <td>
-        <code>/questions/&lt;qid&gt;/&lt;vid&gt;/question.html</code>
-      </td>
-      <td>
-        GET
-      </td>
-      <td>
-        —
-      </td>
-      <td>
-        —
-      </td>
-      <td>
-        Text: HTML question template for question.
-      </td>
-    </tr>
-    <!-------------------------------------------------------------->
-    <tr>
-      <td>
-        <code>/questions/&lt;qid&gt;/&lt;vid&gt;/client.js</code>
+        <code>/questions/&lt;qid&gt;/client.js</code>
       </td>
       <td>
         GET
@@ -274,7 +256,7 @@
     <!-------------------------------------------------------------->
     <tr>
       <td>
-        <code>/questions/&lt;qid&gt;/&lt;vid&gt;/params</code>
+        <code>/questions/&lt;qid&gt;/&lt;filename&gt;</code>
       </td>
       <td>
         GET
@@ -286,25 +268,7 @@
         —
       </td>
       <td>
-        JSON: <code>&lt;params&gt;</code> object.
-      </td>
-    </tr>
-    <!-------------------------------------------------------------->
-    <tr>
-      <td>
-        <code>/questions/&lt;qid&gt;/&lt;vid&gt;/inc/&lt;filename&gt;</code>
-      </td>
-      <td>
-        GET
-      </td>
-      <td>
-        —
-      </td>
-      <td>
-        —
-      </td>
-      <td>
-        Included files (type determined by filename extension).
+        Other question files (type determined by filename extension).
       </td>
     </tr>
     <!-------------------------------------------------------------->
@@ -434,7 +398,7 @@
         JSON: partial <code>&lt;submission&gt;</code> object.
       </td>
       <td>
-        Text: <code>&lt;sid&gt;</code> of newly created object.
+        JSON: complete newly created <code>&lt;submission&gt;</code> object.
       </td>
     </tr>
     <!-------------------------------------------------------------->
@@ -713,8 +677,12 @@
         <pre>{
   "qiid": &lt;string&gt;
   "date": &lt;date&gt;,
+  "uid": &lt;string&gt;,
+  "tiid": &lt;string&gt;
   "qid": &lt;string&gt;,
   "vid": &lt;string&gt;,
+  "params": &lt;params&gt;,
+  "trueAnswer": &lt;trueAnswer&gt; // optional
 }</pre>
       </td>
     </tr>
@@ -751,6 +719,16 @@
     <!-------------------------------------------------------------->
     <tr>
       <td>
+        <code>&lt;feedback&gt;</code>
+      </td>
+      <td>
+        Question-specific object with name/value pairs for feedback
+        data.
+      </td>
+    </tr>
+    <!-------------------------------------------------------------->
+    <tr>
+      <td>
         <code>&lt;questionData&gt;</code>
       </td>
       <td>
@@ -769,12 +747,14 @@
         <pre>{
   "sid": &lt;string&gt;
   "date": &lt;date&gt;,
-  "qid": &lt;string&gt;,
-  "vid": &lt;string&gt;,
+  "uid": &lt;string&gt;,
   "qiid": &lt;string&gt;,
   "submittedAnswer": &lt;submittedAnswer&gt;,
-  "trueAnswer": &lt;trueAnswer&gt;,
-  "score": &lt;number&gt;
+  "overrideScore": &lt;number&gt;, // optional
+  "practice": &lt;boolean&gt;, // optional
+  "score": &lt;number&gt;,
+  "feedback": &lt;feedback&gt;,
+  "trueAnswer": &lt;trueAnswer&gt;
 }</pre>
       </td>
     </tr>
@@ -786,7 +766,7 @@
       <td>
         <pre>{
   "score": &lt;number&gt;,
-  "trueAnswer": &lt;trueAnswer&gt;
+  "feedback": &lt;feedback&gt;
 }</pre>
       </td>
     </tr>
@@ -883,7 +863,10 @@
     <tr><th>Function</th><th>Arguments</th><th>Return</th><th>Description</th></tr>
     <tr>
       <td><code>getData</code></td>
-      <td><code>&lt;vid&gt;</code></td>
+      <td>
+        <code>&lt;vid&gt;</code>,
+        <code>&lt;info&gt;</code>
+      </td>
       <td><code>&lt;questionData&gt;</code></td>
       <td>
         Generate question-specific <code>&lt;questionData&gt;</code>
@@ -896,8 +879,9 @@
     <tr>
       <td><code>gradeAnswer</code></td>
       <td>
-        <code>&lt;vid&gt;</code>
-        <code>&lt;submittedAnswer&gt;</code>
+        <code>&lt;vid&gt;</code>,
+        <code>&lt;submittedAnswer&gt;</code>,
+        <code>&lt;info&gt;</code>
       </td>
       <td><code>&lt;grading&gt;</code></td>
       <td>
@@ -929,7 +913,7 @@
     <tr>
       <td><code>renderQuestion</code></td>
       <td>
-        <code>&lt;questionDivID&gt;</code>
+        <code>&lt;questionDivID&gt;</code>,
         <code>&lt;changeCallback&gt;</code>
       </td>
       <td>—</td>
@@ -1033,22 +1017,20 @@
     <li>
       POST to <code>/qInstances</code> with a partial qInstance of the form:
       <pre>{
-  uid: &lt;uid&gt;,
-  qid: &lt;qid&gt;
+  "uid": &lt;uid&gt;,
+  "qid": &lt;qid&gt;
 }</pre>
     </li>
     <li>
       The return value will be a completed qInstance object of the form:
       <pre>{
-  qiid: &lt;qiid&gt;,
-  uid: &lt;uid&gt;,
-  qid: &lt;qid&gt;,
-  vid: &lt;vid&gt;
+  "qiid": &lt;qiid&gt;,
+  "date": &lt;date&gt;,
+  "uid": &lt;uid&gt;,
+  "qid": &lt;qid&gt;,
+  "params": &lt;params&gt;
 }</pre>
 Take the randomly generated variant ID <code>&lt;vid&gt;</code> from here.
-    </li>
-    <li>
-      GET the question parameters from <code>/questions/&lt;qid&gt;/&lt;vid&gt;/params</code>
     </li>
     <li>
       GET the question client code from <code>/questions/&lt;qid&gt;/&lt;vid&gt;/client.js</code>
@@ -1072,23 +1054,22 @@ Take the randomly generated variant ID <code>&lt;vid&gt;</code> from here.
       POST to <code>/submissions</code> with a partial submission
       object of the form:
       <pre>{
-  uid: &lt;uid&gt;,
-  qid: &lt;qid&gt;,
-  vid: &lt;vid&gt;,
-  qiid: &lt;qiid&gt;,
-  submittedAnswer: &lt;submittedAnswer&gt;
+  "uid": &lt;uid&gt;,
+  "qiid": &lt;qiid&gt;,
+  "submittedAnswer": &lt;submittedAnswer&gt;
 }</pre>
     </li>
     <li>
       The return value will be a completed submission object of the form:
       <pre>{
-  uid: &lt;uid&gt;,
-  qid: &lt;qid&gt;,
-  vid: &lt;vid&gt;,
-  qiid: &lt;qiid&gt;,
-  submittedAnswer: &lt;submittedAnswer&gt;,
-  trueAnswer: &lt;trueAnswer&gt;,
-  score: &lt;number&gt;
+  "sid": &lt;sid&gt;,
+  "date": &lt;date&gt;,
+  "uid": &lt;uid&gt;,
+  "qiid": &lt;qiid&gt;,
+  "submittedAnswer": &lt;submittedAnswer&gt;,
+  "score": &lt;number&gt;,
+  "feedback": &lt;feedback&gt;,
+  "trueAnswer": &lt;trueAnswer&gt;
 }</pre>
     </li>
     <li>

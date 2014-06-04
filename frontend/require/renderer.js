@@ -139,7 +139,7 @@ define(function() {
                 if (submittedAnswer.selection === answerName)
                     check = true;
             } else if (type === "checkbox") {
-                if (submittedAnswer[answerName] === 'true')
+                if (submittedAnswer[answerName] === true)
                     check = true;
             } else {
                 throw Exception("Unknown answersToChecks type: " + type);
@@ -147,6 +147,15 @@ define(function() {
             checks.push(check);
         }
         return checks;
+    };
+
+    /** Render an array of HTML strings as an unordered list.
+
+        @param {Array} items Array of HTML strings.
+        @return {String} The HTML for the list.
+    */
+    Renderer.prototype.unorderedList = function(items) {
+        return '<ul><li>' + items.join('</li><li>') + '</li></ul>';
     };
 
     return new Renderer;

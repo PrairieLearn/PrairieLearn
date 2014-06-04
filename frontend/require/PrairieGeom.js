@@ -1755,6 +1755,45 @@ define(["sylvester", "underscore", "numeric"], function(Sylvester, _, numeric) {
         return score;
     };
 
+    /** Check whether two objects (Numbers, Arrays, Vectors, Objects) are equal to within the given tolerances.
+
+        @param {Object} trueVal The true object value.
+        @param {Object} submittedVal The submitted object value.
+        @param {Number} relTol The relative tolerance.
+        @param {Number} absTol The absolute tolerance.
+        @return {Boolean} Whether the objects are equal to within relTol or absTol.
+    */
+    PrairieGeom.prototype.checkEqual = function(trueVal, submittedVal, relTol, absTol) {
+        var that = this;
+        var subVal;
+        if (_.isFinite(trueVal)) {
+            subVal = Number(submittedVal);
+            if (this.relError(trueVal, subVal) < relTol || this.absError(trueVal, subVal) < absTol)
+                return true;
+            return false;
+        } else if (_.isBoolean(trueVal)) {
+            if (_.isBoolean(submittedVal))
+                subVal = submittedVal;
+            else if (_.isString(submittedVal))
+                subVal = this.toBool(submittedVal);
+            else
+                return false;
+            return trueVal === subVal;
+        } else if (_.isArray(trueVal)) {
+            if (!_.isArray(submittedVal))
+                return false;
+            if (!trueVal.length === submittedVal.length)
+                return false;
+            return _(_.zip(trueVal, submittedVal)).every(function(v) {return that.checkEqual(v[0], v[1], relTol, absTol);});
+        } else if (_.isObject(trueVal)) {
+            if (!_.isObject(submittedVal))
+                return false;
+            return _(trueVal).every(function(val, key) {return that.checkEqual(val, submittedVal[key], relTol, absTol);});
+        } else {
+            return false;
+        }
+    };
+
     /*****************************************************************************/
 
     return new PrairieGeom();

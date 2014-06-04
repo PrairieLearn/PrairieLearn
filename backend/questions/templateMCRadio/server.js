@@ -1,7 +1,9 @@
 
-define(["PrairieRandom", "PrairieGeom", "renderer"], function(PrairieRandom, PrairieGeom, renderer) {
+define(["underscore", "PrairieRandom", "PrairieGeom", "renderer"], function(_, PrairieRandom, PrairieGeom, renderer) {
 
-    function getData(vid) {
+    var server = {};
+
+    server.getData = function(vid) {
         var rand = new PrairieRandom.RandomGenerator(vid);
         var trueAnswers = [
             "Cheap",
@@ -25,25 +27,26 @@ define(["PrairieRandom", "PrairieGeom", "renderer"], function(PrairieRandom, Pra
         answers = answers.concat(rand.randNElem(nFalse, falseAnswers));
         checks = checks.concat(rand.repeat(nFalse, false));
         rand.shuffle(answers, checks);
-        var data = {
+        var params = {
             answersHTML: renderer.answerList("radio", answers),
-            checks: checks
         };
-        return data;
+        var trueAnswer = {
+            checks: checks,
+            answer: _(answers).find(function(s, i) {return checks[i];}),
+        };
+        var questionData = {
+            params: params,
+            trueAnswer: trueAnswer,
+        };
+        return questionData;
     }
 
-    var server = {};
-
-    server.getParams = function(vid) {
-        var params = getData(vid);
-        delete params.checks;
-        return params;
-    };
-
-    server.gradeAnswer = function(submittedAnswer, params, vid) {
-        var data = getData(vid);
-        var submittedChecks = renderer.answersToChecks("radio", data.checks.length, submittedAnswer);
-        var score = PrairieGeom.hammingScore(data.checks, submittedChecks);
+    server.gradeAnswer = function(vid, submittedAnswer) {
+        var questionData = this.getData(vid);
+        var submittedChecks = renderer.answersToChecks("radio", questionData.trueAnswer.checks.length, submittedAnswer);
+        var score = 0;
+        if (PrairieGeom.hammingDistance(questionData.trueAnswer.checks, submittedChecks) === 0)
+            score = 1;
         return {score: score};
     };
 
