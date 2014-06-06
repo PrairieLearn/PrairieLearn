@@ -96,6 +96,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
 
         initialize: function() {
             this.answerAttributes = this.answerAttributes || [];
+            this.template = this.options.template;
             this.params = this.options.params;
             this.submittedAnswer = this.options.submittedAnswer;
             this.trueAnswer = this.options.trueAnswer;
@@ -104,7 +105,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
                 submittedAnswer: this.submittedAnswer.toJSON(),
                 trueAnswer: this.trueAnswer.toJSON()
             };
-            this.$el.html(PrairieTemplate.template(this.options.qHtml, templateData));
+            this.$el.html(PrairieTemplate.template(this.template, templateData));
             this.rivetsView = rivets.bind(this.$el, {
                 model: this.model,
                 params: this.params,
@@ -170,26 +171,68 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         },
     });
 
-    function SimpleClient() {
+    var AnswerView = Backbone.View.extend({
+
+        initialize: function() {
+            this.template = this.options.template;
+            this.params = this.options.params;
+            this.submittedAnswer = this.options.submittedAnswer;
+            this.trueAnswer = this.options.trueAnswer;
+            this.listenTo(this.submittedAnswer, "all", this.render);
+            this.listenTo(this.trueAnswer, "all", this.render);
+            this.render();
+        },
+
+        render: function() {
+            var templateData = {
+                params: this.params.toJSON(),
+                submittedAnswer: this.submittedAnswer.toJSON(),
+                trueAnswer: this.trueAnswer.toJSON()
+            };
+            this.$el.html(PrairieTemplate.template(this.template, templateData));
+            this.rivetsView = rivets.bind(this.$el, {
+                model: this.model,
+                params: this.params,
+                submittedAnswer: this.submittedAnswer,
+                trueAnswer: this.trueAnswer
+            });
+            if (window.MathJax)
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+            return this;
+        },
+
+        close: function() {
+            this.rivetsView.unbind();
+            this.remove();
+        },
+    });
+
+    function SimpleClient(options) {
+        this.options = _.defaults(options || {}, {
+            questionTemplate: "",
+            answerTemplate: "",
+        });
     }
     _.extend(SimpleClient.prototype, Backbone.Events);
 
-    SimpleClient.prototype.render = function(divID, params, qHtml, canSubmit, answerChanged) {
-        var that = this;
-
+    SimpleClient.prototype.initialize = function(params) {
         this.model = new QuestionModel();
-        this.listenTo(this.model, "change:submittable", function() {
-            canSubmit(that.model.get("submittable"));
-        });
-        this.listenTo(this.model, "answerChanged", function() {
-            answerChanged();
-        });
         this.params = new Backbone.Model(params);
         this.submittedAnswer = new Backbone.Model();
         this.trueAnswer = new Backbone.Model();
-        this.questionView = new QuestionView({el: divID, model: this.model, qHtml: qHtml, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer});
+    };
+
+    SimpleClient.prototype.renderQuestion = function(questionDivID, changeCallback) {
+        this.listenTo(this.model, "answerChanged", changeCallback);
+        this.questionView = new QuestionView({el: questionDivID, template: this.options.questionTemplate, model: this.model, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer});
         this.questionView.render();
-        this.trigger("renderFinished");
+        this.trigger("renderQuestionFinished");
+    };
+
+    SimpleClient.prototype.renderAnswer = function(answerDivID) {
+        this.answerView = new AnswerView({el: answerDivID, template: this.options.answerTemplate, model: this.model, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer});
+        this.answerView.render();
+        this.trigger("renderAnswerFinished");
     };
 
     SimpleClient.prototype.close = function() {
@@ -197,15 +240,27 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         if (this.questionView) {
             this.questionView.close();
         }
+        if (this.answerView) {
+            this.answerView.close();
+        }
         this.model = undefined;
         this.params = undefined;
         this.submittedAnswer = undefined;
         this.trueAnswer = undefined;
         this.questionView = undefined;
+        this.answerView = undefined;
+    };
+
+    SimpleClient.prototype.isComplete = function() {
+        if (this.model)
+            return this.model.get("submittable");
+        return false;
     };
 
     SimpleClient.prototype.getSubmittedAnswer = function() {
-        return this.questionView.getSubmittedAnswer();
+        if (this.questionView)
+            return this.questionView.getSubmittedAnswer();
+        return {};
     };
 
     SimpleClient.prototype.setSubmittedAnswer = function(submittedAnswer) {
@@ -215,7 +270,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         });
     };
 
-    SimpleClient.prototype.showSolution = function(trueAnswer) {
+    SimpleClient.prototype.setTrueAnswer = function(trueAnswer) {
         var that = this;
         _(trueAnswer).each(function(value, key) {
             that.trueAnswer.set(key, value);

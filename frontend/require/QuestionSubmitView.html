@@ -20,4 +20,8 @@
 <button type="submit" class="btn btn-primary save" {{^saveActive}}disabled="disabled"{{/saveActive}}>Save answer</button>
 {{/allowSave}}
 
+{{#allowTryAgain}}
+<button class="btn btn-info tryAgain">Do this question again</button>
+{{/allowTryAgain}}
+
 {{/testOpen}}

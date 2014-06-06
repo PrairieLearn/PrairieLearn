@@ -11,10 +11,10 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
             "click .submitCorrect": "submitCorrect",
             "click .submitIncorrect": "submitIncorrect",
             "click .save": "save",
+            "click .tryAgain": "tryAgain",
         },
 
         initialize: function() {
-            //this.listenTo(this.model, "change:submittable change:submitted", this.render);
             this.tInstance = this.options.tInstance;
             this.listenTo(this.model, "all", this.render);
         },
@@ -39,6 +39,10 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
             this.model.saveAnswer();
         },
 
+        tryAgain: function() {
+            Backbone.trigger("tryAgain");
+        },
+
         render: function() {
             var data = {
                 submittable: this.model.get("submittable"),
@@ -49,10 +53,12 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
                 saveStatus: '<span class="label label-danger">not saved</span>',
                 saveActive: false,
                 testOpen: true,
+                allowTryAgain: false,
             };
             data.allowPractice = this.model.get("allowPractice");
             data.allowSubmit = this.model.get("allowSubmit");
             data.allowSave = this.model.get("allowSave");
+            data.allowTryAgain = (this.model.get("score") != null);
             if (this.tInstance && this.tInstance.has("open"))
                 data.testOpen = this.tInstance.get("open");
             if (data.allowSave) {

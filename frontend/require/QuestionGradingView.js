@@ -6,7 +6,6 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'spinController', 'tex
         tagName: 'div',
 
         events: {
-            "click #tryAgain": "tryAgain",
             "click #retrySubmit": "retrySubmit"
         },
 
@@ -18,10 +17,12 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'spinController', 'tex
         render: function() {
             var data = {
                 submitted: this.model.get("submitted"),
-                submitError: this.model.get("submitError")
+                submitError: this.model.get("submitError"),
+                showResult: false,
             };
             var score = this.model.get("score");
             if (score != null) {
+                data.showResult = true;
                 data.scoreLabel = renderer.scoreLabel(score) + ((score >= 0.5) ? " Correct!" : " Incorrect.");
             }
             var html = Mustache.render(questionGradingViewTemplate, data);
@@ -37,10 +38,6 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'spinController', 'tex
 
         close: function() {
             this.remove();
-        },
-
-        tryAgain: function() {
-            Backbone.trigger("tryAgain");
         },
 
         retrySubmit: function() {

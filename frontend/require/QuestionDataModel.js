@@ -1,5 +1,5 @@
 
-define(['underscore', 'backbone', 'jquery'], function(_, Backbone, $) {
+define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, async) {
 
     var QuestionDataModel = Backbone.Model.extend({
         initialize: function(attributes, options) {
@@ -8,13 +8,11 @@ define(['underscore', 'backbone', 'jquery'], function(_, Backbone, $) {
             this.set({
                 qid: options.qid,
                 tiid: options.tiid,
-                vid: null,
                 qiid: null,
                 title: null,
                 number: null,
-                params: null,
-                qTemplate: null,
                 qClient: null,
+                showAnswer: false,
                 showTitle: true,
                 submittable: false,
                 submitted: false,
@@ -49,28 +47,19 @@ define(['underscore', 'backbone', 'jquery'], function(_, Backbone, $) {
                 });
             });
             var qInstance = {uid: uid, qid: qid};
-            var tiid, tid, tInstance;
+            var tiid, tInstance;
             if (this.get("tiid") != null) {
                 tiid = this.get("tiid");
                 qInstance.tiid = tiid;
                 tInstance = this.tInstances.get(tiid);
-                tid = tInstance.get("tid");
-                qInstance.tid = tid;
             }
 
             var processQInstance = function(qInstance) {
                 var qiid = qInstance.qiid;
-                var vid = qInstance.vid;
                 that.set("qiid", qiid);
-                that.set("vid", vid);
-                $.getJSON(that.appModel.apiURL("questions/" + qid + "/" + vid + "/params"), function(params) {
-                    that.set("params", params);
-                });
-                require([that.appModel.apiURL("questions/" + qid + "/" + vid + "/client.js")], function(qClient) {
+                require([that.appModel.apiURL("questions/" + qid + "/client.js")], function(qClient) {
+                    qClient.initialize(qInstance.params);
                     that.set("qClient", qClient);
-                });
-                $.get(that.appModel.apiURL("questions/" + qid + "/" + vid + "/question.html"), function(qTemplate) {
-                    that.set("qTemplate", qTemplate);
                 });
             };
 
@@ -108,9 +97,6 @@ define(['underscore', 'backbone', 'jquery'], function(_, Backbone, $) {
             }
             var submission = {};
             submission.uid = this.appModel.get("userUID");
-            submission.qid = this.get("qid");
-            submission.vid = this.get("vid");
-            submission.tiid = this.get("tiid");
             submission.qiid = this.get("qiid");
             var qClient = this.get("qClient");
             if (options.overrideScore === null) {
@@ -126,8 +112,9 @@ define(['underscore', 'backbone', 'jquery'], function(_, Backbone, $) {
             var that = this;
             var successFn = function(submission) {
                 that.set("score", submission.score);
-                if (qClient.showSolution !== undefined && submission.trueAnswer !== undefined) {
-                    qClient.showSolution(submission.trueAnswer);
+                if (submission.trueAnswer !== undefined) {
+                    qClient.setTrueAnswer(submission.trueAnswer);
+                    that.set("showAnswer", true);
                 }
                 that.trigger("graded");
             };
@@ -186,7 +173,6 @@ define(['underscore', 'backbone', 'jquery'], function(_, Backbone, $) {
             var submission = {};
             submission.uid = this.appModel.get("userUID");
             submission.qid = this.get("qid");
-            submission.vid = this.get("vid");
             submission.tiid = this.get("tiid");
             submission.qiid = this.get("qiid");
             var qClient = this.get("qClient");

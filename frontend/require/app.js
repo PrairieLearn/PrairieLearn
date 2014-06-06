@@ -38,7 +38,21 @@ requirejs.config({
         'sha1': {
             exports: 'Sha1',
         },
-    }
+    },
+    config: {
+        text: {
+            useXhr: function(url, protocol, hostname, port) {
+                // see https://github.com/jrburke/requirejs/issues/269
+                return true;
+                // return true if you want to allow this url, given that the
+                // text plugin thinks the request is coming from protocol, hostname, port.
+
+                // unilaterally returning true here may mean that html
+                // files aren't loaded from the optimized
+                // one-big-js-file
+            }
+        },
+    },
 });
 
 requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'spinController'],
