@@ -1,5 +1,10 @@
 console.log("Starting PrairieLearn server...");
 
+var _ = require("underscore");
+var fs = require("fs");
+var path = require("path");
+var async = require("async");
+
 var DEPLOY_MODE = 'local';
 if (process.argv.length > 2) {
     if (process.argv[2] === "deploy") {
@@ -25,6 +30,21 @@ if (DEPLOY_MODE === 'c9') {
     var questionsDir = "questions";
     var testsDir = "tests";
     var frontendDir = "../frontend";
+}
+
+if (fs.existsSync('config.json')) {
+    try {
+        config = JSON.parse(fs.readFileSync('config.json', {encoding: 'utf8'}));
+        if (config.questionsDir)
+            questionsDir = config.questionsDir;
+        if (config.testsDir)
+            testsDir = config.testsDir;
+    } catch (e) {
+        console.log("Error reading config.json:", e);
+        process.exit(1);
+    }
+} else {
+    console.log("config.json not found, using default configuration...");
 }
 
 var requirejs = require("requirejs");
@@ -60,16 +80,11 @@ requirejs.onError = function(err) {
     logger.error("requirejs load error", data);
 };
 
-var _ = require("underscore");
-var fs = require("fs");
-var path = require("path");
-var async = require("async");
 var hmacSha256 = require("crypto-js/hmac-sha256");
 var gamma = require("gamma");
 var numeric = require("numeric");
 var PrairieStats = requirejs("PrairieStats");
 var PrairieModel = requirejs("PrairieModel");
-
 var express = require("express");
 var https = require('https');
 var app = express();
