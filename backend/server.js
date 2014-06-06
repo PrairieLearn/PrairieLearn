@@ -1010,6 +1010,7 @@ app.get("/tests", function(req, res) {
             if (err) {
                 return sendError(res, 500, "Error serializing tests", err);
             }
+            objs = _(objs).filter(function(o) {return _(testDB).has(o.tid);});
             res.json(stripPrivateFields(objs));
         });
     });
@@ -1104,6 +1105,7 @@ app.get("/tInstances", function(req, res) {
                 if ("type" in req.query)
                     tiList = _(tiList).filter(function(item) {return req.query.type === testDB[item.tid].type;});
                 filterObjsByAuth(req, tiList, function(tiList) {
+                    tiList = _(tiList).filter(function(ti) {return _(testDB).has(ti.tid);});
                     res.json(stripPrivateFields(tiList));
                 });
             });
