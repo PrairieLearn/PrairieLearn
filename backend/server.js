@@ -904,18 +904,10 @@ var updateTest = function(req, res, tiid, submission, callback) {
             readTest(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
                     var uid = submission.uid;
-                    if (!_(tInstance).has("submissionsByQid")) {
-                        submission.oldTInstance = deepClone(tInstance);
-                        submission.oldTest = deepClone(test);
-                    }
                     try {
                         server.update(tInstance, test, submission);
                     } catch (e) {
                         return sendError(res, 500, "Error updating test: " + String(e), {err: e, stack: e.stack});
-                    }
-                    if (!_(tInstance).has("submissionsByQid")) {
-                        submission.newTInstance = deepClone(tInstance);
-                        submission.newTest = deepClone(test);
                     }
                     writeTInstance(req, res, tInstance, function() {
                         writeTest(req, res, test, function() {
