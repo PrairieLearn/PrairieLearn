@@ -1606,61 +1606,6 @@ define(["sylvester", "underscore", "numeric"], function(Sylvester, _, numeric) {
 
     /*****************************************************************************/
 
-    /** Compute the absolute error.
-
-        @param {Number} exact The exact value.
-        @param {Number} approx The approximate value.
-        @return {Number} The absolute error between the exact and approximate values.
-    */
-    PrairieGeom.prototype.absError = function(exact, approx) {
-        return Math.abs(exact - approx);
-    };
-
-    /** Compute the relative error.
-
-        @param {Number} exact The exact value.
-        @param {Number} approx The approximate value.
-        @return {Number} The relative error between the exact and approximate values.
-    */
-    PrairieGeom.prototype.relError = function(exact, approx) {
-        if (exact === 0) {
-            if (approx === 0) {
-                return 0;
-            } else {
-                return 1e100;
-            }
-        }
-        return Math.abs((exact - approx) / exact);
-    };
-
-    /** Compute the absolute vector error.
-
-        @param {Vector} exact The exact value.
-        @param {Vector} approx The approximate value.
-        @return {Number} The absolute error between the exact and approximate values.
-    */
-    PrairieGeom.prototype.vectorError = function(exact, approx) {
-        return exact.subtract(approx).modulus();
-    };
-    PrairieGeom.prototype.absVectorError = PrairieGeom.prototype.vectorError;
-
-    /** Compute the relative vector error.
-
-        @param {Vector} exact The exact value.
-        @param {Vector} approx The approximate value.
-        @return {Number} The relative error between the exact and approximate values.
-    */
-    PrairieGeom.prototype.relVectorError = function(exact, approx) {
-        if (exact.modulus() === 0) {
-            if (approx.modulus() === 0) {
-                return 0;
-            } else {
-                return 1e100;
-            }
-        }
-        return Math.abs(exact.subtract(approx).modulus() / exact.modulus());
-    };
-
     /** Compute the vector angle error.
 
         @param {Vector} exact The exact value.
@@ -1691,33 +1636,29 @@ define(["sylvester", "underscore", "numeric"], function(Sylvester, _, numeric) {
         return this.relError(exact.modulus(), approx.modulus());
     };
 
-    /** Transform an error in [0,Inf) to a score in [0,1], with error = tol mapping to score = 0.5.
+    /** Transform an error in [0,Inf) to a score in [0,1], with error = tol mapping to score = 0.5. Also works for arrays of errors and tols.
 
-        @param {Number} error The error value.
-        @param {Number} tol The tolerance to accept as correct.
-        @return {Number} The score (1 = no error, 0.5 = error is exactly tol).
+        @param {Number} error The error value (or an array of error values).
+        @param {Number} tol The tolerance to accept as correct (or an array of tolerances).
+        @return {Number} The score (1 = no error, 0.5 = error is exactly tol, for arrays the pointwise minimum score is used).
     */
     PrairieGeom.prototype.errorToScore = function(error, tol) {
-        var alpha = error / tol;
-        if (alpha < 1) {
-            return 1 - 0.5 * alpha;
-        } else {
-            return 0.5 * Math.exp(1 - alpha);
-        }
-    };
-
-    /** Transform an array of errors in [0,Inf) to a score in [0,1], with error[i] = tol[i] mapping to score = 0.5.
-
-        @param {Array} errors The array of error values.
-        @param {Array} tols The array of tolerances to accept as correct.
-        @return {Number} The score (1 = no error, 0.5 = error[i] is exactly tol[i]).
-    */
-    PrairieGeom.prototype.errorArrayToScore = function(errors, tols) {
+        if (_.isNumber(error) && _.isNumber(tol)) {
+            var alpha = error / tol;
+            if (alpha < 1) {
+                return 1 - 0.5 * alpha;
+            } else {
+                return 0.5 * Math.exp(1 - alpha);
+            }
+        } else if (_.isArray(error) && _.isArray(tol)) {
         var score = 1;
-        for (var i = 0; i < errors.length; i++) {
-            score = Math.min(score, this.errorToScore(errors[i], tols[i]));
+            for (var i = 0; i < error.length; i++) {
+                score = Math.min(score, this.errorToScore(error[i], tol[i]));
+            }
+            return score;
+        } else {
+            return 0;
         }
-        return score;
     };
 
     /** The Hamming distance between two arrays.
@@ -1755,12 +1696,97 @@ define(["sylvester", "underscore", "numeric"], function(Sylvester, _, numeric) {
         return score;
     };
 
-    /** Check whether two objects (Numbers, Arrays, Vectors, Objects) are equal to within the given tolerances.
+    /** Compute the L2 norm of an object (Number, Boolean, Array, Vector, Object).
+
+        @param {Object} val The object value.
+        @return {Number} The L2 norm of the value.
+    */
+    PrairieGeom.prototype.norm = function(val) {
+        var that = this;
+        if (_.isFinite(val)) {
+            return Math.abs(val);
+        } else if (_.isArray(val)) {
+            return numeric.norm2(_(val).map(function(v) {return that.norm(v);}));
+        } else if (val instanceof Sylvester.Vector) {
+            return val.modulus();
+        } else if (_.isObject(val)) {
+            if (!_.isObject(submittedVal))
+                return false;
+            return numeric.norm2(_(val).map(function(v) {return that.norm(v);}));
+        } else {
+            return Infinity;
+        }
+    };
+
+    /** Compute the absolute error between two objects (Numbers, Booleans, Arrays, Vectors, Objects).
 
         @param {Object} trueVal The true object value.
         @param {Object} submittedVal The submitted object value.
-        @param {Number} relTol The relative tolerance.
-        @param {Number} absTol The absolute tolerance.
+        @return {Number} The absolute L2 error between trueVal and submittedVal.
+    */
+    PrairieGeom.prototype.absError = function(trueVal, submittedVal) {
+        var that = this;
+        var subVal;
+        if (_.isFinite(trueVal)) {
+            subVal = Number(submittedVal);
+            return Math.abs(trueVal - subVal);
+        } else if (_.isBoolean(trueVal)) {
+            if (_.isBoolean(submittedVal))
+                subVal = submittedVal;
+            else if (_.isString(submittedVal))
+                subVal = this.toBool(submittedVal);
+            else
+                return false;
+            return (trueVal === subVal) ? 0 : Infinity;
+        } else if (_.isString(trueVal)) {
+            subVal = String(submittedVal);
+            return (trueVal === subVal) ? 0 : Infinity;
+        } else if (_.isArray(trueVal)) {
+            if (!_.isArray(submittedVal))
+                return false;
+            if (!trueVal.length === submittedVal.length)
+                return false;
+            return numeric.norm2(_(_.zip(trueVal, submittedVal)).map(function(v) {return that.absError(v[0], v[1]);}));
+        } else if (trueVal instanceof Sylvester.Vector) {
+            subVal = submittedVal;
+            if (_.isArray(subVal))
+                subVal = $V(subVal);
+            if (!(subVal instanceof Sylvester.Vector))
+                return Infinity;
+            return trueVal.subtract(subVal).modulus();
+        } else if (_.isObject(trueVal)) {
+            if (!_.isObject(submittedVal))
+                return false;
+            return numeric.norm2(_(trueVal).map(function(val, key) {return that.absError(val, submittedVal[key]);}));
+        } else {
+            return Infinity;
+        }
+    };
+
+    /** Compute the relative error between two objects (Numbers, Arrays, Vectors, Objects).
+
+        @param {Object} trueVal The true object value.
+        @param {Object} submittedVal The submitted object value.
+        @return {Number} The relative L2 error between trueVal and submittedVal.
+    */
+    PrairieGeom.prototype.relError = function(trueVal, submittedVal) {
+        var absError = this.absError(trueVal, submittedVal);
+        var norm = this.norm(trueVal);
+        if (norm === 0) {
+            if (absError === 0)
+                return 0;
+            else
+                return Infinity;
+        }
+        return absError / norm;
+    };
+
+    /** Check whether two objects (Numbers, Booleans, Strings, Arrays, Vectors, Objects) are equal to within the given tolerances.
+
+        @param {Object} trueVal The true object value.
+        @param {Object} submittedVal The submitted object value.
+        @param {Number} relTol The relative tolerance (for numerical comparisons).
+        @param {Number} absTol The absolute tolerance (for numerical comparisons).
         @return {Boolean} Whether the objects are equal to within relTol or absTol.
     */
     PrairieGeom.prototype.checkEqual = function(trueVal, submittedVal, relTol, absTol) {
@@ -1779,12 +1805,24 @@ define(["sylvester", "underscore", "numeric"], function(Sylvester, _, numeric) {
             else
                 return false;
             return trueVal === subVal;
+        } else if (_.isString(trueVal)) {
+            subVal = String(submittedVal);
+            return trueVal === subVal;
         } else if (_.isArray(trueVal)) {
             if (!_.isArray(submittedVal))
                 return false;
             if (!trueVal.length === submittedVal.length)
                 return false;
             return _(_.zip(trueVal, submittedVal)).every(function(v) {return that.checkEqual(v[0], v[1], relTol, absTol);});
+        } else if (trueVal instanceof Sylvester.Vector) {
+            subVal = submittedVal;
+            if (_.isArray(subVal))
+                subVal = $V(subVal);
+            if (!(subVal instanceof Sylvester.Vector))
+                return false;
+            if (this.relError(trueVal, subVal) < relTol || this.absError(trueVal, subVal) < absTol)
+                return true;
+            return false;
         } else if (_.isObject(trueVal)) {
             if (!_.isObject(submittedVal))
                 return false;
