@@ -1071,23 +1071,25 @@ app.get("/tInstances", function(req, res) {
             var tiDB = _(objs).groupBy("tid");
             async.each(_(testDB).values(), function(item, callback) {
                 if (item.autoCreate && tiDB[item.tid] === undefined && req.query.uid !== undefined) {
-                    var serverFile = path.join(testsDir, item.tid, "server.js");
-                    requirejs([serverFile], function(server) {
-                        var tInstance = server.initUserData(req.query.uid);
-                        _.extend(tInstance, {
-                            tid: item.tid,
-                            uid: req.query.uid,
-                            date: new Date()
-                        });
-                        newIDNoError(req, res, "tiid", function(tiid) {
-                            tInstance.tiid = tiid;
-                            tiCollect.insert(tInstance, {w: 1}, function(err) {
-                                if (err) {
-                                    logger.error("Error writing tInstance to database", {tInstance: tInstance, err: err});
-                                    return callback(err);
-                                }
-                                tiDB[tInstance.tid] = [tInstance];
-                                callback(null);
+                    var tid = item.tid;
+                    readTest(res, tid, function(test) {
+                        loadTestServer(tid, function(server) {
+                            var tInstance = server.initUserData(req.query.uid, test);
+                            _.extend(tInstance, {
+                                tid: tid,
+                                uid: req.query.uid,
+                                date: new Date()
+                            });
+                            newIDNoError(req, res, "tiid", function(tiid) {
+                                tInstance.tiid = tiid;
+                                tiCollect.insert(tInstance, {w: 1}, function(err) {
+                                    if (err) {
+                                        logger.error("Error writing tInstance to database", {tInstance: tInstance, err: err});
+                                        return callback(err);
+                                    }
+                                    tiDB[tInstance.tid] = [tInstance];
+                                    callback(null);
+                                });
                             });
                         });
                     });
