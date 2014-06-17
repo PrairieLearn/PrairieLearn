@@ -10,7 +10,8 @@
 #define ENV_NAME "displayName"
 
 #define SHA256_HASH_SIZE 32
-#define SECRET_KEY "THIS_IS_THE_SECRET_KEY"
+#define SECRET_KEY_FILE "/etc/prairielearn.key"
+#define MAX_KEY_LEN 10000
 
 char *iso8601Now() {
         time_t current_time;
@@ -30,7 +31,7 @@ char *iso8601Now() {
         return time_string;
 }
 
-char *sha256Signature(char *uid, char *name, char *date) {
+char *sha256Signature(char *uid, char *name, char *date, char *key) {
         size_t msg_size, sig_size, i;
         char *msg;
         char hash[SHA256_HASH_SIZE];
@@ -50,7 +51,7 @@ char *sha256Signature(char *uid, char *name, char *date) {
         msg[i++] = '/';
         strncpy(&msg[i], date, strlen(date));
 
-        hmac_sha256(SECRET_KEY, strlen(SECRET_KEY), msg, msg_size, hash, SHA256_HASH_SIZE);
+        hmac_sha256(key, strlen(key), msg, msg_size, hash, SHA256_HASH_SIZE);
 
         sig_size = 2 * SHA256_HASH_SIZE + 1;
         if (!(sig = malloc(sig_size * sizeof(char)))) {
@@ -63,12 +64,36 @@ char *sha256Signature(char *uid, char *name, char *date) {
         return sig;
 }
 
+void readkey(char *key) {
+        FILE *keyfile;
+        size_t keysize;
+        
+        if (!(keyfile = fopen(SECRET_KEY_FILE, "rb"))) {
+                fprintf(stderr, "Error: unable to open key file: %s\n", SECRET_KEY_FILE);
+                exit(1);
+        }
+        keysize = fread(key, sizeof(char), MAX_KEY_LEN, keyfile);
+        if (!feof(keyfile)) {
+                fprintf(stderr, "Error: key file too large: %s\n", SECRET_KEY_FILE);
+                exit(1);
+        }
+        if (ferror(keyfile)) {
+                fprintf(stderr, "Error: unable to read key from file: %s\n", SECRET_KEY_FILE);
+                exit(1);
+        }
+        while (keysize > 1 && (key[keysize - 1] == '\n' || key[keysize - 1] == '\r'))
+                keysize--;
+        key[keysize] = 0;
+}
+
 int main() {
         char *uid, *name;
         char *time_string;
         char *signature;
+        char key[MAX_KEY_LEN + 1];
         // char **env;
 
+        readkey(key);
         if (!(uid = getenv(ENV_UID))) {
                 fprintf(stderr, "Error: unable to get environment variable: %s\n", ENV_UID);
                 exit(1);
@@ -83,7 +108,7 @@ int main() {
         printf("    \"name\": \"%s\",\n", name);
         time_string = iso8601Now();
         printf("    \"date\": \"%s\",\n", time_string);
-        signature = sha256Signature(uid, name, time_string);
+        signature = sha256Signature(uid, name, time_string, key);
         printf("    \"signature\": \"%s\"\n", signature);
         printf("}\n");
         /*
