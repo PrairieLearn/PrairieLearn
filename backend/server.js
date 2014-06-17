@@ -744,6 +744,7 @@ var makeQInstance = function(req, res, qInstance, callback) {
                     questionData = server.getData(qInstance.vid, info);
                     qInstance.params = questionData.params || {};
                     qInstance.trueAnswer = questionData.trueAnswer || {};
+                    qInstance.options = questionData.options || {};
                 } catch (e) {
                     return sendError(res, 500, "Error in " + qInstance.qid + " getData(): " + e.toString(), {stack: e.stack});
                 }
@@ -967,13 +968,15 @@ app.post("/submissions", function(req, res) {
                 if (info === undefined) {
                     return sendError(res, 404, "No such QID: " + submission.qid);
                 }
+                var options = info.options || {};
+                options = _.defaults(options, qInstance.options || {});
                 loadQuestionServer(submission.qid, function (server) {
                     if (submission.overrideScore !== undefined) {
                         submission.score = submission.overrideScore;
                     } else {
                         var grading;
                         try {
-                            grading = server.gradeAnswer(submission.vid, submission.submittedAnswer, info);
+                            grading = server.gradeAnswer(qInstance.vid, qInstance.params, qInstance.trueAnswer, submission.submittedAnswer, options);
                         } catch (e) {
                             return sendError(res, 500, "Error in " + submission.qid + " gradeAnswer(): " + e.toString(), {stack: e.stack});
                         }
