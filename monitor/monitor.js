@@ -18,18 +18,35 @@ var nCurrentFails = 0;
 var errorLastTime = 0;
 var heartbeatLastTime = 0;
 
+var config = {};
+
 // Twilio Credentials 
-var accountSid = 'FILL_IN_THIS_ACCOUNT_SID'; 
-var authToken = 'FILL_IN_THIS_AUTH_TOKEN'; 
- 
-//require the Twilio module and create a REST client 
-var twilioClient = require('twilio')(accountSid, authToken); 
- 
+config.accountSid = 'FILL_IN_THIS_ACCOUNT_SID'; // override in config.json
+config.authToken = 'FILL_IN_THIS_AUTH_TOKEN';
+config.toNumber = "+19998887777";
+config.fromNumber = "+12223334444";
+
+if (fs.existsSync('config.json')) {
+    try {
+        fileConfig = JSON.parse(fs.readFileSync('config.json', {encoding: 'utf8'}));
+        _.defaults(fileConfig, config);
+        config = fileConfig;
+    } catch (e) {
+        console.log("Error reading config.json:", e);
+        process.exit(1);
+    }
+} else {
+    console.log("config.json not found, using default configuration...");
+}
+
+//require the Twilio module and create a REST client
+var twilioClient = require('twilio')(accountSid, authToken);
+
 var sendSMS = function(msg, callback) {
     console.log("Sending SMS:", msg);
     twilioClient.messages.create({
-	to: "+15304001280",
-	from: "+15304196197",
+	to: config.toNumber,
+	from: config.fromNumber,
 	body: msg,
     }, function(err, message) {
         if (err) {
