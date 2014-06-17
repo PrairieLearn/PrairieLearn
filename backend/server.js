@@ -5,40 +5,36 @@ var fs = require("fs");
 var path = require("path");
 var async = require("async");
 
-var DEPLOY_MODE = 'local';
+var config = {};
+
+config.deployMode = 'local';
 if (process.argv.length > 2) {
     if (process.argv[2] === "deploy") {
-        DEPLOY_MODE = 'engr';
-
-        console.log("Starting nodetime...");
-        require('nodetime').profile({
-            accountKey: 'SECRET_NODETIME_KEY',
-            appName: 'Node.js Application'
-        });
-        console.log("nodetime started");
+        config.deployMode = 'engr';
     }
 }
 if (process.env.C9_USER != null) {
-    DEPLOY_MODE = 'c9';
+    config.deployMode = 'c9';
 }
 
-if (DEPLOY_MODE === 'c9') {
-    var questionsDir = "backend/questions";
-    var testsDir = "backend/tests";
-    var frontendDir = "frontend";
+if (config.deployMode === 'c9') {
+    config.questionsDir = "backend/questions";
+    config.testsDir = "backend/tests";
+    config.frontendDir = "frontend";
 } else {
-    var questionsDir = "questions";
-    var testsDir = "tests";
-    var frontendDir = "../frontend";
+    config.questionsDir = "questions";
+    config.testsDir = "tests";
+    config.frontendDir = "../frontend";
 }
+
+config.secretKey = "THIS_IS_THE_SECRET_KEY"; // override in config.json
+config.nodetimeAccountKey = 'SECRET_NODETIME_KEY'; // override in config.json
 
 if (fs.existsSync('config.json')) {
     try {
-        config = JSON.parse(fs.readFileSync('config.json', {encoding: 'utf8'}));
-        if (config.questionsDir)
-            questionsDir = config.questionsDir;
-        if (config.testsDir)
-            testsDir = config.testsDir;
+        fileConfig = JSON.parse(fs.readFileSync('config.json', {encoding: 'utf8'}));
+        _.defaults(fileConfig, config);
+        config = fileConfig;
     } catch (e) {
         console.log("Error reading config.json:", e);
         process.exit(1);
@@ -47,15 +43,24 @@ if (fs.existsSync('config.json')) {
     console.log("config.json not found, using default configuration...");
 }
 
+if (config.deployMode === 'engr') {
+    console.log("Starting nodetime...");
+    require('nodetime').profile({
+        accountKey: config.nodetimeAccountKey,
+        appName: 'Node.js Application'
+    });
+    console.log("nodetime started");
+}
+
 var requirejs = require("requirejs");
 
 requirejs.config({
     nodeRequire: require,
-    baseUrl: frontendDir + '/require',
+    baseUrl: config.frontendDir + '/require',
 });
 
 var logFilename;
-if (DEPLOY_MODE === 'engr') {
+if (config.deployMode === 'engr') {
     logFilename = '/var/log/apiserver.log';
 } else {
     logFilename = 'server.log';
@@ -95,7 +100,7 @@ var nSample = 0;
 var STATS_INTERVAL = 10 * 60 * 1000; // ms
 
 var skipUIDs = {};
-if (DEPLOY_MODE === 'engr') {
+if (config.deployMode === 'engr') {
     skipUIDs["user1@illinois.edu"] = true;
     skipUIDs["mwest@illinois.edu"] = true;
     skipUIDs["zilles@illinois.edu"] = true;
@@ -188,7 +193,7 @@ var processCollection = function(name, err, collection, options, callback) {
 
 var loadDB = function(callback) {
     var dbAddress;
-    switch (DEPLOY_MODE) {
+    switch (config.deployMode) {
     case 'engr': dbAddress = "mongodb://prairielearn3.engr.illinois.edu:27017/data"; break;
     case 'c9': dbAddress = "mongodb://" + process.env.IP + ":27017/data"; break;
     default: dbAddress = "mongodb://localhost:27017/data"; break;
@@ -348,7 +353,7 @@ var initTestData = function(callback) {
             } else {
                 obj = {};
             }
-            var serverFile = path.join(testsDir, item.tid, "server.js");
+            var serverFile = path.join(config.testsDir, item.tid, "server.js");
             requirejs([serverFile], function(server) {
                 server.initTestData(obj);
                 _.extend(obj, {
@@ -460,7 +465,7 @@ app.use(function(req, res, next) {
         next();
         return;
     }
-    if (DEPLOY_MODE !== 'engr') {
+    if (config.deployMode !== 'engr') {
         // by-pass authentication for development
         req.authUID = "user1@illinois.edu";
     } else {
@@ -481,8 +486,7 @@ app.use(function(req, res, next) {
         var authDate = req.headers['x-auth-date'];
         var authSignature = req.headers['x-auth-signature'];
         var checkData = authUID + "/" + authName + "/" + authDate;
-        var secretKey = "THIS_IS_THE_SECRET_KEY";
-        var checkSignature = hmacSha256(checkData, secretKey);
+        var checkSignature = hmacSha256(checkData, config.secretKey);
         checkSignature = checkSignature.toString();
         if (authSignature !== checkSignature) {
             return sendError(res, 403, "Invalid X-Auth-Signature for " + authUID);
@@ -547,7 +551,7 @@ app.options('/*', function(req, res) {
 });
 
 // hack for development testing
-if (DEPLOY_MODE !== 'engr') {
+if (config.deployMode !== 'engr') {
     app.get("/auth", function(req, res) {
         res.json(stripPrivateFields({
             "uid": "user1@illinois.edu",
@@ -583,7 +587,7 @@ var questionFilePath = function(qid, filename, callback, nTemplates) {
         return callback("QID not found in questionDB: " + qid);
     }
     var filePath = path.join(qid, filename);
-    var fullFilePath = path.join(questionsDir, filePath);
+    var fullFilePath = path.join(config.questionsDir, filePath);
     fs.stat(fullFilePath, function(err, stats) {
         if (err) {
             // couldn't find the file
@@ -605,7 +609,7 @@ var sendQuestionFile = function(req, res, filename) {
     questionFilePath(req.params.qid, filename, function(err, filePath) {
         if (err)
             return sendError(res, 404, "No such file '" + filename + "' for qid: " + req.params.qid, err);
-        res.sendfile(filePath, {root: questionsDir});
+        res.sendfile(filePath, {root: config.questionsDir});
     });
 };
 
@@ -845,7 +849,7 @@ var loadQuestionServer = function(qid, callback) {
     questionFilePath(qid, "server.js", function(err, filePath) {
         if (err)
             return sendError(res, 404, "Unable to find 'server.js' for qid: " + qid, err);
-        var serverFilePath = path.join(questionsDir, filePath);
+        var serverFilePath = path.join(config.questionsDir, filePath);
         requirejs([serverFilePath], function(server) {
             if (server === undefined)
                 return sendError("Unable to load 'server.js' for qid: " + qid);
@@ -865,7 +869,7 @@ var readTest = function(res, tid, callback) {
 };
 
 var loadTestServer = function(tid, callback) {
-    var serverFile = path.join(testsDir, tid, "server.js");
+    var serverFile = path.join(config.testsDir, tid, "server.js");
     requirejs([serverFile], function(server) {
         return callback(server);
     });
@@ -1029,27 +1033,27 @@ app.get("/tests/:tid", function(req, res) {
 
 app.get("/tests/:tid/client.js", function(req, res) {
     var filePath = path.join(req.params.tid, "client.js");
-    res.sendfile(filePath, {root: testsDir});
+    res.sendfile(filePath, {root: config.testsDir});
 });
 
 app.get("/tests/:tid/common.js", function(req, res) {
     var filePath = path.join(req.params.tid, "common.js");
-    res.sendfile(filePath, {root: testsDir});
+    res.sendfile(filePath, {root: config.testsDir});
 });
 
 app.get("/tests/:tid/test.html", function(req, res) {
     var filePath = path.join(req.params.tid, "test.html");
-    res.sendfile(filePath, {root: testsDir});
+    res.sendfile(filePath, {root: config.testsDir});
 });
 
 app.get("/tests/:tid/testOverview.html", function(req, res) {
     var filePath = path.join(req.params.tid, "testOverview.html");
-    res.sendfile(filePath, {root: testsDir});
+    res.sendfile(filePath, {root: config.testsDir});
 });
 
 app.get("/tests/:tid/testSidebar.html", function(req, res) {
     var filePath = path.join(req.params.tid, "testSidebar.html");
-    res.sendfile(filePath, {root: testsDir});
+    res.sendfile(filePath, {root: config.testsDir});
 });
 
 app.get("/tInstances", function(req, res) {
@@ -1159,7 +1163,7 @@ app.post("/tInstances", function(req, res) {
             } else {
                 // end of collection
 
-                var serverFile = path.join(testsDir, tid, "server.js");
+                var serverFile = path.join(config.testsDir, tid, "server.js");
                 requirejs([serverFile], function(server) {
                     var tInstance = server.initUserData(uid);
                     _.extend(tInstance, {
@@ -1344,29 +1348,29 @@ app.get("/stats/usersPerHour", function(req, res) {
     });
 });
 
-if (DEPLOY_MODE !== 'engr') {
+if (config.deployMode !== 'engr') {
     app.get("/", function(req, res) {
-        res.sendfile("index.html", {root: frontendDir});
+        res.sendfile("index.html", {root: config.frontendDir});
     });
 
     app.get("/index.html", function(req, res) {
-        res.sendfile("index.html", {root: frontendDir});
+        res.sendfile("index.html", {root: config.frontendDir});
     });
 
     app.get("/require/:filename", function(req, res) {
-        res.sendfile(path.join("require", req.params.filename), {root: frontendDir});
+        res.sendfile(path.join("require", req.params.filename), {root: config.frontendDir});
     });
 
     app.get("/require/browser/:filename", function(req, res) {
-        res.sendfile(path.join("require", "browser", req.params.filename), {root: frontendDir});
+        res.sendfile(path.join("require", "browser", req.params.filename), {root: config.frontendDir});
     });
 
     app.get("/css/:filename", function(req, res) {
-        res.sendfile(path.join("css", req.params.filename), {root: frontendDir});
+        res.sendfile(path.join("css", req.params.filename), {root: config.frontendDir});
     });
 
     app.get("/text/:filename", function(req, res) {
-        res.sendfile(path.join("text", req.params.filename), {root: frontendDir});
+        res.sendfile(path.join("text", req.params.filename), {root: config.frontendDir});
     });
 }
 
@@ -1624,7 +1628,7 @@ var runBayes = function(callback) {
 };
 
 var startServer = function(callback) {
-    if (DEPLOY_MODE === 'engr') {
+    if (config.deployMode === 'engr') {
         var options = {
             key: fs.readFileSync('/etc/pki/tls/private/localhost.key'),
             cert: fs.readFileSync('/etc/pki/tls/certs/localhost.crt'),
@@ -1632,7 +1636,7 @@ var startServer = function(callback) {
         };
         https.createServer(options, app).listen(443);
         logger.info('server listening to HTTPS on port 443');
-    } else if (DEPLOY_MODE === 'c9') {
+    } else if (config.deployMode === 'c9') {
         app.listen(process.env.PORT, process.env.IP);
         logger.info('server listening to HTTP');
     } else {
@@ -1650,10 +1654,10 @@ var startIntervalJobs = function(callback) {
 
 async.series([
     function(callback) {
-        loadInfoDB(questionDB, "qid", questionsDir, callback);
+        loadInfoDB(questionDB, "qid", config.questionsDir, callback);
     },
     function(callback) {
-        loadInfoDB(testDB, "tid", testsDir, callback);
+        loadInfoDB(testDB, "tid", config.testsDir, callback);
     },
     loadDB,
     initTestData,
