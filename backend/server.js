@@ -980,7 +980,8 @@ app.post("/submissions", function(req, res) {
                         } catch (e) {
                             return sendError(res, 500, "Error in " + submission.qid + " gradeAnswer(): " + e.toString(), {stack: e.stack});
                         }
-                        submission.score = grading.score || 0;
+                        submission.score = _.isNumber(grading.score) ? grading.score : 0; // make sure score is a Number
+                        submission.score = Math.max(0, Math.min(1, submission.score)); // clip to [0, 1]
                         submission.feedback = grading.feedback || {};
                     }
                     submission.trueAnswer = qInstance.trueAnswer;
