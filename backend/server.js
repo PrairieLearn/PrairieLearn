@@ -13,19 +13,9 @@ if (process.argv.length > 2) {
         config.deployMode = 'engr';
     }
 }
-if (process.env.C9_USER != null) {
-    config.deployMode = 'c9';
-}
-
-if (config.deployMode === 'c9') {
-    config.questionsDir = "backend/questions";
-    config.testsDir = "backend/tests";
-    config.frontendDir = "frontend";
-} else {
-    config.questionsDir = "questions";
-    config.testsDir = "tests";
-    config.frontendDir = "../frontend";
-}
+config.questionsDir = "questions";
+config.testsDir = "tests";
+config.frontendDir = "../frontend";
 
 config.secretKey = "THIS_IS_THE_SECRET_KEY"; // override in config.json
 config.nodetimeAccountKey = 'SECRET_NODETIME_KEY'; // override in config.json
@@ -195,7 +185,6 @@ var loadDB = function(callback) {
     var dbAddress;
     switch (config.deployMode) {
     case 'engr': dbAddress = "mongodb://prairielearn3.engr.illinois.edu:27017/data"; break;
-    case 'c9': dbAddress = "mongodb://" + process.env.IP + ":27017/data"; break;
     default: dbAddress = "mongodb://localhost:27017/data"; break;
     }
     MongoClient.connect(dbAddress, function(err, locDb) {
@@ -1636,9 +1625,6 @@ var startServer = function(callback) {
         };
         https.createServer(options, app).listen(443);
         logger.info('server listening to HTTPS on port 443');
-    } else if (config.deployMode === 'c9') {
-        app.listen(process.env.PORT, process.env.IP);
-        logger.info('server listening to HTTP');
     } else {
         app.listen(3000);
         logger.info('server listening to HTTP');
