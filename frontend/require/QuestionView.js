@@ -1,5 +1,5 @@
 
-define(['underscore', 'backbone', 'mustache', 'text!QuestionView.html', 'QuestionBodyView', 'QuestionSubmitView', 'QuestionGradingView', 'QuestionAnswerView'], function(_, Backbone, Mustache, questionViewTemplate, QuestionBodyView, QuestionSubmitView, QuestionGradingView, QuestionAnswerView) {
+define(['underscore', 'backbone', 'mustache', 'TestFactory', 'text!QuestionView.html', 'QuestionBodyView', 'QuestionSubmitView', 'QuestionGradingView', 'QuestionAnswerView'], function(_, Backbone, Mustache, TestFactory, questionViewTemplate, QuestionBodyView, QuestionSubmitView, QuestionGradingView, QuestionAnswerView) {
 
     var QuestionView = Backbone.View.extend({
 
@@ -9,7 +9,6 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionView.html', 'Questio
             this.test = this.options.test;
             this.tInstance = this.options.tInstance;
             this.listenTo(this.model, "change:title", this.render);
-            this.listenTo(this.test, "change:client", this.render);
             this.listenTo(this.test, "change:helper", this.render);
             this.listenTo(this.model, "graded", this.test.fetch.bind(this.test));
             this.listenTo(this.model, "graded", this.tInstance.fetch.bind(this.tInstance));
@@ -19,8 +18,6 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionView.html', 'Questio
         render: function() {
             var title = this.model.get("title");
             if (title == null)
-                return;
-            if (!this.test.has("client"))
                 return;
             var number = "#" + this.model.get("number");
             if (this.test) {
@@ -45,20 +42,20 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionView.html', 'Questio
             var html = Mustache.render(questionViewTemplate, data);
             this.$el.html(html);
 
-            var client = this.test.get("client");
-            this.questionScoreView = new client.TestInstanceSidebarView({model: this.model, test: this.test, tInstance: this.tInstance});
+            var TestSidebarView = TestFactory.getClass(this.test.get("type"), "sidebarView");
+            if (!TestSidebarView)
+                return;
+            this.questionSidebarView = new TestSidebarView({model: this.model, test: this.test, tInstance: this.tInstance});
             this.questionBodyView = new QuestionBodyView.QuestionBodyView({model: this.model});
             this.questionSubmitView = new QuestionSubmitView.QuestionSubmitView({model: this.model, tInstance: this.tInstance});
             this.questionGradingView = new QuestionGradingView.QuestionGradingView({model: this.model});
             this.questionAnswerView = new QuestionAnswerView.QuestionAnswerView({model: this.model});
-            if (this.questionScoreView)
-                this.questionScoreView.render();
             this.questionBodyView.render();
             this.questionSubmitView.render();
             this.questionGradingView.render();
             this.questionAnswerView.render();
 
-            this.$("#qscore").html(this.questionScoreView.el);
+            this.$("#qsidebar").html(this.questionSidebarView.el);
             this.$("#qsubmit").html(this.questionSubmitView.el);
             this.$("#qgrading").html(this.questionGradingView.el);
             this.$("#qanswer").html(this.questionAnswerView.el);

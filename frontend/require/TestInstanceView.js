@@ -1,5 +1,5 @@
 
-define(['underscore', 'backbone', 'mustache', 'renderer', 'text!TestInstanceView.html'], function(_, Backbone, Mustache, renderer, TestInstanceViewTemplate) {
+define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!TestInstanceView.html'], function(_, Backbone, Mustache, renderer, TestFactory, TestInstanceViewTemplate) {
 
     var TestInstanceView = Backbone.View.extend({
 
@@ -18,10 +18,10 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!TestInstanceView
             var html = Mustache.render(TestInstanceViewTemplate, data);
             this.$el.html(html);
 
-            if (!this.test.has("client"))
+            var TestInstanceView = TestFactory.getClass(this.test.get("type"), "tInstanceView");
+            if (!TestInstanceView)
                 return;
-            var client = this.test.get("client");
-            this.subView = new client.TestInstanceView({model: this.model, test: this.test, questions: this.questions});
+            this.subView = new TestInstanceView({model: this.model, test: this.test, questions: this.questions});
             this.listenTo(this.subView, "finishTest", this.gradeTInstance.bind(this));
             this.subView.render();
             this.$("#tInstance").html(this.subView.el);

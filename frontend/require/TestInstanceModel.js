@@ -17,30 +17,14 @@ define(['underscore', 'backbone', 'jquery', 'PrairieQueue'], function(_, Backbon
         initialize: function(attributes, options) {
             this.set("test", null);
             this.on("change:tid", this.setupTest);
-            this.on("reset", this.computeModelData);
-            this.on("sync", this.computeModelData);
             this.setupTest();
         },
 
         setupTest: function() {
             if (this.collection) {
                 this.test = this.collection.tests.get(this.get("tid"));
-                this.listenTo(this.test, "change", this.computeModelData);
-                this.computeModelData();
             }
         },
-
-        computeModelData: function() {
-            if (!this.test)
-                return;
-            if (!this.test.has("helper"))
-                return;
-            var helper = this.test.get("helper");
-            if (!helper.computeModelData)
-                return;
-            var modelData = helper.computeModelData(this, this.test);
-            this.set("modelData", modelData);
-        }
     });
 
     return {

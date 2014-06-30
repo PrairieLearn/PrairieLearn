@@ -1,6 +1,16 @@
 {
-    "title": "Template homework",
-    "type": "Homework",
+    "type": "Adaptive",
+    "title": "Template adaptive homework",
+    "set": "Homework",
     "number": 1,
-    "autoCreate": true
+    "options": {
+        "questions": [
+            {"qid": "templateCalculation", "beta": {"mean": 0.0, "variance": 0.1}},
+            {"qid": "templateMCRadio",     "beta": {"mean": 1.0, "variance": 0.1}},
+            {"qid": "templateMCCheckbox",  "beta": {"mean": 2.0, "variance": 0.1}}
+        ],
+        "availDate": "2021-04-14T23:59:59",
+        "dueDate": "2021-04-14T23:59:59",
+        "scoreFactor": 1.2
+    }
 }

@@ -342,9 +342,8 @@ var initTestData = function(callback) {
             } else {
                 obj = {};
             }
-            var serverFile = path.join(config.testsDir, item.tid, "server.js");
-            requirejs([serverFile], function(server) {
-                server.initTestData(obj);
+            loadTestServer(item.tid, function(server) {
+                server.updateTest(obj, item.options);
                 _.extend(obj, {
                     tid: item.tid, type: item.type, title: item.title, number: item.number
                 });
@@ -858,7 +857,9 @@ var readTest = function(res, tid, callback) {
 };
 
 var loadTestServer = function(tid, callback) {
-    var serverFile = path.join(config.testsDir, tid, "server.js");
+    var info = testDB[tid];
+    var testType = info.type;
+    var serverFile = testType + "TestServer.js";
     requirejs([serverFile], function(server) {
         return callback(server);
     });
@@ -898,7 +899,7 @@ var updateTest = function(req, res, tiid, submission, callback) {
                 loadTestServer(tid, function(server) {
                     var uid = submission.uid;
                     try {
-                        server.update(tInstance, test, submission);
+                        server.updateWithSubmission(tInstance, test, submission, testDB[tid].options);
                     } catch (e) {
                         return sendError(res, 500, "Error updating test: " + String(e), {err: e, stack: e.stack});
                     }
@@ -1045,6 +1046,63 @@ app.get("/tests/:tid/testSidebar.html", function(req, res) {
     res.sendfile(filePath, {root: config.testsDir});
 });
 
+var updateTInstances = function(req, res, tInstances, updateCallback) {
+    async.each(tInstances, function(tInstance, callback) {
+        var tid = tInstance.tid;
+        readTest(res, tid, function(test) {
+            loadTestServer(tid, function(server) {
+                var oldJSON = JSON.stringify(tInstance);
+                server.updateTInstance(tInstance, test, testDB[tid].options);
+                var newJSON = JSON.stringify(tInstance);
+                if (newJSON !== oldJSON) {
+                    writeTInstance(req, res, tInstance, function() {
+                        callback(null);
+                    });
+                } else {
+                    callback(null);
+                }
+            });                    
+        });
+    }, function(err) {
+        if (err)
+            return sendError(res, 500, "Error updating tInstances", err);
+        updateCallback();
+    });
+};
+
+var autoCreateTInstances = function(req, res, tInstances, autoCreateCallback) {
+    var tiDB = _(tInstances).groupBy("tid");
+    async.each(_(testDB).values(), function(item, callback) {
+        if (item.autoCreate && tiDB[item.tid] === undefined && req.query.uid !== undefined) {
+            var tid = item.tid;
+            readTest(res, tid, function(test) {
+                loadTestServer(tid, function(server) {
+                    newIDNoError(req, res, "tiid", function(tiid) {
+                        var tInstance = {
+                            tiid: tiid,
+                            tid: tid,
+                            uid: req.query.uid,
+                            date: new Date()
+                        };
+                        server.updateTInstance(tInstance, test, item.options);
+                        writeTInstance(req, res, tInstance, function() {
+                            tiDB[tInstance.tid] = [tInstance];
+                            callback(null);
+                        });
+                    });
+                });
+            });
+        } else {
+            callback(null);
+        }
+    }, function(err) {
+        if (err)
+            return sendError(res, 500, "Error autoCreating tInstances", err);
+        var tInstances = _.chain(tiDB).values().flatten(true).value();
+        autoCreateCallback(tInstances);
+    });
+};
+
 app.get("/tInstances", function(req, res) {
     if (!tiCollect) {
         return sendError(res, 500, "Do not have access to the tiCollect database collection");
@@ -1057,47 +1115,16 @@ app.get("/tInstances", function(req, res) {
         if (err) {
             return sendError(res, 500, "Error accessing tiCollect database", err);
         }
-        cursor.toArray(function(err, objs) {
+        cursor.toArray(function(err, tInstances) {
             if (err) {
                 return sendError(res, 500, "Error serializing tInstances", err);
             }
-            var tiDB = _(objs).groupBy("tid");
-            async.each(_(testDB).values(), function(item, callback) {
-                if (item.autoCreate && tiDB[item.tid] === undefined && req.query.uid !== undefined) {
-                    var tid = item.tid;
-                    readTest(res, tid, function(test) {
-                        loadTestServer(tid, function(server) {
-                            var tInstance = server.initUserData(req.query.uid, test);
-                            _.extend(tInstance, {
-                                tid: tid,
-                                uid: req.query.uid,
-                                date: new Date()
-                            });
-                            newIDNoError(req, res, "tiid", function(tiid) {
-                                tInstance.tiid = tiid;
-                                tiCollect.insert(tInstance, {w: 1}, function(err) {
-                                    if (err) {
-                                        logger.error("Error writing tInstance to database", {tInstance: tInstance, err: err});
-                                        return callback(err);
-                                    }
-                                    tiDB[tInstance.tid] = [tInstance];
-                                    callback(null);
-                                });
-                            });
-                        });
+            tInstances = _(tInstances).filter(function(ti) {return _(testDB).has(ti.tid);});
+            updateTInstances(req, res, tInstances, function() {
+                autoCreateTInstances(req, res, tInstances, function(tInstances) {
+                    filterObjsByAuth(req, tInstances, function(tInstances) {
+                        res.json(stripPrivateFields(tInstances));
                     });
-                } else {
-                    callback(null);
-                }
-            }, function(err) {
-                if (err)
-                    return sendError(res, 500, "Error autoCreating tInstances", err);
-                var tiList = _.chain(tiDB).values().flatten(true).value();
-                if ("type" in req.query)
-                    tiList = _(tiList).filter(function(item) {return req.query.type === testDB[item.tid].type;});
-                filterObjsByAuth(req, tiList, function(tiList) {
-                    tiList = _(tiList).filter(function(ti) {return _(testDB).has(ti.tid);});
-                    res.json(stripPrivateFields(tiList));
                 });
             });
         });
@@ -1152,9 +1179,8 @@ app.post("/tInstances", function(req, res) {
             } else {
                 // end of collection
 
-                var serverFile = path.join(config.testsDir, tid, "server.js");
-                requirejs([serverFile], function(server) {
-                    var tInstance = server.initUserData(uid);
+                loadTestServer(tid, function(server) {
+                    var tInstance = server.makeTInstance(uid, testDB[tid].options);
                     _.extend(tInstance, {
                         tid: tid,
                         uid: uid,

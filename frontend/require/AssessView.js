@@ -1,5 +1,5 @@
 
-define(['underscore', 'backbone', 'mustache', 'renderer', 'text!AssessView.html'], function(_, Backbone, Mustache, renderer, AssessViewTemplate) {
+define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!AssessView.html'], function(_, Backbone, Mustache, renderer, TestFactory, AssessViewTemplate) {
 
     var AssessView = Backbone.View.extend({
 
@@ -28,11 +28,11 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!AssessView.html'
 
             this.subViews = [];
             this.tests.each(function(test) {
-                if (!test.has("client"))
+                var TestView = TestFactory.getClass(test.get("type"), "testView");
+                if (!TestView)
                     return;
-                var client = test.get("client");
                 var tid = test.get("tid");
-                var subView = new client.TestView({model: test, tInstances: that.tInstances});
+                var subView = new TestView({model: test, tInstances: that.tInstances});
                 var options = {
                     wait: true,
                     success: function(model, resp, options) {
