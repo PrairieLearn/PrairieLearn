@@ -41,11 +41,10 @@ define(["underscore", "PrairieRandom", "PrairieGeom", "renderer"], function(_, P
         return questionData;
     }
 
-    server.gradeAnswer = function(vid, submittedAnswer) {
-        var questionData = this.getData(vid);
-        var submittedChecks = renderer.answersToChecks("radio", questionData.trueAnswer.checks.length, submittedAnswer);
+    server.gradeAnswer = function(vid, params, trueAnswer, submittedAnswer, options) {
+        var submittedChecks = renderer.answersToChecks("radio", trueAnswer.checks.length, submittedAnswer);
         var score = 0;
-        if (PrairieGeom.hammingDistance(questionData.trueAnswer.checks, submittedChecks) === 0)
+        if (PrairieGeom.hammingDistance(trueAnswer.checks, submittedChecks) === 0)
             score = 1;
         return {score: score};
     };

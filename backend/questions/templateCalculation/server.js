@@ -22,10 +22,9 @@ define(["PrairieRandom", "PrairieGeom"], function(PrairieRandom, PrairieGeom) {
         return questionData;
     };
 
-    server.gradeAnswer = function(vid, submittedAnswer) {
-        var questionData = this.getData(vid);
+    server.gradeAnswer = function(vid, params, trueAnswer, submittedAnswer, options) {
         var score = 0;
-        if (PrairieGeom.checkEqual(questionData.trueAnswer, submittedAnswer, 1e-2, 1e-8))
+        if (PrairieGeom.checkEqual(trueAnswer, submittedAnswer, 1e-2, 1e-8))
             score = 1;
         return {score: score};
     };
