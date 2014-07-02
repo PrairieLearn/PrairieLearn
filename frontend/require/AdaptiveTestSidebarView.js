@@ -19,6 +19,7 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
             data.title = this.test.get("title");
             var hwNumber = this.test.get("number");
             data.hwNumber = hwNumber;
+            data.set = this.test.get("set");
             data.hwScore = AdaptiveTestHelper.renderHWScore(this.tInstance);
             data.tiid = this.tInstance.get("tiid");
 

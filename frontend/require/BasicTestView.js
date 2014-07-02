@@ -13,6 +13,8 @@ define(["underscore", "backbone", "mustache", "BasicTestHelper", "text!BasicTest
         render: function() {
             var that = this;
             var data = {};
+            data.set = this.model.get("set");
+            data.number = this.model.get("number");
             data.title = this.model.get("title");
             data.tid = this.model.get("tid");
 

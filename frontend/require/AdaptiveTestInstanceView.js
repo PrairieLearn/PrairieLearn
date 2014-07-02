@@ -18,6 +18,7 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
             data.title = this.test.get("title");
             var hwNumber = this.test.get("number");
             data.number = hwNumber;
+            data.set = this.test.get("set");
             data.tiid = this.model.get("tiid");
 
             var modelData = this.model.get("modelData");

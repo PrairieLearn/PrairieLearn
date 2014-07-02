@@ -19,6 +19,7 @@ define(["underscore", "backbone", "mustache", "BasicTestHelper", "text!BasicTest
             data.title = this.test.get("title");
             var hwNumber = this.test.get("number");
             data.hwNumber = hwNumber;
+            data.set = this.test.get("set");
             data.tiid = this.tInstance.get("tiid");
 
             var score = this.tInstance.get("score");

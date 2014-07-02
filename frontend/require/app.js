@@ -189,7 +189,7 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
-                this.model.set("currentAssessmentName", test.get("type") + " " + test.get("number"));
+                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
                 this.model.set("currentAssessmentLink", "#ti/" + tiid);
                 view = new TestInstanceView({model: tInstance, test: test, appModel: this.model, questions: this.questions});
                 break;
@@ -200,7 +200,7 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
-                this.model.set("currentAssessmentName", test.get("type") + " " + test.get("number"));
+                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
                 this.model.set("currentAssessmentLink", "#ti/" + tiid);
                 var qid;
                 if (tInstance.has("qids"))
@@ -224,7 +224,7 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
-                this.model.set("currentAssessmentName", test.get("type") + " " + test.get("number"));
+                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
                 this.model.set("currentAssessmentLink", "#ti/" + tiid);
                 var qids;
                 if (tInstance.has("qids"))
