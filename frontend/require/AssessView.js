@@ -28,10 +28,10 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!A
 
             this.subViews = [];
             this.tests.each(function(test) {
+                var tid = test.get("tid");
                 var TestView = TestFactory.getClass(test.get("type"), "testView");
                 if (!TestView)
                     return;
-                var tid = test.get("tid");
                 var subView = new TestView({model: test, tInstances: that.tInstances});
                 var options = {
                     wait: true,

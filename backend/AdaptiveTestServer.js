@@ -70,6 +70,13 @@ define(["underscore", "PrairieModel", "numeric"], function(_, PrairieModel, nume
 
     var AdaptiveTestServer = {};
 
+    AdaptiveTestServer.getDefaultOptions = function() {
+        return {
+            autoCreate: true,
+            allowPractice: true,
+        };
+    };
+
     AdaptiveTestServer.updateTest = function(test, options) {
         test.qDists = test.qDists || {};
         _(options.questions).each(function(initDist) {

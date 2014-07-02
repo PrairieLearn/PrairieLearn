@@ -1,0 +1,44 @@
+<div class="panel panel-default">
+  <div class="panel-heading"><h3 class="panel-title"><a href="#ti/{{tiid}}">Homework {{hwNumber}}</a></h3></div>
+  <div class="panel-body">
+    <p>
+      {{{score}}}
+    </p>
+    <p class="no-bottom-margin">
+      {{{scoreBar}}}
+    </p>
+  </div>
+</div>
+<div class="panel panel-default">
+  <div class="panel-heading"><h3 class="panel-title">Question {{qFullNumber}}</h3></div>
+  <div class="panel-body">
+    <table class="table table-condensed no-bottom-margin">
+      <tbody>
+        <tr>
+          <td>Attempts:</td>
+          <td style="width:100%">{{{qAttempts}}}</td>
+        </tr>
+        <tr>
+          <td>Score:</td>
+          <td style="width:100%">{{{qScore}}}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+<p class="text-center">
+  {{#prevQNumber}}
+  <a class="btn btn-primary" href="#q/{{tiid}}/{{prevQNumber}}">Previous question</a>
+  {{/prevQNumber}}
+  {{^prevQNumber}}
+  <a class="btn btn-primary disabled">Previous question</a>
+  {{/prevQNumber}}
+</p>
+<p class="text-center">
+  {{#nextQNumber}}
+  <a class="btn btn-primary" href="#q/{{tiid}}/{{nextQNumber}}">Next question</a>
+  {{/nextQNumber}}
+  {{^nextQNumber}}
+  <a class="btn btn-primary disabled">Next question</a>
+  {{/nextQNumber}}
+</p>

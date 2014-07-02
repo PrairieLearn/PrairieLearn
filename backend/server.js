@@ -343,10 +343,11 @@ var initTestData = function(callback) {
                 obj = {};
             }
             loadTestServer(item.tid, function(server) {
+                var options = server.getDefaultOptions();
+                _(options).extend(item.options);
+                item.options = options;
                 server.updateTest(obj, item.options);
-                _.extend(obj, {
-                    tid: item.tid, type: item.type, title: item.title, number: item.number
-                });
+                _(obj).extend(item);
                 tCollect.update({tid: item.tid}, {$set: obj}, {upsert: true, w: 1}, function(err) {
                     if (err) {
                         logger.error("Error writing to tCollect", {tid: item.tid, err: err});
@@ -1072,9 +1073,9 @@ var updateTInstances = function(req, res, tInstances, updateCallback) {
 
 var autoCreateTInstances = function(req, res, tInstances, autoCreateCallback) {
     var tiDB = _(tInstances).groupBy("tid");
-    async.each(_(testDB).values(), function(item, callback) {
-        if (item.autoCreate && tiDB[item.tid] === undefined && req.query.uid !== undefined) {
-            var tid = item.tid;
+    async.each(_(testDB).values(), function(test, callback) {
+        var tid = test.tid;
+        if (test.options.autoCreate && tiDB[tid] === undefined && req.query.uid !== undefined) {
             readTest(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
                     newIDNoError(req, res, "tiid", function(tiid) {
@@ -1084,7 +1085,7 @@ var autoCreateTInstances = function(req, res, tInstances, autoCreateCallback) {
                             uid: req.query.uid,
                             date: new Date()
                         };
-                        server.updateTInstance(tInstance, test, item.options);
+                        server.updateTInstance(tInstance, test, test.options);
                         writeTInstance(req, res, tInstance, function() {
                             tiDB[tInstance.tid] = [tInstance];
                             callback(null);
@@ -1161,7 +1162,7 @@ app.post("/tInstances", function(req, res) {
     if (testInfo === undefined) {
         return sendError(res, 400, "Invalid tid", {tid: tid});
     }
-    if (testInfo.autoCreate) {
+    if (testInfo.options.autoCreate) {
         return sendError(res, 400, "Test can only be autoCreated", {tid: tid});
     }
     tiCollect.find({tid: tid, uid: uid}, {"number": 1}, function(err, cursor) {

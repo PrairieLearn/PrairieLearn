@@ -1,0 +1,15 @@
+{
+    "type": "Basic",
+    "title": "Template basic homework",
+    "set": "Homework",
+    "number": 2,
+    "options": {
+        "qids": [
+            "templateCalculation",
+            "templateMCRadio",
+            "templateMCCheckbox"
+        ],
+        "availDate": "2021-04-14T23:59:59",
+        "dueDate": "2021-04-14T23:59:59"
+    }
+}
