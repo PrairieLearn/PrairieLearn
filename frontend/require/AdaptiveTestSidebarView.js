@@ -15,12 +15,14 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
 
         render: function() {
             var that = this;
+            var testOptions = this.test.get("options");
+
             var data = {};
             data.title = this.test.get("title");
             var hwNumber = this.test.get("number");
             data.hwNumber = hwNumber;
             data.set = this.test.get("set");
-            data.hwScore = AdaptiveTestHelper.renderHWScore(this.tInstance);
+            data.hwScore = AdaptiveTestHelper.renderHWScore(this.tInstance, testOptions);
             data.tiid = this.tInstance.get("tiid");
 
             var modelData = this.tInstance.get("modelData");

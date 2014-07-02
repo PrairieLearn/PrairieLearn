@@ -11,6 +11,7 @@
         ],
         "availDate": "2021-04-14T23:59:59",
         "dueDate": "2021-04-14T23:59:59",
+        "allowPractice": true,
         "scoreFactor": 1.2
     }
 }

@@ -168,8 +168,7 @@ define(function() {
 
     AdaptiveTestHelper.renderHWScore = function(tInstance, options) {
         var score = tInstance.get("score");
-        //var tooltip = "The homework score is " + options.scoreFactor.toFixed(1) + " times the highest mastery achieved before the due date (up to 100%).";
-        var tooltip = "Tooltip temporarily disabled";
+        var tooltip = "The homework score is " + options.scoreFactor.toFixed(1) + " times the highest mastery achieved before the due date (up to 100%).";
         var extraAtts = 'data-toggle="tooltip"'
             + ' data-placement="auto top"'
             + ' data-original-title="' + tooltip + '"';

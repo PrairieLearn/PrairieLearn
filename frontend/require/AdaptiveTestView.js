@@ -12,6 +12,8 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
 
         render: function() {
             var that = this;
+            var testOptions = this.model.get("options");
+
             var data = {};
             data.set = this.model.get("set");
             data.number = this.model.get("number");
@@ -23,7 +25,7 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
                 return;
             data.tiid = tInstance.get("tiid");
             var score = tInstance.get("score");
-            data.score = AdaptiveTestHelper.renderHWScore(tInstance);
+            data.score = AdaptiveTestHelper.renderHWScore(tInstance, testOptions);
             data.scoreBar = AdaptiveTestHelper.renderScoreBar(score);
             var dueDate = new Date(that.model.get("dueDate"));
             data.dueDate = AdaptiveTestHelper.renderDueDate(dueDate);

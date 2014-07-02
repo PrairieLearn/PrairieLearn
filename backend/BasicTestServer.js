@@ -6,7 +6,6 @@ define(["underscore"], function(_) {
     BasicTestServer.getDefaultOptions = function() {
         return {
             autoCreate: true,
-            allowPractice: true,
         };
     };
 

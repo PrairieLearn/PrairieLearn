@@ -73,7 +73,6 @@ define(["underscore", "PrairieModel", "numeric"], function(_, PrairieModel, nume
     AdaptiveTestServer.getDefaultOptions = function() {
         return {
             autoCreate: true,
-            allowPractice: true,
         };
     };
 

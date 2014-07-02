@@ -14,6 +14,8 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
 
         render: function() {
             var that = this;
+            var testOptions = this.test.get("options");
+
             var data = {};
             data.title = this.test.get("title");
             var hwNumber = this.test.get("number");
@@ -24,7 +26,7 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
             var modelData = this.model.get("modelData");
             data.masteryScore = AdaptiveTestHelper.renderMasteryScore(modelData);
             data.masteryBar = AdaptiveTestHelper.renderMasteryBar(modelData);
-            data.hwScore = AdaptiveTestHelper.renderHWScore(this.model);
+            data.hwScore = AdaptiveTestHelper.renderHWScore(this.model, testOptions);
             var score = this.model.get("score");
             data.scoreBar = AdaptiveTestHelper.renderScoreBar(score);
 

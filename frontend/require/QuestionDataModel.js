@@ -19,7 +19,6 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 submitError: null,
                 savedOverrideScore: null,
                 savedPractice: false,
-                allowPractice: false,
                 saveInProgress: false,
                 allowSubmit: true,
                 allowSave: false,
