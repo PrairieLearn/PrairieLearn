@@ -16,37 +16,11 @@ define(['underscore', 'backbone', 'mustache', 'TestFactory', 'text!QuestionView.
         },
 
         render: function() {
-            var title = this.model.get("title");
-            if (title == null)
-                return;
-            var number = "#" + this.model.get("number");
-            if (this.test) {
-                number = "";
-                if (this.test.has("helper")) {
-                    var qid = this.model.get("qid");
-                    number = this.test.get("helper").formatQNumber(qid, this.test, this.tInstance);
-                }
-            }
-            if (!this.model.get("showTitle")) {
-                number = "Question " + number;
-                if (this.tInstance && this.tInstance.has("open") && this.tInstance.get("open"))
-                    title = "";
-                else
-                    number +=  ". ";
-            } else {
-                number +=  ". ";
-            }
-            if (this.model.appModel.hasPermission("seeQID"))
-                title += " (" + this.model.get("qid") + ")";
-            data = {title: title, number: number};
-            var html = Mustache.render(questionViewTemplate, data);
-            this.$el.html(html);
+            this.$el.html(questionViewTemplate);
 
             var TestSidebarView = TestFactory.getClass(this.test.get("type"), "sidebarView");
-            if (!TestSidebarView)
-                return;
             this.questionSidebarView = new TestSidebarView({model: this.model, test: this.test, tInstance: this.tInstance});
-            this.questionBodyView = new QuestionBodyView.QuestionBodyView({model: this.model});
+            this.questionBodyView = new QuestionBodyView.QuestionBodyView({model: this.model, test: this.test, tInstance: this.tInstance});
             this.questionSubmitView = new QuestionSubmitView.QuestionSubmitView({model: this.model, test: this.test, tInstance: this.tInstance});
             this.questionGradingView = new QuestionGradingView.QuestionGradingView({model: this.model});
             this.questionAnswerView = new QuestionAnswerView.QuestionAnswerView({model: this.model});
@@ -55,6 +29,7 @@ define(['underscore', 'backbone', 'mustache', 'TestFactory', 'text!QuestionView.
             this.questionGradingView.render();
             this.questionAnswerView.render();
 
+            this.$("#qbody").html(this.questionBodyView.el);
             this.$("#qsidebar").html(this.questionSidebarView.el);
             this.$("#qsubmit").html(this.questionSubmitView.el);
             this.$("#qgrading").html(this.questionGradingView.el);
@@ -68,6 +43,9 @@ define(['underscore', 'backbone', 'mustache', 'TestFactory', 'text!QuestionView.
             }
             if (this.questionBodyView) {
                 this.questionBodyView.close();
+            }
+            if (this.questionSidebarView) {
+                this.questionSidebarView.close();
             }
             if (this.questionSubmitView) {
                 this.questionSubmitView.close();

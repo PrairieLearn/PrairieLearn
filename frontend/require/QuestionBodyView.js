@@ -1,16 +1,42 @@
 
-define(['underscore', 'backbone', 'spinController'], function(_, Backbone, spinController) {
+define(['underscore', 'backbone', 'mustache', 'spinController', 'TestFactory', 'text!QuestionBodyView.html'], function(_, Backbone, Mustache, spinController, TestFactory, questionBodyViewTemplate) {
 
     var QuestionBodyView = Backbone.View.extend({
 
         tagName: 'div',
 
         initialize: function() {
+            this.test = this.options.test;
+            this.tInstance = this.options.tInstance;
             this.listenTo(this.model, "change:qClient", this.render);
             this.render();
         },
 
         render: function() {
+            var that = this;
+            var qid = this.model.get("qid");
+
+            var testClient = TestFactory.getClass(this.test.get("type"), "client");
+            var qTitle = this.model.get("title");
+            var qNumber = testClient.formatQNumber(qid, this.test, this.tInstance);
+            var title;
+            if (this.model.get("showTitle")) {
+                title = qNumber + ". " + qTitle;
+            } else {
+                number = "Question " + number;
+                if (this.tInstance.has("open") && this.tInstance.get("open"))
+                    title = qNumber;
+                else
+                    title = qNumber + ". " + qTitle;
+            }
+            if (this.model.appModel.hasPermission("seeQID"))
+                title += " (" + this.model.get("qid") + ")";
+            var data = {
+                title: title,
+            };
+            var html = Mustache.render(questionBodyViewTemplate, data);
+            this.$el.html(html);
+
             var qClient = this.model.get("qClient");
             if (qClient == null) {
                 if (!this.spinner) {
@@ -22,32 +48,26 @@ define(['underscore', 'backbone', 'spinController'], function(_, Backbone, spinC
             if (this.spinner) {
                 spinController.stopSpinner(this.spinner);
             }
-            var that = this;
-            qClient.renderQuestion("#qbody", function() {
+            qClient.renderQuestion("#qInnerBody", function() {
                 that.model.set("submittable", qClient.isComplete());
                 that.model.trigger("answerChanged");
             });
 
             // restore submittedAnswer from most recent submission if we have one
-            var tiid = this.model.get("tiid");
-            var qid = this.model.get("qid");
-            if (tiid != null) {
-                var tInstance = this.model.tInstances.get(tiid);
-                if (tInstance !== undefined && tInstance.has("submissionsByQid")) {
-                    var submissionsByQid = tInstance.get("submissionsByQid");
-                    var submission = submissionsByQid[qid];
-                    if (submission) {
-                        if (qClient.setSubmittedAnswer) {
-                            qClient.setSubmittedAnswer(submission.submittedAnswer);
-                            this.model.updateDirtyStatus();
-                        }
-                        if (_(submission).has("score")) {
-                            this.model.set("score", submission.score);
-                        }
-                        if (_(submission).has("trueAnswer")) {
-                            if (qClient.showSolution) {
-                                qClient.showSolution(submission.trueAnswer);
-                            }
+            if (this.tInstance.has("submissionsByQid")) {
+                var submissionsByQid = this.tInstance.get("submissionsByQid");
+                var submission = submissionsByQid[qid];
+                if (submission) {
+                    if (qClient.setSubmittedAnswer) {
+                        qClient.setSubmittedAnswer(submission.submittedAnswer);
+                        this.model.updateDirtyStatus();
+                    }
+                    if (_(submission).has("score")) {
+                        this.model.set("score", submission.score);
+                    }
+                    if (_(submission).has("trueAnswer")) {
+                        if (qClient.showSolution) {
+                            qClient.showSolution(submission.trueAnswer);
                         }
                     }
                 }
