@@ -16,7 +16,8 @@
         "gamma": "*",
         "csv": "*",
         "numeric": "*",
-        "nodetime": "*"
+        "nodetime": "*",
+        "moment-timezone": "*"
     },
     "devDependencies": {
         "grunt": "*",

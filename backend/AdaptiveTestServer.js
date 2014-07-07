@@ -1,5 +1,5 @@
 
-define(["underscore", "PrairieModel", "numeric"], function(_, PrairieModel, numeric) {
+define(["underscore", "PrairieModel", "numeric", "moment-timezone"], function(_, PrairieModel, numeric, moment) {
 
     var avgProb = function(qids, qDists, userDist) {
         var totalProb = 0;
@@ -83,8 +83,8 @@ define(["underscore", "PrairieModel", "numeric"], function(_, PrairieModel, nume
             test.qDists[qid] = _.extend(new PrairieModel.QuestionDist(qid), initDist);
         });
         test.qids = _(options.questions).pluck("qid");
-        test.dueDate = options.dueDate;
-        test.availDate = options.availDate;
+        test.dueDate = moment.tz(options.dueDate, options.timezone).format();
+        test.availDate = moment.tz(options.availDate, options.timezone).format();
         var userDist = new PrairieModel.UserDist("");
         test.initAvgProb = avgProb(test.qids, test.qDists, userDist)
     };

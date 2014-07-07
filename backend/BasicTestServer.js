@@ -1,5 +1,5 @@
 
-define(["underscore"], function(_) {
+define(["underscore", "moment-timezone"], function(_, moment) {
 
     var BasicTestServer = {};
 
@@ -11,8 +11,8 @@ define(["underscore"], function(_) {
 
     BasicTestServer.updateTest = function(test, options) {
         test.qids = options.qids;
-        test.dueDate = options.dueDate;
-        test.availDate = options.availDate;
+        test.dueDate = moment.tz(options.dueDate, options.timezone).format();
+        test.availDate = moment.tz(options.availDate, options.timezone).format();
     };
 
     BasicTestServer.updateTInstance = function(tInstance, test, options) {

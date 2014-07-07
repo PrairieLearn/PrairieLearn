@@ -7,6 +7,8 @@ var async = require("async");
 
 var config = {};
 
+config.timezone = 'America/Chicago';
+
 config.deployMode = 'local';
 if (process.argv.length > 2) {
     if (process.argv[2] === "deploy") {
@@ -343,8 +345,11 @@ var initTestData = function(callback) {
                 obj = {};
             }
             loadTestServer(item.tid, function(server) {
-                var options = server.getDefaultOptions();
-                _(options).extend(item.options);
+                var options = {
+                    timezone: config.timezone,
+                };
+                var defaultOptions = server.getDefaultOptions();
+                _(options).extend(defaultOptions, item.options);
                 item.options = options;
                 server.updateTest(obj, item.options);
                 _(obj).extend(item);
