@@ -15,6 +15,7 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
         },
 
         initialize: function() {
+            this.test = this.options.test;
             this.tInstance = this.options.tInstance;
             this.listenTo(this.model, "all", this.render);
         },
@@ -44,6 +45,7 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
         },
 
         render: function() {
+            var testOptions = this.test.get("options");
             var data = {
                 submittable: this.model.get("submittable"),
                 submitted: this.model.get("submitted"),
@@ -55,7 +57,7 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
                 testOpen: true,
                 allowTryAgain: false,
             };
-            data.allowPractice = this.model.get("allowPractice");
+            data.allowPractice = testOptions.allowPractice;
             data.allowSubmit = this.model.get("allowSubmit");
             data.allowSave = this.model.get("allowSave");
             data.allowTryAgain = (this.model.get("score") != null);

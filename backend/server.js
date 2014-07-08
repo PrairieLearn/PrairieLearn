@@ -7,25 +7,17 @@ var async = require("async");
 
 var config = {};
 
+config.timezone = 'America/Chicago';
+
 config.deployMode = 'local';
 if (process.argv.length > 2) {
     if (process.argv[2] === "deploy") {
         config.deployMode = 'engr';
     }
 }
-if (process.env.C9_USER != null) {
-    config.deployMode = 'c9';
-}
-
-if (config.deployMode === 'c9') {
-    config.questionsDir = "backend/questions";
-    config.testsDir = "backend/tests";
-    config.frontendDir = "frontend";
-} else {
-    config.questionsDir = "questions";
-    config.testsDir = "tests";
-    config.frontendDir = "../frontend";
-}
+config.questionsDir = "questions";
+config.testsDir = "tests";
+config.frontendDir = "../frontend";
 
 config.secretKey = "THIS_IS_THE_SECRET_KEY"; // override in config.json
 config.nodetimeAccountKey = 'SECRET_NODETIME_KEY'; // override in config.json
@@ -195,7 +187,6 @@ var loadDB = function(callback) {
     var dbAddress;
     switch (config.deployMode) {
     case 'engr': dbAddress = "mongodb://prairielearn3.engr.illinois.edu:27017/data"; break;
-    case 'c9': dbAddress = "mongodb://" + process.env.IP + ":27017/data"; break;
     default: dbAddress = "mongodb://localhost:27017/data"; break;
     }
     MongoClient.connect(dbAddress, function(err, locDb) {
@@ -353,12 +344,15 @@ var initTestData = function(callback) {
             } else {
                 obj = {};
             }
-            var serverFile = path.join(config.testsDir, item.tid, "server.js");
-            requirejs([serverFile], function(server) {
-                server.initTestData(obj);
-                _.extend(obj, {
-                    tid: item.tid, type: item.type, title: item.title, number: item.number
-                });
+            loadTestServer(item.tid, function(server) {
+                var options = {
+                    timezone: config.timezone,
+                };
+                var defaultOptions = server.getDefaultOptions();
+                _(options).extend(defaultOptions, item.options);
+                item.options = options;
+                server.updateTest(obj, item.options);
+                _(obj).extend(item);
                 tCollect.update({tid: item.tid}, {$set: obj}, {upsert: true, w: 1}, function(err) {
                     if (err) {
                         logger.error("Error writing to tCollect", {tid: item.tid, err: err});
@@ -869,7 +863,9 @@ var readTest = function(res, tid, callback) {
 };
 
 var loadTestServer = function(tid, callback) {
-    var serverFile = path.join(config.testsDir, tid, "server.js");
+    var info = testDB[tid];
+    var testType = info.type;
+    var serverFile = testType + "TestServer.js";
     requirejs([serverFile], function(server) {
         return callback(server);
     });
@@ -909,7 +905,7 @@ var updateTest = function(req, res, tiid, submission, callback) {
                 loadTestServer(tid, function(server) {
                     var uid = submission.uid;
                     try {
-                        server.update(tInstance, test, submission);
+                        server.updateWithSubmission(tInstance, test, submission, testDB[tid].options);
                     } catch (e) {
                         return sendError(res, 500, "Error updating test: " + String(e), {err: e, stack: e.stack});
                     }
@@ -1056,6 +1052,63 @@ app.get("/tests/:tid/testSidebar.html", function(req, res) {
     res.sendfile(filePath, {root: config.testsDir});
 });
 
+var updateTInstances = function(req, res, tInstances, updateCallback) {
+    async.each(tInstances, function(tInstance, callback) {
+        var tid = tInstance.tid;
+        readTest(res, tid, function(test) {
+            loadTestServer(tid, function(server) {
+                var oldJSON = JSON.stringify(tInstance);
+                server.updateTInstance(tInstance, test, testDB[tid].options);
+                var newJSON = JSON.stringify(tInstance);
+                if (newJSON !== oldJSON) {
+                    writeTInstance(req, res, tInstance, function() {
+                        callback(null);
+                    });
+                } else {
+                    callback(null);
+                }
+            });                    
+        });
+    }, function(err) {
+        if (err)
+            return sendError(res, 500, "Error updating tInstances", err);
+        updateCallback();
+    });
+};
+
+var autoCreateTInstances = function(req, res, tInstances, autoCreateCallback) {
+    var tiDB = _(tInstances).groupBy("tid");
+    async.each(_(testDB).values(), function(test, callback) {
+        var tid = test.tid;
+        if (test.options.autoCreate && tiDB[tid] === undefined && req.query.uid !== undefined) {
+            readTest(res, tid, function(test) {
+                loadTestServer(tid, function(server) {
+                    newIDNoError(req, res, "tiid", function(tiid) {
+                        var tInstance = {
+                            tiid: tiid,
+                            tid: tid,
+                            uid: req.query.uid,
+                            date: new Date()
+                        };
+                        server.updateTInstance(tInstance, test, test.options);
+                        writeTInstance(req, res, tInstance, function() {
+                            tiDB[tInstance.tid] = [tInstance];
+                            callback(null);
+                        });
+                    });
+                });
+            });
+        } else {
+            callback(null);
+        }
+    }, function(err) {
+        if (err)
+            return sendError(res, 500, "Error autoCreating tInstances", err);
+        var tInstances = _.chain(tiDB).values().flatten(true).value();
+        autoCreateCallback(tInstances);
+    });
+};
+
 app.get("/tInstances", function(req, res) {
     if (!tiCollect) {
         return sendError(res, 500, "Do not have access to the tiCollect database collection");
@@ -1068,47 +1121,16 @@ app.get("/tInstances", function(req, res) {
         if (err) {
             return sendError(res, 500, "Error accessing tiCollect database", err);
         }
-        cursor.toArray(function(err, objs) {
+        cursor.toArray(function(err, tInstances) {
             if (err) {
                 return sendError(res, 500, "Error serializing tInstances", err);
             }
-            var tiDB = _(objs).groupBy("tid");
-            async.each(_(testDB).values(), function(item, callback) {
-                if (item.autoCreate && tiDB[item.tid] === undefined && req.query.uid !== undefined) {
-                    var tid = item.tid;
-                    readTest(res, tid, function(test) {
-                        loadTestServer(tid, function(server) {
-                            var tInstance = server.initUserData(req.query.uid, test);
-                            _.extend(tInstance, {
-                                tid: tid,
-                                uid: req.query.uid,
-                                date: new Date()
-                            });
-                            newIDNoError(req, res, "tiid", function(tiid) {
-                                tInstance.tiid = tiid;
-                                tiCollect.insert(tInstance, {w: 1}, function(err) {
-                                    if (err) {
-                                        logger.error("Error writing tInstance to database", {tInstance: tInstance, err: err});
-                                        return callback(err);
-                                    }
-                                    tiDB[tInstance.tid] = [tInstance];
-                                    callback(null);
-                                });
-                            });
-                        });
+            tInstances = _(tInstances).filter(function(ti) {return _(testDB).has(ti.tid);});
+            updateTInstances(req, res, tInstances, function() {
+                autoCreateTInstances(req, res, tInstances, function(tInstances) {
+                    filterObjsByAuth(req, tInstances, function(tInstances) {
+                        res.json(stripPrivateFields(tInstances));
                     });
-                } else {
-                    callback(null);
-                }
-            }, function(err) {
-                if (err)
-                    return sendError(res, 500, "Error autoCreating tInstances", err);
-                var tiList = _.chain(tiDB).values().flatten(true).value();
-                if ("type" in req.query)
-                    tiList = _(tiList).filter(function(item) {return req.query.type === testDB[item.tid].type;});
-                filterObjsByAuth(req, tiList, function(tiList) {
-                    tiList = _(tiList).filter(function(ti) {return _(testDB).has(ti.tid);});
-                    res.json(stripPrivateFields(tiList));
                 });
             });
         });
@@ -1145,7 +1167,7 @@ app.post("/tInstances", function(req, res) {
     if (testInfo === undefined) {
         return sendError(res, 400, "Invalid tid", {tid: tid});
     }
-    if (testInfo.autoCreate) {
+    if (testInfo.options.autoCreate) {
         return sendError(res, 400, "Test can only be autoCreated", {tid: tid});
     }
     tiCollect.find({tid: tid, uid: uid}, {"number": 1}, function(err, cursor) {
@@ -1163,9 +1185,8 @@ app.post("/tInstances", function(req, res) {
             } else {
                 // end of collection
 
-                var serverFile = path.join(config.testsDir, tid, "server.js");
-                requirejs([serverFile], function(server) {
-                    var tInstance = server.initUserData(uid);
+                loadTestServer(tid, function(server) {
+                    var tInstance = server.makeTInstance(uid, testDB[tid].options);
                     _.extend(tInstance, {
                         tid: tid,
                         uid: uid,
@@ -1636,9 +1657,6 @@ var startServer = function(callback) {
         };
         https.createServer(options, app).listen(443);
         logger.info('server listening to HTTPS on port 443');
-    } else if (config.deployMode === 'c9') {
-        app.listen(process.env.PORT, process.env.IP);
-        logger.info('server listening to HTTP');
     } else {
         app.listen(3000);
         logger.info('server listening to HTTP');

@@ -189,7 +189,7 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
-                this.model.set("currentAssessmentName", test.get("type") + " " + test.get("number"));
+                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
                 this.model.set("currentAssessmentLink", "#ti/" + tiid);
                 view = new TestInstanceView({model: tInstance, test: test, appModel: this.model, questions: this.questions});
                 break;
@@ -200,7 +200,7 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
-                this.model.set("currentAssessmentName", test.get("type") + " " + test.get("number"));
+                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
                 this.model.set("currentAssessmentLink", "#ti/" + tiid);
                 var qid;
                 if (tInstance.has("qids"))
@@ -208,11 +208,13 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 else
                     qid = test.get("qids")[qIndex];
                 var questionDataModel = new QuestionDataModel.QuestionDataModel({}, {appModel: this.model, qid: qid, tiid: tiid, tInstances: this.tInstances});
+                /*
                 test.callWithHelper(function() {
                     var helper = test.get("helper");
                     if (helper.adjustQuestionDataModel)
                         helper.adjustQuestionDataModel(questionDataModel, test, tInstance);
                 });
+                */
                 view = new QuestionView.QuestionView({model: questionDataModel, test: test, tInstance: tInstance});
                 break;
             case "chooseTestQuestion":
@@ -222,7 +224,7 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
-                this.model.set("currentAssessmentName", test.get("type") + " " + test.get("number"));
+                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
                 this.model.set("currentAssessmentLink", "#ti/" + tiid);
                 var qids;
                 if (tInstance.has("qids"))
