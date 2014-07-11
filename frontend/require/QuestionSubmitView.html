@@ -1,6 +1,6 @@
 {{#testOpen}}
 
-{{#allowSubmit}}
+{{#allowQuestionSubmit}}
 {{^submitted}}
 <button type="submit" class="btn btn-primary submit" {{^submittable}}disabled="disabled"{{/submittable}}>Submit for points</button>
 {{#allowPractice}}
@@ -11,14 +11,14 @@
 <button type="submit" class="btn btn-danger submitIncorrect">Submit incorrect</button>
 {{/overridable}}
 {{/submitted}}
-{{/allowSubmit}}
+{{/allowQuestionSubmit}}
 
-{{#allowSave}}
+{{#allowQuestionSave}}
 <p>
   Answer status: {{{saveStatus}}}
 </p>
 <button type="submit" class="btn btn-primary save" {{^saveActive}}disabled="disabled"{{/saveActive}}>Save answer</button>
-{{/allowSave}}
+{{/allowQuestionSave}}
 
 {{#allowTryAgain}}
 <button class="btn btn-info tryAgain">Do this question again</button>

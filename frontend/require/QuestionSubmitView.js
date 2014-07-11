@@ -50,20 +50,17 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
                 submittable: this.model.get("submittable"),
                 submitted: this.model.get("submitted"),
                 overridable: this.model.appModel.hasPermission("overrideScore"),
-                allowSubmit: true,
-                allowSave: false,
                 saveStatus: '<span class="label label-danger">not saved</span>',
                 saveActive: false,
                 testOpen: true,
-                allowTryAgain: false,
             };
             data.allowPractice = testOptions.allowPractice;
-            data.allowSubmit = this.model.get("allowSubmit");
-            data.allowSave = this.model.get("allowSave");
+            data.allowQuestionSubmit = testOptions.allowQuestionSubmit;
+            data.allowQuestionSave = testOptions.allowQuestionSave;
             data.allowTryAgain = (this.model.get("score") != null);
             if (this.tInstance && this.tInstance.has("open"))
                 data.testOpen = this.tInstance.get("open");
-            if (data.allowSave) {
+            if (data.allowQuestionSave) {
                 if (this.model.get("saveInProgress")) {
                     data.saveStatus = '<span class="label label-warning">saving...</span>';
                 } else if (this.model.get("submitError")) {

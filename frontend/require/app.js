@@ -207,7 +207,7 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                     qid = tInstance.get("qids")[qIndex];
                 else
                     qid = test.get("qids")[qIndex];
-                var questionDataModel = new QuestionDataModel.QuestionDataModel({}, {appModel: this.model, qid: qid, tiid: tiid, tInstances: this.tInstances});
+                var questionDataModel = new QuestionDataModel.QuestionDataModel({}, {appModel: this.model, qid: qid, tInstance: tInstance, test: test});
                 /*
                 test.callWithHelper(function() {
                     var helper = test.get("helper");

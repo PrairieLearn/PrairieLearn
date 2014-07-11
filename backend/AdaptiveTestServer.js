@@ -73,6 +73,7 @@ define(["underscore", "PrairieModel", "numeric", "moment-timezone"], function(_,
     AdaptiveTestServer.getDefaultOptions = function() {
         return {
             autoCreate: true,
+            allowQuestionSubmit: true,
         };
     };
 

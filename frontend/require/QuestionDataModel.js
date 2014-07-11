@@ -4,10 +4,10 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
     var QuestionDataModel = Backbone.Model.extend({
         initialize: function(attributes, options) {
             this.appModel = options.appModel;
-            this.tInstances = options.tInstances;
+            this.tInstance = options.tInstance;
+            this.test = options.test;
             this.set({
                 qid: options.qid,
-                tiid: options.tiid,
                 qiid: null,
                 title: null,
                 number: null,
@@ -20,8 +20,6 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 savedOverrideScore: null,
                 savedPractice: false,
                 saveInProgress: false,
-                allowSubmit: true,
-                allowSave: false,
                 hasSavedSubmission: false,
                 dirtyData: true,
                 score: null,
@@ -45,13 +43,11 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                     "number": data.number
                 });
             });
-            var qInstance = {uid: uid, qid: qid};
-            var tiid, tInstance;
-            if (this.get("tiid") != null) {
-                tiid = this.get("tiid");
-                qInstance.tiid = tiid;
-                tInstance = this.tInstances.get(tiid);
-            }
+            var qInstance = {
+                qid: qid,
+                uid: uid,
+                tiid: this.tInstance.get("tiid"),
+            };
 
             var processQInstance = function(qInstance) {
                 var qiid = qInstance.qiid;
@@ -62,9 +58,9 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 });
             };
 
-            if (tInstance !== undefined && tInstance.has("qiidsByQid")) {
+            if (this.tInstance !== undefined && this.tInstance.has("qiidsByQid")) {
                 // already have a QIID, so GET the qInstance
-                var qiidsByQid = tInstance.get("qiidsByQid");
+                var qiidsByQid = this.tInstance.get("qiidsByQid");
                 var qiid = qiidsByQid[qid];
                 $.getJSON(that.appModel.apiURL("qInstances/" + qiid), processQInstance);
             } else {
@@ -137,22 +133,16 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
         },
 
         updateDirtyStatus: function() {
-            if (!this.get("allowSave"))
-                return;
-            if (!this.get("tiid"))
+            var testOptions = this.test.get("options");
+            if (!testOptions.allowQuestionSave)
                 return;
 
-            var qClient = this.get("qClient");
-            var submittedAnswer = qClient.getSubmittedAnswer();
-
-            var tiid = this.get("tiid");
-            var tInstance = this.tInstances.get(tiid);
-            if (!tInstance.has("submissionsByQid")) {
+            if (!this.tInstance.has("submissionsByQid")) {
                 this.set("hasSavedSubmission", false);
                 this.set("dirtyData", true);
                 return;
             }
-            var submissionsByQid = tInstance.get("submissionsByQid");
+            var submissionsByQid = this.tInstance.get("submissionsByQid");
             var qid = this.get("qid");
             var submission = submissionsByQid[qid];
             if (submission === undefined) {
@@ -161,6 +151,9 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 return;
             }
             this.set("hasSavedSubmission", true);
+
+            var qClient = this.get("qClient");
+            var submittedAnswer = qClient.getSubmittedAnswer();
             if (!_.isEqual(submission.submittedAnswer, submittedAnswer)) {
                 this.set("dirtyData", true);
                 return;
@@ -172,7 +165,7 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
             var submission = {};
             submission.uid = this.appModel.get("userUID");
             submission.qid = this.get("qid");
-            submission.tiid = this.get("tiid");
+            submission.tiid = this.tInstance.get("tiid");
             submission.qiid = this.get("qiid");
             var qClient = this.get("qClient");
             submission.submittedAnswer = qClient.getSubmittedAnswer();
@@ -181,14 +174,9 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
             var that = this;
             var successFn = function(submission) {
                 that.set("saveInProgress", false);
-                var tiid, tInstance;
-                if (that.get("tiid") != null) {
-                    tiid = that.get("tiid");
-                    tInstance = that.tInstances.get(tiid);
-                    if (tInstance.has("submissionsByQid")) {
-                        var submissionsByQid = tInstance.get("submissionsByQid");
-                        submissionsByQid[submission.qid] = submission;
-                    }
+                if (that.tInstance.has("submissionsByQid")) {
+                    var submissionsByQid = that.tInstance.get("submissionsByQid");
+                    submissionsByQid[submission.qid] = submission;
                 }
                 that.updateDirtyStatus();
             };
