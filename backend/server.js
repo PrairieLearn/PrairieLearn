@@ -897,7 +897,7 @@ var writeTest = function(req, res, obj, callback) {
     });
 };
 
-var updateTest = function(req, res, tiid, submission, callback) {
+var testProcessSubmission = function(req, res, tiid, submission, callback) {
     readTInstance(res, tiid, function(tInstance) {
         ensureObjAuth(req, res, tInstance, function(tInstance) {
             var tid = tInstance.tid;
@@ -979,11 +979,11 @@ app.post("/submissions", function(req, res) {
                     submission.trueAnswer = qInstance.trueAnswer;
                     newIDNoError(req, res, "sid", function(sid) {
                         submission.sid = sid;
-                        sCollect.insert(submission, {w: 1}, function(err) {
-                            if (err) {
-                                return sendError(res, 500, "Error writing submission to database", err);
-                            }
-                            updateTest(req, res, tiid, submission, function(submission) {
+                        testProcessSubmission(req, res, tiid, submission, function(submission) {
+                            sCollect.insert(submission, {w: 1}, function(err) {
+                                if (err) {
+                                    return sendError(res, 500, "Error writing submission to database", err);
+                                }
                                 res.json(stripPrivateFields(submission));
                             });
                         });
@@ -1088,7 +1088,8 @@ var autoCreateTInstances = function(req, res, tInstances, autoCreateCallback) {
                             tiid: tiid,
                             tid: tid,
                             uid: req.query.uid,
-                            date: new Date()
+                            date: new Date(),
+                            number: 1,
                         };
                         server.updateTInstance(tInstance, test, test.options);
                         writeTInstance(req, res, tInstance, function() {
@@ -1185,40 +1186,43 @@ app.post("/tInstances", function(req, res) {
             } else {
                 // end of collection
 
-                loadTestServer(tid, function(server) {
-                    var tInstance = server.makeTInstance(uid, testDB[tid].options);
-                    _.extend(tInstance, {
-                        tid: tid,
-                        uid: uid,
-                        number: number,
-                        date: new Date(),
-                    });
-                    newIDNoError(req, res, "tiid", function(tiid) {
-                        tInstance.tiid = tiid;
-                        if (testInfo.autoCreateQuestions && tInstance.qids !== undefined) {
-                            async.map(tInstance.qids, function(qid, callback) {
-                                var qInstance = {
-                                    qid: qid,
-                                    uid: uid,
-                                    tiid: tInstance.tiid,
-                                    tid: tid
-                                };
-                                makeQInstance(req, res, qInstance, function(qInstance) {
-                                    callback(null, [qid, qInstance.qiid]);
-                                });
-                            }, function(err, listOfQidPairQiid) {
-                                if (err)
-                                    return sendError(res, 400, "Error creating qInstances", {tiid: tInstance.tiid, err: err});
-                                tInstance.qiidsByQid = _.object(listOfQidPairQiid);
+                readTest(res, tid, function(test) {
+                    loadTestServer(tid, function(server) {
+                        newIDNoError(req, res, "tiid", function(tiid) {
+                            var tInstance = {
+                                tiid: tiid,
+                                tid: tid,
+                                uid: req.query.uid,
+                                date: new Date(),
+                                number: number,
+                            };
+                            server.updateTInstance(tInstance, test, test.options);
+
+                            if (test.options.autoCreateQuestions && tInstance.qids !== undefined) {
+                                async.map(tInstance.qids, function(qid, callback) {
+                                    var qInstance = {
+                                        qid: qid,
+                                        uid: uid,
+                                        tiid: tInstance.tiid,
+                                        tid: tid,
+                                    };
+                                    makeQInstance(req, res, qInstance, function(qInstance) {
+                                        callback(null, [qid, qInstance.qiid]);
+                                    });
+                                }, function(err, listOfQidPairQiid) {
+                                    if (err)
+                                        return sendError(res, 400, "Error creating qInstances", {tiid: tInstance.tiid, err: err});
+                                    tInstance.qiidsByQid = _.object(listOfQidPairQiid);
+                                    writeTInstance(req, res, tInstance, function() {
+                                        res.json(stripPrivateFields(tInstance));
+                                    });
+                                })
+                            } else {
                                 writeTInstance(req, res, tInstance, function() {
                                     res.json(stripPrivateFields(tInstance));
                                 });
-                            })
-                        } else {
-                            writeTInstance(req, res, tInstance, function() {
-                                res.json(stripPrivateFields(tInstance));
-                            });
-                        }
+                            }
+                        });
                     });
                 });
             }

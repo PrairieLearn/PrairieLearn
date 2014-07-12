@@ -52,26 +52,6 @@ define(['underscore', 'backbone', 'mustache', 'spinController', 'TestFactory', '
                 that.model.set("submittable", qClient.isComplete());
                 that.model.trigger("answerChanged");
             });
-
-            // restore submittedAnswer from most recent submission if we have one
-            if (this.tInstance.has("submissionsByQid")) {
-                var submissionsByQid = this.tInstance.get("submissionsByQid");
-                var submission = submissionsByQid[qid];
-                if (submission) {
-                    if (qClient.setSubmittedAnswer) {
-                        qClient.setSubmittedAnswer(submission.submittedAnswer);
-                        this.model.updateDirtyStatus();
-                    }
-                    if (_(submission).has("score")) {
-                        this.model.set("score", submission.score);
-                    }
-                    if (_(submission).has("trueAnswer")) {
-                        if (qClient.showSolution) {
-                            qClient.showSolution(submission.trueAnswer);
-                        }
-                    }
-                }
-            }
         },
 
         close: function() {
