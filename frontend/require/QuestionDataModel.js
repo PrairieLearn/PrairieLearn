@@ -55,6 +55,25 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 require([that.appModel.apiURL("questions/" + qid + "/client.js")], function(qClient) {
                     qClient.initialize(qInstance.params);
                     that.set("qClient", qClient);
+
+                    // restore submittedAnswer from most recent submission if we have one
+                    if (that.tInstance.has("submissionsByQid")) {
+                        var submissionsByQid = that.tInstance.get("submissionsByQid");
+                        var submission = submissionsByQid[qid];
+                        if (submission) {
+                            if (qClient.setSubmittedAnswer) {
+                                qClient.setSubmittedAnswer(submission.submittedAnswer);
+                                that.updateDirtyStatus();
+                            }
+                            if (_(submission).has("score")) {
+                                that.set("score", submission.score);
+                            }
+                            if (_(submission).has("trueAnswer")) {
+                                qClient.setTrueAnswer(submission.trueAnswer);
+                                that.set("showAnswer", true);
+                            }
+                        }
+                    }
                 });
             };
 
