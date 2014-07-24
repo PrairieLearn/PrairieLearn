@@ -100,17 +100,20 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
             this.params = this.options.params;
             this.submittedAnswer = this.options.submittedAnswer;
             this.trueAnswer = this.options.trueAnswer;
+            this.feedback = this.options.feedback;
             var templateData = {
                 params: this.params.toJSON(),
                 submittedAnswer: this.submittedAnswer.toJSON(),
-                trueAnswer: this.trueAnswer.toJSON()
+                trueAnswer: this.trueAnswer.toJSON(),
+                feedback: this.feedback.toJSON(),
             };
             this.$el.html(PrairieTemplate.template(this.template, templateData));
             this.rivetsView = rivets.bind(this.$el, {
                 model: this.model,
                 params: this.params,
                 submittedAnswer: this.submittedAnswer,
-                trueAnswer: this.trueAnswer
+                trueAnswer: this.trueAnswer,
+                feedback: this.feedback,
             });
             var that = this;
             _.each(_.uniq(_.pluck(_.filter(this.rivetsView.bindings,
@@ -178,8 +181,10 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
             this.params = this.options.params;
             this.submittedAnswer = this.options.submittedAnswer;
             this.trueAnswer = this.options.trueAnswer;
+            this.feedback = this.options.feedback;
             this.listenTo(this.submittedAnswer, "all", this.render);
             this.listenTo(this.trueAnswer, "all", this.render);
+            this.listenTo(this.feedback, "all", this.render);
             this.render();
         },
 
@@ -187,14 +192,16 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
             var templateData = {
                 params: this.params.toJSON(),
                 submittedAnswer: this.submittedAnswer.toJSON(),
-                trueAnswer: this.trueAnswer.toJSON()
+                trueAnswer: this.trueAnswer.toJSON(),
+                feedback: this.feedback.toJSON(),
             };
             this.$el.html(PrairieTemplate.template(this.template, templateData));
             this.rivetsView = rivets.bind(this.$el, {
                 model: this.model,
                 params: this.params,
                 submittedAnswer: this.submittedAnswer,
-                trueAnswer: this.trueAnswer
+                trueAnswer: this.trueAnswer,
+                feedback: this.feedback,
             });
             if (window.MathJax)
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
@@ -220,17 +227,18 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         this.params = new Backbone.Model(params);
         this.submittedAnswer = new Backbone.Model();
         this.trueAnswer = new Backbone.Model();
+        this.feedback = new Backbone.Model();
     };
 
     SimpleClient.prototype.renderQuestion = function(questionDivID, changeCallback) {
         this.listenTo(this.model, "answerChanged", changeCallback);
-        this.questionView = new QuestionView({el: questionDivID, template: this.options.questionTemplate, model: this.model, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer});
+        this.questionView = new QuestionView({el: questionDivID, template: this.options.questionTemplate, model: this.model, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback});
         this.questionView.render();
         this.trigger("renderQuestionFinished");
     };
 
     SimpleClient.prototype.renderAnswer = function(answerDivID) {
-        this.answerView = new AnswerView({el: answerDivID, template: this.options.answerTemplate, model: this.model, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer});
+        this.answerView = new AnswerView({el: answerDivID, template: this.options.answerTemplate, model: this.model, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback});
         this.answerView.render();
         this.trigger("renderAnswerFinished");
     };
@@ -247,6 +255,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         this.params = undefined;
         this.submittedAnswer = undefined;
         this.trueAnswer = undefined;
+        this.feedback = undefined;
         this.questionView = undefined;
         this.answerView = undefined;
     };
@@ -274,6 +283,14 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         var that = this;
         _(trueAnswer).each(function(value, key) {
             that.trueAnswer.set(key, value);
+        });
+        this.model.set("showTrueAnswer", true);
+    };
+
+    SimpleClient.prototype.setFeedback = function(feedback) {
+        var that = this;
+        _(feedback).each(function(value, key) {
+            that.feedback.set(key, value);
         });
         this.model.set("showTrueAnswer", true);
     };

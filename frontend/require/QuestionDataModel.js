@@ -23,7 +23,8 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 hasSavedSubmission: false,
                 dirtyData: true,
                 score: null,
-                trueAnswer: null
+                trueAnswer: null,
+                feedback: null
             });
             this.listenTo(this.appModel, "change:userUID", this.loadQuestion);
             this.on("answerChanged", this.updateDirtyStatus);
@@ -70,6 +71,10 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                             }
                             if (_(submission).has("trueAnswer")) {
                                 qClient.setTrueAnswer(submission.trueAnswer);
+                                that.set("showAnswer", true);
+                            }
+                            if (_(submission).has("feedback")) {
+                                qClient.setFeedback(submission.feedback);
                                 that.set("showAnswer", true);
                             }
                         }
@@ -126,8 +131,12 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
             var that = this;
             var successFn = function(submission) {
                 that.set("score", submission.score);
-                if (submission.trueAnswer !== undefined) {
+                if (_(submission).has("trueAnswer")) {
                     qClient.setTrueAnswer(submission.trueAnswer);
+                    that.set("showAnswer", true);
+                }
+                if (_(submission).has("feedback")) {
+                    qClient.setFeedback(submission.feedback);
                     that.set("showAnswer", true);
                 }
                 that.trigger("graded");

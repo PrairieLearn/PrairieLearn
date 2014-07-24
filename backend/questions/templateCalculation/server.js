@@ -23,10 +23,12 @@ define(["PrairieRandom", "PrairieGeom"], function(PrairieRandom, PrairieGeom) {
     };
 
     server.gradeAnswer = function(vid, params, trueAnswer, submittedAnswer, options) {
-        var score = 0;
+        var score = 0, feedback = {};
         if (PrairieGeom.checkEqual(trueAnswer, submittedAnswer, 1e-2, 1e-8))
             score = 1;
-        return {score: score};
+        else
+            feedback.ansRelation = "Your answer was too " + ((submittedAnswer.c < trueAnswer.c) ? "low" : "high") + ".";
+        return {score: score, feedback: feedback};
     };
 
     return server;
