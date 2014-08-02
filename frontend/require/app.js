@@ -217,6 +217,10 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 */
                 view = new QuestionView.QuestionView({model: questionDataModel, test: test, tInstance: tInstance});
                 break;
+
+            /**
+             * Chooses a question from an active test, excluding any questions in skipQNumbers.
+             */
             case "chooseTestQuestion":
                 var tiid = this.model.get("pageOptions").tiid;
                 var qInfo = this.model.get("pageOptions").qInfo;
@@ -231,14 +235,27 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                     qids = tInstance.get("qids");
                 else
                     qids = test.get("qids");
-                var skipQIDs = _(skipQNumbers).map(function(qNumber) {return qids[qNumber - 1];});
-                var that = this;
-                test.callWithHelper(function(test) {
-                    var qIndex = test.get("helper").chooseRandomQuestion(qInfo, test, tInstance, skipQIDs);
-                    var qNumber = qIndex + 1;
-                    that.router.navigate("q/" + tiid + "/" + qNumber, {trigger: true});
-                });
+                
+
+                // skipQNumbers is an array of strings, containing a question number (starting from question 1, not zero-based)
+                // ...we'll map them to integers
+                var skipQuestionNumbers = _(skipQNumbers).map(function (s) { return parseInt(s); });
+
+                // fill an array with all question numbers (from qids)
+                var allQuestionNumbers = _.range(1, qids.length + 1);
+
+                // remove the skipped questions from the list of all questions
+                var remainingQuestionNumbers = _(allQuestionNumbers).difference(skipQuestionNumbers);
+
+                // randomly choose a next question from the list of remaining questions
+                var chosenQuestionNumber = _.sample(remainingQuestionNumbers);
+
+                // navigate the page to the new question
+                console.log("Navagate to: " + "q/" + tiid + "/" + chosenQuestionNumber)
+                this.router.navigate("q/" + tiid + "/" + chosenQuestionNumber, true);
                 return;
+
+
             case "about":
                 view = new AboutView.AboutView();
                 break;
