@@ -251,7 +251,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 var chosenQuestionNumber = _.sample(remainingQuestionNumbers);
 
                 // navigate the page to the new question
-                console.log("Navagate to: " + "q/" + tiid + "/" + chosenQuestionNumber)
                 this.router.navigate("q/" + tiid + "/" + chosenQuestionNumber, true);
                 return;
 
