@@ -11,6 +11,7 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 qiid: null,
                 title: null,
                 number: null,
+                video: null,
                 qClient: null,
                 showAnswer: false,
                 showTitle: true,
@@ -41,7 +42,8 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
             $.getJSON(that.appModel.apiURL("questions/" + qid), function(data) {
                 that.set({
                     "title": data.title,
-                    "number": data.number
+                    "number": data.number,
+                    "video": data.video
                 });
             });
             var qInstance = {

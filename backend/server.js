@@ -568,7 +568,7 @@ app.get("/questions/:qid", function(req, res) {
     var info = questionDB[req.params.qid];
     if (info === undefined)
         return sendError(res, 404, "No such question: " + req.params.qid);
-    res.json(stripPrivateFields({qid: info.qid, title: info.title, number: info.number}));
+    res.json(stripPrivateFields({qid: info.qid, title: info.title, number: info.number, video: info.video}));
 });
 
 var questionFilePath = function(qid, filename, callback, nTemplates) {
