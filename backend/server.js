@@ -743,6 +743,7 @@ var makeQInstance = function(req, res, qInstance, callback) {
                     qInstance.params = questionData.params || {};
                     qInstance.trueAnswer = questionData.trueAnswer || {};
                     qInstance.options = questionData.options || {};
+                    qInstance._private = ["trueAnswer"];
                 } catch (e) {
                     return sendError(res, 500, "Error in " + qInstance.qid + " getData(): " + e.toString(), {stack: e.stack});
                 }
