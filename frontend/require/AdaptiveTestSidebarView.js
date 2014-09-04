@@ -5,12 +5,26 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
 
         tagName: 'div',
 
+        events: {
+            "show.bs.modal": "loadVideo",
+            "hide.bs.modal": "unloadVideo"
+        },
+
         initialize: function() {
             this.test = this.options.test;
             this.tInstance = this.options.tInstance;
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.test, "change", this.render);
             this.listenTo(this.tInstance, "change", this.render);
+        },
+
+        loadVideo: function() {
+            var $player = $('#player');
+            $player.attr('src', $player.data('url'));
+        },
+
+        unloadVideo: function() {
+            $('#player').attr('src', '');
         },
 
         render: function() {
@@ -43,6 +57,8 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
                 data.prevQNumber = qIndex;
             if (qIndex < qids.length - 1)
                 data.nextQNumber = qIndex + 2;
+
+            data.video = this.model.get("video");
 
             data.recommendBar = AdaptiveTestHelper.renderRecommendBar(modelData, qid);
             data.correctPoints = AdaptiveTestHelper.renderCorrectPoints(modelData, qid);
