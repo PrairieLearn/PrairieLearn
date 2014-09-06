@@ -375,11 +375,27 @@ var checkObjAuth = function(req, obj) {
     if (isSuperuser(req))
         authorized = true;
     if (obj.uid === req.authUID) {
-        if (obj.availDate === undefined) {
-            authorized = true;
-        } else {
-            if (Date.parse(obj.availDate) <= Date.now())
+        // if we have an associated test, check its availDate as well
+        var testAuthorized = true;
+        if (obj.tid !== undefined) {
+            testAuthorized = false;
+            if (_(testDB).has(obj.tid)) {
+                var info = testDB[obj.tid];
+                if (info.options.availDate === undefined) {
+                    testAuthorized = true;
+                } else {
+                    if (Date.parse(info.options.availDate) <= Date.now())
+                        testAuthorized = true;
+                }
+            }
+        }
+        if (testAuthorized) {
+            if (obj.availDate === undefined) {
                 authorized = true;
+            } else {
+                if (Date.parse(obj.availDate) <= Date.now())
+                    authorized = true;
+            }
         }
     }
     return authorized;
