@@ -22,6 +22,9 @@ config.frontendDir = "../frontend";
 config.secretKey = "THIS_IS_THE_SECRET_KEY"; // override in config.json
 config.nodetimeAccountKey = 'SECRET_NODETIME_KEY'; // override in config.json
 
+config.skipUIDs = {};
+config.superusers = {"user1@illinois.edu": true};
+
 if (fs.existsSync('config.json')) {
     try {
         fileConfig = JSON.parse(fs.readFileSync('config.json', {encoding: 'utf8'}));
@@ -90,32 +93,6 @@ var SAMPLE_INTERVAL = 60 * 1000; // ms
 var nSample = 0;
 
 var STATS_INTERVAL = 10 * 60 * 1000; // ms
-
-var skipUIDs = {};
-if (config.deployMode === 'engr') {
-    skipUIDs["user1@illinois.edu"] = true;
-    skipUIDs["mwest@illinois.edu"] = true;
-    skipUIDs["zilles@illinois.edu"] = true;
-    skipUIDs["dullerud@illinois.edu"] = true;
-    skipUIDs["tomkin@illinois.edu"] = true;
-    skipUIDs["ertekin@illinois.edu"] = true;
-    skipUIDs["jkrehbi2@illinois.edu"] = true;
-    skipUIDs["aandrsn3@illinois.edu"] = true;
-    skipUIDs["farooq1@illinois.edu"] = true;
-    skipUIDs["jsandrs2@illinois.edu"] = true;
-    skipUIDs["knguyen9@illinois.edu"] = true;
-    skipUIDs["linguo2@illinois.edu"] = true;
-    skipUIDs["saggrwl3@illinois.edu"] = true;
-    skipUIDs["hwang158@illinois.edu"] = true;
-    skipUIDs["mfsilva@illinois.edu"] = true;
-    skipUIDs["gladish2@illinois.edu"] = true;
-    skipUIDs["ffxiao2@illinois.edu"] = true;
-}
-
-var superusers = {
-    "user1@illinois.edu": true,
-    "mwest@illinois.edu": true
-};
 
 app.use(express.json());
 
@@ -507,7 +484,7 @@ app.use(function(req, res, next) {
 });
 
 var isSuperuser = function(req) {
-    if (superusers[req.authUID] === true)
+    if (config.superusers[req.authUID] === true)
         return true;
     return false;
 };
@@ -625,7 +602,7 @@ app.get("/users", function(req, res) {
             }
             async.map(objs, function(u, callback) {
                 var perms = [];
-                if (superusers[u.uid] === true)
+                if (config.superusers[u.uid] === true)
                     perms.push("superuser");
                 callback(null, {
                     name: u.name,
@@ -656,7 +633,7 @@ app.get("/users/:uid", function(req, res) {
             return sendError(res, 404, "No user with uid " + req.params.uid);
         }
         var perms = [];
-        if (superusers[uObj.uid] === true)
+        if (config.superusers[uObj.uid] === true)
             perms.push("superuser");
         var obj = {
             name: uObj.name,
@@ -1423,7 +1400,7 @@ var submissionsPerHour = function() {
             var uid, date;
             if (item != null) {
                 uid = item.uid;
-                if (skipUIDs[uid]) {
+                if (config.skipUIDs[uid]) {
                     return;
                 }
                 date = item.date;
@@ -1485,7 +1462,7 @@ var usersPerHour = function() {
             var uid, date;
             if (item != null) {
                 uid = item.uid;
-                if (skipUIDs[uid]) {
+                if (config.skipUIDs[uid]) {
                     return;
                 }
                 date = item.date;
