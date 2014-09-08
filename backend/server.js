@@ -370,16 +370,39 @@ var sendError = function(res, code, msg, err) {
     res.send(code, msg);
 };
 
+var checkTestAvail = function(req, tid) {
+    var avail = false;
+    if (isSuperuser(req))
+        avail = true;
+    if (_(testDB).has(tid)) {
+        var info = testDB[tid];
+        if (info.options.availDate === undefined) {
+            avail = true;
+        } else {
+            if (Date.parse(info.options.availDate) <= Date.now())
+                avail = true;
+        }
+    }
+    return avail;
+};
+
 var checkObjAuth = function(req, obj) {
     var authorized = false;
     if (isSuperuser(req))
         authorized = true;
     if (obj.uid === req.authUID) {
-        if (obj.availDate === undefined) {
-            authorized = true;
-        } else {
-            if (Date.parse(obj.availDate) <= Date.now())
+        // if we have an associated test, check its availDate as well
+        var testAuthorized = true;
+        if (obj.tid !== undefined) {
+            testAuthorized = checkTestAvail(req, obj.tid);
+        }
+        if (testAuthorized) {
+            if (obj.availDate === undefined) {
                 authorized = true;
+            } else {
+                if (Date.parse(obj.availDate) <= Date.now())
+                    authorized = true;
+            }
         }
     }
     return authorized;
@@ -1058,7 +1081,7 @@ var autoCreateTInstances = function(req, res, tInstances, autoCreateCallback) {
     var tiDB = _(tInstances).groupBy("tid");
     async.each(_(testDB).values(), function(test, callback) {
         var tid = test.tid;
-        if (test.options.autoCreate && tiDB[tid] === undefined && req.query.uid !== undefined) {
+        if (checkTestAvail(req, tid) && test.options.autoCreate && tiDB[tid] === undefined && req.query.uid !== undefined) {
             readTest(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
                     newIDNoError(req, res, "tiid", function(tiid) {
@@ -1105,10 +1128,12 @@ app.get("/tInstances", function(req, res) {
                 return sendError(res, 500, "Error serializing tInstances", err);
             }
             tInstances = _(tInstances).filter(function(ti) {return _(testDB).has(ti.tid);});
-            updateTInstances(req, res, tInstances, function() {
-                autoCreateTInstances(req, res, tInstances, function(tInstances) {
-                    filterObjsByAuth(req, tInstances, function(tInstances) {
-                        res.json(stripPrivateFields(tInstances));
+            filterObjsByAuth(req, tInstances, function(tInstances) {
+                updateTInstances(req, res, tInstances, function() {
+                    autoCreateTInstances(req, res, tInstances, function(tInstances) {
+                        filterObjsByAuth(req, tInstances, function(tInstances) {
+                            res.json(stripPrivateFields(tInstances));
+                        });
                     });
                 });
             });
