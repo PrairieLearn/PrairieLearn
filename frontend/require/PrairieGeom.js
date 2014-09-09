@@ -1736,16 +1736,16 @@ define(["sylvester", "underscore", "numeric"], function(Sylvester, _, numeric) {
             else if (_.isString(submittedVal))
                 subVal = this.toBool(submittedVal);
             else
-                return false;
+                return Infinity;
             return (trueVal === subVal) ? 0 : Infinity;
         } else if (_.isString(trueVal)) {
             subVal = String(submittedVal);
             return (trueVal === subVal) ? 0 : Infinity;
         } else if (_.isArray(trueVal)) {
             if (!_.isArray(submittedVal))
-                return false;
+                return Infinity;
             if (!trueVal.length === submittedVal.length)
-                return false;
+                return Infinity;
             return numeric.norm2(_(_.zip(trueVal, submittedVal)).map(function(v) {return that.absError(v[0], v[1]);}));
         } else if (trueVal instanceof Sylvester.Vector) {
             subVal = submittedVal;
@@ -1756,7 +1756,7 @@ define(["sylvester", "underscore", "numeric"], function(Sylvester, _, numeric) {
             return trueVal.subtract(subVal).modulus();
         } else if (_.isObject(trueVal)) {
             if (!_.isObject(submittedVal))
-                return false;
+                return Infinity;
             return numeric.norm2(_(trueVal).map(function(val, key) {return that.absError(val, submittedVal[key]);}));
         } else {
             return Infinity;
@@ -1813,7 +1813,9 @@ define(["sylvester", "underscore", "numeric"], function(Sylvester, _, numeric) {
                 return false;
             if (!trueVal.length === submittedVal.length)
                 return false;
-            return _(_.zip(trueVal, submittedVal)).every(function(v) {return that.checkEqual(v[0], v[1], relTol, absTol);});
+            if (this.relError(trueVal, submittedVal) < relTol || this.absError(trueVal, submittedVal) < absTol)
+                return true;
+            return false;
         } else if (trueVal instanceof Sylvester.Vector) {
             subVal = submittedVal;
             if (_.isArray(subVal))
