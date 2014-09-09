@@ -196,6 +196,7 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
             case "testQuestion":
                 var tiid = this.model.get("pageOptions").tiid;
                 var qNumber = this.model.get("pageOptions").qNumber;
+                var vid = this.model.get("pageOptions").vid;
                 var qIndex = qNumber - 1;
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
@@ -207,7 +208,7 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                     qid = tInstance.get("qids")[qIndex];
                 else
                     qid = test.get("qids")[qIndex];
-                var questionDataModel = new QuestionDataModel.QuestionDataModel({}, {appModel: this.model, qid: qid, tInstance: tInstance, test: test});
+                var questionDataModel = new QuestionDataModel.QuestionDataModel({}, {appModel: this.model, qid: qid, vid: vid, tInstance: tInstance, test: test});
                 /*
                 test.callWithHelper(function() {
                     var helper = test.get("helper");
@@ -282,7 +283,7 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
         routes: {
             "stats": "goStats",
             "assess": "goAssess",
-            "q/:tiid/:qNumber": "goTestQuestion",
+            "q/:tiid/:qNumber(/:vid)": "goTestQuestion",
             "cq/:tiid/:qInfo(/not/:skipQNumbers)": "goChooseTestQuestion",
             "ti/:tiid": "goTestInstance",
             "about": "goAbout",
@@ -314,10 +315,10 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
             });
         },
 
-        goTestQuestion: function(tiid, qNumber) {
+        goTestQuestion: function(tiid, qNumber, vid) {
             this.model.set({
                 "page": "testQuestion",
-                "pageOptions": {tiid: tiid, qNumber: qNumber}
+                "pageOptions": {tiid: tiid, qNumber: qNumber, vid: vid}
             });
         },
 

@@ -8,6 +8,7 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
             this.test = options.test;
             this.set({
                 qid: options.qid,
+                vid: options.vid, // may be undefined
                 qiid: null,
                 title: null,
                 number: null,
@@ -39,6 +40,7 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
             }
             var that = this;
             var qid = this.get("qid");
+            var vid = this.get("vid");
             $.getJSON(that.appModel.apiURL("questions/" + qid), function(data) {
                 that.set({
                     "title": data.title,
@@ -49,6 +51,7 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
             var qInstance = {
                 qid: qid,
                 uid: uid,
+                vid: vid, // may be undefined, server may ignore anyway
                 tiid: this.tInstance.get("tiid"),
             };
 

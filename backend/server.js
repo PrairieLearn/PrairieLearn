@@ -764,6 +764,9 @@ app.post("/qInstances", function(req, res) {
         qid: req.body.qid,
         tiid: req.body.tiid,
     };
+    if (isSuperuser(req) && _(req.body).has('vid')) {
+        qInstance.vid = req.body.vid;
+    };
     readTInstance(res, qInstance.tiid, function(tInstance) {
         ensureObjAuth(req, res, tInstance, function(tInstance) {
             makeQInstance(req, res, qInstance, function(qInstance) {
