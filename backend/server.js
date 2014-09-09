@@ -163,8 +163,9 @@ var processCollection = function(name, err, collection, options, callback) {
 var loadDB = function(callback) {
     var dbAddress;
     switch (config.deployMode) {
-    case 'engr': dbAddress = "mongodb://prairielearn3.engr.illinois.edu:27017/data"; break;
-    default: dbAddress = "mongodb://localhost:27017/data"; break;
+        case 'engr': dbAddress = "mongodb://prairielearn3.engr.illinois.edu:27017/data"; break;
+        case 'edu.cs': dbAddress = "mongodb://localhost:27017/PrairieLearn"; break;
+        default: dbAddress = "mongodb://localhost:27017/data"; break;
     }
     MongoClient.connect(dbAddress, function(err, locDb) {
         if (err) {
@@ -459,9 +460,11 @@ app.use(function(req, res, next) {
         next();
         return;
     }
-    if (config.deployMode !== 'engr') {
+    if (config.deployMode === 'local') {
         // by-pass authentication for development
         req.authUID = "user1@illinois.edu";
+    } else if (config.deployMode == 'edu.cs') {
+        req.authUID = req.headers['eppn'];
     } else {
         if (req.headers['x-auth-uid'] == null) {
             return sendError(res, 403, "Missing X-Auth-UID header");
@@ -545,7 +548,7 @@ app.options('/*', function(req, res) {
 });
 
 // hack for development testing
-if (config.deployMode !== 'engr') {
+if (config.deployMode === 'local') {
     app.get("/auth", function(req, res) {
         res.json(stripPrivateFields({
             "uid": "user1@illinois.edu",
@@ -553,6 +556,12 @@ if (config.deployMode !== 'engr') {
             "date": "2013-08-17T09:44:18Z",
             "signature": "THIS_IS_THE_SECRET_SIGNATURE"
         }));
+    });
+}
+
+if (config.deployMode === 'edu.cs') {
+    app.get("/auth", function (req, res) {
+        res.json({ "uid": req.authUID });
     });
 }
 
@@ -1403,6 +1412,10 @@ if (config.deployMode !== 'engr') {
     app.get("/text/:filename", function(req, res) {
         res.sendfile(path.join("text", req.params.filename), {root: config.frontendDir});
     });
+
+    app.get("/img/:filename", function(req, res) {
+        res.sendfile(path.join("img", req.params.filename), {root: config.frontendDir});
+    });
 }
 
 var submissionsPerHour = function() {
@@ -1667,6 +1680,10 @@ var startServer = function(callback) {
         };
         https.createServer(options, app).listen(443);
         logger.info('server listening to HTTPS on port 443');
+    }  else if (config.deployMode === 'edu.cs') {
+        app.listen(10003);
+        logger.info('server listening on port 10003');
+        console.log("config: edu.cs");
     } else {
         app.listen(3000);
         logger.info('server listening to HTTP');

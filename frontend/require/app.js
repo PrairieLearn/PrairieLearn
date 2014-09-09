@@ -103,6 +103,17 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                     apiServer: window.location.protocol + "//" + window.location.hostname
                 });
             }
+
+            var edu_cs_RE = /edu\.cs\.illinois\.edu/;
+            console.log("?: " + edu_cs_RE.test(window.location.href));
+            if (edu_cs_RE.test(window.location.href)) {
+                console.log("  pass");
+                this.set({
+                    deployMode: true,
+                    apiServer: "https://edu.cs.illinois.edu/pl/cs233/"
+                });
+            }
+
             var authURL = this.apiURL("auth");
             var deployRE = /prairielearn\.engr\.illinois\.edu/;
             if (deployRE.test(window.location.href)) {
