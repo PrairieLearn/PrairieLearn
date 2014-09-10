@@ -18,11 +18,6 @@ define(["underscore", "backbone", "mustache", "ExamTestHelper", "text!ExamTestSi
             data.testTitle = this.test.get("title");
             data.attemptNumber = this.tInstance.get("number");
             data.tiid = this.tInstance.get("tiid");
-            var timeRemainingMin = Math.floor((Date.parse(this.tInstance.get("dueDate")) - Date.now()) / (60 * 1000));
-            if (timeRemainingMin < 0)
-                data.timeRemaining = "Time expired";
-            else
-                data.timeRemaining = "Time remaining: " + timeRemainingMin + " min";
 
             var qid = this.model.get("qid");
             var qids = this.tInstance.get("qids");

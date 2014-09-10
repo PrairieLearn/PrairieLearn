@@ -27,13 +27,7 @@ define(["underscore", "backbone", "mustache", "ExamTestHelper", "text!ExamTestIn
             data.nQuestions = qids.length;
 
             data.open = this.model.get("open");
-            if (data.open) {
-                var timeRemainingMin = Math.floor((Date.parse(this.model.get("dueDate")) - Date.now()) / (60 * 1000));
-                if (timeRemainingMin < 0)
-                    data.timeRemaining = "Time expired";
-                else
-                    data.timeRemaining = "Time remaining: " + timeRemainingMin + " min";
-            } else {
+            if (!data.open) {
                 var finishDate = new Date(this.model.get("finishDate"));
                 var options = {hour: "numeric", minute: "numeric"};
                 var dateString = finishDate.toLocaleTimeString("en-US", options);
