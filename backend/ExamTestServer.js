@@ -9,7 +9,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             nQuestions: 20,
             timeLimitMin: 60,
             availDate: "2000-01-01T00:00:00",
-            autoCreate: false,
+            autoCreate: true,
             autoCreateQuestions: true,
             allowQuestionSubmit: false,
             allowQuestionSave: true,
