@@ -987,7 +987,8 @@ app.post("/submissions", function(req, res) {
                         }
                         submission.score = _.isNumber(grading.score) ? grading.score : 0; // make sure score is a Number
                         submission.score = Math.max(0, Math.min(1, submission.score)); // clip to [0, 1]
-                        submission.feedback = grading.feedback || {};
+                        if (grading.feedback)
+                            submission.feedback = grading.feedback;
                     }
                     submission.trueAnswer = qInstance.trueAnswer;
                     newIDNoError(req, res, "sid", function(sid) {
