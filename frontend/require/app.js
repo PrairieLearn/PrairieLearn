@@ -105,7 +105,6 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
             }
 
             var edu_cs_RE = /edu\.cs\.illinois\.edu/;
-            console.log("?: " + edu_cs_RE.test(window.location.href));
             if (edu_cs_RE.test(window.location.href)) {
                 console.log("  pass");
                 this.set({
