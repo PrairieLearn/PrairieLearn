@@ -2066,7 +2066,7 @@ define(["sylvester", "sha1", "PrairieGeom"], function(Sylvester, Sha1, PrairieGe
         angle = (angle === undefined) ? 0 : angle;
         var posPx = this.pos2Px(this.pos3To2(posDw));
         var offsetPx;
-        if (text.slice(0,4) === "TEX:") {
+        if (text.length >= 4 && text.slice(0,4) === "TEX:") {
             var texText = text.slice(4);
             var hash = Sha1.hash(texText);
             this._texts = this._texts || {};
