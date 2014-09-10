@@ -1,0 +1,16 @@
+{
+    "type": "Exam",
+    "title": "Template Exam",
+    "set": "Exam",
+    "number": 1,
+    "options": {
+        "qidGroups": [
+            [
+                ["templateCalculation", "templateMCCheckbox", "templateMCRadio"]
+            ]
+        ],
+        "nQuestions": 2,
+        "timeLimitMin": 60,
+        "availDate": "2014-07-07T23:59:59"
+    }
+}

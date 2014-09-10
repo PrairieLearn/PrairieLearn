@@ -1,5 +1,5 @@
 
-define(["BasicTestClient", "BasicTestView", "BasicTestInstanceView", "BasicTestSidebarView", "AdaptiveTestClient", "AdaptiveTestView", "AdaptiveTestInstanceView", "AdaptiveTestSidebarView", "PracExamTestClient", "PracExamTestView", "PracExamTestInstanceView", "PracExamTestSidebarView"], function(BasicTestClient, BasicTestView, BasicTestInstanceView, BasicTestSidebarView, AdaptiveTestClient, AdaptiveTestView, AdaptiveTestInstanceView, AdaptiveTestSidebarView, PracExamTestClient, PracExamTestView, PracExamTestInstanceView, PracExamTestSidebarView) {
+define(["BasicTestClient", "BasicTestView", "BasicTestInstanceView", "BasicTestSidebarView", "AdaptiveTestClient", "AdaptiveTestView", "AdaptiveTestInstanceView", "AdaptiveTestSidebarView", "PracExamTestClient", "PracExamTestView", "PracExamTestInstanceView", "PracExamTestSidebarView", "ExamTestClient", "ExamTestView", "ExamTestInstanceView", "ExamTestSidebarView"], function(BasicTestClient, BasicTestView, BasicTestInstanceView, BasicTestSidebarView, AdaptiveTestClient, AdaptiveTestView, AdaptiveTestInstanceView, AdaptiveTestSidebarView, PracExamTestClient, PracExamTestView, PracExamTestInstanceView, PracExamTestSidebarView, ExamTestClient, ExamTestView, ExamTestInstanceView, ExamTestSidebarView) {
 
     var objectMap = {
         "Basic": {
@@ -19,6 +19,12 @@ define(["BasicTestClient", "BasicTestView", "BasicTestInstanceView", "BasicTestS
             "testView": PracExamTestView,
             "tInstanceView": PracExamTestInstanceView,
             "sidebarView": PracExamTestSidebarView,
+        },
+        "Exam": {
+            "client": ExamTestClient,
+            "testView": ExamTestView,
+            "tInstanceView": ExamTestInstanceView,
+            "sidebarView": ExamTestSidebarView,
         },
     };
 
