@@ -1066,21 +1066,57 @@ app.get("/tests/:tid/testSidebar.html", function(req, res) {
     res.sendfile(filePath, {root: config.testsDir});
 });
 
+var autoCreateTestQuestions = function(req, res, tInstance, test, callback) {
+    if (test.options.autoCreateQuestions && tInstance.qids !== undefined) {
+        tInstance.qiidsByQid = tInstance.qiidsByQid || {};
+        async.each(tInstance.qids, function(qid, cb) {
+            if (_(tInstance.qiidsByQid).has(qid)) {
+                cb(null);
+            } else {
+                var qInstance = {
+                    qid: qid,
+                    uid: tInstance.uid,
+                    tiid: tInstance.tiid,
+                    tid: tInstance.tid,
+                };
+                makeQInstance(req, res, qInstance, function(qInstance) {
+                    tInstance.qiidsByQid[qid] = qInstance.qiid;
+                    cb(null);
+                });
+            }
+        }, function(err) {
+            if (err)
+                return sendError(res, 400, "Error creating qInstances", {tiid: tInstance.tiid, err: err});
+            callback();
+        });
+    } else {
+        callback();
+    }
+};
+
+var updateTInstance = function(req, res, server, tInstance, test, callback) {
+    server.updateTInstance(tInstance, test, test.options);
+    autoCreateTestQuestions(req, res, tInstance, test, function() {
+        callback();
+    });
+};
+
 var updateTInstances = function(req, res, tInstances, updateCallback) {
     async.each(tInstances, function(tInstance, callback) {
         var tid = tInstance.tid;
         readTest(res, tid, function(test) {
             loadTestServer(tid, function(server) {
                 var oldJSON = JSON.stringify(tInstance);
-                server.updateTInstance(tInstance, test, testDB[tid].options);
-                var newJSON = JSON.stringify(tInstance);
-                if (newJSON !== oldJSON) {
-                    writeTInstance(req, res, tInstance, function() {
+                updateTInstance(req, res, server, tInstance, test, function() {
+                    var newJSON = JSON.stringify(tInstance);
+                    if (newJSON !== oldJSON) {
+                        writeTInstance(req, res, tInstance, function() {
+                            callback(null);
+                        });
+                    } else {
                         callback(null);
-                    });
-                } else {
-                    callback(null);
-                }
+                    }
+                });
             });                    
         });
     }, function(err) {
@@ -1105,10 +1141,11 @@ var autoCreateTInstances = function(req, res, tInstances, autoCreateCallback) {
                             date: new Date(),
                             number: 1,
                         };
-                        server.updateTInstance(tInstance, test, test.options);
-                        writeTInstance(req, res, tInstance, function() {
-                            tiDB[tInstance.tid] = [tInstance];
-                            callback(null);
+                        updateTInstance(req, res, server, tInstance, test, function() {
+                            writeTInstance(req, res, tInstance, function() {
+                                tiDB[tInstance.tid] = [tInstance];
+                                callback(null);
+                            });
                         });
                     });
                 });
@@ -1212,32 +1249,11 @@ app.post("/tInstances", function(req, res) {
                                 date: new Date(),
                                 number: number,
                             };
-                            server.updateTInstance(tInstance, test, test.options);
-
-                            if (test.options.autoCreateQuestions && tInstance.qids !== undefined) {
-                                async.map(tInstance.qids, function(qid, callback) {
-                                    var qInstance = {
-                                        qid: qid,
-                                        uid: uid,
-                                        tiid: tInstance.tiid,
-                                        tid: tid,
-                                    };
-                                    makeQInstance(req, res, qInstance, function(qInstance) {
-                                        callback(null, [qid, qInstance.qiid]);
-                                    });
-                                }, function(err, listOfQidPairQiid) {
-                                    if (err)
-                                        return sendError(res, 400, "Error creating qInstances", {tiid: tInstance.tiid, err: err});
-                                    tInstance.qiidsByQid = _.object(listOfQidPairQiid);
-                                    writeTInstance(req, res, tInstance, function() {
-                                        res.json(stripPrivateFields(tInstance));
-                                    });
-                                })
-                            } else {
+                            updateTInstance(req, res, server, tInstance, test, function() {
                                 writeTInstance(req, res, tInstance, function() {
                                     res.json(stripPrivateFields(tInstance));
                                 });
-                            }
+                            });
                         });
                     });
                 });
