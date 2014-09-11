@@ -739,7 +739,7 @@ var makeQInstance = function(req, res, qInstance, callback) {
     if (info === undefined) {
         return sendError(res, 400, "Invalid QID: " + qInstance.qid);
     }
-    if (qInstance.vid === undefined) {
+    if (!_.isString(qInstance.vid) || qInstance.vid.length === 0) {
         qInstance.vid = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
     }
     ensureObjAuth(req, res, qInstance, function(qInstance) {
