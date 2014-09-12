@@ -12,7 +12,7 @@ define(["underscore", "PrairieGeom"], function(_, PrairieGeom) {
         });
         var trueAns = trueAnswer;
         if (this.transformTrueAnswer)
-            subAns = this.transformTrueAnswer(vid, params, trueAns, subAns, options);
+            trueAns = this.transformTrueAnswer(vid, params, trueAns, subAns, options);
         var subAns = submittedAnswer;
         if (this.transformSubmittedAnswer)
             subAns = this.transformSubmittedAnswer(vid, params, trueAns, subAns, options);
