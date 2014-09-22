@@ -11,6 +11,7 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
             "click .submitCorrect": "submitCorrect",
             "click .submitIncorrect": "submitIncorrect",
             "click .save": "save",
+            "click .saveAndFlag": "saveAndFlag",
             "click .tryAgain": "tryAgain",
         },
 
@@ -37,7 +38,11 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
         },
 
         save: function() {
-            this.model.saveAnswer();
+            this.model.saveAnswer(false);
+        },
+
+        saveAndFlag: function() {
+            this.model.saveAnswer(true);
         },
 
         tryAgain: function() {
@@ -52,6 +57,7 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
                 overridable: this.model.appModel.hasPermission("overrideScore"),
                 saveStatus: '<span class="label label-danger">not saved</span>',
                 saveActive: false,
+                flagged: this.model.get("flagged"),
                 testOpen: true,
             };
             data.allowPractice = testOptions.allowPractice;
@@ -67,10 +73,12 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
                     data.saveStatus = '<span class="label label-danger">save failed</span>';
                 } else if (this.model.get("hasSavedSubmission") && this.model.get("dirtyData")) {
                     data.saveStatus = '<span class="label label-danger">change not saved</span>';
+                } else if (this.model.get("flagged")) {
+                    data.saveStatus = '<span class="label label-warning">saved and flagged for review</span>';
                 } else if (!this.model.get("dirtyData")) {
                     data.saveStatus = '<span class="label label-success">saved</span>';
                 }
-                if (this.model.get("dirtyData") && data.submittable)
+                if (this.model.get("flagged") || this.model.get("dirtyData") && data.submittable)
                     data.saveActive = true;
             }
                 

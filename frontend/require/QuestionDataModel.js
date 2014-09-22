@@ -24,6 +24,7 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 saveInProgress: false,
                 hasSavedSubmission: false,
                 dirtyData: true,
+                flagged: false,
                 score: null,
                 trueAnswer: null,
                 feedback: null
@@ -70,6 +71,9 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                             if (qClient.setSubmittedAnswer) {
                                 qClient.setSubmittedAnswer(submission.submittedAnswer);
                                 that.updateDirtyStatus();
+                            }
+                            if (_(submission).has("flagged")) {
+                                that.set("flagged", submission.flagged);
                             }
                             if (_(submission).has("score")) {
                                 that.set("score", submission.score);
@@ -194,14 +198,16 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
             this.set("dirtyData", false);
         },
 
-        saveAnswer: function() {
+        saveAnswer: function(flag) {
             var submission = {};
             submission.uid = this.appModel.get("userUID");
             submission.qid = this.get("qid");
             submission.tiid = this.tInstance.get("tiid");
             submission.qiid = this.get("qiid");
+            submission.flagged = flag;
             var qClient = this.get("qClient");
             submission.submittedAnswer = qClient.getSubmittedAnswer();
+            this.set("flagged", flag);
             this.set("submitError", false);
             this.set("saveInProgress", true);
             var that = this;
