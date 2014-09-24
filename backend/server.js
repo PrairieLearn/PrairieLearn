@@ -368,6 +368,11 @@ var monitor = function() {
 
 var sendError = function(res, code, msg, err) {
     logger.error("returning error", {code: code, msg: msg, err: err});
+    if (res._header) {
+        // response was already sent
+        logger.error("response was already send, bailing out early");
+        return;
+    }
     res.send(code, msg);
 };
 
