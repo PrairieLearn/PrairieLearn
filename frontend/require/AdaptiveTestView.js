@@ -5,6 +5,7 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
         tagName: 'div',
 
         initialize: function() {
+            this.appModel = this.options.appModel;
             this.tInstances = this.options.tInstances;
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.tInstances, "change", this.render);
@@ -29,6 +30,9 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
             data.scoreBar = AdaptiveTestHelper.renderScoreBar(score);
             var dueDate = new Date(that.model.get("dueDate"));
             data.dueDate = AdaptiveTestHelper.renderDueDate(dueDate);
+            var availDate = new Date(that.model.get("availDate"));
+            data.availDate = AdaptiveTestHelper.renderAvailDate(availDate);
+            data.seeAvailDate = this.appModel.hasPermission("seeAvailDate");
 
             var html = Mustache.render(AdaptiveTestViewTemplate, data);
             this.$el.html(html);

@@ -32,7 +32,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!A
                 var TestView = TestFactory.getClass(test.get("type"), "testView");
                 if (!TestView)
                     return;
-                var subView = new TestView({model: test, tInstances: that.tInstances});
+                var subView = new TestView({model: test, appModel: that.appModel, tInstances: that.tInstances});
                 var options = {
                     wait: true,
                     success: function(model, resp, options) {

@@ -159,6 +159,8 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 permission = true;
             if (operation === "changeUser" && _(perms).contains("superuser"))
                 permission = true;
+            if (operation === "seeAvailDate" && _(perms).contains("superuser"))
+                permission = true;
             return permission;
         }
     });
