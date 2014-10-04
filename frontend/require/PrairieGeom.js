@@ -1651,7 +1651,7 @@ define(["sylvester", "underscore", "numeric"], function(Sylvester, _, numeric) {
                 return 0.5 * Math.exp(1 - alpha);
             }
         } else if (_.isArray(error) && _.isArray(tol)) {
-        var score = 1;
+            var score = 1;
             for (var i = 0; i < error.length; i++) {
                 score = Math.min(score, this.errorToScore(error[i], tol[i]));
             }
