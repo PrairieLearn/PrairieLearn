@@ -2,6 +2,7 @@
 console.log('Starting monitor...');
 
 var request = require('request');
+var fs = require('fs');
 
 var requestOptions = {
     url: 'https://prairielearn2.engr.illinois.edu:/questions/Cart2Polar/2342/client.js',
