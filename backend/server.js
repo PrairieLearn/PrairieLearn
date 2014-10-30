@@ -4,6 +4,7 @@ var _ = require("underscore");
 var fs = require("fs");
 var path = require("path");
 var async = require("async");
+var moment = require("moment-timezone");
 
 var config = {};
 
@@ -376,6 +377,10 @@ var sendError = function(res, code, msg, err) {
     res.send(code, msg);
 };
 
+var dateBeforeNow = function(dateString) {
+    return moment.tz(dateString, config.timezone).isBefore(); // isBefore() uses NOW with no arg
+};
+
 var checkTestAvail = function(req, tid) {
     var avail = false;
     if (isSuperuser(req))
@@ -385,11 +390,25 @@ var checkTestAvail = function(req, tid) {
         if (info.options.availDate === undefined) {
             avail = true;
         } else {
-            if (Date.parse(info.options.availDate) <= Date.now())
+            if (dateBeforeNow(info.options.availDate))
                 avail = true;
         }
     }
     return avail;
+};
+
+var filterTestsByAvail = function(req, tests, callback) {
+    async.filter(tests, function(test, objCallback) {
+        objCallback(checkTestAvail(req, test.tid));
+    }, callback);
+};
+
+var ensureTestAvailByTID = function(req, res, tid, callback) {
+    if (checkTestAvail(req, tid)) {
+        callback(tid);
+    } else {
+        return sendError(res, 403, "Test TID " + tid + " not available: " + req.path);
+    }
 };
 
 var checkObjAuth = function(req, obj) {
@@ -406,7 +425,7 @@ var checkObjAuth = function(req, obj) {
             if (obj.availDate === undefined) {
                 authorized = true;
             } else {
-                if (Date.parse(obj.availDate) <= Date.now())
+                if (dateBeforeNow(obj.availDate))
                     authorized = true;
             }
         }
@@ -1026,7 +1045,9 @@ app.get("/tests", function(req, res) {
                 return sendError(res, 500, "Error serializing tests", err);
             }
             objs = _(objs).filter(function(o) {return _(testDB).has(o.tid);});
-            res.json(stripPrivateFields(objs));
+            filterTestsByAvail(req, objs, function(objs) {
+                res.json(stripPrivateFields(objs));
+            });
         });
     });
 });
@@ -1042,33 +1063,45 @@ app.get("/tests/:tid", function(req, res) {
         if (!obj) {
             return sendError(res, 404, "No test with tid " + req.params.tid);
         }
-        res.json(stripPrivateFields(obj));
+        ensureTestAvailByTID(req, res, obj.tid, function() {
+            res.json(stripPrivateFields(obj));
+        });
     });
 });
 
 app.get("/tests/:tid/client.js", function(req, res) {
-    var filePath = path.join(req.params.tid, "client.js");
-    res.sendfile(filePath, {root: config.testsDir});
+    ensureTestAvailByTID(req, res, req.params.tid, function() {
+        var filePath = path.join(req.params.tid, "client.js");
+        res.sendfile(filePath, {root: config.testsDir});
+    });
 });
 
 app.get("/tests/:tid/common.js", function(req, res) {
-    var filePath = path.join(req.params.tid, "common.js");
-    res.sendfile(filePath, {root: config.testsDir});
+    ensureTestAvailByTID(req, res, req.params.tid, function() {
+        var filePath = path.join(req.params.tid, "common.js");
+        res.sendfile(filePath, {root: config.testsDir});
+    });
 });
 
 app.get("/tests/:tid/test.html", function(req, res) {
-    var filePath = path.join(req.params.tid, "test.html");
-    res.sendfile(filePath, {root: config.testsDir});
+    ensureTestAvailByTID(req, res, req.params.tid, function() {
+        var filePath = path.join(req.params.tid, "test.html");
+        res.sendfile(filePath, {root: config.testsDir});
+    });
 });
 
 app.get("/tests/:tid/testOverview.html", function(req, res) {
-    var filePath = path.join(req.params.tid, "testOverview.html");
-    res.sendfile(filePath, {root: config.testsDir});
+    ensureTestAvailByTID(req, res, req.params.tid, function() {
+        var filePath = path.join(req.params.tid, "testOverview.html");
+        res.sendfile(filePath, {root: config.testsDir});
+    });
 });
 
 app.get("/tests/:tid/testSidebar.html", function(req, res) {
-    var filePath = path.join(req.params.tid, "testSidebar.html");
-    res.sendfile(filePath, {root: config.testsDir});
+    ensureTestAvailByTID(req, res, req.params.tid, function() {
+        var filePath = path.join(req.params.tid, "testSidebar.html");
+        res.sendfile(filePath, {root: config.testsDir});
+    });
 });
 
 var autoCreateTestQuestions = function(req, res, tInstance, test, callback) {
