@@ -472,12 +472,6 @@ app.use(function(req, res, next) {
         next();
         return;
     }
-    // hack due to RequireJS not providing header support
-    if (/^\/tests/.test(req.path)) {
-        req.authUID = "nouser";
-        next();
-        return;
-    }
 
     if (req.method === 'OPTIONS') {
         // don't authenticate for OPTIONS requests, as these are just for CORS
