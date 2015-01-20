@@ -1,5 +1,5 @@
 
-define(["BasicTestClient", "BasicTestView", "BasicTestInstanceView", "BasicTestSidebarView", "AdaptiveTestClient", "AdaptiveTestView", "AdaptiveTestInstanceView", "AdaptiveTestSidebarView", "PracExamTestClient", "PracExamTestView", "PracExamTestInstanceView", "PracExamTestSidebarView", "ExamTestClient", "ExamTestView", "ExamTestInstanceView", "ExamTestSidebarView"], function(BasicTestClient, BasicTestView, BasicTestInstanceView, BasicTestSidebarView, AdaptiveTestClient, AdaptiveTestView, AdaptiveTestInstanceView, AdaptiveTestSidebarView, PracExamTestClient, PracExamTestView, PracExamTestInstanceView, PracExamTestSidebarView, ExamTestClient, ExamTestView, ExamTestInstanceView, ExamTestSidebarView) {
+define(["BasicTestClient", "BasicTestView", "BasicTestInstanceView", "BasicTestSidebarView", "AdaptiveTestClient", "AdaptiveTestView", "AdaptiveTestInstanceView", "AdaptiveTestSidebarView", "PracExamTestClient", "PracExamTestView", "PracExamTestInstanceView", "PracExamTestSidebarView", "ExamTestClient", "ExamTestView", "ExamTestInstanceView", "ExamTestSidebarView", "GameTestClient", "GameTestView", "GameTestInstanceView", "GameTestSidebarView"], function(BasicTestClient, BasicTestView, BasicTestInstanceView, BasicTestSidebarView, AdaptiveTestClient, AdaptiveTestView, AdaptiveTestInstanceView, AdaptiveTestSidebarView, PracExamTestClient, PracExamTestView, PracExamTestInstanceView, PracExamTestSidebarView, ExamTestClient, ExamTestView, ExamTestInstanceView, ExamTestSidebarView, GameTestClient, GameTestView, GameTestInstanceView, GameTestSidebarView) {
 
     var objectMap = {
         "Basic": {
@@ -25,6 +25,12 @@ define(["BasicTestClient", "BasicTestView", "BasicTestInstanceView", "BasicTestS
             "testView": ExamTestView,
             "tInstanceView": ExamTestInstanceView,
             "sidebarView": ExamTestSidebarView,
+        },
+        "Game": {
+            "client": GameTestClient,
+            "testView": GameTestView,
+            "tInstanceView": GameTestInstanceView,
+            "sidebarView": GameTestSidebarView,
         },
     };
 

@@ -1,0 +1,62 @@
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">{{set}} {{number}}: {{title}}</h3>
+  </div>
+  <div class="panel-body">
+
+    <div class="well well-sm small-bottom-margin">
+
+      <div class="row">
+
+        <div class="col-md-3 col-sm-4 col-xs-12">
+          {{{hwScore}}}
+        </div>
+
+        <div class="col-md-5 col-sm-8 col-xs-12">
+          {{{scoreBar}}}
+        </div>
+
+        <div class="col-md-4 col-sm-8 col-xs-12">
+          {{{dueDate}}}
+        </div>
+
+      </div> <!-- row -->
+    </div> <!-- well -->
+
+    <div class="well well-sm no-bottom-margin">
+
+    <div class="row">
+
+      <div class="col-xs-12">
+        <p class="no-bottom-margin"><small>Answer questions in any
+            order. Questions can be repeated and not all questions
+            must be completed. Answering a question correctly will
+            increase its score by its current value, and will also
+            increase its value. Answering a question incorrectly will
+            reset its value. The HW Score is the sum of all question
+            scores.</small></p>
+      </div>
+
+    </div>
+    </div>
+  </div>
+
+  <table class="table table-condensed table-hover">
+    <thead>
+      <tr>
+        <th>Question</th>
+        <th class="cell-center">Value</th>
+        <th class="cell-center">Score</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#questionList}}
+      <tr>
+        <td><a href="#q/{{tiid}}/{{number}}">{{fullNumber}}. {{title}}</a></td>
+        <td class="cell-center">{{{value}}}</td>
+        <td class="cell-center">{{{score}}}</td>
+      </tr>
+      {{/questionList}}
+    </tbody>
+  </table>
+</div>

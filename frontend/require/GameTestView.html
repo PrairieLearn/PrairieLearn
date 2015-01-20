@@ -1,0 +1,34 @@
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title"><a href="#ti/{{tiid}}">{{set}} {{number}}: {{title}}</a></h3>
+  </div>
+
+  <div class="panel-body">
+    <div class="well well-sm small-bottom-margin">
+      <div class="row">
+
+        <div class="col-md-3 col-sm-4 col-xs-12">
+          {{{score}}}
+        </div>
+        
+        <div class="col-md-2 col-sm-8 col-xs-12">
+          {{{scoreBar}}}
+        </div>
+
+        <div class="col-md-4 col-sm-8 col-xs-12">
+          {{{dueDate}}}
+          {{#seeAvailDate}}
+          <br/>
+          {{{availDate}}}
+          {{/seeAvailDate}}
+        </div>
+
+        <div class="col-md-3 col-sm-4 col-xs-12">
+          <a class="btn btn-primary" href="#ti/{{tiid}}">Go to homework</a>
+        </div>
+
+      </div> <!-- row -->
+    </div> <!-- well -->
+  </div> <!-- panel-body -->
+
+</div>
