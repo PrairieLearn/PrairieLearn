@@ -8,16 +8,12 @@
 
       <div class="row">
 
-        <div class="col-md-2 col-sm-4 col-xs-12">
+        <div class="col-md-3 col-sm-4 col-xs-12">
           {{{hwScore}}}
         </div>
 
-        <div class="col-md-4 col-sm-8 col-xs-12">
+        <div class="col-md-5 col-sm-8 col-xs-12">
           {{{scoreBar}}}
-        </div>
-
-        <div class="col-md-2 col-sm-4 col-xs-12">
-          {{{masteryScore}}}
         </div>
 
         <div class="col-md-4 col-sm-8 col-xs-12">
@@ -31,18 +27,14 @@
 
     <div class="row">
 
-      <div class="col-xs-12 col-sm-4">
-        <p>
-          <a class="btn btn-primary" href="#cq/{{tiid}}/randomMedium" data-toggle="tooltip" data-placement="auto bottom"
-             data-original-title="Randomly chosen question from this homework that is recommended for you.">Do a recommended question</a>
-        </p>
-      </div>
-
-      <div class="col-xs-12 col-sm-8">
+      <div class="col-xs-12">
         <p class="no-bottom-margin"><small>Answer questions in any
-        order to get mastery points. Questions can be repeated and not
-        all questions must be completed. Hover over items for
-        details.</small></p>
+            order. Questions can be repeated and not all questions
+            must be completed. Answering a question correctly will
+            increase its score by its current value, and will also
+            increase its value. Answering a question incorrectly will
+            reset its value. The HW Score is the sum of all question
+            scores.</small></p>
       </div>
 
     </div>
@@ -53,20 +45,16 @@
     <thead>
       <tr>
         <th>Question</th>
-        <th class="cell-center">Recommend</th>
-        <th class="cell-center">Correct</th>
-        <th class="cell-center">Incorrect</th>
-        <th class="cell-center">Attempts</th>
+        <th class="cell-center">Value</th>
+        <th class="cell-center">Score</th>
       </tr>
     </thead>
     <tbody>
       {{#questionList}}
       <tr>
         <td><a href="#q/{{tiid}}/{{number}}">{{fullNumber}}. {{title}}</a></td>
-        <td class="cell-center">{{{recommendBar}}}</td>
-        <td class="cell-center">{{{correctPoints}}}</td>
-        <td class="cell-center">{{{incorrectPoints}}}</td>
-        <td class="cell-center">{{{attempts}}}</td>
+        <td class="cell-center">{{{value}}}</td>
+        <td class="cell-center">{{{score}}}</td>
       </tr>
       {{/questionList}}
     </tbody>

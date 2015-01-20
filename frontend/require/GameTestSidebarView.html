@@ -7,9 +7,6 @@
     <p>
       {{{scoreBar}}}
     </p>
-    <p class="no-bottom-margin">
-      {{{masteryScore}}}
-    </p>
   </div>
 </div>
 <div class="panel panel-default">
@@ -18,29 +15,17 @@
     <table class="table table-condensed no-bottom-margin">
       <tbody>
         <tr>
-          <td>Recommend:</td>
-          <td style="width:100%">{{{recommendBar}}}</td>
+          <td>Value:</td>
+          <td>{{{value}}}</td>
         </tr>
         <tr>
-          <td>Correct:</td>
-          <td>{{{correctPoints}}}</td>
-        </tr>
-        <tr>
-          <td>Incorrect:</td>
-          <td>{{{incorrectPoints}}}</td>
-        </tr>
-        <tr>
-          <td>Attempts:</td>
-          <td style="width:100%">{{{attempts}}}</td>
+          <td>Score:</td>
+          <td>{{{score}}}</td>
         </tr>
       </tbody>
     </table>
   </div>
 </div>
-<p class="text-center">
-  <a class="btn btn-primary" href="#cq/{{tiid}}/randomMedium/not/{{qNumber}}" data-toggle="tooltip" data-placement="auto bottom"
-     data-original-title="Randomly chosen question from this homework that is recommended for you.">Do a different question</a>
-</p>
 <p class="text-center">
   {{#prevQNumber}}
   <a class="btn btn-primary" href="#q/{{tiid}}/{{prevQNumber}}">Previous question</a>

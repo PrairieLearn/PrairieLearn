@@ -1,7 +1,7 @@
 
-define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!AdaptiveTestView.html"], function(_, Backbone, Mustache, AdaptiveTestHelper, AdaptiveTestViewTemplate) {
+define(["underscore", "backbone", "mustache", "GameTestHelper", "text!GameTestView.html"], function(_, Backbone, Mustache, GameTestHelper, GameTestViewTemplate) {
 
-    var AdaptiveTestView = Backbone.View.extend({
+    var GameTestView = Backbone.View.extend({
         tagName: 'div',
 
         initialize: function() {
@@ -26,15 +26,15 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
                 return;
             data.tiid = tInstance.get("tiid");
             var score = tInstance.get("score");
-            data.score = AdaptiveTestHelper.renderHWScore(tInstance, testOptions);
-            data.scoreBar = AdaptiveTestHelper.renderScoreBar(score);
+            data.score = GameTestHelper.renderHWScore(tInstance, this.model, testOptions);
+            data.scoreBar = GameTestHelper.renderHWScoreBar(tInstance, this.model, testOptions);
             var dueDate = new Date(that.model.get("dueDate"));
-            data.dueDate = AdaptiveTestHelper.renderDueDate(dueDate);
+            data.dueDate = GameTestHelper.renderDueDate(dueDate);
             var availDate = new Date(that.model.get("availDate"));
-            data.availDate = AdaptiveTestHelper.renderAvailDate(availDate);
+            data.availDate = GameTestHelper.renderAvailDate(availDate);
             data.seeAvailDate = this.appModel.hasPermission("seeAvailDate");
 
-            var html = Mustache.render(AdaptiveTestViewTemplate, data);
+            var html = Mustache.render(GameTestViewTemplate, data);
             this.$el.html(html);
         },
 
@@ -43,5 +43,5 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
         },
     });
 
-    return AdaptiveTestView;
+    return GameTestView;
 });

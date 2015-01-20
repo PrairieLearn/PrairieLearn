@@ -1,7 +1,7 @@
 
-define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!AdaptiveTestSidebarView.html"], function(_, Backbone, Mustache, AdaptiveTestHelper, AdaptiveTestSidebarViewTemplate) {
+define(["underscore", "backbone", "mustache", "GameTestHelper", "text!GameTestSidebarView.html"], function(_, Backbone, Mustache, GameTestHelper, GameTestSidebarViewTemplate) {
 
-    var AdaptiveTestSidebarView = Backbone.View.extend({
+    var GameTestSidebarView = Backbone.View.extend({
 
         tagName: 'div',
 
@@ -36,14 +36,9 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
             var hwNumber = this.test.get("number");
             data.hwNumber = hwNumber;
             data.set = this.test.get("set");
-            data.hwScore = AdaptiveTestHelper.renderHWScore(this.tInstance, testOptions);
+            data.hwScore = GameTestHelper.renderHWScore(this.tInstance, this.test, testOptions);
+            data.scoreBar = GameTestHelper.renderHWScoreBar(this.tInstance, this.test, testOptions);
             data.tiid = this.tInstance.get("tiid");
-
-            var modelData = this.tInstance.get("modelData");
-            data.masteryScore = AdaptiveTestHelper.renderMasteryScore(modelData);
-            data.masteryBar = AdaptiveTestHelper.renderMasteryBar(modelData);
-            var score = this.tInstance.get("score");
-            data.scoreBar = AdaptiveTestHelper.renderScoreBar(score);
 
             var qid = this.model.get("qid");
             var qids = that.test.get("qids");
@@ -60,12 +55,12 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
 
             data.video = this.model.get("video");
 
-            data.recommendBar = AdaptiveTestHelper.renderRecommendBar(modelData, qid);
-            data.correctPoints = AdaptiveTestHelper.renderCorrectPoints(modelData, qid);
-            data.incorrectPoints = AdaptiveTestHelper.renderIncorrectPoints(modelData, qid);
-            data.attempts = AdaptiveTestHelper.renderAttempts(modelData, qid);
+            var qData = this.tInstance.get("qData");
+            var qParams = this.test.get("qParams");
+            data.value = GameTestHelper.renderQuestionValue(qData[qid].value, qParams[qid].initValue);
+            data.score = GameTestHelper.renderQuestionScore(qData[qid].score, qParams[qid].maxScore);
 
-            var html = Mustache.render(AdaptiveTestSidebarViewTemplate, data);
+            var html = Mustache.render(GameTestSidebarViewTemplate, data);
             this.$el.html(html);
             this.$('[data-toggle=tooltip]').tooltip();
         },
@@ -75,5 +70,5 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
         }
     });
 
-    return AdaptiveTestSidebarView;
+    return GameTestSidebarView;
 });

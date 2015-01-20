@@ -1,7 +1,7 @@
 
-define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!AdaptiveTestInstanceView.html"], function(_, Backbone, Mustache, AdaptiveTestHelper, AdaptiveTestInstanceViewTemplate) {
+define(["underscore", "backbone", "mustache", "GameTestHelper", "text!GameTestInstanceView.html"], function(_, Backbone, Mustache, GameTestHelper, GameTestInstanceViewTemplate) {
 
-    var AdaptiveTestInstanceView = Backbone.View.extend({
+    var GameTestInstanceView = Backbone.View.extend({
 
         tagName: 'div',
 
@@ -24,11 +24,8 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
             data.tiid = this.model.get("tiid");
 
             var modelData = this.model.get("modelData");
-            data.masteryScore = AdaptiveTestHelper.renderMasteryScore(modelData);
-            data.masteryBar = AdaptiveTestHelper.renderMasteryBar(modelData);
-            data.hwScore = AdaptiveTestHelper.renderHWScore(this.model, testOptions);
-            var score = this.model.get("score");
-            data.scoreBar = AdaptiveTestHelper.renderScoreBar(score);
+            data.hwScore = GameTestHelper.renderHWScore(this.model, this.test, testOptions);
+            data.scoreBar = GameTestHelper.renderHWScoreBar(this.model, this.test, testOptions);
 
             var dueDate = new Date(this.test.get("dueDate"));
             var options = {hour: "numeric", minute: "numeric"};
@@ -48,9 +45,9 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
             data.dueDate += '</span>';
 
             data.questionList = [];
+            var qData = this.model.get("qData");
+            var qParams = this.test.get("qParams");
             var qids = that.test.get("qids");
-            var qDists = that.test.get("qDists");
-            var userDist = that.model.get("dist");
             _(qids).each(function(qid, index) {
                 var q = that.questions.get(qid);
                 data.questionList.push({
@@ -60,13 +57,11 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
                     title: q.get("title"),
                     number: index + 1,
                     fullNumber: "#" + hwNumber + "-" + (index + 1),
-                    recommendBar: AdaptiveTestHelper.renderRecommendBar(modelData, qid),
-                    correctPoints: AdaptiveTestHelper.renderCorrectPoints(modelData, qid),
-                    incorrectPoints: AdaptiveTestHelper.renderIncorrectPoints(modelData, qid),
-                    attempts: AdaptiveTestHelper.renderAttempts(modelData, qid)
+                    value: GameTestHelper.renderQuestionValue(qData[qid].value, qParams[qid].initValue),
+                    score: GameTestHelper.renderQuestionScore(qData[qid].score, qParams[qid].maxScore),
                 });
             });
-            var html = Mustache.render(AdaptiveTestInstanceViewTemplate, data);
+            var html = Mustache.render(GameTestInstanceViewTemplate, data);
             this.$el.html(html);
             this.$('[data-toggle=tooltip]').tooltip();
         },
@@ -76,5 +71,5 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
         }
     });
 
-    return AdaptiveTestInstanceView;
+    return GameTestInstanceView;
 });
