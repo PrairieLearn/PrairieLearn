@@ -1,0 +1,8 @@
+# JetBrains IDE files
+.idea/
+
+# Backend dependencies
+backend/node_modules/
+
+# Server log files
+backend/server.log
