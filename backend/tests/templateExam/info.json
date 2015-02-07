@@ -6,10 +6,10 @@
     "options": {
         "qidGroups": [
             [
-                ["templateCalculation", "templateMCCheckbox", "templateMCRadio"]
+                ["templateCalculation", "templateMCCheckbox", "templateMCRadio", "templateFile"]
             ]
         ],
-        "nQuestions": 2,
+        "nQuestions": 4,
         "timeLimitMin": 60,
         "availDate": "2014-07-07T23:59:59"
     }

@@ -285,6 +285,7 @@ var loadInfoDB = function(db, idName, parentDir, loadCallback) {
                 var info;
                 try {
                     info = JSON.parse(data);
+                    info.questionDir = path.join(parentDir, dir);
                 } catch (e) {
                     logger.error("Error reading file: " + infoFile + ": " + e.name + ": " + e.message, e);
                     callback(null);
