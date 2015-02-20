@@ -97,6 +97,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         initialize: function() {
             this.answerAttributes = this.answerAttributes || [];
             this.template = this.options.template;
+            this.renderer = this.options.renderer;
             this.params = this.options.params;
             this.submittedAnswer = this.options.submittedAnswer;
             this.trueAnswer = this.options.trueAnswer;
@@ -115,6 +116,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
                 trueAnswer: this.trueAnswer,
                 feedback: this.feedback,
             });
+            this.renderer(this.$el, templateData.params);
             var that = this;
             _.each(_.uniq(_.pluck(_.filter(this.rivetsView.bindings,
                                            function (binding) {return binding.key === "submittedAnswer" && binding.type === "checkedoptional";}),
@@ -217,6 +219,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
     function SimpleClient(options) {
         this.options = _.defaults(options || {}, {
             questionTemplate: "",
+            questionRenderer: function() {},
             answerTemplate: "",
         });
     }
@@ -232,7 +235,16 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
 
     SimpleClient.prototype.renderQuestion = function(questionDivID, changeCallback) {
         this.listenTo(this.model, "answerChanged", changeCallback);
-        this.questionView = new QuestionView({el: questionDivID, template: this.options.questionTemplate, model: this.model, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback});
+        this.questionView = new QuestionView({
+            el: questionDivID,
+            template: this.options.questionTemplate,
+            renderer: this.options.questionRenderer,
+            model: this.model,
+            params: this.params,
+            submittedAnswer: this.submittedAnswer,
+            trueAnswer: this.trueAnswer,
+            feedback: this.feedback,
+        });
         this.questionView.render();
         this.trigger("renderQuestionFinished");
     };
