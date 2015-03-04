@@ -1,4 +1,4 @@
-var httpDownloadPrefix = 'data:text/plain;charset=utf-8,';
+var httpDownloadPrefix = 'data:text/plain;base64,';
 
 
 define(["SimpleClient", "text!./question.html", "text!./answer.html"], function(SimpleClient, questionTemplate, answerTemplate) {
@@ -19,16 +19,27 @@ define(["SimpleClient", "text!./question.html", "text!./answer.html"], function(
 
             var reader = new FileReader();
             reader.onload = function(e) {
-                simpleClient.submittedAnswer.set('fileData', e.target.result);
+                var dataUrl = e.target.result;
+
+                var commaSplitIdx = dataUrl.indexOf(',');
+
+                // Store the prefix read from the file (so the grading script could parse the file type if necessary)
+                var dataPrefix = dataUrl.substring(0, commaSplitIdx);
+                simpleClient.submittedAnswer.set('dataPrefix', dataPrefix);
+
+                // Store the data as base64 encoded data
+                var base64FileData = dataUrl.substring(commaSplitIdx + 1);
+                simpleClient.submittedAnswer.set('fileData', base64FileData);
             };
 
-            reader.readAsText(file);
+            reader.readAsDataURL(file);
         });
 
         simpleClient.submittedAnswer.bind('change', function() {
             updateTemplate();
         });
 
+        simpleClient.addAnswer('dataPrefix');
         simpleClient.addAnswer('fileData');
     });
 
