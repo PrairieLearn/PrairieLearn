@@ -7,7 +7,8 @@ define(['fs', 'module', 'path'], function(fs, module, path) {
         var fileName = info['options']['fileName'];
 
         // The file contents will be put in a data: link for downloading, so we encode it as a URI
-        var fileData = encodeURIComponent(fs.readFileSync(path.join(info.questionDir, fileName), 'utf-8'));
+        var fileBuffer = fs.readFileSync(path.join(info.questionDir, fileName));
+        var fileData = encodeURIComponent(fileBuffer.toString('base64'));
 
         var params = {
             fileData: fileData,

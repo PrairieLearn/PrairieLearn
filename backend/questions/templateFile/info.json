@@ -1,6 +1,6 @@
 {
     "title": "File Download/Upload Test",
     "options": {
-        "fileName": "hello.py"
+        "fileName": "test.zip"
     }
 }

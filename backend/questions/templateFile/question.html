@@ -1,6 +1,6 @@
 <p>
     <h4>Download your problem</h4>
-    <a href="data:text/plain;charset=utf-8,<%= params.fileData %>" download="<%= params.fileName %>" target="_blank">
+    <a href="data:text/plain;base64,<%= params.fileData %>" download="<%= params.fileName %>" target="_blank">
         Download <%= params.fileName %>
     </a>
 

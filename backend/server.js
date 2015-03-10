@@ -274,39 +274,48 @@ var loadInfoDB = function(db, idName, parentDir, loadCallback) {
             loadCallback(true);
             return;
         }
-        async.each(files, function(dir, callback) {
-            var infoFile = path.join(parentDir, dir, "info.json");
-            fs.readFile(infoFile, function(err, data) {
-                if (err) {
-                    logger.error("Unable to read file: " + infoFile, err);
-                    callback(null);
-                    return;
-                }
-                var info;
-                try {
-                    info = JSON.parse(data);
-                    info.questionDir = path.join(parentDir, dir);
-                } catch (e) {
-                    logger.error("Error reading file: " + infoFile + ": " + e.name + ": " + e.message, e);
-                    callback(null);
-                    return;
-                }
-                if (info.disabled) {
-                    callback(null);
-                    return;
-                }
-                info[idName] = dir;
-                db[dir] = info;
-                return callback(null);
+
+        async.filter(files, function(dirName, cb) {
+            // Filter out files from questions/ as it is possible they slip in without the user putting them there (like .DS_Store).
+            var filePath = path.join(parentDir, dirName);
+            fs.lstat(filePath, function(err, fileStats){
+                cb(fileStats.isDirectory());
             });
-        }, function(err) {
-            if (err) {
-                logger.error("Error reading data", err);
-                loadCallback(err);
-                return;
-            }
-            logger.info("successfully loaded info from " + parentDir + ", number of items = " + _.size(db));
-            loadCallback();
+        }, function(folders) {
+            async.each(folders, function(dir, callback) {
+                var infoFile = path.join(parentDir, dir, "info.json");
+                fs.readFile(infoFile, function(err, data) {
+                    if (err) {
+                        logger.error("Unable to read file: " + infoFile, err);
+                        callback(null);
+                        return;
+                    }
+                    var info;
+                    try {
+                        info = JSON.parse(data);
+                        info.questionDir = path.join(parentDir, dir);
+                    } catch (e) {
+                        logger.error("Error reading file: " + infoFile + ": " + e.name + ": " + e.message, e);
+                        callback(null);
+                        return;
+                    }
+                    if (info.disabled) {
+                        callback(null);
+                        return;
+                    }
+                    info[idName] = dir;
+                    db[dir] = info;
+                    return callback(null);
+                });
+            }, function(err) {
+                if (err) {
+                    logger.error("Error reading data", err);
+                    loadCallback(err);
+                    return;
+                }
+                logger.info("successfully loaded info from " + parentDir + ", number of items = " + _.size(db));
+                loadCallback();
+            });
         });
     });
 };
