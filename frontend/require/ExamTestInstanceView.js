@@ -74,7 +74,11 @@ define(["underscore", "backbone", "mustache", "ExamTestHelper", "text!ExamTestIn
         },
 
         gradeExam: function() {
-            this.trigger("finishTest");
+            var that = this;
+            this.$('#confirmModal').on('hidden.bs.modal', function (e) {
+                that.trigger("finishTest");
+            })
+            this.$("#confirmModal").modal('hide');
         },
 
         close: function() {

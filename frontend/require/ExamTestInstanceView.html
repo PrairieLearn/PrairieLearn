@@ -1,3 +1,17 @@
+<div id="confirmModal" class="modal fade">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-body">
+        Are you sure you want to finish and grade your exam? This will end your exam.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary gradeExam" id="finishExam">Finish</button>
+        <button type="button" data-dismiss="modal" class="btn">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div class="panel panel-primary">
   <div class="panel-heading">
     <h3 class="panel-title">{{title}} #{{number}}</h3>
@@ -13,8 +27,9 @@
         </div>
 
         <div class="col-sm-4 col-xs-12">
-          <button class="btn btn-danger gradeExam">Finish and grade exam</button>
+          <button class="btn btn-danger" data-toggle="modal" data-target="#confirmModal">Finish and grade exam</button>
         </div>
+
       </div> <!-- row -->
     </div> <!-- well -->
   </div> <!-- panel-body -->
