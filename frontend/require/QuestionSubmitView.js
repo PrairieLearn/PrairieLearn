@@ -57,7 +57,7 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
                 overridable: this.model.appModel.hasPermission("overrideScore"),
                 saveStatus: '<span class="label label-danger">not saved</span>',
                 saveActive: false,
-                marked: this.model.get("marked"),
+                markActive: false,
                 testOpen: true,
             };
             data.allowPractice = testOptions.allowPractice;
@@ -78,8 +78,10 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
                 } else if (!this.model.get("dirtyData")) {
                     data.saveStatus = '<span class="label label-success">saved</span>';
                 }
-                if (this.model.get("marked") || this.model.get("dirtyData") && data.submittable)
-                    data.saveActive = true;
+                var changed = this.model.get("dirtyData") && data.submittable;
+                var marked = this.model.get("marked");
+                data.saveActive = changed || marked;
+                data.markActive = changed || !marked;
             }
                 
             var html = Mustache.render(questionSubmitViewTemplate, data);
