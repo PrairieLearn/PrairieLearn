@@ -972,7 +972,7 @@ app.post("/submissions", function(req, res) {
         date: new Date(),
         uid: req.body.uid,
         qiid: req.body.qiid,
-        flagged: req.body.flagged,
+        marked: req.body.marked,
         submittedAnswer: req.body.submittedAnswer
     };
     if (submission.uid === undefined) {

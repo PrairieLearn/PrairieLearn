@@ -18,7 +18,7 @@
   Answer status: {{{saveStatus}}}
 </p>
 <button type="submit" class="btn btn-primary save" {{^saveActive}}disabled="disabled"{{/saveActive}}>Save answer</button>
-<button type="submit" class="btn btn-warning saveAndFlag" {{#flagged}}disabled="disabled"{{/flagged}}>Save and flag for review</button>
+<button type="submit" class="btn btn-warning saveAndMark" {{#marked}}disabled="disabled"{{/marked}}>Save and mark for review</button>
 {{/allowQuestionSave}}
 
 {{#allowTryAgain}}

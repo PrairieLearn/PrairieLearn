@@ -53,8 +53,8 @@ define(["underscore", "backbone", "mustache", "ExamTestHelper", "text!ExamTestIn
                 };
                 if (data.open) {
                     if (_(submissionsByQid).has(qid))
-                        if (submissionsByQid[qid].flagged)
-                            entry.saveStatus = '<span class="label label-warning">saved and flagged for review</span>';
+                        if (submissionsByQid[qid].marked)
+                            entry.saveStatus = '<span class="label label-warning">saved and marked for review</span>';
                         else
                             entry.saveStatus = '<span class="label label-success">saved</span>';
                     else
