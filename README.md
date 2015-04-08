@@ -32,9 +32,8 @@ Building
         $ cd PrairieLearn/backend
         $ make
 
-
-Running the server
-------------------
+Running
+-------
 
 1. Run the database:
 
@@ -45,80 +44,7 @@ Running the server
         $ cd PrairieLearn/backend
         $ node server
 
-3. In a web-browswer view the PrairieLearn/frontend/index.html file:
-
-        $ open file://...<path>.../PrairieLearn/frontend/index.html
-
-
-To test the database, you can access it directly:
-
-    $ mongo
-    > show dbs
-    > use data
-    > show collections
-    > db.users.find()
-    > db.users.save({uid: "user1@illinois.edu"})
-
-To test the server, you can access it from the commandline:
-
-    $ curl http://localhost:3000/questions
-    $ curl http://localhost:3000/questions/scalarAdd
-
-    $ curl -H "X-Auth-UID: user1@illinois.edu" -H "X-Auth-Name: User Name" -H "X-Auth-Date: 2013-08-17T09:44:18Z" -H "X-Auth-Signature: 3d38a7acba63047cf8bcf29f9691c68a2cae30e3ae5057ef1ea4616d2060a4be" http://localhost:3000/users
-    $ curl -H "X-Auth-UID: user1@illinois.edu" -H "X-Auth-Name: User Name" -H "X-Auth-Date: 2013-08-17T09:44:18Z" -H "X-Auth-Signature: 3d38a7acba63047cf8bcf29f9691c68a2cae30e3ae5057ef1ea4616d2060a4be" http://localhost:3000/users/user1@illinois.edu
-
-    $ curl -H "X-Auth-UID: user1@illinois.edu" -H "X-Auth-Name: User Name" -H "X-Auth-Date: 2013-08-17T09:44:18Z" -H "X-Auth-Signature: 3d38a7acba63047cf8bcf29f9691c68a2cae30e3ae5057ef1ea4616d2060a4be" -H "Accept: application/json" -H "Content-type: application/json" -X POST -d '{"uid": "user1@illinois.edu", "qid": "scalarAdd"}' http://localhost:3000/qInstances
-
-    $ curl http://localhost:3000/questions/scalarAdd/1/question.html
-    $ curl http://localhost:3000/questions/scalarAdd/1/client.js
-    $ curl http://localhost:3000/questions/scalarAdd/1/params
-
-    $ curl -H "X-Auth-UID: user1@illinois.edu" -H "X-Auth-Name: User Name" -H "X-Auth-Date: 2013-08-17T09:44:18Z" -H "X-Auth-Signature: 3d38a7acba63047cf8bcf29f9691c68a2cae30e3ae5057ef1ea4616d2060a4be" -H "Accept: application/json" -H "Content-type: application/json" -X POST -d '{"uid": "user1@illinois.edu", "qid": "scalarAdd", "vid": "1", "qiid": "qi32", "submittedAnswer": {"c": "43"}}' http://localhost:3000/submissions
-
-Useful curl options:
-
-    --trace
-    --trace-time
-    -w, --write-out
-    -v, --verbose
-
-
-Accessing the client
---------------------
-
-To access the client we can either run a webserver locally or acess
-the files directly from disk.
-
-### Accessing files directly from disk
-
-Simply open `frontend/index.html` in a web browser. Chrome will give
-cross-origin errors when loading non-javascript from disk, so it must
-be run with the `--allow-file-access-from-files` commandline
-argument. Under OS X this can be done with:
-
-    open '/Applications/Google Chrome.app' --new --args --allow-file-access-from-files
-
-On Windows this can be done by adding the
-`--allow-file-access-from-files` flag to a special shortcut (edit it
-with right-click and properties -> target).
-
-To disable cross-origin errors in Firefox go to `about:config` and set
-`security.fileuri.strict_origin_policy` to `false`.
-
-### Run a local webserver
-
-Any webserver that can serve up the `frontend` directory tree can be
-used to access the client. One particularly easy way to do this is to
-run `python -m SimpleHTTPServer` in the `frontend` directory, and then
-point the webbrowser to `http://localhost:8000`.
-
-
-Restore of the database
-----------------------------------
-
-When the DB is stopped:
-
-    mongorestore --dbpath ~/db ~/path-to-dump
+3. In a web-browswer go to http://localhost:3000
 
 
 Miscellaneous Notes
@@ -154,6 +80,42 @@ Tools and libraries
 * [Sylvester](http://sylvester.jcoglan.com/)
 * [MathJax](http://www.mathjax.org/)
 * [Rivets.js](http://rivetsjs.com/)
+
+
+Direct access to DB and API server
+==================================
+
+To test the database, you can access it directly:
+
+    $ mongo
+    > show dbs
+    > use data
+    > show collections
+    > db.users.find()
+    > db.users.save({uid: "user1@illinois.edu"})
+
+To test the server, you can access it from the commandline:
+
+    $ curl http://localhost:3000/questions
+    $ curl http://localhost:3000/questions/scalarAdd
+
+    $ curl -H "X-Auth-UID: user1@illinois.edu" -H "X-Auth-Name: User Name" -H "X-Auth-Date: 2013-08-17T09:44:18Z" -H "X-Auth-Signature: 3d38a7acba63047cf8bcf29f9691c68a2cae30e3ae5057ef1ea4616d2060a4be" http://localhost:3000/users
+    $ curl -H "X-Auth-UID: user1@illinois.edu" -H "X-Auth-Name: User Name" -H "X-Auth-Date: 2013-08-17T09:44:18Z" -H "X-Auth-Signature: 3d38a7acba63047cf8bcf29f9691c68a2cae30e3ae5057ef1ea4616d2060a4be" http://localhost:3000/users/user1@illinois.edu
+
+    $ curl -H "X-Auth-UID: user1@illinois.edu" -H "X-Auth-Name: User Name" -H "X-Auth-Date: 2013-08-17T09:44:18Z" -H "X-Auth-Signature: 3d38a7acba63047cf8bcf29f9691c68a2cae30e3ae5057ef1ea4616d2060a4be" -H "Accept: application/json" -H "Content-type: application/json" -X POST -d '{"uid": "user1@illinois.edu", "qid": "scalarAdd"}' http://localhost:3000/qInstances
+
+    $ curl http://localhost:3000/questions/scalarAdd/1/question.html
+    $ curl http://localhost:3000/questions/scalarAdd/1/client.js
+    $ curl http://localhost:3000/questions/scalarAdd/1/params
+
+    $ curl -H "X-Auth-UID: user1@illinois.edu" -H "X-Auth-Name: User Name" -H "X-Auth-Date: 2013-08-17T09:44:18Z" -H "X-Auth-Signature: 3d38a7acba63047cf8bcf29f9691c68a2cae30e3ae5057ef1ea4616d2060a4be" -H "Accept: application/json" -H "Content-type: application/json" -X POST -d '{"uid": "user1@illinois.edu", "qid": "scalarAdd", "vid": "1", "qiid": "qi32", "submittedAnswer": {"c": "43"}}' http://localhost:3000/submissions
+
+Useful curl options:
+
+    --trace
+    --trace-time
+    -w, --write-out
+    -v, --verbose
 
 
 Deploying to a Vagrant virtual machine
