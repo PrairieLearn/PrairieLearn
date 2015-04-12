@@ -59,7 +59,10 @@ define(["underscore", "backbone", "mustache", "PracExamTestHelper", "text!PracEx
                 };
                 if (data.open) {
                     if (_(submissionsByQid).has(qid))
-                        entry.saveStatus = '<span class="label label-success">saved</span>';
+                        if (submissionsByQid[qid].marked)
+                            entry.saveStatus = '<span class="label label-warning">saved and marked for review</span>';
+                        else
+                            entry.saveStatus = '<span class="label label-success">saved</span>';
                     else
                         entry.saveStatus = '<span class="label label-danger">not saved</span>';
                 } else {

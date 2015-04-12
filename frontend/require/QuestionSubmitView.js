@@ -11,6 +11,7 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
             "click .submitCorrect": "submitCorrect",
             "click .submitIncorrect": "submitIncorrect",
             "click .save": "save",
+            "click .saveAndMark": "saveAndMark",
             "click .tryAgain": "tryAgain",
         },
 
@@ -37,7 +38,11 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
         },
 
         save: function() {
-            this.model.saveAnswer();
+            this.model.saveAnswer(false);
+        },
+
+        saveAndMark: function() {
+            this.model.saveAnswer(true);
         },
 
         tryAgain: function() {
@@ -52,6 +57,7 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
                 overridable: this.model.appModel.hasPermission("overrideScore"),
                 saveStatus: '<span class="label label-danger">not saved</span>',
                 saveActive: false,
+                markActive: false,
                 testOpen: true,
             };
             data.allowPractice = testOptions.allowPractice;
@@ -67,11 +73,15 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
                     data.saveStatus = '<span class="label label-danger">save failed</span>';
                 } else if (this.model.get("hasSavedSubmission") && this.model.get("dirtyData")) {
                     data.saveStatus = '<span class="label label-danger">change not saved</span>';
+                } else if (this.model.get("marked")) {
+                    data.saveStatus = '<span class="label label-warning">saved and marked for review</span>';
                 } else if (!this.model.get("dirtyData")) {
                     data.saveStatus = '<span class="label label-success">saved</span>';
                 }
-                if (this.model.get("dirtyData") && data.submittable)
-                    data.saveActive = true;
+                var changed = this.model.get("dirtyData");
+                var marked = this.model.get("marked");
+                data.saveActive = data.submittable && (changed || marked);
+                data.markActive = data.submittable && (changed || !marked);
             }
                 
             var html = Mustache.render(questionSubmitViewTemplate, data);
