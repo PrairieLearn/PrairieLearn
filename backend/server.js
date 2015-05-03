@@ -1326,19 +1326,44 @@ var finishTest = function(req, res, tiid, callback) {
     });
 };
 
+uvar gradeTest = function(req, res, tiid, callback) {
+    readTInstance(res, tiid, function(tInstance) {
+        ensureObjAuth(req, res, tInstance, function(tInstance) {
+            var tid = tInstance.tid;
+            readTest(res, tid, function(test) {
+                loadTestServer(tid, function(server) {
+                    try {
+                        server.grade(tInstance, test);
+                    } catch (e) {
+                        return sendError(res, 500, "Error grading test: " + String(e), {err: e, stack: e.stack});
+                    }
+                    writeTInstance(req, res, tInstance, function() {
+                        writeTest(req, res, test, function() {
+                            return callback(tInstance);
+                        });
+                    });
+                });
+            });
+        });
+    });
+};
+
 app.patch("/tInstances/:tiid", function(req, res) {
     var tiid = req.params.tiid;
     if (tiid === undefined) {
         return sendError(res, 400, "No tiid provided");
     }
-    if (req.body.open === undefined)
-        return sendError(res, 400, "Patch can only be to 'open' member");
-    if (req.body.open !== false)
-        return sendError(res, 400, 'Patch can only be to set "open": false');
-
-    finishTest(req, res, tiid, function(tInstance) {
-        res.json(stripPrivateFields(tInstance));
-    });
+    if (req.body.open !== undefined && req.body.open === false) {
+        finishTest(req, res, tiid, function(tInstance) {
+            res.json(stripPrivateFields(tInstance));
+        });
+    } else if (req.body.graded !== undefined && req.body.graded === true) {
+        gradeTest(req, res, tiid, function(tInstance) {
+            res.json(stripPrivateFields(tInstance));
+        });
+    } else {
+        return sendError(res, 400, "Invalid patch on tInstance");
+    }
 });
 
 app.get("/export.csv", function(req, res) {
