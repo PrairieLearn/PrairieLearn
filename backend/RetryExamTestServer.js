@@ -7,9 +7,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
         return {
             questions: [],
             nQuestions: 20,
-            timeLimitMin: 60,
-            availDate: "2000-01-01T00:00:00",
-            autoCreate: false,
+            autoCreate: true,
             autoCreateQuestions: true,
             allowQuestionSubmit: false,
             allowQuestionSave: true,
@@ -28,9 +26,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             questionInfo: {},
         });
         test.nQuestions = options.nQuestions;
-        test.timeLimitMin = options.timeLimitMin;
         test._private = ["scoresByUID", "highScoresByUID", "completeHighScoresByUID"];
-        test.availDate = moment.tz(options.availDate, options.timezone).format();
     };
 
     PracExamTestServer.updateTInstance = function(tInstance, test, options) {
@@ -57,7 +53,6 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
                 tInstance.maxScore += Math.max.apply(null, question.points);
             });
             tInstance.createDate = new Date(now).toJSON(),
-            tInstance.dueDate = new Date(now + options.timeLimitMin * 60 * 1000).toJSON(),
             tInstance.open = true,
             tInstance.submissionsByQid = {},
             tInstance.score = 0;
@@ -67,8 +62,6 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
     };
 
     PracExamTestServer.updateWithSubmission = function(tInstance, test, submission, options) {
-        if (Date.now() > Date.parse(tInstance.dueDate))
-            throw Error("Due date has passed");
         if (!tInstance.open)
             throw Error("Test is not open");
         if (!_(tInstance.qids).contains(submission.qid))
