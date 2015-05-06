@@ -1,9 +1,9 @@
 
 define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, PrairieRandom) {
 
-    var PracExamTestServer = {};
+    var RetryExamTestServer = {};
 
-    PracExamTestServer.getDefaultOptions = function() {
+    RetryExamTestServer.getDefaultOptions = function() {
         return {
             questions: [],
             nQuestions: 20,
@@ -15,7 +15,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
         };
     };
 
-    PracExamTestServer.updateTest = function(test, options) {
+    RetryExamTestServer.updateTest = function(test, options) {
         _.defaults(test, {
             scoresByUID: {},
             highScoresByUID: {},
@@ -29,7 +29,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
         test._private = ["scoresByUID", "highScoresByUID", "completeHighScoresByUID"];
     };
 
-    PracExamTestServer.updateTInstance = function(tInstance, test, options) {
+    RetryExamTestServer.updateTInstance = function(tInstance, test, options) {
         if (tInstance.qids === undefined) {
             var questions = [];
             var rand = new PrairieRandom.RandomGenerator();
@@ -45,27 +45,26 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             tInstance.qids = _(questions).pluck('qid');
             tInstance.maxScore = 0;
             tInstance.questionsByQID = _(questions).indexBy('qid');
-            _(tInstance.questionsByQID).forEach(function(qid, question) {
+            _(tInstance.questionsByQID).each(function(question, qid) {
                 question.nGradedAttempts = 0;
-                question.graded = true;
                 question.awardedPoints = 0;
                 question.correct = false;
                 tInstance.maxScore += Math.max.apply(null, question.points);
             });
-            tInstance.createDate = new Date(now).toJSON(),
-            tInstance.open = true,
-            tInstance.submissionsByQid = {},
+            tInstance.createDate = new Date(now).toJSON();
+            tInstance.open = true;
+            tInstance.submissionsByQid = {};
             tInstance.score = 0;
             tInstance.gradingDates = [];
         }
         return tInstance;
     };
 
-    PracExamTestServer.updateWithSubmission = function(tInstance, test, submission, options) {
+    RetryExamTestServer.updateWithSubmission = function(tInstance, test, submission, options) {
         if (!tInstance.open)
             throw Error("Test is not open");
         if (!_(tInstance.qids).contains(submission.qid))
-            throw Error("QID is not in tInstance")
+            throw Error("QID is not in tInstance");
         var question = tInstance.questionsByQID[submission.qid];
         if (question.nGradedAttempts >= question.points.length)
             throw Error("Too many attempts at question");
@@ -73,11 +72,11 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             throw Error("question is already correct");
 
         tInstance.submissionsByQid[submission.qid] = submission;
+        submission.graded = false;
         submission._private = ["score", "trueAnswer", "oldTInstance", "oldTest", "newTInstance", "newTest"];
-        tInstance.questionsByQID[submission.qid].graded = false;
     };
 
-    PracExamTestServer.grade = function(tInstance, test) {
+    RetryExamTestServer.grade = function(tInstance, test) {
         if (!tInstance.open)
             throw Error("Test is not open");
 
@@ -89,23 +88,26 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             if (submission === undefined)
                 continue;
             question = tInstance.questionsByQID[qid];
-            if (!question.graded) {
+            if (!submission.graded) {
                 if (submission.score >= 0.5) {
                     question.correct = true;
+                    submission.correct = true;
                     question.awardedPoints = question.points[question.nGradedAttempts];
+                } else {
+                    submission.correct = false;
                 }
                 question.nGradedAttempts++;
-                question.graded = true;
+                submission.graded = true;
             }
         }
         tInstance.score = 0;
         _(tInstance.questionsByQID).forEach(function(question) {
             tInstance.score += question.awardedPoints;
-        }).;
+        });
         tInstance.gradingDates.push(new Date().toJSON());
     };
 
-    PracExamTestServer.finish = function(tInstance, test) {
+    RetryExamTestServer.finish = function(tInstance, test) {
         if (!tInstance.open)
             throw Error("Test is already finished");
 
@@ -154,5 +156,5 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
         tInstance.open = false;
     };
 
-    return PracExamTestServer;
+    return RetryExamTestServer;
 });

@@ -1326,7 +1326,7 @@ var finishTest = function(req, res, tiid, callback) {
     });
 };
 
-uvar gradeTest = function(req, res, tiid, callback) {
+var gradeTest = function(req, res, tiid, callback) {
     readTInstance(res, tiid, function(tInstance) {
         ensureObjAuth(req, res, tInstance, function(tInstance) {
             var tid = tInstance.tid;
