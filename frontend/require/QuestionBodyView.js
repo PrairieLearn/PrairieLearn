@@ -23,11 +23,7 @@ define(['underscore', 'backbone', 'mustache', 'spinController', 'TestFactory', '
             if (this.model.get("showTitle")) {
                 title = qNumber + ". " + qTitle;
             } else {
-                number = "Question " + number;
-                if (this.tInstance.has("open") && this.tInstance.get("open"))
-                    title = qNumber;
-                else
-                    title = qNumber + ". " + qTitle;
+                title = "Question " + qNumber;
             }
             if (this.model.appModel.hasPermission("seeQID"))
                 title += " (" + this.model.get("qid") + ")";

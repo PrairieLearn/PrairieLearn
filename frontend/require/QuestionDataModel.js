@@ -28,6 +28,9 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 trueAnswer: null,
                 feedback: null
             });
+            var testOptions = this.test.get("options");
+            if (testOptions.showQuestionTitle !== undefined)
+                this.set("showTitle", testOptions.showQuestionTitle);
             this.listenTo(this.appModel, "change:userUID", this.loadQuestion);
             this.on("answerChanged", this.updateDirtyStatus);
             this.loadQuestion();
