@@ -31,9 +31,9 @@
     <h3 class="panel-title">{{title}} #{{number}}</h3>
   </div>
 
-  {{#open}}
   <div class="panel-body">
 
+    {{#open}}
     <div class="well well-sm">
       <div class="row">
         <div class="col-sm-6 col-xs-12">
@@ -54,27 +54,42 @@
           <p class="no-bottom-margin"><small>To do the exam, go to
           each question and save an answer for it. At any time you can
           use the button above to grade all currently saved
-          answers. Getting a question correct will get the available
-          points for it, and getting it wrong will reduce the
-          remaining attempts and available points. To try an incorrect
-          question again, save a new answer for it and
-          regrade. Questions with zero remaining attempts cannot be
-          tried again. The total exam score is the sum of all question
-          points.</small></p>
+          answers. The value is the current number of points that a
+          question is worth, while the score is the final number of
+          points awarded for a question. To try an incorrect question
+          again, save a new answer for it and regrade. Questions with
+          zero remaining attempts cannot be tried again. The total
+          exam score is the sum of all question scores.</small></p>
         </div>
       </div> <!-- row -->
     </div> <!-- well -->
+    {{/open}}
 
+    {{^open}}
+    <div class="well well-sm">
+      <div class="row">
+        <div class="col-sm-6 col-xs-12">
+          Score: {{correctPercentage}}% ({{score}}/{{maxScore}})
+        </div>
+
+        <div class="col-sm-6 col-xs-12">
+          Time completed: {{finishDate}}
+        </div>
+
+      </div> <!-- row -->
+    </div> <!-- well -->
+    {{/open}}
+    
   </div> <!-- panel-body -->
 
   <table class="table table-condensed table-hover">
     <thead>
       <tr>
         <th>Question</th>
-        <th class="cell-center">Available points</th>
+        <th class="cell-center">Current value</th>
         <th class="cell-center">Remaining attempts</th>
         <th class="cell-center">Status</th>
-        <th class="cell-center">Points</th>
+        <th class="cell-center">Score</th>
       </tr>
     </thead>
     <tbody>
@@ -89,44 +104,5 @@
       {{/questionList}}
     </tbody>
   </table>
-  {{/open}}
-
-  <!-- #################################################################### -->
-
-  {{^open}}
-  <div class="panel-body">
-
-    <div class="well well-sm">
-      <div class="row">
-        <div class="col-md-6 col-sm-6 col-xs-12">
-          Score: {{correctPercentage}}% ({{score}}/{{maxScore}})
-        </div>
-
-        <div class="col-md-6 col-sm-6 col-xs-12">
-          Time completed: {{finishDate}}
-        </div>
-      </div> <!-- row -->
-    </div> <!-- well -->
-
-  </div> <!-- panel-body -->
-
-  <table class="table table-condensed table-hover">
-    <thead>
-      <tr>
-        <th>Question</th>
-        <th class="cell-center">Grading</th>
-      </tr>
-    </thead>
-    <tbody>
-      {{#questionList}}
-      <tr>
-        <td><a href="#q/{{tiid}}/{{number}}">Question #{{number}}. {{title}}</a></td>
-        <td class="cell-center">{{{grade}}}</td>
-      </tr>
-      {{/questionList}}
-    </tbody>
-  </table>
-  {{/open}}
-
 
 </div>

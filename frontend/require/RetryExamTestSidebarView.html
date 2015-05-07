@@ -6,26 +6,6 @@
     <p>
       Current score: {{correctPercentage}}% ({{score}}/{{maxScore}})
     </p>
-
-    <p>
-      Question status: {{{questionStatus}}}
-    </p>
-
-    {{#questionCorrect}}
-    <p>
-      Points: {{{points}}}
-    </p>
-    {{/questionCorrect}}
-
-    {{^questionCorrect}}
-    <p>
-      Available points: {{{availablePoints}}}
-    </p>
-    <p>
-      Remaining attempts: {{{remainingAttempts}}}
-    </p>
-    {{/questionCorrect}}
-
     {{/open}}
 
     {{^open}}
@@ -48,16 +28,44 @@
   <div class="panel-heading"><h3 class="panel-title">{{questionTitle}}</h3></div>
   <div class="panel-body">
     
-    {{#open}
-    {{/open}
+    {{#open}}
+
+    <p>
+      Question status: {{{questionStatus}}}
+    </p>
+
+    {{#questionOpen}}
+    <p>
+      Current value: {{{availablePoints}}}
+    </p>
+    <p>
+      Remaining attempts: {{{remainingAttempts}}}
+    </p>
+    {{/questionOpen}}
+
+    {{^questionOpen}}
+    <p>
+      Score: {{{points}}}
+    </p>
+    {{/questionOpen}}
+
+    {{/open}}
     
     {{^open}}
+
     <p>
-      Grade: {{{questionGrade}}}
-      {{#showQuestionScore}}
-      ({{questionScore}}%)
-      {{/showQuestionScore}}
+      Question status: {{{questionStatus}}}
     </p>
+    <p>
+      Score: {{{points}}}
+    </p>
+
+    {{#showQuestionScore}}
+    <p>
+      Question correctness:
+      {{questionScore}}%
+    </p>
+    {{/showQuestionScore}}
     {{/open}}
 
   </div>

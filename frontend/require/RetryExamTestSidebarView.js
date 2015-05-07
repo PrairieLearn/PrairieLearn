@@ -38,9 +38,11 @@ define(["underscore", "backbone", "mustache", "RetryExamTestHelper", "text!Retry
             data.correctPercentage = (data.score / data.maxScore * 100).toFixed(0);
             var submissionsByQid = this.tInstance.get("submissionsByQid");
             var questionsByQID = this.tInstance.get("questionsByQID");
-            if (data.open) {
-                
-            } else {
+            var submission = submissionsByQid[qid];
+            var question = questionsByQID[qid];
+            _(data).extend(RetryExamTestHelper.getQuestionData(submission, question, data.open));
+
+            if (!data.open) {
                 var finishDate = new Date(this.tInstance.get("finishDate"));
                 var options = {hour: "numeric", minute: "numeric"};
                 var dateString = finishDate.toLocaleTimeString("en-US", options);
@@ -48,15 +50,10 @@ define(["underscore", "backbone", "mustache", "RetryExamTestHelper", "text!Retry
                 dateString += ", " + finishDate.toLocaleDateString("en-US", options);
                 data.finishDate = dateString;
                 data.showQuestionScore = false;
-                data.questionGrade = '<span class="label label-default">not answered</span>';
                 if (_(submissionsByQid).has(qid)) {
                     var submission = submissionsByQid[qid];
                     data.showQuestionScore = true;
                     data.questionScore = (submission.score * 100).toFixed(0);
-                    if (submission.score >= 0.5)
-                        data.questionGrade = '<span class="label label-success">correct</span>';
-                    else
-                        data.questionGrade = '<span class="label label-danger">incorrect</span>';
                 }
             }
 

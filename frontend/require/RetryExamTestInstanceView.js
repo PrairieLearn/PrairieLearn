@@ -54,36 +54,9 @@ define(["underscore", "backbone", "mustache", "RetryExamTestHelper", "text!Retry
                     title: q.get("title"),
                     number: index + 1,
                 };
-                if (data.open) {
-                    submission = submissionsByQid[qid];
-                    question = questionsByQID[qid];
-                    entry.availablePoints = question.points[question.nGradedAttempts];
-                    entry.remainingAttempts = question.points.length - question.nGradedAttempts;
-                    if (submission !== undefined) {
-                        if (submission.graded) {
-                            if (submission.correct) {
-                                entry.questionStatus = '<span class="label label-success">correct</span>';
-                                entry.points = question.awardedPoints;
-                            } else {
-                                entry.questionStatus = '<span class="label label-danger">incorrect</span>';
-                            }
-                        } else {
-                            entry.questionStatus = '<span class="label label-primary">saved</span>';
-                        }
-                    } else {
-                        entry.questionStatus = '<span class="label label-default">no answer</span>';
-                        
-                    }
-                } else {
-                    entry.grade = '<span class="label label-default">not answered</span>';
-                    if (_(submissionsByQid).has(qid)) {
-                        var submission = submissionsByQid[qid];
-                        if (submission.score >= 0.5)
-                            entry.grade = '<span class="label label-success">correct</span>';
-                        else
-                            entry.grade = '<span class="label label-danger">incorrect</span>';
-                    }
-                }
+                submission = submissionsByQid[qid];
+                question = questionsByQID[qid];
+                _(entry).extend(RetryExamTestHelper.getQuestionData(submission, question, data.open));
                 data.questionList.push(entry);
             });
 
