@@ -1,0 +1,108 @@
+<div id="confirmGradeModal" class="modal fade">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-body">
+        Are you sure you want to grade all of your saved answers?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-primary gradeExam" id="gradeExam">Grade</button>
+        <button type="button" data-dismiss="modal" class="btn btn-default">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="confirmFinishModal" class="modal fade">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-body">
+        Are you sure you want to finish your exam? This will grade any saved answers and compute your final score. You will not be able to answer any more questions after finishing.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger finishExam" id="finishExam">Finish</button>
+        <button type="button" data-dismiss="modal" class="btn btn-default">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">{{title}} #{{number}}</h3>
+  </div>
+
+  <div class="panel-body">
+
+    {{#open}}
+    <div class="well well-sm">
+      <div class="row">
+        <div class="col-sm-6 col-xs-12">
+          Current score: <strong>{{correctPercentage}}%</strong> ({{score}}/{{maxScore}})
+        </div>
+
+        <div class="col-sm-6 col-xs-12">
+          <button class="btn btn-primary" data-toggle="modal" data-target="#confirmGradeModal">Grade all saved answers</button>
+          <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish exam</button>
+        </div>
+
+      </div> <!-- row -->
+    </div> <!-- well -->
+
+    <div class="well well-sm no-bottom-margin">
+      <div class="row">
+        <div class="col-xs-12">
+          <p class="no-bottom-margin"><small>To do the exam, go to
+          each question and save an answer for it. At any time you can
+          use the button above to grade all currently saved
+          answers. The value is the current number of points that a
+          question is worth, while the score is the final number of
+          points awarded for a question. To try an incorrect question
+          again, save a new answer for it and regrade. Questions with
+          zero remaining attempts cannot be tried again. The total
+          exam score is the sum of all question scores.</small></p>
+        </div>
+      </div> <!-- row -->
+    </div> <!-- well -->
+    {{/open}}
+
+    {{^open}}
+    <div class="well well-sm">
+      <div class="row">
+        <div class="col-sm-6 col-xs-12">
+          Score: <strong>{{correctPercentage}}%</strong> ({{score}}/{{maxScore}})
+        </div>
+
+        <div class="col-sm-6 col-xs-12">
+          Time completed: {{finishDate}}
+        </div>
+
+      </div> <!-- row -->
+    </div> <!-- well -->
+    {{/open}}
+    
+  </div> <!-- panel-body -->
+
+  <table class="table table-condensed table-hover">
+    <thead>
+      <tr>
+        <th>Question</th>
+        <th class="cell-center">Current value</th>
+        <th class="cell-center">Remaining attempts</th>
+        <th class="cell-center">Status</th>
+        <th class="cell-center">Score</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#questionList}}
+      <tr>
+        <td><a href="#q/{{tiid}}/{{number}}">Question #{{number}}</a></td>
+        <td class="cell-center">{{{availablePoints}}}</td>
+        <td class="cell-center">{{{remainingAttempts}}}</td>
+        <td class="cell-center">{{{questionStatus}}}</td>
+        <td class="cell-center">{{{points}}}</td>
+      </tr>
+      {{/questionList}}
+    </tbody>
+  </table>
+
+</div>

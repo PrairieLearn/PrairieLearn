@@ -22,12 +22,20 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             if (!TestInstanceView)
                 return;
             this.subView = new TestInstanceView({model: this.model, test: this.test, questions: this.questions});
-            this.listenTo(this.subView, "finishTest", this.gradeTInstance.bind(this));
+            this.listenTo(this.subView, "gradeTest", this.gradeTInstance.bind(this));
+            this.listenTo(this.subView, "finishTest", this.finishTInstance.bind(this));
             this.subView.render();
             this.$("#tInstance").html(this.subView.el);
         },
 
         gradeTInstance: function() {
+            var that = this;
+            this.model.save({graded: true}, {patch: true, wait: true, success: function() {
+                that.test.fetch();
+            }});
+        },
+
+        finishTInstance: function() {
             var that = this;
             this.model.save({open: false}, {patch: true, wait: true, success: function() {
                 that.test.fetch();

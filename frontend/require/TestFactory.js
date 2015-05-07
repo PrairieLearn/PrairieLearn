@@ -1,5 +1,5 @@
 
-define(["BasicTestClient", "BasicTestView", "BasicTestInstanceView", "BasicTestSidebarView", "AdaptiveTestClient", "AdaptiveTestView", "AdaptiveTestInstanceView", "AdaptiveTestSidebarView", "PracExamTestClient", "PracExamTestView", "PracExamTestInstanceView", "PracExamTestSidebarView", "ExamTestClient", "ExamTestView", "ExamTestInstanceView", "ExamTestSidebarView", "GameTestClient", "GameTestView", "GameTestInstanceView", "GameTestSidebarView"], function(BasicTestClient, BasicTestView, BasicTestInstanceView, BasicTestSidebarView, AdaptiveTestClient, AdaptiveTestView, AdaptiveTestInstanceView, AdaptiveTestSidebarView, PracExamTestClient, PracExamTestView, PracExamTestInstanceView, PracExamTestSidebarView, ExamTestClient, ExamTestView, ExamTestInstanceView, ExamTestSidebarView, GameTestClient, GameTestView, GameTestInstanceView, GameTestSidebarView) {
+define(["BasicTestClient", "BasicTestView", "BasicTestInstanceView", "BasicTestSidebarView", "AdaptiveTestClient", "AdaptiveTestView", "AdaptiveTestInstanceView", "AdaptiveTestSidebarView", "PracExamTestClient", "PracExamTestView", "PracExamTestInstanceView", "PracExamTestSidebarView", "ExamTestClient", "ExamTestView", "ExamTestInstanceView", "ExamTestSidebarView", "GameTestClient", "GameTestView", "GameTestInstanceView", "GameTestSidebarView", "RetryExamTestClient", "RetryExamTestView", "RetryExamTestInstanceView", "RetryExamTestSidebarView"], function(BasicTestClient, BasicTestView, BasicTestInstanceView, BasicTestSidebarView, AdaptiveTestClient, AdaptiveTestView, AdaptiveTestInstanceView, AdaptiveTestSidebarView, PracExamTestClient, PracExamTestView, PracExamTestInstanceView, PracExamTestSidebarView, ExamTestClient, ExamTestView, ExamTestInstanceView, ExamTestSidebarView, GameTestClient, GameTestView, GameTestInstanceView, GameTestSidebarView, RetryExamTestClient, RetryExamTestView, RetryExamTestInstanceView, RetryExamTestSidebarView) {
 
     var objectMap = {
         "Basic": {
@@ -31,6 +31,12 @@ define(["BasicTestClient", "BasicTestView", "BasicTestInstanceView", "BasicTestS
             "testView": GameTestView,
             "tInstanceView": GameTestInstanceView,
             "sidebarView": GameTestSidebarView,
+        },
+        "RetryExam": {
+            "client": RetryExamTestClient,
+            "testView": RetryExamTestView,
+            "tInstanceView": RetryExamTestInstanceView,
+            "sidebarView": RetryExamTestSidebarView,
         },
     };
 
