@@ -27,6 +27,8 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
         });
         test.nQuestions = options.nQuestions;
         test._private = ["scoresByUID", "highScoresByUID", "completeHighScoresByUID"];
+        if (options.availDate)
+            test.availDate = moment.tz(options.availDate, options.timezone).format();
     };
 
     RetryExamTestServer.updateTInstance = function(tInstance, test, options) {
@@ -134,24 +136,6 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
         }
         var complete = (nAnswers === tInstance.qids.length);
         tInstance.finishDate = new Date().toJSON();
-
-        var uid = tInstance.uid;
-        var sanitizedUID = uid.replace(/\./g, "_");
-        if (test.scoresByUID[sanitizedUID] === undefined)
-            test.scoresByUID[sanitizedUID] = [];
-        test.scoresByUID[sanitizedUID].push(tInstance.score);
-        if (test.highScoresByUID[sanitizedUID] === undefined)
-            test.highScoresByUID[sanitizedUID] = 0;
-        test.highScoresByUID[sanitizedUID] = Math.max(tInstance.score, test.highScoresByUID[sanitizedUID]);
-        if (complete) {
-            if (test.completeHighScoresByUID[sanitizedUID] === undefined)
-                test.completeHighScoresByUID[sanitizedUID] = 0;
-            test.completeHighScoresByUID[sanitizedUID] = Math.max(tInstance.score, test.completeHighScoresByUID[sanitizedUID]);
-        }
-
-        test.scores = _.chain(test.scoresByUID).values().flatten().countBy().value();
-        test.highScores = _.chain(test.highScoresByUID).values().countBy().value();
-        test.completeHighScores = _.chain(test.completeHighScoresByUID).values().countBy().value();
 
         tInstance.open = false;
     };

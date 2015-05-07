@@ -28,6 +28,9 @@ define(["underscore", "backbone", "mustache", "RetryExamTestHelper", "text!Retry
             var qids = tInstance.get("qids");
             data.nQuestions = qids.length;
             data.maxScore = tInstance.get("maxScore");
+            data.score = tInstance.get("score");
+            data.correctPercentage = (data.score / data.maxScore * 100).toFixed(0);
+            data.incorrectPercentage = 100 - data.correctPercentage;
             if (data.open) {
                 var submissionsByQid = tInstance.get("submissionsByQid");
                 data.nSaved = _(qids).filter(function(qid) {return _(submissionsByQid).has(qid);}).length;
@@ -39,9 +42,6 @@ define(["underscore", "backbone", "mustache", "RetryExamTestHelper", "text!Retry
                 options = {weekday: "short", year: "numeric", month: "numeric", day: "numeric"};
                 dateString += ", " + finishDate.toLocaleDateString("en-US", options);
                 data.finishDate = dateString;
-                data.score = tInstance.get("score");
-                data.correctPercentage = (data.score / data.maxScore * 100).toFixed(0);
-                data.incorrectPercentage = 100 - data.correctPercentage;
             }
 
             var html = Mustache.render(RetryExamTestViewTemplate, data);
