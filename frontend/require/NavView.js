@@ -16,6 +16,7 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
 
         render: function() {
             var data = {};
+            data.navTitle = this.model.get("navTitle");
             data.userName = this.model.get("userName");
             data.perms = '';
             var perms = this.model.get("authPerms");

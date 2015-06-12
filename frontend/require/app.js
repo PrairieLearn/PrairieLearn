@@ -56,7 +56,7 @@ requirejs.config({
 });
 
 requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'spinController'],
-function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection, TestInstanceView, TestModel, StatsModel,   StatsView,   AssessView, AboutView, spinController) {
+function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection, TestInstanceView, TestModel, StatsModel,   StatsView,   AssessView, AboutView, spinController) {
 
     var QuestionModel = Backbone.Model.extend({
         idAttribute: "qid"
@@ -82,7 +82,7 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
 
     var AppModel = Backbone.Model.extend({
         initialize: function() {
-            this.set({
+            defaultConfig = {
                 page: "home",
                 currentAssessmentName: null,
                 currentAssessmentLink: null,
@@ -95,35 +95,16 @@ function(  $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mus
                 authSignature: null,
                 authPerms: [],
                 userUID: null,
-                userName: null
-            });
-            var c9RE = /c9.io/;
-            if (c9RE.test(window.location.href)) {
-                this.set({
-                    apiServer: window.location.protocol + "//" + window.location.hostname
-                });
-            }
+                userName: null,
+                pageTitle: "PrairieLearn",
+                navTitle: "PrairieLearn",
+            };
+            this.set(_(document.PLConfig).defaults(defaultConfig));
 
-            var edu_cs_RE = /edu\.cs\.illinois\.edu/;
-            if (edu_cs_RE.test(window.location.href)) {
-                console.log("  pass");
-                this.set({
-                    deployMode: true,
-                    apiServer: "https://edu.cs.illinois.edu/pl/cs233/"
-                });
-            }
+            document.title = this.get("pageTitle");
 
-            var authURL = this.apiURL("auth");
-            var deployRE = /prairielearn\.engr\.illinois\.edu/;
-            if (deployRE.test(window.location.href)) {
-                this.set({
-                    deployMode: true,
-                    apiServer: "https://prairielearn2.engr.illinois.edu:443"
-                });
-                authURL = "/cgi-bin/auth";
-            }
             var that = this;
-            $.getJSON(authURL, function(data) {
+            $.getJSON(this.apiURL("auth"), function(data) {
                 that.set({
                     authUID: data.uid,
                     authName: data.name,
