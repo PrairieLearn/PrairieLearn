@@ -289,7 +289,7 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
 
         goHome: function(actions) {
             this.model.set({
-                "page": "home",
+                "page": "assess",
                 "pageOptions": {}
             });
         },

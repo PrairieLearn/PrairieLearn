@@ -1481,6 +1481,10 @@ if (config.deployMode !== 'engr') {
         res.sendfile("index.html", {root: config.frontendDir});
     });
 
+    app.get("/config.js", function(req, res) {
+        res.sendfile("config.js", {root: config.frontendDir});
+    });
+
     app.get("/require/:filename", function(req, res) {
         res.sendfile(path.join("require", req.params.filename), {root: config.frontendDir});
     });
