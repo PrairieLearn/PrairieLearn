@@ -8,7 +8,8 @@
             "templateCalculation",
             "templateMCRadio",
             "templateMCCheckbox",
-            "templateFile"
+            "templateFile",
+            "templateRandomZip"
         ],
         "availDate": "2021-04-14T23:59:59",
         "dueDate": "2021-04-14T23:59:59",
