@@ -5,6 +5,7 @@ define(["underscore", "backbone", "mustache", "BasicTestHelper", "text!BasicTest
         tagName: 'div',
 
         initialize: function() {
+            this.appModel = this.options.appModel;
             this.tInstances = this.options.tInstances;
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.tInstances, "change", this.render);
@@ -27,6 +28,9 @@ define(["underscore", "backbone", "mustache", "BasicTestHelper", "text!BasicTest
             data.scoreBar = BasicTestHelper.renderScoreBar(score);
             var dueDate = new Date(that.model.get("dueDate"));
             data.dueDate = BasicTestHelper.renderDueDate(dueDate);
+            var availDate = new Date(that.model.get("availDate"));
+            data.availDate = BasicTestHelper.renderAvailDate(availDate);
+            data.seeAvailDate = this.appModel.hasPermission("seeAvailDate");
 
             var html = Mustache.render(BasicTestViewTemplate, data);
             this.$el.html(html);

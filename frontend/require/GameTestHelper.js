@@ -29,7 +29,7 @@ define(function() {
 
     GameTestHelper.renderAvailDate = function(availDate) {
         var dateString = this.renderDate(availDate);
-        var tooltip = "Due at " + availDate.toString();
+        var tooltip = "Available at " + availDate.toString();
         var html = '<span '
             + ' data-toggle="tooltip"'
             + ' data-placement="auto top"'
