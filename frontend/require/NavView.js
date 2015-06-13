@@ -1,5 +1,5 @@
 
-define(['underscore', 'backbone', 'Mustache', 'text!NavView.html'], function(_, Backbone, Mustache, navViewTemplate) {
+define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, Backbone, Mustache, navViewTemplate) {
     
     var NavView = Backbone.View.extend({
 
