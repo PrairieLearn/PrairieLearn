@@ -98,13 +98,16 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
                 userName: null,
                 pageTitle: "PrairieLearn",
                 navTitle: "PrairieLearn",
+                authURL: null,
             };
             this.set(_(document.PLConfig).defaults(defaultConfig));
+            if (this.get("authURL") === null)
+                this.set("authURL", this.apiURL("auth"));
 
             document.title = this.get("pageTitle");
 
             var that = this;
-            $.getJSON(this.apiURL("auth"), function(data) {
+            $.getJSON(this.get("authURL"), function(data) {
                 that.set({
                     authUID: data.uid,
                     authName: data.name,
