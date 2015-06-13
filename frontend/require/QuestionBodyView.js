@@ -6,6 +6,7 @@ define(['underscore', 'backbone', 'mustache', 'spinController', 'TestFactory', '
         tagName: 'div',
 
         initialize: function() {
+            this.appModel = this.options.appModel;
             this.test = this.options.test;
             this.tInstance = this.options.tInstance;
             this.listenTo(this.model, "change:qClient", this.render);
@@ -47,7 +48,7 @@ define(['underscore', 'backbone', 'mustache', 'spinController', 'TestFactory', '
             qClient.renderQuestion("#qInnerBody", function() {
                 that.model.set("submittable", qClient.isComplete());
                 that.model.trigger("answerChanged");
-            });
+            }, this.model, this.appModel);
         },
 
         close: function() {

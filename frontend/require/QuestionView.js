@@ -6,6 +6,7 @@ define(['underscore', 'backbone', 'mustache', 'TestFactory', 'text!QuestionView.
         tagName: 'div',
 
         initialize: function() {
+            this.appModel = this.options.appModel;
             this.test = this.options.test;
             this.tInstance = this.options.tInstance;
             this.listenTo(this.model, "change:title", this.render);
@@ -20,7 +21,7 @@ define(['underscore', 'backbone', 'mustache', 'TestFactory', 'text!QuestionView.
 
             var TestSidebarView = TestFactory.getClass(this.test.get("type"), "sidebarView");
             this.questionSidebarView = new TestSidebarView({model: this.model, test: this.test, tInstance: this.tInstance});
-            this.questionBodyView = new QuestionBodyView.QuestionBodyView({model: this.model, test: this.test, tInstance: this.tInstance});
+            this.questionBodyView = new QuestionBodyView.QuestionBodyView({model: this.model, test: this.test, tInstance: this.tInstance, appModel: this.appModel});
             this.questionSubmitView = new QuestionSubmitView.QuestionSubmitView({model: this.model, test: this.test, tInstance: this.tInstance});
             this.questionGradingView = new QuestionGradingView.QuestionGradingView({model: this.model});
             this.questionAnswerView = new QuestionAnswerView.QuestionAnswerView({model: this.model});

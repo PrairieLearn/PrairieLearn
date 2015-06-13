@@ -212,7 +212,7 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
                         helper.adjustQuestionDataModel(questionDataModel, test, tInstance);
                 });
                 */
-                view = new QuestionView.QuestionView({model: questionDataModel, test: test, tInstance: tInstance});
+                view = new QuestionView.QuestionView({model: questionDataModel, test: test, tInstance: tInstance, appModel: this.model});
                 break;
 
             /**
