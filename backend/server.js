@@ -9,43 +9,34 @@ var moment = require("moment-timezone");
 var config = {};
 
 config.timezone = 'America/Chicago';
-
-config.deployMode = 'local';
-if (process.argv.length > 2) {
-    if (process.argv[2] === "deploy") {
-        config.deployMode = 'engr';
-    }
-}
+config.dbAddress = 'mongodb://localhost:27017/data';
+config.logFilename = 'server.log';
+config.authType = 'none';
+config.localFileserver = true;
+config.serverType = 'http';
+config.serverPort = '3000';
 config.questionsDir = "questions";
 config.testsDir = "tests";
 config.frontendDir = "../frontend";
-
 config.secretKey = "THIS_IS_THE_SECRET_KEY"; // override in config.json
-config.nodetimeAccountKey = 'SECRET_NODETIME_KEY'; // override in config.json
-
 config.skipUIDs = {};
 config.superusers = {"user1@illinois.edu": true};
 
-if (fs.existsSync('config.json')) {
+configFilename = 'config.json';
+if (process.argv.length > 2) {
+    configFilename = process.argv[2];
+}
+if (fs.existsSync(configFilename)) {
     try {
-        fileConfig = JSON.parse(fs.readFileSync('config.json', {encoding: 'utf8'}));
+        fileConfig = JSON.parse(fs.readFileSync(configFilename, {encoding: 'utf8'}));
         _.defaults(fileConfig, config);
         config = fileConfig;
     } catch (e) {
-        console.log("Error reading config.json:", e);
+        console.log("Error reading config file: " + configFilename, e);
         process.exit(1);
     }
 } else {
     console.log("config.json not found, using default configuration...");
-}
-
-if (config.deployMode === 'engr') {
-    console.log("Starting nodetime...");
-    require('nodetime').profile({
-        accountKey: config.nodetimeAccountKey,
-        appName: 'Node.js Application'
-    });
-    console.log("nodetime started");
 }
 
 var requirejs = require("requirejs");
@@ -55,18 +46,11 @@ requirejs.config({
     baseUrl: config.frontendDir + '/require',
 });
 
-var logFilename;
-if (config.deployMode === 'engr') {
-    logFilename = '/var/log/apiserver.log';
-} else {
-    logFilename = 'server.log';
-}
-
 var winston = require('winston');
 var logger = new (winston.Logger)({
     transports: [
         new (winston.transports.Console)({level: 'warn', timestamp: true, colorize: true}),
-        new (winston.transports.File)({filename: logFilename, level: 'info'})
+        new (winston.transports.File)({filename: config.logFilename, level: 'info'})
     ]
 });
 logger.info('server start');
@@ -162,15 +146,9 @@ var processCollection = function(name, err, collection, options, callback) {
 };
 
 var loadDB = function(callback) {
-    var dbAddress;
-    switch (config.deployMode) {
-        case 'engr': dbAddress = "mongodb://prairielearn3.engr.illinois.edu:27017/data"; break;
-        case 'edu.cs': dbAddress = "mongodb://localhost:27017/PrairieLearn"; break;
-        default: dbAddress = "mongodb://localhost:27017/data"; break;
-    }
-    MongoClient.connect(dbAddress, function(err, locDb) {
+    MongoClient.connect(config.dbAddress, function(err, locDb) {
         if (err) {
-            logger.error("unable to connect to database", err);
+            logger.error("unable to connect to database at address: " + config.dbAddress, err);
             callback(true);
             return;
         }
@@ -488,12 +466,12 @@ app.use(function(req, res, next) {
         next();
         return;
     }
-    if (config.deployMode === 'local') {
+    if (config.authType === 'none') {
         // by-pass authentication for development
         req.authUID = "user1@illinois.edu";
-    } else if (config.deployMode == 'edu.cs') {
+    } else if (config.authType == 'eppn') {
         req.authUID = req.headers['eppn'];
-    } else {
+    } else if (config.authType == 'x-auth') {
         if (req.headers['x-auth-uid'] == null) {
             return sendError(res, 403, "Missing X-Auth-UID header");
         }
@@ -517,6 +495,8 @@ app.use(function(req, res, next) {
             return sendError(res, 403, "Invalid X-Auth-Signature for " + authUID);
         }
         req.authUID = authUID;
+    } else {
+        return sendError(res, 500, "Invalid authType: " + config.authType);
     }
 
     // add authUID to DB if not already present
@@ -576,7 +556,7 @@ app.options('/*', function(req, res) {
 });
 
 // hack for development testing
-if (config.deployMode === 'local') {
+if (config.authType === 'none') {
     app.get("/auth", function(req, res) {
         res.json(stripPrivateFields({
             "uid": "user1@illinois.edu",
@@ -587,7 +567,7 @@ if (config.deployMode === 'local') {
     });
 }
 
-if (config.deployMode === 'edu.cs') {
+if (config.authType === 'eppn') {
     app.get("/auth", function (req, res) {
         res.json({ "uid": req.authUID });
     });
@@ -1472,13 +1452,17 @@ app.get("/stats/usersPerHour", function(req, res) {
     });
 });
 
-if (config.deployMode !== 'engr') {
+if (config.localFileserver) {
     app.get("/", function(req, res) {
         res.sendfile("index.html", {root: config.frontendDir});
     });
 
     app.get("/index.html", function(req, res) {
         res.sendfile("index.html", {root: config.frontendDir});
+    });
+
+    app.get("/config.js", function(req, res) {
+        res.sendfile("config.js", {root: config.frontendDir});
     });
 
     app.get("/require/:filename", function(req, res) {
@@ -1756,23 +1740,22 @@ var runBayes = function(callback) {
 };
 
 var startServer = function(callback) {
-    if (config.deployMode === 'engr') {
+    if (config.serverType === 'https') {
         var options = {
             key: fs.readFileSync('/etc/pki/tls/private/localhost.key'),
             cert: fs.readFileSync('/etc/pki/tls/certs/localhost.crt'),
             ca: [fs.readFileSync('/etc/pki/tls/certs/server-chain.crt')]
         };
-        https.createServer(options, app).listen(443);
-        logger.info('server listening to HTTPS on port 443');
-    }  else if (config.deployMode === 'edu.cs') {
-        app.listen(10003);
-        logger.info('server listening on port 10003');
-        console.log("config: edu.cs");
+        https.createServer(options, app).listen(config.serverPort);
+        logger.info('server listening to HTTPS on port ' + config.serverPort);
+        callback(null);
+    } else if (config.serverType === 'http') {
+        app.listen(config.serverPort);
+        logger.info('server listening to HTTP on port ' + config.serverPort);
+        callback(null);
     } else {
-        app.listen(3000);
-        logger.info('server listening to HTTP');
+        callback('unknown serverType: ' + config.serverType);
     }
-    callback(null);
 };
 
 var startIntervalJobs = function(callback) {

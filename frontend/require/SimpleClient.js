@@ -95,6 +95,8 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
     var QuestionView = Backbone.View.extend({
 
         initialize: function() {
+            this.questionDataModel = this.options.questionDataModel;
+            this.appModel = this.options.appModel;
             this.answerAttributes = this.answerAttributes || [];
             this.template = this.options.template;
             this.params = this.options.params;
@@ -107,7 +109,8 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
                 trueAnswer: this.trueAnswer.toJSON(),
                 feedback: this.feedback.toJSON(),
             };
-            this.$el.html(PrairieTemplate.template(this.template, templateData));
+            var templatedHTML = PrairieTemplate.template(this.template, templateData, this.questionDataModel, this.appModel);
+            this.$el.html(templatedHTML);
             this.rivetsView = rivets.bind(this.$el, {
                 model: this.model,
                 params: this.params,
@@ -230,9 +233,9 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         this.feedback = new Backbone.Model();
     };
 
-    SimpleClient.prototype.renderQuestion = function(questionDivID, changeCallback) {
+    SimpleClient.prototype.renderQuestion = function(questionDivID, changeCallback, questionDataModel, appModel) {
         this.listenTo(this.model, "answerChanged", changeCallback);
-        this.questionView = new QuestionView({el: questionDivID, template: this.options.questionTemplate, model: this.model, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback});
+        this.questionView = new QuestionView({el: questionDivID, template: this.options.questionTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback});
         this.questionView.render();
         this.trigger("renderQuestionFinished");
     };

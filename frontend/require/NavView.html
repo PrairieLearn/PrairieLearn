@@ -6,14 +6,12 @@
       <span class="icon-bar"></span>
       <span class="icon-bar"></span>
     </button>
-    <a class="navbar-brand" href="index.html#">PrairieLearn</a>
+    <a class="navbar-brand" href="index.html#assess">{{navTitle}}</a>
   </div>
   <div class="collapse navbar-collapse">
     <ul class="nav navbar-nav" id="main-nav">
-      <li {{{navHomeAttributes}}}><a href="index.html#">Home</a></li>
-      <li {{{navAboutAttributes}}}><a href="index.html#about">About</a></li>
-      <li {{{navStatsAttributes}}}><a href="index.html#stats">Statistics</a></li>
       <li {{{navAssessAttributes}}}><a href="index.html#assess">Assessments</a></li>
+      <li {{{navStatsAttributes}}}><a href="index.html#stats">Statistics</a></li>
       {{#currentAssessmentName}}
       <li {{{currentAssessmentAttributes}}}><a href="{{{currentAssessmentLink}}}">{{currentAssessmentName}}</a></li>
       {{/currentAssessmentName}}
