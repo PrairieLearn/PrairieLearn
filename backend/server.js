@@ -91,7 +91,7 @@ var newID = function(type, callback) {
     var doc = {$inc: {seq: 1}};
     countersCollect.findAndModify(query, sort, doc, {w: 1, new: true}, function(err, item) {
         if (err) return callback(err);
-        var id = type.slice(0, type.length - 2) + item.seq;
+        var id = type.slice(0, type.length - 2) + item.value.seq;
         callback(null, id);
     });
 };
