@@ -5,6 +5,12 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!UserView.html'],
 
         tagName: 'div',
 
+        events: {
+            "submit #changeUIDForm": "changeUID",
+            "submit #changeRoleForm": "changeRole",
+            "submit #changeModeForm": "changeMode",
+        },
+
         initialize: function() {
         },
 
@@ -27,7 +33,25 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!UserView.html'],
 
         close: function() {
             this.remove();
-        }
+        },
+
+        changeUID: function(event) {
+            event.preventDefault();
+            var newUID = this.$("#changeViewUID").val();
+            this.model.changeUserUID(newUID);
+        },
+
+        changeRole: function() {
+            event.preventDefault();
+            var newRole = this.$("#changeViewRole").val();
+            this.model.changeUserRole(newRole);
+        },
+
+        changeMode: function() {
+            event.preventDefault();
+            var newMode = this.$("#changeMode").val();
+            this.model.changeMode(newMode);
+        },
     });
 
     return {

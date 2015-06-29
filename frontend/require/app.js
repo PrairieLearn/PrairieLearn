@@ -181,6 +181,18 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
             }
             return _(roleList).rest(roleRank);
         },
+
+        changeUserUID: function(newUID) {
+            console.log("changeUserUID to " + newUID);
+        },
+
+        changeUserRole: function(newRole) {
+            console.log("changeUserRole to " + newRole);
+        },
+
+        changeMode: function(newMode) {
+            console.log("changeMode to " + newMode);
+        },
     });
 
     var AppView = Backbone.View.extend({

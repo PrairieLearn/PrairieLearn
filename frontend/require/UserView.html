@@ -26,7 +26,7 @@
     <p><strong>Viewing Role:</strong> {{userRole}}</p>
 
     <div class="well well-sm">
-      <form>
+      <form id="changeUIDForm">
         <div class="form-group">
           <label for="changeViewUID">Change viewing UID to:</label>
           <input type="text" class="form-control" id="changeViewUID" placeholder="username@domain.org">
@@ -36,7 +36,7 @@
     </div>
 
     <div class="well well-sm no-bottom-margin">
-      <form class="form-inline">
+      <form class="form-inline" id="changeRoleForm">
         <div class="form-group">
           <label for="changeViewRole">Change viewing role to:</label>
           <select class="form-control" id="changeViewRole">
@@ -64,10 +64,10 @@
     <p><strong>Mode:</strong> {{mode}}</p>
 
     <div class="well well-sm no-bottom-margin">
-      <form class="form-inline">
+      <form class="form-inline" id="changeModeForm">
         <div class="form-group">
-          <label for="changeViewRole">Change mode to:</label>
-          <select class="form-control" id="changeViewRole">
+          <label for="changeMode">Change mode to:</label>
+          <select class="form-control" id="changeMode">
             <option>Default</option>
             <option>Exam</option>
           </select>
