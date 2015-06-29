@@ -22,7 +22,10 @@ config.serverCodeDir = "../../backend/serverCode";
 config.frontendDir = "../frontend";
 config.secretKey = "THIS_IS_THE_SECRET_KEY"; // override in config.json
 config.skipUIDs = {};
-config.superusers = {"user1@illinois.edu": true};
+config.superusers = {};
+config.roles = {"user1@illinois.edu": "Superuser"};
+
+var roleList = ["Superuser", "Instructor", "TA", "Student"];
 
 configFilename = 'config.json';
 if (process.argv.length > 2) {
@@ -40,6 +43,13 @@ if (fs.existsSync(configFilename)) {
 } else {
     console.log("config.json not found, using default configuration...");
 }
+
+_(config.superusers).forEach(function(value, key) {
+    if (value)
+        config.roles[key] = "Superuser";
+    else
+        config.roles[key] = "Student";
+});
 
 var requirejs = require("requirejs");
 
@@ -405,6 +415,18 @@ var ensureTestAvailByTID = function(req, res, tid, callback) {
     }
 };
 
+var uidToRole = function(uid) {
+    var role = "Student";
+    if (_(config.roles).has(uid)) {
+        role = config.roles[uid];
+        if (!_(roleList).contains(role)) {
+            logger.error("Invalid role '" + role + "' for UID '" + uid + "', resetting to 'Student'.");
+            role = "Student";
+        }
+    }
+    return role;
+};
+
 var checkObjAuth = function(req, obj) {
     var authorized = false;
     if (isSuperuser(req))
@@ -496,6 +518,7 @@ app.use(function(req, res, next) {
             return sendError(res, 403, "Missing X-Auth-Signature header");
         }
         var authUID = req.headers['x-auth-uid'];
+        var authRole = uidToRole(authUID);
         var authName = req.headers['x-auth-name'];
         var authDate = req.headers['x-auth-date'];
         var authSignature = req.headers['x-auth-signature'];
@@ -506,6 +529,7 @@ app.use(function(req, res, next) {
             return sendError(res, 403, "Invalid X-Auth-Signature for " + authUID);
         }
         req.authUID = authUID;
+        req.authRole = authRole;
     } else {
         return sendError(res, 500, "Invalid authType: " + config.authType);
     }
@@ -662,13 +686,10 @@ app.get("/users", function(req, res) {
                 return sendError(res, 500, "Error serializing users", err);
             }
             async.map(objs, function(u, callback) {
-                var perms = [];
-                if (config.superusers[u.uid] === true)
-                    perms.push("superuser");
                 callback(null, {
                     name: u.name,
                     uid: u.uid,
-                    perms: perms
+                    role: uidToRole(u.uid),
                 });
             }, function(err, objs) {
                 if (err) {
@@ -693,13 +714,10 @@ app.get("/users/:uid", function(req, res) {
         if (!uObj) {
             return sendError(res, 404, "No user with uid " + req.params.uid);
         }
-        var perms = [];
-        if (config.superusers[uObj.uid] === true)
-            perms.push("superuser");
         var obj = {
             name: uObj.name,
             uid: uObj.uid,
-            perms: perms
+            role: uidToRole(uObj.uid),
         };
         ensureObjAuth(req, res, obj, function(obj) {
             res.json(stripPrivateFields(obj));
@@ -1160,7 +1178,7 @@ var updateTInstances = function(req, res, tInstances, updateCallback) {
                         callback(null);
                     }
                 });
-            });                    
+            });
         });
     }, function(err) {
         if (err)
