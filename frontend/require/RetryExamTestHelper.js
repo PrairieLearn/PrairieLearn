@@ -8,6 +8,7 @@ define(function() {
         if (!open) {
             data.questionOpen = false;
             data.remainingAttempts = question.points.length - question.nGradedAttempts;
+            data.remainingPoints = question.points.slice(question.nGradedAttempts + 1).join(", ");
             if (data.remainingAttempts > 0)
                 data.availablePoints = question.points[question.nGradedAttempts];
             else
@@ -26,6 +27,7 @@ define(function() {
 
         data.questionOpen = true;
         data.remainingAttempts = question.points.length - question.nGradedAttempts;
+        data.remainingPoints = question.points.slice(question.nGradedAttempts + 1).join(", ");
         if (data.remainingAttempts > 0)
             data.availablePoints = question.points[question.nGradedAttempts];
         else
