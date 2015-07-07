@@ -147,8 +147,13 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
             this.trigger("change");
         },
 
-        hasPermission: function(operation) {
-            var role = this.get('userRole');
+        hasPermission: function(operation, type) {
+            var role;
+            if (type == "auth") {
+                role = this.get('authRole');
+            } else {
+                role = this.get('userRole');
+            }
             if (role == null)
                 return false;
 
@@ -173,7 +178,7 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
         },
 
         availableRoles: function() {
-            var role = this.get('userRole');
+            var role = this.get('authRole');
             var roleRank = _(roleList).indexOf(role);
             if (roleRank < 0) {
                 console.log("Invalid role: " + role);
@@ -183,15 +188,15 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
         },
 
         changeUserUID: function(newUID) {
-            console.log("changeUserUID to " + newUID);
+            this.set("userUID", newUID);
         },
 
         changeUserRole: function(newRole) {
-            console.log("changeUserRole to " + newRole);
+            this.set("userRole", newRole);
         },
 
         changeMode: function(newMode) {
-            console.log("changeMode to " + newMode);
+            this.set("mode", newMode);
         },
     });
 
@@ -199,13 +204,14 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
         initialize: function() {
             this.router = this.options.router; // hack to enable random question URL re-writing
             this.questions = this.options.questions;
-            this.eScores = this.options.eScores;
             this.tests = this.options.tests;
             this.tInstances = this.options.tInstances;
             this.users = this.options.users;
             this.currentView = null;
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.model, "change:userUID", this.reloadUserData);
+            this.listenTo(this.model, "change:userRole", this.reloadUserData);
+            this.listenTo(this.model, "change:mode", this.reloadUserData);
             this.navView = new NavView.NavView({model: this.model, users: this.users});
             this.navView.render();
             $("#nav").html(this.navView.el);
@@ -319,8 +325,21 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
             $('[data-toggle=tooltip]').tooltip();
         },
 
+        handleLoadError: function(collection, response, options) {
+            $("#error").html('<div class="alert alert-danger" role="alert">Error loading data.</div>');
+        },
+
         reloadUserData: function() {
-            this.tInstances.fetch({reset: true});
+            this.tInstances.reset();
+            this.questions.reset();
+            this.tests.reset();
+            this.tInstances.reset();
+            this.users.reset();
+            this.tInstances.fetch({error: this.handleLoadError.bind(this)});
+            this.questions.fetch({error: this.handleLoadError.bind(this)});
+            this.tests.fetch({error: this.handleLoadError.bind(this)});
+            this.tInstances.fetch({error: this.handleLoadError.bind(this)});
+            this.users.fetch({error: this.handleLoadError.bind(this)});
         }
     });
 

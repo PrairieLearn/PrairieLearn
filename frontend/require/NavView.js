@@ -16,7 +16,7 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
             data.userName = this.model.get("userName");
             data.userRole = this.model.get("userRole");
             data.mode = this.model.get("mode");
-            data.changeUserPerm = this.model.hasPermission("changeUser");
+            data.changeUserPerm = this.model.hasPermission("changeUser", "auth");
             data.currentAssessmentName = this.model.get("currentAssessmentName");
             data.currentAssessmentLink = this.model.get("currentAssessmentLink");
 

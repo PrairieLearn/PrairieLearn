@@ -12,13 +12,14 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!UserView.html'],
         },
 
         initialize: function() {
+            this.listenTo(this.model, "change", this.render);
         },
 
         render: function() {
             var that = this;
             var data = {};
-            data.changeModePerm = this.model.hasPermission("changeMode");
-            data.changeUserPerm = this.model.hasPermission("changeUser");
+            data.changeModePerm = this.model.hasPermission("changeMode", "auth");
+            data.changeUserPerm = this.model.hasPermission("changeUser", "auth");
             data.mode = this.model.get("mode");
             data.authUID = this.model.get("authUID");
             data.authName = this.model.get("authName");
