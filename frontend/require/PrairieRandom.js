@@ -273,10 +273,12 @@ define(["mersenne", "underscore", "PrairieGeom"], function(mersenne, _, PrairieG
     /** Randomly shuffle the given arrays in place with the same permutation.
 
         @param {Array} a (Optional) Arrays.
+        @return {Array} the permutation used to shuffle.
     */
     RandomGenerator.prototype.shuffle = function(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9) {
         var perm = this.randPerm(a0.length);
         this.permute(perm, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9);
+        return perm;
     };
 
     /** Make nSel near-uniform selections from nCat categories, returning the number of selections per category.
