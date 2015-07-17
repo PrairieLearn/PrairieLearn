@@ -125,6 +125,7 @@ define(["sylvester", "sha1", "PrairieGeom"], function(Sylvester, Sha1, PrairieGe
         this._props.arrowOutOfPageRadiusPx = 5;
 
         this._props.textOffsetPx = 4;
+        this._props.textFontSize = 16;
 
         this._props.pointRadiusPx = 2;
 
@@ -2123,7 +2124,7 @@ define(["sylvester", "sha1", "PrairieGeom"], function(Sylvester, Sha1, PrairieGe
             var d = this._props.textOffsetPx;
             //var bb0 = drawPx.add($V([-metrics.actualBoundingBoxLeft - d, -metrics.actualBoundingBoxAscent - d]));
             //var bb1 = drawPx.add($V([metrics.actualBoundingBoxRight + d, metrics.actualBoundingBoxDescent + d]));
-            var textHeight = 10;
+            var textHeight = this._props.textFontSize;
             var bb0 = drawPx.add($V([- bbRelOffset * metrics.width - d, - d]));
             var bb1 = drawPx.add($V([(1 - bbRelOffset) * metrics.width + d, textHeight + d]));
             if (boxed) {
@@ -2132,6 +2133,7 @@ define(["sylvester", "sha1", "PrairieGeom"], function(Sylvester, Sha1, PrairieGe
                 this._ctx.fillRect(bb0.e(1), bb0.e(2), bb1.e(1) - bb0.e(1), bb1.e(2) - bb0.e(2));
                 this._ctx.restore();
             }
+            this._ctx.font = this._props.textFontSize.toString() + "px serif";
             this._ctx.fillText(text, drawPx.e(1), drawPx.e(2));
             this.restore();
         }
