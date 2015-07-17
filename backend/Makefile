@@ -11,4 +11,4 @@ CONFIG_QUESTIONS_DIR := $(patsubst "%"$(comma),%,$(CONFIG_QUESTIONS_DIR))
 QUESTIONS_DIR := $(if $(CONFIG_QUESTIONS_DIR),$(CONFIG_QUESTIONS_DIR),../backend/questions)
 
 text:
-	cd ../frontend ; ../tool/generate_text.py $(QUESTIONS_DIR)/*/*.js
+	cd ../frontend ; ../tool/generate_text.py $(QUESTIONS_DIR)

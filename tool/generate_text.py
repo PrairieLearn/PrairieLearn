@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-import os, sys, re, hashlib, subprocess
+import os, fnmatch, sys, re, hashlib, subprocess
 
 TEXT_RE = re.compile("\"TEX:([^\"]+)\"");
 
 TEXT_DIR = "text"
 
 if len(sys.argv) <= 1:
-    print("Usage: generate_text <filenames>")
+    print("Usage: generate_text <basedir>")
     sys.exit(0);
 
 if not os.path.isdir(TEXT_DIR):
@@ -40,7 +40,7 @@ def unescape(s):
         i += 1
     return "".join(chars)
 
-for filename in sys.argv[1:]:
+def process_file(filename):
     print(filename)
     with open(filename) as file:
         for line in file:
@@ -68,6 +68,10 @@ for filename in sys.argv[1:]:
                     subprocess.check_call(["convert", "-density", "96",
                                            pdf_filename, "-trim", "+repage",
                                            img_filename], cwd=TEXT_DIR)
+
+for (dirpath, dirnames, filenames) in os.walk(sys.argv[1]):
+    for filename in fnmatch.filter(filenames, "*.js"):
+        process_file(os.path.join(dirpath, filename))
 
 print("Deleting intermediate files from %s" % TEXT_DIR)
 filenames = os.listdir(TEXT_DIR)
