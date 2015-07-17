@@ -125,7 +125,7 @@ define(["sylvester", "sha1", "PrairieGeom"], function(Sylvester, Sha1, PrairieGe
         this._props.arrowOutOfPageRadiusPx = 5;
 
         this._props.textOffsetPx = 4;
-        this._props.textFontSize = 16;
+        this._props.textFontSize = 14;
 
         this._props.pointRadiusPx = 2;
 
