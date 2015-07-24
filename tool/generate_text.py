@@ -1,6 +1,20 @@
 #!/usr/bin/env python
 
-import os, fnmatch, sys, re, hashlib, subprocess
+import os, fnmatch, sys, re, hashlib, subprocess, platform, glob
+
+CONVERT_CMD = "convert"
+if platform.system() == "Windows":
+    globspec = "C:\Program Files\ImageMagick*\convert.exe"
+    magicks = glob.glob(globspec)
+    if len(magicks) < 1:
+        print("ERROR: No files match %s" % globspec)
+        sys.exit(1)
+    if len(magicks) > 1:
+        print("ERROR: Multiple files match %s" % globspec)
+        for m in magicks:
+            print m
+        sys.exit(1)
+    CONVERT_CMD = magicks[0]
 
 TEXT_RE = re.compile("\"TEX:([^\"]+)\"");
 
