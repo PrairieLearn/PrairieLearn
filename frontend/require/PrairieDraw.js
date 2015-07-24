@@ -3049,6 +3049,9 @@ define(["sylvester", "sha1", "PrairieGeom"], function(Sylvester, Sha1, PrairieGe
             /* jshint boss: true */ // suppress warning for assignment on next line
         } while (element = element.offsetParent);
 
+        xPx *= this._canvas.width / this._canvas.scrollWidth;
+        yPx *= this._canvas.height / this._canvas.scrollHeight;
+
         var posPx = $V([xPx, yPx]);
         return posPx;
     };
