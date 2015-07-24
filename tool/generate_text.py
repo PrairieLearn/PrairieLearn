@@ -79,7 +79,7 @@ def process_file(filename):
                     print("Running pdflatex on " + tex_filename);
                     subprocess.check_call(["pdflatex", tex_filename], cwd=TEXT_DIR)
                     print("Running convert on " + pdf_filename);
-                    subprocess.check_call(["convert", "-density", "96",
+                    subprocess.check_call([CONVERT_CMD, "-density", "96",
                                            pdf_filename, "-trim", "+repage",
                                            img_filename], cwd=TEXT_DIR)
 
