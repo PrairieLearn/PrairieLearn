@@ -11,9 +11,9 @@ define(["underscore", "PrairieGeom"], function(_, PrairieGeom) {
             absTol: 1e-8,
         });
         var trueAns = trueAnswer;
+        var subAns = submittedAnswer;
         if (this.transformTrueAnswer)
             trueAns = this.transformTrueAnswer(vid, params, trueAns, subAns, options);
-        var subAns = submittedAnswer;
         if (this.transformSubmittedAnswer)
             subAns = this.transformSubmittedAnswer(vid, params, trueAns, subAns, options);
         var score;
