@@ -142,23 +142,30 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         },
 
         addAnswer: function(answerName) {
-            this.answerAttributes.push(answerName);
+            this.answerAttributes.push({name: answerName, required: true});
             this.listenTo(this.submittedAnswer, "change:" + answerName, this.checkSubmittable);
             this.listenTo(this.submittedAnswer, "change:" + answerName, this.answerChanged);
             this.checkSubmittable();
         },
 
+        addOptionalAnswer: function(answerName) {
+            this.answerAttributes.push({name: answerName, required: false});
+            this.listenTo(this.submittedAnswer, "change:" + answerName, this.answerChanged);
+        },
+
         checkSubmittable: function() {
             var i, submittable = true;
             for (i = 0; i < this.answerAttributes.length; i++) {
-                if (!this.submittedAnswer.has(this.answerAttributes[i])) {
-                    submittable = false;
-                    break;
-                }
-                var answer = this.submittedAnswer.get(this.answerAttributes[i]);
-                if (answer === undefined || answer === null || answer === "") {
-                    submittable = false;
-                    break;
+                if (this.answerAttributes[i].required) {
+                    if (!this.submittedAnswer.has(this.answerAttributes[i].name)) {
+                        submittable = false;
+                        break;
+                    }
+                    var answer = this.submittedAnswer.get(this.answerAttributes[i].name);
+                    if (answer === undefined || answer === null || answer === "") {
+                        submittable = false;
+                        break;
+                    }
                 }
             }
             this.model.set("submittable", submittable);
@@ -171,7 +178,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         getSubmittedAnswer: function() {
             var i, answerData = {};
             for (i = 0; i < this.answerAttributes.length; i++) {
-                answerData[this.answerAttributes[i]] = this.submittedAnswer.get(this.answerAttributes[i]);
+                answerData[this.answerAttributes[i].name] = this.submittedAnswer.get(this.answerAttributes[i].name);
             }
             return answerData;
         },
@@ -300,6 +307,10 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
 
     SimpleClient.prototype.addAnswer = function(answer) {
         this.questionView.addAnswer(answer);
+    };
+
+    SimpleClient.prototype.addOptionalAnswer = function(answer) {
+        this.questionView.addOptionalAnswer(answer);
     };
 
     return {
