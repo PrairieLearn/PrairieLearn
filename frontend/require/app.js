@@ -1,5 +1,10 @@
+var PRAIRIELEARN_DEFAULT_API_SERVER = "http://localhost:3000";
+
 requirejs.config({
     baseUrl: 'require',
+    paths: {
+        courseCode: (document.PLConfig.apiServer || PRAIRIELEARN_DEFAULT_API_SERVER) + "/courseCode",
+    },
     map: {
         '*': {
             'backbone': 'browser/backbone',
@@ -88,7 +93,7 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
                 currentAssessmentLink: null,
                 pageOptions: {},
                 deployMode: false,
-                apiServer: "http://localhost:3000",
+                apiServer: PRAIRIELEARN_DEFAULT_API_SERVER,
                 authUID: null,
                 authName: null,
                 authDate: null,

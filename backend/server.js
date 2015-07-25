@@ -17,6 +17,7 @@ config.serverType = 'http';
 config.serverPort = '3000';
 config.questionsDir = "questions";
 config.testsDir = "tests";
+config.courseCodeDir = "../../backend/code";
 config.frontendDir = "../frontend";
 config.secretKey = "THIS_IS_THE_SECRET_KEY"; // override in config.json
 config.skipUIDs = {};
@@ -41,9 +42,13 @@ if (fs.existsSync(configFilename)) {
 
 var requirejs = require("requirejs");
 
+console.log(config.courseCodeDir);
 requirejs.config({
     nodeRequire: require,
     baseUrl: config.frontendDir + '/require',
+    paths: {
+        courseCode: config.courseCodeDir,
+    },
 });
 
 var winston = require('winston');
@@ -626,6 +631,16 @@ var sendQuestionFile = function(req, res, filename) {
 
 app.get("/questions/:qid/:filename", function(req, res) {
     sendQuestionFile(req, res, req.params.filename);
+});
+
+app.get("/courseCode/:filename", function(req, res) {
+    var fullFilePath = path.join(config.courseCodeDir, req.params.filename);
+    fs.stat(fullFilePath, function(err, stats) {
+        if (err) {
+            return sendError(res, 404, 'No such file "/courseCode/' + req.params.filename + '"', err);
+        }
+        res.sendfile(req.params.filename, {root: config.courseCodeDir});
+    });
 });
 
 app.get("/users", function(req, res) {
