@@ -42,7 +42,6 @@ if (fs.existsSync(configFilename)) {
 
 var requirejs = require("requirejs");
 
-console.log(config.courseCodeDir);
 requirejs.config({
     nodeRequire: require,
     baseUrl: config.frontendDir + '/require',
