@@ -3,7 +3,7 @@ var PRAIRIELEARN_DEFAULT_API_SERVER = "http://localhost:3000";
 requirejs.config({
     baseUrl: 'require',
     paths: {
-        courseCode: (document.PLConfig.apiServer || PRAIRIELEARN_DEFAULT_API_SERVER) + "/courseCode",
+        clientCode: (document.PLConfig.apiServer || PRAIRIELEARN_DEFAULT_API_SERVER) + "/clientCode",
     },
     map: {
         '*': {

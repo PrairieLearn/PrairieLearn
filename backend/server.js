@@ -17,7 +17,8 @@ config.serverType = 'http';
 config.serverPort = '3000';
 config.questionsDir = "questions";
 config.testsDir = "tests";
-config.courseCodeDir = "../../backend/code";
+config.clientCodeDir = "../../backend/clientCode";
+config.serverCodeDir = "../../backend/serverCode";
 config.frontendDir = "../frontend";
 config.secretKey = "THIS_IS_THE_SECRET_KEY"; // override in config.json
 config.skipUIDs = {};
@@ -46,7 +47,8 @@ requirejs.config({
     nodeRequire: require,
     baseUrl: config.frontendDir + '/require',
     paths: {
-        courseCode: config.courseCodeDir,
+        clientCode: config.clientCodeDir,
+        serverCode: config.serverCodeDir,
     },
 });
 
@@ -464,7 +466,7 @@ app.use(function(req, res, next) {
         next();
         return;
     }
-    if (/^\/courseCode/.test(req.path)) {
+    if (/^\/clientCode/.test(req.path)) {
         req.authUID = "nouser";
         next();
         return;
@@ -637,13 +639,13 @@ app.get("/questions/:qid/:filename", function(req, res) {
     sendQuestionFile(req, res, req.params.filename);
 });
 
-app.get("/courseCode/:filename", function(req, res) {
-    var fullFilePath = path.join(config.courseCodeDir, req.params.filename);
+app.get("/clientCode/:filename", function(req, res) {
+    var fullFilePath = path.join(config.clientCodeDir, req.params.filename);
     fs.stat(fullFilePath, function(err, stats) {
         if (err) {
-            return sendError(res, 404, 'No such file "/courseCode/' + req.params.filename + '"', err);
+            return sendError(res, 404, 'No such file "/clientCode/' + req.params.filename + '"', err);
         }
-        res.sendfile(req.params.filename, {root: config.courseCodeDir});
+        res.sendfile(req.params.filename, {root: config.clientCodeDir});
     });
 });
 

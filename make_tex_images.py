@@ -12,7 +12,7 @@ with open("backend/config.json") as config_file:
     for line in config_file:
         for pattern in [
                 '"questionsDir" *: *\"([^"]*)\"',
-                '"courseCodeDir" *: *\"([^"]*)\"',
+                '"clientCodeDir" *: *\"([^"]*)\"',
         ]:
             match = re.search(pattern, line)
             if match:
