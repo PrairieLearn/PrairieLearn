@@ -18,11 +18,13 @@ if platform.system() == "Windows":
 
 TEXT_RE = re.compile("\"TEX:([^\"]+)\"");
 
-TEXT_DIR = "text"
-
-if len(sys.argv) <= 1:
-    print("Usage: generate_text <basedir>")
+if len(sys.argv) <= 2:
+    print("Usage: generate_text <outputdir> <basedir1> <basedir2> ...")
     sys.exit(0);
+
+TEXT_DIR = sys.argv[1]
+print("Convert command: %s" % CONVERT_CMD)
+print("Output directory: %s" % TEXT_DIR)
 
 if not os.path.isdir(TEXT_DIR):
     os.mkdir(TEXT_DIR)
@@ -83,10 +85,14 @@ def process_file(filename):
                                            pdf_filename, "-trim", "+repage",
                                            img_filename], cwd=TEXT_DIR)
 
-for (dirpath, dirnames, filenames) in os.walk(sys.argv[1]):
-    for filename in fnmatch.filter(filenames, "*.js"):
-        process_file(os.path.join(dirpath, filename))
+for basedir in sys.argv[2:]:
+    print("########################################")
+    print("Processing %s" % basedir)
+    for (dirpath, dirnames, filenames) in os.walk(basedir):
+        for filename in fnmatch.filter(filenames, "*.js"):
+            process_file(os.path.join(dirpath, filename))
 
+print("########################################")
 print("Deleting intermediate files from %s" % TEXT_DIR)
 filenames = os.listdir(TEXT_DIR)
 for filename in filenames:
