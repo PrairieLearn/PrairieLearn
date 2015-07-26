@@ -19,7 +19,7 @@ LaTeX labels are searched for by looking for strings of the form `"TEX:..."` or 
 
 ## Library code in `clientCode` and `serverCode`
 
-Each course can have JavaScript libraries that are specific to just that course, and can be used from any question in the course. These library files are separated into *client* and *server* libraries. Client libraries are accessible from both `client.js` and `server.js` in each question, while server libraries are only accessible from `server.js`. This means that any secret code that students should not be able to access can be put in a server library, while other non-sensitive code can go in client libraries.
+Each course can have JavaScript libraries that are specific to just that course, and can be used from any question in the course. These library files are separated into *client* and *server* libraries. Client libraries are accessible from both `client.js` and `server.js` in each question, while server libraries are only accessible from `server.js`. This means that any secret code that students should not be able to access can be put in a server library, while other non-sensitive code can go in client libraries. There is never a need to put a library file into both the client and server directories, because it can just go only into the client directory and be accessed directly from there by both `client.js` and `server.js`.
 
 To add client library code in the file `library.js`, do the following:
 
