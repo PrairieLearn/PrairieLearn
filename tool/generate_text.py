@@ -16,7 +16,7 @@ if platform.system() == "Windows":
         sys.exit(1)
     CONVERT_CMD = magicks[0]
 
-TEXT_RE = re.compile("\"TEX:([^\"]+)\"");
+TEXT_RE = re.compile("(?P<quote>['\"])TEX:([^(?P=quote)]+)(?P=quote)");
 
 if len(sys.argv) <= 2:
     print("Usage: generate_text <outputdir> <basedir1> <basedir2> ...")
@@ -60,8 +60,9 @@ def process_file(filename):
     print(filename)
     with open(filename) as file:
         for line in file:
-            for matchtext in TEXT_RE.findall(line):
-                text = unescape(matchtext)
+            for match in TEXT_RE.finditer(line):
+                match_text = match.group(2)
+                text = unescape(match_text)
                 hash = hashlib.sha1(text.encode()).hexdigest()
                 print(hash + " " + text)
                 tex_filename = hash + ".tex"
