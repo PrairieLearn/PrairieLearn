@@ -464,6 +464,11 @@ app.use(function(req, res, next) {
         next();
         return;
     }
+    if (/^\/courseCode/.test(req.path)) {
+        req.authUID = "nouser";
+        next();
+        return;
+    }
 
     if (req.method === 'OPTIONS') {
         // don't authenticate for OPTIONS requests, as these are just for CORS
