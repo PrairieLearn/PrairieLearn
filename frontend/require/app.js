@@ -443,10 +443,13 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
                 "X-Auth-Name": String(appModel.get("authName")),
                 "X-Auth-Date": String(appModel.get("authDate")),
                 "X-Auth-Signature": String(appModel.get("authSignature")),
+                "X-Mode": String(appModel.get("mode")),
+                "X-User-UID": String(appModel.get("userUID")),
+                "X-User-Role": String(appModel.get("userRole")),
             };
         });
 
-        appModel.on("change:authUID", function() {
+        appModel.on("change:userUID change:userRole change:mode", function() {
             questions.fetch({success: function() {
                 tests.fetch({success: function() {
                     tInstances.fetch({success: function() {
