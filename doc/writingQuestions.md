@@ -42,7 +42,7 @@ To add client library code in the file `library.js`, do the following:
 
 3. Edit the `PrairieLearn\backend\config.json` file to add the line:
 
-        "clientCodeDir": "<FULL-COURSE-PATH>/courseCode",
+        "clientCodeDir": "<FULL-COURSE-PATH>/clientCode",
 
 4. Inside a question's `client.js` or 'server.js`, use the library with:
 
