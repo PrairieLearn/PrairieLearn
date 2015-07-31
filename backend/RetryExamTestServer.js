@@ -76,7 +76,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
 
         tInstance.submissionsByQid[submission.qid] = submission;
         submission.graded = false;
-        submission._private = ["score", "trueAnswer", "oldTInstance", "oldTest", "newTInstance", "newTest"];
+        submission._private = ["score", "feedback", "trueAnswer", "oldTInstance", "oldTest", "newTInstance", "newTest"];
     };
 
     RetryExamTestServer.grade = function(tInstance, test) {
