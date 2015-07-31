@@ -178,7 +178,9 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         getSubmittedAnswer: function() {
             var i, answerData = {};
             for (i = 0; i < this.answerAttributes.length; i++) {
-                answerData[this.answerAttributes[i].name] = this.submittedAnswer.get(this.answerAttributes[i].name);
+                if (this.submittedAnswer.has(this.answerAttributes[i].name)) {
+                    answerData[this.answerAttributes[i].name] = this.submittedAnswer.get(this.answerAttributes[i].name);
+                }
             }
             return answerData;
         },
