@@ -25,8 +25,6 @@ config.skipUIDs = {};
 config.superusers = {};
 config.roles = {"user1@illinois.edu": "Superuser"};
 
-var roleList = ["Superuser", "Instructor", "TA", "Student"];
-
 configFilename = 'config.json';
 if (process.argv.length > 2) {
     configFilename = process.argv[2];
@@ -86,6 +84,7 @@ var gamma = require("gamma");
 var numeric = require("numeric");
 var PrairieStats = requirejs("PrairieStats");
 var PrairieModel = requirejs("PrairieModel");
+var PrairieRole = requirejs("PrairieRole");
 var express = require("express");
 var https = require('https');
 var app = express();
@@ -381,20 +380,20 @@ var sendError = function(res, code, msg, err) {
     res.send(code, msg);
 };
 
-var dateBeforeNow = function(dateString) {
+var isDateBeforeNow = function(dateString) {
     return moment.tz(dateString, config.timezone).isBefore(); // isBefore() uses NOW with no arg
 };
 
 var checkTestAvail = function(req, tid) {
     var avail = false;
-    if (isSuperuser(req))
+    if (PrairieRole.hasPermission(req.userRole, 'bypassAvailDate'))
         avail = true;
     if (_(testDB).has(tid)) {
         var info = testDB[tid];
         if (info.options.availDate === undefined) {
             avail = true;
         } else {
-            if (dateBeforeNow(info.options.availDate))
+            if (isDateBeforeNow(info.options.availDate))
                 avail = true;
         }
     }
@@ -419,9 +418,9 @@ var uidToRole = function(uid) {
     var role = "Student";
     if (_(config.roles).has(uid)) {
         role = config.roles[uid];
-        if (!_(roleList).contains(role)) {
-            logger.error("Invalid role '" + role + "' for UID '" + uid + "', resetting to 'Student'.");
-            role = "Student";
+        if (!PrairieRole.isRoleValid(role)) {
+            logger.error("Invalid role '" + role + "' for UID '" + uid + "', resetting to least permissive role.");
+            role = PrairieRole.leastPermissiveRole();
         }
     }
     return role;
@@ -429,9 +428,9 @@ var uidToRole = function(uid) {
 
 var checkObjAuth = function(req, obj) {
     var authorized = false;
-    if (isSuperuser(req))
+    if (PrairieRole.hasPermission(req.authRole, 'changeUser'))
         authorized = true;
-    if (obj.uid === req.authUID) {
+    if (obj.uid === req.userUID) {
         // if we have an associated test, check its availDate as well
         var testAuthorized = true;
         if (obj.tid !== undefined) {
@@ -441,7 +440,7 @@ var checkObjAuth = function(req, obj) {
             if (obj.availDate === undefined) {
                 authorized = true;
             } else {
-                if (dateBeforeNow(obj.availDate))
+                if (isDateBeforeNow(obj.availDate))
                     authorized = true;
             }
         }
@@ -494,17 +493,41 @@ app.use(function(req, res, next) {
         return;
     }
 
+    // bypass auth for local file serving
+    if (config.localFileserver) {
+        if (req.path == "/"
+            || req.path == "/index.html"
+            || req.path == "/config.js"
+            || /^\/require\//.test(req.path)
+            || /^\/css\//.test(req.path)
+            || /^\/text\//.test(req.path)
+            || /^\/img\//.test(req.path)
+           ) {
+            next();
+            return;
+        }
+    }
+
+    // bypass auth for local /auth serving
+    if (config.authType === 'none' && req.path == "/auth") {
+        next();
+        return;
+    }
+    
     if (req.method === 'OPTIONS') {
         // don't authenticate for OPTIONS requests, as these are just for CORS
         next();
         return;
     }
-    if (config.authType === 'none') {
-        // by-pass authentication for development
-        req.authUID = "user1@illinois.edu";
-    } else if (config.authType == 'eppn') {
+    if (config.authType == 'eppn') {
         req.authUID = req.headers['eppn'];
-    } else if (config.authType == 'x-auth') {
+
+        // FIXME: we need to figure out what headers are being passed with eppn auth
+        req.authRole = uidToRole(req.authUID);
+        req.mode = 'Default';
+        req.userUID = req.authUID;
+        req.userRole = req.authRole;
+    } else if (config.authType == 'x-auth' || config.authType === 'none') {
         if (req.headers['x-auth-uid'] == null) {
             return sendError(res, 403, "Missing X-Auth-UID header");
         }
@@ -517,30 +540,57 @@ app.use(function(req, res, next) {
         if (req.headers['x-auth-signature'] == null) {
             return sendError(res, 403, "Missing X-Auth-Signature header");
         }
+        if (req.headers['x-mode'] == null) {
+            return sendError(res, 403, "Missing X-Mode header");
+        }
+        if (req.headers['x-user-uid'] == null) {
+            return sendError(res, 403, "Missing X-User-UID header");
+        }
+        if (req.headers['x-user-role'] == null) {
+            return sendError(res, 403, "Missing X-User-Role header");
+        }
         var authUID = req.headers['x-auth-uid'];
         var authRole = uidToRole(authUID);
         var authName = req.headers['x-auth-name'];
         var authDate = req.headers['x-auth-date'];
         var authSignature = req.headers['x-auth-signature'];
         var checkData = authUID + "/" + authName + "/" + authDate;
-        var checkSignature = hmacSha256(checkData, config.secretKey);
-        checkSignature = checkSignature.toString();
+        var checkSignature = hmacSha256(checkData, config.secretKey).toString();
         if (authSignature !== checkSignature) {
             return sendError(res, 403, "Invalid X-Auth-Signature for " + authUID);
         }
+
+        // authorization succeeded, store data in the request
         req.authUID = authUID;
         req.authRole = authRole;
+        req.mode = req.headers['x-mode'];
+        req.userUID = req.headers['x-user-uid'];
+        req.userRole = req.headers['x-user-role'];
     } else {
         return sendError(res, 500, "Invalid authType: " + config.authType);
     }
 
+    // make sure userRole is not more powerful than authRole
+    req.userRole = PrairieRole.leastPermissive(req.userRole, req.authRole);
+    
+    // make sure only authorized users can change UID
+    if (!PrairieRole.hasPermission(req.authRole, 'changeUser')) {
+        req.userUID = req.authUID;
+    }
+
+    // make sure only authorized users can change mode
+    var serverMode = 'Public'; // FIXME: determine from client IP
+    if (req.mode == 'Default' || !PrairieRole.hasPermission(req.authRole, 'changeMode')) {
+        req.mode = serverMode;
+    }
+    
     // add authUID to DB if not already present
     uCollect.findOne({uid: req.authUID}, function(err, uObj) {
         if (err) {
             return sendError(res, 500, "error checking for user: " + req.authUID, err);
         }
         if (!uObj) {
-            uCollect.insert({uid: req.authUID}, {w: 1}, function(err) {
+            uCollect.insert({uid: req.authUID, name: req.authName}, {w: 1}, function(err) {
                 if (err) {
                     return sendError(res, 500, "error adding user: " + req.authUID, err);
                 }
@@ -552,21 +602,19 @@ app.use(function(req, res, next) {
     });
 });
 
-var isSuperuser = function(req) {
-    if (config.superusers[req.authUID] === true)
-        return true;
-    return false;
-};
-
 app.use(function(req, res, next) {
     if (req.method !== 'OPTIONS') {
         logger.info("request",
                      {ip: req.ip,
                       authUID: req.authUID,
+                      authRole: req.authRole,
+                      userUID: req.userUID,
+                      userRole: req.userRole,
+                      mode: req.mode,
                       method: req.method,
                       path: req.path,
                       params: req.params,
-                      body: req.body
+                      body: req.body,
                      });
     }
     next();
@@ -593,11 +641,16 @@ app.options('/*', function(req, res) {
 // hack for development testing
 if (config.authType === 'none') {
     app.get("/auth", function(req, res) {
+        var authUID = "user1@illinois.edu";
+        var authName = "Test User";
+        var authDate = (new Date()).toISOString();
+        var checkData = authUID + "/" + authName + "/" + authDate;
+        var authSignature = hmacSha256(checkData, config.secretKey).toString();
         res.json(stripPrivateFields({
-            "uid": "user1@illinois.edu",
-            "name": "Test User",
-            "date": "2013-08-17T09:44:18Z",
-            "signature": "THIS_IS_THE_SECRET_SIGNATURE"
+            "uid": authUID,
+            "name": authName,
+            "date": authDate,
+            "signature": authSignature,
         }));
     });
 }
@@ -820,7 +873,7 @@ app.post("/qInstances", function(req, res) {
         qid: req.body.qid,
         tiid: req.body.tiid,
     };
-    if (isSuperuser(req) && _(req.body).has('vid')) {
+    if (PrairieRole.hasPermission(req.userRole, 'overrideVID') && _(req.body).has('vid')) {
         qInstance.vid = req.body.vid;
     };
     readTInstance(res, qInstance.tiid, function(tInstance) {
@@ -1003,7 +1056,7 @@ app.post("/submissions", function(req, res) {
         return sendError(res, 400, "No submittedAnswer provided");
     }
     if (req.body.overrideScore !== undefined) {
-        if (!isSuperuser(req))
+        if (!PrairieRole.hasPermission(req.userRole, 'overrideScore'))
             return sendError(res, 403, "Superuser permissions required for override");
         submission.overrideScore = req.body.overrideScore;
     }

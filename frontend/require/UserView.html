@@ -29,7 +29,12 @@
       <form id="changeUIDForm">
         <div class="form-group">
           <label for="changeViewUID">Change viewing UID to:</label>
-          <input type="text" class="form-control" id="changeViewUID" placeholder="username@domain.org">
+          <input list="userList" type="text" class="form-control" id="changeViewUID" placeholder="username@domain.org">
+          <datalist id="userList">
+            {{#userList}}
+            <option value="{{.}}">
+            {{/userList}}
+          </datalist>
         </div>
         <button type="submit" class="btn btn-default">Change UID</button>
       </form>
@@ -69,6 +74,7 @@
           <label for="changeMode">Change mode to:</label>
           <select class="form-control" id="changeMode">
             <option>Default</option>
+            <option>Public</option>
             <option>Exam</option>
           </select>
         </div>

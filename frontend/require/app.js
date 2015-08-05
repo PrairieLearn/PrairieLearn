@@ -60,8 +60,8 @@ requirejs.config({
     },
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'spinController'],
-function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   spinController) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'PrairieRole', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'spinController'],
+function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   PrairieRole,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   spinController) {
 
     var QuestionModel = Backbone.Model.extend({
         idAttribute: "qid"
@@ -84,12 +84,6 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
     var UserCollection = Backbone.Collection.extend({
         model: UserModel
     });
-
-    var roleList = ['Superuser', 'Instructor', 'TA', 'Student'];
-    var ROLE_SUPERUSER = 0;
-    var ROLE_INSTRUCTOR = 1;
-    var ROLE_TA = 2;
-    var ROLE_STUDENT = 3;
 
     var AppModel = Backbone.Model.extend({
         initialize: function() {
@@ -157,34 +151,12 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
             if (role == null)
                 return false;
 
-            var roleRank = _(roleList).indexOf(role);
-            if (roleRank < 0) {
-                console.log("Invalid role: " + role);
-                roleRank = ROLE_STUDENT;
-            }
-
-            var permission = false;
-            if (operation === "overrideScore" && roleRank <= ROLE_INSTRUCTOR)
-                permission = true;
-            if (operation === "seeQID" && roleRank <= ROLE_TA)
-                permission = true;
-            if (operation === "changeUser" && roleRank <= ROLE_TA)
-                permission = true;
-            if (operation === "changeMode" && roleRank <= ROLE_TA)
-                permission = true;
-            if (operation === "seeAvailDate" && roleRank <= ROLE_TA)
-                permission = true;
-            return permission;
+            return PrairieRole.hasPermission(role, operation);
         },
 
         availableRoles: function() {
             var role = this.get('authRole');
-            var roleRank = _(roleList).indexOf(role);
-            if (roleRank < 0) {
-                console.log("Invalid role: " + role);
-                roleRank = ROLE_STUDENT;
-            }
-            return _(roleList).rest(roleRank);
+            return PrairieRole.availableRoles(role);
         },
 
         changeUserUID: function(newUID) {
@@ -308,7 +280,7 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
                 break;
 
             case "user":
-                view = new UserView.UserView({model: this.model});
+                view = new UserView.UserView({model: this.model, users: this.users});
                 break;
             }
             this.showView(view);

@@ -12,6 +12,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!UserView.html'],
         },
 
         initialize: function() {
+            this.users = this.options.users;
             this.listenTo(this.model, "change", this.render);
         },
 
@@ -28,6 +29,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!UserView.html'],
             data.userName = this.model.get("userName");
             data.userRole = this.model.get("userRole");
             data.roleList = this.model.availableRoles();
+            data.userList = this.users.map(function(user) {return user.get("uid");});
             var html = Mustache.render(UserViewTemplate, data);
             this.$el.html(html);
         },
