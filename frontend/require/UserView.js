@@ -20,7 +20,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!UserView.html'],
             var that = this;
             var data = {};
             data.changeModePerm = this.model.hasPermission("changeMode", "auth");
-            data.changeUserPerm = this.model.hasPermission("changeUser", "auth");
+            data.viewOtherUsersPerm = this.model.hasPermission("viewOtherUsers", "auth");
             data.mode = this.model.get("mode");
             data.authUID = this.model.get("authUID");
             data.authName = this.model.get("authName");

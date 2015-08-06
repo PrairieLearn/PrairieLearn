@@ -426,10 +426,19 @@ var uidToRole = function(uid) {
     return role;
 };
 
-var checkObjAuth = function(req, obj) {
+var checkObjAuth = function(req, obj, operation) {
     var authorized = false;
-    if (PrairieRole.hasPermission(req.authRole, 'changeUser'))
-        authorized = true;
+    if (operation == "read") {
+        if (PrairieRole.hasPermission(req.authRole, 'viewOtherUsers')) {
+            authorized = true;
+        }
+    } else if (operation == "write") {
+        if (PrairieRole.hasPermission(req.authRole, 'editOtherUsers')) {
+            authorized = true;
+        }
+    } else {
+        logger.error("Unknown operation in checkObjAuth: " + operation);
+    }
     if (obj.uid === req.userUID) {
         // if we have an associated test, check its availDate as well
         var testAuthorized = true;
@@ -448,17 +457,17 @@ var checkObjAuth = function(req, obj) {
     return authorized;
 };
 
-var filterObjsByAuth = function(req, objs, callback) {
+var filterObjsByAuth = function(req, objs, operation, callback) {
     async.filter(objs, function(obj, objCallback) {
-        objCallback(checkObjAuth(req, obj));
+        objCallback(checkObjAuth(req, obj, operation));
     }, callback);
 };
 
-var ensureObjAuth = function(req, res, obj, callback) {
-    if (checkObjAuth(req, obj)) {
+var ensureObjAuth = function(req, res, obj, operation, callback) {
+    if (checkObjAuth(req, obj, operation)) {
         callback(obj);
     } else {
-        return sendError(res, 403, "Insufficient permissions: " + req.path);
+        return sendError(res, 403, "Insufficient permissions for operation " + operation + ": " + req.path);
     }
 };
 
@@ -574,7 +583,7 @@ app.use(function(req, res, next) {
     req.userRole = PrairieRole.leastPermissive(req.userRole, req.authRole);
     
     // make sure only authorized users can change UID
-    if (!PrairieRole.hasPermission(req.authRole, 'changeUser')) {
+    if (!PrairieRole.hasPermission(req.authRole, 'viewOtherUsers')) {
         req.userUID = req.authUID;
     }
 
@@ -748,7 +757,7 @@ app.get("/users", function(req, res) {
                 if (err) {
                     return sendError(res, 500, "Error cleaning users", err);
                 }
-                filterObjsByAuth(req, objs, function(objs) {
+                filterObjsByAuth(req, objs, "read", function(objs) {
                     res.json(stripPrivateFields(objs));
                 });
             });
@@ -772,7 +781,7 @@ app.get("/users/:uid", function(req, res) {
             uid: uObj.uid,
             role: uidToRole(uObj.uid),
         };
-        ensureObjAuth(req, res, obj, function(obj) {
+        ensureObjAuth(req, res, obj, "read", function(obj) {
             res.json(stripPrivateFields(obj));
         });
     });
@@ -800,7 +809,7 @@ app.get("/qInstances", function(req, res) {
             if (err) {
                 return sendError(res, 500, "Error serializing qInstances", err);
             }
-            filterObjsByAuth(req, objs, function(objs) {
+            filterObjsByAuth(req, objs, "read", function(objs) {
                 res.json(stripPrivateFields(objs));
             });
         });
@@ -818,7 +827,7 @@ app.get("/qInstances/:qiid", function(req, res) {
         if (!obj) {
             return sendError(res, 404, "No qInstance with qiid " + req.params.qiid);
         }
-        ensureObjAuth(req, res, obj, function(obj) {
+        ensureObjAuth(req, res, obj, "read", function(obj) {
             res.json(stripPrivateFields(obj));
         });
     });
@@ -842,7 +851,7 @@ var makeQInstance = function(req, res, qInstance, callback) {
     if (!_.isString(qInstance.vid) || qInstance.vid.length === 0) {
         qInstance.vid = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
     }
-    ensureObjAuth(req, res, qInstance, function(qInstance) {
+    ensureObjAuth(req, res, qInstance, "write", function(qInstance) {
         newIDNoError(req, res, "qiid", function(qiid) {
             qInstance.qiid = qiid;
             loadQuestionServer(qInstance.qid, function (server) {
@@ -877,7 +886,7 @@ app.post("/qInstances", function(req, res) {
         qInstance.vid = req.body.vid;
     };
     readTInstance(res, qInstance.tiid, function(tInstance) {
-        ensureObjAuth(req, res, tInstance, function(tInstance) {
+        ensureObjAuth(req, res, tInstance, "read", function(tInstance) {
             makeQInstance(req, res, qInstance, function(qInstance) {
                 res.json(stripPrivateFields(qInstance));
             });
@@ -904,7 +913,7 @@ app.get("/submissions", function(req, res) {
             if (err) {
                 return sendError(res, 500, "Error serializing submissions", err);
             }
-            filterObjsByAuth(req, objs, function(objs) {
+            filterObjsByAuth(req, objs, "read", function(objs) {
                 res.json(stripPrivateFields(objs));
             });
         });
@@ -922,7 +931,7 @@ app.get("/submissions/:sid", function(req, res) {
         if (!obj) {
             return sendError(res, 404, "No submission with sid " + req.params.sid);
         }
-        ensureObjAuth(req, res, obj, function(obj) {
+        ensureObjAuth(req, res, obj, "read", function(obj) {
             res.json(stripPrivateFields(obj));
         });
     });
@@ -989,7 +998,7 @@ var writeTInstance = function(req, res, obj, callback) {
         return sendError(res, 500, "No tiid for write to tInstance database", {tInstance: obj});
     if (obj._id !== undefined)
         delete obj._id;
-    ensureObjAuth(req, res, obj, function(obj) {
+    ensureObjAuth(req, res, obj, "write", function(obj) {
         tiCollect.update({tiid: obj.tiid}, {$set: obj}, {upsert: true, w: 1}, function(err) {
             if (err)
                 return sendError(res, 500, "Error writing tInstance to database", {tInstance: obj, err: err});
@@ -1012,7 +1021,7 @@ var writeTest = function(req, res, obj, callback) {
 
 var testProcessSubmission = function(req, res, tiid, submission, callback) {
     readTInstance(res, tiid, function(tInstance) {
-        ensureObjAuth(req, res, tInstance, function(tInstance) {
+        ensureObjAuth(req, res, tInstance, "read", function(tInstance) {
             var tid = tInstance.tid;
             readTest(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
@@ -1063,9 +1072,9 @@ app.post("/submissions", function(req, res) {
     if (req.body.practice !== undefined) {
         submission.practice = req.body.practice;
     }
-    ensureObjAuth(req, res, submission, function(submission) {
+    ensureObjAuth(req, res, submission, "write", function(submission) {
         readQInstance(res, submission.qiid, function(qInstance) {
-            ensureObjAuth(req, res, qInstance, function(qInstance) {
+            ensureObjAuth(req, res, qInstance, "read", function(qInstance) {
                 submission.qid = qInstance.qid;
                 submission.vid = qInstance.vid;
                 var tiid = qInstance.tiid;
@@ -1292,10 +1301,10 @@ app.get("/tInstances", function(req, res) {
                 return sendError(res, 500, "Error serializing tInstances", err);
             }
             tInstances = _(tInstances).filter(function(ti) {return _(testDB).has(ti.tid);});
-            filterObjsByAuth(req, tInstances, function(tInstances) {
+            filterObjsByAuth(req, tInstances, "read", function(tInstances) {
                 updateTInstances(req, res, tInstances, function() {
                     autoCreateTInstances(req, res, tInstances, function(tInstances) {
-                        filterObjsByAuth(req, tInstances, function(tInstances) {
+                        filterObjsByAuth(req, tInstances, "read", function(tInstances) {
                             res.json(stripPrivateFields(tInstances));
                         });
                     });
@@ -1316,7 +1325,7 @@ app.get("/tInstances/:tiid", function(req, res) {
         if (!obj) {
             return sendError(res, 404, "No tInstance with tiid " + req.params.tiid);
         }
-        ensureObjAuth(req, res, obj, function(obj) {
+        ensureObjAuth(req, res, obj, "read", function(obj) {
             res.json(stripPrivateFields(obj));
         });
     });
@@ -1378,7 +1387,7 @@ app.post("/tInstances", function(req, res) {
 
 var finishTest = function(req, res, tiid, callback) {
     readTInstance(res, tiid, function(tInstance) {
-        ensureObjAuth(req, res, tInstance, function(tInstance) {
+        ensureObjAuth(req, res, tInstance, "write", function(tInstance) {
             var tid = tInstance.tid;
             readTest(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
@@ -1400,7 +1409,7 @@ var finishTest = function(req, res, tiid, callback) {
 
 var gradeTest = function(req, res, tiid, callback) {
     readTInstance(res, tiid, function(tInstance) {
-        ensureObjAuth(req, res, tInstance, function(tInstance) {
+        ensureObjAuth(req, res, tInstance, "write", function(tInstance) {
             var tid = tInstance.tid;
             readTest(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
@@ -1452,7 +1461,7 @@ app.get("/export.csv", function(req, res) {
                 return sendError(res, 400, "Error iterating over tInstances", {err: err});
             }
             if (item != null) {
-                if (!checkObjAuth(req, item))
+                if (!checkObjAuth(req, item, "read"))
                     return;
                 var tid = item.tid;
                 var uid = item.uid;

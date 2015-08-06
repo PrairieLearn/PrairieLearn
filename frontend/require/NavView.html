@@ -12,15 +12,15 @@
     <ul class="nav navbar-nav" id="main-nav">
       <li {{{navAssessAttributes}}}><a href="index.html#assess">Assessments</a></li>
       <li {{{navStatsAttributes}}}><a href="index.html#stats">Statistics</a></li>
-      {{#changeUserPerm}}
+      {{#viewOtherUsersPerm}}
       <li {{{navUserAttributes}}}><a href="index.html#user">User</a></li>
-      {{/changeUserPerm}}
+      {{/viewOtherUsersPerm}}
       {{#currentAssessmentName}}
       <li {{{currentAssessmentAttributes}}}><a href="{{{currentAssessmentLink}}}">{{currentAssessmentName}}</a></li>
       {{/currentAssessmentName}}
     </ul>
     <div class="navbar-right">
-      <p class="navbar-text">{{userName}} {{#changeUserPerm}}({{mode}}/{{userRole}}){{/changeUserPerm}}</p>
+      <p class="navbar-text">{{userName}} {{#viewOtherUsersPerm}}({{mode}}/{{userRole}}){{/viewOtherUsersPerm}}</p>
       <a class="btn btn-default navbar-btn" href="https://prairielearn.engr.illinois.edu/Shibboleth.sso/Logout">Log out</a>
     </div>
   </div>

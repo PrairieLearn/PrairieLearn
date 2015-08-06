@@ -99,7 +99,9 @@ define(['underscore'], function(_) {
             permission = true;
         if (operation === 'seeQID' && rank <= this.TA)
             permission = true;
-        if (operation === 'changeUser' && rank <= this.TA)
+        if (operation === 'viewOtherUsers' && rank <= this.TA)
+            permission = true;
+        if (operation === 'editOtherUsers' && rank <= this.INSTRUCTOR)
             permission = true;
         if (operation === 'changeMode' && rank <= this.INSTRUCTOR)
             permission = true;
