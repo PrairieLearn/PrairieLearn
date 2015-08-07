@@ -5,6 +5,7 @@ var fs = require("fs");
 var path = require("path");
 var async = require("async");
 var moment = require("moment-timezone");
+var validator = require('is-my-json-valid')
 
 var config = {};
 
@@ -32,12 +33,23 @@ if (process.argv.length > 2) {
 if (fs.existsSync(configFilename)) {
     try {
         fileConfig = JSON.parse(fs.readFileSync(configFilename, {encoding: 'utf8'}));
-        _.defaults(fileConfig, config);
-        config = fileConfig;
     } catch (e) {
         console.log("Error reading config file: " + configFilename, e);
         process.exit(1);
     }
+    configValidate = validator(fs.readFileSync("schema/backendConfig.json", {encoding: 'utf8'}),
+                               {verbose: true, greedy: true});
+    configValidate(fileConfig);
+    if (configValidate.errors) {
+        console.log("Error in config file format: " + configFilename);
+        _(configValidate.errors).forEach(function(e) {
+            console.log('Error in field "' + e.field + '": ' + e.message
+                        + (_(e).has('value') ? (' (value: ' + e.value + ')') : ''));
+        });
+        process.exit(1);
+    }
+    _.defaults(fileConfig, config);
+    config = fileConfig;
 } else {
     console.log("config.json not found, using default configuration...");
 }

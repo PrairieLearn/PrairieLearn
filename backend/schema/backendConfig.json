@@ -1,0 +1,71 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Backend Config",
+    "description": "A configuration file for the PrairieLearn server.",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "questionsDir": {
+            "description": "Path to the questions directory.",
+            "type": "string"
+        },
+        "testsDir": {
+            "description": "Path to the tests directory.",
+            "type": "string"
+        },
+        "clientCodeDir": {
+            "description": "Path to the client code directory.",
+            "type": "string"
+        },
+        "serverCodeDir": {
+            "description": "Path to the server code directory.",
+            "type": "string"
+        },
+        "secretKey": {
+            "description": "Secret key for authenticating users (should be a long random string).",
+            "type": "string"
+        },
+        "nodetimeAccountKey": {
+            "description": "Secret account key for Nodetime, for logging.",
+            "type": "string"
+        },
+        "superusers": {
+            "description": "List of superuser UIDs.",
+            "type": "object",
+            "patternProperties": {
+                ".+": {
+                    "description": "Whether this UID is a superuser.",
+                    "type": "boolean"
+                }
+            }
+        },
+        "dbAddress": {
+            "description": "The address for connecting to the database.",
+            "type": "string"
+        },
+        "logFilename": {
+            "description": "Filename to use for server logging.",
+            "type": "string"
+        },
+        "authType": {
+            "description": "The type of authentication to use.",
+            "enum": ["none", "x-auth", "eppn"]
+        },
+        "authURL": {
+            "description": "The URL to use ",
+            "type": "string"
+        },
+        "localFileserver": {
+            "description": "Whether to also run a local fileserver on port 3000.",
+            "type": "boolean"
+        },
+        "serverType": {
+            "description": "The type of server to start.",
+            "enum": ["http", "https"]
+        },
+        "serverPort": {
+            "description": "The TCP port number for the server.",
+            "type": "string"
+        }
+    }
+}

@@ -17,7 +17,8 @@
         "csv": "*",
         "numeric": "*",
         "nodetime": "*",
-        "moment-timezone": "*"
+        "moment-timezone": "*",
+        "is-my-json-valid": "*"
     },
     "devDependencies": {
         "grunt": "*",

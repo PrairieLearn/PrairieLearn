@@ -3,6 +3,17 @@
     "title": "Template Exam",
     "set": "Exam",
     "number": 1,
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "role": "TA"
+        },
+        {
+            "mode": "Exam",
+            "startDate": "2014-07-07T23:59:59",
+            "endDate": "2014-07-10T23:59:59"
+        },
+    ],
     "options": {
         "qidGroups": [
             [

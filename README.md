@@ -10,6 +10,7 @@ the server.
 
 * [Installing PrairieLearn on Linux or OS X](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/installingLinux.md)
 * [Installing PrairieLearn on Windows](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/installingWindows.md)
+* [PrairieLearn server configuration](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/serverConfig.md)
 * [Configuring the server for a course](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/courseConfig.md)
 * [Writing questions](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/writingQuestions.md)
 * [Writing tests](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/writingTests.md)
