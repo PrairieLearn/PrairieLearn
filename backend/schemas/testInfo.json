@@ -1,0 +1,34 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Test Info",
+    "description": "Info files for tests.",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "type": {
+            "description": "Type of the test.",
+            "enum": ["Basic", "Game", "Exam", "RetryExam"],
+            "required": true
+        },
+        "title": {
+            "description": "The title of the test (e.g., 'Derivatives and anti-derivatives').",
+            "type": "string",
+            "required": true
+        },
+        "set": {
+            "description": "Which set of tests this one belongs to (e.g., 'Homework', 'Practice Quiz').",
+            "type": "string",
+            "required": true
+        },
+        "number": {
+            "description": "The number of this test within the set (e.g., 1, 2, 3).",
+            "type": "integer",
+            "required": true
+        },
+        "options": {
+            "description": "Options that define how the test will work, specific to the individual test type.",
+            "required": true,
+            "type": "object"
+        }
+    }
+}
