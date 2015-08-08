@@ -4,7 +4,7 @@
 Each user has a single role assigned to them. These are:
 
 Role         | Description
---           | --
+---          | ---
 `Student`    | A student participating in the class. They can only see their own information, and can do do tests.
 `TA`         | An assistant instructor. They can see the data of all users, but can only edit their own information.
 `Instructor` | A person in charge of the course. Has full permission to see and edit the information of other users.
@@ -13,7 +13,7 @@ Role         | Description
 The detailed list of permissions for each role is given below.
 
 Operation                                                             | Student | TA  | Instructor | Superuser
---                                                                    | --      | --  | --         | --
+---                                                                   | ---     | --- | ---        | ---
 `overrideScore`: Submit question answers with pre-determined scores.  |         |     | Yes        | Yes
 `overrideVID`: Load specific (non-random) instances of questions.     |         | Yes | Yes        | Yes
 `seeQID`: See question ID strings.                                    |         | Yes | Yes        | Yes
