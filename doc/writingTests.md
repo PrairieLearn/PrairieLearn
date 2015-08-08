@@ -70,5 +70,5 @@ Each access role will only grant access if all of the restrictions are satisfied
 
 In summary, `allowAccess` uses the algorithm:
 
-    each accessRule is True if (restriction1 and restriction2 and restriction3)
-    allowAccess is True if (accessRule1 or accessRule2 or accessRule3)
+    each accessRule is True if (restriction1 AND restriction2 AND restriction3)
+    allowAccess is True if (accessRule1 OR accessRule2 OR accessRule3)
