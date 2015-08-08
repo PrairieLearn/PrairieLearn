@@ -12,27 +12,15 @@
     <ul class="nav navbar-nav" id="main-nav">
       <li {{{navAssessAttributes}}}><a href="index.html#assess">Assessments</a></li>
       <li {{{navStatsAttributes}}}><a href="index.html#stats">Statistics</a></li>
+      {{#viewOtherUsersPerm}}
+      <li {{{navUserAttributes}}}><a href="index.html#user">User</a></li>
+      {{/viewOtherUsersPerm}}
       {{#currentAssessmentName}}
       <li {{{currentAssessmentAttributes}}}><a href="{{{currentAssessmentLink}}}">{{currentAssessmentName}}</a></li>
       {{/currentAssessmentName}}
-      {{#changeUserPerm}}
-      <li class="dropdown">
-        <a href="#" class="dropdown-toggle" data-toggle="dropdown">User <b class="caret"></b></a>
-        <ul class="dropdown-menu">
-          <li>
-            <form class="navbar-form">
-              <div class="form-group">
-                <input id="navChangeUID" type="text" class="form-control" placeholder="UID" />
-              </div>
-              <button class="btn btn-default changeUser">Change user</button>
-            </form>
-          </li>
-        </ul>
-      </li>
-      {{/changeUserPerm}}
     </ul>
     <div class="navbar-right">
-      <p class="navbar-text">{{userName}}{{perms}}</p>
+      <p class="navbar-text">{{userName}} {{#viewOtherUsersPerm}}({{mode}}/{{userRole}}){{/viewOtherUsersPerm}}</p>
       <a class="btn btn-default navbar-btn" href="https://prairielearn.engr.illinois.edu/Shibboleth.sso/Logout">Log out</a>
     </div>
   </div>

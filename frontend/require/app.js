@@ -60,8 +60,8 @@ requirejs.config({
     },
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'spinController'],
-function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection, TestInstanceView, TestModel, StatsModel,   StatsView,   AssessView, AboutView, spinController) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'PrairieRole', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'spinController'],
+function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   PrairieRole,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   spinController) {
 
     var QuestionModel = Backbone.Model.extend({
         idAttribute: "qid"
@@ -88,6 +88,7 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
     var AppModel = Backbone.Model.extend({
         initialize: function() {
             defaultConfig = {
+                mode: "Default",
                 page: "home",
                 currentAssessmentName: null,
                 currentAssessmentLink: null,
@@ -95,11 +96,12 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
                 deployMode: false,
                 apiServer: PRAIRIELEARN_DEFAULT_API_SERVER,
                 authUID: null,
+                authRole: null,
                 authName: null,
                 authDate: null,
                 authSignature: null,
-                authPerms: [],
                 userUID: null,
+                userRole: null,
                 userName: null,
                 pageTitle: "PrairieLearn",
                 navTitle: "PrairieLearn",
@@ -115,14 +117,17 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
             $.getJSON(this.get("authURL"), function(data) {
                 that.set({
                     authUID: data.uid,
+                    authRole: data.role,
                     authName: data.name,
                     authDate: data.date,
                     authSignature: data.signature,
                     userUID: data.uid,
+                    userRole: data.role,
                     userName: data.name
                 });
                 $.getJSON(that.apiURL("users/" + that.get("authUID")), function(userData) {
-                    that.set("authPerms", userData.perms);
+                    that.set("authRole", userData.role);
+                    that.set("userRole", userData.role);
                 });
             });
             this.listenTo(Backbone, "tryAgain", this.tryAgain);
@@ -136,35 +141,49 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
             this.trigger("change");
         },
 
-        hasPermission: function(operation) {
-            var perms = this.get("authPerms");
-            if (!perms)
+        hasPermission: function(operation, type) {
+            var role;
+            if (type == "auth") {
+                role = this.get('authRole');
+            } else {
+                role = this.get('userRole');
+            }
+            if (role == null)
                 return false;
 
-            var permission = false;
-            if (operation === "overrideScore" && _(perms).contains("superuser"))
-                permission = true;
-            if (operation === "seeQID" && _(perms).contains("superuser"))
-                permission = true;
-            if (operation === "changeUser" && _(perms).contains("superuser"))
-                permission = true;
-            if (operation === "seeAvailDate" && _(perms).contains("superuser"))
-                permission = true;
-            return permission;
-        }
+            return PrairieRole.hasPermission(role, operation);
+        },
+
+        availableRoles: function() {
+            var role = this.get('authRole');
+            return PrairieRole.availableRoles(role);
+        },
+
+        changeUserUID: function(newUID) {
+            this.set("userUID", newUID);
+        },
+
+        changeUserRole: function(newRole) {
+            this.set("userRole", newRole);
+        },
+
+        changeMode: function(newMode) {
+            this.set("mode", newMode);
+        },
     });
 
     var AppView = Backbone.View.extend({
         initialize: function() {
             this.router = this.options.router; // hack to enable random question URL re-writing
             this.questions = this.options.questions;
-            this.eScores = this.options.eScores;
             this.tests = this.options.tests;
             this.tInstances = this.options.tInstances;
             this.users = this.options.users;
             this.currentView = null;
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.model, "change:userUID", this.reloadUserData);
+            this.listenTo(this.model, "change:userRole", this.reloadUserData);
+            this.listenTo(this.model, "change:mode", this.reloadUserData);
             this.navView = new NavView.NavView({model: this.model, users: this.users});
             this.navView.render();
             $("#nav").html(this.navView.el);
@@ -237,7 +256,7 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
                     qids = tInstance.get("qids");
                 else
                     qids = test.get("qids");
-                
+
 
                 // skipQNumbers is an array of strings, containing a question number (starting from question 1, not zero-based)
                 // ...we'll map them to integers
@@ -256,9 +275,12 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
                 this.router.navigate("q/" + tiid + "/" + chosenQuestionNumber, true);
                 return;
 
-
             case "about":
                 view = new AboutView.AboutView();
+                break;
+
+            case "user":
+                view = new UserView.UserView({model: this.model, users: this.users});
                 break;
             }
             this.showView(view);
@@ -275,8 +297,21 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
             $('[data-toggle=tooltip]').tooltip();
         },
 
+        handleLoadError: function(collection, response, options) {
+            $("#error").html('<div class="alert alert-danger" role="alert">Error loading data.</div>');
+        },
+
         reloadUserData: function() {
-            this.tInstances.fetch({reset: true});
+            this.tInstances.reset();
+            this.questions.reset();
+            this.tests.reset();
+            this.tInstances.reset();
+            this.users.reset();
+            this.tInstances.fetch({error: this.handleLoadError.bind(this)});
+            this.questions.fetch({error: this.handleLoadError.bind(this)});
+            this.tests.fetch({error: this.handleLoadError.bind(this)});
+            this.tInstances.fetch({error: this.handleLoadError.bind(this)});
+            this.users.fetch({error: this.handleLoadError.bind(this)});
         }
     });
 
@@ -288,6 +323,7 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
             "cq/:tiid/:qInfo(/not/:skipQNumbers)": "goChooseTestQuestion",
             "ti/:tiid": "goTestInstance",
             "about": "goAbout",
+            "user": "goUser",
             "*actions": "goHome"
         },
 
@@ -344,6 +380,13 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
                 "pageOptions": {}
             });
         },
+
+        goUser: function() {
+            this.model.set({
+                "page": "user",
+                "pageOptions": {}
+            });
+        },
     });
 
     $(function() {
@@ -372,10 +415,13 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
                 "X-Auth-Name": String(appModel.get("authName")),
                 "X-Auth-Date": String(appModel.get("authDate")),
                 "X-Auth-Signature": String(appModel.get("authSignature")),
+                "X-Mode": String(appModel.get("mode")),
+                "X-User-UID": String(appModel.get("userUID")),
+                "X-User-Role": String(appModel.get("userRole")),
             };
         });
 
-        appModel.on("change:authUID", function() {
+        appModel.on("change:userUID change:userRole change:mode", function() {
             questions.fetch({success: function() {
                 tests.fetch({success: function() {
                     tInstances.fetch({success: function() {
