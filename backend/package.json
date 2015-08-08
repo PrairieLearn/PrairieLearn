@@ -18,6 +18,7 @@
         "numeric": "*",
         "nodetime": "*",
         "moment-timezone": "*",
+        "jju": "*"
         "is-my-json-valid": "*"
     },
     "devDependencies": {
