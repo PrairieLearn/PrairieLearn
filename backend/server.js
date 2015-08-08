@@ -62,7 +62,7 @@ if (process.argv.length > 2) {
     configFilename = process.argv[2];
 }
 if (fs.existsSync(configFilename)) {
-    fileConfig = readJSON(configFilename, 'schema/backendConfig.json');
+    fileConfig = readJSON(configFilename, 'schemas/backendConfig.json');
     _.defaults(fileConfig, config);
     config = fileConfig;
 } else {
