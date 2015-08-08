@@ -1,0 +1,54 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "RetryExam test options",
+    "description": "Options for a RetryExam test.",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "questionGroups": {
+            "description": "Array of QID difficulty groups, one per difficulty level of questions.",
+            "type": "array",
+            "items": {
+                "description": "Array of QID topic groups, one per topic of questions.",
+                "type": "array",
+                "items": {
+                    "description": "Array of question IDs (QIDs) for this topic and difficulty.",
+                    "type": "array",
+                    "item": {
+                        "description": "A single test question.",
+                        "type": "object",
+                        "additionalProperties": false,
+                        "properties": {
+                            "qid": {
+                                "description": "The ID of this question (QID).",
+                                "type": "string",
+                                "required": true
+                            },
+                            "points": {
+                                "description": "An array of points values.",
+                                "type": "array",
+                                "required": true,
+                                "minItems": 1,
+                                "items": {
+                                    "type": "integer"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "availDate": {
+            "description": "The date after which the test is available for students to view.",
+            "type": "string"
+        },
+        "nQuestions": {
+            "description": "The number of questions to select for each instance of this test.",
+            "type": "integer"
+        },
+        "timeLimitMin": {
+            "description": "The number of minutes allowed for this test.",
+            "type": "integer"
+        }
+    }
+}

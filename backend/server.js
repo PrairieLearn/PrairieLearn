@@ -5,6 +5,8 @@ var fs = require("fs");
 var path = require("path");
 var async = require("async");
 var moment = require("moment-timezone");
+var jju = require('jju');
+var validator = require('is-my-json-valid')
 
 var config = {};
 
@@ -25,19 +27,106 @@ config.skipUIDs = {};
 config.superusers = {};
 config.roles = {"user1@illinois.edu": "Superuser"};
 
+var readJSONSyncOrDie = function(jsonFilename, schemaFilename) {
+    try {
+        var data = fs.readFileSync(jsonFilename, {encoding: 'utf8'});
+    } catch (e) {
+        logger.error("Error reading JSON file: " + jsonFilename, e);
+        process.exit(1);
+    }
+    try {
+        var json = jju.parse(data, {mode: 'json'});
+    } catch (e) {
+        logger.error("Error in JSON file format: " + jsonFilename + " (line " + e.row + ", column " + e.column + ")\n"
+                     + e.name + ": " + e.message);
+        process.exit(1);
+    }
+    if (schemaFilename) {
+        configValidate = validator(fs.readFileSync(schemaFilename, {encoding: 'utf8'}),
+                                   {verbose: true, greedy: true});
+        configValidate(json);
+        if (configValidate.errors) {
+            logger.error("Error in JSON file specification: " + jsonFilename);
+            _(configValidate.errors).forEach(function(e) {
+                logger.error('Error in field "' + e.field + '": ' + e.message
+                            + (_(e).has('value') ? (' (value: ' + e.value + ')') : ''));
+            });
+            process.exit(1);
+        }
+    }
+    return json;
+};
+
+var readJSON = function(jsonFilename, callback) {
+    var json;
+    fs.readFile(jsonFilename, {encoding: 'utf8'}, function(err, data) {
+        if (err) {
+            return callback("Error reading JSON file: " + jsonFilename + ": " + err);
+        }
+        try {
+            json = jju.parse(data, {mode: 'json'});
+        } catch (e) {
+            return callback("Error in JSON file format: " + jsonFilename + " (line " + e.row + ", column " + e.column + ")\n"
+                            + e.name + ": " + e.message);
+        }
+        callback(null, json);
+    });
+};
+
+var validateJSON = function(json, schema, callback) {
+    var configValidate;
+    try {
+        configValidate = validator(schema, {verbose: true, greedy: true});
+    } catch (e) {
+        return callback("Error loading JSON schema file: " + schemaFilename + ": " + e);
+    }
+    configValidate(json);
+    if (configValidate.errors) {
+        return callback("Error in JSON file specification: "
+                        + _(configValidate.errors).map(function(e) {
+                            return 'Error in field "' + e.field + '": ' + e.message
+                                + (_(e).has('value') ? (' (value: ' + jju.stringify(e.value) + ')') : '');
+                        }).join('; '));
+    }
+    callback(null, json);
+};
+
+var readInfoJSON = function(jsonFilename, schemaFilename, optionsSchemaPrefix, optionsSchemaSuffix, callback) {
+    readJSON(jsonFilename, function(err, json) {
+        if (err) return callback(err);
+        if (schemaFilename) {
+            readJSON(schemaFilename, function(err, schema) {
+                if (err) return callback(err);
+                validateJSON(json, schema, function(err, json) {
+                    if (err) return callback("Error validating file '" + jsonFilename + "' against '" + schemaFilename + "': " + err);
+                    if (optionsSchemaPrefix && optionsSchemaSuffix && _(json).has('type') && _(json).has('options')) {
+                        var optionsSchemaFilename = optionsSchemaPrefix + json.type + optionsSchemaSuffix;
+                        readJSON(optionsSchemaFilename, function(err, optionsSchema) {
+                            if (err) return callback(err);
+                            validateJSON(json.options, optionsSchema, function(err, optionsJSON) {
+                                if (err) return callback("Error validating 'options' field from '" + jsonFilename + "' against '" + optionsSchemaFilename + "': " + err);
+                                callback(null, json);
+                            });
+                        });
+                    } else {
+                        return callback(null, json);
+                    }
+                });
+            });
+        } else {
+            return callback(null, json);
+        }
+    });
+};
+
 configFilename = 'config.json';
 if (process.argv.length > 2) {
     configFilename = process.argv[2];
 }
 if (fs.existsSync(configFilename)) {
-    try {
-        fileConfig = JSON.parse(fs.readFileSync(configFilename, {encoding: 'utf8'}));
-        _.defaults(fileConfig, config);
-        config = fileConfig;
-    } catch (e) {
-        console.log("Error reading config file: " + configFilename, e);
-        process.exit(1);
-    }
+    fileConfig = readJSONSyncOrDie(configFilename, 'schemas/backendConfig.json');
+    _.defaults(fileConfig, config);
+    config = fileConfig;
 } else {
     console.log("config.json not found, using default configuration...");
 }
@@ -260,7 +349,7 @@ var loadDB = function(callback) {
 var questionDB = {};
 var testDB = {};
 
-var loadInfoDB = function(db, idName, parentDir, loadCallback) {
+var loadInfoDB = function(db, idName, parentDir, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, loadCallback) {
     fs.readdir(parentDir, function(err, files) {
         if (err) {
             logger.error("unable to read info directory: " + parentDir, err);
@@ -277,21 +366,13 @@ var loadInfoDB = function(db, idName, parentDir, loadCallback) {
         }, function(folders) {
             async.each(folders, function(dir, callback) {
                 var infoFile = path.join(parentDir, dir, "info.json");
-                fs.readFile(infoFile, function(err, data) {
+                readInfoJSON(infoFile, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, function(err, info) {
                     if (err) {
-                        logger.error("Unable to read file: " + infoFile, err);
+                        logger.error("Error reading file: " + infoFile, err);
                         callback(null);
                         return;
                     }
-                    var info;
-                    try {
-                        info = JSON.parse(data);
-                        info.questionDir = path.join(parentDir, dir);
-                    } catch (e) {
-                        logger.error("Error reading file: " + infoFile + ": " + e.name + ": " + e.message, e);
-                        callback(null);
-                        return;
-                    }
+                    info.questionDir = path.join(parentDir, dir);
                     if (info.disabled) {
                         callback(null);
                         return;
@@ -1867,10 +1948,10 @@ var startIntervalJobs = function(callback) {
 
 async.series([
     function(callback) {
-        loadInfoDB(questionDB, "qid", config.questionsDir, callback);
+        loadInfoDB(questionDB, "qid", config.questionsDir, undefined, undefined, undefined, callback);
     },
     function(callback) {
-        loadInfoDB(testDB, "tid", config.testsDir, callback);
+        loadInfoDB(testDB, "tid", config.testsDir, "schemas/testInfo.json", "schemas/", "TestOptions.json", callback);
     },
     loadDB,
     initTestData,
