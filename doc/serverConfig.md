@@ -5,4 +5,4 @@ The PrairieLearn server is configured by a JSON file called `config.json` in the
 
 To configure the server, add a file `config.json` (normally this would be in the `PrairieLearn/backend` directory).
 
-The format of `config.json` is specified by the [backend config JSON schema](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schema/backendConfig.json).
+The format of `config.json` is specified by the [backend config JSON schema](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/backendConfig.json).
