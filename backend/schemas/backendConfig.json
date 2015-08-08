@@ -52,7 +52,7 @@
             "enum": ["none", "x-auth", "eppn"]
         },
         "authURL": {
-            "description": "The URL to use ",
+            "description": "The URL to use for authentication.",
             "type": "string"
         },
         "localFileserver": {
