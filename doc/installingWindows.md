@@ -25,11 +25,16 @@
 
 1. Run the database:
 
-        $ "C:\Program Files\mongod" --dbpath ~/db
+        $ mkdir C:\db       # or any other directory you want
+        $ "C:\Program Files\mongod" --dbpath C:\db
+
+   This should end with a message like `waiting for connections on port 27017` and will remain running in the foreground, so this terminal can't be used for anything else. Use Crtl-C to stop the database at any time.
 
 2. Run the server:
 
         $ cd C:\GitHub\PrairieLearn\backend
         $ node server
+
+   This should end with `PrairieLearn server ready` and will remain running in the foreground, so this terminal can't be used for anything else. Stopping or restarting the server can be done with Crtl-C.
 
 3. In a web-browswer go to http://localhost:3000
