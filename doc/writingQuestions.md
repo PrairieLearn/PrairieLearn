@@ -23,13 +23,13 @@ Questions are all stored inside the main `questions` directory for a course. Eac
 
 PrairieLearn assumes independent questions; nothing ties them together. However, each question could have multiple parts (inputs that are validated together).
 
-Example questions in the [`courseExample`](https://github.com/PrairieLearn/PrairieLearn/blob/master/courseExample/questions) directory inside PrairieLearn:
+Example questions in the [`courseExample/questions`](https://github.com/PrairieLearn/PrairieLearn/blob/master/courseExample/questions) directory inside PrairieLearn:
 
 Question | Description
 --- | ---
 [`fossilFuels`](https://github.com/PrairieLearn/PrairieLearn/blob/master/courseExample/questions/fossilFuels) | A multiple-choice question with possible answers randomly chosen from lists of correct and incorrect answers.
 [`addVectors`](https://github.com/PrairieLearn/PrairieLearn/blob/master/courseExample/questions/addVectors) | A calculation-style question with randomly generated question parameters and automatic grading.
-[`writeFunction`](https://github.com/PrairieLearn/PrairieLearn/blob/master/courseExample/questions/writeCode) | An upload/download question that gives the user a file and wants them to upload an edited file containing solution code.
+[`fibonacci`](https://github.com/PrairieLearn/PrairieLearn/blob/master/courseExample/questions/writeCode) | An upload/download question that gives the user a file and wants them to upload an edited file containing solution code.
 
 
 ## Question `info.json`
@@ -43,10 +43,10 @@ The `info.json` file for each question defines properties of the question. For e
         "clientFiles": ["client.js", "question.html", "answer.html", "fig1.png"]
     }
 
-- _title_ gives a student-visible title for the question.
-- _topic_ is the part of the course that this question belongs to (like the chapter in a textbook).
-- _tags_ stores any other aspects of the questions, for sorting and searching (these can be anything).
-- _clientFiles_ lists the files that the client (student's webbrowser) can access.
+- `title` gives a student-visible title for the question.
+- `topic` is the part of the course that this question belongs to (like the chapter in a textbook).
+- `tags` stores any other aspects of the questions, for sorting and searching (these can be anything).
+- `clientFiles` lists the files that the client (student's webbrowser) can access.
 
 
 ## Question `server.js`
@@ -55,46 +55,54 @@ The `info.json` file for each question defines properties of the question. For e
 
 It can randomly (or systematically) create the question variables. Those are stored in an JSON element returned by server.getData()
 
-It's a standard practice to define the answer when creating the question variables in the getData() function.
+It's a standard practice to define the answer when creating the question variables in the `server.getData()` function, but it's not required.
 
-A function called server.gradeAnswer can take in the parameters as well as the submittedAnswer and return the score and feedback.
+A function called `server.gradeAnswer()` can take in the parameters as well as the submittedAnswer and return the score and feedback.
 
-```
-define(["PrairieRandom", "PrairieGeom"], function(PrairieRandom, PrairieGeom) {
-
-    var server = {};
-
-    server.getData = function(vid) {
-        var rand = new PrairieRandom.RandomGenerator(vid);
-        var a = rand.randInt(5, 10);
-        var b = rand.randInt(5, 10);
-        var c = a + b;
-        var params = {
-            a: a,
-            b: b,
+    define(["PrairieRandom", "PrairieGeom"], function(PrairieRandom, PrairieGeom) {
+    
+        var server = {};
+    
+        server.getData = function(vid) {
+            var rand = new PrairieRandom.RandomGenerator(vid);
+            var a = rand.randInt(5, 10);
+            var b = rand.randInt(5, 10);
+            var c = a + b;
+            var params = {
+                a: a,
+                b: b,
+            };
+            var trueAnswer = {
+                c: c,
+            };
+            var questionData = {
+                params: params,
+                trueAnswer: trueAnswer,
+            };
+            return questionData;
         };
-        var trueAnswer = {
-            c: c,
+    
+        server.gradeAnswer = function(vid, params, trueAnswer, submittedAnswer, options) {
+            var score = 0, feedback = {};
+            if (PrairieGeom.checkEqual(trueAnswer, submittedAnswer, 1e-2, 1e-8))
+                score = 1;
+            else
+                feedback.ansRelation = "Your answer was too " + ((submittedAnswer.c < trueAnswer.c) ? "low" : "high") + ".";
+            return {score: score, feedback: feedback};
         };
-        var questionData = {
-            params: params,
-            trueAnswer: trueAnswer,
-        };
-        return questionData;
-    };
+    
+        return server;
+    });
 
-    server.gradeAnswer = function(vid, params, trueAnswer, submittedAnswer, options) {
-        var score = 0, feedback = {};
-        if (PrairieGeom.checkEqual(trueAnswer, submittedAnswer, 1e-2, 1e-8))
-            score = 1;
-        else
-            feedback.ansRelation = "Your answer was too " + ((submittedAnswer.c < trueAnswer.c) ? "low" : "high") + ".";
-        return {score: score, feedback: feedback};
-    };
+The three main objects associated with each question are:
 
-    return server;
-});
-```
+Object | Description
+--- | ---
+`params` | The parameters specifying a particular question instance.
+`submittedAnswer` | Everything submitted by the student to answer a question.
+`trueAnswer` | The correct answer to a question, shown to the student after the question is graded.
+
+These are all JavaScript objects that are encoded as JSON for transport between the client and server.
 
 ## Question `client.js`
 
@@ -105,26 +113,38 @@ Different question types have different client-side javascript needs, so just co
 
 ## Question `question.html`
 
-_question.html_ contains the HTML data presented to the student. It's the stuff inside the box, including the problem and any input forms to answer it. A submit button (or other form setup) isn't needed.
+`question.html` contains the HTML data presented to the student. It's the stuff inside the question box, including the problem and any input forms to answer it. A submit button (or other form setup) isn't needed.
 
-Standard HTML is accepted here, as is LaTeX (when preceded by $c, like for a variable, or enclosed in $'s i.e. $ LaTeX_code_here $).
+Standard HTML is accepted here, as is LaTeX math enclosed in dollar signs, e.g., `$e^{i\pi} + 1 = 0$`.
+
+Parameters generated by the question server can be inserted with `{{params.a}}`, etc.
+
+Best practice for writing a question is to divide it into three sections:
+
+1. Information about the problem, defining all variables, etc.
+2. A short and clear question asking for a very specific answer.
+3. The data entry fields.
+
+For example:
 
     <p>
-      What is $c = {{params.a}} + {{params.b}}$?
+      The length $c$ is defined by
+      $c = {{params.a}}{\rm\ m} + {{params.b}}{\rm\ m}$.
     </p>
     <p>
-      $c = $ <input data-instavalue="submittedAnswer.c" />
+      What is $c$?
     </p>
-
-_{{params.a}}_ and _{{params.b}}_ are replaced by those variables in server.js.
+    <p>
+      $c = $ <input data-instavalue="submittedAnswer.c" />$\rm\ m$
+    </p>
 
 
 ## Question answer.html
 
-The part in the box returned to the student.
+The part in the box shown to the student after the question has been graded.
 
     <p>
-      Correct answer: {{trueAnswer.answer}}.
+      $c = {{trueAnswer.c}}\rm\ m$.
     </p>
 
 
@@ -143,37 +163,29 @@ LaTeX labels are searched for by looking for strings of the form `"TEX:..."` or 
 
 ## Advanced: Library code in `clientCode` and `serverCode`
 
-Each course can have JavaScript libraries that are specific to just that course, and can be used from any question in the course. These library files are separated into *client* and *server* libraries. Client libraries are accessible from both `client.js` and `server.js` in each question, while server libraries are only accessible from `server.js`. This means that any secret code that students should not be able to access can be put in a server library, while other non-sensitive code can go in client libraries. There is never a need to put a library file into both the client and server directories, because it can just go only into the client directory and be accessed directly from there by both `client.js` and `server.js`.
+Each course can have JavaScript libraries that are specific to just that course, and can be used from any question in the course. See the (course configuration)[https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/courseConfig.md] section for the directory layout.
 
-To add client library code in the file `library.js`, do the following:
+These library files are separated into *client* and *server* libraries. Client libraries are accessible from both `client.js` and `server.js` in each question, while server libraries are only accessible from `server.js`. This means that any secret code that students should not be able to access can be put in a server library, while other non-sensitive code can go in client libraries. There is never a need to put a library file into both the client and server directories, because it can just go only into the client directory and be accessed directly from there by both `client.js` and `server.js`.
 
-1. In the main course directory (where `questions/` and `tests/` are located), make a directory called `clientCode`.
+The basic form of a `library.js` file is:
 
-2. Put the `library.js` file in this new `clientCode` directory. The basic format of `library.js` should be like:
+    define([<DEPENDENT-LIBRARIES-PATHS>], function(<DEPENDENT-LIBRARY-VARS>) {
+    
+        var library = {};
+    
+        library.add = function(arg1, arg2) {
+            return arg1 + arg2;
+        };
 
-        define([<DEPENDENT-LIBRARIES-PATHS>], function(<DEPENDENT-LIBRARY-VARS>) {
-        
-            var library = {};
-        
-            library.add = function(arg1, arg2) {
-                return arg1 + arg2;
-            };
+        // more library functions go here
 
-            // more library functions go here
+        return library;
+    });
 
-            return library;
-        });
+To use this `library.js` file inside a question's `client.js` or 'server.js` file:
 
-3. Edit the `PrairieLearn\backend\config.json` file to add the line:
-
-        "clientCodeDir": "<FULL-COURSE-PATH>/clientCode",
-
-4. Inside a question's `client.js` or 'server.js`, use the library with:
-
-        define([<OTHER-LIBRARY-PATHS>, 'clientCode/library'], function(<OTHER-LIBRARY-VARS>, library) {
-        
-            var sum = library.add(3, 5); // sets sum to 8
-        
-        });
-
-To add a server library then repeat the above steps but with `serverCode` in the place of `clientCode`.
+    define([<OTHER-LIBRARY-PATHS>, 'clientCode/library'], function(<OTHER-LIBRARY-VARS>, library) {
+    
+        var sum = library.add(3, 5); // sets sum to 8
+    
+    });
