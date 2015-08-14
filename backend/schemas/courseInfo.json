@@ -1,0 +1,29 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Course information",
+    "description": "The specification file for a course.",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "name": {
+            "description": "The course name (e.g., 'TAM 212').",
+            "type": "string",
+            "required": true
+        },
+        "title": {
+            "description": "The course title (e.g., 'Introductory Dynamics').",
+            "type": "string"
+            "required": true
+        },
+        "userRoles": {
+            "description": "Special roles for specific users (anyone not listed is assumed to be a 'Student').",
+            "type": "object",
+            "patterProperties": {
+                ".+": {
+                    "description": "The role for a given UID.",
+                    "enum": ["Student", "TA", "Instructor"]
+                }
+            }
+        }
+    }
+}
