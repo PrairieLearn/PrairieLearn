@@ -1,0 +1,22 @@
+{
+    "type": "Basic",
+    "title": "Miscellaneous question set",
+    "set": "Homework",
+    "number": 1,
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "startDate": "2014-07-07T23:59:59",
+            "endDate": "2014-07-10T23:59:59"
+        }
+    ],
+    "options": {
+        "qids": [
+            "addVectors",
+            "fossilFuels",
+            "writeFunction"
+        ],
+        "dueDate": "2021-04-14T23:59:59",
+        "allowPractice": true
+    }
+}

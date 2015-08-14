@@ -1,9 +1,134 @@
 
 # Writing questions in PrairieLearn
 
+Questions are all stored inside the main `questions` directory for a course. Each question is a single directory that contains all the files for that question. The name of the question directory is the question ID label (the `qid`) for that question. For example, here are two different questions:
+
+    questions
+    |
+    |-- fossilFuels       # first question, qid is "fossilFuels"
+    |   |
+    |   |-- info.json     # metadata for the fossilFuels question
+    |   |-- server.js     # secret server-side code (does grading, etc)
+    |   `-- client.js     # client-side code (runs in the student's browser)
+    |
+    `-- addVectors        # second question, qid is "addVectors"
+        |
+        |-- info.json     # files for the addVectors question
+        |-- server.js
+        |-- client.js
+        |-- question.html
+        |-- answer.html
+        |-- fig1.png      # extra files (e.g., images) for the question
+        `-- notes.docx    # more files, like notes on how the question works
+
+PrairieLearn assumes independent questions; nothing ties them together. However, each question could have multiple parts (inputs that are validated together).
+
+Example questions in the [`courseExample`](https://github.com/PrairieLearn/PrairieLearn/blob/master/courseExample/questions) directory inside PrairieLearn:
+
+Question | Description
+--- | ---
+[`fossilFuels`](https://github.com/PrairieLearn/PrairieLearn/blob/master/courseExample/questions/fossilFuels) | A multiple-choice question with possible answers randomly chosen from lists of correct and incorrect answers.
+[`addVectors`](https://github.com/PrairieLearn/PrairieLearn/blob/master/courseExample/questions/addVectors) | A calculation-style question with randomly generated question parameters and automatic grading.
+[`writeFunction`](https://github.com/PrairieLearn/PrairieLearn/blob/master/courseExample/questions/writeCode) | An upload/download question that gives the user a file and wants them to upload an edited file containing solution code.
 
 
-## Generating LaTeX labels on figures
+## Question `info.json`
+
+The `info.json` file for each question defines properties of the question. For example, for the `addVectors` question:
+
+    {
+        "title": "Addition of vectors in Cartesian coordinates",
+        "topic": "Vectors",
+        "tags": ["Cartesian", "graphical"],
+        "clientFiles": ["client.js", "question.html", "answer.html", "fig1.png"]
+    }
+
+- _title_ gives a student-visible title for the question.
+- _topic_ is the part of the course that this question belongs to (like the chapter in a textbook).
+- _tags_ stores any other aspects of the questions, for sorting and searching (these can be anything).
+- _clientFiles_ lists the files that the client (student's webbrowser) can access.
+
+
+## Question `server.js`
+
+`server.js` is the code that runs on the server (never seen directly by the client) which generates the question and grades the answer.
+
+It can randomly (or systematically) create the question variables. Those are stored in an JSON element returned by server.getData()
+
+It's a standard practice to define the answer when creating the question variables in the getData() function.
+
+A function called server.gradeAnswer can take in the parameters as well as the submittedAnswer and return the score and feedback.
+
+```
+define(["PrairieRandom", "PrairieGeom"], function(PrairieRandom, PrairieGeom) {
+
+    var server = {};
+
+    server.getData = function(vid) {
+        var rand = new PrairieRandom.RandomGenerator(vid);
+        var a = rand.randInt(5, 10);
+        var b = rand.randInt(5, 10);
+        var c = a + b;
+        var params = {
+            a: a,
+            b: b,
+        };
+        var trueAnswer = {
+            c: c,
+        };
+        var questionData = {
+            params: params,
+            trueAnswer: trueAnswer,
+        };
+        return questionData;
+    };
+
+    server.gradeAnswer = function(vid, params, trueAnswer, submittedAnswer, options) {
+        var score = 0, feedback = {};
+        if (PrairieGeom.checkEqual(trueAnswer, submittedAnswer, 1e-2, 1e-8))
+            score = 1;
+        else
+            feedback.ansRelation = "Your answer was too " + ((submittedAnswer.c < trueAnswer.c) ? "low" : "high") + ".";
+        return {score: score, feedback: feedback};
+    };
+
+    return server;
+});
+```
+
+## Question `client.js`
+
+JavaScript presented to the client to display the question. Can be overloaded/expanded if specialized interfaces are used.
+
+Different question types have different client-side javascript needs, so just copy it over from the default template for your question.
+
+
+## Question `question.html`
+
+_question.html_ contains the HTML data presented to the student. It's the stuff inside the box, including the problem and any input forms to answer it. A submit button (or other form setup) isn't needed.
+
+Standard HTML is accepted here, as is LaTeX (when preceded by $c, like for a variable, or enclosed in $'s i.e. $ LaTeX_code_here $).
+
+    <p>
+      What is $c = {{params.a}} + {{params.b}}$?
+    </p>
+    <p>
+      $c = $ <input data-instavalue="submittedAnswer.c" />
+    </p>
+
+_{{params.a}}_ and _{{params.b}}_ are replaced by those variables in server.js.
+
+
+## Question answer.html
+
+The part in the box returned to the student.
+
+    <p>
+      Correct answer: {{trueAnswer.answer}}.
+    </p>
+
+
+## Advanced: Generating LaTeX labels on figures
 
 When using `PrairieDraw.js` to draw figures, figure labels can be included using either plain text, like `pd.text(..., "label")`, or with LaTeX, like `pd.text(..., "TEX:$x$")`. If you are using LaTeX labels then they have to be rendered into image files before they can be displayed, by running the commands:
 
@@ -16,8 +141,7 @@ This needs to be repeated after any LaTeX labels are added or changed. Running t
 LaTeX labels are searched for by looking for strings of the form `"TEX:..."` or `'TEX:...'` (note the different quote types). Use the `""` form if you want to have `'` characters in the string itself, and vice versa.
 
 
-
-## Library code in `clientCode` and `serverCode`
+## Advanced: Library code in `clientCode` and `serverCode`
 
 Each course can have JavaScript libraries that are specific to just that course, and can be used from any question in the course. These library files are separated into *client* and *server* libraries. Client libraries are accessible from both `client.js` and `server.js` in each question, while server libraries are only accessible from `server.js`. This means that any secret code that students should not be able to access can be put in a server library, while other non-sensitive code can go in client libraries. There is never a need to put a library file into both the client and server directories, because it can just go only into the client directory and be accessed directly from there by both `client.js` and `server.js`.
 

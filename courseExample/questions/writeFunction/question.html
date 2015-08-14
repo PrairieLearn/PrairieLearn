@@ -1,0 +1,21 @@
+<h4>Download your problem</h4>
+<p>
+  <a href="data:text/plain;base64,<%= params.fileData %>" download="<%= params.fileName %>" target="_blank">
+    Download <%= params.fileName %>
+  </a>
+</p>
+<p>
+  Complete the empty <tt>fib</tt> function to recursively compute the <i>n</i>th Fibonacci number.
+</p>
+
+<hr>
+
+<h4>Upload the solution</h4>
+<p>
+  <input type="file" id="fileUpload" name="fileUpload" value="Upload Your Solution">
+</p>
+<p>
+  <a id="downloadFileLink" download="<%= params.fileName %>" style="display:none" target="_blank">
+    Download your solution
+  </a>
+</p>
