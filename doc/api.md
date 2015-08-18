@@ -30,8 +30,8 @@ The PrairieLearn server presents a RESTful HTTP API (Level 2 on the [Richardson 
 
 All ID objects are strings. They should be treated as opaque identifiers and should not be interpreted for any information.
 
-ID     | Identified resource   | Example
----    | ---                   | ---
+ID       | Identified resource   | Example
+---      | ---                   | ---
 `<qid>`  | Question              | `scalarAdd`
 `<uid>`  | User                  | `mwest`
 `<vid>`  | Variant of a question | `ac45b0`
@@ -53,38 +53,37 @@ generally be accessed in three ways:
 * A GET to `/collect/<id>` returns the single specified object in complete form.
 
 
-Path | Method | Action | Send | Return
---- | --- | --- | --- | ---
-`/questions` | GET | — | — | JSON: List of all `<question>` objects.
-`/questions/<qid>` | GET | — | — | JSON: Single `<question>` object.
-`/questions/<qid>/client.js` | GET | — | — | Text: JavaScript question client code.
-`/questions/<qid>/<filename>` | GET | — | — | Other question files (type determined by filename extension).
-`/users` | GET | — | — | JSON: List of all `<user>` objects.
-`/users/<uid>` | GET | — | — | JSON: Single `<user>` object.
-`/qInstances` | GET | — | — | JSON: List of all `<qInstance>` objects, optionally filtered by `<uid>` or `<qid>` parameters.
-`/qInstances` | POST | Creates new qInstance object. | JSON: partial `<qInstance>` object. | JSON: complete newly created `<qInstance>` object.
-`/qInstances/<qiid>` | GET | — | — | JSON: Single `<qInstance>` object.
-`/submissions` | GET | — | — | JSON: List of all `<submission>` objects, optionally filtered by `<uid>` or `<qid>` parameters.
-`/submissions` | POST | Creates new submission object. | JSON: partial `<submission>` object. | JSON: complete newly created `<submission>` object.
-`/submissions/<sid>` | GET | — | — | JSON: Single `<submission>` object.
-`/tests` | GET | — | — | JSON: List of all `<test>` objects.
-`/tests/<tid>` | GET | — | — | JSON: Single `<test>` object.
-`/tests/<tid>/client.js` | GET | — | — | Text: JavaScript test client code.
-`/tests/<tid>/common.js` | GET | — | — | Text: JavaScript test client-server-shared code.
-`/tests/<tid>/test.html` | GET | — | — | Text: HTML question template for test.
-`/tests/<tid>/testOverview.html` | GET | — | — | Text: HTML question template for test overview.
-`/tests/<tid>/testSidebar.html` | GET | — | — | Text: HTML question template for test sidebar.
-`/tInstances` | GET | — | — | JSON: List of all `<tInstance>` objects, optionally filtered by `<uid>`.
-`/tInstances/<tiid>` | GET | — | — | JSON: Single `<tInstance>` object.
-`/tInstances` | POST | Creates new tInstance object. | JSON: partial `<tInstance>` object. | JSON: complete newly created `<tInstance>` object.
-`/tInstances/<tiid>` | PATCH | Updates an existing `<tInstance>` (used to grade tests). | JSON: partial `<tInstance>` object. | JSON: complete updated `<tInstance>` object.
-`/export.csv` | GET | — | — | CSV: All test scores (maximum over every `<tInstance>`) for all users.
+Path                             | Method | Action                                                   | Send                                 | Return
+---                              | ---    | ---                                                      | ---                                  | ---
+`/questions`                     | GET    | —                                                        | —                                    | JSON: List of all `<question>` objects.
+`/questions/<qid>`               | GET    | —                                                        | —                                    | JSON: Single `<question>` object.
+`/questions/<qid>/client.js`     | GET    | —                                                        | —                                    | Text: JavaScript question client code.
+`/questions/<qid>/<filename>`    | GET    | —                                                        | —                                    | Other question files (type determined by filename extension).
+`/users`                         | GET    | —                                                        | —                                    | JSON: List of all `<user>` objects.
+`/users/<uid>`                   | GET    | —                                                        | —                                    | JSON: Single `<user>` object.
+`/qInstances`                    | GET    | —                                                        | —                                    | JSON: List of all `<qInstance>` objects, optionally filtered by `<uid>` or `<qid>` parameters.
+`/qInstances`                    | POST   | Creates new qInstance object.                            | JSON: partial `<qInstance>` object.  | JSON: complete newly created `<qInstance>` object.
+`/qInstances/<qiid>`             | GET    | —                                                        | —                                    | JSON: Single `<qInstance>` object.
+`/submissions`                   | GET    | —                                                        | —                                    | JSON: List of all `<submission>` objects, optionally filtered by `<uid>` or `<qid>` parameters.
+`/submissions`                   | POST   | Creates new submission object.                           | JSON: partial `<submission>` object. | JSON: complete newly created `<submission>` object.
+`/submissions/<sid>`             | GET    | —                                                        | —                                    | JSON: Single `<submission>` object.
+`/tests`                         | GET    | —                                                        | —                                    | JSON: List of all `<test>` objects.
+`/tests/<tid>`                   | GET    | —                                                        | —                                    | JSON: Single `<test>` object.
+`/tests/<tid>/client.js`         | GET    | —                                                        | —                                    | Text: JavaScript test client code.
+`/tests/<tid>/common.js`         | GET    | —                                                        | —                                    | Text: JavaScript test client-server-shared code.
+`/tests/<tid>/test.html`         | GET    | —                                                        | —                                    | Text: HTML question template for test.
+`/tests/<tid>/testOverview.html` | GET    | —                                                        | —                                    | Text: HTML question template for test overview.
+`/tests/<tid>/testSidebar.html`  | GET    | —                                                        | —                                    | Text: HTML question template for test sidebar.
+`/tInstances`                    | GET    | —                                                        | —                                    | JSON: List of all `<tInstance>` objects, optionally filtered by `<uid>`.
+`/tInstances/<tiid>`             | GET    | —                                                        | —                                    | JSON: Single `<tInstance>` object.
+`/tInstances`                    | POST   | Creates new tInstance object.                            | JSON: partial `<tInstance>` object.  | JSON: complete newly created `<tInstance>` object.
+`/tInstances/<tiid>`             | PATCH  | Updates an existing `<tInstance>` (used to grade tests). | JSON: partial `<tInstance>` object.  | JSON: complete updated `<tInstance>` object.
+`/export.csv`                    | GET    | —                                                        | —                                    | CSV: All test scores (maximum over every `<tInstance>`) for all users.
   
 ### Server API: JSON object specifications
 
   <table>
     <tr><th>Object</th><th>Specification</th></tr>
-    <!-------------------------------------------------------------->
     <tr>
       <td>
         <code>&lt;question&gt;</code>
@@ -97,7 +96,6 @@ Path | Method | Action | Send | Return
 }</pre>
       </td>
     </tr>
-    <!-------------------------------------------------------------->
     <tr>
       <td>
         <code>&lt;user&gt;</code>
@@ -109,7 +107,6 @@ Path | Method | Action | Send | Return
 }</pre>
       </td>
     </tr>
-    <!-------------------------------------------------------------->
     <tr>
       <td>
         <code>&lt;qInstance&gt;</code>
@@ -128,7 +125,6 @@ Path | Method | Action | Send | Return
 }</pre>
       </td>
     </tr>
-    <!-------------------------------------------------------------->
     <tr>
       <td>
         <code>&lt;params&gt;</code>
@@ -138,7 +134,6 @@ Path | Method | Action | Send | Return
         question data.
       </td>
     </tr>
-    <!-------------------------------------------------------------->
     <tr>
       <td>
         <code>&lt;submittedAnswer&gt;</code>
@@ -148,7 +143,6 @@ Path | Method | Action | Send | Return
         submitted answer data.
       </td>
     </tr>
-    <!-------------------------------------------------------------->
     <tr>
       <td>
         <code>&lt;trueAnswer&gt;</code>
@@ -158,7 +152,6 @@ Path | Method | Action | Send | Return
         true answer data.
       </td>
     </tr>
-    <!-------------------------------------------------------------->
     <tr>
       <td>
         <code>&lt;feedback&gt;</code>
@@ -168,7 +161,6 @@ Path | Method | Action | Send | Return
         data.
       </td>
     </tr>
-    <!-------------------------------------------------------------->
     <tr>
       <td>
         <code>&lt;questionData&gt;</code>
@@ -180,7 +172,6 @@ Path | Method | Action | Send | Return
 }</pre>
       </td>
     </tr>
-    <!-------------------------------------------------------------->
     <tr>
       <td>
         <code>&lt;submission&gt;</code>
@@ -200,7 +191,6 @@ Path | Method | Action | Send | Return
 }</pre>
       </td>
     </tr>
-    <!-------------------------------------------------------------->
     <tr>
       <td>
         <code>&lt;grading&gt;</code>
@@ -212,7 +202,6 @@ Path | Method | Action | Send | Return
 }</pre>
       </td>
     </tr>
-    <!-------------------------------------------------------------->
     <tr>
       <td>
         <code>&lt;test&gt;</code>
@@ -226,7 +215,6 @@ Path | Method | Action | Send | Return
 }</pre>
       </td>
     </tr>
-    <!-------------------------------------------------------------->
     <tr>
       <td>
         <code>&lt;tInstance&gt;</code>
@@ -239,8 +227,8 @@ Path | Method | Action | Send | Return
 }</pre>
       </td>
     </tr>
-    <!-------------------------------------------------------------->
   </table>
+
 
 ### Server API: Error reporting
 
@@ -267,17 +255,17 @@ Function      | Arguments                                                       
 
 ### Question client API
 
-Function | Arguments | Return | Description
---- | --- | --- | ---
-`initialize` | `<params>` | — | Initialize the question client with the given question parameters. This will be called before any other functions on the client.
-`renderQuestion` | `<questionDivID>`, `<changeCallback>` | — | Render the question into the `div` with the given ID. The `<changeCallback>` argument is a function that must be called (with no arguments) when the user changes their answer to the question. The `renderQuestion()` function will not be called multiple times without an intervening call to `close()`. The `setSubmittedAnswer()` and `setTrueAnswer()` functions may be called before or after `renderQuestion()`.
-`renderAnswer` | `<answerDivID>` | — | Render the true answer into the `div` with the given ID. The `renderAnswer()` function will not be called multiple times without an intervening call to `close()`. The `setSubmittedAnswer()` and `setTrueAnswer()` functions may be called before or after `renderAnswer()`.
-`close`</td> <td>—</td> <td>— | Remove any listeners or other hooks associated with the client. Called just before the client rendering is removed from the DOM.
-`isComplete`</td> <td>— | `<boolean>` | Return `true` if the question can be graded, otherwise `false`.
-`getSubmittedAnswer`</td> <td>— | `<submittedAnswer>` | Return the current state of the question input as a `<submittedAnswer>` object (possibly only partially complete).
-`setSubmittedAnswer` | `<submittedAnswer>` | — | Set the current state of the question input from the provided `<submittedAnswer>` object (possibly only partially complete).
-`setTrueAnswer` | `<trueAnswer>` | — | Set the current state of the true answer from the provided `<trueAnswer>` object.
-`setFeedback` | `<feedback>` | — | Set the current state of the question feedback from the provided `<feedback>` object.
+Function                        | Arguments                             | Return | Description
+---                             | ---                                   | ---    | ---
+`initialize`                    | `<params>`                            | —      | Initialize the question client with the given question parameters. This will be called before any other functions on the client.
+`renderQuestion`                | `<questionDivID>`, `<changeCallback>` | —      | Render the question into the `div` with the given ID. The `<changeCallback>` argument is a function that must be called (with no arguments) when the user changes their answer to the question. The `renderQuestion()` function will not be called multiple times without an intervening call to `close()`. The `setSubmittedAnswer()` and `setTrueAnswer()` functions may be called before or after `renderQuestion()`.
+`renderAnswer`                  | `<answerDivID>`                       | —      | Render the true answer into the `div` with the given ID. The `renderAnswer()` function will not be called multiple times without an intervening call to `close()`. The `setSubmittedAnswer()` and `setTrueAnswer()` functions may be called before or after `renderAnswer()`.
+`close`</td> <td>—</td> <td>—   | Remove any listeners or other hooks associated with the client. Called just before the client rendering is removed from the DOM.
+`isComplete`</td> <td>—         | `<boolean>`                           | Return `true` if the question can be graded, otherwise `false`.
+`getSubmittedAnswer`</td> <td>— | `<submittedAnswer>`                   | Return the current state of the question input as a `<submittedAnswer>` object (possibly only partially complete).
+`setSubmittedAnswer`            | `<submittedAnswer>`                   | —      | Set the current state of the question input from the provided `<submittedAnswer>` object (possibly only partially complete).
+`setTrueAnswer`                 | `<trueAnswer>`                        | —      | Set the current state of the true answer from the provided `<trueAnswer>` object.
+`setFeedback`                   | `<feedback>`                          | —      | Set the current state of the question feedback from the provided `<feedback>` object.
   
 
 ## Sample execution flows
@@ -288,14 +276,14 @@ The steps to ask and answer a question with a random variant are:
 
 1. Decide which `<qid>` we want to attempt.
 
-2. POST to `/qInstances` with a partial qInstance of the form:
+1. POST to `/qInstances` with a partial qInstance of the form:
 
         {
           "uid": <uid>,
           "qid": <qid>
         }
 
-3. The return value will be a completed qInstance object of the form:
+1. The return value will be a completed qInstance object of the form:
 
         {
           "qiid": <qiid>,
@@ -305,18 +293,17 @@ The steps to ask and answer a question with a random variant are:
           "params": <params>
         }
 
-Take the randomly generated variant ID `<vid>` from here.
+  Take the randomly generated variant ID `<vid>` from here.
 
+1. GET the question client code from `/questions/<qid>/<vid>/client.js`
 
-4. GET the question client code from `/questions/<qid>/<vid>/client.js`
+1. Call `client.initialize()` and `client.renderQuestion()`, passing a callback for change notifications.
 
-5. Call `client.initialize()` and `client.renderQuestion()`, passing a callback for change notifications.
+1. Wait until the change callback fires and `client.isComplete()` returns `true`, and then further wait until the user indicates the desire to submit the answer for grading.
 
-6. Wait until the change callback fires and `client.isComplete()` returns `true`, and then further wait until the user indicates the desire to submit the answer for grading.
+1. Call `client.getSubmittedAnswer()` to obtain a `<submittedAnswer>` object.
 
-7. Call `client.getSubmittedAnswer()` to obtain a `<submittedAnswer>` object.
-
-8. POST to `/submissions` with a partial submission object of the form:
+1. POST to `/submissions` with a partial submission object of the form:
 
         {
           "uid": <uid>,
@@ -324,7 +311,7 @@ Take the randomly generated variant ID `<vid>` from here.
           "submittedAnswer": <submittedAnswer>
         }
 
-9. The return value will be a completed submission object of the form:
+1. The return value will be a completed submission object of the form:
 
         {
           "sid": <sid>,
@@ -337,7 +324,7 @@ Take the randomly generated variant ID `<vid>` from here.
           "trueAnswer": <trueAnswer>
         }
 
-10. Show the score to the user and call `client.setTrueAnswer()` and `client.renderAnswer()` to display the true answer.
+1. Show the score to the user and call `client.setTrueAnswer()` and `client.renderAnswer()` to display the true answer.
 
 
 ## SimpleClient
