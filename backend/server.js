@@ -697,7 +697,7 @@ app.use(function(req, res, next) {
         if (req.headers['x-user-role'] == null) {
             return sendError(res, 403, "Missing X-User-Role header");
         }
-        var authUID = req.headers['x-auth-uid'];
+        var authUID = req.headers['x-auth-uid'].toLowerCase();
         var authRole = uidToRole(authUID);
         var authName = req.headers['x-auth-name'];
         var authDate = req.headers['x-auth-date'];
@@ -712,7 +712,7 @@ app.use(function(req, res, next) {
         req.authUID = authUID;
         req.authRole = authRole;
         req.mode = req.headers['x-mode'];
-        req.userUID = req.headers['x-user-uid'];
+        req.userUID = req.headers['x-user-uid'].toLowerCase();
         req.userRole = req.headers['x-user-role'];
     } else {
         return sendError(res, 500, "Invalid authType: " + config.authType);
