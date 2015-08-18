@@ -375,7 +375,7 @@ var loadCourseInfo = function(callback) {
 var questionDB = {};
 var testDB = {};
 
-var loadInfoDB = function(db, idName, parentDir, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, loadCallback) {
+var loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, loadCallback) {
     fs.readdir(parentDir, function(err, files) {
         if (err) {
             logger.error("unable to read info directory: " + parentDir, err);
@@ -403,6 +403,7 @@ var loadInfoDB = function(db, idName, parentDir, schemaFilename, optionSchemaPre
                         callback(null);
                         return;
                     }
+                    info = _.defaults(info, defaultInfo);
                     info[idName] = dir;
                     db[dir] = info;
                     return callback(null);
@@ -819,16 +820,26 @@ var questionFilePath = function(qid, filename, callback, nTemplates) {
             }
         } else {
             // found the file
-            return callback(null, filePath);
+            return callback(null, {filePath: filePath, qid: qid, filename: filename});
         }
     });
 };
 
 var sendQuestionFile = function(req, res, filename) {
-    questionFilePath(req.params.qid, filename, function(err, filePath) {
+    questionFilePath(req.params.qid, filename, function(err, fileInfo) {
         if (err)
             return sendError(res, 404, "No such file '" + filename + "' for qid: " + req.params.qid, err);
-        res.sendfile(filePath, {root: config.questionsDir});
+        info = questionDB[fileInfo.qid];
+        if (info === undefined) {
+            return sendError(res, 404, "No such qid: " + fileInfo.qid);
+        }
+        if (!_(info).has("clientFiles")) {
+            return sendError(res, 500, "Question does not have clientFiles, qid: " + fileInfo.qid);
+        }
+        if (!_(info.clientFiles).contains(fileInfo.filename)) {
+            return sendError(res, 404, "Access denied to '" + fileInfo.filename + "' for qid: " + fileInfo.qid);
+        }
+        res.sendfile(fileInfo.filePath, {root: config.questionsDir});
     });
 };
 
@@ -1073,10 +1084,10 @@ var readQInstance = function(res, qiid, callback) {
 };
 
 var loadQuestionServer = function(qid, callback) {
-    questionFilePath(qid, "server.js", function(err, filePath) {
+    questionFilePath(qid, "server.js", function(err, fileInfo) {
         if (err)
             return sendError(res, 404, "Unable to find 'server.js' for qid: " + qid, err);
-        var serverFilePath = path.join(config.questionsDir, filePath);
+        var serverFilePath = path.join(config.questionsDir, fileInfo.filePath);
         requirejs([serverFilePath], function(server) {
             if (server === undefined)
                 return sendError("Unable to load 'server.js' for qid: " + qid);
@@ -1981,10 +1992,16 @@ async.series([
         loadCourseInfo(callback);
     },
     function(callback) {
-        loadInfoDB(questionDB, "qid", config.questionsDir, "schemas/questionInfo.json", "schemas/questionOptions", ".json", callback);
+        var defaultQuestionInfo = {
+            "type": "Calculation",
+            "clientFiles": ["client.js", "question.html", "answer.html"],
+        };
+        loadInfoDB(questionDB, "qid", config.questionsDir, defaultQuestionInfo, "schemas/questionInfo.json", "schemas/questionOptions", ".json", callback);
     },
     function(callback) {
-        loadInfoDB(testDB, "tid", config.testsDir, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
+        var defaultTestInfo = {
+        };
+        loadInfoDB(testDB, "tid", config.testsDir, defaultTestInfo, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
     },
     loadDB,
     initTestData,
