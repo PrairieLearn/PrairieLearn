@@ -5,7 +5,7 @@ To use PrairieLearn in a course you will need to:
 
 1. Install PrairieLearn on your own computer and make sure that it works by viewing the sample course in a web browser.
 
-1. Get a PrairieLearn course set up by emailing your request to [engr-cbtf-admins@mx.uillinois.edu](mailto:engr-cbtf-admins@mx.uillinois.edu). This will give you two things:
+1. Get a PrairieLearn course set up by emailing your GitHub username to [engr-cbtf-admins@mx.uillinois.edu](mailto:engr-cbtf-admins@mx.uillinois.edu). This will give you two things:
 
   * A course-specific private GitHub repository with a name like `pl-tam212`.
 
