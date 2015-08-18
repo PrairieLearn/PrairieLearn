@@ -5,28 +5,12 @@
     "type": "object",
     "additionalProperties": false,
     "properties": {
-        "questionsDir": {
-            "description": "Path to the questions directory.",
-            "type": "string"
-        },
-        "testsDir": {
-            "description": "Path to the tests directory.",
-            "type": "string"
-        },
-        "clientCodeDir": {
-            "description": "Path to the client code directory.",
-            "type": "string"
-        },
-        "serverCodeDir": {
-            "description": "Path to the server code directory.",
+        "courseDir": {
+            "description": "Path to the course directory.",
             "type": "string"
         },
         "secretKey": {
             "description": "Secret key for authenticating users (should be a long random string).",
-            "type": "string"
-        },
-        "nodetimeAccountKey": {
-            "description": "Secret account key for Nodetime, for logging.",
             "type": "string"
         },
         "superusers": {

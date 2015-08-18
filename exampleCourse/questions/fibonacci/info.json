@@ -3,6 +3,7 @@
     "topic": "Functions",
     "tags": ["recursion"],
     "clientFiles": ["client.js", "question.html", "answer.html", "fib.py"],
+    "type": "File",
     "options": {
         "fileName": "fib.py"
     }

@@ -129,6 +129,10 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
                     that.set("authRole", userData.role);
                     that.set("userRole", userData.role);
                 });
+                $.getJSON(that.apiURL("course"), function(courseInfo) {
+                    that.set('pageTitle', courseInfo.name + ': ' + courseInfo.title);
+                    that.set('navTitle', 'PrairieLearn: ' + courseInfo.name);
+                });
             });
             this.listenTo(Backbone, "tryAgain", this.tryAgain);
         },

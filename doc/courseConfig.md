@@ -5,7 +5,7 @@
 
 A course is specified by a single directory, with the following structure:
 
-    courseExample
+    exampleCourse
     |-- courseInfo.json # course specification (see below)
     |-- questions       # all questions for the course
     |   `-- ...         # one subdirectory per question
@@ -17,12 +17,24 @@ A course is specified by a single directory, with the following structure:
     `-- serverCode      # code only accessible from server.js in questions
         `-- secretLibrary1.js
 
-* [Example course directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/courseExample) in PrairieLearn
+* [Example course directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse) in PrairieLearn
 
 
 ## `courseInfo.json`
 
-* Example [courseInfo.json](https://github.com/PrairieLearn/PrairieLearn/blob/master/courseExample/courseInfo.json)
+This file specifies basic information about the course, like the title and users:
+
+    {
+        "name": "TAM 212",
+        "title": "Introductory Dynamics",
+        "userRoles": {
+            "mwest@illinois.edu": "Instructor",
+            "zilles@illinois.edu": "TA",
+            "mussulma@illinois.edu": "TA"
+        }
+    }
+
+* Example [courseInfo.json](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInfo.json)
 
 * [Format specification for `courseInfo.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/courseInfo.json)
 

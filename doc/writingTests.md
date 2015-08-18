@@ -1,6 +1,8 @@
 
 # Writing tests
 
+**NOTE:** Any time you edit or add a test, you need to stop and restart the PrairieLearn server for it to reload the changes.
+
 Each test is a single directory in the `tests` folder. The name of the directory is the `tid` (test ID). The directory must contain a single file called `info.json` that describes the test.
 
 * [Format specification for test `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/backendConfig.json)

@@ -29,8 +29,8 @@ define(["PrairieRandom", "PrairieGeom"], function(PrairieRandom, PrairieGeom) {
         // OPTIONAL, if missing then
         // relTol = 0.01 and absTol = 1e-8 will be used
         var options = {
-            relTol = 0.01, // relative tolerance for checking answers
-            absTol = 1e-8, // absolute tolerance
+            relTol: 0.01, // relative tolerance for checking answers (OPTIONAL)
+            absTol: 1e-8, // absolute tolerance (OPTIONAL)
         };
 
         // all the question data together

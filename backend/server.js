@@ -17,10 +17,7 @@ config.authType = 'none';
 config.localFileserver = true;
 config.serverType = 'http';
 config.serverPort = '3000';
-config.questionsDir = "questions";
-config.testsDir = "tests";
-config.clientCodeDir = "../../backend/clientCode";
-config.serverCodeDir = "../../backend/serverCode";
+config.courseDir = "../exampleCourse";
 config.frontendDir = "../frontend";
 config.secretKey = "THIS_IS_THE_SECRET_KEY"; // override in config.json
 config.skipUIDs = {};
@@ -131,6 +128,15 @@ if (fs.existsSync(configFilename)) {
     console.log("config.json not found, using default configuration...");
 }
 
+config.questionsDir = path.join(config.courseDir, "questions");
+config.testsDir = path.join(config.courseDir, "tests");
+config.clientCodeDir = path.join(config.courseDir, "clientCode");
+config.serverCodeDir = path.join(config.courseDir, "serverCode");
+
+config.requireDir = path.join(config.frontendDir, "require");
+config.relativeClientCodeDir = path.relative(path.resolve(config.requireDir), path.resolve(config.clientCodeDir));
+config.relativeServerCodeDir = path.relative(path.resolve(config.requireDir), path.resolve(config.serverCodeDir));
+
 _(config.superusers).forEach(function(value, key) {
     if (value)
         config.roles[key] = "Superuser";
@@ -142,10 +148,10 @@ var requirejs = require("requirejs");
 
 requirejs.config({
     nodeRequire: require,
-    baseUrl: config.frontendDir + '/require',
+    baseUrl: config.requireDir,
     paths: {
-        clientCode: config.clientCodeDir,
-        serverCode: config.serverCodeDir,
+        clientCode: config.relativeClientCodeDir,
+        serverCode: config.relativeServerCodeDir,
     },
 });
 
@@ -343,6 +349,26 @@ var loadDB = function(callback) {
                 callback(null);
             }
         });
+    });
+};
+
+var courseInfo = {};
+
+var loadCourseInfo = function(callback) {
+    var courseInfoFilename = path.join(config.courseDir, "courseInfo.json");
+    readInfoJSON(courseInfoFilename, "schemas/courseInfo.json", undefined, undefined, function(err, info) {
+        if (err) return callback(err);
+        courseInfo.name = info.name;
+        courseInfo.title = info.title;
+        if (info.userRoles) {
+            _(info.userRoles).forEach(function(value, key) {
+                // only add new role if role doesn't currently exist, so we can't overwrite superusers
+                if (!config.roles[key]) {
+                    config.roles[key] = value;
+                }
+            });
+        }
+        return callback(null);
     });
 };
 
@@ -750,6 +776,10 @@ if (config.authType === 'eppn') {
         res.json({ "uid": req.authUID });
     });
 }
+
+app.get("/course", function(req, res) {
+    res.json({name: courseInfo.name, title: courseInfo.title});
+});
 
 app.get("/questions", function(req, res) {
     async.map(_.values(questionDB), function(item, callback) {
@@ -1948,7 +1978,10 @@ var startIntervalJobs = function(callback) {
 
 async.series([
     function(callback) {
-        loadInfoDB(questionDB, "qid", config.questionsDir, undefined, undefined, undefined, callback);
+        loadCourseInfo(callback);
+    },
+    function(callback) {
+        loadInfoDB(questionDB, "qid", config.questionsDir, "schemas/questionInfo.json", "schemas/", "QuestionOptions.json", callback);
     },
     function(callback) {
         loadInfoDB(testDB, "tid", config.testsDir, "schemas/testInfo.json", "schemas/", "TestOptions.json", callback);

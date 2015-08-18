@@ -1,6 +1,8 @@
 
 # Writing questions in PrairieLearn
 
+**NOTE:** Any time you edit or add a question, you need to stop and restart the PrairieLearn server for it to reload the changes.
+
 Questions are all stored inside the main `questions` directory for a course. Each question is a single directory that contains all the files for that question. The name of the question directory is the question ID label (the `qid`) for that question. For example, here are two different questions:
 
     questions
@@ -23,13 +25,7 @@ Questions are all stored inside the main `questions` directory for a course. Eac
 
 PrairieLearn assumes independent questions; nothing ties them together. However, each question could have multiple parts (inputs that are validated together).
 
-Example questions in the [`courseExample/questions`](https://github.com/PrairieLearn/PrairieLearn/blob/master/courseExample/questions) directory inside PrairieLearn:
-
-Question | Description
---- | ---
-[`fossilFuels`](https://github.com/PrairieLearn/PrairieLearn/blob/master/courseExample/questions/fossilFuels) | A multiple-choice question with possible answers randomly chosen from lists of correct and incorrect answers.
-[`addVectors`](https://github.com/PrairieLearn/PrairieLearn/blob/master/courseExample/questions/addVectors) | A calculation-style question with randomly generated question parameters and automatic grading.
-[`fibonacci`](https://github.com/PrairieLearn/PrairieLearn/blob/master/courseExample/questions/writeCode) | An upload/download question that gives the user a file and wants them to upload an edited file containing solution code.
+Example questions are in the [`exampleCourse/questions`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions) directory inside PrairieLearn.
 
 
 ## Question `info.json`
@@ -40,13 +36,21 @@ The `info.json` file for each question defines properties of the question. For e
         "title": "Addition of vectors in Cartesian coordinates",
         "topic": "Vectors",
         "tags": ["Cartesian", "graphical"],
-        "clientFiles": ["client.js", "question.html", "answer.html", "fig1.png"]
+        "clientFiles": ["client.js", "question.html", "answer.html", "fig1.png"],
+        "type": "Calculation"
     }
 
 - `title` gives a student-visible title for the question.
 - `topic` is the part of the course that this question belongs to (like the chapter in a textbook).
-- `tags` stores any other aspects of the questions, for sorting and searching (these can be anything).
-- `clientFiles` lists the files that the client (student's webbrowser) can access.
+- `tags` (optional) stores any other aspects of the questions, for sorting and searching (these can be anything).
+- `clientFiles` (optional) lists the files that the client (student's webbrowser) can access. Anything in here should be considered viewable by the student.
+- `type` specifies the question format.
+
+Type | Example | Description
+--- | ---
+`MultipleChoice` | [`fossilFuels`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fossilFuels) | A multiple choice question (radio button). One correct answer and several incorrect answers are selected from lists of correct and incorrect answers, and the order is randomized.
+`File` | [`fibonacci`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/writeCode) | A file is provided to the student for download, and they have to upload an edited file for grading.
+`Calculation` | [`addVectors`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/addVectors) | A very general question type that allows server-side and client-side code to generate and grade questions.
 
 
 ## Question `server.js`

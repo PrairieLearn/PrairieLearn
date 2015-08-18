@@ -2,7 +2,8 @@
     "title": "Advantages of fossil fuels",
     "topic": "Energy",
     "tags": ["comparative advantages", "fossil fuels", "renewables"],
-    "config": {
+    "type": "MultipleChoice",
+    "options": {
         "text": "Which of the following is an advantage of fossil fuels relative to renewable energy sources?",
         "correctAnswers": [
             "Cheap",
@@ -18,7 +19,6 @@
             "Sustainable",
             "Low energy return"
         ],
-        "numberCorrect": 1,
-        "numberAnwers": 5
+        "numberAnswers": 5
     }
 }

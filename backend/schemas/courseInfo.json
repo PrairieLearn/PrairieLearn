@@ -12,13 +12,13 @@
         },
         "title": {
             "description": "The course title (e.g., 'Introductory Dynamics').",
-            "type": "string"
+            "type": "string",
             "required": true
         },
         "userRoles": {
             "description": "Special roles for specific users (anyone not listed is assumed to be a 'Student').",
             "type": "object",
-            "patterProperties": {
+            "patternProperties": {
                 ".+": {
                     "description": "The role for a given UID.",
                     "enum": ["Student", "TA", "Instructor"]

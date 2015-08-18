@@ -12,12 +12,16 @@
             "mode": "Exam",
             "startDate": "2014-07-07T23:59:59",
             "endDate": "2014-07-10T23:59:59"
-        },
+        }
     ],
     "options": {
         "qidGroups": [
             [
-                ["templateCalculation", "templateMCCheckbox", "templateMCRadio", "templateFile"]
+                [
+                    "addVectors",
+                    "fossilFuels",
+                    "fibonacci"
+                ]
             ]
         ],
         "nQuestions": 4,

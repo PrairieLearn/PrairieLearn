@@ -1,0 +1,44 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Question Info",
+    "description": "Info files for questions.",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "type": {
+            "description": "Type of the test.",
+            "enum": ["Calculation", "MultipleChoice", "File"],
+            "required": true
+        },
+        "title": {
+            "description": "The title of the question (e.g., 'Addition of vectors in Cartesian coordinates').",
+            "type": "string",
+            "required": true
+        },
+        "topic": {
+            "description": "The category of question (e.g., 'Vectors', 'Energy').",
+            "type": "string",
+            "required": true
+        },
+        "tags": {
+            "description": "Extra tags associated with the question (e.g., 'Cartesian', 'graphics').",
+            "type": "array",
+            "items": {
+                "description": "An arbitrary tag associated with a question.",
+                "type": "string"
+            }
+        },
+        "clientFiles": {
+            "description": "The list of question files accessible by the client (defaults to [\"client.js\"]).",
+            "type": "array",
+            "items": {
+                "description": "A single file accessible by the client.",
+                "type": "string"
+            }
+        },
+        "options": {
+            "description": "Options that define how the question will work, specific to the individual question type.",
+            "type": "object"
+        }
+    }
+}
