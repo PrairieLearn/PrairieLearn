@@ -46,14 +46,64 @@ The `info.json` file for each question defines properties of the question. For e
 - `clientFiles` (optional) lists the files that the client (student's webbrowser) can access. Anything in here should be considered viewable by the student.
 - `type` specifies the question format.
 
-Type | Example | Description
---- | ---
-`MultipleChoice` | [`fossilFuels`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fossilFuels) | A multiple choice question (radio button). One correct answer and several incorrect answers are selected from lists of correct and incorrect answers, and the order is randomized.
-`File` | [`fibonacci`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/writeCode) | A file is provided to the student for download, and they have to upload an edited file for grading.
-`Calculation` | [`addVectors`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/addVectors) | A very general question type that allows server-side and client-side code to generate and grade questions.
+Type             | Example                                                                                                       | Required Files                              | Description
+---              | ---                                                                                                           | ---                                         | ---
+`MultipleChoice` | [`fossilFuels`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fossilFuels) | `info.json`                                 | A multiple choice question (radio button). One correct answer and several incorrect answers are selected from lists of correct and incorrect answers, and the order is randomized.
+`File`           | [`fibonacci`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fibonacci)     | `info.json`, `question.html`, `answer.html` | A file is provided to the student for download, and they have to upload an edited file for grading.
+`Calculation`    | [`addVectors`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/addVectors)   | `info.json`, `client.js`, `server.js`       | A very general question type that allows server-side and client-side code to generate and grade questions.
 
 
-## Question `server.js`
+## `MultipleChoice` questions
+
+A `MultipleChoice` question has an `info.json` that provides the question text, one or more correct answers, and one or more incorrect answers. One correct answer is randomly chosen, and enough incorrect answers to make `numberAnswers` total answers, which are then displayed to the student in a random order. For example:
+
+    {
+        "title": "Advantages of fossil fuels",
+        "topic": "Energy",
+        "tags": ["comparative advantages", "fossil fuels", "renewables"],
+        "type": "MultipleChoice",
+        "options": {
+            "text": "Which of the following is an advantage of fossil fuels relative to renewable energy sources?",
+            "correctAnswers": [
+                "Cheap",
+                "High energy density",
+                "Provide energy on demand"            
+            ],
+            "incorrectAnswers": [
+                "Non-polluting",
+                "Low energy density",
+                "Low production of carbon dioxide",
+                "High production of carbon dioxide",
+                "Secure",
+                "Sustainable",
+                "Low energy return"
+            ],
+            "numberAnswers": 5
+        }
+    }
+
+
+## `File` questions
+
+A `File` question gives the student a file to download, and then requires an uploaded file for the answer. The downloaded file is specified in the `info.json` like:
+
+    {
+        "title": "Write a Fibonacci function",
+        "topic": "Functions",
+        "tags": ["recursion"],
+        "clientFiles": ["client.js", "question.html", "answer.html", "fib.py"],
+        "type": "File",
+        "options": {
+            "fileName": "fib.py"
+        }
+    }
+
+
+## `Calculation` questions
+
+A `Calculation` question is the most general type of question, allowing arbitrary code to generate and grade the question instance on the server, and arbitrary client code to interact with the student (e.g., for interactive drawing).
+
+### `Calculation` question: `server.js`
 
 `server.js` is the code that runs on the server (never seen directly by the client) which generates the question and grades the answer.
 
@@ -63,7 +113,7 @@ It's a standard practice to define the answer when creating the question variabl
 
 A function called `server.gradeAnswer()` can take in the parameters as well as the submittedAnswer and return the score and feedback.
 
-    define(["PrairieRandom", "PrairieGeom"], function(PrairieRandom, PrairieGeom) {
+    define(["PrairieRandom"], function(PrairieRandom) {
     
         var server = {};
     
@@ -87,12 +137,10 @@ A function called `server.gradeAnswer()` can take in the parameters as well as t
         };
     
         server.gradeAnswer = function(vid, params, trueAnswer, submittedAnswer, options) {
-            var score = 0, feedback = {};
+            var score = 0;
             if (PrairieGeom.checkEqual(trueAnswer, submittedAnswer, 1e-2, 1e-8))
                 score = 1;
-            else
-                feedback.ansRelation = "Your answer was too " + ((submittedAnswer.c < trueAnswer.c) ? "low" : "high") + ".";
-            return {score: score, feedback: feedback};
+            return {score: score};
         };
     
         return server;
@@ -100,22 +148,23 @@ A function called `server.gradeAnswer()` can take in the parameters as well as t
 
 The three main objects associated with each question are:
 
-Object | Description
---- | ---
-`params` | The parameters specifying a particular question instance.
+Object            | Description
+---               | ---
+`params`          | The parameters specifying a particular question instance.
 `submittedAnswer` | Everything submitted by the student to answer a question.
-`trueAnswer` | The correct answer to a question, shown to the student after the question is graded.
+`trueAnswer`      | The correct answer to a question, shown to the student after the question is graded.
 
 These are all JavaScript objects that are encoded as JSON for transport between the client and server.
 
-## Question `client.js`
+
+### `Calculation` question: `client.js`
 
 JavaScript presented to the client to display the question. Can be overloaded/expanded if specialized interfaces are used.
 
 Different question types have different client-side javascript needs, so just copy it over from the default template for your question.
 
 
-## Question `question.html`
+### `Calculation` question: `question.html`
 
 `question.html` contains the HTML data presented to the student. It's the stuff inside the question box, including the problem and any input forms to answer it. A submit button (or other form setup) isn't needed.
 
@@ -143,7 +192,7 @@ For example:
     </p>
 
 
-## Question answer.html
+### `Calculation` question: `answer.html`
 
 The part in the box shown to the student after the question has been graded.
 

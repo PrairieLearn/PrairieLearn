@@ -19,6 +19,7 @@ config.serverType = 'http';
 config.serverPort = '3000';
 config.courseDir = "../exampleCourse";
 config.frontendDir = "../frontend";
+config.questionDefaultsDir = "questionDefaults";
 config.secretKey = "THIS_IS_THE_SECRET_KEY"; // override in config.json
 config.skipUIDs = {};
 config.superusers = {};
@@ -398,7 +399,6 @@ var loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, op
                         callback(null);
                         return;
                     }
-                    info.questionDir = path.join(parentDir, dir);
                     if (info.disabled) {
                         callback(null);
                         return;
@@ -846,12 +846,28 @@ var questionFilePath = function(qid, filename, callback, nTemplates) {
                 // have a template, try it
                 return questionFilePath(info.template, filename, callback, nTemplates + 1);
             } else {
-                // no template, give up
-                return callback("file not found: " + fullFilePath);
+                // no template, try default files
+                var filenameToSuffix = {
+                    "client.js": 'Client.js',
+                    "server.js": 'Server.js',
+                };
+                if (filenameToSuffix[filename] === undefined) {
+                    return callback("file not found: " + fullFilePath);
+                }
+                var defaultFilename = info.type + filenameToSuffix[filename];
+                var fullDefaultFilePath = path.join(config.questionDefaultsDir, defaultFilename);
+                fs.stat(fullDefaultFilePath, function(err, stats) {
+                    if (err) {
+                        // no default file, give up
+                        return callback("file not found: " + fullFilePath);
+                    }
+                    // found a default file
+                    return callback(null, {filePath: defaultFilename, qid: qid, filename: filename, root: config.questionDefaultsDir});
+                });
             }
         } else {
             // found the file
-            return callback(null, {filePath: filePath, qid: qid, filename: filename});
+            return callback(null, {filePath: filePath, qid: qid, filename: filename, root: config.questionsDir});
         }
     });
 };
@@ -870,7 +886,7 @@ var sendQuestionFile = function(req, res, filename) {
         if (!_(info.clientFiles).contains(fileInfo.filename)) {
             return sendError(res, 404, "Access denied to '" + fileInfo.filename + "' for qid: " + fileInfo.qid);
         }
-        res.sendfile(fileInfo.filePath, {root: config.questionsDir});
+        res.sendfile(fileInfo.filePath, {root: fileInfo.root});
     });
 };
 
@@ -1008,9 +1024,10 @@ var makeQInstance = function(req, res, qInstance, callback) {
         newIDNoError(req, res, "qiid", function(qiid) {
             qInstance.qiid = qiid;
             loadQuestionServer(qInstance.qid, function (server) {
+                var questionDir = path.join(config.questionsDir, info.qid);
                 var questionData;
                 try {
-                    questionData = server.getData(qInstance.vid, info.options);
+                    questionData = server.getData(qInstance.vid, info.options, questionDir);
                     qInstance.params = questionData.params || {};
                     qInstance.trueAnswer = questionData.trueAnswer || {};
                     qInstance.options = questionData.options || {};
@@ -1118,7 +1135,7 @@ var loadQuestionServer = function(qid, callback) {
     questionFilePath(qid, "server.js", function(err, fileInfo) {
         if (err)
             return sendError(res, 404, "Unable to find 'server.js' for qid: " + qid, err);
-        var serverFilePath = path.join(config.questionsDir, fileInfo.filePath);
+        var serverFilePath = path.join(fileInfo.root, fileInfo.filePath);
         requirejs([serverFilePath], function(server) {
             if (server === undefined)
                 return sendError("Unable to load 'server.js' for qid: " + qid);
