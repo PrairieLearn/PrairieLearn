@@ -15,4 +15,4 @@ To use PrairieLearn in a course you will need to:
 
 1. Develop questions and tests on your local computer, and push them back to GitHub.
 
-1. Whenever you are ready, go to your course PrairieLearn page and update from GitHub.
+1. Whenever you are ready, go to your course PrairieLearn page and update from GitHub, which will update to the current `master`.
