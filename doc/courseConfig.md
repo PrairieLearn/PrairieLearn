@@ -57,9 +57,9 @@ Operation                                                             | Student 
 `overrideScore`: Submit question answers with pre-determined scores.  |         |     | Yes        | Yes
 `overrideVID`: Load specific (non-random) instances of questions.     |         | Yes | Yes        | Yes
 `seeQID`: See question ID strings.                                    |         | Yes | Yes        | Yes
-`viewOtherUsers`: View data from other users.                         |         | Yes | Yes        | Yes
-`editOtherUsers`: Edit data from other users.                         |         |     | Yes        | Yes
+`viewOtherUsers`: View data from any other user.                      |         | Yes | Yes        | Yes
+`editOtherUsers`: Edit data from any other user.                      |         |     | Yes        | Yes
 `changeMode`: Change the current interface mode (Public/Exam).        |         |     | Yes        | Yes
 `seeAvailDate`: See the date availability information for tests.      |         | Yes | Yes        | Yes
-`bypassAvailDate`: Access tests outside of the availble date range.   |         | Yes | Yes        | Yes
+`bypassAccess`: Bypass all access restrictions.                       |         |     | Yes        | Yes
 Automatic access to all courses.                                      |         |     |            | Yes

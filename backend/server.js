@@ -492,17 +492,48 @@ var isDateBeforeNow = function(dateString) {
     return moment.tz(dateString, config.timezone).isBefore(); // isBefore() uses NOW with no arg
 };
 
+var isDateAfterNow = function(dateString) {
+    return moment.tz(dateString, config.timezone).isAfter(); // isBefore() uses NOW with no arg
+};
+
+var checkTestAccessRule = function(req, tid, accessRule) {
+    // AND all the accessRule tests together
+    var avail = true;
+    _(accessRule).each(function(value, key) {
+        if (key === "mode") {
+            if (req.mode != value)
+                avail = false;
+        } else if (key == "role") {
+            if (!PrairieRole.isAsPowerful(req.userRole, value))
+                avail = false;
+        } else if (key === "startDate") {
+            if (!isDateBeforeNow(value))
+                avail = false;
+        } else if (key === "endDate") {
+            if (!isDateAfterNow(value))
+                avail = false;
+        } else {
+            avail = false;
+        }
+    });
+};
+
 var checkTestAvail = function(req, tid) {
     var avail = false;
-    if (PrairieRole.hasPermission(req.userRole, 'bypassAvailDate'))
+    if (PrairieRole.hasPermission(req.userRole, 'bypassAccess')) {
         avail = true;
+    }
     if (_(testDB).has(tid)) {
         var info = testDB[tid];
-        if (info.options.availDate === undefined) {
+        if (info.allowAccess === undefined) {
             avail = true;
         } else {
-            if (isDateBeforeNow(info.options.availDate))
-                avail = true;
+            // OR the accessRules
+            _(info.allowAccess).each(function(accessRule) {
+                if (checkTestAccessRule(req, accessRule)) {
+                    avail = true;
+                }
+            });
         }
     }
     return avail;

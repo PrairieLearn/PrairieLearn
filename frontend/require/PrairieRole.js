@@ -62,7 +62,7 @@ define(['underscore'], function(_) {
         @param {String} role Role to test for validity.
         @return {Boolean} Whether role is valid.
     */
-    PrairieRole.isRoleValid = function (role) {
+    PrairieRole.isRoleValid = function(role) {
         return _(this.roleList).contains(role);
     };
     
@@ -70,8 +70,22 @@ define(['underscore'], function(_) {
 
         @return {String} The least permissive role.
     */
-    PrairieRole.leastPermissiveRole = function () {
+    PrairieRole.leastPermissiveRole = function() {
         return this.roleList[this.roleList.length - 1];
+    };
+
+    /** Is role1 as powerful as role2?
+
+        @param {String} role1 First role to test.
+        @param {String} role2 Second role to test.
+        @return {Boolean} Whether role1 is as powerful as role2.
+    */
+    PrairieRole.isAsPowerful = function(role1, role2) {
+        var rank1 = this.roleToRank(role1);
+        var rank2 = this.roleToRank(role2);
+        if (rank1 <= rank2)
+            return true;
+        return false;
     };
     
     /** Return list of roles that are no more permissive than the given role.
@@ -107,7 +121,7 @@ define(['underscore'], function(_) {
             permission = true;
         if (operation === 'seeAvailDate' && rank <= this.TA)
             permission = true;
-        if (operation === 'bypassAvailDate' && rank <= this.TA)
+        if (operation === 'bypassAccess' && rank <= this.INSTRUCTOR)
             permission = true;
         return permission;
     };
