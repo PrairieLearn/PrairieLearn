@@ -16,7 +16,7 @@
         "gamma": "*",
         "csv": "*",
         "numeric": "*",
-        "nodetime": "*",
+        "moment": "*",
         "moment-timezone": "*",
         "jju": "*",
         "is-my-json-valid": "*"
