@@ -1010,7 +1010,7 @@ var makeQInstance = function(req, res, qInstance, callback) {
             loadQuestionServer(qInstance.qid, function (server) {
                 var questionData;
                 try {
-                    questionData = server.getData(qInstance.vid, info);
+                    questionData = server.getData(qInstance.vid, info.options);
                     qInstance.params = questionData.params || {};
                     qInstance.trueAnswer = questionData.trueAnswer || {};
                     qInstance.options = questionData.options || {};

@@ -8,7 +8,7 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
 
     MCQServer.prototype.getData = function(vid, options) {
         var rand = new PrairieRandom.RandomGenerator(vid);
-        var opt = _.defaults(options.options, {
+        options = _.defaults(options, {
             text: "Question text not defined.",
             correctAnswers: ["Correct answers not defined."],
             incorrectAnswers: ["Incorrect answers not defined."],
@@ -16,18 +16,18 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
         });
 
         var numberCorrect = 1;
-        var numberIncorrect = opt.numberAnswers - numberCorrect;
-        numberIncorrect = Math.min(numberIncorrect, opt.incorrectAnswers.length);
+        var numberIncorrect = options.numberAnswers - numberCorrect;
+        numberIncorrect = Math.min(numberIncorrect, options.incorrectAnswers.length);
         
         var answers = [];
-        answers = answers.concat(rand.randNElem(numberCorrect, opt.correctAnswers));
-        answers = answers.concat(rand.randNElem(numberIncorrect, opt.incorrectAnswers));
+        answers = answers.concat(rand.randNElem(numberCorrect, options.correctAnswers));
+        answers = answers.concat(rand.randNElem(numberIncorrect, options.incorrectAnswers));
         var perm = rand.shuffle(answers);
         answers = _(answers).map(function(value, index) {
                 return {key: String.fromCharCode('a'.charCodeAt() + index), text: value};
         });
         var params = {
-            text: opt.text,
+            text: options.text,
             answers: answers,
         };
         var trueIndex = _(perm).indexOf(0);
