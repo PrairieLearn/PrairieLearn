@@ -6,6 +6,7 @@
   * [Node.js](http://nodejs.org/)
   * [npm](https://npmjs.org/)
   * [MongoDB](http://www.mongodb.org/)
+  * command-line git or [GitHub Desktop](https://desktop.github.com)
 
   On OS X these can be installed with [MacPorts](http://www.macports.org/) or [Homebrew](http://brew.sh/). On Linux these should all be standard packages from the OS distrbution.
 

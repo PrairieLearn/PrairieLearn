@@ -5,7 +5,7 @@
 
   * [Node.js](http://nodejs.org/)
   * [MongoDB](http://www.mongodb.org/)
-  * [GitHub for Windows](https://windows.github.com)
+  * [GitHub Desktop](https://desktop.github.com)
 
 2. Make an account on [GitHub](https://www.github.com) and ask [Matt West](mwest@illinois.edu) to add you to the PrairieLearn organization.
 
