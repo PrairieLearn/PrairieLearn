@@ -1981,10 +1981,10 @@ async.series([
         loadCourseInfo(callback);
     },
     function(callback) {
-        loadInfoDB(questionDB, "qid", config.questionsDir, "schemas/questionInfo.json", "schemas/", "QuestionOptions.json", callback);
+        loadInfoDB(questionDB, "qid", config.questionsDir, "schemas/questionInfo.json", "schemas/questionOptions", ".json", callback);
     },
     function(callback) {
-        loadInfoDB(testDB, "tid", config.testsDir, "schemas/testInfo.json", "schemas/", "TestOptions.json", callback);
+        loadInfoDB(testDB, "tid", config.testsDir, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
     },
     loadDB,
     initTestData,
