@@ -193,7 +193,7 @@ var STATS_INTERVAL = 10 * 60 * 1000; // ms
 
 app.use(express.json());
 
-var db, countersCollect, uCollect, sCollect, qiCollect, statsCollect, tCollect, tiCollect;
+var db, countersCollect, uCollect, sCollect, qiCollect, statsCollect, tCollect, tiCollect, accessCollect;
 
 var MongoClient = require('mongodb').MongoClient;
 
@@ -340,6 +340,13 @@ var loadDB = function(callback) {
                         ],
                     };
                     processCollection('tInstances', err, collection, options, cb);
+                });
+            },
+            function(cb) {
+                db.collection('accesses', function(err, collection) {
+                    accessCollect = collection;
+                    var options = {};
+                    processCollection('accesses', err, collection, options, cb);
                 });
             },
         ], function(err) {
@@ -753,18 +760,22 @@ app.use(function(req, res, next) {
 
 app.use(function(req, res, next) {
     if (req.method !== 'OPTIONS') {
-        logger.info("request",
-                     {ip: req.ip,
-                      authUID: req.authUID,
-                      authRole: req.authRole,
-                      userUID: req.userUID,
-                      userRole: req.userRole,
-                      mode: req.mode,
-                      method: req.method,
-                      path: req.path,
-                      params: req.params,
-                      body: req.body,
-                     });
+        var access = {
+            ip: req.ip,
+            authUID: req.authUID,
+            authRole: req.authRole,
+            userUID: req.userUID,
+            userRole: req.userRole,
+            mode: req.mode,
+            method: req.method,
+            path: req.path,
+            params: req.params,
+            body: req.body,
+        };
+        logger.info("request", access);
+        if (accessCollect) {
+            accessCollect.insert(access);
+        };
     }
     next();
 });
