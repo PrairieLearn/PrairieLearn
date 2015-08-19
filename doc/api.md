@@ -232,10 +232,13 @@ Path                             | Method | Action                              
 
 ### Server API: Error reporting
 
+The PrairieLearn server only uses the following HTTP status codes:
+
 HTTP status code | Meaning
 ---              | ---
 200              | Success
 400              | Invalid request
+403              | Forbidden
 404              | No object with given ID
 500              | Internal server error
   

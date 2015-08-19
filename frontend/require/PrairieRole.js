@@ -123,6 +123,8 @@ define(['underscore'], function(_) {
             permission = true;
         if (operation === 'bypassAccess' && rank <= this.INSTRUCTOR)
             permission = true;
+        if (operation === 'viewErrors' && rank <= this.INSTRUCTOR)
+            permission = true;
         return permission;
     };
 

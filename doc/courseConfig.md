@@ -62,4 +62,5 @@ Operation                                                             | Student 
 `changeMode`: Change the current interface mode (Public/Exam).        |         |     | Yes        | Yes
 `seeAvailDate`: See the date availability information for tests.      |         | Yes | Yes        | Yes
 `bypassAccess`: Bypass all access restrictions.                       |         |     | Yes        | Yes
+`viewErrors`: See server error messages.                              |         |     | Yes        | Yes
 Automatic access to all courses.                                      |         |     |            | Yes

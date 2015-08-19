@@ -7,6 +7,18 @@ var logger = new (winston.Logger)({
 logger.info('PrairieLearn server start');
 logger.transports.console.level = 'warn';
 
+var errorList = [];
+var MemLogger = winston.transports.MemLogger = function(options) {
+    this.name = 'memLogger';
+    this.level = options.level || 'error';
+};
+MemLogger.prototype = new winston.Transport;
+MemLogger.prototype.log = function(level, msg, meta, callback) {
+    errorList.push({timestamp: (new Date()).toISOString(), level: level, msg: msg, meta: meta});
+    callback(null, true);
+};
+logger.add(winston.transports.MemLogger, {});
+
 var _ = require("underscore");
 var fs = require("fs");
 var path = require("path");
@@ -761,6 +773,7 @@ app.use(function(req, res, next) {
 app.use(function(req, res, next) {
     if (req.method !== 'OPTIONS') {
         var access = {
+            timestamp: (new Date()).toISOString(),
             ip: req.ip,
             authUID: req.authUID,
             authRole: req.authRole,
@@ -1733,6 +1746,14 @@ app.get("/stats/usersPerHour", function(req, res) {
         }
         res.json(stripPrivateFields(obj));
     });
+});
+
+app.get("/errors", function(req, res) {
+    if (PrairieRole.hasPermission(req.userRole, 'readErrors')) {
+        res.json(errorList);
+    } else {
+        res.json([]);
+    }
 });
 
 if (config.localFileserver) {
