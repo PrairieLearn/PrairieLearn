@@ -7,11 +7,11 @@
   * [MongoDB](http://www.mongodb.org/)
   * [GitHub Desktop](https://desktop.github.com)
 
-2. Make an account on [GitHub](https://www.github.com) and ask [Matt West](mwest@illinois.edu) to add you to the PrairieLearn organization.
+2. Make an account on [GitHub](https://www.github.com) and ask [Matt West](mwest@illinois.edu) to add you to the PrairieLearn organization (send your GitHub username).
 
 2. Next clone the latest code:
 
-   * Open GitHub for Windows (the program, not the website)
+   * Open GitHub Desktop (the program, not the website)
    * Click the `+` button in the upper left to add a repository
    * From within the PrairieLearn organization, clone the PrairieLearn repository. Note where it is installed it (e.g., `C:\GitHub`) for use below.
 
