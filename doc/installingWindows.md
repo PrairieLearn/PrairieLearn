@@ -23,14 +23,14 @@
 
 ## Running PrairieLearn
 
-1. Run the database:
+1. Run the database (exact commandline may need adjusting):
 
         $ mkdir C:\db       # or any other directory you want
-        $ "C:\Program Files\mongod" --dbpath C:\db
+        $ "C:\Program Files\Mongo\3.0\Server\mongod.exe" --dbpath C:\db
 
    This should end with a message like `waiting for connections on port 27017` and will remain running in the foreground, so this terminal can't be used for anything else. Use Crtl-C to stop the database at any time.
 
-2. Run the server:
+2. Run the server (exact commandline may need adjusting):
 
         $ cd C:\GitHub\PrairieLearn\backend
         $ node server
