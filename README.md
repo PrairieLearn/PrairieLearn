@@ -20,16 +20,16 @@ the server.
 
 ## ChangeLog
 
-* __1.0.2__ 2015-08-19
+* __1.0.2__ - 2015-08-19
 
   * Documentation fixes following the bootcamp.
 
   * Fix undefined logger error if `config.json` contains errors (reported by Craig and Mariana).
 
-* __1.0.1__ 2015-08-18
+* __1.0.1__ - 2015-08-18
 
   * Fix `npm` module list during bootcamp (remove `nodetime`, add `moment`).
 
-* __1.0.0__ 2015-08-18
+* __1.0.0__ - 2015-08-18
 
   * First public release for pre-Fall-2015 bootcamp.
