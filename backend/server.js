@@ -1,4 +1,11 @@
-console.log("Starting PrairieLearn server...");
+var winston = require('winston');
+var logger = new (winston.Logger)({
+    transports: [
+        new (winston.transports.Console)({timestamp: true, colorize: true}),
+    ]
+});
+logger.info('PrairieLearn server start');
+logger.transports.console.level = 'warn';
 
 var _ = require("underscore");
 var fs = require("fs");
@@ -126,7 +133,7 @@ if (fs.existsSync(configFilename)) {
     _.defaults(fileConfig, config);
     config = fileConfig;
 } else {
-    console.log("config.json not found, using default configuration...");
+    logger.warn("config.json not found, using default configuration");
 }
 
 config.questionsDir = path.join(config.courseDir, "questions");
@@ -145,6 +152,9 @@ _(config.superusers).forEach(function(value, key) {
         config.roles[key] = "Student";
 });
 
+logger.add(winston.transports.File, {filename: config.logFilename, level: 'info'});
+logger.info('activated file logging: ' + config.logFilename);
+
 var requirejs = require("requirejs");
 
 requirejs.config({
@@ -155,15 +165,6 @@ requirejs.config({
         serverCode: config.relativeServerCodeDir,
     },
 });
-
-var winston = require('winston');
-var logger = new (winston.Logger)({
-    transports: [
-        new (winston.transports.Console)({level: 'warn', timestamp: true, colorize: true}),
-        new (winston.transports.File)({filename: config.logFilename, level: 'info'})
-    ]
-});
-logger.info('server start');
 
 requirejs.onError = function(err) {
     var data = {errorMsg: err.toString()};
@@ -2067,7 +2068,8 @@ async.series([
         logger.error("Error initializing PrairieLearn server, exiting...", err);
         process.exit(1);
     } else {
+        logger.transports.console.level = 'info';
         logger.info("PrairieLearn server ready");
-        console.log("PrairieLearn server ready");
+        logger.transports.console.level = 'warn';
     }
 });
