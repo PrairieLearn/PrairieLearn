@@ -20,6 +20,10 @@ the server.
 
 ## ChangeLog
 
+* __1.1.0__ - 2015-08-22
+
+  * Add access logging to the database.
+
 * __1.0.2__ - 2015-08-19
 
   * Documentation fixes following the bootcamp.
