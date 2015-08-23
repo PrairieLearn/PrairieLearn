@@ -36,6 +36,10 @@
                 "type": "string"
             }
         },
+        "template": {
+            "description": "The QID of a question that serves at the template for this question.",
+            "type": "string"
+        },
         "options": {
             "description": "Options that define how the question will work, specific to the individual question type.",
             "type": "object"
