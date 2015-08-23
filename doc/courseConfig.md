@@ -63,4 +63,6 @@ Operation                                                             | Student 
 `seeAvailDate`: See the date availability information for tests.      |         | Yes | Yes        | Yes
 `bypassAccess`: Bypass all access restrictions.                       |         |     | Yes        | Yes
 `viewErrors`: See server error messages.                              |         |     | Yes        | Yes
+`viewCourseCommits`: See git commits of course data.                  |         | Yes | Yes        | Yes
+`editCourseCommits`: Update the course data from git.                 |         |     | Yes        | Yes
 Automatic access to all courses.                                      |         |     |            | Yes

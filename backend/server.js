@@ -191,6 +191,7 @@ requirejs.onError = function(err) {
 var hmacSha256 = require("crypto-js/hmac-sha256");
 var gamma = require("gamma");
 var numeric = require("numeric");
+var child_process = require("child_process");
 var PrairieStats = requirejs("PrairieStats");
 var PrairieModel = requirejs("PrairieModel");
 var PrairieRole = requirejs("PrairieRole");
@@ -205,7 +206,7 @@ var STATS_INTERVAL = 10 * 60 * 1000; // ms
 
 app.use(express.json());
 
-var db, countersCollect, uCollect, sCollect, qiCollect, statsCollect, tCollect, tiCollect, accessCollect;
+var db, countersCollect, uCollect, sCollect, qiCollect, statsCollect, tCollect, tiCollect, accessCollect, commitCollect;
 
 var MongoClient = require('mongodb').MongoClient;
 
@@ -359,6 +360,19 @@ var loadDB = function(callback) {
                     accessCollect = collection;
                     var options = {};
                     processCollection('accesses', err, collection, options, cb);
+                });
+            },
+            function(cb) {
+                db.collection('commits', function(err, collection) {
+                    commitCollect = collection;
+                    var options = {
+                        idPrefix: "m",
+                        indexes: [
+                            {keys: {mid: 1}, options: {unique: true}},
+                            {keys: {commitHash: 1}, options: {}},
+                        ],
+                    };
+                    processCollection('commits', err, collection, options, cb);
                 });
             },
         ], function(err) {
@@ -837,6 +851,100 @@ if (config.authType === 'eppn') {
 app.get("/course", function(req, res) {
     res.json({name: courseInfo.name, title: courseInfo.title});
 });
+
+var getCourseCommitFromDisk = function(callback) {
+    var cmd = 'git';
+    var options = [
+        'show',
+        '-s',
+        '--format=subject:%s%ncommitHash:%H%nrefNames:%D%nauthorName:%an%nauthorEmail:%ae%nauthorDate:%aI%ncommitterName:%cn%ncommitterEmail:%ce%ncommitterDate:%cI',
+        'HEAD'
+    ];
+    var env = {
+        'timeout': 5000, // milliseconds
+        'cwd': config.courseDir,
+    };
+    child_process.execFile(cmd, options, env, function(err, stdout, stderr) {
+        if (err) {
+            return callback(err);
+        }
+        var commit = {};
+        _(stdout.split('\n')).each(function(line) {
+            if (line.length <= 0) return;
+            var i = line.indexOf(':');
+            if (i < 0) return logger.warn('Unable to parse "git show" output: ' + line);
+            var key = line.slice(0, i);
+            var val = line.slice(i + 1);
+            var validKeys = ['subject', 'commitHash', 'refNames',
+                             'authorName', 'authorEmail', 'authorDate',
+                             'committerName', 'committerEmail', 'committerDate'];
+            if (!_(validKeys).contains(key)) return logger.warn('Unknown key in "git show": ' + key);
+            commit[key] = val;
+        });
+        if (!commit.commitHash || commit.commitHash.length != 40) {
+            return callback(Error('Invalid or missing commitHash from "git show"'),
+                            {cmd: cmd, options: options, env: env, stdout: stdout});
+        }
+        callback(null, commit);
+    });
+};
+
+var ensureDiskCommitInDB = function(callback) {
+    getCourseCommitFromDisk(function(err, commit) {
+        if (err) return callback(err);
+        commitCollect.findOne({commitHash: commit.commitHash}, function(err, obj) {
+            if (err) return callback(err);
+            if (obj) return callback(null);
+            commit.createSource = 'External';
+            commit.createDate = (new Date()).toISOString();
+            commit.createUID = '';
+            newID('mid', function(err, mid) {
+                if (err) return callback(err);
+                commit.mid = mid;
+                commitCollect.insert(commit, {w: 1}, function(err) {
+                    if (err) return callback(err);
+                    callback(null);
+                });
+            });
+        });
+    });
+};
+
+app.get("/courseCommits", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewCourseCommits')) {
+        return sendError(res, 403, "Insufficient permissions to access.");
+    }
+    ensureDiskCommitInDB(function(err) {
+        if (err) return sendError(res, 500, "Error mapping disk commit to DB", err);
+        commitCollect.find({}, function(err, cursor) {
+            if (err) return sendError(res, 500, "Error accessing database", err);
+            cursor.toArray(function(err, objs) {
+                if (err) return sendError(res, 500, "Error serializing", err);
+                async.map(objs, function(o, callback) {
+                    callback(null, {
+                        mid: o.mid,
+                        createDate: o.createDate,
+                        createUID: o.createUID,
+                        createSource: o.createSource,
+                        subject: o.subject,
+                        commitHash: o.commitHash,
+                        refNames: o.refNames,
+                        authorName: o.authorName,
+                        authorEmail: o.authorEmail,
+                        authorDate: o.authorDate,
+                        committerName: o.committerName,
+                        committerEmail: o.committerEmail,
+                        committerDate: o.committerDate,
+                    });
+                }, function(err, objs) {
+                    if (err) return sendError(res, 500, "Error cleaning objects", err);
+                    res.json(objs);
+                });
+            });
+        });
+    });
+});
+
 
 app.get("/questions", function(req, res) {
     async.map(_.values(questionDB), function(item, callback) {

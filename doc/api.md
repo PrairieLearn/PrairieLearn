@@ -39,6 +39,7 @@ ID       | Identified resource   | Example
 `<qiid>` | Question instance     | `qi4228`
 `<tid>`  | Test                  | `midterm2`
 `<tiid>` | Test instance         | `ti4241`
+`<mid>`  | Commit instance       | `m273`
 
 
 ### Server API: Method calls
@@ -79,6 +80,10 @@ Path                             | Method | Action                              
 `/tInstances`                    | POST   | Creates new tInstance object.                            | JSON: partial `<tInstance>` object.  | JSON: complete newly created `<tInstance>` object.
 `/tInstances/<tiid>`             | PATCH  | Updates an existing `<tInstance>` (used to grade tests). | JSON: partial `<tInstance>` object.  | JSON: complete updated `<tInstance>` object.
 `/export.csv`                    | GET    | —                                                        | —                                    | CSV: All test scores (maximum over every `<tInstance>`) for all users.
+`/course`                        | GET    | -                                                        | -                                    | JSON: The `<courseInfo>` object.
+`/courseCommits`                 | GET    | -                                                        | -                                    | JSON: List of all `<courseCommit>` objects.
+`/courseCommits/current`         | GET    | -                                                        | -                                    | JSON: The current `<courseCommit>` object.
+`/courseCommits`                 | POST   | Creates new `<courseCommit>` object.                     | JSON: particle `<courseCommit>` object. | JSON: complete newly created `<courseCommit>` object.
   
 ### Server API: JSON object specifications
 
@@ -224,6 +229,38 @@ Path                             | Method | Action                              
   "tiid": &lt;string&gt;,
   "uid": &lt;string&gt;,
   "tid": &lt;string&gt;
+}</pre>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <code>&lt;courseInfo&gt;</code>
+      </td>
+      <td>
+        <pre>{
+  "name": &lt;string&gt;,
+  "title": &lt;string&gt;
+}</pre>
+      </td>
+    </tr>
+    <tr>
+      <td>
+        <code>&lt;courseCommit&gt;</code>
+      </td>
+      <td>
+        <pre>{
+  "mid": &lt;string&gt;,
+  "createDate": &lt;date&gt;,
+  "createUID": &lt;string&gt;,
+  "subject": &lt;string&gt;,
+  "commitHash": &lt;string&gt;,
+  "refNames": &lt;string&gt;,
+  "authorName": &lt;string&gt;,
+  "authorEmail": &lt;string&gt;,
+  "authorDate": &lt;string&gt;,
+  "committerName": &lt;string&gt;,
+  "committerEmail": &lt;string&gt;,
+  "committerDate": &lt;string&gt;
 }</pre>
       </td>
     </tr>

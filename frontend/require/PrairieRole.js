@@ -125,6 +125,10 @@ define(['underscore'], function(_) {
             permission = true;
         if (operation === 'viewErrors' && rank <= this.INSTRUCTOR)
             permission = true;
+        if (operation === 'viewCourseCommits' && rank <= this.TA)
+            permission = true;
+        if (operation === 'editCourseCommits' && rank <= this.INSTRUCTOR)
+            permission = true;
         return permission;
     };
 
