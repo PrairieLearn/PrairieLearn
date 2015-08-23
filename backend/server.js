@@ -499,13 +499,19 @@ var monitor = function() {
 };
 
 var sendError = function(res, code, msg, err) {
+    if (err instanceof Error)
+        err = String(err);
     logger.error("returning error", {code: code, msg: msg, err: err});
     if (res._header) {
         // response was already sent
         logger.error("response was already send, bailing out early");
         return;
     }
-    res.send(code, msg);
+    var fullMsg = msg;
+    try {
+        fullMsg += ', err: ' + String(err);
+    } catch (e) {};
+    res.send(code, fullMsg);
 };
 
 var isDateBeforeNow = function(dateString) {
