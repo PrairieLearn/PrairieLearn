@@ -889,12 +889,30 @@ var getCourseCommitFromDisk = function(callback) {
     });
 };
 
-var ensureDiskCommitInDB = function(callback) {
+var cleanCommit = function(obj) {
+    return {
+        mid: obj.mid,
+        createDate: obj.createDate,
+        createUID: obj.createUID,
+        createSource: obj.createSource,
+        subject: obj.subject,
+        commitHash: obj.commitHash,
+        refNames: obj.refNames,
+        authorName: obj.authorName,
+        authorEmail: obj.authorEmail,
+        authorDate: obj.authorDate,
+        committerName: obj.committerName,
+        committerEmail: obj.committerEmail,
+        committerDate: obj.committerDate,
+    };
+};
+
+var ensureDiskCommitInDB = function(callback, commit) {
     getCourseCommitFromDisk(function(err, commit) {
         if (err) return callback(err);
         commitCollect.findOne({commitHash: commit.commitHash}, function(err, obj) {
             if (err) return callback(err);
-            if (obj) return callback(null);
+            if (obj) return callback(null, cleanCommit(obj));
             commit.createSource = 'External';
             commit.createDate = (new Date()).toISOString();
             commit.createUID = '';
@@ -903,7 +921,7 @@ var ensureDiskCommitInDB = function(callback) {
                 commit.mid = mid;
                 commitCollect.insert(commit, {w: 1}, function(err) {
                     if (err) return callback(err);
-                    callback(null);
+                    callback(null, commit);
                 });
             });
         });
@@ -920,22 +938,8 @@ app.get("/courseCommits", function(req, res) {
             if (err) return sendError(res, 500, "Error accessing database", err);
             cursor.toArray(function(err, objs) {
                 if (err) return sendError(res, 500, "Error serializing", err);
-                async.map(objs, function(o, callback) {
-                    callback(null, {
-                        mid: o.mid,
-                        createDate: o.createDate,
-                        createUID: o.createUID,
-                        createSource: o.createSource,
-                        subject: o.subject,
-                        commitHash: o.commitHash,
-                        refNames: o.refNames,
-                        authorName: o.authorName,
-                        authorEmail: o.authorEmail,
-                        authorDate: o.authorDate,
-                        committerName: o.committerName,
-                        committerEmail: o.committerEmail,
-                        committerDate: o.committerDate,
-                    });
+                async.map(objs, function(obj, callback) {
+                    callback(null, cleanCommit(obj));
                 }, function(err, objs) {
                     if (err) return sendError(res, 500, "Error cleaning objects", err);
                     res.json(objs);
@@ -945,6 +949,15 @@ app.get("/courseCommits", function(req, res) {
     });
 });
 
+app.get("/courseCommits/current", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewCourseCommits')) {
+        return sendError(res, 403, "Insufficient permissions to access.");
+    }
+    ensureDiskCommitInDB(function(err, commit) {
+        if (err) return sendError(res, 500, "Error mapping disk commit to DB", err);
+        res.json(commit);
+    });
+});
 
 app.get("/questions", function(req, res) {
     async.map(_.values(questionDB), function(item, callback) {
