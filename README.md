@@ -20,6 +20,10 @@ the server.
 
 ## ChangeLog
 
+* __1.3.0__ - 2015-08-24
+
+  * Change default `allowAccess` to block all non-instructor access.
+
 * __1.2.1__ - 2015-08-24
 
   * Fix race condition in user creation and correctly record user names.

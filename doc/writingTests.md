@@ -35,7 +35,7 @@ Mode     | When active
 
 ## Access control
 
-By default, a test is accessible in `Public` mode to all users at any time, and is only available to `Instructor` users in `Exam` mode. To change these defaults, the `allowAccess` option can be used in the test's `info.json` file. As an example:
+By default, a test is only accessible to `Instructor` users. To change this, the `allowAccess` option can be used in the test's `info.json` file. As an example:
 
     "allowAccess": [
         {
