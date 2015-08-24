@@ -536,7 +536,7 @@ var isDateAfterNow = function(dateString) {
 };
 
 var checkTestAccessRule = function(req, tid, accessRule) {
-    // AND all the accessRule tests together
+    // logical-AND the accessRule tests together (they all need to be satisfied)
     var avail = true;
     _(accessRule).each(function(value, key) {
         if (key === "mode") {
@@ -564,10 +564,8 @@ var checkTestAvail = function(req, tid) {
     }
     if (_(testDB).has(tid)) {
         var info = testDB[tid];
-        if (info.allowAccess === undefined) {
-            avail = true;
-        } else {
-            // OR the accessRules
+        if (info.allowAccess) {
+            // logical-OR the accessRules together (only need one of them to be satisfied)
             _(info.allowAccess).each(function(accessRule) {
                 if (checkTestAccessRule(req, accessRule)) {
                     avail = true;
