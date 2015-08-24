@@ -407,8 +407,7 @@ var loadCourseInfo = function(callback) {
     });
 };
 
-var questionDB = {};
-var testDB = {};
+var questionDB, testDB;
 
 var loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, loadCallback) {
     fs.readdir(parentDir, function(err, files) {
@@ -1025,7 +1024,13 @@ app.post("/coursePulls", function(req, res) {
                     pull.pid = pid;
                     pullCollect.insert(pull, {w: 1}, function(err) {
                         if (err) return sendError(res, 500, "Unable to insert pull", err);
-                        res.json(cleanPull(pull));
+                        loadData(function(err) {
+                            if (err) return sendError(res, 500, "Error reloading data", err);
+                            initTestData(function(err) {
+                                if (err) return sendError(res, 500, "Error initializing tests", err);
+                                res.json(cleanPull(pull));
+                            });
+                        });
                     });
                 });
             });
@@ -2263,22 +2268,32 @@ var startIntervalJobs = function(callback) {
     callback(null);
 };
 
+var loadData = function(callback) {
+    async.series([
+        function(callback) {
+            loadCourseInfo(callback);
+        },
+        function(callback) {
+            questionDB = {};
+            var defaultQuestionInfo = {
+                "type": "Calculation",
+                "clientFiles": ["client.js", "question.html", "answer.html"],
+            };
+            loadInfoDB(questionDB, "qid", config.questionsDir, defaultQuestionInfo, "schemas/questionInfo.json", "schemas/questionOptions", ".json", callback);
+        },
+        function(callback) {
+            testDB = {};
+            var defaultTestInfo = {
+            };
+            loadInfoDB(testDB, "tid", config.testsDir, defaultTestInfo, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
+        },
+    ], function(err) {
+        callback(err);
+    });
+};
+
 async.series([
-    function(callback) {
-        loadCourseInfo(callback);
-    },
-    function(callback) {
-        var defaultQuestionInfo = {
-            "type": "Calculation",
-            "clientFiles": ["client.js", "question.html", "answer.html"],
-        };
-        loadInfoDB(questionDB, "qid", config.questionsDir, defaultQuestionInfo, "schemas/questionInfo.json", "schemas/questionOptions", ".json", callback);
-    },
-    function(callback) {
-        var defaultTestInfo = {
-        };
-        loadInfoDB(testDB, "tid", config.testsDir, defaultTestInfo, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
-    },
+    loadData,
     loadDB,
     initTestData,
     //runBayes,
