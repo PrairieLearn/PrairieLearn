@@ -60,8 +60,8 @@ requirejs.config({
     },
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'PrairieRole', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'spinController'],
-function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   PrairieRole,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   spinController) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'PrairieRole', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'SyncModel', 'SyncView', 'spinController'],
+function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   PrairieRole,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   SyncModel,   SyncView,   spinController) {
 
     var QuestionModel = Backbone.Model.extend({
         idAttribute: "qid"
@@ -83,6 +83,15 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
 
     var UserCollection = Backbone.Collection.extend({
         model: UserModel
+    });
+
+    var PullModel = Backbone.Model.extend({
+        idAttribute: "pid"
+    });
+
+    var PullCollection = Backbone.Collection.extend({
+        model: PullModel,
+        comparator: function(pull) {return -(new Date(pull.get("createDate"))).getTime();},
     });
 
     var AppModel = Backbone.Model.extend({
@@ -183,11 +192,14 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
             this.tests = this.options.tests;
             this.tInstances = this.options.tInstances;
             this.users = this.options.users;
+            this.pulls = this.options.pulls;
+            this.syncModel = this.options.syncModel;
             this.currentView = null;
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.model, "change:userUID", this.reloadUserData);
             this.listenTo(this.model, "change:userRole", this.reloadUserData);
             this.listenTo(this.model, "change:mode", this.reloadUserData);
+            this.listenTo(Backbone, "reloadUserData", this.reloadUserData);
             this.navView = new NavView.NavView({model: this.model, users: this.users});
             this.navView.render();
             $("#nav").html(this.navView.el);
@@ -286,6 +298,10 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
             case "user":
                 view = new UserView.UserView({model: this.model, users: this.users});
                 break;
+
+            case "sync":
+                view = new SyncView.SyncView({model: this.model, pulls: this.pulls, syncModel: this.syncModel});
+                break;
             }
             this.showView(view);
             spinController.stopSpinner(spinner);
@@ -328,6 +344,7 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
             "ti/:tiid": "goTestInstance",
             "about": "goAbout",
             "user": "goUser",
+            "sync": "goSync",
             "*actions": "goHome"
         },
 
@@ -391,6 +408,13 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
                 "pageOptions": {}
             });
         },
+
+        goSync: function() {
+            this.model.set({
+                "page": "sync",
+                "pageOptions": {}
+            });
+        },
     });
 
     $(function() {
@@ -410,6 +434,10 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
         var users = new UserCollection([], {
             url: function() {return appModel.apiURL("users");}
         });
+        var pulls = new PullCollection([], {
+            url: function() {return appModel.apiURL("coursePulls");}
+        });
+        var syncModel = new SyncModel.SyncModel();
 
         Backbone.history.start();
 
@@ -426,16 +454,56 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
         });
 
         appModel.on("change:userUID change:userRole change:mode", function() {
-            questions.fetch({success: function() {
-                tests.fetch({success: function() {
-                    tInstances.fetch({success: function() {
-                        users.fetch({success: function() {
-                            var appView = new AppView({model: appModel, questions: questions, tests: tests, tInstances: tInstances, router: appRouter, users: users});
-                            appView.render();
-                        }});
-                    }});
-                }});
-            }});
+            async.parallel(
+                [
+                    function(callback) {
+                        questions.fetch({
+                            success: function() {callback(null);},
+                            error: function() {callback("Error fetching questions");},
+                        });
+                    },
+                    function(callback) {
+                        tests.fetch({
+                            success: function() {callback(null);},
+                            error: function() {callback("Error fetching tests");},
+                        });
+                    },
+                    function(callback) {
+                        tInstances.fetch({
+                            success: function() {callback(null);},
+                            error: function() {callback("Error fetching tInstances");},
+                        });
+                    },
+                    function(callback) {
+                        users.fetch({
+                            success: function() {callback(null);},
+                            error: function() {callback("Error fetching users");},
+                        });
+                    },
+                    function(callback) {
+                        pulls.fetch({
+                            success: function() {callback(null);},
+                            error: function() {callback("Error fetching pulls");},
+                        });
+                    },
+                ],
+                function(err) {
+                    if (err) {
+                        $("#error").html('<div class="alert alert-danger" role="alert">' + err + '</div>');
+                        return;
+                    }
+                    var appView = new AppView({
+                        model: appModel,
+                        questions: questions,
+                        tests: tests,
+                        tInstances: tInstances,
+                        router: appRouter,
+                        users: users,
+                        pulls: pulls,
+                        syncModel: syncModel,
+                    });
+                    appView.render();
+                });
         });
     });
 });

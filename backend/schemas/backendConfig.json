@@ -50,6 +50,10 @@
         "serverPort": {
             "description": "The TCP port number for the server.",
             "type": "string"
+        },
+        "gitCourseBranch": {
+            "description": "The origin git branch to pull from.",
+            "type": "string"
         }
     }
 }

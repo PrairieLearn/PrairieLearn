@@ -22,6 +22,8 @@ the server.
 
 * __1.2.0__ - 2015-08-23
 
+  * Add "Sync" feature to pull from a git repository.
+
   * Fix missing `template` field in `config.json` schema.
 
   * Improve error logging with more specific error information.

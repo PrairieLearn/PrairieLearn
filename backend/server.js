@@ -191,6 +191,7 @@ requirejs.onError = function(err) {
 var hmacSha256 = require("crypto-js/hmac-sha256");
 var gamma = require("gamma");
 var numeric = require("numeric");
+var child_process = require("child_process");
 var PrairieStats = requirejs("PrairieStats");
 var PrairieModel = requirejs("PrairieModel");
 var PrairieRole = requirejs("PrairieRole");
@@ -205,7 +206,7 @@ var STATS_INTERVAL = 10 * 60 * 1000; // ms
 
 app.use(express.json());
 
-var db, countersCollect, uCollect, sCollect, qiCollect, statsCollect, tCollect, tiCollect, accessCollect;
+var db, countersCollect, uCollect, sCollect, qiCollect, statsCollect, tCollect, tiCollect, accessCollect, pullCollect;
 
 var MongoClient = require('mongodb').MongoClient;
 
@@ -361,6 +362,19 @@ var loadDB = function(callback) {
                     processCollection('accesses', err, collection, options, cb);
                 });
             },
+            function(cb) {
+                db.collection('pulls', function(err, collection) {
+                    pullCollect = collection;
+                    var options = {
+                        idPrefix: "p",
+                        indexes: [
+                            {keys: {pid: 1}, options: {unique: true}},
+                            {keys: {pullHash: 1}, options: {}},
+                        ],
+                    };
+                    processCollection('pulls', err, collection, options, cb);
+                });
+            },
         ], function(err) {
             if (err) {
                 logger.error("Error loading DB collections");
@@ -393,8 +407,7 @@ var loadCourseInfo = function(callback) {
     });
 };
 
-var questionDB = {};
-var testDB = {};
+var questionDB, testDB;
 
 var loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, loadCallback) {
     fs.readdir(parentDir, function(err, files) {
@@ -842,6 +855,193 @@ if (config.authType === 'eppn') {
 
 app.get("/course", function(req, res) {
     res.json({name: courseInfo.name, title: courseInfo.title});
+});
+
+var getCourseCommitFromDisk = function(callback) {
+    var cmd = 'git';
+    var options = [
+        'show',
+        '-s',
+        '--format=subject:%s%ncommitHash:%H%nrefNames:%D%nauthorName:%an%nauthorEmail:%ae%nauthorDate:%aI%ncommitterName:%cn%ncommitterEmail:%ce%ncommitterDate:%cI',
+        'HEAD'
+    ];
+    var env = {
+        'timeout': 5000, // milliseconds
+        'cwd': config.courseDir,
+    };
+    child_process.execFile(cmd, options, env, function(err, stdout, stderr) {
+        if (err) return callback(err);
+        var commit = {};
+        _(stdout.split('\n')).each(function(line) {
+            if (line.length <= 0) return;
+            var i = line.indexOf(':');
+            if (i < 0) return logger.warn('Unable to parse "git show" output: ' + line);
+            var key = line.slice(0, i);
+            var val = line.slice(i + 1);
+            var validKeys = ['subject', 'commitHash', 'refNames',
+                             'authorName', 'authorEmail', 'authorDate',
+                             'committerName', 'committerEmail', 'committerDate'];
+            if (!_(validKeys).contains(key)) return logger.warn('Unknown key in "git show": ' + key);
+            commit[key] = val;
+        });
+        if (!commit.commitHash || commit.commitHash.length != 40) {
+            return callback(Error('Invalid or missing commitHash from "git show"',
+                                  {cmd: cmd, options: options, env: env, stdout: stdout}));
+        }
+        callback(null, commit);
+    });
+};
+
+var getCourseOriginURL = function(callback) {
+    var cmd = 'git';
+    var options = ['remote', 'show', '-n', 'origin'];
+    var env = {
+        'timeout': 5000, // milliseconds
+        'cwd': config.courseDir,
+    };
+    child_process.execFile(cmd, options, env, function(err, stdout, stderr) {
+        if (err) return callback(err);
+        var originURL = null;
+        _(stdout.split('\n')).each(function(line) {
+            match = /^ *Fetch URL: (.*)$/.exec(line);
+            if (!match) return;
+            originURL = match[1];
+        });
+        if (!originURL) {
+            return callback(Error('Invalid or missing "Fetch URL" from "git show"'),
+                            {cmd: cmd, options: options, env: env, stdout: stdout});
+        }
+        callback(null, originURL);
+    });
+};
+
+var gitPullCourseOrigin = function(callback) {
+    var cmd = 'git';
+    if (!config.gitCourseBranch) return callback(Error('config.gitCourseBranch is not defined'));
+    var options = ['pull', 'origin', config.gitCourseBranch];
+    var env = {
+        'timeout': 20000, // milliseconds
+        'cwd': config.courseDir,
+    };
+    child_process.execFile(cmd, options, env, function(err, stdout, stderr) {
+        if (err) return callback(err);
+        callback(null, String(stdout).trim());
+    });
+};
+
+var cleanPull = function(obj) {
+    return {
+        pid: obj.pid,
+        createSource: obj.createSource,
+        createDate: obj.createDate,
+        createUID: obj.createUID,
+        createRemoteFetchURL: obj.createRemoteFetchURL,
+        createBranch: obj.createBranch,
+        createResult: obj.createResult,
+        subject: obj.subject,
+        commitHash: obj.commitHash,
+        refNames: obj.refNames,
+        authorName: obj.authorName,
+        authorEmail: obj.authorEmail,
+        authorDate: obj.authorDate,
+        committerName: obj.committerName,
+        committerEmail: obj.committerEmail,
+        committerDate: obj.committerDate,
+    };
+};
+
+var ensureDiskCommitInDB = function(callback) {
+    getCourseCommitFromDisk(function(err, commit) {
+        if (err) return callback(err);
+        pullCollect.findOne({commitHash: commit.commitHash}, function(err, obj) {
+            if (err) return callback(err);
+            if (obj) return callback(null, cleanPull(obj));
+            var pull = _.defaults(commit, {
+                createSource: 'External',
+                createDate: (new Date()).toISOString(),
+                createUID: '',
+                createRemoteFetchURL: '',
+                createBranch: '',
+                createResult: '',
+            });
+            newID('pid', function(err, pid) {
+                if (err) return callback(err);
+                pull.pid = pid;
+                pullCollect.insert(pull, {w: 1}, function(err) {
+                    if (err) return callback(err);
+                    callback(null, pull);
+                });
+            });
+        });
+    });
+};
+
+app.get("/coursePulls", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewCoursePulls')) {
+        return res.json([]);
+    }
+    ensureDiskCommitInDB(function(err) {
+        if (err) return sendError(res, 500, "Error mapping disk commit to DB", err);
+        pullCollect.find({}, function(err, cursor) {
+            if (err) return sendError(res, 500, "Error accessing database", err);
+            cursor.toArray(function(err, objs) {
+                if (err) return sendError(res, 500, "Error serializing", err);
+                async.map(objs, function(obj, callback) {
+                    callback(null, cleanPull(obj));
+                }, function(err, objs) {
+                    if (err) return sendError(res, 500, "Error cleaning objects", err);
+                    res.json(objs);
+                });
+            });
+        });
+    });
+});
+
+app.get("/coursePulls/current", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewCoursePulls')) {
+        return res.json({});
+    }
+    ensureDiskCommitInDB(function(err, pull) {
+        if (err) return sendError(res, 500, "Error mapping disk commit to DB", err);
+        res.json(pull);
+    });
+});
+
+app.post("/coursePulls", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'editCoursePulls')) {
+        return sendError(res, 403, "Insufficient permissions to access.");
+    }
+    getCourseOriginURL(function(err, originURL) {
+        if (err) return sendError(res, 500, "Unable to get originURL", err);
+        gitPullCourseOrigin(function(err, pullResult) {
+            if (err) return sendError(res, 500, "Unable to git pull", err);
+            getCourseCommitFromDisk(function(err, commit) {
+                if (err) return sendError(res, 500, "Unable to get current commit", err);
+                var pull = _.defaults(commit, {
+                    createSource: 'Web',
+                    createDate: (new Date()).toISOString(),
+                    createUID: req.userUID,
+                    createRemoteFetchURL: originURL,
+                    createBranch: config.gitCourseBranch,
+                    createResult: pullResult,
+                });
+                newID('pid', function(err, pid) {
+                    if (err) return sendError(res, 500, "Unable to get new pid", err);
+                    pull.pid = pid;
+                    pullCollect.insert(pull, {w: 1}, function(err) {
+                        if (err) return sendError(res, 500, "Unable to insert pull", err);
+                        loadData(function(err) {
+                            if (err) return sendError(res, 500, "Error reloading data", err);
+                            initTestData(function(err) {
+                                if (err) return sendError(res, 500, "Error initializing tests", err);
+                                res.json(cleanPull(pull));
+                            });
+                        });
+                    });
+                });
+            });
+        });
+    });
 });
 
 app.get("/questions", function(req, res) {
@@ -2074,22 +2274,32 @@ var startIntervalJobs = function(callback) {
     callback(null);
 };
 
+var loadData = function(callback) {
+    async.series([
+        function(callback) {
+            loadCourseInfo(callback);
+        },
+        function(callback) {
+            questionDB = {};
+            var defaultQuestionInfo = {
+                "type": "Calculation",
+                "clientFiles": ["client.js", "question.html", "answer.html"],
+            };
+            loadInfoDB(questionDB, "qid", config.questionsDir, defaultQuestionInfo, "schemas/questionInfo.json", "schemas/questionOptions", ".json", callback);
+        },
+        function(callback) {
+            testDB = {};
+            var defaultTestInfo = {
+            };
+            loadInfoDB(testDB, "tid", config.testsDir, defaultTestInfo, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
+        },
+    ], function(err) {
+        callback(err);
+    });
+};
+
 async.series([
-    function(callback) {
-        loadCourseInfo(callback);
-    },
-    function(callback) {
-        var defaultQuestionInfo = {
-            "type": "Calculation",
-            "clientFiles": ["client.js", "question.html", "answer.html"],
-        };
-        loadInfoDB(questionDB, "qid", config.questionsDir, defaultQuestionInfo, "schemas/questionInfo.json", "schemas/questionOptions", ".json", callback);
-    },
-    function(callback) {
-        var defaultTestInfo = {
-        };
-        loadInfoDB(testDB, "tid", config.testsDir, defaultTestInfo, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
-    },
+    loadData,
     loadDB,
     initTestData,
     //runBayes,

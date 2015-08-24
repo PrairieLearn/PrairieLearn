@@ -1,0 +1,69 @@
+
+<p class="text-right">
+{{#editCoursePulls}}
+<button id="pullFromGitHub" class="btn btn-success" type="submit">Sync</button>
+{{/editCoursePulls}}
+</p>
+
+<div class="panel-group" id="pulls" role="tablist" aria-multiselectable="true">
+  {{#pullsList}}
+  <div class="panel panel-{{panelType}}">
+    <div class="panel-heading" role="tab" id="{{pid}}">
+      <h4 class="panel-title">
+        <a role="button" data-toggle="collapse" data-parent="#pulls" href="#collapse{{pid}}" aria-expanded="true" aria-controls="collapseOne">
+          {{^inProgress}}
+          {{commitHash}} {{extraTitle}}
+          {{/inProgress}}
+        </a>
+      </h4>
+    </div>
+    <div id="collapse{{pid}}" class="panel-collapse collapse {{classIn}}" role="tabpanel" aria-labelledby="heading{{pid}}">
+      <div class="panel-body">
+
+        {{#inProgress}}
+        <p>Pulling...</p>
+        {{/inProgress}}
+        
+        {{^inProgress}}
+        
+        {{#createUID}}
+        <dl class="dl-horizontal">
+          <dt>Pull source</dt>
+          <dd>Branch {{createBranch}} at {{createRemoteFetchURL}}</dd>
+          <dt>Pull user</dt>
+          <dd>{{createUID}} at {{createDate}} ({{createSource}})</dd>
+        </dl>
+        {{/createUID}}
+
+        {{^createUID}}
+        <dl class="dl-horizontal">
+          <dt>Pull source</dt>
+          <dd>{{createSource}} at {{createDate}}</dd>
+        </dl>
+        {{/createUID}}
+
+        <dl class="dl-horizontal">
+          <dt>Commit</dt>
+          <dd>{{commitHash}} ({{refNames}})</dd>
+          <dt>Subject</dt>
+          <dd>{{subject}}</dd>
+          <dt>Author</dt>
+          <dd>{{authorName}} ({{authorEmail}}) at {{authorDate}}</dd>
+          <dt>Committer</dt>
+          <dd>{{committerName}} ({{committerEmail}}) at {{committerDate}}</dd>
+        </dl>
+
+        {{#createResult}}
+        <dl class="dl-horizontal no-bottom-margin">
+          <dt>Pull result</dt>
+          <dd><pre>{{createResult}}</pre></dd>
+        </dl>
+        {{/createResult}}
+
+        {{/inProgress}}
+
+      </div>
+    </div>
+  </div>
+  {{/pullsList}}
+</div>
