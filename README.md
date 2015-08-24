@@ -20,6 +20,10 @@ the server.
 
 ## ChangeLog
 
+* __1.3.2__ - 2015-08-24
+
+  * Fix `allowAccess` checks to not always fail.
+
 * __1.3.1__ - 2015-08-24
 
   * Fix `pulls` error when `gitCourseBranch` is not set.

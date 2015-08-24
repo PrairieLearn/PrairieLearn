@@ -555,6 +555,7 @@ var checkTestAccessRule = function(req, tid, accessRule) {
             avail = false;
         }
     });
+    return avail;
 };
 
 var checkTestAvail = function(req, tid) {
@@ -567,7 +568,7 @@ var checkTestAvail = function(req, tid) {
         if (info.allowAccess) {
             // logical-OR the accessRules together (only need one of them to be satisfied)
             _(info.allowAccess).each(function(accessRule) {
-                if (checkTestAccessRule(req, accessRule)) {
+                if (checkTestAccessRule(req, tid, accessRule)) {
                     avail = true;
                 }
             });
