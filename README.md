@@ -20,6 +20,10 @@ the server.
 
 ## ChangeLog
 
+* __1.2.0__ - XXXX-XX-XX
+
+  * Add "Sync" feature to pull from a git repository.
+
 * __1.1.0__ - 2015-08-22
 
   * Add access logging to the database.
