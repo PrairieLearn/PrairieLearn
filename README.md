@@ -20,6 +20,10 @@ the server.
 
 ## ChangeLog
 
+* __1.3.1__ - 2015-08-24
+
+  * Fix `pulls` error when `gitCourseBranch` is not set.
+
 * __1.3.0__ - 2015-08-24
 
   * Change default `allowAccess` to block all non-instructor access.

@@ -975,6 +975,9 @@ app.get("/coursePulls", function(req, res) {
     if (!PrairieRole.hasPermission(req.userRole, 'viewCoursePulls')) {
         return res.json([]);
     }
+    if (!config.gitCourseBranch) {
+        return res.json([]);
+    }
     ensureDiskCommitInDB(function(err) {
         if (err) return sendError(res, 500, "Error mapping disk commit to DB", err);
         pullCollect.find({}, function(err, cursor) {
@@ -996,6 +999,9 @@ app.get("/coursePulls/current", function(req, res) {
     if (!PrairieRole.hasPermission(req.userRole, 'viewCoursePulls')) {
         return res.json({});
     }
+    if (!config.gitCourseBranch) {
+        return res.json({});
+    }
     ensureDiskCommitInDB(function(err, pull) {
         if (err) return sendError(res, 500, "Error mapping disk commit to DB", err);
         res.json(pull);
@@ -1005,6 +1011,9 @@ app.get("/coursePulls/current", function(req, res) {
 app.post("/coursePulls", function(req, res) {
     if (!PrairieRole.hasPermission(req.userRole, 'editCoursePulls')) {
         return sendError(res, 403, "Insufficient permissions to access.");
+    }
+    if (!config.gitCourseBranch) {
+        return sendError(res, 500, "Syncing not enabled.");
     }
     getCourseOriginURL(function(err, originURL) {
         if (err) return sendError(res, 500, "Unable to get originURL", err);
