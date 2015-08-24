@@ -206,7 +206,7 @@ var STATS_INTERVAL = 10 * 60 * 1000; // ms
 
 app.use(express.json());
 
-var db, countersCollect, uCollect, sCollect, qiCollect, statsCollect, tCollect, tiCollect, accessCollect, commitCollect;
+var db, countersCollect, uCollect, sCollect, qiCollect, statsCollect, tCollect, tiCollect, accessCollect, pullCollect;
 
 var MongoClient = require('mongodb').MongoClient;
 
@@ -363,16 +363,16 @@ var loadDB = function(callback) {
                 });
             },
             function(cb) {
-                db.collection('commits', function(err, collection) {
-                    commitCollect = collection;
+                db.collection('pulls', function(err, collection) {
+                    pullCollect = collection;
                     var options = {
-                        idPrefix: "m",
+                        idPrefix: "p",
                         indexes: [
-                            {keys: {mid: 1}, options: {unique: true}},
-                            {keys: {commitHash: 1}, options: {}},
+                            {keys: {pid: 1}, options: {unique: true}},
+                            {keys: {pullHash: 1}, options: {}},
                         ],
                     };
-                    processCollection('commits', err, collection, options, cb);
+                    processCollection('pulls', err, collection, options, cb);
                 });
             },
         ], function(err) {
@@ -924,9 +924,9 @@ var gitPullCourseOrigin = function(callback) {
     });
 };
 
-var cleanCommit = function(obj) {
+var cleanPull = function(obj) {
     return {
-        mid: obj.mid,
+        pid: obj.pid,
         createSource: obj.createSource,
         createDate: obj.createDate,
         createUID: obj.createUID,
@@ -948,39 +948,41 @@ var cleanCommit = function(obj) {
 var ensureDiskCommitInDB = function(callback) {
     getCourseCommitFromDisk(function(err, commit) {
         if (err) return callback(err);
-        commitCollect.findOne({commitHash: commit.commitHash}, function(err, obj) {
+        pullCollect.findOne({commitHash: commit.commitHash}, function(err, obj) {
             if (err) return callback(err);
-            if (obj) return callback(null, cleanCommit(obj));
-            commit.createSource = 'External';
-            commit.createDate = (new Date()).toISOString();
-            commit.createUID = '';
-            commit.createRemoteFetchURL = '';
-            commit.createBranch = '';
-            commit.createResult = '';
-            newID('mid', function(err, mid) {
+            if (obj) return callback(null, cleanPull(obj));
+            var pull = _.defaults(commit, {
+                createSource: 'External',
+                createDate: (new Date()).toISOString(),
+                createUID: '',
+                createRemoteFetchURL: '',
+                createBranch: '',
+                createResult: '',
+            });
+            newID('pid', function(err, pid) {
                 if (err) return callback(err);
-                commit.mid = mid;
-                commitCollect.insert(commit, {w: 1}, function(err) {
+                pull.pid = pid;
+                pullCollect.insert(pull, {w: 1}, function(err) {
                     if (err) return callback(err);
-                    callback(null, commit);
+                    callback(null, pull);
                 });
             });
         });
     });
 };
 
-app.get("/courseCommits", function(req, res) {
-    if (!PrairieRole.hasPermission(req.userRole, 'viewCourseCommits')) {
+app.get("/coursePulls", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewCoursePulls')) {
         return sendError(res, 403, "Insufficient permissions to access.");
     }
     ensureDiskCommitInDB(function(err) {
         if (err) return sendError(res, 500, "Error mapping disk commit to DB", err);
-        commitCollect.find({}, function(err, cursor) {
+        pullCollect.find({}, function(err, cursor) {
             if (err) return sendError(res, 500, "Error accessing database", err);
             cursor.toArray(function(err, objs) {
                 if (err) return sendError(res, 500, "Error serializing", err);
                 async.map(objs, function(obj, callback) {
-                    callback(null, cleanCommit(obj));
+                    callback(null, cleanPull(obj));
                 }, function(err, objs) {
                     if (err) return sendError(res, 500, "Error cleaning objects", err);
                     res.json(objs);
@@ -990,18 +992,18 @@ app.get("/courseCommits", function(req, res) {
     });
 });
 
-app.get("/courseCommits/current", function(req, res) {
-    if (!PrairieRole.hasPermission(req.userRole, 'viewCourseCommits')) {
+app.get("/coursePulls/current", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewCoursePulls')) {
         return sendError(res, 403, "Insufficient permissions to access.");
     }
-    ensureDiskCommitInDB(function(err, commit) {
+    ensureDiskCommitInDB(function(err, pull) {
         if (err) return sendError(res, 500, "Error mapping disk commit to DB", err);
-        res.json(commit);
+        res.json(pull);
     });
 });
 
-app.post("/courseCommits", function(req, res) {
-    if (!PrairieRole.hasPermission(req.userRole, 'editCourseCommits')) {
+app.post("/coursePulls", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'editCoursePulls')) {
         return sendError(res, 403, "Insufficient permissions to access.");
     }
     getCourseOriginURL(function(err, originURL) {
@@ -1010,18 +1012,20 @@ app.post("/courseCommits", function(req, res) {
             if (err) return sendError(res, 500, "Unable to git pull", err);
             getCourseCommitFromDisk(function(err, commit) {
                 if (err) return sendError(res, 500, "Unable to get current commit", err);
-                commit.createSource = 'Web';
-                commit.createDate = (new Date()).toISOString();
-                commit.createUID = req.userUID;
-                commit.createRemoteFetchURL = originURL;
-                commit.createBranch = config.gitCourseBranch;
-                commit.createResult = pullResult;
-                newID('mid', function(err, mid) {
-                    if (err) return sendError(res, 500, "Unable to get new mid", err);
-                    commit.mid = mid;
-                    commitCollect.insert(commit, {w: 1}, function(err) {
-                        if (err) return sendError(res, 500, "Unable to insert commit", err);
-                        res.json(commit);
+                var pull = _.defaults(commit, {
+                    createSource: 'Web',
+                    createDate: (new Date()).toISOString(),
+                    createUID: req.userUID,
+                    createRemoteFetchURL: originURL,
+                    createBranch: config.gitCourseBranch,
+                    createResult: pullResult,
+                });
+                newID('pid', function(err, pid) {
+                    if (err) return sendError(res, 500, "Unable to get new pid", err);
+                    pull.pid = pid;
+                    pullCollect.insert(pull, {w: 1}, function(err) {
+                        if (err) return sendError(res, 500, "Unable to insert pull", err);
+                        res.json(cleanPull(pull));
                     });
                 });
             });

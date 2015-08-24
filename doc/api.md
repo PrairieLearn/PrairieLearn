@@ -39,7 +39,7 @@ ID       | Identified resource   | Example
 `<qiid>` | Question instance     | `qi4228`
 `<tid>`  | Test                  | `midterm2`
 `<tiid>` | Test instance         | `ti4241`
-`<mid>`  | Commit instance       | `m273`
+`<pid>`  | Pull instance         | `p273`
 
 
 ### Server API: Method calls
@@ -54,36 +54,36 @@ generally be accessed in three ways:
 * A GET to `/collect/<id>` returns the single specified object in complete form.
 
 
-Path                             | Method | Action                                                   | Send                                 | Return
----                              | ---    | ---                                                      | ---                                  | ---
-`/questions`                     | GET    | —                                                        | —                                    | JSON: List of all `<question>` objects.
-`/questions/<qid>`               | GET    | —                                                        | —                                    | JSON: Single `<question>` object.
-`/questions/<qid>/client.js`     | GET    | —                                                        | —                                    | Text: JavaScript question client code.
-`/questions/<qid>/<filename>`    | GET    | —                                                        | —                                    | Other question files (type determined by filename extension).
-`/users`                         | GET    | —                                                        | —                                    | JSON: List of all `<user>` objects.
-`/users/<uid>`                   | GET    | —                                                        | —                                    | JSON: Single `<user>` object.
-`/qInstances`                    | GET    | —                                                        | —                                    | JSON: List of all `<qInstance>` objects, optionally filtered by `<uid>` or `<qid>` parameters.
-`/qInstances`                    | POST   | Creates new qInstance object.                            | JSON: partial `<qInstance>` object.  | JSON: complete newly created `<qInstance>` object.
-`/qInstances/<qiid>`             | GET    | —                                                        | —                                    | JSON: Single `<qInstance>` object.
-`/submissions`                   | GET    | —                                                        | —                                    | JSON: List of all `<submission>` objects, optionally filtered by `<uid>` or `<qid>` parameters.
-`/submissions`                   | POST   | Creates new submission object.                           | JSON: partial `<submission>` object. | JSON: complete newly created `<submission>` object.
-`/submissions/<sid>`             | GET    | —                                                        | —                                    | JSON: Single `<submission>` object.
-`/tests`                         | GET    | —                                                        | —                                    | JSON: List of all `<test>` objects.
-`/tests/<tid>`                   | GET    | —                                                        | —                                    | JSON: Single `<test>` object.
-`/tests/<tid>/client.js`         | GET    | —                                                        | —                                    | Text: JavaScript test client code.
-`/tests/<tid>/common.js`         | GET    | —                                                        | —                                    | Text: JavaScript test client-server-shared code.
-`/tests/<tid>/test.html`         | GET    | —                                                        | —                                    | Text: HTML question template for test.
-`/tests/<tid>/testOverview.html` | GET    | —                                                        | —                                    | Text: HTML question template for test overview.
-`/tests/<tid>/testSidebar.html`  | GET    | —                                                        | —                                    | Text: HTML question template for test sidebar.
-`/tInstances`                    | GET    | —                                                        | —                                    | JSON: List of all `<tInstance>` objects, optionally filtered by `<uid>`.
-`/tInstances/<tiid>`             | GET    | —                                                        | —                                    | JSON: Single `<tInstance>` object.
-`/tInstances`                    | POST   | Creates new tInstance object.                            | JSON: partial `<tInstance>` object.  | JSON: complete newly created `<tInstance>` object.
-`/tInstances/<tiid>`             | PATCH  | Updates an existing `<tInstance>` (used to grade tests). | JSON: partial `<tInstance>` object.  | JSON: complete updated `<tInstance>` object.
-`/export.csv`                    | GET    | —                                                        | —                                    | CSV: All test scores (maximum over every `<tInstance>`) for all users.
-`/course`                        | GET    | -                                                        | -                                    | JSON: The `<courseInfo>` object.
-`/courseCommits`                 | GET    | -                                                        | -                                    | JSON: List of all `<courseCommit>` objects.
-`/courseCommits/current`         | GET    | -                                                        | -                                    | JSON: The current `<courseCommit>` object.
-`/courseCommits`                 | POST   | Creates new `<courseCommit>` object.                     | JSON: particle `<courseCommit>` object. | JSON: complete newly created `<courseCommit>` object.
+Path                             | Method | Action                                                   | Send                                  | Return
+---                              | ---    | ---                                                      | ---                                   | ---
+`/questions`                     | GET    | —                                                        | —                                     | JSON: List of all `<question>` objects.
+`/questions/<qid>`               | GET    | —                                                        | —                                     | JSON: Single `<question>` object.
+`/questions/<qid>/client.js`     | GET    | —                                                        | —                                     | Text: JavaScript question client code.
+`/questions/<qid>/<filename>`    | GET    | —                                                        | —                                     | Other question files (type determined by filename extension).
+`/users`                         | GET    | —                                                        | —                                     | JSON: List of all `<user>` objects.
+`/users/<uid>`                   | GET    | —                                                        | —                                     | JSON: Single `<user>` object.
+`/qInstances`                    | GET    | —                                                        | —                                     | JSON: List of all `<qInstance>` objects, optionally filtered by `<uid>` or `<qid>` parameters.
+`/qInstances`                    | POST   | Creates new qInstance object.                            | JSON: partial `<qInstance>` object.   | JSON: complete newly created `<qInstance>` object.
+`/qInstances/<qiid>`             | GET    | —                                                        | —                                     | JSON: Single `<qInstance>` object.
+`/submissions`                   | GET    | —                                                        | —                                     | JSON: List of all `<submission>` objects, optionally filtered by `<uid>` or `<qid>` parameters.
+`/submissions`                   | POST   | Creates new submission object.                           | JSON: partial `<submission>` object.  | JSON: complete newly created `<submission>` object.
+`/submissions/<sid>`             | GET    | —                                                        | —                                     | JSON: Single `<submission>` object.
+`/tests`                         | GET    | —                                                        | —                                     | JSON: List of all `<test>` objects.
+`/tests/<tid>`                   | GET    | —                                                        | —                                     | JSON: Single `<test>` object.
+`/tests/<tid>/client.js`         | GET    | —                                                        | —                                     | Text: JavaScript test client code.
+`/tests/<tid>/common.js`         | GET    | —                                                        | —                                     | Text: JavaScript test client-server-shared code.
+`/tests/<tid>/test.html`         | GET    | —                                                        | —                                     | Text: HTML question template for test.
+`/tests/<tid>/testOverview.html` | GET    | —                                                        | —                                     | Text: HTML question template for test overview.
+`/tests/<tid>/testSidebar.html`  | GET    | —                                                        | —                                     | Text: HTML question template for test sidebar.
+`/tInstances`                    | GET    | —                                                        | —                                     | JSON: List of all `<tInstance>` objects, optionally filtered by `<uid>`.
+`/tInstances/<tiid>`             | GET    | —                                                        | —                                     | JSON: Single `<tInstance>` object.
+`/tInstances`                    | POST   | Creates new tInstance object.                            | JSON: partial `<tInstance>` object.   | JSON: complete newly created `<tInstance>` object.
+`/tInstances/<tiid>`             | PATCH  | Updates an existing `<tInstance>` (used to grade tests). | JSON: partial `<tInstance>` object.   | JSON: complete updated `<tInstance>` object.
+`/export.csv`                    | GET    | —                                                        | —                                     | CSV: All test scores (maximum over every `<tInstance>`) for all users.
+`/course`                        | GET    | -                                                        | -                                     | JSON: The `<courseInfo>` object.
+`/coursePulls`                   | GET    | -                                                        | -                                     | JSON: List of all `<coursePull>` objects.
+`/coursePulls/current`           | GET    | -                                                        | -                                     | JSON: The current `<coursePull>` object.
+`/coursePulls`                   | POST   | Creates new `<coursePull>` object.                       | JSON: particle `<coursePull>` object. | JSON: complete newly created `<coursePull>` object.
   
 ### Server API: JSON object specifications
 
@@ -245,11 +245,11 @@ Path                             | Method | Action                              
     </tr>
     <tr>
       <td>
-        <code>&lt;courseCommit&gt;</code>
+        <code>&lt;coursePull&gt;</code>
       </td>
       <td>
         <pre>{
-  "mid": &lt;string&gt;,
+  "pid": &lt;string&gt;,
   "createDate": &lt;date&gt;,
   "createUID": &lt;string&gt;,
   "subject": &lt;string&gt;,
