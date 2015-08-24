@@ -12,9 +12,15 @@
     <ul class="nav navbar-nav" id="main-nav">
       <li {{{navAssessAttributes}}}><a href="index.html#assess">Assessments</a></li>
       <li {{{navStatsAttributes}}}><a href="index.html#stats">Statistics</a></li>
+
       {{#viewOtherUsersPerm}}
       <li {{{navUserAttributes}}}><a href="index.html#user">User</a></li>
       {{/viewOtherUsersPerm}}
+
+      {{#viewCoursePulls}}
+      <li {{{navUserAttributes}}}><a href="index.html#sync">Sync</a></li>
+      {{/viewCoursePulls}}
+
       {{#currentAssessmentName}}
       <li {{{currentAssessmentAttributes}}}><a href="{{{currentAssessmentLink}}}">{{currentAssessmentName}}</a></li>
       {{/currentAssessmentName}}

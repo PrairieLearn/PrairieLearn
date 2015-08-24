@@ -60,8 +60,8 @@ requirejs.config({
     },
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'PrairieRole', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'spinController'],
-function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   PrairieRole,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   spinController) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'PrairieRole', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'SyncModel', 'SyncView', 'spinController'],
+function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   PrairieRole,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   SyncModel,   SyncView,   spinController) {
 
     var QuestionModel = Backbone.Model.extend({
         idAttribute: "qid"
@@ -90,7 +90,8 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
     });
 
     var PullCollection = Backbone.Collection.extend({
-        model: PullModel
+        model: PullModel,
+        comparator: function(pull) {return -(new Date(pull.get("createDate"))).getTime();},
     });
 
     var AppModel = Backbone.Model.extend({
@@ -192,6 +193,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             this.tInstances = this.options.tInstances;
             this.users = this.options.users;
             this.pulls = this.options.pulls;
+            this.syncModel = this.options.syncModel;
             this.currentView = null;
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.model, "change:userUID", this.reloadUserData);
@@ -295,6 +297,10 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             case "user":
                 view = new UserView.UserView({model: this.model, users: this.users});
                 break;
+
+            case "sync":
+                view = new SyncView.SyncView({model: this.model, pulls: this.pulls, syncModel: this.syncModel});
+                break;
             }
             this.showView(view);
             spinController.stopSpinner(spinner);
@@ -337,6 +343,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             "ti/:tiid": "goTestInstance",
             "about": "goAbout",
             "user": "goUser",
+            "sync": "goSync",
             "*actions": "goHome"
         },
 
@@ -400,6 +407,13 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 "pageOptions": {}
             });
         },
+
+        goSync: function() {
+            this.model.set({
+                "page": "sync",
+                "pageOptions": {}
+            });
+        },
     });
 
     $(function() {
@@ -422,6 +436,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         var pulls = new PullCollection([], {
             url: function() {return appModel.apiURL("coursePulls");}
         });
+        var syncModel = new SyncModel.SyncModel();
 
         Backbone.history.start();
 
@@ -483,7 +498,8 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                         tInstances: tInstances,
                         router: appRouter,
                         users: users,
-                        pulls: pulls
+                        pulls: pulls,
+                        syncModel: syncModel,
                     });
                     appView.render();
                 });

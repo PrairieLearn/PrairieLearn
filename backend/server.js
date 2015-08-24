@@ -920,7 +920,7 @@ var gitPullCourseOrigin = function(callback) {
     };
     child_process.execFile(cmd, options, env, function(err, stdout, stderr) {
         if (err) return callback(err);
-        callback(null, stdout);
+        callback(null, String(stdout).trim());
     });
 };
 
