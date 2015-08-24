@@ -20,6 +20,10 @@ the server.
 
 ## ChangeLog
 
+* __1.2.1__ - 2015-08-24
+
+  * Fix race condition in user creation and correctly record user names.
+
 * __1.2.0__ - 2015-08-23
 
   * Add "Sync" feature to pull from a git repository.

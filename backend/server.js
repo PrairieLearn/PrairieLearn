@@ -749,6 +749,7 @@ app.use(function(req, res, next) {
 
         // authorization succeeded, store data in the request
         req.authUID = authUID;
+        req.authName = authName;
         req.authRole = authRole;
         req.mode = req.headers['x-mode'];
         req.userUID = req.headers['x-user-uid'].toLowerCase();
@@ -772,21 +773,17 @@ app.use(function(req, res, next) {
     }
     
     // add authUID to DB if not already present
-    uCollect.findOne({uid: req.authUID}, function(err, uObj) {
-        if (err) {
-            return sendError(res, 500, "error checking for user: " + req.authUID, err);
-        }
-        if (!uObj) {
-            uCollect.insert({uid: req.authUID, name: req.authName}, {w: 1}, function(err) {
-                if (err) {
-                    return sendError(res, 500, "error adding user: " + req.authUID, err);
-                }
-                next();
-            });
-        } else {
+    uCollect.update(
+        {uid: req.authUID},
+        {$setOnInsert: {uid: req.authUID, name: req.authName}},
+        {upsert: true, w: 1},
+        function(err) {
+            if (err) {
+                return sendError(res, 500, "error adding user: " + req.authUID, err);
+            }
             next();
         }
-    });
+    );
 });
 
 app.use(function(req, res, next) {
