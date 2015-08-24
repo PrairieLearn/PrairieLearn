@@ -60,8 +60,8 @@ requirejs.config({
     },
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'backbone', 'bootstrap', 'mustache', 'PrairieRole', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'spinController'],
-function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mustache,   PrairieRole,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   spinController) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'PrairieRole', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'spinController'],
+function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   PrairieRole,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   spinController) {
 
     var QuestionModel = Backbone.Model.extend({
         idAttribute: "qid"
@@ -83,6 +83,14 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
 
     var UserCollection = Backbone.Collection.extend({
         model: UserModel
+    });
+
+    var PullModel = Backbone.Model.extend({
+        idAttribute: "pid"
+    });
+
+    var PullCollection = Backbone.Collection.extend({
+        model: PullModel
     });
 
     var AppModel = Backbone.Model.extend({
@@ -183,6 +191,7 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
             this.tests = this.options.tests;
             this.tInstances = this.options.tInstances;
             this.users = this.options.users;
+            this.pulls = this.options.pulls;
             this.currentView = null;
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.model, "change:userUID", this.reloadUserData);
@@ -410,6 +419,9 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
         var users = new UserCollection([], {
             url: function() {return appModel.apiURL("users");}
         });
+        var pulls = new PullCollection([], {
+            url: function() {return appModel.apiURL("coursePulls");}
+        });
 
         Backbone.history.start();
 
@@ -426,16 +438,55 @@ function(   $,        jqueryCookie,    _,            Backbone,   bootstrap,   Mu
         });
 
         appModel.on("change:userUID change:userRole change:mode", function() {
-            questions.fetch({success: function() {
-                tests.fetch({success: function() {
-                    tInstances.fetch({success: function() {
-                        users.fetch({success: function() {
-                            var appView = new AppView({model: appModel, questions: questions, tests: tests, tInstances: tInstances, router: appRouter, users: users});
-                            appView.render();
-                        }});
-                    }});
-                }});
-            }});
+            async.parallel(
+                [
+                    function(callback) {
+                        questions.fetch({
+                            success: function() {callback(null);},
+                            error: function() {callback("Error fetching questions");},
+                        });
+                    },
+                    function(callback) {
+                        tests.fetch({
+                            success: function() {callback(null);},
+                            error: function() {callback("Error fetching tests");},
+                        });
+                    },
+                    function(callback) {
+                        tInstances.fetch({
+                            success: function() {callback(null);},
+                            error: function() {callback("Error fetching tInstances");},
+                        });
+                    },
+                    function(callback) {
+                        users.fetch({
+                            success: function() {callback(null);},
+                            error: function() {callback("Error fetching users");},
+                        });
+                    },
+                    function(callback) {
+                        pulls.fetch({
+                            success: function() {callback(null);},
+                            error: function() {callback("Error fetching pulls");},
+                        });
+                    },
+                ],
+                function(err) {
+                    if (err) {
+                        $("#content").html('<div class="alert alert-danger" role="alert">' + err + '</div>');
+                        return;
+                    }
+                    var appView = new AppView({
+                        model: appModel,
+                        questions: questions,
+                        tests: tests,
+                        tInstances: tInstances,
+                        router: appRouter,
+                        users: users,
+                        pulls: pulls
+                    });
+                    appView.render();
+                });
         });
     });
 });

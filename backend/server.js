@@ -973,7 +973,7 @@ var ensureDiskCommitInDB = function(callback) {
 
 app.get("/coursePulls", function(req, res) {
     if (!PrairieRole.hasPermission(req.userRole, 'viewCoursePulls')) {
-        return sendError(res, 403, "Insufficient permissions to access.");
+        return res.json([]);
     }
     ensureDiskCommitInDB(function(err) {
         if (err) return sendError(res, 500, "Error mapping disk commit to DB", err);
@@ -994,7 +994,7 @@ app.get("/coursePulls", function(req, res) {
 
 app.get("/coursePulls/current", function(req, res) {
     if (!PrairieRole.hasPermission(req.userRole, 'viewCoursePulls')) {
-        return sendError(res, 403, "Insufficient permissions to access.");
+        return res.json({});
     }
     ensureDiskCommitInDB(function(err, pull) {
         if (err) return sendError(res, 500, "Error mapping disk commit to DB", err);
