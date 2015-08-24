@@ -199,6 +199,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             this.listenTo(this.model, "change:userUID", this.reloadUserData);
             this.listenTo(this.model, "change:userRole", this.reloadUserData);
             this.listenTo(this.model, "change:mode", this.reloadUserData);
+            this.listenTo(Backbone, "reloadUserData", this.reloadUserData);
             this.navView = new NavView.NavView({model: this.model, users: this.users});
             this.navView.render();
             $("#nav").html(this.navView.el);
@@ -488,7 +489,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 ],
                 function(err) {
                     if (err) {
-                        $("#content").html('<div class="alert alert-danger" role="alert">' + err + '</div>');
+                        $("#error").html('<div class="alert alert-danger" role="alert">' + err + '</div>');
                         return;
                     }
                     var appView = new AppView({

@@ -52,6 +52,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!SyncView.html'],
                 that.pulls.fetch({
                     error: function() {that.syncModel.set("pullError", "Error retrieving pull results");},
                 });
+                Backbone.trigger("reloadUserData");
             };
             var errorFn = function(jqXHR, textStatus, errorThrown) {
                 this.syncModel.set("pullInProgress", false);
