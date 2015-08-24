@@ -20,6 +20,12 @@ the server.
 
 ## ChangeLog
 
+* __1.2.0__ - 2015-08-23
+
+  * Fix missing `template` field in `config.json` schema.
+
+  * Improve error logging with more specific error information.
+
 * __1.1.0__ - 2015-08-22
 
   * Add access logging to the database.
