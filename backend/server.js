@@ -865,9 +865,7 @@ var getCourseCommitFromDisk = function(callback) {
         'cwd': config.courseDir,
     };
     child_process.execFile(cmd, options, env, function(err, stdout, stderr) {
-        if (err) {
-            return callback(err);
-        }
+        if (err) return callback(err);
         var commit = {};
         _(stdout.split('\n')).each(function(line) {
             if (line.length <= 0) return;
@@ -882,19 +880,59 @@ var getCourseCommitFromDisk = function(callback) {
             commit[key] = val;
         });
         if (!commit.commitHash || commit.commitHash.length != 40) {
-            return callback(Error('Invalid or missing commitHash from "git show"'),
-                            {cmd: cmd, options: options, env: env, stdout: stdout});
+            return callback(Error('Invalid or missing commitHash from "git show"',
+                                  {cmd: cmd, options: options, env: env, stdout: stdout}));
         }
         callback(null, commit);
+    });
+};
+
+var getCourseOriginURL = function(callback) {
+    var cmd = 'git';
+    var options = ['remote', 'show', '-n', 'origin'];
+    var env = {
+        'timeout': 5000, // milliseconds
+        'cwd': config.courseDir,
+    };
+    child_process.execFile(cmd, options, env, function(err, stdout, stderr) {
+        if (err) return callback(err);
+        var originURL = null;
+        _(stdout.split('\n')).each(function(line) {
+            match = /^ *Fetch URL: (.*)$/.exec(line);
+            if (!match) return;
+            originURL = match[1];
+        });
+        if (!originURL) {
+            return callback(Error('Invalid or missing "Fetch URL" from "git show"'),
+                            {cmd: cmd, options: options, env: env, stdout: stdout});
+        }
+        callback(null, originURL);
+    });
+};
+
+var gitPullCourseOrigin = function(callback) {
+    var cmd = 'git';
+    if (!config.gitCourseBranch) return callback(Error('config.gitCourseBranch is not defined'));
+    var options = ['pull', 'origin', config.gitCourseBranch];
+    var env = {
+        'timeout': 20000, // milliseconds
+        'cwd': config.courseDir,
+    };
+    child_process.execFile(cmd, options, env, function(err, stdout, stderr) {
+        if (err) return callback(err);
+        callback(null, stdout);
     });
 };
 
 var cleanCommit = function(obj) {
     return {
         mid: obj.mid,
+        createSource: obj.createSource,
         createDate: obj.createDate,
         createUID: obj.createUID,
-        createSource: obj.createSource,
+        createRemoteFetchURL: obj.createRemoteFetchURL,
+        createBranch: obj.createBranch,
+        createResult: obj.createResult,
         subject: obj.subject,
         commitHash: obj.commitHash,
         refNames: obj.refNames,
@@ -907,7 +945,7 @@ var cleanCommit = function(obj) {
     };
 };
 
-var ensureDiskCommitInDB = function(callback, commit) {
+var ensureDiskCommitInDB = function(callback) {
     getCourseCommitFromDisk(function(err, commit) {
         if (err) return callback(err);
         commitCollect.findOne({commitHash: commit.commitHash}, function(err, obj) {
@@ -916,6 +954,9 @@ var ensureDiskCommitInDB = function(callback, commit) {
             commit.createSource = 'External';
             commit.createDate = (new Date()).toISOString();
             commit.createUID = '';
+            commit.createRemoteFetchURL = '';
+            commit.createBranch = '';
+            commit.createResult = '';
             newID('mid', function(err, mid) {
                 if (err) return callback(err);
                 commit.mid = mid;
@@ -956,6 +997,35 @@ app.get("/courseCommits/current", function(req, res) {
     ensureDiskCommitInDB(function(err, commit) {
         if (err) return sendError(res, 500, "Error mapping disk commit to DB", err);
         res.json(commit);
+    });
+});
+
+app.post("/courseCommits", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'editCourseCommits')) {
+        return sendError(res, 403, "Insufficient permissions to access.");
+    }
+    getCourseOriginURL(function(err, originURL) {
+        if (err) return sendError(res, 500, "Unable to get originURL", err);
+        gitPullCourseOrigin(function(err, pullResult) {
+            if (err) return sendError(res, 500, "Unable to git pull", err);
+            getCourseCommitFromDisk(function(err, commit) {
+                if (err) return sendError(res, 500, "Unable to get current commit", err);
+                commit.createSource = 'Web';
+                commit.createDate = (new Date()).toISOString();
+                commit.createUID = req.userUID;
+                commit.createRemoteFetchURL = originURL;
+                commit.createBranch = config.gitCourseBranch;
+                commit.createResult = pullResult;
+                newID('mid', function(err, mid) {
+                    if (err) return sendError(res, 500, "Unable to get new mid", err);
+                    commit.mid = mid;
+                    commitCollect.insert(commit, {w: 1}, function(err) {
+                        if (err) return sendError(res, 500, "Unable to insert commit", err);
+                        res.json(commit);
+                    });
+                });
+            });
+        });
     });
 });
 
