@@ -17,7 +17,7 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
             data.userRole = this.model.get("userRole");
             data.mode = this.model.get("mode");
             data.viewOtherUsersPerm = this.model.hasPermission("viewOtherUsers", "auth");
-            data.viewCoursePulls = this.model.hasPermission("viewCoursePulls");
+            data.viewSync = this.model.hasPermission("viewCoursePulls") && this.model.get("gitCourseBranch");
             data.currentAssessmentName = this.model.get("currentAssessmentName");
             data.currentAssessmentLink = this.model.get("currentAssessmentLink");
 

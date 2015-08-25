@@ -39,6 +39,7 @@ config.serverPort = '3000';
 config.courseDir = "../exampleCourse";
 config.frontendDir = "../frontend";
 config.questionDefaultsDir = "questionDefaults";
+config.polyfillGitShow = false;
 config.secretKey = "THIS_IS_THE_SECRET_KEY"; // override in config.json
 config.skipUIDs = {};
 config.superusers = {};
@@ -403,7 +404,11 @@ var loadCourseInfo = function(callback) {
                 }
             });
         }
-        return callback(null);
+        courseInfo.gitCourseBranch = config.gitCourseBranch;
+        getCourseOriginURL(function(err, originURL) {
+            courseInfo.remoteFetchURL = originURL;
+            return callback(null);
+        });
     });
 };
 
@@ -684,6 +689,7 @@ app.use(function(req, res, next) {
         if (req.path == "/"
             || req.path == "/index.html"
             || req.path == "/config.js"
+            || req.path == "/favicon.png"
             || /^\/require\//.test(req.path)
             || /^\/css\//.test(req.path)
             || /^\/text\//.test(req.path)
@@ -715,25 +721,25 @@ app.use(function(req, res, next) {
         req.userRole = req.authRole;
     } else if (config.authType == 'x-auth' || config.authType === 'none') {
         if (req.headers['x-auth-uid'] == null) {
-            return sendError(res, 403, "Missing X-Auth-UID header");
+            return sendError(res, 403, "Missing X-Auth-UID header", {path: req.path});
         }
         if (req.headers['x-auth-name'] == null) {
-            return sendError(res, 403, "Missing X-Auth-Name header");
+            return sendError(res, 403, "Missing X-Auth-Name header", {path: req.path});
         }
         if (req.headers['x-auth-date'] == null) {
-            return sendError(res, 403, "Missing X-Auth-Date header");
+            return sendError(res, 403, "Missing X-Auth-Date header", {path: req.path});
         }
         if (req.headers['x-auth-signature'] == null) {
-            return sendError(res, 403, "Missing X-Auth-Signature header");
+            return sendError(res, 403, "Missing X-Auth-Signature header", {path: req.path});
         }
         if (req.headers['x-mode'] == null) {
-            return sendError(res, 403, "Missing X-Mode header");
+            return sendError(res, 403, "Missing X-Mode header", {path: req.path});
         }
         if (req.headers['x-user-uid'] == null) {
-            return sendError(res, 403, "Missing X-User-UID header");
+            return sendError(res, 403, "Missing X-User-UID header", {path: req.path});
         }
         if (req.headers['x-user-role'] == null) {
-            return sendError(res, 403, "Missing X-User-Role header");
+            return sendError(res, 403, "Missing X-User-Role header", {path: req.path});
         }
         var authUID = req.headers['x-auth-uid'].toLowerCase();
         var authRole = uidToRole(authUID);
@@ -757,6 +763,10 @@ app.use(function(req, res, next) {
         return sendError(res, 500, "Invalid authType: " + config.authType);
     }
 
+    // if we have an invalid userRole, then set it to authRole
+    if (!PrairieRole.isRoleValid(req.userRole)) {
+        req.userRole = req.authRole;
+    }
     // make sure userRole is not more powerful than authRole
     req.userRole = PrairieRole.leastPermissive(req.userRole, req.authRole);
     
@@ -850,7 +860,15 @@ if (config.authType === 'eppn') {
 }
 
 app.get("/course", function(req, res) {
-    res.json({name: courseInfo.name, title: courseInfo.title});
+    var course = {
+        name: courseInfo.name,
+        title: courseInfo.title,
+    };
+    if (PrairieRole.hasPermission(req.userRole, 'viewCoursePulls')) {
+        course.gitCourseBranch = courseInfo.gitCourseBranch;
+        course.remoteFetchURL = courseInfo.remoteFetchURL;
+    }
+    res.json(course);
 });
 
 var getCourseCommitFromDisk = function(callback) {
@@ -861,6 +879,14 @@ var getCourseCommitFromDisk = function(callback) {
         '--format=subject:%s%ncommitHash:%H%nrefNames:%D%nauthorName:%an%nauthorEmail:%ae%nauthorDate:%aI%ncommitterName:%cn%ncommitterEmail:%ce%ncommitterDate:%cI',
         'HEAD'
     ];
+    if (config.polyfillGitShow) {
+        options = [
+            'show',
+            '-s',
+            '--format=subject:%s%ncommitHash:%H%nrefNames:%d%nauthorName:%an%nauthorEmail:%ae%nauthorDate:%ai%ncommitterName:%cn%ncommitterEmail:%ce%ncommitterDate:%ci',
+            'HEAD'
+        ];
+    }
     var env = {
         'timeout': 5000, // milliseconds
         'cwd': config.courseDir,
@@ -884,11 +910,23 @@ var getCourseCommitFromDisk = function(callback) {
             return callback(Error('Invalid or missing commitHash from "git show"',
                                   {cmd: cmd, options: options, env: env, stdout: stdout}));
         }
+        if (config.polyfillGitShow) {
+            if (_.isString(commit.refNames)) {
+                commit.refNames = commit.refNames.replace(/^ *\((.*)\)$/, "$1");
+            }
+            if (_.isString(commit.authorDate)) {
+                commit.authorDate = commit.authorDate.replace(/^([^ ]+) ([^ ]+) ([^ ]+)$/, "$1T$2$3");
+            }
+            if (_.isString(commit.committerDate)) {
+                commit.committerDate = commit.committerDate.replace(/^([^ ]+) ([^ ]+) ([^ ]+)$/, "$1T$2$3");
+            }
+        }
         callback(null, commit);
     });
 };
 
 var getCourseOriginURL = function(callback) {
+    if (!config.gitCourseBranch) return callback(null, null);
     var cmd = 'git';
     var options = ['remote', 'show', '-n', 'origin'];
     var env = {
@@ -1978,6 +2016,10 @@ if (config.localFileserver) {
 
     app.get("/config.js", function(req, res) {
         res.sendfile("config.js", {root: config.frontendDir});
+    });
+
+    app.get("/favicon.png", function(req, res) {
+        res.sendfile("favicon.png", {root: config.frontendDir});
     });
 
     app.get("/require/:filename", function(req, res) {

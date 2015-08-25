@@ -22,6 +22,8 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!SyncView.html'],
             var data = {};
             data.pullError = this.syncModel.get("pullError");
             data.editCoursePulls = this.model.hasPermission("editCoursePulls");
+            data.gitCourseBranch = this.model.get('gitCourseBranch');
+            data.remoteFetchURL = this.model.get('remoteFetchURL');
             data.pullsList = this.pulls.toJSON();
             _(data.pullsList).each(function(pull) {
                 pull.panelType = "default";
