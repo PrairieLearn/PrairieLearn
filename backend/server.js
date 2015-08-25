@@ -39,6 +39,7 @@ config.serverPort = '3000';
 config.courseDir = "../exampleCourse";
 config.frontendDir = "../frontend";
 config.questionDefaultsDir = "questionDefaults";
+config.polyfillGitShow = false;
 config.secretKey = "THIS_IS_THE_SECRET_KEY"; // override in config.json
 config.skipUIDs = {};
 config.superusers = {};
@@ -878,6 +879,14 @@ var getCourseCommitFromDisk = function(callback) {
         '--format=subject:%s%ncommitHash:%H%nrefNames:%D%nauthorName:%an%nauthorEmail:%ae%nauthorDate:%aI%ncommitterName:%cn%ncommitterEmail:%ce%ncommitterDate:%cI',
         'HEAD'
     ];
+    if (config.polyfillGitShow) {
+        options = [
+            'show',
+            '-s',
+            '--format=subject:%s%ncommitHash:%H%nrefNames:%d%nauthorName:%an%nauthorEmail:%ae%nauthorDate:%ai%ncommitterName:%cn%ncommitterEmail:%ce%ncommitterDate:%ci',
+            'HEAD'
+        ];
+    }
     var env = {
         'timeout': 5000, // milliseconds
         'cwd': config.courseDir,
@@ -900,6 +909,17 @@ var getCourseCommitFromDisk = function(callback) {
         if (!commit.commitHash || commit.commitHash.length != 40) {
             return callback(Error('Invalid or missing commitHash from "git show"',
                                   {cmd: cmd, options: options, env: env, stdout: stdout}));
+        }
+        if (config.polyfillGitShow) {
+            if (_.isString(commit.refNames)) {
+                commit.refNames = commit.refNames.replace(/^ *\((.*)\)$/, "$1");
+            }
+            if (_.isString(commit.authorDate)) {
+                commit.authorDate = commit.authorDate.replace(/^([^ ]+) ([^ ]+) ([^ ]+)$/, "$1T$2$3");
+            }
+            if (_.isString(commit.committerDate)) {
+                commit.committerDate = commit.committerDate.replace(/^([^ ]+) ([^ ]+) ([^ ]+)$/, "$1T$2$3");
+            }
         }
         callback(null, commit);
     });

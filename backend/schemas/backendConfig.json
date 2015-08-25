@@ -54,6 +54,10 @@
         "gitCourseBranch": {
             "description": "The origin git branch to pull from.",
             "type": "string"
+        },
+        "polyfillGitShow": {
+            "description": "Whether to polyfill old git date and refs formats in 'git show'.",
+            "type": "boolean"
         }
     }
 }
