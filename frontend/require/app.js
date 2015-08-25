@@ -115,6 +115,8 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 pageTitle: "PrairieLearn",
                 navTitle: "PrairieLearn",
                 authURL: null,
+                gitCourseBranch: null,
+                remoteFetchURL: null,
             };
             this.set(_(document.PLConfig).defaults(defaultConfig));
             if (this.get("authURL") === null)
@@ -122,8 +124,12 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
 
             document.title = this.get("pageTitle");
 
+            this.listenTo(Backbone, "tryAgain", this.tryAgain);
+        },
+
+        fetch: function() {
             var that = this;
-            $.getJSON(this.get("authURL"), function(data) {
+            $.getJSON(that.get("authURL"), function(data) {
                 that.set({
                     authUID: data.uid,
                     authRole: data.role,
@@ -135,15 +141,20 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                     userName: data.name
                 });
                 $.getJSON(that.apiURL("users/" + that.get("authUID")), function(userData) {
-                    that.set("authRole", userData.role);
-                    that.set("userRole", userData.role);
+                    that.set({
+                        "authRole": userData.role,
+                        "userRole": userData.role,
+                    });
                 });
                 $.getJSON(that.apiURL("course"), function(courseInfo) {
-                    that.set('pageTitle', courseInfo.name + ': ' + courseInfo.title);
-                    that.set('navTitle', 'PrairieLearn: ' + courseInfo.name);
+                    that.set({
+                        'pageTitle': courseInfo.name + ': ' + courseInfo.title,
+                        'navTitle': 'PrairieLearn: ' + courseInfo.name,
+                        'gitCourseBranch': courseInfo.gitCourseBranch,
+                        'remoteFetchURL': courseInfo.remoteFetchURL,
+                    });
                 });
             });
-            this.listenTo(Backbone, "tryAgain", this.tryAgain);
         },
 
         apiURL: function(path) {
@@ -505,5 +516,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                     appView.render();
                 });
         });
+
+        appModel.fetch();
     });
 });

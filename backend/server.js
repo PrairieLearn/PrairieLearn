@@ -403,7 +403,11 @@ var loadCourseInfo = function(callback) {
                 }
             });
         }
-        return callback(null);
+        courseInfo.gitCourseBranch = config.gitCourseBranch;
+        getCourseOriginURL(function(err, originURL) {
+            courseInfo.remoteFetchURL = originURL;
+            return callback(null);
+        });
     });
 };
 
@@ -684,6 +688,7 @@ app.use(function(req, res, next) {
         if (req.path == "/"
             || req.path == "/index.html"
             || req.path == "/config.js"
+            || req.path == "/favicon.png"
             || /^\/require\//.test(req.path)
             || /^\/css\//.test(req.path)
             || /^\/text\//.test(req.path)
@@ -715,25 +720,25 @@ app.use(function(req, res, next) {
         req.userRole = req.authRole;
     } else if (config.authType == 'x-auth' || config.authType === 'none') {
         if (req.headers['x-auth-uid'] == null) {
-            return sendError(res, 403, "Missing X-Auth-UID header");
+            return sendError(res, 403, "Missing X-Auth-UID header", {path: req.path});
         }
         if (req.headers['x-auth-name'] == null) {
-            return sendError(res, 403, "Missing X-Auth-Name header");
+            return sendError(res, 403, "Missing X-Auth-Name header", {path: req.path});
         }
         if (req.headers['x-auth-date'] == null) {
-            return sendError(res, 403, "Missing X-Auth-Date header");
+            return sendError(res, 403, "Missing X-Auth-Date header", {path: req.path});
         }
         if (req.headers['x-auth-signature'] == null) {
-            return sendError(res, 403, "Missing X-Auth-Signature header");
+            return sendError(res, 403, "Missing X-Auth-Signature header", {path: req.path});
         }
         if (req.headers['x-mode'] == null) {
-            return sendError(res, 403, "Missing X-Mode header");
+            return sendError(res, 403, "Missing X-Mode header", {path: req.path});
         }
         if (req.headers['x-user-uid'] == null) {
-            return sendError(res, 403, "Missing X-User-UID header");
+            return sendError(res, 403, "Missing X-User-UID header", {path: req.path});
         }
         if (req.headers['x-user-role'] == null) {
-            return sendError(res, 403, "Missing X-User-Role header");
+            return sendError(res, 403, "Missing X-User-Role header", {path: req.path});
         }
         var authUID = req.headers['x-auth-uid'].toLowerCase();
         var authRole = uidToRole(authUID);
@@ -757,6 +762,10 @@ app.use(function(req, res, next) {
         return sendError(res, 500, "Invalid authType: " + config.authType);
     }
 
+    // if we have an invalid userRole, then set it to authRole
+    if (!PrairieRole.isRoleValid(req.userRole)) {
+        req.userRole = req.authRole;
+    }
     // make sure userRole is not more powerful than authRole
     req.userRole = PrairieRole.leastPermissive(req.userRole, req.authRole);
     
@@ -850,7 +859,15 @@ if (config.authType === 'eppn') {
 }
 
 app.get("/course", function(req, res) {
-    res.json({name: courseInfo.name, title: courseInfo.title});
+    var course = {
+        name: courseInfo.name,
+        title: courseInfo.title,
+    };
+    if (PrairieRole.hasPermission(req.userRole, 'viewCoursePulls')) {
+        course.gitCourseBranch = courseInfo.gitCourseBranch;
+        course.remoteFetchURL = courseInfo.remoteFetchURL;
+    }
+    res.json(course);
 });
 
 var getCourseCommitFromDisk = function(callback) {
@@ -889,6 +906,7 @@ var getCourseCommitFromDisk = function(callback) {
 };
 
 var getCourseOriginURL = function(callback) {
+    if (!config.gitCourseBranch) return callback(null, null);
     var cmd = 'git';
     var options = ['remote', 'show', '-n', 'origin'];
     var env = {
@@ -1978,6 +1996,10 @@ if (config.localFileserver) {
 
     app.get("/config.js", function(req, res) {
         res.sendfile("config.js", {root: config.frontendDir});
+    });
+
+    app.get("/favicon.png", function(req, res) {
+        res.sendfile("favicon.png", {root: config.frontendDir});
     });
 
     app.get("/require/:filename", function(req, res) {

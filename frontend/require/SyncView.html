@@ -1,9 +1,15 @@
 
-<p class="text-right">
 {{#editCoursePulls}}
-<button id="pullFromGitHub" class="btn btn-success" type="submit">Sync</button>
-{{/editCoursePulls}}
+<p class="text-right">
+  <button id="pullFromGitHub" class="btn btn-success" type="submit">Sync</button>
 </p>
+<div class="well well-sm">
+  <small>
+    Clicking “Sync” will update the course data (questions, tests, etc) by pulling from the <strong>{{gitCourseBranch}}</strong> branch at <strong>{{remoteFetchURL}}</strong>. Nothing will be pushed back. The table below shows all previous pulls from syncing, with the most recent first.
+  </small>
+</div>
+{{/editCoursePulls}}
+
 
 <div class="panel-group" id="pulls" role="tablist" aria-multiselectable="true">
   {{#pullsList}}
