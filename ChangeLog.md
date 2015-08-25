@@ -1,6 +1,12 @@
 
 # ChangeLog
 
+* __1.4.0__ - 2015-08-25
+
+  * Add documentation and help text for Sync page.
+
+  * Fix display of commit information when using older versions of git.
+
 * __1.3.2__ - 2015-08-24
 
   * Fix `allowAccess` checks to not always fail.
