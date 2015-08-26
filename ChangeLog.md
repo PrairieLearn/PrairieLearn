@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.5.0__ - 2015-08-26
+
+  * Enable exam mode detection via hard-coded IP range for the CBTF.
+
 * __1.4.1__ - 2015-08-26
 
   * `export.csv` now uses test `set` rather than `type` for test names.

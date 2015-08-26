@@ -777,6 +777,24 @@ app.use(function(req, res, next) {
 
     // make sure only authorized users can change mode
     var serverMode = 'Public'; // FIXME: determine from client IP
+    var clientIP = req.headers['x-forwarded-for'];
+    if (!clientIP) {
+        clientIP = req.ip;
+    }
+    if (_(clientIP).isString()) {
+        var ipParts = clientIP.split('.');
+        if (ipParts.length == 4) {
+            try {
+                n1 = parseInt(ipParts[0]);
+                n2 = parseInt(ipParts[1]);
+                n3 = parseInt(ipParts[2]);
+                n4 = parseInt(ipParts[3]);
+                if (n1 == 192 && n2 == 17 && n3 == 239 && n4 >= 128 && n4 <= 192) {
+                    serverMode = 'Exam';
+                }
+            } catch (e) {}
+        }
+    }
     if (req.mode == 'Default' || !PrairieRole.hasPermission(req.authRole, 'changeMode')) {
         req.mode = serverMode;
     }
@@ -800,6 +818,7 @@ app.use(function(req, res, next) {
         var access = {
             timestamp: (new Date()).toISOString(),
             ip: req.ip,
+            forwardedIP: req.headers['x-forwarded-for'],
             authUID: req.authUID,
             authRole: req.authRole,
             userUID: req.userUID,
