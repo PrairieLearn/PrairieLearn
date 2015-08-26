@@ -1919,15 +1919,15 @@ app.get("/export.csv", function(req, res) {
                 // end of collection
                 var tids = _(testDB).pluck('tid');
                 tids.sort(function(tid1, tid2) {
-                    var test1 = testDB[tid1] ? testDB[tid1] : {type: 'none', number: 0};
-                    var test2 = testDB[tid2] ? testDB[tid2] : {type: 'none', number: 0};
-                    if (test1.type === test2.type) {
+                    var test1 = testDB[tid1] ? testDB[tid1] : {set: 'none', number: 0};
+                    var test2 = testDB[tid2] ? testDB[tid2] : {set: 'none', number: 0};
+                    if (test1.set === test2.set) {
                         return test1.number - test2.number;
                     } else {
-                        return (test1.type < test2.type) ? -1 : 1;
+                        return (test1.set < test2.set) ? -1 : 1;
                     }
                 });
-                titles = _(tids).map(function(tid) {return testDB[tid].type + testDB[tid].number;});
+                titles = _(tids).map(function(tid) {return testDB[tid].set + testDB[tid].number;});
                 headers = ["uid"].concat(titles);
                 var csvData = [];
                 _(_(scores).keys()).each(function(uid) {

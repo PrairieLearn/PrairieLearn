@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.4.1__ - 2015-08-26
+
+  * `export.csv` now uses test `set` rather than `type` for test names.
+
 * __1.4.0__ - 2015-08-25
 
   * Add documentation and help text for Sync page.
