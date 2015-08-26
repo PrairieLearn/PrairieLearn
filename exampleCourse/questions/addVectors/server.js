@@ -7,23 +7,23 @@ define(["PrairieRandom", "PrairieGeom"], function(PrairieRandom, PrairieGeom) {
         var rand = new PrairieRandom.RandomGenerator(vid);
 
         // question parameters
-        var ax = rand.randInt(5, 10);
-        var ay = rand.randInt(5, 10);
-        var bx = rand.randInt(5, 10);
-        var by = rand.randInt(5, 10);
+        var ux = rand.randInt(5, 10);
+        var uy = rand.randInt(5, 10);
+        var vx = rand.randInt(5, 10);
+        var vy = rand.randInt(5, 10);
         var params = {
-            ax: ax,
-            ay: ay,
-            bx: bx,
-            by: by,
+            ux: ux,
+            uy: uy,
+            vx: vx,
+            vy: vy,
         };
 
         // correct answer to the question
-        var cx = ax + bx;
-        var cy = ay + by;
+        var wx = ux + vx;
+        var wy = uy + vy;
         var trueAnswer = {
-            cx: cx,
-            cy: cy,
+            wx: wx,
+            wy: wy,
         };
 
         // OPTIONAL, if missing then

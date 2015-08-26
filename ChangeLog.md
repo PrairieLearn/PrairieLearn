@@ -7,6 +7,8 @@
 
   * Fix display of commit information when using older versions of git.
 
+  * Add figure to example question `addVectors` in `exampleCourse`.
+
 * __1.3.2__ - 2015-08-24
 
   * Fix `allowAccess` checks to not always fail.
