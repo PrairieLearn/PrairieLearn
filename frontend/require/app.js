@@ -148,11 +148,12 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 });
                 $.getJSON(that.apiURL("course"), function(courseInfo) {
                     that.set({
-                        'pageTitle': courseInfo.name + ': ' + courseInfo.title,
+                        'pageTitle': 'PrairieLearn: ' + courseInfo.name + ' (' + courseInfo.title + ')',
                         'navTitle': 'PrairieLearn: ' + courseInfo.name,
                         'gitCourseBranch': courseInfo.gitCourseBranch,
                         'remoteFetchURL': courseInfo.remoteFetchURL,
                     });
+                    document.title = that.get("pageTitle");
                 });
             });
         },
