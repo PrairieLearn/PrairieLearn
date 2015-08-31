@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.5.2__ - 2015-08-31
+
+  * Fix example `backend/config.json` in the docs.
+
 * __1.5.1__ - 2015-08-30
 
   * Clarify docs about user role setting.
