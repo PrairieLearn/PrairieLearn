@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.6.0__ - XXXX-XX-XX
+
+  * Make `exampleCourse/tests/homework1` visible by default.
+
 * __1.5.2__ - 2015-08-31
 
   * Fix example `backend/config.json` in the docs.
