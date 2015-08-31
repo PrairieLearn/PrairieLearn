@@ -50,6 +50,8 @@ Role         | Description
 `Instructor` | A person in charge of the course. Has full permission to see and edit the information of other users.
 `Superuser`  | A server administrator. Has full access to everything.
 
+User roles `Student` through `Instructor` can be set in the `courseConfig.json` file. The `Superuser` role can only be specified in the [server `config.json` file](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/serverConfig.md).
+
 The detailed list of permissions for each role is:
 
 Operation                                                             | Student | TA  | Instructor | Superuser

@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.5.1__ - 2015-08-30
+
+  * Clarify docs about user role setting.
+
 * __1.5.0__ - 2015-08-26
 
   * Enable exam mode detection via hard-coded IP range for the CBTF.
