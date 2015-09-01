@@ -1,6 +1,12 @@
 
 # ChangeLog
 
+* __1.7.1__ - 2015-09-02
+
+  * Fix schema links in documentation.
+
+  * 
+
 * __1.7.0__ - 2015-09-01
 
   * Don't generate new question variants until the old variant is answered.
