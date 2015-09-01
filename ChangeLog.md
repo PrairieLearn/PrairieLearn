@@ -1,9 +1,13 @@
 
 # ChangeLog
 
-* __1.6.0__ - XXXX-XX-XX
+* __1.6.0__ - 2015-09-01
 
   * Make `exampleCourse/tests/homework1` visible by default.
+
+  * Display course name in page title.
+
+  * Use "assessment" rather than "homework" or "test" in user-visible strings.
 
 * __1.5.2__ - 2015-08-31
 
