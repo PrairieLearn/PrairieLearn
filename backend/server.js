@@ -1340,20 +1340,54 @@ var makeQInstance = function(req, res, qInstance, callback) {
 };
 
 app.post("/qInstances", function(req, res) {
+    var uid = req.body.uid;
+    var qid = req.body.qid;
+    var tiid = req.body.tiid;
     var qInstance = {
-        uid: req.body.uid,
-        qid: req.body.qid,
-        tiid: req.body.tiid,
+        uid: uid,
+        qid: qid,
+        tiid: tiid,
     };
     if (PrairieRole.hasPermission(req.userRole, 'overrideVID') && _(req.body).has('vid')) {
         qInstance.vid = req.body.vid;
     };
     readTInstance(res, qInstance.tiid, function(tInstance) {
-        ensureObjAuth(req, res, tInstance, "read", function(tInstance) {
-            makeQInstance(req, res, qInstance, function(qInstance) {
-                res.json(stripPrivateFields(qInstance));
+        var qiid = null;
+        if (tInstance.qiidsByQid) {
+            if (tInstance.qiidsByQid[qid]) {
+                qiid = tInstance.qiidsByQid[qid];
+            }
+        }
+        if (qiid) {
+            qiCollect.findOne({qiid: qiid}, function(err, obj) {
+                if (err) {
+                    return sendError(res, 500, "Error accessing qInstances database for qiid " + req.params.qiid, err);
+                }
+                if (!obj) {
+                    return sendError(res, 404, "No qInstance with qiid " + req.params.qiid);
+                }
+                ensureObjAuth(req, res, obj, "read", function(obj) {
+                    res.json(stripPrivateFields(obj));
+                });
             });
-        });
+        } else {
+            var tid = tInstance.tid;
+            readTest(res, tid, function(test) {
+                if (test.options.autoCreateQuestions) {
+                    return sendError(res, 403, "QIID creation disallowed for tiid: ", tInstance.tiid);
+                } else {
+                    ensureObjAuth(req, res, tInstance, "read", function(tInstance) {
+                        makeQInstance(req, res, qInstance, function(qInstance) {
+                            tInstance.qiidsByQid = tInstance.qiidsByQid || {};
+                            tInstance.qiidsByQid[qid] = qInstance.qiid;
+                            writeTInstance(req, res, tInstance, function() {
+                                res.json(stripPrivateFields(qInstance));
+                            });
+                        });
+                    });
+                }
+            });
+        }
     });
 });
 
@@ -1491,6 +1525,11 @@ var testProcessSubmission = function(req, res, tiid, submission, callback) {
                     var uid = submission.uid;
                     try {
                         server.updateWithSubmission(tInstance, test, submission, testDB[tid].options);
+                        if (!test.options.autoCreateQuestions) {
+                            if (tInstance.qiidsByQid) {
+                                delete tInstance.qiidsByQid[submission.qid];
+                            }
+                        }
                     } catch (e) {
                         return sendError(res, 500, "Error updating test: " + String(e), {err: e, stack: e.stack});
                     }

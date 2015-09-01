@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.7.0__ - 2015-09-01
+
+  * Don't generate new question variants until the old variant is answered.
+
 * __1.6.0__ - 2015-09-01
 
   * Make `exampleCourse/tests/homework1` visible by default.

@@ -90,10 +90,13 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 });
             };
 
+            var qiid = null;
             if (this.tInstance !== undefined && this.tInstance.has("qiidsByQid")) {
                 // already have a QIID, so GET the qInstance
                 var qiidsByQid = this.tInstance.get("qiidsByQid");
                 var qiid = qiidsByQid[qid];
+            }
+            if (qiid) {
                 $.getJSON(that.appModel.apiURL("qInstances/" + qiid), processQInstance);
             } else {
                 // don't already have a QIID, so POST to create a new qInstance
