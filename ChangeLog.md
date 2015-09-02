@@ -5,7 +5,7 @@
 
   * Fix schema links in documentation.
 
-  * 
+  * Add documentation for question options.
 
 * __1.7.0__ - 2015-09-01
 
