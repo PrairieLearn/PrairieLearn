@@ -7,6 +7,8 @@
 
   * Add documentation for question options.
 
+  * Add docs and text on the User page to describe the server `mode` in more detail.
+
 * __1.7.0__ - 2015-09-01
 
   * Don't generate new question variants until the old variant is answered.

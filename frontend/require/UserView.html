@@ -21,9 +21,9 @@
 
   <div class="panel-body">
 
-    <p><strong>Viewing UID:</strong> {{userUID}}</p>
-    <p><strong>Viewing name:</strong> {{userName}}</p>
-    <p><strong>Viewing Role:</strong> {{userRole}}</p>
+    <p><strong>Active viewing UID:</strong> {{userUID}}</p>
+    <p><strong>Active viewing name:</strong> {{userName}}</p>
+    <p><strong>Active viewing role:</strong> {{userRole}}</p>
 
     <div class="well well-sm">
       <form id="changeUIDForm">
@@ -66,9 +66,9 @@
 
   <div class="panel-body">
 
-    <p><strong>Mode:</strong> {{mode}}</p>
+    <p><strong>Active mode:</strong> {{mode}}</p>
 
-    <div class="well well-sm no-bottom-margin">
+    <div class="well well-sm">
       <form class="form-inline" id="changeModeForm">
         <div class="form-group">
           <label for="changeMode">Change mode to:</label>
@@ -81,6 +81,11 @@
         <button type="submit" class="btn btn-default">Change mode</button>
       </form>
     </div>
+
+
+    <p class="no-bottom-margin"><small>
+        The <em>mode</em> of the server determines which tests and questions are available to a student. The <em>Public</em> mode is used when students are accessing PrairieLearn from the general internet (on campus, at home, etc). The <em>Exam</em> mode is used when the student is physically sitting at a computer in the CBTF (Computer-Based Testing Facility). The options above allow you to test out the different modes to see which assessments a student will see in either Public or Exam mode. Setting the mode to <em>Default</em> means that the server will use whichever mode a student would use if they were sitting at your computer right now (i.e., Exam mode if you are sitting in the CBTF right now, otherwise Public mode).
+    </small></p>
 
   </div>
 </div>

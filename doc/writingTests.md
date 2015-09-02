@@ -30,8 +30,9 @@ Each user accesses the PrairieLearn server in a `mode`, as listed below. This ca
 
 Mode     | When active
 ---      | ---
-`Exam`   | When the user is on a computer in the Computer Based Testing Faciltiy labs (determined by IP range), or when the user has overridden the mode to be `Exam` (only possible for `Instructor`).
+`Exam`   | When the user is on a computer in the Computer-Based Testing Facility (CBTF) labs (determined by IP range), or when the user has overridden the mode to be `Exam` (only possible for `Instructor`).
 `Public` | In all other cases.
+`Default` | An instructor-only mode on the client, which means that the server will act in it's natural mode as determined by client IP. That is, a `Default` mode says to not override the mode to either of the other settings.
 
 ## Access control
 
