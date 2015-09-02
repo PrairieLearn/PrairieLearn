@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.7.2__ - 2015-09-02
+
+  * Fix `exampleCourse/questions/addVectors` to use `QServer` so `gradeAnswer()` is truly optional.
+
 * __1.7.1__ - 2015-09-02
 
   * Fix schema links in documentation.

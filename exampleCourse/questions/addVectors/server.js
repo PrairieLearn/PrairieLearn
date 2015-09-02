@@ -1,7 +1,7 @@
 
-define(["PrairieRandom", "PrairieGeom"], function(PrairieRandom, PrairieGeom) {
+define(["PrairieRandom", "PrairieGeom", "QServer"], function(PrairieRandom, PrairieGeom, QServer) {
 
-    var server = {};
+    var server = new QServer();
 
     server.getData = function(vid) {
         var rand = new PrairieRandom.RandomGenerator(vid);
