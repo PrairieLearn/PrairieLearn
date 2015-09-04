@@ -2422,15 +2422,15 @@ var loadData = function(callback) {
             };
             loadInfoDB(testDB, "tid", config.testsDir, defaultTestInfo, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
         },
+        initTestData,
     ], function(err) {
         callback(err);
     });
 };
 
 async.series([
-    loadData,
     loadDB,
-    initTestData,
+    loadData,
     //runBayes,
     /*
     function(callback) {
