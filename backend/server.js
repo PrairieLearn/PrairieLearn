@@ -667,6 +667,25 @@ var ensureObjAuth = function(req, res, obj, operation, callback) {
     }
 };
 
+var ensureQuestionInTest = function(req, res, qid, tInstance, test, callback) {
+    questionInTest = false;
+    if (_(tInstance).has("qids")) {
+        if (_(tInstance.qids).contains(qid)) {
+            questionInTest = true;
+        }
+    }
+    if (_(test).has("qids")) {
+        if (_(test.qids).contains(qid)) {
+            questionInTest = true;
+        }
+    }
+    if (questionInTest) {
+        return callback();
+    } else {
+        return sendError(res, 403, "Insufficient permissions to access question: " + qid);
+    }
+};
+
 var stripPrivateFields = function(obj) {
     if (_.isArray(obj))
         return _(obj).map(function(item) {return stripPrivateFields(item);});
@@ -1443,11 +1462,13 @@ app.post("/qInstances", function(req, res) {
                     return sendError(res, 403, "QIID creation disallowed for tiid: ", tInstance.tiid);
                 } else {
                     ensureObjAuth(req, res, tInstance, "read", function(tInstance) {
-                        makeQInstance(req, res, qInstance, function(qInstance) {
-                            tInstance.qiidsByQid = tInstance.qiidsByQid || {};
-                            tInstance.qiidsByQid[qid] = qInstance.qiid;
-                            writeTInstance(req, res, tInstance, function() {
-                                res.json(stripPrivateFields(qInstance));
+                        ensureQuestionInTest(req, res, qid, tInstance, test, function() {
+                            makeQInstance(req, res, qInstance, function(qInstance) {
+                                tInstance.qiidsByQid = tInstance.qiidsByQid || {};
+                                tInstance.qiidsByQid[qid] = qInstance.qiid;
+                                writeTInstance(req, res, tInstance, function() {
+                                    res.json(stripPrivateFields(qInstance));
+                                });
                             });
                         });
                     });
@@ -2009,19 +2030,21 @@ app.post("/tInstances", function(req, res) {
             } else {
                 // end of collection
 
-                readTest(res, tid, function(test) {
-                    loadTestServer(tid, function(server) {
-                        newIDNoError(req, res, "tiid", function(tiid) {
-                            var tInstance = {
-                                tiid: tiid,
-                                tid: tid,
-                                uid: req.query.uid,
-                                date: new Date(),
-                                number: number,
-                            };
-                            updateTInstance(req, res, server, tInstance, test, function() {
-                                writeTInstance(req, res, tInstance, function() {
-                                    res.json(stripPrivateFields(tInstance));
+                ensureTestAvailByTID(req, res, tid, function() {
+                    readTest(res, tid, function(test) {
+                        loadTestServer(tid, function(server) {
+                            newIDNoError(req, res, "tiid", function(tiid) {
+                                var tInstance = {
+                                    tiid: tiid,
+                                    tid: tid,
+                                    uid: req.query.uid,
+                                    date: new Date(),
+                                    number: number,
+                                };
+                                updateTInstance(req, res, server, tInstance, test, function() {
+                                    writeTInstance(req, res, tInstance, function() {
+                                        res.json(stripPrivateFields(tInstance));
+                                    });
                                 });
                             });
                         });
