@@ -463,7 +463,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             };
         });
 
-        appModel.on("change:userUID change:userRole change:mode", function() {
+        appModel.once("change:userUID", function() {
             async.parallel(
                 [
                     function(callback) {
