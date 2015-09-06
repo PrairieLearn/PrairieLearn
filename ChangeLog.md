@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.7.4__ - 2015-09-06
+
+  * Correctly give highest score for assessments with duplicate scores.
+
 * __1.7.3__ - 2015-09-06
 
   * Fix bug that created multiple tInstances.

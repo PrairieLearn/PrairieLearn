@@ -1795,7 +1795,7 @@ var eliminateDuplicateTInstances = function(req, res, tInstances, eliminateCallb
                 // we should only have a single tInstance for this test, so enforce this
                 // if we have multiple tInstances, pick the one with the highest score
                 var sortedTIList = _(tiList).sortBy('score');
-                cleanTIDB[tid] = [_(tiList).last()];
+                cleanTIDB[tid] = [_(sortedTIList).last()];
             } else {
                 cleanTIDB[tid] = tiList;
             }
