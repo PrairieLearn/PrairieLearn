@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.7.3__ - 2015-09-06
+
+  * Fix bug that created multiple tInstances.
+
 * __1.7.2__ - 2015-09-02
 
   * Fix `exampleCourse/questions/addVectors` to use `QServer` so `gradeAnswer()` is truly optional.

@@ -1786,6 +1786,28 @@ var autoCreateTInstances = function(req, res, tInstances, autoCreateCallback) {
     });
 };
 
+var eliminateDuplicateTInstances = function(req, res, tInstances, eliminateCallback) {
+    var tiDB = _(tInstances).groupBy("tid");
+    var cleanTIDB = {};
+    async.forEachOf(tiDB, function(tiList, tid, callback) {
+        readTest(res, tid, function(test) {
+            if (test.options.autoCreate) {
+                // we should only have a single tInstance for this test, so enforce this
+                // if we have multiple tInstances, pick the one with the highest score
+                var sortedTIList = _(tiList).sortBy('score');
+                cleanTIDB[tid] = [_(tiList).last()];
+            } else {
+                cleanTIDB[tid] = tiList;
+            }
+            callback(null);
+        });
+    }, function(err) {
+        if (err) return sendError(res, 500, "Error eliminating duplicate tInstances", err);
+        var tInstances = _.chain(cleanTIDB).values().flatten(true).value();
+        eliminateCallback(tInstances);
+    });
+}
+
 app.get("/tInstances", function(req, res) {
     if (!tiCollect) {
         return sendError(res, 500, "Do not have access to the tiCollect database collection");
@@ -1807,7 +1829,9 @@ app.get("/tInstances", function(req, res) {
                 updateTInstances(req, res, tInstances, function() {
                     autoCreateTInstances(req, res, tInstances, function(tInstances) {
                         filterObjsByAuth(req, tInstances, "read", function(tInstances) {
-                            res.json(stripPrivateFields(tInstances));
+                            eliminateDuplicateTInstances(req, res, tInstances, function(tInstances) {
+                                res.json(stripPrivateFields(tInstances));
+                            });
                         });
                     });
                 });

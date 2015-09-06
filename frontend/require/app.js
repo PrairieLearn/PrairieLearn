@@ -337,12 +337,10 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             this.tInstances.reset();
             this.questions.reset();
             this.tests.reset();
-            this.tInstances.reset();
             this.users.reset();
             this.tInstances.fetch({error: this.handleLoadError.bind(this)});
             this.questions.fetch({error: this.handleLoadError.bind(this)});
             this.tests.fetch({error: this.handleLoadError.bind(this)});
-            this.tInstances.fetch({error: this.handleLoadError.bind(this)});
             this.users.fetch({error: this.handleLoadError.bind(this)});
         }
     });
@@ -465,7 +463,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             };
         });
 
-        appModel.on("change:userUID change:userRole change:mode", function() {
+        appModel.once("change:userUID", function() {
             async.parallel(
                 [
                     function(callback) {
