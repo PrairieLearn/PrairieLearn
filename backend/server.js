@@ -1066,6 +1066,23 @@ app.get("/coursePulls/current", function(req, res) {
     });
 });
 
+var undefQuestionServers = function(callback) {
+    // We could get the list of defined server.js modules from
+    //     requirejs.s.contexts._.defined
+    // and only delete modules that are actually defined, but it doesn't seem to be necessary.
+    async.each(_(questionDB).keys(), function(qid, cb) {
+        questionFilePath(qid, "server.js", function(err, fileInfo) {
+            if (err) return cb(err);
+            var serverFilePath = path.join(fileInfo.root, fileInfo.filePath);
+            requirejs.undef(serverFilePath);
+            cb(null);
+        });
+    }, function(err) {
+        if (err) return callback(err);
+        callback(null);
+    });
+};
+
 app.post("/coursePulls", function(req, res) {
     if (!PrairieRole.hasPermission(req.userRole, 'editCoursePulls')) {
         return sendError(res, 403, "Insufficient permissions to access.");
@@ -1094,9 +1111,12 @@ app.post("/coursePulls", function(req, res) {
                         if (err) return sendError(res, 500, "Unable to insert pull", err);
                         loadData(function(err) {
                             if (err) return sendError(res, 500, "Error reloading data", err);
-                            initTestData(function(err) {
-                                if (err) return sendError(res, 500, "Error initializing tests", err);
-                                res.json(cleanPull(pull));
+                            undefQuestionServers(function(err) {
+                                if (err) return sendError(res, 500, "Error undefining question servers", err);
+                                initTestData(function(err) {
+                                    if (err) return sendError(res, 500, "Error initializing tests", err);
+                                    res.json(cleanPull(pull));
+                                });
                             });
                         });
                     });
@@ -2305,9 +2325,6 @@ var processSubmissionBayes = function(submission, iSubmission, count) {
 
     PrairieModel.dynamicPrediction(user.dist, question.dist);
     PrairieModel.measurementUpdate(correct, user.dist, question.dist);
-
-    //if (uid === "tableri2@illinois.edu")
-    //    console.log(iSubmission, user.dist.sigma.mean[0], user.dist.sigma.covariance[0][0]);
 };
 
 var processSubmissionsBayes = function(callback) {
@@ -2422,15 +2439,15 @@ var loadData = function(callback) {
             };
             loadInfoDB(testDB, "tid", config.testsDir, defaultTestInfo, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
         },
+        initTestData,
     ], function(err) {
         callback(err);
     });
 };
 
 async.series([
-    loadData,
     loadDB,
-    initTestData,
+    loadData,
     //runBayes,
     /*
     function(callback) {
