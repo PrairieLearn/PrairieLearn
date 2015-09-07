@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.7.5__ - 2015-09-07
+
+  * Reload all question `server.js` files after "Sync" with a git course repository.
+
 * __1.7.4__ - 2015-09-06
 
   * Correctly give highest score for assessments with duplicate scores.
