@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.7.6__ - 2015-09-09
+
+  * Load frontend website even if there were errors fetching data.
+
 * __1.7.5__ - 2015-09-07
 
   * Reload all question `server.js` files after "Sync" with a git course repository.

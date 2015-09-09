@@ -464,36 +464,37 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         });
 
         appModel.once("change:userUID", function() {
+            var errors = [];
             async.parallel(
                 [
                     function(callback) {
                         questions.fetch({
                             success: function() {callback(null);},
-                            error: function() {callback("Error fetching questions");},
+                            error: function() {errors.push("Error fetching questions"); callback(null);},
                         });
                     },
                     function(callback) {
                         tests.fetch({
                             success: function() {callback(null);},
-                            error: function() {callback("Error fetching tests");},
+                            error: function() {errors.push("Error fetching tests"); callback(null);},
                         });
                     },
                     function(callback) {
                         tInstances.fetch({
                             success: function() {callback(null);},
-                            error: function() {callback("Error fetching tInstances");},
+                            error: function() {errors.push("Error fetching tInstances"); callback(null);},
                         });
                     },
                     function(callback) {
                         users.fetch({
                             success: function() {callback(null);},
-                            error: function() {callback("Error fetching users");},
+                            error: function() {errors.push("Error fetching users"); callback(null);},
                         });
                     },
                     function(callback) {
                         pulls.fetch({
                             success: function() {callback(null);},
-                            error: function() {callback("Error fetching pulls");},
+                            error: function() {errors.push("Error fetching pulls"); callback(null);},
                         });
                     },
                 ],
@@ -501,6 +502,10 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                     if (err) {
                         $("#error").html('<div class="alert alert-danger" role="alert">' + err + '</div>');
                         return;
+                    }
+                    if (errors.length > 0) {
+                        $("#error").html('<div class="alert alert-danger" role="alert">' + errors.join(', ') + '</div>');
+                        // no return here, keep going despite errors
                     }
                     var appView = new AppView({
                         model: appModel,
