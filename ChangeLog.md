@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.8.1__ - 2015-09-10
+
+  * Fix security hold where anyone could access `/export.csv`.
+
 * __1.8.0__ - 2015-09-09
 
   * Add optional header text for `RetryExam` (for formula sheets, etc).

@@ -2022,6 +2022,9 @@ app.get("/export.csv", function(req, res) {
     if (!tiCollect) {
         return sendError(res, 500, "Do not have access to the tiCollect database collection");
     }
+    if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
+        return sendError(res, 403, "Insufficient permissions");
+    }
     tiCollect.find({}, function(err, cursor) {
         if (err) {
             return sendError(res, 500, "Error accessing tiCollect database", err);
