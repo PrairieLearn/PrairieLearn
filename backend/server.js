@@ -481,7 +481,7 @@ var initTestData = function(callback) {
                 item.options = options;
                 server.updateTest(obj, item.options);
                 _(obj).extend(item);
-                tCollect.update({tid: item.tid}, {$set: obj}, {upsert: true, w: 1}, function(err) {
+                tCollect.update({tid: item.tid}, obj, {upsert: true, w: 1}, function(err) {
                     if (err) {
                         logger.error("Error writing to tCollect", {tid: item.tid, err: err});
                         cb(err);
@@ -679,6 +679,11 @@ app.use(function(req, res, next) {
         return;
     }
     if (/^\/clientCode/.test(req.path)) {
+        req.authUID = "nouser";
+        next();
+        return;
+    }
+    if (/^\/tests\/[^\/]+\//.test(req.path)) {
         req.authUID = "nouser";
         next();
         return;
@@ -1205,6 +1210,26 @@ var sendQuestionFile = function(req, res, filename) {
 
 app.get("/questions/:qid/:filename", function(req, res) {
     sendQuestionFile(req, res, req.params.filename);
+});
+
+var sendTestFile = function(req, res, tid, filename) {
+    var filePath = path.join(tid, filename);
+    var fullFilePath = path.join(config.testsDir, filePath);
+    info = testDB[tid];
+    if (info === undefined) {
+        return sendError(res, 404, "No such tid: " + fileInfo.tid);
+    }
+    if (!_(info).has("clientFiles")) {
+        return sendError(res, 500, "Test does not have clientFiles, tid: " + tid);
+    }
+    if (!_(info.clientFiles).contains(filename)) {
+        return sendError(res, 404, "Access denied to '" + filename + "' for tid: " + tid);
+    }
+    res.sendfile(filePath, {root: config.testsDir});
+};
+
+app.get("/tests/:tid/:filename", function(req, res) {
+    sendTestFile(req, res, req.params.tid, req.params.filename);
 });
 
 app.get("/clientCode/:filename", function(req, res) {

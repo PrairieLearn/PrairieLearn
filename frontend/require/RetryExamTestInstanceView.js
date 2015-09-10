@@ -1,5 +1,5 @@
 
-define(["underscore", "backbone", "mustache", "RetryExamTestHelper", "text!RetryExamTestInstanceView.html"], function(_, Backbone, Mustache, RetryExamTestHelper, RetryExamTestInstanceViewTemplate) {
+define(["underscore", "backbone", "mustache", "PrairieTemplate", "RetryExamTestHelper", "text!RetryExamTestInstanceView.html"], function(_, Backbone, Mustache, PrairieTemplate, RetryExamTestHelper, RetryExamTestInstanceViewTemplate) {
 
     var RetryExamTestInstanceView = Backbone.View.extend({
 
@@ -11,6 +11,7 @@ define(["underscore", "backbone", "mustache", "RetryExamTestHelper", "text!Retry
         },
 
         initialize: function() {
+            this.appModel = this.options.appModel;
             this.test = this.options.test;
             this.questions = this.options.questions;
             this.listenTo(this.model, "change", this.render);
@@ -29,6 +30,11 @@ define(["underscore", "backbone", "mustache", "RetryExamTestHelper", "text!Retry
             data.maxScore = this.model.get("maxScore");
             data.score = this.model.get("score");
             data.correctPercentage = (data.score / data.maxScore * 100).toFixed(0);
+
+            var text = this.test.get("text");
+            if (text) {
+                data.text = PrairieTemplate.template(text, {}, undefined, this.appModel, this.model);
+            }
 
             data.open = this.model.get("open");
             if (!data.open) {

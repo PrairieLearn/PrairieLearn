@@ -51,6 +51,14 @@
                 }
             }
         },
+        "clientFiles": {
+            "description": "The list of test files accessible by the client (defaults to None).",
+            "type": "array",
+            "items": {
+                "description": "A single file accessible by the client.",
+                "type": "string"
+            }
+        },
         "options": {
             "description": "Options that define how the test will work, specific to the individual test type.",
             "required": true,

@@ -1,5 +1,5 @@
 {
-    "type": "Exam",
+    "type": "RetryExam",
     "title": "Template Exam",
     "set": "Exam",
     "number": 1,
@@ -14,18 +14,18 @@
             "endDate": "2014-07-10T23:59:59"
         }
     ],
+    "clientFiles": ["formulas.pdf", "formulas.html"],
     "options": {
-        "qidGroups": [
+        "questionGroups": [
             [
                 [
-                    "addVectors",
-                    "fossilFuels",
-                    "fibonacci"
+                    {"qid": "addVectors", "points": [10, 5, 2, 1]},
+                    {"qid": "fossilFuels", "points": [10]},
+                    {"qid": "fibonacci", "points": [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0.5, 0.25]}
                 ]
             ]
         ],
-        "nQuestions": 4,
-        "timeLimitMin": 60,
-        "availDate": "2014-07-07T23:59:59"
+        "nQuestions": 3,
+        "text": "For this exam you can use the <a href=\"<% print(testFile(\"formulas.pdf\")) %>\">PDF formula sheet</a>, the <a href=\"<% print(testFile(\"formulas.html\")) %>\">HTML formula sheet</a> or <a href=\"https://en.wikipedia.org/wiki/List_of_moments_of_inertia\">this Wikipedia page</a>."
     }
 }

@@ -27,6 +27,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             questionInfo: {},
         });
         test.nQuestions = options.nQuestions;
+        test.text = options.text;
         test._private = ["scoresByUID", "highScoresByUID", "completeHighScoresByUID"];
         if (options.availDate)
             test.availDate = moment.tz(options.availDate, options.timezone).format();

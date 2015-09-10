@@ -430,7 +430,7 @@ define(["underscore"], function(_) {
         return vectorFcnString(vecFcn, indVar, "\\hat\\imath", "\\hat\\jmath", "\\hat{k}");
     };
 
-    function template(text, data, questionDataModel, appModel) {
+    function template(text, data, questionDataModel, appModel, tInstance) {
 
         var localData = _.clone(data);
 
@@ -454,6 +454,9 @@ define(["underscore"], function(_) {
         localData.cartesianVectorFcnString = cartesianVectorFcnString;
         localData.questionFile = function(name) {
             return appModel.apiURL("questions/" + questionDataModel.get("qid") + "/" + name);
+        };
+        localData.testFile = function(name) {
+            return appModel.apiURL("tests/" + tInstance.get("tid") + "/" + name);
         };
 
         var rendered = _.template(text, localData);

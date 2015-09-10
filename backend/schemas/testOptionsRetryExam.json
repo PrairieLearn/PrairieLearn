@@ -49,6 +49,10 @@
         "timeLimitMin": {
             "description": "The number of minutes allowed for this test.",
             "type": "integer"
+        },
+        "text": {
+            "description": "HTML text shown on the test overview page.",
+            "type": "string"
         }
     }
 }

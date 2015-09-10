@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.8.0__ - 2015-09-09
+
+  * Add optional header text for `RetryExam` (for formula sheets, etc).
+
 * __1.7.6__ - 2015-09-09
 
   * Load frontend website even if there were errors fetching data.
