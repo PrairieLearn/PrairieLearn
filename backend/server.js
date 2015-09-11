@@ -1248,13 +1248,14 @@ app.get("/clientCode/:filename", function(req, res) {
     });
 });
 
-app.get("/clientFiles/:filename", function(req, res) {
-    var fullFilePath = path.join(config.clientFilesDir, req.params.filename);
+app.get("/clientFiles/*", function(req, res) {
+    var filename = req.params[0];
+    var fullFilePath = path.join(config.clientFilesDir, filename);
     fs.stat(fullFilePath, function(err, stats) {
         if (err) {
-            return sendError(res, 404, 'No such file "/clientFiles/' + req.params.filename + '"', err);
+            return sendError(res, 404, 'No such file "/clientFiles/' + filename + '"', err);
         }
-        res.sendfile(req.params.filename, {root: config.clientFilesDir});
+        res.sendfile(filename, {root: config.clientFilesDir});
     });
 });
 
