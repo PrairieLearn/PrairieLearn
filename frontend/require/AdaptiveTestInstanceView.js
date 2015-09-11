@@ -1,11 +1,12 @@
 
-define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!AdaptiveTestInstanceView.html"], function(_, Backbone, Mustache, AdaptiveTestHelper, AdaptiveTestInstanceViewTemplate) {
+define(["underscore", "backbone", "mustache", "PrairieTemplate", "AdaptiveTestHelper", "text!AdaptiveTestInstanceView.html"], function(_, Backbone, Mustache, PrairieTemplate, AdaptiveTestHelper, AdaptiveTestInstanceViewTemplate) {
 
     var AdaptiveTestInstanceView = Backbone.View.extend({
 
         tagName: 'div',
 
         initialize: function() {
+            this.appModel = this.options.appModel;
             this.test = this.options.test;
             this.questions = this.options.questions;
             this.listenTo(this.model, "change", this.render);
@@ -46,6 +47,11 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
             data.dueDate += dateString;
             data.dueDate += '</strong>';
             data.dueDate += '</span>';
+
+            var text = this.test.get("text");
+            if (text) {
+                data.text = PrairieTemplate.template(text, {}, undefined, this.appModel, this.model);
+            }
 
             data.questionList = [];
             var qids = that.test.get("qids");

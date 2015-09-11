@@ -153,6 +153,7 @@ config.questionsDir = path.join(config.courseDir, "questions");
 config.testsDir = path.join(config.courseDir, "tests");
 config.clientCodeDir = path.join(config.courseDir, "clientCode");
 config.serverCodeDir = path.join(config.courseDir, "serverCode");
+config.clientFilesDir = path.join(config.courseDir, "clientFiles");
 
 config.requireDir = path.join(config.frontendDir, "require");
 config.relativeClientCodeDir = path.relative(path.resolve(config.requireDir), path.resolve(config.clientCodeDir));
@@ -679,6 +680,11 @@ app.use(function(req, res, next) {
         return;
     }
     if (/^\/clientCode/.test(req.path)) {
+        req.authUID = "nouser";
+        next();
+        return;
+    }
+    if (/^\/clientFiles/.test(req.path)) {
         req.authUID = "nouser";
         next();
         return;
@@ -1239,6 +1245,16 @@ app.get("/clientCode/:filename", function(req, res) {
             return sendError(res, 404, 'No such file "/clientCode/' + req.params.filename + '"', err);
         }
         res.sendfile(req.params.filename, {root: config.clientCodeDir});
+    });
+});
+
+app.get("/clientFiles/:filename", function(req, res) {
+    var fullFilePath = path.join(config.clientFilesDir, req.params.filename);
+    fs.stat(fullFilePath, function(err, stats) {
+        if (err) {
+            return sendError(res, 404, 'No such file "/clientFiles/' + req.params.filename + '"', err);
+        }
+        res.sendfile(req.params.filename, {root: config.clientFilesDir});
     });
 });
 

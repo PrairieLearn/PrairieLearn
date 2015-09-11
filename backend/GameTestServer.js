@@ -16,6 +16,7 @@ define(["underscore", "moment-timezone"], function(_, moment) {
         test.availDate = moment.tz(options.availDate, options.timezone).format();
         test.qParams = _(options.questions).indexBy('qid');
         test.maxScore = options.maxScore;
+        test.text = options.text;
     };
 
     GameTestServer.updateTInstance = function(tInstance, test, options) {

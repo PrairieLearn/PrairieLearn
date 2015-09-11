@@ -88,6 +88,7 @@ define(["underscore", "PrairieModel", "numeric", "moment-timezone"], function(_,
         test.availDate = moment.tz(options.availDate, options.timezone).format();
         var userDist = new PrairieModel.UserDist("");
         test.initAvgProb = avgProb(test.qids, test.qDists, userDist)
+        test.text = options.text;
     };
 
     AdaptiveTestServer.updateTInstance = function(tInstance, test, options) {

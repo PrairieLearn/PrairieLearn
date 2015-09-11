@@ -46,6 +46,11 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "RetryExamTestH
                 data.finishDate = dateString;
             }
 
+            var text = this.test.get("text");
+            if (text) {
+                data.text = PrairieTemplate.template(text, {}, undefined, this.appModel, this.model);
+            }
+
             var submissionsByQid = this.model.get("submissionsByQid");
             var questionsByQID = this.model.get("questionsByQID");
             data.nSaved = _(qids).filter(function(qid) {return _(submissionsByQid).has(qid);}).length;

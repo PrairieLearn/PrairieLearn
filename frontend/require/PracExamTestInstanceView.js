@@ -1,5 +1,5 @@
 
-define(["underscore", "backbone", "mustache", "PracExamTestHelper", "text!PracExamTestInstanceView.html"], function(_, Backbone, Mustache, PracExamTestHelper, PracExamTestInstanceViewTemplate) {
+define(["underscore", "backbone", "mustache", "PrairieTemplate", "PracExamTestHelper", "text!PracExamTestInstanceView.html"], function(_, Backbone, Mustache, PrairieTemplate, PracExamTestHelper, PracExamTestInstanceViewTemplate) {
 
     var PracExamTestInstanceView = Backbone.View.extend({
 
@@ -10,6 +10,7 @@ define(["underscore", "backbone", "mustache", "PracExamTestHelper", "text!PracEx
         },
 
         initialize: function() {
+            this.appModel = this.options.appModel;
             this.test = this.options.test;
             this.questions = this.options.questions;
             this.listenTo(this.model, "change", this.render);
@@ -42,6 +43,11 @@ define(["underscore", "backbone", "mustache", "PracExamTestHelper", "text!PracEx
                 data.finishDate = dateString;
                 data.nCorrect = this.model.get("score");
                 data.correctPercentage = (data.nCorrect / data.nQuestions * 100).toFixed(0);
+            }
+
+            var text = this.test.get("text");
+            if (text) {
+                data.text = PrairieTemplate.template(text, {}, undefined, this.appModel, this.model);
             }
 
             var submissionsByQid = this.model.get("submissionsByQid");

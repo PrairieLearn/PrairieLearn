@@ -1,11 +1,12 @@
 
-define(["underscore", "backbone", "mustache", "GameTestHelper", "text!GameTestInstanceView.html"], function(_, Backbone, Mustache, GameTestHelper, GameTestInstanceViewTemplate) {
+define(["underscore", "backbone", "mustache", "PrairieTemplate", "GameTestHelper", "text!GameTestInstanceView.html"], function(_, Backbone, Mustache, PrairieTemplate, GameTestHelper, GameTestInstanceViewTemplate) {
 
     var GameTestInstanceView = Backbone.View.extend({
 
         tagName: 'div',
 
         initialize: function() {
+            this.appModel = this.options.appModel;
             this.test = this.options.test;
             this.questions = this.options.questions;
             this.listenTo(this.model, "change", this.render);
@@ -43,6 +44,11 @@ define(["underscore", "backbone", "mustache", "GameTestHelper", "text!GameTestIn
             data.dueDate += dateString;
             data.dueDate += '</strong>';
             data.dueDate += '</span>';
+
+            var text = this.test.get("text");
+            if (text) {
+                data.text = PrairieTemplate.template(text, {}, undefined, this.appModel, this.model);
+            }
 
             data.questionList = [];
             var qData = this.model.get("qData");

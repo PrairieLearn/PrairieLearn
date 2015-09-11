@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.9.0__ - 2015-09-11
+
+  * Add `clientFiles` and docs for adding text/files to tests.
+
 * __1.8.1__ - 2015-09-10
 
   * Fix security hold where anyone could access `/export.csv`.

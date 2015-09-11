@@ -14,8 +14,11 @@ A course is specified by a single directory, with the following structure:
     |-- clientCode      # library code that can be used in any question
     |   |-- library1.js
     |   `-- library2.js
-    `-- serverCode      # code only accessible from server.js in questions
-        `-- secretLibrary1.js
+    |-- serverCode      # code only accessible from server.js in questions
+    |   `-- secretLibrary1.js
+    `-- clientFiles     # general files available from the client at all time
+        |-- refs.html
+        `-- formulas.pdf
 
 * [Example course directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse) in PrairieLearn
 

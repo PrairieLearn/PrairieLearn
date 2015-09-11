@@ -46,6 +46,10 @@
         "maxScore": {
             "description": "The number of points that counts as complete, and so gives 100% on the test.",
             "type": "integer"
+        },
+        "text": {
+            "description": "HTML text shown on the test overview page.",
+            "type": "string"
         }
     }
 }

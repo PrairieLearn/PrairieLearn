@@ -458,6 +458,9 @@ define(["underscore"], function(_) {
         localData.testFile = function(name) {
             return appModel.apiURL("tests/" + tInstance.get("tid") + "/" + name);
         };
+        localData.clientFile = function(name) {
+            return appModel.apiURL("clientFiles/" + name);
+        };
 
         var rendered = _.template(text, localData);
         return rendered;

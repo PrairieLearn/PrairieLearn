@@ -53,6 +53,10 @@
         "scoreFactor": {
             "description": "A scaling factor to transform the raw mastery score to a homework score (normally use 1.2).",
             "type": "number"
+        },
+        "text": {
+            "description": "HTML text shown on the test overview page.",
+            "type": "string"
         }
     }
 }

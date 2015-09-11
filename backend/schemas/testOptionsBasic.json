@@ -25,6 +25,10 @@
         "allowPractice": {
             "description": "Whether to allow questions to be tried for practice, with no points earned or lost.",
             "type": "boolean"
+        },
+        "text": {
+            "description": "HTML text shown on the test overview page.",
+            "type": "string"
         }
     }
 }

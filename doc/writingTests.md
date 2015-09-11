@@ -24,6 +24,8 @@ Type        | Randomized | Options format                                       
 
 ## Question randomization algorithm
 
+FIXME!
+
 ## Server modes
 
 Each user accesses the PrairieLearn server in a `mode`, as listed below. This can be used to restrict access to tests based on the current mode.
@@ -75,3 +77,21 @@ In summary, `allowAccess` uses the algorithm:
 
     each accessRule is True if (restriction1 AND restriction2 AND restriction3)
     allowAccess is True if (accessRule1 OR accessRule2 OR accessRule3)
+
+## Adding text and links to tests
+
+Tests can include extra optional information to point students towards reference web pages, a PDF formula sheet, or similar files. See [`exampleCourse/midterm1`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/tests/midterm1/) for an example. Extra text appears on the test overview page and is specified in the `options.text` parameter in the test's `info.json` file, like:
+
+    {
+        "type": "RetryExam",
+        "clientFiles": ["formulas.pdf"],
+        "options": {
+            "text": "See the <a href=\"<% print(testFile(\"formulas.pdf\")) %>\">PDF formula sheet</a> and the <a href=\"<% print(clientFile(\"index.html\")) %>\">reference webpages</a>."
+        }
+    }
+
+There are two different ways to link to files:
+
+1. Specific files can be stored in the test directory (like `formaulas.pdf` above). These are linked with the `testFile()` command, and all such files must be explicitly specified in the `clientFiles` list for that test.
+
+2. Files can be made accessible to all tests by putting them in the `clientFiles` directory at the top level of the course (see the [courseConfig](courseConfig.md)). These are linked with the `courseFile()` command. All files in `clientFiles` are available to students at any time (including during exams).
