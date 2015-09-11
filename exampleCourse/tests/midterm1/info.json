@@ -26,6 +26,6 @@
             ]
         ],
         "nQuestions": 3,
-        "text": "For this exam you can use the <a href=\"<% print(testFile(\"formulas.pdf\")) %>\">PDF formula sheet</a>, the <a href=\"<% print(testFile(\"formulas.html\")) %>\">HTML formula sheet</a> or <a href=\"https://en.wikipedia.org/wiki/List_of_moments_of_inertia\">this Wikipedia page</a>."
+        "text": "For this exam you can use the <a target=\"_blank\" href=\"<% print(testFile(\"formulas.pdf\")) %>\">PDF formula sheet</a>, the <a target=\"_blank\" href=\"<% print(testFile(\"formulas.html\")) %>\">HTML formula sheet</a> or <a target=\"_blank\" href=\"https://en.wikipedia.org/wiki/List_of_moments_of_inertia\">this Wikipedia page</a>."
     }
 }

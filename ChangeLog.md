@@ -1,6 +1,12 @@
 
 # ChangeLog
 
+* __1.9.1__ - 2015-09-11
+
+  * Fix docs/example to add blank target for test text links.
+
+  * Fix `clientFiles` to also handle subdirectories.
+
 * __1.9.0__ - 2015-09-11
 
   * Add `clientFiles` and docs for adding text/files to tests.

@@ -86,7 +86,7 @@ Tests can include extra optional information to point students towards reference
         "type": "RetryExam",
         "clientFiles": ["formulas.pdf"],
         "options": {
-            "text": "See the <a href=\"<% print(testFile(\"formulas.pdf\")) %>\">PDF formula sheet</a> and the <a href=\"<% print(clientFile(\"index.html\")) %>\">reference webpages</a>."
+            "text": "See the <a target=\"_blank\" href=\"<% print(testFile(\"formulas.pdf\")) %>\">PDF formula sheet</a> and the <a target=\"_blank\" href=\"<% print(clientFile(\"index.html\")) %>\">reference webpages</a>."
         }
     }
 
