@@ -1753,6 +1753,19 @@ app.get("/tests/:tid/testSidebar.html", function(req, res) {
     });
 });
 
+app.delete("/tests", function(req, res) {
+    var tid = req.params.tid;
+    var uid = req.params.uid;
+    if (!tid) {
+        return sendError(res, 400, "No tid provided");
+    }
+    var info = testDB[tid];
+    if (!info) {
+        return sendError(res, 404, "Unknown tid: " + tid);
+    }
+    
+});
+
 var autoCreateTestQuestions = function(req, res, tInstance, test, callback) {
     if (test.options.autoCreateQuestions && tInstance.qids !== undefined) {
         tInstance.qiidsByQid = tInstance.qiidsByQid || {};

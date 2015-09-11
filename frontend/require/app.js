@@ -60,8 +60,8 @@ requirejs.config({
     },
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'PrairieRole', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'SyncModel', 'SyncView', 'spinController'],
-function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   PrairieRole,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   SyncModel,   SyncView,   spinController) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'PrairieRole', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestDetailView', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'SyncModel', 'SyncView', 'spinController'],
+function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   PrairieRole,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestDetailView,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   SyncModel,   SyncView,   spinController) {
 
     var QuestionModel = Backbone.Model.extend({
         idAttribute: "qid"
@@ -241,6 +241,13 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 this.model.set("currentAssessmentLink", "#ti/" + tiid);
                 view = new TestInstanceView({model: tInstance, test: test, appModel: this.model, questions: this.questions});
                 break;
+            case "testDetail":
+                var tid = this.model.get("pageOptions").tid;
+                var test = this.tests.get(tid);
+                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
+                this.model.set("currentAssessmentLink", "#t/" + tid);
+                view = new TestDetailView({model: test, appModel: this.model, questions: this.questions});
+                break;
             case "testQuestion":
                 var tiid = this.model.get("pageOptions").tiid;
                 var qNumber = this.model.get("pageOptions").qNumber;
@@ -352,6 +359,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             "q/:tiid/:qNumber(/:vid)": "goTestQuestion",
             "cq/:tiid/:qInfo(/not/:skipQNumbers)": "goChooseTestQuestion",
             "ti/:tiid": "goTestInstance",
+            "t/:tid": "goTestDetail",
             "about": "goAbout",
             "user": "goUser",
             "sync": "goSync",
@@ -402,6 +410,13 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             this.model.set({
                 "page": "testInstance",
                 "pageOptions": {tiid: tiid}
+            });
+        },
+
+        goTestDetail: function(tid) {
+            this.model.set({
+                "page": "testDetail",
+                "pageOptions": {tid: tid}
             });
         },
 
