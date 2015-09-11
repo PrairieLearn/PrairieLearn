@@ -27,9 +27,13 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
         },
 
         _resetSuccess: function(data, textStatus, jqXHR) {
+            this.$("#resetResult").html('<div class="alert alert-success" role="alert">Successfully reset test.</div>');
+            Backbone.trigger('reloadUserData');
         },
         
         _resetError: function(jqXHR, textStatus, errorThrown) {
+            this.$("#resetResult").html('<div class="alert alert-danger" role="alert">Error resetting test.</div>');
+            Backbone.trigger('reloadUserData');
         },
         
         resetTest: function() {

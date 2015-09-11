@@ -208,7 +208,7 @@ var STATS_INTERVAL = 10 * 60 * 1000; // ms
 
 app.use(express.json());
 
-var db, countersCollect, uCollect, sCollect, qiCollect, statsCollect, tCollect, tiCollect, accessCollect, pullCollect;
+var db, countersCollect, uCollect, sCollect, qiCollect, statsCollect, tCollect, tiCollect, accessCollect, pullCollect, dCollect;
 
 var MongoClient = require('mongodb').MongoClient;
 
@@ -375,6 +375,18 @@ var loadDB = function(callback) {
                         ],
                     };
                     processCollection('pulls', err, collection, options, cb);
+                });
+            },
+            function(cb) {
+                db.collection('deleted', function(err, collection) {
+                    dCollect = collection;
+                    var options = {
+                        idPrefix: "d",
+                        indexes: [
+                            {keys: {did: 1}, options: {unique: true}},
+                        ],
+                    };
+                    processCollection('deleted', err, collection, options, cb);
                 });
             },
         ], function(err) {
@@ -1753,9 +1765,40 @@ app.get("/tests/:tid/testSidebar.html", function(req, res) {
     });
 });
 
-app.delete("/tests", function(req, res) {
-    var tid = req.params.tid;
-    var uid = req.params.uid;
+var deleteObjects = function(req, query, collect, collectName, callback) {
+    var cursor = collect.find(query);
+    var allErrs = [];
+    cursor.forEach(function(doc) {
+        newID('did', function(err, did) {
+            if (err) return allErrs.push(err);
+            var deleteRecord = {
+                did: did,
+                timestamp: (new Date()).toISOString(),
+                authUID: req.authUID,
+                authRole: req.authRole,
+                userUID: req.userUID,
+                userRole: req.userRole,
+                mode: req.mode,
+                collection: collectName,
+                document: doc
+            };
+            dCollect.insert(deleteRecord, {w: 1}, function(err) {
+                if (err) return allErrs.push(err);
+                collect.remove({_id: doc._id}, function(err) {
+                    if (err) return allErrs.push(err);
+                });
+            });
+        });
+    }, function(err) {
+        if (err) return callback({err: err, allErrs: allErrs});
+        if (allErrs.length > 0) return callback(allErrs);
+        callback(null);
+    });
+};
+
+app.delete("/tInstances", function(req, res) {
+    var tid = req.query.tid;
+    var uid = req.query.uid;
     if (!tid) {
         return sendError(res, 400, "No tid provided");
     }
@@ -1763,7 +1806,14 @@ app.delete("/tests", function(req, res) {
     if (!info) {
         return sendError(res, 404, "Unknown tid: " + tid);
     }
-    
+    var query = {tid: tid};
+    if (uid) {
+        query.uid = uid;
+    }
+    deleteObjects(req, query, tiCollect, 'tInstances', function(err) {
+        if (err) return sendError(res, 500, 'Error deleting objects', err);
+        res.json({});
+    });
 });
 
 var autoCreateTestQuestions = function(req, res, tInstance, test, callback) {
