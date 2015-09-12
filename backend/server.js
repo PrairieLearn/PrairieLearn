@@ -1769,6 +1769,7 @@ var deleteObjects = function(req, query, collect, collectName, callback) {
     var cursor = collect.find(query);
     var allErrs = [];
     cursor.forEach(function(doc) {
+        if (!checkObjAuth(req, doc, "write")) return allErrs.push("insufficient permissions");
         newID('did', function(err, did) {
             if (err) return allErrs.push(err);
             var deleteRecord = {
@@ -1788,7 +1789,7 @@ var deleteObjects = function(req, query, collect, collectName, callback) {
                     if (err) return allErrs.push(err);
                 });
             });
-        });
+        }):
     }, function(err) {
         if (err) return callback({err: err, allErrs: allErrs});
         if (allErrs.length > 0) return callback(allErrs);
