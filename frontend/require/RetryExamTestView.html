@@ -4,7 +4,7 @@
   </div>
 
   <div class="panel-body">
-    <div class="well well-sm small-bottom-margin">
+    <div class="well well-sm">
       <div class="row">
 
         <div class="col-md-3 col-sm-6 col-xs-12">
@@ -34,14 +34,21 @@
           <a class="btn btn-primary" href="#ti/{{tiid}}">Go to assessment</a>
         </div>
 
-        {{#seeDetail}}
+      </div> <!-- row -->
+    </div> <!-- well -->
+
+    {{#seeDetail}}
+    <div class="well well-sm">
+      <div class="row">
+
         <div class="col-xs-12">
           <a class="btn btn-info" href="#t/{{tid}}">View assessment details</a>
         </div>
-        {{/seeDetail}}
         
       </div> <!-- row -->
     </div> <!-- well -->
+  {{/seeDetail}}
+
   </div> <!-- panel-body -->
 
 </div>

@@ -34,7 +34,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "AdaptiveTestHe
             this.$("#confirmResetTestModal").modal('hide');
         },
 
-        resetTestForALl: function() {
+        resetTestForAll: function() {
             var that = this;
             this.$('#confirmResetTestForAllModal').on('hidden.bs.modal', function (e) {
                 that.trigger("resetTestForAll");
