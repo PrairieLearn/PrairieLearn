@@ -117,6 +117,8 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 authURL: null,
                 gitCourseBranch: null,
                 remoteFetchURL: null,
+                courseName: "unknownCourseName",
+                courseTitle: "unknownCourseTitle",
             };
             this.set(_(document.PLConfig).defaults(defaultConfig));
             if (this.get("authURL") === null)
@@ -150,6 +152,8 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 });
                 $.getJSON(that.apiURL("course"), function(courseInfo) {
                     that.set({
+                        'courseName': courseInfo.name,
+                        'courseTitle': courseInfo.title,
                         'pageTitle': 'PrairieLearn: ' + courseInfo.name + ' (' + courseInfo.title + ')',
                         'navTitle': 'PrairieLearn: ' + courseInfo.name,
                         'gitCourseBranch': courseInfo.gitCourseBranch,

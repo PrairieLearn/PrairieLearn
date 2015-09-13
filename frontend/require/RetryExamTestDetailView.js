@@ -21,6 +21,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "RetryExamTestH
             var data = {};
             data.title = this.model.get("title");
             data.userUID = this.appModel.get("userUID");
+            data.seeReset = this.appModel.hasPermission("deleteTInstances");
 
             var html = Mustache.render(RetryExamTestDetailViewTemplate, data);
             this.$el.html(html);

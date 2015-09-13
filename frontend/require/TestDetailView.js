@@ -13,6 +13,14 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
 
         render: function() {
             var data = {};
+            data.tid = this.model.get("tid");
+            data.title = this.model.get("set") + " " + this.model.get("number") + ": " + this.model.get("title");
+            data.seeDownload = this.appModel.hasPermission("viewOtherUsers");
+            data.testScoresFilename = this.model.get("tid") + ".csv";
+            data.testScoresLink = this.appModel.apiURL("testScores/" + data.testScoresFilename + "?tid=" + data.tid);
+            data.testScoresCompassFilename = this.model.get("tid") + "_compass.csv";
+            data.testScoresCompassLink = this.appModel.apiURL("testScores/" + data.testScoresFilename + "?tid=" + data.tid + "&format=compass");
+
             var html = Mustache.render(TestDetailViewTemplate, data);
             this.$el.html(html);
 

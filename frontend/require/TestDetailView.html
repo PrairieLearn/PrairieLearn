@@ -2,3 +2,34 @@
 </div>
 <div id="tDetail">
 </div>
+
+{{#seeDownload}}
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">Download data for {{title}}</h3>
+  </div>
+
+  <div class="panel-body">
+  </div> <!-- panel-body -->
+
+  <table class="table table-condensed table-hover">
+    <thead>
+      <tr>
+        <th>Data file</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a href="{{testScoresLink}}">{{testScoresFilename}}</a></td>
+        <td>Final test scores for all students.</td>
+      </tr>
+      <tr>
+        <td><a href="{{testScoresCompassLink}}">{{testScoresCompassFilename}}</a></td>
+        <td>Final test scores for all students, formatted for upload into Compass2g.</td>
+      </tr>
+    </tbody>
+  </table>
+  
+</div>
+{{/seeDownload}}

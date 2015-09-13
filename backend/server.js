@@ -193,6 +193,7 @@ requirejs.onError = function(err) {
 var hmacSha256 = require("crypto-js/hmac-sha256");
 var gamma = require("gamma");
 var numeric = require("numeric");
+var csvStringify = require('csv').stringify;
 var child_process = require("child_process");
 var PrairieStats = requirejs("PrairieStats");
 var PrairieModel = requirejs("PrairieModel");
@@ -2174,6 +2175,61 @@ app.get("/export.csv", function(req, res) {
                 var csv = _(csvData).map(function(row) {return row.join(",") + "\n";}).join("");
                 res.attachment("export.csv");
                 res.send(csv);
+            }
+        });
+    });
+});
+
+app.get("/testScores/:filename", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
+        return sendError(res, 403, "Insufficient permissions");
+    }
+    var filename = req.params.filename;
+    var tid = req.query.tid;
+    var format = req.query.format;
+    tiCollect.find({tid: tid}, function(err, cursor) {
+        if (err) {
+            return sendError(res, 500, "Error accessing tiCollect database", err);
+        }
+        scores = {};
+        cursor.each(function(err, item) {
+            if (err) {
+                return sendError(res, 400, "Error iterating over tInstances", {err: err});
+            }
+            if (item != null) {
+                if (!checkObjAuth(req, item, "read"))
+                    return;
+                var uid = item.uid;
+                if (scores[uid] === undefined)
+                    scores[uid] = item.score
+                else
+                    scores[uid] = Math.max(scores[uid], item.score);
+            } else {
+                // end of collection
+                var headers;
+                if (format == "compass")
+                    headers = ['Username', tid];
+                else
+                    headers = ['uid', tid];
+                var csvData = [];
+                _(scores).each(function(score, uid) {
+                    var username = uid;
+                    if (format == "compass") {
+                        var i = uid.indexOf("@");
+                        if (i > 0) {
+                            username = uid.slice(0, i);
+                        }
+                    }
+                    var row = [username, score];
+                    csvData.push(row);
+                });
+                csvData = _(csvData).sortBy(function(row) {return row[0];});
+                csvData.splice(0, 0, headers);
+                csvStringify(csvData, function(err, csv) {
+                    if (err) return sendError(res, 500, "Error formatting CSV", err);
+                    res.attachment(filename);
+                    res.send(csv);
+                });
             }
         });
     });

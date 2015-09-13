@@ -26,9 +26,10 @@
   </div>
 </div>
 
+{{#seeReset}}
 <div class="panel panel-primary">
   <div class="panel-heading">
-    <h3 class="panel-title">{{title}}</h3>
+    <h3 class="panel-title">Reset {{title}}</h3>
   </div>
 
   <div class="panel-body">
@@ -37,13 +38,12 @@
       <div class="col-sm-6 col-xs-12">
         <button class="btn btn-warning" data-toggle="modal" data-target="#confirmResetTestModal">Reset for current user</button>
       </div>
-
       <div class="col-sm-6 col-xs-12">
         <button class="btn btn-danger" data-toggle="modal" data-target="#confirmResetTestForAllModal">Reset for all users</button>
       </div>
-
     </div> <!-- row -->
 
   </div> <!-- panel-body -->
 
 </div>
+{{/seeReset}}
