@@ -38,3 +38,22 @@
    This should end with `PrairieLearn server ready` and will remain running in the foreground, so this terminal can't be used for anything else. Stopping or restarting the server can be done with Crtl-C.
 
 3. In a web-browswer go to http://localhost:3000
+
+
+## Updating PrairieLearn
+
+1. Stop the PrairieLearn server with Ctrl-C.
+
+1. Open GitHub Deskop (the program, not the website), select the PrairieLearn repository, and click the Sync button.
+
+1. Ensure the libraries are up-to-date with:
+
+        $ cd C:\GitHub\PrairieLearn/backend
+        $ npm update
+
+1. Restart the PrairieLearn server:
+
+        $ cd C:\GitHub\PrairieLearn/backend
+        $ node server
+
+   If this gives an error that it `Cannot find module`, then make sure the `npm update` command in the previous step was successful.
