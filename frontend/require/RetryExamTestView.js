@@ -5,6 +5,7 @@ define(["underscore", "backbone", "mustache", "RetryExamTestHelper", "text!Retry
         tagName: 'div',
 
         initialize: function() {
+            this.appModel = this.options.appModel;
             this.tInstances = this.options.tInstances;
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.tInstances, "change", this.render);
@@ -43,6 +44,7 @@ define(["underscore", "backbone", "mustache", "RetryExamTestHelper", "text!Retry
                 dateString += ", " + finishDate.toLocaleDateString("en-US", options);
                 data.finishDate = dateString;
             }
+            data.seeDetail = this.appModel.hasPermission("viewOtherUsers");
 
             var html = Mustache.render(RetryExamTestViewTemplate, data);
             this.$el.html(html);

@@ -33,6 +33,7 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
             var availDate = new Date(that.model.get("availDate"));
             data.availDate = AdaptiveTestHelper.renderAvailDate(availDate);
             data.seeAvailDate = this.appModel.hasPermission("seeAvailDate");
+            data.seeDetail = this.appModel.hasPermission("viewOtherUsers");
 
             var html = Mustache.render(AdaptiveTestViewTemplate, data);
             this.$el.html(html);

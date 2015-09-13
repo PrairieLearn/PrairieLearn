@@ -31,6 +31,7 @@ define(["underscore", "backbone", "mustache", "BasicTestHelper", "text!BasicTest
             var availDate = new Date(that.model.get("availDate"));
             data.availDate = BasicTestHelper.renderAvailDate(availDate);
             data.seeAvailDate = this.appModel.hasPermission("seeAvailDate");
+            data.seeDetail = this.appModel.hasPermission("viewOtherUsers");
 
             var html = Mustache.render(BasicTestViewTemplate, data);
             this.$el.html(html);

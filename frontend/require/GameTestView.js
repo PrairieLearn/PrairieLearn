@@ -33,6 +33,7 @@ define(["underscore", "backbone", "mustache", "GameTestHelper", "text!GameTestVi
             var availDate = new Date(that.model.get("availDate"));
             data.availDate = GameTestHelper.renderAvailDate(availDate);
             data.seeAvailDate = this.appModel.hasPermission("seeAvailDate");
+            data.seeDetail = this.appModel.hasPermission("viewOtherUsers");
 
             var html = Mustache.render(GameTestViewTemplate, data);
             this.$el.html(html);

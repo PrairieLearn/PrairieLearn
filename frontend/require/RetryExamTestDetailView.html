@@ -1,0 +1,49 @@
+<div id="confirmResetTestModal" class="modal fade">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-body">
+        Are you sure you want to reset <strong>{{title}}</strong> for <strong>{{userUID}}</strong>? This will delete all progress on this assessment and cannot be undone.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-warning resetTest" id="resetTest">Reset</button>
+        <button type="button" data-dismiss="modal" class="btn btn-default">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="confirmResetTestForAllModal" class="modal fade">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-body">
+        Are you sure you want to reset <strong>{{title}}</strong> for <strong>all users</strong>? This will delete all progress on this assessment for every user and cannot be undone.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger resetTestForAll" id="resetTestForAll">Reset For All Users</button>
+        <button type="button" data-dismiss="modal" class="btn btn-default">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">{{title}}</h3>
+  </div>
+
+  <div class="panel-body">
+
+    <div class="row">
+      <div class="col-sm-6 col-xs-12">
+        <button class="btn btn-warning" data-toggle="modal" data-target="#confirmResetTestModal">Reset for current user</button>
+      </div>
+
+      <div class="col-sm-6 col-xs-12">
+        <button class="btn btn-danger" data-toggle="modal" data-target="#confirmResetTestForAllModal">Reset for all users</button>
+      </div>
+
+    </div> <!-- row -->
+
+  </div> <!-- panel-body -->
+
+</div>
