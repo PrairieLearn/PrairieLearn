@@ -207,6 +207,7 @@ var nSample = 0;
 var STATS_INTERVAL = 10 * 60 * 1000; // ms
 
 app.use(express.json());
+app.use(express.cookieParser());
 
 var db, countersCollect, uCollect, sCollect, qiCollect, statsCollect, tCollect, tiCollect, accessCollect, pullCollect, dCollect;
 
@@ -666,6 +667,25 @@ var ensureObjAuth = function(req, res, obj, operation, callback) {
     }
 };
 
+var ensureQuestionInTest = function(req, res, qid, tInstance, test, callback) {
+    questionInTest = false;
+    if (_(tInstance).has("qids")) {
+        if (_(tInstance.qids).contains(qid)) {
+            questionInTest = true;
+        }
+    }
+    if (_(test).has("qids")) {
+        if (_(test.qids).contains(qid)) {
+            questionInTest = true;
+        }
+    }
+    if (questionInTest) {
+        return callback();
+    } else {
+        return sendError(res, 403, "Insufficient permissions to access question: " + qid);
+    }
+};
+
 var stripPrivateFields = function(obj) {
     if (_.isArray(obj))
         return _(obj).map(function(item) {return stripPrivateFields(item);});
@@ -684,28 +704,6 @@ var stripPrivateFields = function(obj) {
 
 app.use(function(req, res, next) {
     logRequest();
-
-    // hack due to RequireJS not providing header support
-    if (/^\/questions/.test(req.path)) {
-        req.authUID = "nouser";
-        next();
-        return;
-    }
-    if (/^\/clientCode/.test(req.path)) {
-        req.authUID = "nouser";
-        next();
-        return;
-    }
-    if (/^\/clientFiles/.test(req.path)) {
-        req.authUID = "nouser";
-        next();
-        return;
-    }
-    if (/^\/tests\/[^\/]+\//.test(req.path)) {
-        req.authUID = "nouser";
-        next();
-        return;
-    }
 
     // bypass auth for local file serving
     if (config.localFileserver) {
@@ -743,32 +741,44 @@ app.use(function(req, res, next) {
         req.userUID = req.authUID;
         req.userRole = req.authRole;
     } else if (config.authType == 'x-auth' || config.authType === 'none') {
-        if (req.headers['x-auth-uid'] == null) {
-            return sendError(res, 403, "Missing X-Auth-UID header", {path: req.path});
+        var authUID = null, authName = null, authDate = null, authSignature = null, mode = null, userUID = null, userRole = null;
+        if (req.cookies.userData) {
+            var cookieUserData;
+            try {
+                cookieUserData = JSON.parse(req.cookies.userData);
+            } catch (e) {
+                return sendError(res, 403, "Error parsing cookies.userData as JSON", {userData: req.cookies.userData});
+            }
+            if (cookieUserData.authUID) authUID = cookieUserData.authUID;
+            if (cookieUserData.authName) authName = cookieUserData.authName;
+            if (cookieUserData.authDate) authDate = cookieUserData.authDate;
+            if (cookieUserData.authSignature) authSignature = cookieUserData.authSignature;
+            if (cookieUserData.mode) mode = cookieUserData.mode;
+            if (cookieUserData.userUID) userUID = cookieUserData.userUID;
+            if (cookieUserData.userRole) userRole = cookieUserData.userRole;
         }
-        if (req.headers['x-auth-name'] == null) {
-            return sendError(res, 403, "Missing X-Auth-Name header", {path: req.path});
-        }
-        if (req.headers['x-auth-date'] == null) {
-            return sendError(res, 403, "Missing X-Auth-Date header", {path: req.path});
-        }
-        if (req.headers['x-auth-signature'] == null) {
-            return sendError(res, 403, "Missing X-Auth-Signature header", {path: req.path});
-        }
-        if (req.headers['x-mode'] == null) {
-            return sendError(res, 403, "Missing X-Mode header", {path: req.path});
-        }
-        if (req.headers['x-user-uid'] == null) {
-            return sendError(res, 403, "Missing X-User-UID header", {path: req.path});
-        }
-        if (req.headers['x-user-role'] == null) {
-            return sendError(res, 403, "Missing X-User-Role header", {path: req.path});
-        }
-        var authUID = req.headers['x-auth-uid'].toLowerCase();
+        if (req.headers['x-auth-uid']) authUID = req.headers['x-auth-uid'];
+        if (req.headers['x-auth-name']) authName = req.headers['x-auth-name'];
+        if (req.headers['x-auth-date']) authDate = req.headers['x-auth-date'];
+        if (req.headers['x-auth-signature']) authSignature = req.headers['x-auth-signature'];
+        if (req.headers['x-mode']) mode = req.headers['x-mode'];
+        if (req.headers['x-user-uid']) userUID = req.headers['x-user-uid'];
+        if (req.headers['x-user-role']) userRole = req.headers['x-user-role'];
+
+        if (!authUID) return sendError(res, 403, "No X-Auth-UID header and no authUID cookie", {path: req.path});
+        if (!authName) return sendError(res, 403, "No X-Auth-Name header and no authName cookie", {path: req.path});
+        if (!authDate) return sendError(res, 403, "No X-Auth-Date header and no authDate cookie", {path: req.path});
+        if (!authSignature) return sendError(res, 403, "No X-Auth-Signature header and no authSignature cookie", {path: req.path});
+
+        if (!mode) mode = 'Default';
+        if (!userUID) userUID = authUID;
+
+        authUID = authUID.toLowerCase();
+        userUID = userUID.toLowerCase();
+
         var authRole = uidToRole(authUID);
-        var authName = req.headers['x-auth-name'];
-        var authDate = req.headers['x-auth-date'];
-        var authSignature = req.headers['x-auth-signature'];
+        if (!userRole) userRole = authRole;
+
         var checkData = authUID + "/" + authName + "/" + authDate;
         var checkSignature = hmacSha256(checkData, config.secretKey).toString();
         if (authSignature !== checkSignature) {
@@ -778,17 +788,18 @@ app.use(function(req, res, next) {
         // authorization succeeded, store data in the request
         req.authUID = authUID;
         req.authName = authName;
+        req.authSignature = authSignature;
         req.authRole = authRole;
-        req.mode = req.headers['x-mode'];
-        req.userUID = req.headers['x-user-uid'].toLowerCase();
-        req.userRole = req.headers['x-user-role'];
+        req.mode = mode;
+        req.userUID = userUID;
+        req.userRole = userRole;
     } else {
         return sendError(res, 500, "Invalid authType: " + config.authType);
     }
 
-    // if we have an invalid userRole, then set it to authRole
+    // if we have an invalid userRole, then die
     if (!PrairieRole.isRoleValid(req.userRole)) {
-        req.userRole = req.authRole;
+        return sendError(res, 403, "Invalid userRole: " + userRole);
     }
     // make sure userRole is not more powerful than authRole
     req.userRole = PrairieRole.leastPermissive(req.userRole, req.authRole);
@@ -825,7 +836,7 @@ app.use(function(req, res, next) {
     // add authUID to DB if not already present
     uCollect.update(
         {uid: req.authUID},
-        {$setOnInsert: {uid: req.authUID, name: req.authName}},
+        {$setOnInsert: {uid: req.authUID, name: req.authName, dateAdded: (new Date()).toISOString()}},
         {upsert: true, w: 1},
         function(err) {
             if (err) {
@@ -1451,11 +1462,13 @@ app.post("/qInstances", function(req, res) {
                     return sendError(res, 403, "QIID creation disallowed for tiid: ", tInstance.tiid);
                 } else {
                     ensureObjAuth(req, res, tInstance, "read", function(tInstance) {
-                        makeQInstance(req, res, qInstance, function(qInstance) {
-                            tInstance.qiidsByQid = tInstance.qiidsByQid || {};
-                            tInstance.qiidsByQid[qid] = qInstance.qiid;
-                            writeTInstance(req, res, tInstance, function() {
-                                res.json(stripPrivateFields(qInstance));
+                        ensureQuestionInTest(req, res, qid, tInstance, test, function() {
+                            makeQInstance(req, res, qInstance, function(qInstance) {
+                                tInstance.qiidsByQid = tInstance.qiidsByQid || {};
+                                tInstance.qiidsByQid[qid] = qInstance.qiid;
+                                writeTInstance(req, res, tInstance, function() {
+                                    res.json(stripPrivateFields(qInstance));
+                                });
                             });
                         });
                     });
@@ -2017,19 +2030,21 @@ app.post("/tInstances", function(req, res) {
             } else {
                 // end of collection
 
-                readTest(res, tid, function(test) {
-                    loadTestServer(tid, function(server) {
-                        newIDNoError(req, res, "tiid", function(tiid) {
-                            var tInstance = {
-                                tiid: tiid,
-                                tid: tid,
-                                uid: req.query.uid,
-                                date: new Date(),
-                                number: number,
-                            };
-                            updateTInstance(req, res, server, tInstance, test, function() {
-                                writeTInstance(req, res, tInstance, function() {
-                                    res.json(stripPrivateFields(tInstance));
+                ensureTestAvailByTID(req, res, tid, function() {
+                    readTest(res, tid, function(test) {
+                        loadTestServer(tid, function(server) {
+                            newIDNoError(req, res, "tiid", function(tiid) {
+                                var tInstance = {
+                                    tiid: tiid,
+                                    tid: tid,
+                                    uid: req.query.uid,
+                                    date: new Date(),
+                                    number: number,
+                                };
+                                updateTInstance(req, res, server, tInstance, test, function() {
+                                    writeTInstance(req, res, tInstance, function() {
+                                        res.json(stripPrivateFields(tInstance));
+                                    });
                                 });
                             });
                         });

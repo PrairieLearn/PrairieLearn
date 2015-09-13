@@ -5,6 +5,8 @@
 
   * Add "reset test" capability for instructors.
 
+  * Only allow questions to be solved for accessible tests.
+
 * __1.9.1__ - 2015-09-11
 
   * Fix docs/example to add blank target for test text links.

@@ -140,11 +140,13 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                     userRole: data.role,
                     userName: data.name
                 });
+                that.setUserCookie();
                 $.getJSON(that.apiURL("users/" + that.get("authUID")), function(userData) {
                     that.set({
                         "authRole": userData.role,
                         "userRole": userData.role,
                     });
+                    that.setUserCookie();
                 });
                 $.getJSON(that.apiURL("course"), function(courseInfo) {
                     that.set({
@@ -160,6 +162,35 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
 
         apiURL: function(path) {
             return this.get("apiServer") + "/" + path;
+        },
+
+        setUserCookie: function() {
+            var parser = document.createElement('a');
+            parser.href = this.get('apiServer');
+            var domainFlag = ';' + parser.hostname;
+
+            var secureFlag = '';
+            if (parser.protocol == 'https:') {
+                secureFlag = ';secure';
+            }
+
+            var userData = {
+                authUID: this.get("authUID"),
+                authName: this.get("authName"),
+                authDate: this.get("authDate"),
+                authSignature: this.get("authSignature"),
+                mode: this.get("mode"),
+                userUID: this.get("userUID"),
+                userRole: this.get("userRole"),
+            };
+
+            var newCookie = 'userData=' + JSON.stringify(userData)
+                + ';max-age=86400; path=/' + secureFlag + domainFlag
+            document.cookie = newCookie;
+
+            if (!$.cookie('userData')) {
+                $('#error').append('<div class="alert alert-danger" role="alert">Failed to set cookie. Please ensure that cookies are enabled.</div>');
+            }
         },
 
         tryAgain: function() {
@@ -185,15 +216,21 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         },
 
         changeUserUID: function(newUID) {
-            this.set("userUID", newUID);
+            this.set("userUID", newUID, {silent: true});
+            this.setUserCookie();
+            this.trigger("userModeChanged");
         },
 
         changeUserRole: function(newRole) {
-            this.set("userRole", newRole);
+            this.set("userRole", newRole, {silent: true});
+            this.setUserCookie();
+            this.trigger("userModeChanged");
         },
 
         changeMode: function(newMode) {
-            this.set("mode", newMode);
+            this.set("mode", newMode, {silent: true});
+            this.setUserCookie();
+            this.trigger("userModeChanged");
         },
     });
 
@@ -208,9 +245,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             this.syncModel = this.options.syncModel;
             this.currentView = null;
             this.listenTo(this.model, "change", this.render);
-            this.listenTo(this.model, "change:userUID", this.reloadUserData);
-            this.listenTo(this.model, "change:userRole", this.reloadUserData);
-            this.listenTo(this.model, "change:mode", this.reloadUserData);
+            this.listenTo(this.model, "userModeChanged", this.reloadUserData);
             this.listenTo(Backbone, "reloadUserData", this.reloadUserData);
             this.navView = new NavView.NavView({model: this.model, users: this.users});
             this.navView.render();
@@ -337,7 +372,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         },
 
         handleLoadError: function(collection, response, options) {
-            $("#error").html('<div class="alert alert-danger" role="alert">Error loading data.</div>');
+            $("#error").append('<div class="alert alert-danger" role="alert">Error loading data.</div>');
         },
 
         reloadUserData: function() {
@@ -467,15 +502,15 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         Backbone.history.start();
 
         $.ajaxPrefilter(function(options, originalOptions, jqXHR) {
-            options.headers = {
-                "X-Auth-UID": String(appModel.get("authUID")),
-                "X-Auth-Name": String(appModel.get("authName")),
-                "X-Auth-Date": String(appModel.get("authDate")),
-                "X-Auth-Signature": String(appModel.get("authSignature")),
-                "X-Mode": String(appModel.get("mode")),
-                "X-User-UID": String(appModel.get("userUID")),
-                "X-User-Role": String(appModel.get("userRole")),
-            };
+            var headers = {};
+            if (appModel.get("authUID")) headers["X-Auth-UID"] = String(appModel.get("authUID"));
+            if (appModel.get("authName")) headers["X-Auth-Name"] = String(appModel.get("authName"));
+            if (appModel.get("authDate")) headers["X-Auth-Date"] = String(appModel.get("authDate"));
+            if (appModel.get("authSignature")) headers["X-Auth-Signature"] = String(appModel.get("authSignature"));
+            if (appModel.get("mode")) headers["X-Mode"] = String(appModel.get("mode"));
+            if (appModel.get("userUID")) headers["X-User-UID"] = String(appModel.get("userUID"));
+            if (appModel.get("userRole")) headers["X-User-Role"] = String(appModel.get("userRole"));
+            options.headers = headers;
         });
 
         appModel.once("change:userUID", function() {
@@ -515,7 +550,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 ],
                 function(err) {
                     if (err) {
-                        $("#error").html('<div class="alert alert-danger" role="alert">' + err + '</div>');
+                        $("#error").append('<div class="alert alert-danger" role="alert">' + err + '</div>');
                         return;
                     }
                     if (errors.length > 0) {
