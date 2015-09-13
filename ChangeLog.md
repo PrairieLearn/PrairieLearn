@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.10.0__ - 2015-09-12
+
+  * Add "reset test" capability for instructors.
+
 * __1.9.1__ - 2015-09-11
 
   * Fix docs/example to add blank target for test text links.
