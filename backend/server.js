@@ -1789,7 +1789,7 @@ var deleteObjects = function(req, query, collect, collectName, callback) {
                     if (err) return allErrs.push(err);
                 });
             });
-        }):
+        });
     }, function(err) {
         if (err) return callback({err: err, allErrs: allErrs});
         if (allErrs.length > 0) return callback(allErrs);

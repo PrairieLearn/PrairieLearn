@@ -42,6 +42,7 @@ define(["underscore", "backbone", "mustache", "ExamTestHelper", "text!ExamTestVi
                 data.correctPercentage = (data.nCorrect / data.nQuestions * 100).toFixed(0);
                 data.incorrectPercentage = 100 - data.correctPercentage;
             }
+            data.seeDetail = this.appModel.hasPermission("viewOtherUsers");
 
             var html = Mustache.render(ExamTestViewTemplate, data);
             this.$el.html(html);

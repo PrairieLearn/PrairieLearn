@@ -52,6 +52,7 @@ define(["underscore", "backbone", "mustache", "PracExamTestHelper", "text!PracEx
                 }
                 data.attemptsList.push(attempt);
             });
+            data.seeDetail = this.appModel.hasPermission("viewOtherUsers");
 
             var html = Mustache.render(PracExamTestViewTemplate, data);
             this.$el.html(html);
