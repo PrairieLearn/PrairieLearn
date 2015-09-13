@@ -1798,6 +1798,9 @@ var deleteObjects = function(req, query, collect, collectName, callback) {
 };
 
 app.delete("/tInstances", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'deleteTInstances')) {
+        return sendError(res, 403, "Insufficient permissions");
+    }
     var tid = req.query.tid;
     var uid = req.query.uid;
     if (!tid) {

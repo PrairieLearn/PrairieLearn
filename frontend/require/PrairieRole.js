@@ -129,6 +129,8 @@ define(['underscore'], function(_) {
             permission = true;
         if (operation === 'editCoursePulls' && rank <= this.INSTRUCTOR)
             permission = true;
+        if (operation === 'deleteTInstances' && rank <= this.INSTRUCTOR)
+            permission = true;
         return permission;
     };
 

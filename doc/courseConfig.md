@@ -70,4 +70,5 @@ Operation                                                             | Student 
 `viewErrors`: See server error messages.                              |         |     | Yes        | Yes
 `viewCoursePulls`: See git pulls of course data.                      |         | Yes | Yes        | Yes
 `editCoursePulls`: Pull the course data from git.                     |         |     | Yes        | Yes
+`deleteTInstances` : Delete and reset tests.                          |         |     | Yes        | Yes
 Automatic access to all courses.                                      |         |     |            | Yes
