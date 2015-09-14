@@ -193,6 +193,7 @@ requirejs.onError = function(err) {
 var hmacSha256 = require("crypto-js/hmac-sha256");
 var gamma = require("gamma");
 var numeric = require("numeric");
+var csvStringify = require('csv').stringify;
 var child_process = require("child_process");
 var PrairieStats = requirejs("PrairieStats");
 var PrairieModel = requirejs("PrairieModel");
@@ -309,6 +310,7 @@ var loadDB = function(callback) {
                         indexes: [
                             {keys: {sid: 1}, options: {unique: true}},
                             {keys: {uid: 1}, options: {}},
+                            {keys: {qiid: 1}, options: {}},
                         ],
                     };
                     processCollection('submissions', err, collection, options, cb);
@@ -322,6 +324,7 @@ var loadDB = function(callback) {
                         indexes: [
                             {keys: {qiid: 1}, options: {unique: true}},
                             {keys: {uid: 1}, options: {}},
+                            {keys: {tiid: 1}, options: {}},
                         ],
                     };
                     processCollection('qInstances', err, collection, options, cb);
@@ -353,6 +356,7 @@ var loadDB = function(callback) {
                         indexes: [
                             {keys: {tiid: 1}, options: {unique: true}},
                             {keys: {uid: 1}, options: {}},
+                            {keys: {tid: 1}, options: {}},
                         ],
                     };
                     processCollection('tInstances', err, collection, options, cb);
@@ -2131,7 +2135,7 @@ app.get("/export.csv", function(req, res) {
         scores = {};
         cursor.each(function(err, item) {
             if (err) {
-                return sendError(res, 400, "Error iterating over tInstances", {err: err});
+                return sendError(res, 500, "Error iterating over tInstances", {err: err});
             }
             if (item != null) {
                 if (!checkObjAuth(req, item, "read"))
@@ -2175,6 +2179,316 @@ app.get("/export.csv", function(req, res) {
                 res.attachment("export.csv");
                 res.send(csv);
             }
+        });
+    });
+});
+
+app.get("/testScores/:filename", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
+        return sendError(res, 403, "Insufficient permissions");
+    }
+    var filename = req.params.filename;
+    var tid = req.query.tid;
+    var format = req.query.format;
+    tiCollect.find({tid: tid}, function(err, cursor) {
+        if (err) {
+            return sendError(res, 500, "Error accessing tiCollect database", err);
+        }
+        var scores = {};
+        cursor.each(function(err, item) {
+            if (err) {
+                return sendError(res, 500, "Error iterating over tInstances", {err: err});
+            }
+            if (item != null) {
+                if (!checkObjAuth(req, item, "read"))
+                    return;
+                var uid = item.uid;
+                if (scores[uid] === undefined)
+                    scores[uid] = item.score;
+                else
+                    scores[uid] = Math.max(scores[uid], item.score);
+            } else {
+                // end of collection
+                var headers;
+                if (format == "compass")
+                    headers = ['Username', tid];
+                else
+                    headers = ['uid', tid];
+                var csvData = [];
+                _(scores).each(function(score, uid) {
+                    var username = uid;
+                    if (format == "compass") {
+                        var i = uid.indexOf("@");
+                        if (i > 0) {
+                            username = uid.slice(0, i);
+                        }
+                    }
+                    var row = [username, score];
+                    csvData.push(row);
+                });
+                csvData = _(csvData).sortBy(function(row) {return row[0];});
+                csvData.splice(0, 0, headers);
+                csvStringify(csvData, function(err, csv) {
+                    if (err) return sendError(res, 500, "Error formatting CSV", err);
+                    res.attachment(filename);
+                    res.send(csv);
+                });
+            }
+        });
+    });
+});
+
+var addSubsForQInstance = function(req, subs, qiid, qInstance, tInstance, callback) {
+    sCollect.find({qiid: qiid}, function(err, cursor) {
+        if (err) return callback(err);
+        var item;
+        async.doUntil(function(cb) { // body
+            cursor.next(function(err, r) {
+                if (err) return cb(err);
+                item = r;
+                if (item != null) {
+                    if (!checkObjAuth(req, item, "read")) return cb("Insufficient permissions");
+                    var submission = item;
+                    subs.push({
+                        uid: submission.uid,
+                        tid: tInstance.tid,
+                        tiid: tInstance.tiid,
+                        qid: qInstance.qid,
+                        qiid: qInstance.qiid,
+                        sid: submission.sid,
+                        vid: qInstance.vid,
+                        date: submission.date,
+                        params: qInstance.params,
+                        options: qInstance.options,
+                        overrideScore: submission.overrideScore,
+                        practice: submission.practice,
+                        trueAnswer: qInstance.trueAnswer,
+                        submittedAnswer: submission.submittedAnswer,
+                        score: submission.score,
+                        correct: ((submission.score >= 0.5) ? 1 : 0),
+                        feedback: submission.feedback,
+                    });
+                    cb(null);
+                } else {
+                    cb(null);
+                }
+            });
+        }, function() { // test
+            return (item == null);
+        }, function(err) { // finalize
+            if (err) return callback(err);
+            callback(null);
+        });
+    });
+};
+
+var addSubsForTInstance = function(req, subs, tiid, tInstance, callback) {
+    qiCollect.find({tiid: tiid}, function(err, cursor) {
+        if (err) return callback(err);
+        var item;
+        async.doUntil(function(cb) { // body
+            cursor.next(function(err, r) {
+                if (err) return cb(err);
+                item = r;
+                if (item != null) {
+                    if (!checkObjAuth(req, item, "read")) return cb("Insufficient permissions");
+                    addSubsForQInstance(req, subs, item.qiid, item, tInstance, function(err) {
+                        if (err) return cb(err);
+                        cb(null);
+                    });
+                } else {
+                    cb(null);
+                }
+            });
+        }, function() { // test
+            return (item == null);
+        }, function(err) { // finalize
+            if (err) return callback(err);
+            callback(null);
+        });
+    });
+};
+
+var addSubsForTest = function(req, subs, tid, callback) {
+    tiCollect.find({tid: tid}, function(err, cursor) {
+        if (err) return callback(err);
+        var item;
+        async.doUntil(function(cb) { // body
+            cursor.next(function(err, r) {
+                if (err) return cb(err);
+                item = r;
+                if (item != null) {
+                    if (!checkObjAuth(req, item, "read")) return cb("Insufficient permissions");
+                    addSubsForTInstance(req, subs, item.tiid, item, function(err) {
+                        if (err) return cb(err);
+                        cb(null);
+                    });
+                } else {
+                    cb(null);
+                }
+            });
+        }, function() { // test
+            return (item == null);
+        }, function(err) { // finalize
+            if (err) return callback(err);
+            callback(null);
+        });
+    });
+};
+
+var subsToCSV = function(subs, headers, callback) {
+    subs.sort(function(a, b) {
+        return (a.uid < b.uid) ? -1
+            : ((a.uid > b.uid) ? 1
+               : ((a.tiid < b.tiid) ? -1
+                  : ((a.tiid > b.tiid) ? 1
+                     : ((a.qid < b.qid) ? -1
+                        : ((a.qid > b.qid) ? 1
+                           : ((a.date < b.date) ? -1
+                              : ((a.date > b.date) ? 1
+                                 : 0)))))));
+    });
+    var csvData = _(subs).map(function(v) {
+        if (v.date) v.date = moment(v.date).tz(config.timezone).format();
+        return _(headers).map(function(key) {return v[key];});
+    });
+    csvData.splice(0, 0, headers);
+    csvStringify(csvData, function(err, csv) {
+        if (err) return callback(err);
+        callback(null, csv);
+    });
+};
+
+app.get("/testAllSubmissions/:filename", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
+        return sendError(res, 403, "Insufficient permissions");
+    }
+    var filename = req.params.filename;
+    var tid = req.query.tid;
+    var subs = [];
+    addSubsForTest(req, subs, tid, function(err) {
+        if (err) return sendError(res, 500, "Error getting submissions for test", err);
+        var headers = ["uid", "tid", "tiid", "qid", "qiid", "sid", "vid", "date", "params", "options",
+                       "overrideScore", "practice", "trueAnswer", "submittedAnswer", "score", "correct", "feedback"];
+        subsToCSV(subs, headers, function(err, csv) {
+            if (err) return sendError(res, 500, "Error formatting CSV", err);
+            res.attachment(filename);
+            res.send(csv);
+        });
+    });
+});
+
+var addFinalSubsForTInstance = function(req, subs, tiid, tInstance, callback) {
+    if (_(tInstance).has('qids') && _(tInstance).has('submissionsByQid') && _(tInstance).has('questionsByQID')) {
+        async.each(tInstance.qids, function(qid, cb) {
+            if (!tInstance.qiidsByQid) return cb("No qiidsByQid");
+            var qiid = tInstance.qiidsByQid[qid];
+            if (!qiid) return cb("No qiidsByQid.qid for qid: " + qid);
+            qiCollect.findOne({qiid: qiid}, function(err, qInstance) {
+                if (err) return cb(err);
+                if (!qInstance) return cb("No qInstance with qiid " + qiid);
+                if (checkObjAuth(req, qInstance, "read")) {
+                    var sub = {
+                        uid: qInstance.uid,
+                        tid: tInstance.tid,
+                        tiid: tInstance.tiid,
+                        qid: qInstance.qid,
+                        qiid: qInstance.qiid,
+                        vid: qInstance.vid,
+                        params: qInstance.params,
+                        options: qInstance.options,
+                        trueAnswer: qInstance.trueAnswer,
+                    };
+                    var submission = tInstance.submissionsByQid[qid];
+                    if (submission) {
+                        sub.sid = submission.sid;
+                        sub.date = submission.date;
+                        sub.overrideScore = submission.overrideScore;
+                        sub.practice = submission.practice;
+                        sub.submittedAnswer = submission.submittedAnswer;
+                        sub.score = submission.score;
+                        sub.feedback = submission.feedback;
+                    }
+                    var question = tInstance.questionsByQID[qid];
+                    if (question) {
+                        sub.nGradedAttempts = question.nGradedAttempts;
+                        sub.awardedPoints = question.awardedPoints;
+                        sub.correct = question.correct;
+                    }
+                    subs.push(sub);
+                    return cb(null);
+                } else {
+                    return cb("Insufficient permissions");
+                }
+            });
+        }, function(err) {
+            if (err) return callback(err);
+            callback(null);
+        });
+    } else {
+        addSubsForTInstance(req, subs, tiid, tInstance, function(err) {
+            if (err) return callback(err);
+            callback(null);
+        });
+    }
+};
+
+var addFinalSubsForTest = function(req, subs, tid, callback) {
+    tiCollect.find({tid: tid}, function(err, cursor) {
+        if (err) {
+            return sendError(res, 500, "Error accessing tiCollect database", err);
+        }
+        var tInstances = {};
+        var item;
+        async.doUntil(function(cb) { // body
+            cursor.next(function(err, r) {
+                if (err) return cb(err);
+                item = r;
+                if (item != null) {
+                    if (!checkObjAuth(req, item, "read")) return cb("Insufficient permissions");
+                    var uid = item.uid;
+                    if (tInstances[uid] === undefined) {
+                        tInstances[uid] = item;
+                    } else {
+                        if (item.score > tInstances[uid].score)
+                            tInstances[uid] = item;
+                    }
+                }
+                cb(null);
+            });
+        }, function() { // test
+            return (item == null);
+        }, function(err) { // finalize
+            if (err) return callback(err);
+            async.forEachOf(tInstances, function(tInstance, uid, cb) {
+                addFinalSubsForTInstance(req, subs, tInstance.tiid, tInstance, function(err) {
+                    if (err) return cb(err);
+                    cb(null);
+                });
+            }, function(err) {
+                if (err) return callback(err);
+                callback(null);
+            });
+        });
+    });
+};
+
+app.get("/testFinalSubmissions/:filename", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
+        return sendError(res, 403, "Insufficient permissions");
+    }
+    var filename = req.params.filename;
+    var tid = req.query.tid;
+    var subs = [];
+    addFinalSubsForTest(req, subs, tid, function(err) {
+        if (err) return sendError(res, 500, "Error getting submissions for test", err);
+        var headers = ["uid", "tid", "tiid", "qid", "qiid", "sid", "vid", "date", "params", "options",
+                       "overrideScore", "practice", "trueAnswer", "submittedAnswer", "score", "correct", "feedback",
+                       "nGradedAttempts", "awardedPoints"];
+        subsToCSV(subs, headers, function(err, csv) {
+            if (err) return sendError(res, 500, "Error formatting CSV", err);
+            res.attachment(filename);
+            res.send(csv);
         });
     });
 });

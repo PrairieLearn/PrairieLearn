@@ -1,4 +1,91 @@
+<div id="confirmResetTestModal" class="modal fade">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-body">
+        Are you sure you want to reset <strong>{{title}}</strong> for <strong>{{userUID}}</strong>? This will delete all progress on this assessment and cannot be undone.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-warning resetTest" id="resetTest">Reset</button>
+        <button type="button" data-dismiss="modal" class="btn btn-default">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="confirmResetTestForAllModal" class="modal fade">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-body">
+        Are you sure you want to reset <strong>{{title}}</strong> for <strong>all users</strong>? This will delete all progress on this assessment for every user and cannot be undone.
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-danger resetTestForAll" id="resetTestForAll">Reset For All Users</button>
+        <button type="button" data-dismiss="modal" class="btn btn-default">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <div id="resetResult">
 </div>
+
+{{#seeReset}}
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">Reset {{title}}</h3>
+  </div>
+
+  <div class="panel-body">
+
+    <div class="row">
+      <div class="col-sm-6 col-xs-12">
+        <button class="btn btn-warning" data-toggle="modal" data-target="#confirmResetTestModal">Reset for current user</button>
+      </div>
+      <div class="col-sm-6 col-xs-12">
+        <button class="btn btn-danger" data-toggle="modal" data-target="#confirmResetTestForAllModal">Reset for all users</button>
+      </div>
+    </div> <!-- row -->
+
+  </div> <!-- panel-body -->
+
+</div>
+{{/seeReset}}
+
+{{#seeDownload}}
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">Download data for {{title}}</h3>
+  </div>
+
+  <table class="table table-condensed table-hover">
+    <thead>
+      <tr>
+        <th>Data file</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><a href="{{testScoresLink}}">{{testScoresFilename}}</a></td>
+        <td>Total scores for all students. Scores range from 0 to 1.</td>
+      </tr>
+      <tr>
+        <td><a href="{{testScoresCompassLink}}">{{testScoresCompassFilename}}</a></td>
+        <td>Total scores for all students, formatted for upload into Compass2g. Scores range from 0 to 1.</td>
+      </tr>
+      <tr>
+        <td><a href="{{testFinalSubmissionsLink}}">{{testFinalSubmissionsFilename}}</a></td>
+        <td>Final submitted answers for all students that were used to compute the total score.</td>
+      </tr>
+      <tr>
+        <td><a href="{{testAllSubmissionsLink}}">{{testAllSubmissionsFilename}}</a></td>
+        <td>All submitted answers for all students. Not all submitted answers will have been used to compute the final score, as some may have been overwritten by subsequent attempts.</td>
+      </tr>
+    </tbody>
+  </table>
+  
+</div>
+{{/seeDownload}}
+
 <div id="tDetail">
 </div>

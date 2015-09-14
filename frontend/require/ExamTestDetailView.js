@@ -5,11 +5,6 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "ExamTestHelper
 
         tagName: 'div',
 
-        events: {
-            "click .resetTest": "resetTest",
-            "click .resetTestForAll": "resetTestForAll",
-        },
-
         initialize: function() {
             this.appModel = this.options.appModel;
             this.questions = this.options.questions;
@@ -19,27 +14,8 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "ExamTestHelper
         render: function() {
             var that = this;
             var data = {};
-            data.title = this.model.get("title");
-            data.userUID = this.appModel.get("userUID");
-
             var html = Mustache.render(ExamTestDetailViewTemplate, data);
             this.$el.html(html);
-        },
-
-        resetTest: function() {
-            var that = this;
-            this.$('#confirmResetTestModal').on('hidden.bs.modal', function (e) {
-                that.trigger("resetTest");
-            })
-            this.$("#confirmResetTestModal").modal('hide');
-        },
-
-        resetTestForAll: function() {
-            var that = this;
-            this.$('#confirmResetTestForAllModal').on('hidden.bs.modal', function (e) {
-                that.trigger("resetTestForAll");
-            })
-            this.$("#confirmResetTestForAllModal").modal('hide');
         },
 
         close: function() {

@@ -5,6 +5,11 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
 
         tagName: 'div',
 
+        events: {
+            "click .resetTest": "resetTest",
+            "click .resetTestForAll": "resetTestForAll",
+        },
+
         initialize: function() {
             this.appModel = this.options.appModel;
             this.questions = this.options.questions;
@@ -13,6 +18,21 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
 
         render: function() {
             var data = {};
+            data.tid = this.model.get("tid");
+            data.title = this.model.get("set") + " " + this.model.get("number") + ": " + this.model.get("title");
+            data.userUID = this.appModel.get("userUID");
+            data.seeReset = this.appModel.hasPermission("deleteTInstances");
+
+            data.seeDownload = this.appModel.hasPermission("viewOtherUsers");
+            data.testScoresFilename = this.model.get("tid") + "_scores.csv";
+            data.testScoresLink = this.appModel.apiURL("testScores/" + data.testScoresFilename + "?tid=" + data.tid);
+            data.testScoresCompassFilename = this.model.get("tid") + "_scores_compass.csv";
+            data.testScoresCompassLink = this.appModel.apiURL("testScores/" + data.testScoresFilename + "?tid=" + data.tid + "&format=compass");
+            data.testFinalSubmissionsFilename = this.model.get("tid") + "_final_submissions.csv";
+            data.testFinalSubmissionsLink = this.appModel.apiURL("testFinalSubmissions/" + data.testFinalSubmissionsFilename + "?tid=" + data.tid);
+            data.testAllSubmissionsFilename = this.model.get("tid") + "_all_submissions.csv";
+            data.testAllSubmissionsLink = this.appModel.apiURL("testAllSubmissions/" + data.testAllSubmissionsFilename + "?tid=" + data.tid);
+            
             var html = Mustache.render(TestDetailViewTemplate, data);
             this.$el.html(html);
 
@@ -37,32 +57,40 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
         },
         
         resetTest: function() {
+            this.$("#resetResult").html('');
             var that = this;
-            var tid = that.model.get("tid");
-            var userUID = that.appModel.get("userUID");
-            $.ajax({
-                dataType: "json",
-                url: that.appModel.apiURL("tInstances?tid=" + tid + "&uid=" + userUID),
-                type: "DELETE",
-                processData: false,
-                contentType: 'application/json; charset=UTF-8',
-                success: that._resetSuccess.bind(that),
-                error: that._resetError.bind(that),
+            this.$('#confirmResetTestModal').on('hidden.bs.modal', function (e) {
+                var tid = that.model.get("tid");
+                var userUID = that.appModel.get("userUID");
+                $.ajax({
+                    dataType: "json",
+                    url: that.appModel.apiURL("tInstances?tid=" + tid + "&uid=" + userUID),
+                    type: "DELETE",
+                    processData: false,
+                    contentType: 'application/json; charset=UTF-8',
+                    success: that._resetSuccess.bind(that),
+                    error: that._resetError.bind(that),
+                });
             });
+            this.$("#confirmResetTestModal").modal('hide');
         },
 
         resetTestForAll: function() {
+            this.$("#resetResult").html('');
             var that = this;
-            var tid = that.model.get("tid");
-            $.ajax({
-                dataType: "json",
-                url: that.appModel.apiURL("tInstances?tid=" + tid),
-                type: "DELETE",
-                processData: false,
-                contentType: 'application/json; charset=UTF-8',
-                success: that._resetSuccess.bind(that),
-                error: that._resetError.bind(that),
+            this.$('#confirmResetTestForAllModal').on('hidden.bs.modal', function (e) {
+                var tid = that.model.get("tid");
+                $.ajax({
+                    dataType: "json",
+                    url: that.appModel.apiURL("tInstances?tid=" + tid),
+                    type: "DELETE",
+                    processData: false,
+                    contentType: 'application/json; charset=UTF-8',
+                    success: that._resetSuccess.bind(that),
+                    error: that._resetError.bind(that),
+                });
             });
+            this.$("#confirmResetTestForAllModal").modal('hide');
         },
 
         close: function() {
