@@ -24,11 +24,13 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             data.seeReset = this.appModel.hasPermission("deleteTInstances");
 
             data.seeDownload = this.appModel.hasPermission("viewOtherUsers");
-            data.testScoresFilename = this.model.get("tid") + ".csv";
+            data.testScoresFilename = this.model.get("tid") + "_scores.csv";
             data.testScoresLink = this.appModel.apiURL("testScores/" + data.testScoresFilename + "?tid=" + data.tid);
-            data.testScoresCompassFilename = this.model.get("tid") + "_compass.csv";
+            data.testScoresCompassFilename = this.model.get("tid") + "_scores_compass.csv";
             data.testScoresCompassLink = this.appModel.apiURL("testScores/" + data.testScoresFilename + "?tid=" + data.tid + "&format=compass");
-
+            data.testAllSubmissionsFilename = this.model.get("tid") + "_all_submissions.csv";
+            data.testAllSubmissionsLink = this.appModel.apiURL("testAllSubmissions/" + data.testScoresFilename + "?tid=" + data.tid);
+            
             var html = Mustache.render(TestDetailViewTemplate, data);
             this.$el.html(html);
 

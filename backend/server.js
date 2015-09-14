@@ -310,6 +310,7 @@ var loadDB = function(callback) {
                         indexes: [
                             {keys: {sid: 1}, options: {unique: true}},
                             {keys: {uid: 1}, options: {}},
+                            {keys: {qiid: 1}, options: {}},
                         ],
                     };
                     processCollection('submissions', err, collection, options, cb);
@@ -323,6 +324,7 @@ var loadDB = function(callback) {
                         indexes: [
                             {keys: {qiid: 1}, options: {unique: true}},
                             {keys: {uid: 1}, options: {}},
+                            {keys: {tiid: 1}, options: {}},
                         ],
                     };
                     processCollection('qInstances', err, collection, options, cb);
@@ -354,6 +356,7 @@ var loadDB = function(callback) {
                         indexes: [
                             {keys: {tiid: 1}, options: {unique: true}},
                             {keys: {uid: 1}, options: {}},
+                            {keys: {tid: 1}, options: {}},
                         ],
                     };
                     processCollection('tInstances', err, collection, options, cb);
@@ -2132,7 +2135,7 @@ app.get("/export.csv", function(req, res) {
         scores = {};
         cursor.each(function(err, item) {
             if (err) {
-                return sendError(res, 400, "Error iterating over tInstances", {err: err});
+                return sendError(res, 500, "Error iterating over tInstances", {err: err});
             }
             if (item != null) {
                 if (!checkObjAuth(req, item, "read"))
@@ -2191,10 +2194,10 @@ app.get("/testScores/:filename", function(req, res) {
         if (err) {
             return sendError(res, 500, "Error accessing tiCollect database", err);
         }
-        scores = {};
+        var scores = {};
         cursor.each(function(err, item) {
             if (err) {
-                return sendError(res, 400, "Error iterating over tInstances", {err: err});
+                return sendError(res, 500, "Error iterating over tInstances", {err: err});
             }
             if (item != null) {
                 if (!checkObjAuth(req, item, "read"))
@@ -2231,6 +2234,139 @@ app.get("/testScores/:filename", function(req, res) {
                     res.send(csv);
                 });
             }
+        });
+    });
+});
+
+var addSubsForQInstance = function(req, subs, qiid, qInstance, tInstance, callback) {
+    sCollect.find({qiid: qiid}, function(err, cursor) {
+        if (err) return callback(err);
+        var item;
+        async.doUntil(function(cb) { // body
+            cursor.next(function(err, r) {
+                if (err) return cb(err);
+                item = r;
+                if (item != null) {
+                    if (!checkObjAuth(req, item, "read")) return cb("Insufficient permissions");
+                    var submission = item;
+                    subs.push({
+                        uid: submission.uid,
+                        tid: tInstance.tid,
+                        tiid: tInstance.tiid,
+                        qid: qInstance.qid,
+                        qiid: qInstance.qiid,
+                        sid: submission.sid,
+                        vid: qInstance.vid,
+                        date: submission.date,
+                        params: qInstance.params,
+                        options: qInstance.options,
+                        overrideScore: submission.overrideScore,
+                        practice: submission.practice,
+                        trueAnswer: qInstance.trueAnswer,
+                        submittedAnswer: submission.submittedAnswer,
+                        score: submission.score,
+                        correct: ((submission.score >= 0.5) ? 1 : 0),
+                        feedback: submission.feedback,
+                    });
+                    cb(null);
+                } else {
+                    cb(null);
+                }
+            });
+        }, function() { // test
+            return (item == null);
+        }, function(err) { // finalize
+            if (err) return callback(err);
+            callback(null);
+        });
+    });
+};
+
+var addSubsForTInstance = function(req, subs, tiid, tInstance, callback) {
+    qiCollect.find({tiid: tiid}, function(err, cursor) {
+        if (err) return callback(err);
+        var item;
+        async.doUntil(function(cb) { // body
+            cursor.next(function(err, r) {
+                if (err) return cb(err);
+                item = r;
+                if (item != null) {
+                    if (!checkObjAuth(req, item, "read")) return cb("Insufficient permissions");
+                    addSubsForQInstance(req, subs, item.qiid, item, tInstance, function(err) {
+                        if (err) return cb(err);
+                        cb(null);
+                    });
+                } else {
+                    cb(null);
+                }
+            });
+        }, function() { // test
+            return (item == null);
+        }, function(err) { // finalize
+            if (err) return callback(err);
+            callback(null);
+        });
+    });
+};
+
+var addSubsForTest = function(req, subs, tid, callback) {
+    tiCollect.find({tid: tid}, function(err, cursor) {
+        if (err) return callback(err);
+        var item;
+        async.doUntil(function(cb) { // body
+            cursor.next(function(err, r) {
+                if (err) return cb(err);
+                item = r;
+                if (item != null) {
+                    if (!checkObjAuth(req, item, "read")) return cb("Insufficient permissions");
+                    addSubsForTInstance(req, subs, item.tiid, item, function(err) {
+                        if (err) return cb(err);
+                        cb(null);
+                    });
+                } else {
+                    cb(null);
+                }
+            });
+        }, function() { // test
+            return (item == null);
+        }, function(err) { // finalize
+            if (err) return callback(err);
+            callback(null);
+        });
+    });
+};
+
+app.get("/testAllSubmissions/:filename", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
+        return sendError(res, 403, "Insufficient permissions");
+    }
+    var filename = req.params.filename;
+    var tid = req.query.tid;
+    var subs = [];
+    addSubsForTest(req, subs, tid, function(err) {
+        if (err) return sendError(res, 500, "Error getting submissions for test", err);
+	subs.sort(function(a, b) {
+            return (a.uid < b.uid) ? -1
+                : ((a.uid > b.uid) ? 1
+                   : ((a.tiid < b.tiid) ? -1
+                      : ((a.tiid > b.tiid) ? 1
+                         : ((a.qid < b.qid) ? -1
+                            : ((a.qid > b.qid) ? 1
+                               : ((a.date < b.date) ? -1
+                                  : ((a.date > b.date) ? 1
+                                     : 0)))))));
+        });
+        var csvData = _(subs).map(function(v) {
+            var dateString = moment(v.date).tz(config.timezone).format();
+            return [v.uid, v.tid, v.tiid, v.qid, v.qiid, v.sid, v.vid, dateString, v.params, v.options,
+                    v.overrideScore, v.practice, v.trueAnswer, v.submittedAnswer, v.score, v.correct, v.feedback];
+        });
+        csvData.splice(0, 0, ["uid", "tid", "tiid", "qid", "qiid", "sid", "vid", "date", "params", "options",
+                              "overrideScore", "practice", "trueAnswer", "submittedAnswer", "score", "correct", "feedback"]);
+        csvStringify(csvData, function(err, csv) {
+            if (err) return sendError(res, 500, "Error formatting CSV", err);
+            res.attachment(filename);
+            res.send(csv);
         });
     });
 });
