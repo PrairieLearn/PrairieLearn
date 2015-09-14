@@ -194,6 +194,7 @@ var hmacSha256 = require("crypto-js/hmac-sha256");
 var gamma = require("gamma");
 var numeric = require("numeric");
 var csvStringify = require('csv').stringify;
+var archiver = require('archiver');
 var child_process = require("child_process");
 var PrairieStats = requirejs("PrairieStats");
 var PrairieModel = requirejs("PrairieModel");
@@ -2489,6 +2490,72 @@ app.get("/testFinalSubmissions/:filename", function(req, res) {
             if (err) return sendError(res, 500, "Error formatting CSV", err);
             res.attachment(filename);
             res.send(csv);
+        });
+    });
+});
+
+var subsToFiles = function(subs, callback) {
+    var files = [];
+    async.each(subs, function(sub, cb) {
+        if (sub.uid && sub.qid && sub.params && sub.params.fileName && sub.submittedAnswer && sub.submittedAnswer.fileData) {
+            files.push({
+                filename: sub.uid + '_' + sub.qid + '_' + sub.params.fileName,
+                contents: new Buffer(sub.submittedAnswer.fileData, 'base64'),
+            });
+        }
+            cb(null);
+    }, function(err) {
+        if (err) return callback(err);
+        callback(null, files);
+    });
+};
+
+var filesToZip = function(files, dirname, callback) {
+    var zip = archiver.create('zip', {});
+    zip.append(null, {name: dirname + '/'});
+    async.each(files, function(file, cb) {
+        zip.append(file.contents, {name: dirname + '/' + file.filename});
+        cb(null);
+    }, function(err) {
+        if (err) callback(err);
+        zip.finalize();
+        callback(null, zip);
+    });
+};
+
+var streamToBuffer = function(stream, callback) {
+    var data = [];
+    stream.on('data', function(b) {
+        data.push(b);
+    });
+    stream.on('error', function(err) {
+        callback(err);
+    });
+    stream.on('end', function() {
+        var buffer = Buffer.concat(data);
+        callback(null, buffer);
+    });
+};
+
+app.get("/testFilesZip/:filename", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
+        return sendError(res, 403, "Insufficient permissions");
+    }
+    var filename = req.params.filename;
+    var tid = req.query.tid;
+    var subs = [];
+    addFinalSubsForTest(req, subs, tid, function(err) {
+        if (err) return sendError(res, 500, "Error getting submissions for test", err);
+        subsToFiles(subs, function(err, files) {
+            if (err) return sendError(res, 500, "Error converting subs to files", err);
+            var dirname = tid;
+            filesToZip(files, dirname, function(err, zip) {
+                if (err) return sendError(res, 500, "Error zipping files", err);
+                streamToBuffer(zip, function(err, zipBuffer) {
+                    res.attachment(filename);
+                    res.send(zipBuffer);
+                });
+            });
         });
     });
 });
