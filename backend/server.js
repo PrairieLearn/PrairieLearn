@@ -2204,7 +2204,7 @@ app.get("/testScores/:filename", function(req, res) {
                     return;
                 var uid = item.uid;
                 if (scores[uid] === undefined)
-                    scores[uid] = item.score
+                    scores[uid] = item.score;
                 else
                     scores[uid] = Math.max(scores[uid], item.score);
             } else {
@@ -2336,6 +2336,29 @@ var addSubsForTest = function(req, subs, tid, callback) {
     });
 };
 
+var subsToCSV = function(subs, headers, callback) {
+    subs.sort(function(a, b) {
+        return (a.uid < b.uid) ? -1
+            : ((a.uid > b.uid) ? 1
+               : ((a.tiid < b.tiid) ? -1
+                  : ((a.tiid > b.tiid) ? 1
+                     : ((a.qid < b.qid) ? -1
+                        : ((a.qid > b.qid) ? 1
+                           : ((a.date < b.date) ? -1
+                              : ((a.date > b.date) ? 1
+                                 : 0)))))));
+    });
+    var csvData = _(subs).map(function(v) {
+        if (v.date) v.date = moment(v.date).tz(config.timezone).format();
+        return _(headers).map(function(key) {return v[key];});
+    });
+    csvData.splice(0, 0, headers);
+    csvStringify(csvData, function(err, csv) {
+        if (err) return callback(err);
+        callback(null, csv);
+    });
+};
+
 app.get("/testAllSubmissions/:filename", function(req, res) {
     if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
         return sendError(res, 403, "Insufficient permissions");
@@ -2345,25 +2368,124 @@ app.get("/testAllSubmissions/:filename", function(req, res) {
     var subs = [];
     addSubsForTest(req, subs, tid, function(err) {
         if (err) return sendError(res, 500, "Error getting submissions for test", err);
-	subs.sort(function(a, b) {
-            return (a.uid < b.uid) ? -1
-                : ((a.uid > b.uid) ? 1
-                   : ((a.tiid < b.tiid) ? -1
-                      : ((a.tiid > b.tiid) ? 1
-                         : ((a.qid < b.qid) ? -1
-                            : ((a.qid > b.qid) ? 1
-                               : ((a.date < b.date) ? -1
-                                  : ((a.date > b.date) ? 1
-                                     : 0)))))));
+        var headers = ["uid", "tid", "tiid", "qid", "qiid", "sid", "vid", "date", "params", "options",
+                       "overrideScore", "practice", "trueAnswer", "submittedAnswer", "score", "correct", "feedback"];
+        subsToCSV(subs, headers, function(err, csv) {
+            if (err) return sendError(res, 500, "Error formatting CSV", err);
+            res.attachment(filename);
+            res.send(csv);
         });
-        var csvData = _(subs).map(function(v) {
-            var dateString = moment(v.date).tz(config.timezone).format();
-            return [v.uid, v.tid, v.tiid, v.qid, v.qiid, v.sid, v.vid, dateString, v.params, v.options,
-                    v.overrideScore, v.practice, v.trueAnswer, v.submittedAnswer, v.score, v.correct, v.feedback];
+    });
+});
+
+var addFinalSubsForTInstance = function(req, subs, tiid, tInstance, callback) {
+    if (_(tInstance).has('qids') && _(tInstance).has('submissionsByQid') && _(tInstance).has('questionsByQID')) {
+        async.each(tInstance.qids, function(qid, cb) {
+            if (!tInstance.qiidsByQid) return cb("No qiidsByQid");
+            var qiid = tInstance.qiidsByQid[qid];
+            if (!qiid) return cb("No qiidsByQid.qid for qid: " + qid);
+            qiCollect.findOne({qiid: qiid}, function(err, qInstance) {
+                if (err) return cb(err);
+                if (!qInstance) return cb("No qInstance with qiid " + qiid);
+                if (checkObjAuth(req, qInstance, "read")) {
+                    var sub = {
+                        uid: qInstance.uid,
+                        tid: tInstance.tid,
+                        tiid: tInstance.tiid,
+                        qid: qInstance.qid,
+                        qiid: qInstance.qiid,
+                        vid: qInstance.vid,
+                        params: qInstance.params,
+                        options: qInstance.options,
+                        trueAnswer: qInstance.trueAnswer,
+                    };
+                    var submission = tInstance.submissionsByQid[qid];
+                    if (submission) {
+                        sub.sid = submission.sid;
+                        sub.date = submission.date;
+                        sub.overrideScore = submission.overrideScore;
+                        sub.practice = submission.practice;
+                        sub.submittedAnswer = submission.submittedAnswer;
+                        sub.score = submission.score;
+                        sub.feedback = submission.feedback;
+                    }
+                    var question = tInstance.questionsByQID[qid];
+                    if (question) {
+                        sub.nGradedAttempts = question.nGradedAttempts;
+                        sub.awardedPoints = question.awardedPoints;
+                        sub.correct = question.correct;
+                    }
+                    subs.push(sub);
+                    return cb(null);
+                } else {
+                    return cb("Insufficient permissions");
+                }
+            });
+        }, function(err) {
+            if (err) return callback(err);
+            callback(null);
         });
-        csvData.splice(0, 0, ["uid", "tid", "tiid", "qid", "qiid", "sid", "vid", "date", "params", "options",
-                              "overrideScore", "practice", "trueAnswer", "submittedAnswer", "score", "correct", "feedback"]);
-        csvStringify(csvData, function(err, csv) {
+    } else {
+        addSubsForTInstance(req, subs, tiid, tInstance, function(err) {
+            if (err) return callback(err);
+            callback(null);
+        });
+    }
+};
+
+var addFinalSubsForTest = function(req, subs, tid, callback) {
+    tiCollect.find({tid: tid}, function(err, cursor) {
+        if (err) {
+            return sendError(res, 500, "Error accessing tiCollect database", err);
+        }
+        var tInstances = {};
+        var item;
+        async.doUntil(function(cb) { // body
+            cursor.next(function(err, r) {
+                if (err) return cb(err);
+                item = r;
+                if (item != null) {
+                    if (!checkObjAuth(req, item, "read")) return cb("Insufficient permissions");
+                    var uid = item.uid;
+                    if (tInstances[uid] === undefined) {
+                        tInstances[uid] = item;
+                    } else {
+                        if (item.score > tInstances[uid].score)
+                            tInstances[uid] = item;
+                    }
+                }
+                cb(null);
+            });
+        }, function() { // test
+            return (item == null);
+        }, function(err) { // finalize
+            if (err) return callback(err);
+            async.forEachOf(tInstances, function(tInstance, uid, cb) {
+                addFinalSubsForTInstance(req, subs, tInstance.tiid, tInstance, function(err) {
+                    if (err) return cb(err);
+                    cb(null);
+                });
+            }, function(err) {
+                if (err) return callback(err);
+                callback(null);
+            });
+        });
+    });
+};
+
+app.get("/testFinalSubmissions/:filename", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
+        return sendError(res, 403, "Insufficient permissions");
+    }
+    var filename = req.params.filename;
+    var tid = req.query.tid;
+    var subs = [];
+    addFinalSubsForTest(req, subs, tid, function(err) {
+        if (err) return sendError(res, 500, "Error getting submissions for test", err);
+        var headers = ["uid", "tid", "tiid", "qid", "qiid", "sid", "vid", "date", "params", "options",
+                       "overrideScore", "practice", "trueAnswer", "submittedAnswer", "score", "correct", "feedback",
+                       "nGradedAttempts", "awardedPoints"];
+        subsToCSV(subs, headers, function(err, csv) {
             if (err) return sendError(res, 500, "Error formatting CSV", err);
             res.attachment(filename);
             res.send(csv);

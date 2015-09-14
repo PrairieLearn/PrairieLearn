@@ -28,8 +28,10 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             data.testScoresLink = this.appModel.apiURL("testScores/" + data.testScoresFilename + "?tid=" + data.tid);
             data.testScoresCompassFilename = this.model.get("tid") + "_scores_compass.csv";
             data.testScoresCompassLink = this.appModel.apiURL("testScores/" + data.testScoresFilename + "?tid=" + data.tid + "&format=compass");
+            data.testFinalSubmissionsFilename = this.model.get("tid") + "_final_submissions.csv";
+            data.testFinalSubmissionsLink = this.appModel.apiURL("testFinalSubmissions/" + data.testFinalSubmissionsFilename + "?tid=" + data.tid);
             data.testAllSubmissionsFilename = this.model.get("tid") + "_all_submissions.csv";
-            data.testAllSubmissionsLink = this.appModel.apiURL("testAllSubmissions/" + data.testScoresFilename + "?tid=" + data.tid);
+            data.testAllSubmissionsLink = this.appModel.apiURL("testAllSubmissions/" + data.testAllSubmissionsFilename + "?tid=" + data.tid);
             
             var html = Mustache.render(TestDetailViewTemplate, data);
             this.$el.html(html);
