@@ -211,7 +211,7 @@ var STATS_INTERVAL = 10 * 60 * 1000; // ms
 app.use(express.json());
 app.use(express.cookieParser());
 
-var db, countersCollect, uCollect, sCollect, qiCollect, statsCollect, tCollect, tiCollect, accessCollect, pullCollect, dCollect;
+var db, countersCollect, uCollect, sCollect, qiCollect, statsCollect, tCollect, tiCollect, accessCollect, pullCollect, dCollect, fCollect;
 
 var MongoClient = require('mongodb').MongoClient;
 
@@ -393,6 +393,18 @@ var loadDB = function(callback) {
                         ],
                     };
                     processCollection('deleted', err, collection, options, cb);
+                });
+            },
+            function(cb) {
+                db.collection('finishes', function(err, collection) {
+                    fCollect = collection;
+                    var options = {
+                        idPrefix: "f",
+                        indexes: [
+                            {keys: {fid: 1}, options: {unique: true}},
+                        ],
+                    };
+                    processCollection('finishes', err, collection, options, cb);
                 });
             },
         ], function(err) {
@@ -2120,6 +2132,67 @@ app.patch("/tInstances/:tiid", function(req, res) {
     } else {
         return sendError(res, 400, "Invalid patch on tInstance");
     }
+});
+
+var closeOpenTInstances = function(req, res, tid, callback) {
+    tiCollect.find({tid: tid}, function(err, cursor) {
+        if (err) return callback(err);
+        var tiids = [];
+        var item;
+        async.doUntil(function(cb) { // body
+            cursor.next(function(err, r) {
+                if (err) return cb(err);
+                item = r;
+                if (item != null) {
+                    var tiid = item.tiid;
+                    if (!tiid) return cb("Error accessing tiid");
+                    if (item.open) {
+                        finishTest(req, res, tiid, function(tInstance) {
+                            tiids.push(tiid);
+                            cb(null);
+                        });
+                    } else {
+                        cb(null);
+                    }
+                } else {
+                    cb(null);
+                }
+            });
+        }, function() { // test
+            return (item == null);
+        }, function(err) { // finalize
+            if (err) return callback(err);
+            callback(null, tiids);
+        });
+    });
+};
+
+app.post("/finishes", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'editOtherUsers')) {
+        return sendError(res, 403, "Insufficient permissions");
+    }
+    var tid = req.body.tid;
+    if (!tid) {
+        return sendError(res, 400, "No tid provided");
+    }
+    newID('fid', function(err, fid) {
+        if (err) return sendError(res, 500, "Error creating fid", err);
+        var finish = {
+            fid: fid,
+            tid: tid,
+            uid: req.userUID,
+            authUID: req.authUID,
+            date: (new Date).toISOString(),
+        };
+        closeOpenTInstances(req, res, tid, function(err, tiids) {
+            if (err) return sendError(res, 500, "Error closing open tInstances", err);
+            finish.tiidsClosed = tiids;
+            fCollect.insert(finish, {w: 1}, function(err) {
+                if (err) return sendError(500, "Error inserting finish", err);
+                res.json(finish);
+            });
+        });
+    });
 });
 
 app.get("/export.csv", function(req, res) {
