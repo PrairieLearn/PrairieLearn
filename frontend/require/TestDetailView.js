@@ -8,6 +8,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
         events: {
             "click .resetTest": "resetTest",
             "click .resetTestForAll": "resetTestForAll",
+            "click .finishTestForAll": "finishTestForAll",
         },
 
         initialize: function() {
@@ -22,6 +23,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             data.title = this.model.get("set") + " " + this.model.get("number") + ": " + this.model.get("title");
             data.userUID = this.appModel.get("userUID");
             data.seeReset = this.appModel.hasPermission("deleteTInstances");
+            data.seeFinish = this.appModel.hasPermission("editOtherUsers");
 
             data.seeDownload = this.appModel.hasPermission("viewOtherUsers");
             data.testScoresFilename = this.model.get("tid") + "_scores.csv";
@@ -49,17 +51,17 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
         },
 
         _resetSuccess: function(data, textStatus, jqXHR) {
-            this.$("#resetResult").html('<div class="alert alert-success" role="alert">Successfully reset test.</div>');
+            this.$("#actionResult").html('<div class="alert alert-success" role="alert">Successfully reset test.</div>');
             Backbone.trigger('reloadUserData');
         },
         
         _resetError: function(jqXHR, textStatus, errorThrown) {
-            this.$("#resetResult").html('<div class="alert alert-danger" role="alert">Error resetting test.</div>');
+            this.$("#actionResult").html('<div class="alert alert-danger" role="alert">Error resetting test.</div>');
             Backbone.trigger('reloadUserData');
         },
         
         resetTest: function() {
-            this.$("#resetResult").html('');
+            this.$("#actionResult").html('');
             var that = this;
             this.$('#confirmResetTestModal').on('hidden.bs.modal', function (e) {
                 var tid = that.model.get("tid");
@@ -78,7 +80,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
         },
 
         resetTestForAll: function() {
-            this.$("#resetResult").html('');
+            this.$("#actionResult").html('');
             var that = this;
             this.$('#confirmResetTestForAllModal').on('hidden.bs.modal', function (e) {
                 var tid = that.model.get("tid");
@@ -93,6 +95,40 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 });
             });
             this.$("#confirmResetTestForAllModal").modal('hide');
+        },
+
+        _finishSuccess: function(data, textStatus, jqXHR) {
+            if (data.tiidsClosed.length == 0) {
+                this.$("#actionResult").html('<div class="alert alert-success" role="alert">All tests were already finished.</div>');
+            } else {
+                this.$("#actionResult").html('<div class="alert alert-success" role="alert">Successfully finished all open tests. Number of tests finished: ' + data.tiidsClosed.length + '</div>');
+            }
+            Backbone.trigger('reloadUserData');
+        },
+        
+        _finishError: function(jqXHR, textStatus, errorThrown) {
+            this.$("#actionResult").html('<div class="alert alert-danger" role="alert">Error finishing tests.</div>');
+            Backbone.trigger('reloadUserData');
+        },
+        
+        finishTestForAll: function() {
+            this.$("#actionResult").html('');
+            var that = this;
+            this.$('#confirmFinishTestForAllModal').on('hidden.bs.modal', function (e) {
+                var tid = that.model.get("tid");
+                var finish = {tid: tid};
+                $.ajax({
+                    dataType: "json",
+                    url: that.appModel.apiURL("finishes"),
+                    type: "POST",
+                    processData: false,
+                    data: JSON.stringify(finish),
+                    contentType: 'application/json; charset=UTF-8',
+                    success: that._finishSuccess.bind(that),
+                    error: that._finishError.bind(that),
+                });
+            });
+            this.$("#confirmFinishTestForAllModal").modal('hide');
         },
 
         close: function() {
