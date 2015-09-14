@@ -32,6 +32,8 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             data.testFinalSubmissionsLink = this.appModel.apiURL("testFinalSubmissions/" + data.testFinalSubmissionsFilename + "?tid=" + data.tid);
             data.testAllSubmissionsFilename = this.model.get("tid") + "_all_submissions.csv";
             data.testAllSubmissionsLink = this.appModel.apiURL("testAllSubmissions/" + data.testAllSubmissionsFilename + "?tid=" + data.tid);
+            data.testFilesZipFilename = this.model.get("tid") + "_files.zip";
+            data.testFilesZipLink = this.appModel.apiURL("testFilesZip/" + data.testFilesZipFilename + "?tid=" + data.tid);
             
             var html = Mustache.render(TestDetailViewTemplate, data);
             this.$el.html(html);

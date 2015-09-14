@@ -19,7 +19,8 @@
         "moment": "*",
         "moment-timezone": "*",
         "jju": "*",
-        "is-my-json-valid": "*"
+        "is-my-json-valid": "*",
+        "archiver": "*"
     },
     "devDependencies": {
         "grunt": "*",
