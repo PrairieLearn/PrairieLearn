@@ -2623,7 +2623,7 @@ app.get("/testFilesZip/:filename", function(req, res) {
         if (err) return sendError(res, 500, "Error getting submissions for test", err);
         subsToFiles(subs, function(err, files) {
             if (err) return sendError(res, 500, "Error converting subs to files", err);
-            var dirname = tid;
+            var dirname = tid + '_files';
             filesToZip(files, dirname, function(err, zip) {
                 if (err) return sendError(res, 500, "Error zipping files", err);
                 streamToBuffer(zip, function(err, zipBuffer) {
