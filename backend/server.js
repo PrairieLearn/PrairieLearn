@@ -2627,6 +2627,7 @@ app.get("/testFilesZip/:filename", function(req, res) {
             filesToZip(files, dirname, function(err, zip) {
                 if (err) return sendError(res, 500, "Error zipping files", err);
                 streamToBuffer(zip, function(err, zipBuffer) {
+                    if (err) return sendError(res, 500, "Error converting zip to buffer", err);
                     res.attachment(filename);
                     res.send(zipBuffer);
                 });
