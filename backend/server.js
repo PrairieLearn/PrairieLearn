@@ -2453,7 +2453,7 @@ app.get("/testAllSubmissions/:filename", function(req, res) {
 });
 
 var addFinalSubsForTInstance = function(req, subs, tiid, tInstance, callback) {
-    if (_(tInstance).has('qids') && _(tInstance).has('submissionsByQid') && _(tInstance).has('questionsByQID')) {
+    if (_(tInstance).has('qids') && _(tInstance).has('submissionsByQid')) {
         async.each(tInstance.qids, function(qid, cb) {
             if (!tInstance.qiidsByQid) return cb("No qiidsByQid");
             var qiid = tInstance.qiidsByQid[qid];
@@ -2483,11 +2483,13 @@ var addFinalSubsForTInstance = function(req, subs, tiid, tInstance, callback) {
                         sub.score = submission.score;
                         sub.feedback = submission.feedback;
                     }
-                    var question = tInstance.questionsByQID[qid];
-                    if (question) {
-                        sub.nGradedAttempts = question.nGradedAttempts;
-                        sub.awardedPoints = question.awardedPoints;
-                        sub.correct = question.correct;
+                    if (_(tInstance).has('questionsByQID')) {
+                        var question = tInstance.questionsByQID[qid];
+                        if (question) {
+                            sub.nGradedAttempts = question.nGradedAttempts;
+                            sub.awardedPoints = question.awardedPoints;
+                            sub.correct = question.correct;
+                        }
                     }
                     subs.push(sub);
                     return cb(null);
