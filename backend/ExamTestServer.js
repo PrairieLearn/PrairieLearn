@@ -11,6 +11,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             autoCreateQuestions: true,
             allowQuestionSubmit: false,
             allowQuestionSave: true,
+            allowFinish: true,
         };
     };
 

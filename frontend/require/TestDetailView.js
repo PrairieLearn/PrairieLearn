@@ -18,12 +18,13 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
         },
 
         render: function() {
+            var options = this.model.get("options");
             var data = {};
             data.tid = this.model.get("tid");
             data.title = this.model.get("set") + " " + this.model.get("number") + ": " + this.model.get("title");
             data.userUID = this.appModel.get("userUID");
             data.seeReset = this.appModel.hasPermission("deleteTInstances");
-            data.seeFinish = this.appModel.hasPermission("editOtherUsers");
+            data.seeFinish = this.appModel.hasPermission("editOtherUsers") && options && options.allowFinish;
 
             data.seeDownload = this.appModel.hasPermission("viewOtherUsers");
             data.testScoresFilename = this.model.get("tid") + "_scores.csv";

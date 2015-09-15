@@ -13,6 +13,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             allowQuestionSave: true,
             allowQuestionRetry: true,
             showQuestionTitle: false,
+            allowFinish: true,
         };
     };
 
