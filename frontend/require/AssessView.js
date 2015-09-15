@@ -23,6 +23,38 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!A
                     tid: test.get("tid")
                 });
             });
+            data.seeDetail = "yes";
+            data.assessList = [
+                {
+                    detail: '<a href="" class="btn btn-info btn-xs">Admin</a>',
+                    title: '<a href="ti/ti234">Homework 1: Vectors and coordinates</a>',
+                    score: '<div class="progress"><div class="progress-bar progress-bar-success" style="width: 68%">68%</div><div class="progress-bar progress-bar-danger" style="width: 32%"></div></div>',
+                    dueDate: 'Wed, Sep 2, 23:59',
+                },
+                {
+                    detail: '<a href="" class="btn btn-info btn-xs">Admin</a>',
+                    title: '<a href="ti/ti234">Homework 2: Tangential-normal basis</a>',
+                    score: '<div class="progress"><div class="progress-bar progress-bar-success" style="width: 12%"></div><div class="progress-bar progress-bar-danger" style="width: 88%">12%</div></div>',
+                    dueDate: 'Fri, Sep 10, 23:59',
+                },
+                {
+                    detail: '<a href="" class="btn btn-info btn-xs">Admin</a>',
+                    rowSpec: 'class="warning"',
+                    title: '<a href="ti/ti234">Homework 3: Rigid body kinetics and kinematics</a>',
+                    score: '<div class="progress"><div class="progress-bar progress-bar-success" style="width: 100%">100%</div><div class="progress-bar progress-bar-danger" style="width: 0%"></div></div>',
+                    dueDate: 'Mon, Oct 28, 23:59',
+                },
+                {
+                    detail: '<a href="" class="btn btn-info btn-xs">Admin</a>',
+                    title: 'Practice Quiz 1: Tangential-normal basis <a href="ti/ti234" class="btn btn-info btn-xs" data-toggle="modal" data-target="#confirmGenerateVersionModal">Generate new version</a>',
+                },
+                {
+                    detail: '<a href="" class="btn btn-info btn-xs">Admin</a>',
+                    title: '<a href="ti/ti234">Practice Quiz 1: Tangential-normal basis (version 1)</a>',
+                    score: '<div class="progress"><div class="progress-bar progress-bar-success" style="width: 49%"></div><div class="progress-bar progress-bar-danger" style="width: 51%">49%</div></div>',
+                    dueDate: '',
+                },
+            ];
             var html = Mustache.render(AssessViewTemplate, data);
             this.$el.html(html);
 

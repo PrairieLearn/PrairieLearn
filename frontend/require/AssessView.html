@@ -1,5 +1,47 @@
-<div class="page-header">
-  <h1>Assessments</h1>
+<div id="confirmGenerateVersionModal" class="modal fade">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-body">
+        Are you sure you want to generate a new version of this assessment?
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-info generateVersion" id="generateVersion">Generate new version</button>
+        <button type="button" data-dismiss="modal" class="btn btn-default">Cancel</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">Assessments</h3>
+  </div>
+
+  <table class="table table-condensed table-hover">
+    <thead>
+      <tr>
+        <th></th>
+        <th class="text-center">Score</th>
+        <th class="text-center">Due date</th>
+        {{#seeDetail}}
+        <th class="text-center"></th>
+        {{/seeDetail}}
+      </tr>
+    </thead>
+    <tbody>
+      {{#assessList}}
+      <tr {{{rowSpec}}}>
+        <td>{{{title}}}</td>
+        <td class="text-center">{{{score}}}</td>
+        <td class="text-center">{{{dueDate}}}</td>
+        {{#detail}}
+        <td class="text-center">{{{detail}}}</td>
+        {{/detail}}
+      </tr>
+      {{/assessList}}
+    </tbody>
+  </table>
+
 </div>
 
 {{#testList}}
