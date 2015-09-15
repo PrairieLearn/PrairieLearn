@@ -5,7 +5,7 @@
         Are you sure you want to reset <strong>{{title}}</strong> for <strong>{{userUID}}</strong>? This will delete all progress on this assessment and cannot be undone.
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-warning resetTest" id="resetTest">Reset</button>
+        <button type="button" class="btn btn-warning resetTest" id="resetTest">Reset for current user</button>
         <button type="button" data-dismiss="modal" class="btn btn-default">Cancel</button>
       </div>
     </div>
@@ -19,7 +19,7 @@
         Are you sure you want to reset <strong>{{title}}</strong> for <strong>all users</strong>? This will delete all progress on this assessment for every user and cannot be undone.
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-danger resetTestForAll" id="resetTestForAll">Reset For All Users</button>
+        <button type="button" class="btn btn-danger resetTestForAll" id="resetTestForAll">Reset for all users</button>
         <button type="button" data-dismiss="modal" class="btn btn-default">Cancel</button>
       </div>
     </div>
@@ -30,10 +30,10 @@
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-body">
-        Are you sure you want to finish all open instances of <strong>{{title}}</strong> for <strong>all users</strong>? Any in-progress tests will be closed by this action and students will not be able to submit any further answers. This cannot be undone.
+        Are you sure you want to finish all open instances of <strong>{{title}}</strong> for <strong>all users</strong>? Any in-progress tests will be finished by this action and students will not be able to submit any further answers. This cannot be undone.
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-danger finishTestForAll" id="finishTestForAll">Reset For All Users</button>
+        <button type="button" class="btn btn-danger finishTestForAll" id="finishTestForAll">Finish for all users</button>
         <button type="button" data-dismiss="modal" class="btn btn-default">Cancel</button>
       </div>
     </div>
@@ -51,11 +51,11 @@
 
   <div class="panel-body">
     <p>
-        <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishTestForAllModal">Finish all open tests</button>
+        <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishTestForAllModal">Finish for all users</button>
     </p>
     <p>
       <small>
-        Before downloading final test scores or data you should <i>finish</i> all open tests. Students have the option to do this themselves when they take a test, but sometimes they forget or don't bother. Finishing a test makes sure that the total score is correctly computed and the test cannot be continued by the student.
+        This button does the equivalent of having each student individually click the "Finish" button on their test. You should finish all tests before downloading the final test scores. After a test is finished, students cannot answer any more questions on it. You should not finish all tests until all students have completed the test.
       </small>
     </p>
   </div> <!-- panel-body -->
