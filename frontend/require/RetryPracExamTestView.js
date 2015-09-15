@@ -9,6 +9,7 @@ define(["underscore", "backbone", "mustache", "PracExamTestHelper", "text!PracEx
         },
 
         initialize: function() {
+            this.appModel = this.options.appModel;
             this.tInstances = this.options.tInstances;
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.tInstances, "change", this.render);

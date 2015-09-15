@@ -5,6 +5,7 @@ define(["underscore", "backbone", "mustache", "ExamTestHelper", "text!ExamTestVi
         tagName: 'div',
 
         initialize: function() {
+            this.appModel = this.options.appModel;
             this.tInstances = this.options.tInstances;
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.tInstances, "change", this.render);
