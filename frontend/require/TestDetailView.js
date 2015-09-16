@@ -46,6 +46,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             data.testFilesZipFilename = this.model.get("tid") + "_files.zip";
             data.testFilesZipLink = this.appModel.apiURL("testFilesZip/" + data.testFilesZipFilename + "?tid=" + data.tid);
 
+            data.seeTestStats = this.appModel.hasPermission("viewOtherUsers");
             data.hasTestStats = this.testStats.has("n");
             if (data.hasTestStats) {
                 data.n = this.testStats.get("n");
