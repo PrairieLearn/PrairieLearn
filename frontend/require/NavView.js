@@ -36,6 +36,7 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
             case "user":               data.navUserAttributes           = 'class="active"'; break;
             case "sync":               data.navSyncAttributes           = 'class="active"'; break;
             case "testInstance":       data.currentAssessmentAttributes = 'class="active"'; break;
+            case "testDetail":         data.currentAssessmentAttributes = 'class="active"'; break;
             }
 
             var html = Mustache.render(navViewTemplate, data);

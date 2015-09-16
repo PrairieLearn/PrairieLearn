@@ -283,7 +283,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             case "testDetail":
                 var tid = this.model.get("pageOptions").tid;
                 var test = this.tests.get(tid);
-                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
+                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number") + " Detail");
                 this.model.set("currentAssessmentLink", "#t/" + tid);
                 view = new TestDetailView({model: test, appModel: this.model, questions: this.questions});
                 break;
