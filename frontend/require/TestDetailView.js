@@ -9,6 +9,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             "click .resetTest": "resetTest",
             "click .resetTestForAll": "resetTestForAll",
             "click .finishTestForAll": "finishTestForAll",
+            "click .reloadStats": "reloadStats",
         },
 
         initialize: function() {
@@ -145,6 +146,11 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 });
             });
             this.$("#confirmFinishTestForAllModal").modal('hide');
+        },
+
+        reloadStats: function() {
+            this.testStats.clear();
+            this.testStats.fetch();
         },
 
         close: function() {
