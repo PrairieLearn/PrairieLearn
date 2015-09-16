@@ -195,6 +195,7 @@ var gamma = require("gamma");
 var numeric = require("numeric");
 var csvStringify = require('csv').stringify;
 var archiver = require('archiver');
+var jStat = require("jStat").jStat;
 var child_process = require("child_process");
 var PrairieStats = requirejs("PrairieStats");
 var PrairieModel = requirejs("PrairieModel");
@@ -1474,7 +1475,7 @@ app.post("/qInstances", function(req, res) {
             });
         } else {
             var tid = tInstance.tid;
-            readTest(res, tid, function(test) {
+            readTestBAD(res, tid, function(test) {
                 if (test.options.autoCreateQuestions) {
                     return sendError(res, 403, "QIID creation disallowed for tiid: ", tInstance.tiid);
                 } else {
@@ -1575,13 +1576,18 @@ var loadQuestionServer = function(qid, callback) {
     });
 };
 
-var readTest = function(res, tid, callback) {
+var readTest = function(tid, callback) {
     tCollect.findOne({tid: tid}, function(err, obj) {
-        if (err)
-            return sendError(res, 500, "Error accessing tests database", {tid: tid, err: err});
-        if (!obj)
-            return sendError(res, 404, "No test with tid " + tid, {tid: tid, err: err});
-        return callback(obj);
+        if (err) return callback(err)
+        if (!obj) return callback("No test with tid: " + tid);
+        return callback(null, obj);
+    });
+};
+
+var readTestBAD = function(res, tid, callback) {
+    readTest(tid, function(err, obj) {
+        if (err) return sendError(res, 500, "Error reading test", err);
+        callback(obj);
     });
 };
 
@@ -1624,7 +1630,7 @@ var testProcessSubmission = function(req, res, tiid, submission, callback) {
     readTInstance(res, tiid, function(tInstance) {
         ensureObjAuth(req, res, tInstance, "read", function(tInstance) {
             var tid = tInstance.tid;
-            readTest(res, tid, function(test) {
+            readTestBAD(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
                     var uid = submission.uid;
                     try {
@@ -1888,7 +1894,7 @@ var updateTInstance = function(req, res, server, tInstance, test, callback) {
 var updateTInstances = function(req, res, tInstances, updateCallback) {
     async.each(tInstances, function(tInstance, callback) {
         var tid = tInstance.tid;
-        readTest(res, tid, function(test) {
+        readTestBAD(res, tid, function(test) {
             loadTestServer(tid, function(server) {
                 var oldJSON = JSON.stringify(tInstance);
                 updateTInstance(req, res, server, tInstance, test, function() {
@@ -1915,7 +1921,7 @@ var autoCreateTInstances = function(req, res, tInstances, autoCreateCallback) {
     async.each(_(testDB).values(), function(test, callback) {
         var tid = test.tid;
         if (checkTestAvail(req, tid) && test.options.autoCreate && tiDB[tid] === undefined && req.query.uid !== undefined) {
-            readTest(res, tid, function(test) {
+            readTestBAD(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
                     newIDNoError(req, res, "tiid", function(tiid) {
                         var tInstance = {
@@ -1949,7 +1955,7 @@ var eliminateDuplicateTInstances = function(req, res, tInstances, eliminateCallb
     var tiDB = _(tInstances).groupBy("tid");
     var cleanTIDB = {};
     async.forEachOf(tiDB, function(tiList, tid, callback) {
-        readTest(res, tid, function(test) {
+        readTestBAD(res, tid, function(test) {
             if (test.options.autoCreate) {
                 // we should only have a single tInstance for this test, so enforce this
                 // if we have multiple tInstances, pick the one with the highest score
@@ -2048,7 +2054,7 @@ app.post("/tInstances", function(req, res) {
                 // end of collection
 
                 ensureTestAvailByTID(req, res, tid, function() {
-                    readTest(res, tid, function(test) {
+                    readTestBAD(res, tid, function(test) {
                         loadTestServer(tid, function(server) {
                             newIDNoError(req, res, "tiid", function(tiid) {
                                 var tInstance = {
@@ -2076,7 +2082,7 @@ var finishTest = function(req, res, tiid, callback) {
     readTInstance(res, tiid, function(tInstance) {
         ensureObjAuth(req, res, tInstance, "write", function(tInstance) {
             var tid = tInstance.tid;
-            readTest(res, tid, function(test) {
+            readTestBAD(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
                     try {
                         server.finish(tInstance, test);
@@ -2098,7 +2104,7 @@ var gradeTest = function(req, res, tiid, callback) {
     readTInstance(res, tiid, function(tInstance) {
         ensureObjAuth(req, res, tInstance, "write", function(tInstance) {
             var tid = tInstance.tid;
-            readTest(res, tid, function(test) {
+            readTestBAD(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
                     try {
                         server.grade(tInstance, test);
@@ -2257,6 +2263,33 @@ app.get("/export.csv", function(req, res) {
     });
 });
 
+var getScoresForTest = function(tid, callback) {
+    tiCollect.find({tid: tid}, function(err, cursor) {
+        if (err) return callback(err);
+        var scores = {};
+        var item;
+        async.doUntil(function(cb) { // body
+            cursor.next(function(err, r) {
+                if (err) return cb(err);
+                item = r;
+                if (item != null) {
+                    var uid = item.uid;
+                    if (scores[uid] === undefined)
+                        scores[uid] = item.score;
+                    else
+                        scores[uid] = Math.max(scores[uid], item.score);
+                }
+                cb(null);
+            });
+        }, function() { // test
+            return (item == null);
+        }, function(err) { // finalize
+            if (err) return callback(err);
+            callback(null, scores);
+        });
+    });
+};
+
 app.get("/testScores/:filename", function(req, res) {
     if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
         return sendError(res, 403, "Insufficient permissions");
@@ -2264,50 +2297,30 @@ app.get("/testScores/:filename", function(req, res) {
     var filename = req.params.filename;
     var tid = req.query.tid;
     var format = req.query.format;
-    tiCollect.find({tid: tid}, function(err, cursor) {
-        if (err) {
-            return sendError(res, 500, "Error accessing tiCollect database", err);
-        }
-        var scores = {};
-        cursor.each(function(err, item) {
-            if (err) {
-                return sendError(res, 500, "Error iterating over tInstances", {err: err});
+    getScoresForTest(tid, function(err, scores) {
+        if (err) return sendError(500, "Error getting scores for tid: " + tid, err);
+        var headers;
+        if (format == "compass")
+            headers = ['Username', tid];
+        else
+            headers = ['uid', tid];
+        var csvData =  _(scores).map(function(score, uid) {
+            var username = uid;
+            if (format == "compass") {
+                var i = uid.indexOf("@");
+                if (i > 0) {
+                    username = uid.slice(0, i);
+                }
             }
-            if (item != null) {
-                if (!checkObjAuth(req, item, "read"))
-                    return;
-                var uid = item.uid;
-                if (scores[uid] === undefined)
-                    scores[uid] = item.score;
-                else
-                    scores[uid] = Math.max(scores[uid], item.score);
-            } else {
-                // end of collection
-                var headers;
-                if (format == "compass")
-                    headers = ['Username', tid];
-                else
-                    headers = ['uid', tid];
-                var csvData = [];
-                _(scores).each(function(score, uid) {
-                    var username = uid;
-                    if (format == "compass") {
-                        var i = uid.indexOf("@");
-                        if (i > 0) {
-                            username = uid.slice(0, i);
-                        }
-                    }
-                    var row = [username, score];
-                    csvData.push(row);
-                });
-                csvData = _(csvData).sortBy(function(row) {return row[0];});
-                csvData.splice(0, 0, headers);
-                csvStringify(csvData, function(err, csv) {
-                    if (err) return sendError(res, 500, "Error formatting CSV", err);
-                    res.attachment(filename);
-                    res.send(csv);
-                });
-            }
+            var row = [username, score];
+            return row;
+        });
+        csvData = _(csvData).sortBy(function(row) {return row[0];});
+        csvData.splice(0, 0, headers);
+        csvStringify(csvData, function(err, csv) {
+            if (err) return sendError(res, 500, "Error formatting CSV", err);
+            res.attachment(filename);
+            res.send(csv);
         });
     });
 });
@@ -2632,6 +2645,28 @@ app.get("/testFilesZip/:filename", function(req, res) {
                     res.send(zipBuffer);
                 });
             });
+        });
+    });
+});
+
+app.get("/testStats/:tid", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
+        return sendError(res, 403, "Insufficient permissions");
+    }
+    var tid = req.params.tid;
+    getScoresForTest(tid, function(err, scores) {
+        if (err) return sendError(500, "Error getting scores for tid: " + tid, err);
+        scores = _(scores).values();
+        readTest(tid, function(err, test) {
+            if (err) return sendError(500, "Error reading test with tid: " + tid, err);
+            var stats = {
+                tid: tid,
+                n: scores.length,
+                mean: jStat.mean(scores) / test.maxScore,
+                median: jStat.median(scores) / test.maxScore,
+                stddev: jStat.stdev(scores) / test.maxScore,
+            };
+            res.json(stats);
         });
     });
 });

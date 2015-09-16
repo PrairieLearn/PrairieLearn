@@ -89,6 +89,7 @@ define(["underscore", "PrairieModel", "numeric", "moment-timezone"], function(_,
         var userDist = new PrairieModel.UserDist("");
         test.initAvgProb = avgProb(test.qids, test.qDists, userDist)
         test.text = options.text;
+        test.maxScore = 1;
     };
 
     AdaptiveTestServer.updateTInstance = function(tInstance, test, options) {

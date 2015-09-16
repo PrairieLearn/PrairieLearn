@@ -15,6 +15,7 @@ define(["underscore", "moment-timezone"], function(_, moment) {
         test.dueDate = moment.tz(options.dueDate, options.timezone).format();
         test.availDate = moment.tz(options.availDate, options.timezone).format();
         test.text = options.text;
+        test.maxScore = 1;
     };
 
     BasicTestServer.updateTInstance = function(tInstance, test, options) {
