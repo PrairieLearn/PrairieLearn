@@ -1,11 +1,15 @@
 
 # ChangeLog
 
-* __1.10.0__ - 2015-09-12
+* __1.10.0__ - 2015-09-15
 
   * Add "reset test" capability for instructors.
 
   * Only allow questions to be solved for accessible tests.
+
+  * Add export test data capability for instructors.
+
+  * Add summary test statistics for instructors.
 
 * __1.9.1__ - 2015-09-11
 
