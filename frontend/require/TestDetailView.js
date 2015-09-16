@@ -12,9 +12,16 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
         },
 
         initialize: function() {
+            var that = this;
             this.appModel = this.options.appModel;
             this.questions = this.options.questions;
+            var TestStats = Backbone.Model.extend({
+                url: function() {return that.appModel.apiURL("testStats/" + that.model.get("tid"));},
+             });
+            this.testStats = new TestStats;
             this.listenTo(this.model, "all", this.render);
+            this.listenTo(this.testStats, "all", this.render);
+            this.testStats.fetch();
         },
 
         render: function() {
@@ -37,6 +44,14 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             data.testAllSubmissionsLink = this.appModel.apiURL("testAllSubmissions/" + data.testAllSubmissionsFilename + "?tid=" + data.tid);
             data.testFilesZipFilename = this.model.get("tid") + "_files.zip";
             data.testFilesZipLink = this.appModel.apiURL("testFilesZip/" + data.testFilesZipFilename + "?tid=" + data.tid);
+
+            data.hasTestStats = this.testStats.has("n");
+            if (data.hasTestStats) {
+                data.n = this.testStats.get("n");
+                data.mean = (this.testStats.get("mean") * 100).toFixed(1);
+                data.median = (this.testStats.get("median") * 100).toFixed(1);
+                data.stddev = (this.testStats.get("stddev") * 100).toFixed(1);
+            }
             
             var html = Mustache.render(TestDetailViewTemplate, data);
             this.$el.html(html);

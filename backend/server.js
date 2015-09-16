@@ -195,6 +195,7 @@ var gamma = require("gamma");
 var numeric = require("numeric");
 var csvStringify = require('csv').stringify;
 var archiver = require('archiver');
+var jStat = require("jStat").jStat;
 var child_process = require("child_process");
 var PrairieStats = requirejs("PrairieStats");
 var PrairieModel = requirejs("PrairieModel");
@@ -2257,6 +2258,33 @@ app.get("/export.csv", function(req, res) {
     });
 });
 
+var getScoresForTest = function(tid, callback) {
+    tiCollect.find({tid: tid}, function(err, cursor) {
+        if (err) return callback(err);
+        var scores = {};
+        var item;
+        async.doUntil(function(cb) { // body
+            cursor.next(function(err, r) {
+                if (err) return cb(err);
+                item = r;
+                if (item != null) {
+                    var uid = item.uid;
+                    if (scores[uid] === undefined)
+                        scores[uid] = item.score;
+                    else
+                        scores[uid] = Math.max(scores[uid], item.score);
+                }
+                cb(null);
+            });
+        }, function() { // test
+            return (item == null);
+        }, function(err) { // finalize
+            if (err) return callback(err);
+            callback(null, scores);
+        });
+    });
+};
+
 app.get("/testScores/:filename", function(req, res) {
     if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
         return sendError(res, 403, "Insufficient permissions");
@@ -2264,50 +2292,30 @@ app.get("/testScores/:filename", function(req, res) {
     var filename = req.params.filename;
     var tid = req.query.tid;
     var format = req.query.format;
-    tiCollect.find({tid: tid}, function(err, cursor) {
-        if (err) {
-            return sendError(res, 500, "Error accessing tiCollect database", err);
-        }
-        var scores = {};
-        cursor.each(function(err, item) {
-            if (err) {
-                return sendError(res, 500, "Error iterating over tInstances", {err: err});
+    getScoresForTest(tid, function(err, scores) {
+        if (err) return sendError(500, "Error getting scores for tid: " + tid, err);
+        var headers;
+        if (format == "compass")
+            headers = ['Username', tid];
+        else
+            headers = ['uid', tid];
+        var csvData =  _(scores).map(function(score, uid) {
+            var username = uid;
+            if (format == "compass") {
+                var i = uid.indexOf("@");
+                if (i > 0) {
+                    username = uid.slice(0, i);
+                }
             }
-            if (item != null) {
-                if (!checkObjAuth(req, item, "read"))
-                    return;
-                var uid = item.uid;
-                if (scores[uid] === undefined)
-                    scores[uid] = item.score;
-                else
-                    scores[uid] = Math.max(scores[uid], item.score);
-            } else {
-                // end of collection
-                var headers;
-                if (format == "compass")
-                    headers = ['Username', tid];
-                else
-                    headers = ['uid', tid];
-                var csvData = [];
-                _(scores).each(function(score, uid) {
-                    var username = uid;
-                    if (format == "compass") {
-                        var i = uid.indexOf("@");
-                        if (i > 0) {
-                            username = uid.slice(0, i);
-                        }
-                    }
-                    var row = [username, score];
-                    csvData.push(row);
-                });
-                csvData = _(csvData).sortBy(function(row) {return row[0];});
-                csvData.splice(0, 0, headers);
-                csvStringify(csvData, function(err, csv) {
-                    if (err) return sendError(res, 500, "Error formatting CSV", err);
-                    res.attachment(filename);
-                    res.send(csv);
-                });
-            }
+            var row = [username, score];
+            return row;
+        });
+        csvData = _(csvData).sortBy(function(row) {return row[0];});
+        csvData.splice(0, 0, headers);
+        csvStringify(csvData, function(err, csv) {
+            if (err) return sendError(res, 500, "Error formatting CSV", err);
+            res.attachment(filename);
+            res.send(csv);
         });
     });
 });
@@ -2633,6 +2641,25 @@ app.get("/testFilesZip/:filename", function(req, res) {
                 });
             });
         });
+    });
+});
+
+app.get("/testStats/:tid", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
+        return sendError(res, 403, "Insufficient permissions");
+    }
+    var tid = req.params.tid;
+    getScoresForTest(tid, function(err, scores) {
+        if (err) return sendError(500, "Error getting scores for tid: " + tid, err);
+        scores = _(scores).values();
+        var stats = {
+            tid: tid,
+            n: scores.length,
+            mean: jStat.mean(scores),
+            median: jStat.median(scores),
+            stddev: jStat.stdev(scores),
+        };
+        res.json(stats);
     });
 });
 

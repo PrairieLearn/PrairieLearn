@@ -43,6 +43,44 @@
 <div id="actionResult">
 </div>
 
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">Statistics for {{title}}</h3>
+  </div>
+
+  {{#hasTestStats}}
+  <table class="table table-condensed table-hover">
+    <thead>
+      <tr>
+        <th>Item</th>
+        <th>Value</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td>Number of students</td><td>{{n}}</td></tr>
+      <tr><td>Mean score</td><td>{{mean}}%</td></tr>
+      <tr><td>Median score</td><td>{{median}}%</td></tr>
+      <tr><td>Standard deviation</td><td>{{stddev}}%</td></tr>
+    </tbody>
+  </table>
+  {{/hasTestStats}}
+
+  {{^hasTestStats}}
+  <div class="panel-body">
+    <p>
+      Loading...
+    </p>
+  </div> <!-- panel-body -->
+  {{/hasTestStats}}
+
+  <div class="panel-footer">
+    <p class="text-right">
+      <button class="btn btn-info">Reload statistics</button>
+    </p>
+  </div> <!-- panel-footer -->
+
+</div>
+
 {{#seeFinish}}
 <div class="panel panel-primary">
   <div class="panel-heading">
