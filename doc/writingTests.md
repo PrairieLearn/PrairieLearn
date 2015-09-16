@@ -1,7 +1,9 @@
 
 # Writing tests
 
-**NOTE:** Any time you edit or add a test, you need to stop and restart the PrairieLearn server for it to reload the changes.
+**NOTE:** *Any time you edit or add a test, you need to stop and restart the PrairieLearn server for it to reload the changes. Exam-type tests that choose questions randomly will not change their selections when the test is edited, so you will need to "reset" the test (on the "Assessment Detail" page) to see the changes.*
+
+## Overview
 
 Each test is a single directory in the `tests` folder. The name of the directory is the `tid` (test ID). The directory must contain a single file called `info.json` that describes the test.
 
