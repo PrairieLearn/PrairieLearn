@@ -2264,28 +2264,32 @@ app.get("/export.csv", function(req, res) {
 });
 
 var getScoresForTest = function(tid, callback) {
-    tiCollect.find({tid: tid}, function(err, cursor) {
+    readTest(tid, function(err, test) {
         if (err) return callback(err);
-        var scores = {};
-        var item;
-        async.doUntil(function(cb) { // body
-            cursor.next(function(err, r) {
-                if (err) return cb(err);
-                item = r;
-                if (item != null) {
-                    var uid = item.uid;
-                    if (scores[uid] === undefined)
-                        scores[uid] = item.score;
-                    else
-                        scores[uid] = Math.max(scores[uid], item.score);
-                }
-                cb(null);
-            });
-        }, function() { // test
-            return (item == null);
-        }, function(err) { // finalize
+        tiCollect.find({tid: tid}, function(err, cursor) {
             if (err) return callback(err);
-            callback(null, scores);
+            var scores = {};
+            var item;
+            async.doUntil(function(cb) { // body
+                cursor.next(function(err, r) {
+                    if (err) return cb(err);
+                    item = r;
+                    if (item != null) {
+                        var uid = item.uid;
+                        var score = item.score / test.maxScore;
+                        if (scores[uid] === undefined)
+                            scores[uid] = score;
+                        else
+                            scores[uid] = Math.max(scores[uid], score);
+                    }
+                    cb(null);
+                });
+            }, function() { // test
+                return (item == null);
+            }, function(err) { // finalize
+                if (err) return callback(err);
+                callback(null, scores);
+            });
         });
     });
 };
@@ -2312,7 +2316,7 @@ app.get("/testScores/:filename", function(req, res) {
                     username = uid.slice(0, i);
                 }
             }
-            var row = [username, score];
+            var row = [username, score * 100];
             return row;
         });
         csvData = _(csvData).sortBy(function(row) {return row[0];});
@@ -2657,17 +2661,14 @@ app.get("/testStats/:tid", function(req, res) {
     getScoresForTest(tid, function(err, scores) {
         if (err) return sendError(500, "Error getting scores for tid: " + tid, err);
         scores = _(scores).values();
-        readTest(tid, function(err, test) {
-            if (err) return sendError(500, "Error reading test with tid: " + tid, err);
-            var stats = {
-                tid: tid,
-                n: scores.length,
-                mean: jStat.mean(scores) / test.maxScore,
-                median: jStat.median(scores) / test.maxScore,
-                stddev: jStat.stdev(scores) / test.maxScore,
-            };
-            res.json(stats);
-        });
+        var stats = {
+            tid: tid,
+            n: scores.length,
+            mean: jStat.mean(scores),
+            median: jStat.median(scores),
+            stddev: jStat.stdev(scores),
+        };
+        res.json(stats);
     });
 });
 
