@@ -28,6 +28,11 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             questionInfo: {},
         });
         test.nQuestions = options.nQuestions;
+        test.maxScore = _.chain(options.questionGroups)
+            .flatten()
+            .pluck("points")
+            .map(function(a) {return Math.max.apply(null, a);})
+            .reduce(function(a, b) {return a + b;}, 0).value();
         test.text = options.text;
         test._private = ["scoresByUID", "highScoresByUID", "completeHighScoresByUID"];
         if (options.availDate)

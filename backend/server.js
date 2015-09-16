@@ -1475,7 +1475,7 @@ app.post("/qInstances", function(req, res) {
             });
         } else {
             var tid = tInstance.tid;
-            readTest(res, tid, function(test) {
+            readTestBAD(res, tid, function(test) {
                 if (test.options.autoCreateQuestions) {
                     return sendError(res, 403, "QIID creation disallowed for tiid: ", tInstance.tiid);
                 } else {
@@ -1576,13 +1576,18 @@ var loadQuestionServer = function(qid, callback) {
     });
 };
 
-var readTest = function(res, tid, callback) {
+var readTest = function(tid, callback) {
     tCollect.findOne({tid: tid}, function(err, obj) {
-        if (err)
-            return sendError(res, 500, "Error accessing tests database", {tid: tid, err: err});
-        if (!obj)
-            return sendError(res, 404, "No test with tid " + tid, {tid: tid, err: err});
-        return callback(obj);
+        if (err) return callback(err)
+        if (!obj) return callback("No test with tid: " + tid);
+        return callback(null, obj);
+    });
+};
+
+var readTestBAD = function(res, tid, callback) {
+    readTest(tid, function(err, obj) {
+        if (err) return sendError(res, 500, "Error reading test", err);
+        callback(obj);
     });
 };
 
@@ -1625,7 +1630,7 @@ var testProcessSubmission = function(req, res, tiid, submission, callback) {
     readTInstance(res, tiid, function(tInstance) {
         ensureObjAuth(req, res, tInstance, "read", function(tInstance) {
             var tid = tInstance.tid;
-            readTest(res, tid, function(test) {
+            readTestBAD(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
                     var uid = submission.uid;
                     try {
@@ -1889,7 +1894,7 @@ var updateTInstance = function(req, res, server, tInstance, test, callback) {
 var updateTInstances = function(req, res, tInstances, updateCallback) {
     async.each(tInstances, function(tInstance, callback) {
         var tid = tInstance.tid;
-        readTest(res, tid, function(test) {
+        readTestBAD(res, tid, function(test) {
             loadTestServer(tid, function(server) {
                 var oldJSON = JSON.stringify(tInstance);
                 updateTInstance(req, res, server, tInstance, test, function() {
@@ -1916,7 +1921,7 @@ var autoCreateTInstances = function(req, res, tInstances, autoCreateCallback) {
     async.each(_(testDB).values(), function(test, callback) {
         var tid = test.tid;
         if (checkTestAvail(req, tid) && test.options.autoCreate && tiDB[tid] === undefined && req.query.uid !== undefined) {
-            readTest(res, tid, function(test) {
+            readTestBAD(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
                     newIDNoError(req, res, "tiid", function(tiid) {
                         var tInstance = {
@@ -1950,7 +1955,7 @@ var eliminateDuplicateTInstances = function(req, res, tInstances, eliminateCallb
     var tiDB = _(tInstances).groupBy("tid");
     var cleanTIDB = {};
     async.forEachOf(tiDB, function(tiList, tid, callback) {
-        readTest(res, tid, function(test) {
+        readTestBAD(res, tid, function(test) {
             if (test.options.autoCreate) {
                 // we should only have a single tInstance for this test, so enforce this
                 // if we have multiple tInstances, pick the one with the highest score
@@ -2049,7 +2054,7 @@ app.post("/tInstances", function(req, res) {
                 // end of collection
 
                 ensureTestAvailByTID(req, res, tid, function() {
-                    readTest(res, tid, function(test) {
+                    readTestBAD(res, tid, function(test) {
                         loadTestServer(tid, function(server) {
                             newIDNoError(req, res, "tiid", function(tiid) {
                                 var tInstance = {
@@ -2077,7 +2082,7 @@ var finishTest = function(req, res, tiid, callback) {
     readTInstance(res, tiid, function(tInstance) {
         ensureObjAuth(req, res, tInstance, "write", function(tInstance) {
             var tid = tInstance.tid;
-            readTest(res, tid, function(test) {
+            readTestBAD(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
                     try {
                         server.finish(tInstance, test);
@@ -2099,7 +2104,7 @@ var gradeTest = function(req, res, tiid, callback) {
     readTInstance(res, tiid, function(tInstance) {
         ensureObjAuth(req, res, tInstance, "write", function(tInstance) {
             var tid = tInstance.tid;
-            readTest(res, tid, function(test) {
+            readTestBAD(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
                     try {
                         server.grade(tInstance, test);
@@ -2652,14 +2657,17 @@ app.get("/testStats/:tid", function(req, res) {
     getScoresForTest(tid, function(err, scores) {
         if (err) return sendError(500, "Error getting scores for tid: " + tid, err);
         scores = _(scores).values();
-        var stats = {
-            tid: tid,
-            n: scores.length,
-            mean: jStat.mean(scores),
-            median: jStat.median(scores),
-            stddev: jStat.stdev(scores),
-        };
-        res.json(stats);
+        readTest(tid, function(err, test) {
+            if (err) return sendError(500, "Error reading test with tid: " + tid, err);
+            var stats = {
+                tid: tid,
+                n: scores.length,
+                mean: jStat.mean(scores) / test.maxScore,
+                median: jStat.median(scores) / test.maxScore,
+                stddev: jStat.stdev(scores) / test.maxScore,
+            };
+            res.json(stats);
+        });
     });
 });
 
