@@ -131,6 +131,8 @@ define(['underscore'], function(_) {
             permission = true;
         if (operation === 'deleteTInstances' && rank <= this.INSTRUCTOR)
             permission = true;
+        if (operation === 'seeAdminPages' && rank <= this.TA)
+            permission = true;
         return permission;
     };
 

@@ -1,16 +1,18 @@
-<div id="confirmGenerateVersionModal" class="modal fade">
+{{#confirmGenerateVersionList}}
+<div id="confirmGenerateVersionModal-{{tid}}" class="modal fade">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-body">
-        Are you sure you want to generate a new version of this assessment?
+        Are you sure you want to generate a new version of <strong>{{title}}</strong>?
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-info generateVersion" id="generateVersion">Generate new version</button>
+        <button type="button" class="btn btn-primary generateVersion" id="generateVersion-{{tid}}">Generate new version</button>
         <button type="button" data-dismiss="modal" class="btn btn-default">Cancel</button>
       </div>
     </div>
   </div>
 </div>
+{{/confirmGenerateVersionList}}
 
 <div class="panel panel-primary">
   <div class="panel-heading">
@@ -22,26 +24,45 @@
       <tr>
         <th></th>
         <th class="text-center">Score</th>
-        <th class="text-center">Due date</th>
-        {{#seeDetail}}
+        <th class="text-center">Date</th>
         <th class="text-center"></th>
-        {{/seeDetail}}
+        <th class="text-center"></th>
       </tr>
     </thead>
     <tbody>
+      {{#setList}}
+      <tr>
+        <th>{{title}}</th>
+        <td></td>
+        <td></td>
+        <td></td>
+        <td></td>
+      </tr>
       {{#assessList}}
       <tr {{{rowSpec}}}>
         <td>{{{title}}}</td>
         <td class="text-center">{{{score}}}</td>
-        <td class="text-center">{{{dueDate}}}</td>
-        {{#detail}}
-        <td class="text-center">{{{detail}}}</td>
-        {{/detail}}
+        {{#dateTooltip}}
+        <td class="text-center"><span data-toggle="tooltip" title="{{dateTooltip}}">{{{date}}}</span></td>
+        {{/dateTooltip}}
+        {{^dateTooltip}}
+        <td class="text-center">{{{date}}}</td>
+        {{/dateTooltip}}
+        <td class="text-center">{{{extra}}}</td>
+        <td class="text-center">{{{admin}}}</td>
       </tr>
       {{/assessList}}
+      {{/setList}}
     </tbody>
   </table>
 
+  <div class="panel-footer">
+    <p>
+      <small>
+        Hover over a date to see details. For assessments with a "New version" button, clicking it will generate a new random assessment of that type. Active assessments that can still be worked on have a yellow background.
+      </small>
+    </p>
+  </div>
 </div>
 
 {{#testList}}
