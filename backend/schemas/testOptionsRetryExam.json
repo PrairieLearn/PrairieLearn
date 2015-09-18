@@ -19,24 +19,18 @@
                         "type": "object",
                         "additionalProperties": false,
                         "properties": {
-                            "qid": {
-                                "description": "The ID of this question (QID).",
-                                "type": "string",
-                                "required": true
-                            },
-                            "points": {
-                                "description": "An array of points values.",
-                                "type": "array",
-                                "required": true,
-                                "minItems": 1,
-                                "items": {
-                                    "type": "integer"
-                                }
-                            }
-                        }
+                            "qid": {"$ref": "#/definitions/questionQID"},
+                            "points": {"$ref": "#/definitions/questionPoints"}
+                        },
+                        "required": ["qid", "points"]
                     }
                 }
             }
+        },
+        "zones": {
+            "description": "Array of \"zones\" in the test, each containing questions that can be randomized within the zone.",
+            "type": "array",
+            "items": {"$ref": "#/definitions/zone"}
         },
         "availDate": {
             "description": "The date after which the test is available for students to view.",
@@ -52,6 +46,58 @@
         },
         "text": {
             "description": "HTML text shown on the test overview page.",
+            "type": "string"
+        }
+    },
+    "oneOf": [
+        {"type": "object", "required": ["questionGroups", "nQuestions"]},
+        {"type": "object", "required": ["zones"], "not": {"type": "object", "required": ["nQuestions"]}}
+    ],
+    "definitions": {
+        "zone": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "description": "Zone title, displayed to the students at the top of the question list for the zone.",
+                    "type": "string"
+                },
+                "questions": {
+                    "description": "Array of questions in the zone.",
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {"$ref": "#/definitions/question"}
+                }
+            },
+            "required": ["questions"]
+        },
+        "question": {
+            "type": "object",
+            "properties": {
+                "points": {"$ref": "#/definitions/questionPoints"},
+                "qid": {"$ref": "#/definitions/questionQID"},
+                "variants": {
+                    "description": "Array of variants of a question.",
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {"$ref": "#/definitions/questionQID"}
+                }
+            },
+            "required": ["points"],
+            "oneOf": [
+                {"type": "object", "required": ["qid"]},
+                {"type": "object", "required": ["variants"]}
+            ]
+        },
+        "questionPoints": {
+            "description": "An array of points values.",
+            "type": "array",
+            "minItems": 1,
+            "items": {
+                "type": "integer"
+            }
+        },
+        "questionQID": {
+            "description": "Question ID.",
             "type": "string"
         }
     }
