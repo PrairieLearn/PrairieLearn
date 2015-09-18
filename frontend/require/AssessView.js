@@ -110,35 +110,9 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'renderer', 'Te
                 data.setList.push(setData);
             });
 
-            data.testList = [];
-            this.tests.each(function(test) {
-                data.testList.push({
-                    tid: test.get("tid")
-                });
-            });
             var html = Mustache.render(AssessViewTemplate, data);
             this.$el.html(html);
             $('[data-toggle=tooltip]').tooltip();
-            
-            this.subViews = [];
-            this.tests.each(function(test) {
-                var tid = test.get("tid");
-                var TestView = TestFactory.getClass(test.get("type"), "testView");
-                if (!TestView)
-                    return;
-                var subView = new TestView({model: test, appModel: that.appModel, tInstances: that.tInstances});
-                var options = {
-                    wait: true,
-                    success: function(model, resp, options) {
-                        var tiid = model.get("tiid");
-                        that.router.navigate("ti/" + tiid, {trigger: true});
-                    },
-                };
-                that.listenTo(subView, "createTestInstance", that.tInstances.create.bind(that.tInstances, {uid: that.appModel.get("userUID"), tid: tid}, options));
-                that.subViews.push(subView);
-                subView.render();
-                that.$("#" + tid).html(subView.el);
-            });
         },
 
         generateVersion: function(event) {
@@ -158,11 +132,6 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'renderer', 'Te
         },
             
         close: function() {
-            if (this.subViews) {
-                _(this.subViews).each(function(subView) {
-                    subView.close();
-                });
-            }
             this.remove();
         }
     });
