@@ -222,19 +222,19 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         changeUserUID: function(newUID) {
             this.set("userUID", newUID, {silent: true});
             this.setUserCookie();
-            this.trigger("userModeChanged");
+            this.trigger("change");
         },
 
         changeUserRole: function(newRole) {
             this.set("userRole", newRole, {silent: true});
             this.setUserCookie();
-            this.trigger("userModeChanged");
+            this.trigger("change");
         },
 
         changeMode: function(newMode) {
             this.set("mode", newMode, {silent: true});
             this.setUserCookie();
-            this.trigger("userModeChanged");
+            this.trigger("change");
         },
     });
 
@@ -249,7 +249,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             this.syncModel = this.options.syncModel;
             this.currentView = null;
             this.listenTo(this.model, "change", this.render);
-            this.listenTo(this.model, "userModeChanged", this.reloadUserData);
+            this.listenTo(this.model, "change", this.reloadUserData);
             this.listenTo(Backbone, "reloadUserData", this.reloadUserData);
             this.navView = new NavView.NavView({model: this.model, users: this.users});
             this.navView.render();

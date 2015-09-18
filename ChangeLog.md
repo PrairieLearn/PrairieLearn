@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.10.1__ - 2015-09-18
+
+  * Fix bug that caused the "User" page to not display changes in user, role, or mode.
+
 * __1.10.0__ - 2015-09-15
 
   * Add "reset test" capability for instructors.
