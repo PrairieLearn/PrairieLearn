@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.10.2__ - 2015-09-19
+
+  * Fix bug introduced by 1.10.1 that broke all tests (overly general change events).
+
 * __1.10.1__ - 2015-09-18
 
   * Fix bug that caused the "User" page to not display changes in user, role, or mode.
