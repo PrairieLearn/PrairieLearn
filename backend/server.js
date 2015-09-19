@@ -437,6 +437,7 @@ var loadCourseInfo = function(callback) {
             });
         }
         courseInfo.gitCourseBranch = config.gitCourseBranch;
+        courseInfo.timezone = config.timezone;
         getCourseOriginURL(function(err, originURL) {
             courseInfo.remoteFetchURL = originURL;
             return callback(null);
@@ -934,6 +935,7 @@ app.get("/course", function(req, res) {
     var course = {
         name: courseInfo.name,
         title: courseInfo.title,
+        timezone: courseInfo.timezone,
     };
     if (PrairieRole.hasPermission(req.userRole, 'viewCoursePulls')) {
         course.gitCourseBranch = courseInfo.gitCourseBranch;

@@ -9,7 +9,9 @@ requirejs.config({
         '*': {
             'backbone': 'browser/backbone',
             'underscore': 'browser/underscore',
-            'numeric': 'numeric-1.2.6.min'
+            'numeric': 'numeric-1.2.6.min',
+            'moment': 'moment.min',
+            'moment-timezone': 'moment-timezone-with-data-2010-2020',
         }
     },
     waitSeconds: 60,
@@ -60,8 +62,8 @@ requirejs.config({
     },
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'PrairieRole', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestDetailView', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'SyncModel', 'SyncView', 'spinController'],
-function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   PrairieRole,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestDetailView,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   SyncModel,   SyncView,   spinController) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'moment-timezone', 'PrairieRole', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestDetailView', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'SyncModel', 'SyncView', 'spinController'],
+function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   moment,            PrairieRole,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestDetailView,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   SyncModel,   SyncView,   spinController) {
 
     var QuestionModel = Backbone.Model.extend({
         idAttribute: "qid"
@@ -119,6 +121,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 remoteFetchURL: null,
                 courseName: "unknownCourseName",
                 courseTitle: "unknownCourseTitle",
+                timezone: "UTC",
             };
             this.set(_(document.PLConfig).defaults(defaultConfig));
             if (this.get("authURL") === null)
@@ -152,6 +155,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 });
                 $.getJSON(that.apiURL("course"), function(courseInfo) {
                     that.set({
+                        'timezone': courseInfo.timezone,
                         'courseName': courseInfo.name,
                         'courseTitle': courseInfo.title,
                         'pageTitle': 'PrairieLearn: ' + courseInfo.name + ' (' + courseInfo.title + ')',
@@ -235,6 +239,14 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             this.set("mode", newMode, {silent: true});
             this.setUserCookie();
             this.trigger("change:mode change");
+        },
+
+        formatDate: function(dateString) {
+            return moment.tz(dateString, this.get("timezone")).format("ddd, MMM D, h:mma");
+        },
+
+        formatDateLong: function(dateString) {
+            return moment.tz(dateString, this.get("timezone")).format("dddd, YYYY‑MM‑DD, HH:mm, z (Z)");
         },
     });
 
