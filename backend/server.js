@@ -1493,6 +1493,9 @@ app.post("/qInstances", function(req, res) {
                 } else {
                     ensureObjAuth(req, res, tInstance, "read", function(tInstance) {
                         ensureQuestionInTest(req, res, qid, tInstance, test, function() {
+                            if (tInstance.vidsByQID) {
+                                qInstance.vid = tInstance.vidsByQID[qid];
+                            }
                             makeQInstance(req, res, qInstance, function(qInstance) {
                                 tInstance.qiidsByQid = tInstance.qiidsByQid || {};
                                 tInstance.qiidsByQid[qid] = qInstance.qiid;
@@ -1881,6 +1884,9 @@ var autoCreateTestQuestions = function(req, res, tInstance, test, callback) {
                     tiid: tInstance.tiid,
                     tid: tInstance.tid,
                 };
+                if (tInstance.vidsByQID) {
+                    qInstance.vid = tInstance.vidsByQID[qid];
+                }
                 makeQInstance(req, res, qInstance, function(qInstance) {
                     tInstance.qiidsByQid[qid] = qInstance.qiid;
                     cb(null);

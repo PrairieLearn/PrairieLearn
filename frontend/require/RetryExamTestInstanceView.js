@@ -56,14 +56,22 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "RetryExamTestH
             data.nSaved = _(qids).filter(function(qid) {return _(submissionsByQid).has(qid);}).length;
 
             data.questionList = [];
+            var showZoneTitles = that.model.has("showZoneTitles") && that.model.get("showZoneTitles");
             _(qids).each(function(qid, index) {
+                if (showZoneTitles) {
+                    var zones = that.model.get("zones");
+                    if (zones[index]) {
+                        var entry = {
+                            title: '<strong>' + zones[index] + '</strong>',
+                        };
+                        data.questionList.push(entry);
+                    }
+                }
                 var q = that.questions.get(qid);
+                var tiid = that.model.get("tiid");
+                var number = index + 1;
                 var entry = {
-                    qid: q.get("qid"),
-                    tid: that.model.get("tid"),
-                    tiid: that.model.get("tiid"),
-                    title: q.get("title"),
-                    number: index + 1,
+                    title: '<a href="#q/' + tiid + '/' + number + '">Question #' + number + '</a>',
                 };
                 submission = submissionsByQid[qid];
                 question = questionsByQID[qid];
