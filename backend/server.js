@@ -445,6 +445,12 @@ var loadCourseInfo = function(callback) {
     });
 };
 
+var checkInfoDeprecated = function(idName, info, infoFile) {
+    if (idName == "tid" && info.options && info.options.availDate) {
+        logger.warn(infoFile + ': "options.availDate" is deprecated and will be removed in a future version. Please use "allowAccess" instead.');
+    }
+};
+
 var questionDB, testDB;
 
 var loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, loadCallback) {
@@ -470,6 +476,7 @@ var loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, op
                         callback(null);
                         return;
                     }
+                    checkInfoDeprecated(idName, info, infoFile);
                     if (info.disabled) {
                         callback(null);
                         return;
