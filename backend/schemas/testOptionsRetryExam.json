@@ -32,6 +32,17 @@
             "type": "array",
             "items": {"$ref": "#/definitions/zone"}
         },
+        "unlimitedVariants": {
+            "description": "Whether to generate new variants for all students, rather than using a limited set.",
+            "type": "boolean",
+            "default": false
+        },
+        "variantsPerQuestion": {
+            "description": "Number of variants to select from per question.",
+            "type": "integer",
+            "minimum": 1,
+            "default": 3
+        },
         "availDate": {
             "description": "The date after which the test is available for students to view.",
             "type": "string"

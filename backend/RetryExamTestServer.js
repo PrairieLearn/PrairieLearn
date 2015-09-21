@@ -12,7 +12,8 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             allowQuestionRetry: true,
             showQuestionTitle: false,
             allowFinish: true,
-            vidsPerQID: 1,
+            unlimitedVariants: false,
+            variantsPerQuestion: 1,
         };
     };
 
@@ -44,6 +45,8 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
                 .pluck("questions")
                 .map(_.max)
                 .reduce(function(a, b) {return a + b;}, 0);
+        }
+        if (!options.unlimitedVariants) {
             test.vidsByQID = test.vidsByQID || {};
             _(options.zones).each(function(zone) {
                 _(zone.questions).each(function(question) {
@@ -52,10 +55,10 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
                     if (question.variants) qids.push.apply(qids, question.variants);
                     _(qids).each(function(qid) {
                         if (!test.vidsByQID[qid]) test.vidsByQID[qid] = [];
-                        if (test.vidsByQID[qid].length > options.vidsPerQID) {
-                            test.vidsByQID[qid] = _(test.vidsByQID[qid]).first(options.vidsPerQID);
+                        if (test.vidsByQID[qid].length > options.variantsPerQuestion) {
+                            test.vidsByQID[qid] = _(test.vidsByQID[qid]).first(options.variantsPerQuestion);
                         }
-                        while (test.vidsByQID[qid].length < options.vidsPerQID) {
+                        while (test.vidsByQID[qid].length < options.variantsPerQuestion) {
                             test.vidsByQID[qid].push(Math.floor(Math.random() * Math.pow(2, 32)).toString(36));
                         }
                     });
@@ -99,7 +102,10 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
                         } else {
                             qid = rand.randElem(question.variants);
                         }
-                        var vid = rand.randElem(test.vidsByQID[qid]);
+                        var vid = null;
+                        if (!options.unlimitedVariants) {
+                            vid = rand.randElem(test.vidsByQID[qid]);
+                        }
                         questions.push({qid: qid, vid: vid, points: question.points});
                     });
                 });
