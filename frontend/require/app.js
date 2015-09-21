@@ -379,7 +379,11 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             var tInstance = this.tInstances.get(tiid);
             var tid = tInstance.get("tid");
             var test = this.tests.get(tid);
-            this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
+            if (tInstance.has("number")) {
+                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number") + " #" + tInstance.get("number"));
+            } else {
+                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
+            }
             this.model.set("currentAssessmentLink", "#ti/" + tiid);
             if (this.model.hasPermission("seeAdminPages")) {
                 this.model.set("currentDetailName", "Admin");
@@ -392,17 +396,21 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
 
         setNavbarForTest: function(tid) {
             var test = this.tests.get(tid);
-            this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
             // check whether the current link to a tiid is still valid
             // if so, leave it, if not, use a random tiid as the link
             var theseTInstances = new Backbone.Collection(this.tInstances.where({tid: tid}));
             var possibleLinks = theseTInstances.pluck("tiid").map(function(tiid) {return "#ti/" + tiid;});
-            console.log("possibleLinks", possibleLinks, "currentAssessmentLink", this.model.get("currentAssessmentLink"));
             if (!_(possibleLinks).contains(this.model.get("currentAssessmentLink"))) {
-                console.log("resetting");
                 if (possibleLinks.length > 0) {
+                    var tInstance = theseTInstances.first();
+                    if (tInstance.has("number")) {
+                        this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number") + " #" + tInstance.get("number"));
+                    } else {
+                        this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
+                    }
                     this.model.set("currentAssessmentLink", possibleLinks[0]);
                 } else {
+                    this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
                     this.model.set("currentAssessmentLink", "#assess");
                 }
             }
