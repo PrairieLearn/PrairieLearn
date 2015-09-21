@@ -287,61 +287,27 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 break;
             case "testInstance":
                 var tiid = this.model.get("pageOptions").tiid;
+                this.setNavbarForTInstance(tiid);
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
-                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
-                this.model.set("currentAssessmentLink", "#ti/" + tiid);
-                if (this.model.hasPermission("seeAdminPages")) {
-                    this.model.set("currentDetailName", "Admin");
-                    this.model.set("currentDetailLink", "#t/" + tid);
-                } else {
-                    this.model.set("currentDetailName", null);
-                    this.model.set("currentDetailLink", null);
-                }
                 view = new TestInstanceView({model: tInstance, test: test, appModel: this.model, questions: this.questions});
                 break;
             case "testDetail":
                 var tid = this.model.get("pageOptions").tid;
+                this.setNavbarForTest(tid);
                 var test = this.tests.get(tid);
-                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
-                // check whether the current link to a tiid is still valid
-                // if so, leave it, if not, use a random tiid as the link
-                var theseTInstances = new Backbone.Collection(this.tInstances.where({tid: tid}));
-                var possibleLinks = theseTInstances.pluck("tiid").map(function(tiid) {return "#tid/" + tiid;});
-                if (!_(possibleLinks).contains(this.model.get("currentAssessmentLink"))) {
-                    if (possibleLinks.length > 0) {
-                        this.model.set("currentAssessmentLink", possibleLinks[0]);
-                    } else {
-                        this.model.set("currentAssessmentLink", "#assess");
-                    }
-                }
-                if (this.model.hasPermission("seeAdminPages")) {
-                    this.model.set("currentDetailName", "Admin");
-                    this.model.set("currentDetailLink", "#t/" + tid);
-                } else {
-                    this.model.set("currentDetailName", null);
-                    this.model.set("currentDetailLink", null);
-                }
                 view = new TestDetailView({model: test, appModel: this.model, questions: this.questions});
                 break;
             case "testQuestion":
                 var tiid = this.model.get("pageOptions").tiid;
+                this.setNavbarForTInstance(tiid);
                 var qNumber = this.model.get("pageOptions").qNumber;
                 var vid = this.model.get("pageOptions").vid;
                 var qIndex = qNumber - 1;
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
-                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
-                this.model.set("currentAssessmentLink", "#ti/" + tiid);
-                if (this.model.hasPermission("seeAdminPages")) {
-                    this.model.set("currentDetailName", "Admin");
-                    this.model.set("currentDetailLink", "#t/" + tid);
-                } else {
-                    this.model.set("currentDetailName", null);
-                    this.model.set("currentDetailLink", null);
-                }
                 var qid;
                 if (tInstance.has("qids"))
                     qid = tInstance.get("qids")[qIndex];
@@ -363,20 +329,12 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
              */
             case "chooseTestQuestion":
                 var tiid = this.model.get("pageOptions").tiid;
+                this.setNavbarForTInstance(tiid);
                 var qInfo = this.model.get("pageOptions").qInfo;
                 var skipQNumbers = this.model.get("pageOptions").skipQNumbers;
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
-                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
-                this.model.set("currentAssessmentLink", "#ti/" + tiid);
-                if (this.model.hasPermission("seeAdminPages")) {
-                    this.model.set("currentDetailName", "Admin");
-                    this.model.set("currentDetailLink", "#t/" + tid);
-                } else {
-                    this.model.set("currentDetailName", null);
-                    this.model.set("currentDetailLink", null);
-                }
                 var qids;
                 if (tInstance.has("qids"))
                     qids = tInstance.get("qids");
@@ -415,6 +373,46 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             }
             this.showView(view);
             spinController.stopSpinner(spinner);
+        },
+
+        setNavbarForTInstance: function(tiid) {
+            var tInstance = this.tInstances.get(tiid);
+            var tid = tInstance.get("tid");
+            var test = this.tests.get(tid);
+            this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
+            this.model.set("currentAssessmentLink", "#ti/" + tiid);
+            if (this.model.hasPermission("seeAdminPages")) {
+                this.model.set("currentDetailName", "Admin");
+                this.model.set("currentDetailLink", "#t/" + tid);
+            } else {
+                this.model.set("currentDetailName", null);
+                this.model.set("currentDetailLink", null);
+            }
+        },
+
+        setNavbarForTest: function(tid) {
+            var test = this.tests.get(tid);
+            this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
+            // check whether the current link to a tiid is still valid
+            // if so, leave it, if not, use a random tiid as the link
+            var theseTInstances = new Backbone.Collection(this.tInstances.where({tid: tid}));
+            var possibleLinks = theseTInstances.pluck("tiid").map(function(tiid) {return "#ti/" + tiid;});
+            console.log("possibleLinks", possibleLinks, "currentAssessmentLink", this.model.get("currentAssessmentLink"));
+            if (!_(possibleLinks).contains(this.model.get("currentAssessmentLink"))) {
+                console.log("resetting");
+                if (possibleLinks.length > 0) {
+                    this.model.set("currentAssessmentLink", possibleLinks[0]);
+                } else {
+                    this.model.set("currentAssessmentLink", "#assess");
+                }
+            }
+            if (this.model.hasPermission("seeAdminPages")) {
+                this.model.set("currentDetailName", "Admin");
+                this.model.set("currentDetailLink", "#t/" + tid);
+            } else {
+                this.model.set("currentDetailName", null);
+                this.model.set("currentDetailLink", null);
+            }
         },
 
         showView: function(view) {
