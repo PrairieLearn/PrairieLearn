@@ -24,6 +24,10 @@
       {{#currentAssessmentName}}
       <li {{{currentAssessmentAttributes}}}><a href="{{{currentAssessmentLink}}}">{{currentAssessmentName}}</a></li>
       {{/currentAssessmentName}}
+
+      {{#currentDetailName}}
+      <li {{{currentDetailAttributes}}}><a href="{{{currentDetailLink}}}">{{currentDetailName}}</a></li>
+      {{/currentDetailName}}
     </ul>
     <div class="navbar-right">
       <p class="navbar-text">{{userName}} {{#viewOtherUsersPerm}}({{mode}}/{{userRole}}){{/viewOtherUsersPerm}}</p>

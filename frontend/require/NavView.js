@@ -20,6 +20,8 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
             data.viewSync = this.model.hasPermission("viewCoursePulls") && this.model.get("gitCourseBranch");
             data.currentAssessmentName = this.model.get("currentAssessmentName");
             data.currentAssessmentLink = this.model.get("currentAssessmentLink");
+            data.currentDetailName = this.model.get("currentDetailName");
+            data.currentDetailLink = this.model.get("currentDetailLink");
 
             data.navHomeAttributes = '';
             data.navAssessAttributes = '';
@@ -28,6 +30,7 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
             data.navUserAttributes = '';
             data.navSyncAttributes = '';
             data.currentAssessmentAttributes = '';
+            data.currentDetailAttributes = '';
             switch (this.model.get("page")) {
             case "home":               data.navHomeAttributes           = 'class="active"'; break;
             case "assess":             data.navAssessAttributes         = 'class="active"'; break;
@@ -36,7 +39,7 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
             case "user":               data.navUserAttributes           = 'class="active"'; break;
             case "sync":               data.navSyncAttributes           = 'class="active"'; break;
             case "testInstance":       data.currentAssessmentAttributes = 'class="active"'; break;
-            case "testDetail":         data.currentAssessmentAttributes = 'class="active"'; break;
+            case "testDetail":         data.currentDetailAttributes     = 'class="active"'; break;
             }
 
             var html = Mustache.render(navViewTemplate, data);
