@@ -445,6 +445,15 @@ var loadCourseInfo = function(callback) {
     });
 };
 
+var checkInfoDeprecated = function(idName, info, infoFile) {
+    if (idName == "tid" && info.options && info.options.availDate) {
+        logger.warn(infoFile + ': "options.availDate" is deprecated and will be removed in a future version. Please use "allowAccess" instead.');
+    }
+    if (idName == "tid" && info.type == "RetryExam" && info.options && info.options.questionGroups) {
+        logger.warn(infoFile + ': "options.questionGroups" is deprecated and will be removed in a future version. Please use "zones" instead.');
+    }
+};
+
 var questionDB, testDB;
 
 var loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, loadCallback) {
@@ -470,6 +479,7 @@ var loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, op
                         callback(null);
                         return;
                     }
+                    checkInfoDeprecated(idName, info, infoFile);
                     if (info.disabled) {
                         callback(null);
                         return;
@@ -1483,6 +1493,9 @@ app.post("/qInstances", function(req, res) {
                 } else {
                     ensureObjAuth(req, res, tInstance, "read", function(tInstance) {
                         ensureQuestionInTest(req, res, qid, tInstance, test, function() {
+                            if (tInstance.vidsByQID) {
+                                qInstance.vid = tInstance.vidsByQID[qid];
+                            }
                             makeQInstance(req, res, qInstance, function(qInstance) {
                                 tInstance.qiidsByQid = tInstance.qiidsByQid || {};
                                 tInstance.qiidsByQid[qid] = qInstance.qiid;
@@ -1871,6 +1884,9 @@ var autoCreateTestQuestions = function(req, res, tInstance, test, callback) {
                     tiid: tInstance.tiid,
                     tid: tInstance.tid,
                 };
+                if (tInstance.vidsByQID) {
+                    qInstance.vid = tInstance.vidsByQID[qid];
+                }
                 makeQInstance(req, res, qInstance, function(qInstance) {
                     tInstance.qiidsByQid[qid] = qInstance.qiid;
                     cb(null);

@@ -16,16 +16,23 @@
     ],
     "clientFiles": ["formulas.pdf", "formulas.html"],
     "options": {
-        "questionGroups": [
-            [
-                [
-                    {"qid": "addVectors", "points": [10, 5, 2, 1]},
-                    {"qid": "fossilFuels", "points": [10]},
-                    {"qid": "fibonacci", "points": [10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0.5, 0.25]}
+        "zones": [
+            {
+                "title": "Easy questions",
+                "questions": [
+                    {"qid": "fossilFuels", "points": [10]}
                 ]
-            ]
+            },
+            {
+                "title": "Hard questions",
+                "questions": [
+                    {
+                        "variants": ["fibonacci", "addVectors"],
+                        "points": [10, 10, 7, 3, 1, 0.5, 0.25]
+                    }
+                ]
+            }
         ],
-        "nQuestions": 3,
         "text": "For this exam you can use the <a target=\"_blank\" href=\"<% print(testFile(\"formulas.pdf\")) %>\">PDF formula sheet</a>, the <a target=\"_blank\" href=\"<% print(testFile(\"formulas.html\")) %>\">HTML formula sheet</a> or <a target=\"_blank\" href=\"https://en.wikipedia.org/wiki/List_of_moments_of_inertia\">this Wikipedia page</a>."
     }
 }

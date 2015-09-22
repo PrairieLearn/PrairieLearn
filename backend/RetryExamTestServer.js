@@ -5,8 +5,6 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
 
     RetryExamTestServer.getDefaultOptions = function() {
         return {
-            questions: [],
-            nQuestions: 20,
             autoCreate: true,
             autoCreateQuestions: true,
             allowQuestionSubmit: false,
@@ -14,6 +12,8 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             allowQuestionRetry: true,
             showQuestionTitle: false,
             allowFinish: true,
+            unlimitedVariants: false,
+            variantsPerQuestion: 1,
         };
     };
 
@@ -27,12 +27,44 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             completeHighScores: {},
             questionInfo: {},
         });
-        test.nQuestions = options.nQuestions;
-        test.maxScore = _.chain(options.questionGroups)
-            .flatten()
-            .pluck("points")
-            .map(function(a) {return Math.max.apply(null, a);})
-            .reduce(function(a, b) {return a + b;}, 0).value();
+        if (options && options.questionGroups) {
+            // FIXME: remove once we have fully transitions to zones
+            test.nQuestions = options.nQuestions;
+            test.maxScore = _.chain(options.questionGroups)
+                .flatten()
+                .pluck("points")
+                .map(function(a) {return Math.max.apply(null, a);})
+                .reduce(function(a, b) {return a + b;}, 0).value();
+        } else {
+            // new code that should always be used in the future
+            test.nQuestions = _.chain(options.zones)
+                .pluck("questions")
+                .map(function(x) {return x.length;})
+                .reduce(function(a, b) {return a + b;}, 0);
+            test.maxScore = _.chain(options.zones)
+                .pluck("questions")
+                .map(_.max)
+                .reduce(function(a, b) {return a + b;}, 0);
+        }
+        if (!options.unlimitedVariants) {
+            test.vidsByQID = test.vidsByQID || {};
+            _(options.zones).each(function(zone) {
+                _(zone.questions).each(function(question) {
+                    var qids = [];
+                    if (question.qid) qids.push(question.qid);
+                    if (question.variants) qids.push.apply(qids, question.variants);
+                    _(qids).each(function(qid) {
+                        if (!test.vidsByQID[qid]) test.vidsByQID[qid] = [];
+                        if (test.vidsByQID[qid].length > options.variantsPerQuestion) {
+                            test.vidsByQID[qid] = _(test.vidsByQID[qid]).first(options.variantsPerQuestion);
+                        }
+                        while (test.vidsByQID[qid].length < options.variantsPerQuestion) {
+                            test.vidsByQID[qid].push(Math.floor(Math.random() * Math.pow(2, 32)).toString(36));
+                        }
+                    });
+                });
+            });
+        }
         test.text = options.text;
         test._private = ["scoresByUID", "highScoresByUID", "completeHighScoresByUID"];
         if (options.availDate)
@@ -43,18 +75,46 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
         if (tInstance.qids === undefined) {
             var questions = [];
             var rand = new PrairieRandom.RandomGenerator();
-            var levelChoices = rand.randCategoryChoices(options.nQuestions, options.questionGroups.length);
-            var iLevel, iType, typeChoices;
-            for (iLevel = 0; iLevel < options.questionGroups.length; iLevel++) {
-                typeChoices = rand.randCategoryChoices(levelChoices[iLevel], options.questionGroups[iLevel].length);
-                for (iType = 0; iType < options.questionGroups[iLevel].length; iType++) {
-                    questions = questions.concat(rand.randNElem(typeChoices[iType], options.questionGroups[iLevel][iType]));
+            if (options && options.questionGroups) {
+                // FIXME: remove once we have fully transitions to zones
+                var levelChoices = rand.randCategoryChoices(options.nQuestions, options.questionGroups.length);
+                var iLevel, iType, typeChoices;
+                for (iLevel = 0; iLevel < options.questionGroups.length; iLevel++) {
+                    typeChoices = rand.randCategoryChoices(levelChoices[iLevel], options.questionGroups[iLevel].length);
+                    for (iType = 0; iType < options.questionGroups[iLevel].length; iType++) {
+                        questions = questions.concat(rand.randNElem(typeChoices[iType], options.questionGroups[iLevel][iType]));
+                    }
                 }
+            } else {
+                // new code that should always be used in the future
+                tInstance.zones = [];
+                tInstance.showZoneTitles = false;
+                _(options.zones).each(function(zone) {
+                    if (_(zone).has("title")) {
+                        tInstance.zones[questions.length] = zone.title;
+                    } else {
+                        tInstance.zones[questions.length] = null;
+                    }
+                    _(zone.questions).each(function(question) {
+                        var qid;
+                        if (_(question).has("qid")) {
+                            qid = question.qid
+                        } else {
+                            qid = rand.randElem(question.variants);
+                        }
+                        var vid = null;
+                        if (!options.unlimitedVariants) {
+                            vid = rand.randElem(test.vidsByQID[qid]);
+                        }
+                        questions.push({qid: qid, vid: vid, points: question.points});
+                    });
+                });
             }
             var now = Date.now();
             tInstance.qids = _(questions).pluck('qid');
             tInstance.maxScore = 0;
             tInstance.questionsByQID = _(questions).indexBy('qid');
+            tInstance.vidsByQID = _(tInstance.questionsByQID).mapObject(function(q) {return q.vid;});
             _(tInstance.questionsByQID).each(function(question, qid) {
                 question.nGradedAttempts = 0;
                 question.awardedPoints = 0;
