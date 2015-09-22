@@ -10,8 +10,8 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
             this.tests = this.options.tests;
             this.tInstances = this.options.tInstances;
             this.listenTo(this.model, "change", this.render);
-            this.listenTo(this.tests, "change", this.render);
-            this.listenTo(this.tInstances, "change", this.render);
+            this.listenTo(this.tests, "all", this.render);
+            this.listenTo(this.tInstances, "all", this.render);
         },
 
         render: function() {
@@ -23,22 +23,27 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
             data.viewOtherUsersPerm = this.model.hasPermission("viewOtherUsers", "auth");
             data.viewSync = this.model.hasPermission("viewCoursePulls") && this.model.get("gitCourseBranch");
 
-            var tid = this.model.get("currentTID");
-            var tiid = this.model.get("currentTIID");
+            var tid = this.model.get("tid");
+            var tiid = this.model.get("tiid");
             if (tid) {
                 var test = this.tests.get(tid);
-                if (this.model.hasPermission("seeAdminPages")) {
-                    data.currentDetailName = "Admin";
-                    data.currentDetailLink = "#t/" + tid;
-                }
-                if (tiid) {
-                    var tInstance = this.tInstances.get(tiid);
-                    if (tInstance.has("number")) {
-                        data.currentAssessmentName = test.get("set") + " " + test.get("number") + " #" + tInstance.get("number");
-                    } else {
-                        data.currentAssessmentName = test.get("set") + " " + test.get("number");
+                if (test) {
+                    var testOptions = test.get("options");
+                    if (this.model.hasPermission("seeAdminPages")) {
+                        data.currentDetailName = "Admin";
+                        data.currentDetailLink = "#t/" + tid;
                     }
-                    data.currentAssessmentLink = "#ti/" + tiid;
+                    if (tiid) {
+                        var tInstance = this.tInstances.get(tiid);
+                        if (tInstance) {
+                            if (testOptions && testOptions.autoCreate) {
+                                data.currentAssessmentName = test.get("set") + " " + test.get("number");
+                            } else {
+                                data.currentAssessmentName = test.get("set") + " " + test.get("number") + " #" + tInstance.get("number");
+                            }
+                            data.currentAssessmentLink = "#ti/" + tiid;
+                        }
+                    }
                 }
             }
 

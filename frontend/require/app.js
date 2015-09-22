@@ -101,8 +101,8 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             defaultConfig = {
                 mode: "Default",
                 page: "home",
-                currentTID: null,
-                currentTIID: null,
+                tid: null,
+                tiid: null,
                 pageOptions: {},
                 deployMode: false,
                 apiServer: PRAIRIELEARN_DEFAULT_API_SERVER,
@@ -271,7 +271,6 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         render: function() {
             var target = document.getElementById('content');
             var spinner = spinController.startSpinner(target);
-            this.checkCurrentTest();
             var view;
             switch (this.model.get("page")) {
             case "home":
@@ -286,7 +285,6 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 break;
             case "testInstance":
                 var tiid = this.model.get("pageOptions").tiid;
-                this.setNavbarForTInstance(tiid);
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
@@ -294,13 +292,11 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 break;
             case "testDetail":
                 var tid = this.model.get("pageOptions").tid;
-                this.setNavbarForTest(tid);
                 var test = this.tests.get(tid);
                 view = new TestDetailView({model: test, appModel: this.model, questions: this.questions});
                 break;
             case "testQuestion":
                 var tiid = this.model.get("pageOptions").tiid;
-                this.setNavbarForTInstance(tiid);
                 var qNumber = this.model.get("pageOptions").qNumber;
                 var vid = this.model.get("pageOptions").vid;
                 var qIndex = qNumber - 1;
@@ -328,7 +324,6 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
              */
             case "chooseTestQuestion":
                 var tiid = this.model.get("pageOptions").tiid;
-                this.setNavbarForTInstance(tiid);
                 var qInfo = this.model.get("pageOptions").qInfo;
                 var skipQNumbers = this.model.get("pageOptions").skipQNumbers;
                 var tInstance = this.tInstances.get(tiid);
@@ -374,41 +369,6 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             spinController.stopSpinner(spinner);
         },
 
-        checkCurrentTest: function() {
-            var tid = this.model.get("currentTID");
-            var tiid = this.model.get("currentTIID");
-            if (!this.tests.get(tid)) {
-                this.model.set({
-                    currentTID: null,
-                    currentTIID: null,
-                });
-            } else {
-                var theseTInstances = new Backbone.Collection(this.tInstances.where({tid: tid}));
-                if (!theseTInstances.get(tiid)) {
-                    var possibleTIIDs = theseTInstances.pluck("tiid");
-                    if (possibleTIIDs.length > 0) {
-                        this.model.set("currentTIID", possibleTIIDs[0]);
-                    } else {
-                        this.model.set("currentTIID", null);
-                    }
-                }
-            }
-        },
-
-        setNavbarForTInstance: function(tiid) {
-            var tInstance = this.tInstances.get(tiid);
-            var tid = tInstance.get("tid");
-            this.model.set({
-                currentTID: tid,
-                currentTIID: tiid,
-            });
-        },
-
-        setNavbarForTest: function(tid) {
-            this.model.set("currentTID", tid);
-            this.checkCurrentTest();
-        },
-
         showView: function(view) {
             if (this.currentView != null) {
                 this.currentView.close();
@@ -417,10 +377,6 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             view.render();
             $("#content").html(view.el);
             $('[data-toggle=tooltip]').tooltip();
-        },
-
-        handleLoadError: function(collection, response, options) {
-            $("#error").append('<div class="alert alert-danger" role="alert">Error loading data.</div>');
         },
 
         reloadUserData: function() {
@@ -464,7 +420,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                     $("#error").html('<div class="alert alert-danger" role="alert">' + errors.join(', ') + '</div>');
                     // no return, we want to do updates
                 }
-                that.checkNavbar();
+                that.router.checkCurrentTest();
             });
         },
     });
@@ -485,6 +441,29 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
 
         initialize: function(options) {
             this.model = options.model;
+            this.tests = options.tests;
+            this.tInstances = options.tInstances;
+        },
+
+        checkCurrentTest: function() {
+            var tid = this.model.get("tid");
+            var tiid = this.model.get("tiid");
+            if (!this.tests.get(tid)) {
+                this.model.set({
+                    tid: null,
+                    tiid: null,
+                });
+            } else {
+                var theseTInstances = new Backbone.Collection(this.tInstances.where({tid: tid}));
+                if (!theseTInstances.get(tiid)) {
+                    var possibleTIIDs = theseTInstances.pluck("tiid");
+                    if (possibleTIIDs.length > 0) {
+                        this.model.set("tiid", possibleTIIDs[0]);
+                    } else {
+                        this.model.set("tiid", null);
+                    }
+                }
+            }
         },
 
         goHome: function(actions) {
@@ -509,24 +488,36 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         },
 
         goTestQuestion: function(tiid, qNumber, vid) {
+            var tInstance = this.tInstances.get(tiid);
+            var tid = tInstance ? tInstance.get("tid") : null;
             this.model.set({
                 page: "testQuestion",
                 pageOptions: {tiid: tiid, qNumber: qNumber, vid: vid},
+                tid: tid,
+                tiid: tiid,
             });
         },
 
         goChooseTestQuestion: function(tiid, qInfo, skipQNumbers) {
             skipQNumbers = (skipQNumbers == null) ? [] : skipQNumbers.split(",");
+            var tInstance = this.tInstances.get(tiid);
+            var tid = tInstance ? tInstance.get("tid") : null;
             this.model.set({
                 page: "chooseTestQuestion",
                 pageOptions: {tiid: tiid, qInfo: qInfo, skipQNumbers: skipQNumbers},
+                tid: tid,
+                tiid: tiid,
             });
         },
 
         goTestInstance: function(tiid) {
+            var tInstance = this.tInstances.get(tiid);
+            var tid = tInstance ? tInstance.get("tid") : null;
             this.model.set({
                 page: "testInstance",
                 pageOptions: {tiid: tiid},
+                tid: tid,
+                tiid: tiid,
             });
         },
 
@@ -534,7 +525,9 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             this.model.set({
                 page: "testDetail",
                 pageOptions: {tid: tid},
+                tid: tid,
             });
+            this.checkCurrentTest();
         },
 
         goAbout: function() {
@@ -561,7 +554,6 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
 
     $(function() {
         var appModel = new AppModel();
-        var appRouter = new AppRouter({model: appModel});
 
         var questions = new QuestionCollection([], {
             url: function() {return appModel.apiURL("questions");}
@@ -581,7 +573,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         });
         var syncModel = new SyncModel.SyncModel();
 
-        Backbone.history.start();
+        var appRouter = new AppRouter({model: appModel, tests: tests, tInstances: tInstances});
 
         $.ajaxPrefilter(function(options, originalOptions, jqXHR) {
             var headers = {};
@@ -639,6 +631,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                         $("#error").html('<div class="alert alert-danger" role="alert">' + errors.join(', ') + '</div>');
                         // no return here, keep going despite errors
                     }
+                    Backbone.history.start();
                     var appView = new AppView({
                         model: appModel,
                         questions: questions,
