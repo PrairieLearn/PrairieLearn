@@ -489,72 +489,72 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
 
         goHome: function(actions) {
             this.model.set({
-                "page": "assess",
-                "pageOptions": {}
+                page: "assess",
+                pageOptions: {},
             });
         },
 
         goStats: function() {
             this.model.set({
-                "page": "stats",
-                "pageOptions": {}
+                page: "stats",
+                pageOptions: {},
             });
         },
 
         goAssess: function() {
             this.model.set({
-                "page": "assess",
-                "pageOptions": {}
+                page: "assess",
+                pageOptions: {},
             });
         },
 
         goTestQuestion: function(tiid, qNumber, vid) {
             this.model.set({
-                "page": "testQuestion",
-                "pageOptions": {tiid: tiid, qNumber: qNumber, vid: vid}
+                page: "testQuestion",
+                pageOptions: {tiid: tiid, qNumber: qNumber, vid: vid},
             });
         },
 
         goChooseTestQuestion: function(tiid, qInfo, skipQNumbers) {
             skipQNumbers = (skipQNumbers == null) ? [] : skipQNumbers.split(",");
             this.model.set({
-                "page": "chooseTestQuestion",
-                "pageOptions": {tiid: tiid, qInfo: qInfo, skipQNumbers: skipQNumbers}
+                page: "chooseTestQuestion",
+                pageOptions: {tiid: tiid, qInfo: qInfo, skipQNumbers: skipQNumbers},
             });
         },
 
         goTestInstance: function(tiid) {
             this.model.set({
-                "page": "testInstance",
-                "pageOptions": {tiid: tiid}
+                page: "testInstance",
+                pageOptions: {tiid: tiid},
             });
         },
 
         goTestDetail: function(tid) {
             this.model.set({
-                "page": "testDetail",
-                "pageOptions": {tid: tid}
+                page: "testDetail",
+                pageOptions: {tid: tid},
             });
         },
 
         goAbout: function() {
             this.model.set({
-                "page": "about",
-                "pageOptions": {}
+                page: "about",
+                pageOptions: {},
             });
         },
 
         goUser: function() {
             this.model.set({
-                "page": "user",
-                "pageOptions": {}
+                page: "user",
+                pageOptions: {},
             });
         },
 
         goSync: function() {
             this.model.set({
-                "page": "sync",
-                "pageOptions": {}
+                page: "sync",
+                pageOptions: {},
             });
         },
     });
