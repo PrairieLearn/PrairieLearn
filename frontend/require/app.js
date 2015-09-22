@@ -101,8 +101,8 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             defaultConfig = {
                 mode: "Default",
                 page: "home",
-                currentAssessmentName: null,
-                currentAssessmentLink: null,
+                tid: null,
+                tiid: null,
                 pageOptions: {},
                 deployMode: false,
                 apiServer: PRAIRIELEARN_DEFAULT_API_SERVER,
@@ -263,7 +263,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.model, "change:userUID change:userRole change:mode", this.reloadUserData);
             this.listenTo(Backbone, "reloadUserData", this.reloadUserData);
-            this.navView = new NavView.NavView({model: this.model, users: this.users});
+            this.navView = new NavView.NavView({model: this.model, users: this.users, tests: this.tests, tInstances: this.tInstances});
             this.navView.render();
             $("#nav").html(this.navView.el);
         },
@@ -288,15 +288,11 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
-                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
-                this.model.set("currentAssessmentLink", "#ti/" + tiid);
                 view = new TestInstanceView({model: tInstance, test: test, appModel: this.model, questions: this.questions});
                 break;
             case "testDetail":
                 var tid = this.model.get("pageOptions").tid;
                 var test = this.tests.get(tid);
-                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number") + " Detail");
-                this.model.set("currentAssessmentLink", "#t/" + tid);
                 view = new TestDetailView({model: test, appModel: this.model, questions: this.questions});
                 break;
             case "testQuestion":
@@ -307,8 +303,6 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
-                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
-                this.model.set("currentAssessmentLink", "#ti/" + tiid);
                 var qid;
                 if (tInstance.has("qids"))
                     qid = tInstance.get("qids")[qIndex];
@@ -335,8 +329,6 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
-                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
-                this.model.set("currentAssessmentLink", "#ti/" + tiid);
                 var qids;
                 if (tInstance.has("qids"))
                     qids = tInstance.get("qids");
@@ -387,20 +379,50 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             $('[data-toggle=tooltip]').tooltip();
         },
 
-        handleLoadError: function(collection, response, options) {
-            $("#error").append('<div class="alert alert-danger" role="alert">Error loading data.</div>');
-        },
-
         reloadUserData: function() {
-            this.tInstances.reset();
-            this.questions.reset();
-            this.tests.reset();
-            this.users.reset();
-            this.tInstances.fetch({error: this.handleLoadError.bind(this)});
-            this.questions.fetch({error: this.handleLoadError.bind(this)});
-            this.tests.fetch({error: this.handleLoadError.bind(this)});
-            this.users.fetch({error: this.handleLoadError.bind(this)});
-        }
+            var that = this;
+            var errors = [];
+            async.parallel([
+                function(callback) {
+                    that.questions.reset();
+                    that.questions.fetch({
+                        success: function() {callback(null);},
+                        error: function() {errors.push("Error fetching questions"); callback(null);},
+                    });
+                },
+                function(callback) {
+                    that.tests.reset();
+                    that.tests.fetch({
+                        success: function() {callback(null);},
+                        error: function() {errors.push("Error fetching tests"); callback(null);},
+                    });
+                },
+                function(callback) {
+                    that.tInstances.reset();
+                    that.tInstances.fetch({
+                        success: function() {callback(null);},
+                        error: function() {errors.push("Error fetching tInstances"); callback(null);},
+                    });
+                },
+                function(callback) {
+                    that.users.reset();
+                    that.users.fetch({
+                        success: function() {callback(null);},
+                        error: function() {errors.push("Error fetching users"); callback(null);},
+                    });
+                },
+            ], function(err) {
+                if (err) {
+                    $("#error").append('<div class="alert alert-danger" role="alert">' + err + '</div>');
+                    // no return, we want to do updates
+                }
+                if (errors.length > 0) {
+                    $("#error").html('<div class="alert alert-danger" role="alert">' + errors.join(', ') + '</div>');
+                    // no return, we want to do updates
+                }
+                that.router.checkCurrentTest();
+            });
+        },
     });
 
     var AppRouter = Backbone.Router.extend({
@@ -419,83 +441,119 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
 
         initialize: function(options) {
             this.model = options.model;
+            this.tests = options.tests;
+            this.tInstances = options.tInstances;
+        },
+
+        checkCurrentTest: function() {
+            var tid = this.model.get("tid");
+            var tiid = this.model.get("tiid");
+            if (!this.tests.get(tid)) {
+                this.model.set({
+                    tid: null,
+                    tiid: null,
+                });
+            } else {
+                var theseTInstances = new Backbone.Collection(this.tInstances.where({tid: tid}));
+                if (!theseTInstances.get(tiid)) {
+                    var possibleTIIDs = theseTInstances.pluck("tiid");
+                    if (possibleTIIDs.length > 0) {
+                        this.model.set("tiid", possibleTIIDs[0]);
+                    } else {
+                        this.model.set("tiid", null);
+                    }
+                }
+            }
         },
 
         goHome: function(actions) {
             this.model.set({
-                "page": "assess",
-                "pageOptions": {}
+                page: "assess",
+                pageOptions: {},
             });
         },
 
         goStats: function() {
             this.model.set({
-                "page": "stats",
-                "pageOptions": {}
+                page: "stats",
+                pageOptions: {},
             });
         },
 
         goAssess: function() {
             this.model.set({
-                "page": "assess",
-                "pageOptions": {}
+                page: "assess",
+                pageOptions: {},
             });
         },
 
         goTestQuestion: function(tiid, qNumber, vid) {
+            var tInstance = this.tInstances.get(tiid);
+            var tid = tInstance ? tInstance.get("tid") : null;
             this.model.set({
-                "page": "testQuestion",
-                "pageOptions": {tiid: tiid, qNumber: qNumber, vid: vid}
+                page: "testQuestion",
+                pageOptions: {tiid: tiid, qNumber: qNumber, vid: vid},
+                tid: tid,
+                tiid: tiid,
             });
         },
 
         goChooseTestQuestion: function(tiid, qInfo, skipQNumbers) {
             skipQNumbers = (skipQNumbers == null) ? [] : skipQNumbers.split(",");
+            var tInstance = this.tInstances.get(tiid);
+            var tid = tInstance ? tInstance.get("tid") : null;
             this.model.set({
-                "page": "chooseTestQuestion",
-                "pageOptions": {tiid: tiid, qInfo: qInfo, skipQNumbers: skipQNumbers}
+                page: "chooseTestQuestion",
+                pageOptions: {tiid: tiid, qInfo: qInfo, skipQNumbers: skipQNumbers},
+                tid: tid,
+                tiid: tiid,
             });
         },
 
         goTestInstance: function(tiid) {
+            var tInstance = this.tInstances.get(tiid);
+            var tid = tInstance ? tInstance.get("tid") : null;
             this.model.set({
-                "page": "testInstance",
-                "pageOptions": {tiid: tiid}
+                page: "testInstance",
+                pageOptions: {tiid: tiid},
+                tid: tid,
+                tiid: tiid,
             });
         },
 
         goTestDetail: function(tid) {
             this.model.set({
-                "page": "testDetail",
-                "pageOptions": {tid: tid}
+                page: "testDetail",
+                pageOptions: {tid: tid},
+                tid: tid,
             });
+            this.checkCurrentTest();
         },
 
         goAbout: function() {
             this.model.set({
-                "page": "about",
-                "pageOptions": {}
+                page: "about",
+                pageOptions: {},
             });
         },
 
         goUser: function() {
             this.model.set({
-                "page": "user",
-                "pageOptions": {}
+                page: "user",
+                pageOptions: {},
             });
         },
 
         goSync: function() {
             this.model.set({
-                "page": "sync",
-                "pageOptions": {}
+                page: "sync",
+                pageOptions: {},
             });
         },
     });
 
     $(function() {
         var appModel = new AppModel();
-        var appRouter = new AppRouter({model: appModel});
 
         var questions = new QuestionCollection([], {
             url: function() {return appModel.apiURL("questions");}
@@ -515,7 +573,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         });
         var syncModel = new SyncModel.SyncModel();
 
-        Backbone.history.start();
+        var appRouter = new AppRouter({model: appModel, tests: tests, tInstances: tInstances});
 
         $.ajaxPrefilter(function(options, originalOptions, jqXHR) {
             var headers = {};
@@ -573,6 +631,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                         $("#error").html('<div class="alert alert-danger" role="alert">' + errors.join(', ') + '</div>');
                         // no return here, keep going despite errors
                     }
+                    Backbone.history.start();
                     var appView = new AppView({
                         model: appModel,
                         questions: questions,

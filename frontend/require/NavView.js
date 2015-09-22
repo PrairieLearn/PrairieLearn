@@ -7,7 +7,11 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
 
         initialize: function() {
             this.users = this.options.users;
+            this.tests = this.options.tests;
+            this.tInstances = this.options.tInstances;
             this.listenTo(this.model, "change", this.render);
+            this.listenTo(this.tests, "all", this.render);
+            this.listenTo(this.tInstances, "all", this.render);
         },
 
         render: function() {
@@ -18,8 +22,30 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
             data.mode = this.model.get("mode");
             data.viewOtherUsersPerm = this.model.hasPermission("viewOtherUsers", "auth");
             data.viewSync = this.model.hasPermission("viewCoursePulls") && this.model.get("gitCourseBranch");
-            data.currentAssessmentName = this.model.get("currentAssessmentName");
-            data.currentAssessmentLink = this.model.get("currentAssessmentLink");
+
+            var tid = this.model.get("tid");
+            var tiid = this.model.get("tiid");
+            if (tid) {
+                var test = this.tests.get(tid);
+                if (test) {
+                    var testOptions = test.get("options");
+                    if (this.model.hasPermission("seeAdminPages")) {
+                        data.currentDetailName = "Admin";
+                        data.currentDetailLink = "#t/" + tid;
+                    }
+                    if (tiid) {
+                        var tInstance = this.tInstances.get(tiid);
+                        if (tInstance) {
+                            if (testOptions && testOptions.autoCreate) {
+                                data.currentAssessmentName = test.get("set") + " " + test.get("number");
+                            } else {
+                                data.currentAssessmentName = test.get("set") + " " + test.get("number") + " #" + tInstance.get("number");
+                            }
+                            data.currentAssessmentLink = "#ti/" + tiid;
+                        }
+                    }
+                }
+            }
 
             data.navHomeAttributes = '';
             data.navAssessAttributes = '';
@@ -28,6 +54,7 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
             data.navUserAttributes = '';
             data.navSyncAttributes = '';
             data.currentAssessmentAttributes = '';
+            data.currentDetailAttributes = '';
             switch (this.model.get("page")) {
             case "home":               data.navHomeAttributes           = 'class="active"'; break;
             case "assess":             data.navAssessAttributes         = 'class="active"'; break;
@@ -36,7 +63,7 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
             case "user":               data.navUserAttributes           = 'class="active"'; break;
             case "sync":               data.navSyncAttributes           = 'class="active"'; break;
             case "testInstance":       data.currentAssessmentAttributes = 'class="active"'; break;
-            case "testDetail":         data.currentAssessmentAttributes = 'class="active"'; break;
+            case "testDetail":         data.currentDetailAttributes     = 'class="active"'; break;
             }
 
             var html = Mustache.render(navViewTemplate, data);
