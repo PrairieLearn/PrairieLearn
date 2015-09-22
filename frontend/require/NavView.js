@@ -7,7 +7,11 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
 
         initialize: function() {
             this.users = this.options.users;
+            this.tests = this.options.tests;
+            this.tInstances = this.options.tInstances;
             this.listenTo(this.model, "change", this.render);
+            this.listenTo(this.tests, "change", this.render);
+            this.listenTo(this.tInstances, "change", this.render);
         },
 
         render: function() {
@@ -18,10 +22,25 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
             data.mode = this.model.get("mode");
             data.viewOtherUsersPerm = this.model.hasPermission("viewOtherUsers", "auth");
             data.viewSync = this.model.hasPermission("viewCoursePulls") && this.model.get("gitCourseBranch");
-            data.currentAssessmentName = this.model.get("currentAssessmentName");
-            data.currentAssessmentLink = this.model.get("currentAssessmentLink");
-            data.currentDetailName = this.model.get("currentDetailName");
-            data.currentDetailLink = this.model.get("currentDetailLink");
+
+            var tid = this.model.get("currentTID");
+            var tiid = this.model.get("currentTIID");
+            if (tid) {
+                var test = this.tests.get(tid);
+                if (this.model.hasPermission("seeAdminPages")) {
+                    data.currentDetailName = "Admin";
+                    data.currentDetailLink = "#t/" + tid;
+                }
+                if (tiid) {
+                    var tInstance = this.tInstances.get(tiid);
+                    if (tInstance.has("number")) {
+                        data.currentAssessmentName = test.get("set") + " " + test.get("number") + " #" + tInstance.get("number");
+                    } else {
+                        data.currentAssessmentName = test.get("set") + " " + test.get("number");
+                    }
+                    data.currentAssessmentLink = "#ti/" + tiid;
+                }
+            }
 
             data.navHomeAttributes = '';
             data.navAssessAttributes = '';

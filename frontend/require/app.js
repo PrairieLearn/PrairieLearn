@@ -101,10 +101,8 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             defaultConfig = {
                 mode: "Default",
                 page: "home",
-                currentAssessmentName: null,
-                currentAssessmentLink: null,
-                currentDetailName: null,
-                currentDetailLink: null,
+                currentTID: null,
+                currentTIID: null,
                 pageOptions: {},
                 deployMode: false,
                 apiServer: PRAIRIELEARN_DEFAULT_API_SERVER,
@@ -265,7 +263,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.model, "change:userUID change:userRole change:mode", this.reloadUserData);
             this.listenTo(Backbone, "reloadUserData", this.reloadUserData);
-            this.navView = new NavView.NavView({model: this.model, users: this.users});
+            this.navView = new NavView.NavView({model: this.model, users: this.users, tests: this.tests, tInstances: this.tInstances});
             this.navView.render();
             $("#nav").html(this.navView.el);
         },
@@ -273,6 +271,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         render: function() {
             var target = document.getElementById('content');
             var spinner = spinController.startSpinner(target);
+            this.checkCurrentTest();
             var view;
             switch (this.model.get("page")) {
             case "home":
@@ -375,52 +374,39 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             spinController.stopSpinner(spinner);
         },
 
-        setNavbarForTInstance: function(tiid) {
-            var tInstance = this.tInstances.get(tiid);
-            var tid = tInstance.get("tid");
-            var test = this.tests.get(tid);
-            if (tInstance.has("number")) {
-                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number") + " #" + tInstance.get("number"));
+        checkCurrentTest: function() {
+            var tid = this.model.get("currentTID");
+            var tiid = this.model.get("currentTIID");
+            if (!this.tests.get(tid)) {
+                this.model.set({
+                    currentTID: null,
+                    currentTIID: null,
+                });
             } else {
-                this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
-            }
-            this.model.set("currentAssessmentLink", "#ti/" + tiid);
-            if (this.model.hasPermission("seeAdminPages")) {
-                this.model.set("currentDetailName", "Admin");
-                this.model.set("currentDetailLink", "#t/" + tid);
-            } else {
-                this.model.set("currentDetailName", null);
-                this.model.set("currentDetailLink", null);
+                var theseTInstances = new Backbone.Collection(this.tInstances.where({tid: tid}));
+                if (!theseTInstances.get(tiid)) {
+                    var possibleTIIDs = theseTInstances.pluck("tiid");
+                    if (possibleTIIDs.length > 0) {
+                        this.model.set("currentTIID", possibleTIIDs[0]);
+                    } else {
+                        this.model.set("currentTIID", null);
+                    }
+                }
             }
         },
 
+        setNavbarForTInstance: function(tiid) {
+            var tInstance = this.tInstances.get(tiid);
+            var tid = tInstance.get("tid");
+            this.model.set({
+                currentTID: tid,
+                currentTIID: tiid,
+            });
+        },
+
         setNavbarForTest: function(tid) {
-            var test = this.tests.get(tid);
-            // check whether the current link to a tiid is still valid
-            // if so, leave it, if not, use a random tiid as the link
-            var theseTInstances = new Backbone.Collection(this.tInstances.where({tid: tid}));
-            var possibleLinks = theseTInstances.pluck("tiid").map(function(tiid) {return "#ti/" + tiid;});
-            if (!_(possibleLinks).contains(this.model.get("currentAssessmentLink"))) {
-                if (possibleLinks.length > 0) {
-                    var tInstance = theseTInstances.first();
-                    if (tInstance.has("number")) {
-                        this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number") + " #" + tInstance.get("number"));
-                    } else {
-                        this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
-                    }
-                    this.model.set("currentAssessmentLink", possibleLinks[0]);
-                } else {
-                    this.model.set("currentAssessmentName", test.get("set") + " " + test.get("number"));
-                    this.model.set("currentAssessmentLink", "#assess");
-                }
-            }
-            if (this.model.hasPermission("seeAdminPages")) {
-                this.model.set("currentDetailName", "Admin");
-                this.model.set("currentDetailLink", "#t/" + tid);
-            } else {
-                this.model.set("currentDetailName", null);
-                this.model.set("currentDetailLink", null);
-            }
+            this.model.set("currentTID", tid);
+            this.checkCurrentTest();
         },
 
         showView: function(view) {
@@ -438,15 +424,49 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         },
 
         reloadUserData: function() {
-            this.tInstances.reset();
-            this.questions.reset();
-            this.tests.reset();
-            this.users.reset();
-            this.tInstances.fetch({error: this.handleLoadError.bind(this)});
-            this.questions.fetch({error: this.handleLoadError.bind(this)});
-            this.tests.fetch({error: this.handleLoadError.bind(this)});
-            this.users.fetch({error: this.handleLoadError.bind(this)});
-        }
+            var that = this;
+            var errors = [];
+            async.parallel([
+                function(callback) {
+                    that.questions.reset();
+                    that.questions.fetch({
+                        success: function() {callback(null);},
+                        error: function() {errors.push("Error fetching questions"); callback(null);},
+                    });
+                },
+                function(callback) {
+                    that.tests.reset();
+                    that.tests.fetch({
+                        success: function() {callback(null);},
+                        error: function() {errors.push("Error fetching tests"); callback(null);},
+                    });
+                },
+                function(callback) {
+                    that.tInstances.reset();
+                    that.tInstances.fetch({
+                        success: function() {callback(null);},
+                        error: function() {errors.push("Error fetching tInstances"); callback(null);},
+                    });
+                },
+                function(callback) {
+                    that.users.reset();
+                    that.users.fetch({
+                        success: function() {callback(null);},
+                        error: function() {errors.push("Error fetching users"); callback(null);},
+                    });
+                },
+            ], function(err) {
+                if (err) {
+                    $("#error").append('<div class="alert alert-danger" role="alert">' + err + '</div>');
+                    // no return, we want to do updates
+                }
+                if (errors.length > 0) {
+                    $("#error").html('<div class="alert alert-danger" role="alert">' + errors.join(', ') + '</div>');
+                    // no return, we want to do updates
+                }
+                that.checkNavbar();
+            });
+        },
     });
 
     var AppRouter = Backbone.Router.extend({
