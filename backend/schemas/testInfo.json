@@ -22,7 +22,10 @@
         },
         "number": {
             "description": "The number of this test within the set (e.g., 1, 2, 3).",
-            "type": "integer",
+            "oneOf": [
+                {"type": "integer"},
+                {"type": "string"}
+            ],
             "required": true
         },
         "allowAccess": {
