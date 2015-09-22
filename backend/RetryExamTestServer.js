@@ -13,7 +13,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             showQuestionTitle: false,
             allowFinish: true,
             unlimitedVariants: false,
-            variantsPerQuestion: 1,
+            variantsPerQuestion: 3,
         };
     };
 
@@ -95,6 +95,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
                     } else {
                         tInstance.zones[questions.length] = null;
                     }
+                    var zoneQuestions = [];
                     _(zone.questions).each(function(question) {
                         var qid;
                         if (_(question).has("qid")) {
@@ -106,8 +107,10 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
                         if (!options.unlimitedVariants) {
                             vid = rand.randElem(test.vidsByQID[qid]);
                         }
-                        questions.push({qid: qid, vid: vid, points: question.points});
+                        zoneQuestions.push({qid: qid, vid: vid, points: question.points});
                     });
+                    rand.shuffle(zoneQuestions);
+                    questions.push.apply(questions, zoneQuestions);
                 });
             }
             var now = Date.now();
