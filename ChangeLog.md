@@ -1,6 +1,12 @@
 
 # ChangeLog
 
+* __1.11.1__ - 2015-09-23
+
+  * Fix build bug with missing moment-timezone.
+
+  * Remove deprecation warning for `questionGroups` in `RetryExam`.
+
 * __1.11.0__ - 2015-09-23
 
   * Redesign of the "Assessment" page to be more compact and consistent.
