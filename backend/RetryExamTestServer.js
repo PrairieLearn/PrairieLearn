@@ -52,7 +52,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
                 _(zone.questions).each(function(question) {
                     var qids = [];
                     if (question.qid) qids.push(question.qid);
-                    if (question.variants) qids.push.apply(qids, question.variants);
+                    if (question.qids) qids.push.apply(qids, question.qids);
                     _(qids).each(function(qid) {
                         if (!test.vidsByQID[qid]) test.vidsByQID[qid] = [];
                         if (test.vidsByQID[qid].length > options.variantsPerQuestion) {
@@ -101,7 +101,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
                         if (_(question).has("qid")) {
                             qid = question.qid
                         } else {
-                            qid = rand.randElem(question.variants);
+                            qid = rand.randElem(question.qids);
                         }
                         var vid = null;
                         if (!options.unlimitedVariants) {

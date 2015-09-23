@@ -86,8 +86,8 @@
             "properties": {
                 "points": {"$ref": "#/definitions/questionPoints"},
                 "qid": {"$ref": "#/definitions/questionQID"},
-                "variants": {
-                    "description": "Array of variants of a question.",
+                "qids": {
+                    "description": "Array of possible qids for a question.",
                     "type": "array",
                     "minItems": 1,
                     "items": {"$ref": "#/definitions/questionQID"}
