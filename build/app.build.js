@@ -5,7 +5,9 @@
         '*': {
             'backbone': 'browser/backbone',
             'underscore': 'browser/underscore',
-            'numeric': 'numeric-1.2.6.min'
+            'numeric': 'numeric-1.2.6.min',
+            'moment': 'moment.min',
+            'moment-timezone': 'moment-timezone-with-data-2010-2020',
         }
     },
     shim: {
