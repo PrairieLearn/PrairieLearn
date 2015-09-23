@@ -5,11 +5,20 @@
 
 ## Overview
 
-Each test is a single directory in the `tests` folder. The name of the directory is the `tid` (test ID). The directory must contain a single file called `info.json` that describes the test.
+Each test is a single directory in the `tests` folder. The name of the directory is the `tid` (test ID). The directory must contain a single file called `info.json` that describes the test and looks like:
 
-* [Format specification for test `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/backendConfig.json)
+    {
+        "type": "RetryExam",
+        "title": "Coordinates and Vectors",
+        "set": "Quiz",
+        "number": 2,
+        "allowAccess": [...],
+        "options": {...}
+    }
 
-The `options` field inside the test `info.json` has a format that depends on the test type (see the next section).
+* [Format specification for test `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/testInfo.json)
+
+The `type` of the test controls the way questions are asked, the grading scheme, and the format of the `options` data (see the next section for a list of available types). Tests are organized into `sets` such as (`homework`, `quiz`, `exam`, etc). Within each set the test has a `number`, so the short name of the test above is `Quiz 2`, for example. The `title` is a description of the test content, so the full name of the above test is `Quiz 2: Coordinates and Vectors`.
 
 ## Test types
 
