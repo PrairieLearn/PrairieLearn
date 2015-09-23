@@ -13,6 +13,7 @@ define(["underscore", "backbone", "mustache", "GameTestHelper", "text!GameTestSi
         initialize: function() {
             this.test = this.options.test;
             this.tInstance = this.options.tInstance;
+            this.store = this.options.store;
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.test, "change", this.render);
             this.listenTo(this.tInstance, "change", this.render);
@@ -32,19 +33,17 @@ define(["underscore", "backbone", "mustache", "GameTestHelper", "text!GameTestSi
             var testOptions = this.test.get("options");
 
             var data = {};
-            data.title = this.test.get("title");
-            var hwNumber = this.test.get("number");
-            data.hwNumber = hwNumber;
-            data.set = this.test.get("set");
             data.hwScore = GameTestHelper.renderHWScore(this.tInstance, this.test, testOptions);
             data.scoreBar = GameTestHelper.renderHWScoreBar(this.tInstance, this.test, testOptions);
             data.tiid = this.tInstance.get("tiid");
+            data.testShortName = this.store.tiidShortName(data.tiid);
 
             var qid = this.model.get("qid");
             var qids = that.test.get("qids");
             var qIndex = _.indexOf(qids, qid);
 
             data.qNumber = qIndex + 1;
+            var hwNumber = this.test.get("number");
             data.qFullNumber = "#" + hwNumber + "-" + (qIndex + 1);
             data.prevQNumber = null;
             data.nextQNumber = null;

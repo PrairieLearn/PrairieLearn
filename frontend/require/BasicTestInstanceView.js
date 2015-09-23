@@ -6,6 +6,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "BasicTestHelpe
         tagName: 'div',
 
         initialize: function() {
+            this.store = this.options.store;
             this.appModel = this.options.appModel;
             this.test = this.options.test;
             this.questions = this.options.questions;
@@ -16,11 +17,8 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "BasicTestHelpe
         render: function() {
             var that = this;
             var data = {};
-            data.title = this.test.get("title");
-            var hwNumber = this.test.get("number");
-            data.number = hwNumber;
-            data.set = this.test.get("set");
             data.tiid = this.model.get("tiid");
+            data.longName = this.store.tiidLongName(data.tiid);
 
             var dueDate = new Date(this.test.get("dueDate"));
             data.dueDate = BasicTestHelper.renderDueDate(dueDate);
@@ -37,6 +35,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "BasicTestHelpe
             data.questionList = [];
             var qids = this.test.get("qids");
             var qData = this.model.get("qData");
+            var hwNumber = this.test.get("number");
             _(qids).each(function(qid, index) {
                 var q = that.questions.get(qid);
                 data.questionList.push({

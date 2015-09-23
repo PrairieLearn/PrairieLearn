@@ -13,6 +13,7 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
         initialize: function() {
             this.test = this.options.test;
             this.tInstance = this.options.tInstance;
+            this.store = this.options.store;
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.test, "change", this.render);
             this.listenTo(this.tInstance, "change", this.render);
@@ -32,10 +33,8 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
             var testOptions = this.test.get("options");
 
             var data = {};
-            data.title = this.test.get("title");
-            var hwNumber = this.test.get("number");
-            data.hwNumber = hwNumber;
-            data.set = this.test.get("set");
+            data.testShortName = this.store.tiidShortName(data.tiid);
+            
             data.hwScore = AdaptiveTestHelper.renderHWScore(this.tInstance, testOptions);
             data.tiid = this.tInstance.get("tiid");
 
@@ -50,6 +49,7 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
             var qIndex = _.indexOf(qids, qid);
 
             data.qNumber = qIndex + 1;
+            var hwNumber = this.test.get("number");
             data.qFullNumber = "#" + hwNumber + "-" + (qIndex + 1);
             data.prevQNumber = null;
             data.nextQNumber = null;

@@ -6,6 +6,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
         tagName: 'div',
 
         initialize: function() {
+            this.store = this.options.store;
             this.appModel = this.options.appModel;
             this.test = this.options.test;
             this.questions = this.options.questions;
@@ -21,7 +22,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             var TestInstanceView = TestFactory.getClass(this.test.get("type"), "tInstanceView");
             if (!TestInstanceView)
                 return;
-            this.subView = new TestInstanceView({model: this.model, appModel: this.appModel, test: this.test, questions: this.questions});
+            this.subView = new TestInstanceView({model: this.model, appModel: this.appModel, test: this.test, questions: this.questions, store: this.store});
             this.listenTo(this.subView, "gradeTest", this.gradeTInstance.bind(this));
             this.listenTo(this.subView, "finishTest", this.finishTInstance.bind(this));
             this.subView.render();

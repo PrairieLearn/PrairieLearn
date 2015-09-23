@@ -8,6 +8,7 @@ define(["underscore", "backbone", "mustache", "BasicTestHelper", "text!BasicTest
         initialize: function() {
             this.test = this.options.test;
             this.tInstance = this.options.tInstance;
+            this.store = this.options.store;
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.test, "change", this.render);
             this.listenTo(this.tInstance, "change", this.render);
@@ -16,11 +17,8 @@ define(["underscore", "backbone", "mustache", "BasicTestHelper", "text!BasicTest
         render: function() {
             var that = this;
             var data = {};
-            data.title = this.test.get("title");
-            var hwNumber = this.test.get("number");
-            data.hwNumber = hwNumber;
-            data.set = this.test.get("set");
             data.tiid = this.tInstance.get("tiid");
+            data.testShortName = this.store.tiidShortName(data.tiid);
 
             var score = this.tInstance.get("score");
             data.score = BasicTestHelper.renderHWScore(score);
@@ -31,6 +29,7 @@ define(["underscore", "backbone", "mustache", "BasicTestHelper", "text!BasicTest
             var qIndex = _.indexOf(qids, qid);
 
             data.qNumber = qIndex + 1;
+            var hwNumber = this.test.get("number");
             data.qFullNumber = "#" + hwNumber + "-" + (qIndex + 1);
             data.prevQNumber = null;
             data.nextQNumber = null;

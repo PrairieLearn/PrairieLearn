@@ -252,6 +252,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
 
     var AppView = Backbone.View.extend({
         initialize: function() {
+            this.store = this.options.store;
             this.router = this.options.router; // hack to enable random question URL re-writing
             this.questions = this.options.questions;
             this.tests = this.options.tests;
@@ -263,7 +264,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.model, "change:userUID change:userRole change:mode", this.reloadUserData);
             this.listenTo(Backbone, "reloadUserData", this.reloadUserData);
-            this.navView = new NavView.NavView({model: this.model, users: this.users, tests: this.tests, tInstances: this.tInstances});
+            this.navView = new NavView.NavView({model: this.model, users: this.users, tests: this.tests, tInstances: this.tInstances, store: this.store});
             this.navView.render();
             $("#nav").html(this.navView.el);
         },
@@ -278,22 +279,22 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 break;
             case "stats":
                 var statsModel = new StatsModel.StatsModel({}, {appModel: this.model});
-                view = new StatsView.StatsView({model: statsModel});
+                view = new StatsView.StatsView({model: statsModel, store: this.store});
                 break;
             case "assess":
-                view = new AssessView({appModel: this.model, tests: this.tests, tInstances: this.tInstances, router: this.router});
+                view = new AssessView({appModel: this.model, tests: this.tests, tInstances: this.tInstances, router: this.router, store: this.store});
                 break;
             case "testInstance":
                 var tiid = this.model.get("pageOptions").tiid;
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
-                view = new TestInstanceView({model: tInstance, test: test, appModel: this.model, questions: this.questions});
+                view = new TestInstanceView({model: tInstance, test: test, appModel: this.model, questions: this.questions, store: this.store});
                 break;
             case "testDetail":
                 var tid = this.model.get("pageOptions").tid;
                 var test = this.tests.get(tid);
-                view = new TestDetailView({model: test, appModel: this.model, questions: this.questions});
+                view = new TestDetailView({model: test, appModel: this.model, questions: this.questions, store: this.store});
                 break;
             case "testQuestion":
                 var tiid = this.model.get("pageOptions").tiid;
@@ -316,7 +317,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                         helper.adjustQuestionDataModel(questionDataModel, test, tInstance);
                 });
                 */
-                view = new QuestionView.QuestionView({model: questionDataModel, test: test, tInstance: tInstance, appModel: this.model});
+                view = new QuestionView.QuestionView({model: questionDataModel, test: test, tInstance: tInstance, appModel: this.model, store: this.store});
                 break;
 
             /**
@@ -358,11 +359,11 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 break;
 
             case "user":
-                view = new UserView.UserView({model: this.model, users: this.users});
+                view = new UserView.UserView({model: this.model, users: this.users, store: this.store});
                 break;
 
             case "sync":
-                view = new SyncView.SyncView({model: this.model, pulls: this.pulls, syncModel: this.syncModel});
+                view = new SyncView.SyncView({model: this.model, pulls: this.pulls, syncModel: this.syncModel, store: this.store});
                 break;
             }
             this.showView(view);
@@ -552,6 +553,59 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         },
     });
 
+    var Store = Backbone.Model.extend({
+        initialize: function(attributes, options) {
+            this.router = options.router;
+            this.appModel = options.appModel;
+            this.questions = options.questions;
+            this.tests = options.tests;
+            this.tInstances = options.tInstances;
+            this.users = options.users;
+            this.pulls = options.pulls;
+            this.syncModel = options.syncModel;
+        },
+
+        tiidShortName: function(tiid) {
+            var tInstance = this.tInstances.get(tiid);
+            if (!tInstance) return "Invalid tInstance";
+            var tid = tInstance.get("tid");
+            var test = this.tests.get(tid);
+            if (!test) return "Invalid test";
+            var options = test.get("options");
+            if (options && !options.autoCreate) {
+                return test.get("set") + ' ' + test.get("number") + ' #' + tInstance.get("number");
+            } else {
+                return test.get("set") + ' ' + test.get("number");
+            }
+        },
+
+        tiidLongName: function(tiid) {
+            var tInstance = this.tInstances.get(tiid);
+            if (!tInstance) return "Invalid tInstance";
+            var tid = tInstance.get("tid");
+            var test = this.tests.get(tid);
+            if (!test) return "Invalid test";
+            var options = test.get("options");
+            if (options && !options.autoCreate) {
+                return test.get("set") + ' ' + test.get("number") + ' #' + tInstance.get("number") + ': ' + test.get("title");
+            } else {
+                return test.get("set") + ' ' + test.get("number") + ': ' + test.get("title");
+            }
+        },
+
+        tidShortName: function(tid) {
+            var test = this.tests.get(tid);
+            if (!test) return "Invalid test";
+            return test.get("set") + ' ' + test.get("number");
+        },
+
+        tidLongName: function(tid) {
+            var test = this.tests.get(tid);
+            if (!test) return "Invalid test";
+            return test.get("set") + ' ' + test.get("number") + ': ' + test.get("title");
+        },
+    });
+
     $(function() {
         var appModel = new AppModel();
 
@@ -573,7 +627,18 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         });
         var syncModel = new SyncModel.SyncModel();
 
-        var appRouter = new AppRouter({model: appModel, tests: tests, tInstances: tInstances});
+        var router = new AppRouter({model: appModel, tests: tests, tInstances: tInstances});
+
+        var store = new Store({}, {
+            router: router,
+            model: appModel,
+            questions: questions,
+            tests: tests,
+            tInstances: tInstances,
+            users: users,
+            pulls: pulls,
+            syncModel: syncModel,
+        });
 
         $.ajaxPrefilter(function(options, originalOptions, jqXHR) {
             var headers = {};
@@ -634,10 +699,11 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                     Backbone.history.start();
                     var appView = new AppView({
                         model: appModel,
+                        store: store,
                         questions: questions,
                         tests: tests,
                         tInstances: tInstances,
-                        router: appRouter,
+                        router: router,
                         users: users,
                         pulls: pulls,
                         syncModel: syncModel,

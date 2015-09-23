@@ -10,6 +10,7 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'renderer', 'Te
         },
 
         initialize: function() {
+            this.store = this.options.store;
             this.appModel = this.options.appModel;
             this.router = this.options.router;
             this.tests = this.options.tests;
@@ -33,7 +34,7 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'renderer', 'Te
                 theseTests = new Backbone.Collection(theseTests.sortBy("number"));
                 theseTests.each(function(test) {
                     var tid = test.get("tid");
-                    var testTitle = set + ' ' + test.get("number") + ': ' + test.get("title");
+                    var testTitle = that.store.tidLongName(tid);
                     var options = test.get("options");
                     var testAdmin = null;
                     if (that.appModel.hasPermission("seeAdminPages")) {
@@ -58,10 +59,9 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'renderer', 'Te
                     theseTInstances = new Backbone.Collection(theseTInstances.sortBy("number"));
                     theseTInstances.each(function(tInstance) {
                         var tiid = tInstance.get("tiid");
-                        var title = testTitle;
+                        var title = that.store.tiidLongName(tiid);
                         var admin = testAdmin;
                         if (options && !options.autoCreate) {
-                            title = testTitle + ' #' + tInstance.get("number");
                             admin = null;
                         }
                         var score = Math.round(tInstance.get("score") / test.get("maxScore") * 100);

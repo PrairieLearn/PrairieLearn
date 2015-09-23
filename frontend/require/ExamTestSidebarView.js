@@ -8,6 +8,7 @@ define(["underscore", "backbone", "mustache", "ExamTestHelper", "text!ExamTestSi
         initialize: function() {
             this.test = this.options.test;
             this.tInstance = this.options.tInstance;
+            this.store = this.options.store;
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.test, "change", this.render);
             this.listenTo(this.tInstance, "change", this.render);
@@ -15,9 +16,8 @@ define(["underscore", "backbone", "mustache", "ExamTestHelper", "text!ExamTestSi
 
         render: function() {
             var data = {};
-            data.testTitle = this.test.get("title");
-            data.attemptNumber = this.tInstance.get("number");
             data.tiid = this.tInstance.get("tiid");
+            data.testShortName = this.store.tiidShortName(data.tiid);
 
             var qid = this.model.get("qid");
             var qids = this.tInstance.get("qids");

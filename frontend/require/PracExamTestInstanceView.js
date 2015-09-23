@@ -10,6 +10,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "PracExamTestHe
         },
 
         initialize: function() {
+            this.store = this.options.store;
             this.appModel = this.options.appModel;
             this.test = this.options.test;
             this.questions = this.options.questions;
@@ -20,9 +21,8 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "PracExamTestHe
         render: function() {
             var that = this;
             var data = {};
-            data.title = this.test.get("title");
-            data.number = this.model.get("number");
             data.tiid = this.model.get("tiid");
+            data.longName = this.store.tiidLongName(data.tiid);
 
             var qids = that.model.get("qids");
             data.nQuestions = qids.length;

@@ -6,6 +6,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "AdaptiveTestHe
         tagName: 'div',
 
         initialize: function() {
+            this.store = this.options.store;
             this.appModel = this.options.appModel;
             this.test = this.options.test;
             this.questions = this.options.questions;
@@ -18,11 +19,8 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "AdaptiveTestHe
             var testOptions = this.test.get("options");
 
             var data = {};
-            data.title = this.test.get("title");
-            var hwNumber = this.test.get("number");
-            data.number = hwNumber;
-            data.set = this.test.get("set");
             data.tiid = this.model.get("tiid");
+            data.longName = this.store.tiidLongName(data.tiid);
 
             var modelData = this.model.get("modelData");
             data.masteryScore = AdaptiveTestHelper.renderMasteryScore(modelData);
@@ -57,6 +55,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "AdaptiveTestHe
             var qids = that.test.get("qids");
             var qDists = that.test.get("qDists");
             var userDist = that.model.get("dist");
+            var hwNumber = this.test.get("number");
             _(qids).each(function(qid, index) {
                 var q = that.questions.get(qid);
                 data.questionList.push({

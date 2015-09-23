@@ -6,6 +6,7 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
         tagName: 'nav',
 
         initialize: function() {
+            this.store = this.options.store;
             this.users = this.options.users;
             this.tests = this.options.tests;
             this.tInstances = this.options.tInstances;
@@ -36,11 +37,7 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
                     if (tiid) {
                         var tInstance = this.tInstances.get(tiid);
                         if (tInstance) {
-                            if (testOptions && testOptions.autoCreate) {
-                                data.currentAssessmentName = test.get("set") + " " + test.get("number");
-                            } else {
-                                data.currentAssessmentName = test.get("set") + " " + test.get("number") + " #" + tInstance.get("number");
-                            }
+                            data.currentAssessmentName = this.store.tiidShortName(tiid);
                             data.currentAssessmentLink = "#ti/" + tiid;
                         }
                     }

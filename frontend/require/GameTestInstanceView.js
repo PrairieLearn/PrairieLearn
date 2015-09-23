@@ -6,6 +6,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "GameTestHelper
         tagName: 'div',
 
         initialize: function() {
+            this.store = this.options.store;
             this.appModel = this.options.appModel;
             this.test = this.options.test;
             this.questions = this.options.questions;
@@ -18,11 +19,8 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "GameTestHelper
             var testOptions = this.test.get("options");
 
             var data = {};
-            data.title = this.test.get("title");
-            var hwNumber = this.test.get("number");
-            data.number = hwNumber;
-            data.set = this.test.get("set");
             data.tiid = this.model.get("tiid");
+            data.longName = this.store.tiidLongName(data.tiid);
 
             var modelData = this.model.get("modelData");
             data.hwScore = GameTestHelper.renderHWScore(this.model, this.test, testOptions);
@@ -54,6 +52,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "GameTestHelper
             var qData = this.model.get("qData");
             var qParams = this.test.get("qParams");
             var qids = that.test.get("qids");
+            var hwNumber = this.test.get("number");
             _(qids).each(function(qid, index) {
                 var q = that.questions.get(qid);
                 data.questionList.push({
