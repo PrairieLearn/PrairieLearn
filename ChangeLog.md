@@ -1,6 +1,18 @@
 
 # ChangeLog
 
+* __1.11.0__ - 2015-09-23
+
+  * Redesign of the "Assessment" page to be more compact and consistent.
+
+  * Add `zones` to `RetryExam` to control question-order randomization.
+
+  * Add `variantsPerQuestion` and `unlimitedVariants` options for `RetryExam`.
+
+  * Improve test naming consistency and fix navbar link bugs with tests.
+
+  * Allow test numbers to be strings.
+
 * __1.10.2__ - 2015-09-19
 
   * Fix bug introduced by 1.10.1 that broke all tests (overly general change events).
