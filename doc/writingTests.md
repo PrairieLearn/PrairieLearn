@@ -24,9 +24,40 @@ Type        | Randomized | Options format                                       
 `PracExam`  | Yes        | [`PracExam` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/testOptionsPracExam.json)   | Like `Exam`, but students can generate their own repeated random test instances for practice.
 `RetryExam` | Yes        | [`RetryExam` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/testOptionsRetryExam.json) | An exam where students can grade their answers at any time, and retry question for reduced points.
 
-## Question randomization algorithm
+## Randomization algorithm
 
-FIXME!
+The test randomization algorithm depends on the test type. Here we only describe the "new" type of randomization for `RetryExam`.
+
+#### `RetryExam` randomization
+
+A `RetryExam` is broken down in to a list of zones, like this:
+
+    "zones": [
+        {
+            "title": "Easy questions",
+            "questions": [
+                {"qid": "anEasyQ", "points": [10, 5, 3, 1, 0.5, 0.25]},
+                {"qids": ["easyQV1" , "easyQV2"], "points": [10, 3]},
+                {"qid": "aSlightlyHarderQ", "points": [10, 9, 7, 5]}
+            ]
+        },
+        {
+            "title": "Hard questions",
+            "questions": [
+                {"qids": ["hardQV1", "hardQV2"], "points": [10]}
+                {"qid": "reallyHardQ", "points": [10, 10, 10]}
+            ]
+        }
+    ],
+
+* Each zone appears in the given order in the test. Zone titles are optional and are displayed to the student if present.
+
+* Within each zone the question order is randomized.
+
+* A test question can be specified by either a single `qid` or by several `qids`, in which case one of these `qids` is chosen at random. Once the `qid` is determined, then a random variant of that question is selected.
+
+* Rather than continually generating new random variants for each question, the test maintains a pool of possible variants for each question and selects from there. This is done to provide better statistics on question variants. To change this, set the `variantsPerQuestion` option, or set `unlimitedVariants: true` to use unlimited variants.
+
 
 ## Server modes
 
