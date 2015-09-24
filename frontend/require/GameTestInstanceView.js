@@ -61,7 +61,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "GameTestHelper
                     tiid: that.model.get("tiid"),
                     title: q.get("title"),
                     number: index + 1,
-                    fullNumber: "#" + hwNumber + "-" + (index + 1),
+                    fullNumber: "#" + hwNumber + "." + (index + 1),
                     value: GameTestHelper.renderQuestionValue(qData[qid].value, qParams[qid].initValue),
                     score: GameTestHelper.renderQuestionScore(qData[qid].score, qParams[qid].maxScore),
                 });

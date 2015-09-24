@@ -8,7 +8,7 @@ define(["underscore"], function(_) {
         var hwNumber = test.get("number");
         var qids = test.get("qids");
         var qIndex = _(qids).indexOf(qid);
-        return "#" + hwNumber + "-" + (qIndex + 1);
+        return "#" + hwNumber + "." + (qIndex + 1);
     };
 
     return new BasicTestClient();

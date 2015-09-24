@@ -22,7 +22,7 @@ define(['underscore', 'backbone', 'mustache', 'spinController', 'TestFactory', '
             var qNumber = testClient.formatQNumber(qid, this.test, this.tInstance);
             var title;
             if (this.model.get("showTitle")) {
-                title = qNumber + ". " + qTitle;
+                title = qNumber + ": " + qTitle;
             } else {
                 title = "Question " + qNumber;
             }
