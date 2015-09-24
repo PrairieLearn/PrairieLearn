@@ -44,7 +44,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "BasicTestHelpe
                     tiid: that.model.get("tiid"),
                     title: q.get("title"),
                     number: index + 1,
-                    fullNumber: "#" + hwNumber + "-" + (index + 1),
+                    fullNumber: "#" + hwNumber + "." + (index + 1),
                     attempts: BasicTestHelper.renderQAttempts(qData[qid]),
                     score: BasicTestHelper.renderQScore(qData[qid]),
                 });

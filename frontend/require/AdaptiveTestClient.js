@@ -24,7 +24,7 @@ define(["underscore", "PrairieRandom"], function(_, PrairieRandom) {
         var hwNumber = test.get("number");
         var qids = test.get("qids");
         var qIndex = _(qids).indexOf(qid);
-        return "#" + hwNumber + "-" + (qIndex + 1);
+        return "#" + hwNumber + "." + (qIndex + 1);
     };
 
     AdaptiveTestClient.prototype.adjustQuestionDataModel = function(questionDataModel, tInstance, test) {

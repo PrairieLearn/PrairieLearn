@@ -34,7 +34,10 @@
     <tbody>
       {{#questionList}}
       <tr>
-        <td><a href="#q/{{tiid}}/{{number}}">{{fullNumber}}. {{title}}</a></td>
+        <td>
+          <a href="#q/{{tiid}}/{{number}}">
+            {{fullNumber}}&nbsp;&nbsp;{{title}}
+          </a></td>
         <td class="cell-center">{{{attempts}}}</td>
         <td class="cell-center">{{{score}}}</td>
       </tr>
