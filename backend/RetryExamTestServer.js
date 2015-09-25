@@ -40,11 +40,13 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             test.nQuestions = _.chain(options.zones)
                 .pluck("questions")
                 .map(function(x) {return x.length;})
-                .reduce(function(a, b) {return a + b;}, 0);
+                .reduce(function(a, b) {return a + b;}, 0).value();
             test.maxScore = _.chain(options.zones)
                 .pluck("questions")
-                .map(_.max)
-                .reduce(function(a, b) {return a + b;}, 0);
+                .flatten()
+                .pluck("points")
+                .map(function(p) {return _.max(p);})
+                .reduce(function(a, b) {return a + b;}, 0).value();
         }
         if (!options.unlimitedVariants) {
             test.vidsByQID = test.vidsByQID || {};
