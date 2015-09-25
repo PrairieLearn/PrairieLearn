@@ -44,7 +44,7 @@ define(["underscore", "backbone", "mustache", "GameTestHelper", "text!GameTestSi
 
             data.qNumber = qIndex + 1;
             var hwNumber = this.test.get("number");
-            data.qFullNumber = "#" + hwNumber + "-" + (qIndex + 1);
+            data.qFullNumber = "#" + hwNumber + "." + (qIndex + 1);
             data.prevQNumber = null;
             data.nextQNumber = null;
             if (qIndex > 0)

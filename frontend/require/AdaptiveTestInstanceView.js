@@ -64,7 +64,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "AdaptiveTestHe
                     tiid: that.model.get("tiid"),
                     title: q.get("title"),
                     number: index + 1,
-                    fullNumber: "#" + hwNumber + "-" + (index + 1),
+                    fullNumber: "#" + hwNumber + "." + (index + 1),
                     recommendBar: AdaptiveTestHelper.renderRecommendBar(modelData, qid),
                     correctPoints: AdaptiveTestHelper.renderCorrectPoints(modelData, qid),
                     incorrectPoints: AdaptiveTestHelper.renderIncorrectPoints(modelData, qid),
