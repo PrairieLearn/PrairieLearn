@@ -27,7 +27,7 @@
                 "title": "Hard questions",
                 "questions": [
                     {
-                        "variants": ["fibonacci", "addVectors"],
+                        "qids": ["fibonacci", "addVectors"],
                         "points": [10, 10, 7, 3, 1, 0.5, 0.25]
                     }
                 ]
