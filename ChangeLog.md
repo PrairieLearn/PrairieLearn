@@ -1,6 +1,12 @@
 
 # ChangeLog
 
+* __1.12.0__ - 2015-09-24
+
+  * Standardize question numbering to be like #3.8 rather than #3-8 (Terence Nip @tnip).
+
+  * Fix schema validation and example for RetryExams with multiple qids in a question.
+
 * __1.11.1__ - 2015-09-23
 
   * Fix build bug with missing moment-timezone.
