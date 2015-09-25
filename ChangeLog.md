@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.12.1__ - 2015-09-24
+
+  * Fix test statistics for `RetryExam` using zones.
+
 * __1.12.0__ - 2015-09-24
 
   * Standardize question numbering to be like #3.8 rather than #3-8 (Terence Nip @tnip).
