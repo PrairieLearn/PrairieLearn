@@ -96,7 +96,7 @@
             "required": ["points"],
             "oneOf": [
                 {"type": "object", "required": ["qid"]},
-                {"type": "object", "required": ["variants"]}
+                {"type": "object", "required": ["qids"]}
             ]
         },
         "questionPoints": {
