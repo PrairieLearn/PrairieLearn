@@ -2358,16 +2358,16 @@ var getScoresForTest = function(tid, callback) {
                 cursor.next(function(err, r) {
                     if (err) return cb(err);
                     tInstance = r;
+                    if (!tInstance) return cb(null);
+                    var uid = tInstance.uid;
+                    if (uidToRole(uid) != "Student") return cb(null);
                     try {
-                        if (tInstance != null) {
-                            var uid = tInstance.uid;
-                            var score = tInstance.score / test.maxScore;
-                            if (!scores[uid] || score > scores[uid].score) {
-                                scores[uid] = {
-                                    score: score,
-                                    qDataByQID: getQDataByQID(test, tInstance),
-                                };
-                            }
+                        var score = tInstance.score / test.maxScore;
+                        if (!scores[uid] || score > scores[uid].score) {
+                            scores[uid] = {
+                                score: score,
+                                qDataByQID: getQDataByQID(test, tInstance),
+                            };
                         }
                     } catch (e) {
                         return cb(e);
