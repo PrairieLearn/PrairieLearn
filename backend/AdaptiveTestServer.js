@@ -90,6 +90,11 @@ define(["underscore", "PrairieModel", "numeric", "moment-timezone"], function(_,
         test.initAvgProb = avgProb(test.qids, test.qDists, userDist)
         test.text = options.text;
         test.maxScore = 1;
+        test.maxQScoresByQID = _.chain(options.questions)
+            .pluck('qid')
+            .map(function(qid) {return [qid, 1];})
+            .object()
+            .value();
     };
 
     AdaptiveTestServer.updateTInstance = function(tInstance, test, options) {
