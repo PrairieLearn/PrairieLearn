@@ -386,7 +386,17 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 .attr("x", function(stat) {return x(stat.meanScore);})
                 .attr("y", function(stat) {return y(stat.discrimination);})
                 .attr("width", function(stat) {return 5;})
-                .attr("height", function(stat) {return 5;});
+                .attr("height", function(stat) {return 5;})
+
+            svg.selectAll(".qLabels")
+                .data(qStats)
+                .enter()
+                .append("text")
+                .attr("class", "label")
+                .attr("x", function(stat) {return x(stat.meanScore);})
+                .attr("y", function(stat) {return y(stat.discrimination + 1);})
+                .style("text-anchor", "middle")
+                .text(function(stat) {return stat.qid;});
         },
     });
 
