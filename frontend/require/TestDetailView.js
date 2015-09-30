@@ -57,7 +57,10 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 data.stddev = (this.testStats.get("stddev") * 100).toFixed(1);
                 data.min = (this.testStats.get("min") * 100).toFixed(1);
                 data.max = (this.testStats.get("max") * 100).toFixed(1);
+                data.nZeroScore = this.testStats.get("nZeroScore");
                 data.nFullScore = this.testStats.get("nFullScore");
+                data.fracZeroScore = (data.n > 0) ? (data.nZeroScore / data.n * 100).toFixed(1) : 0;
+                data.fracFullScore = (data.n > 0) ? (data.nFullScore / data.n * 100).toFixed(1) : 0;
                 var byQID = this.testStats.get("byQID");
                 data.qStats = [];
                 _(byQID).each(function(stat, qid) {
@@ -70,7 +73,6 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                         meanNAttempts: stat.meanNAttempts.toFixed(1),
                         fracEverCorrect: (stat.fracEverCorrect * 100).toFixed(1),
                         discrimination: (stat.discrimination * 100).toFixed(1),
-                        discByCorrect: (stat.discByCorrect * 100).toFixed(1),
                         meanScoreByQuintile: meanScoreByQuintile,
                         meanScoreByQuintileString: _(meanScoreByQuintile).map(function(s) {return s + '%';}).join(', '),
                     });

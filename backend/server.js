@@ -2757,6 +2757,7 @@ var computeTestStats = function(tid, scores, callback) {
                 stddev: jStat.stdev(totalScores),
                 min: jStat.min(totalScores),
                 max: jStat.max(totalScores),
+                nZeroScore: _(totalScores).filter(function(s) {return Math.abs(s) < 1e-8;}).length,
                 nFullScore: _(totalScores).filter(function(s) {return Math.abs(s - 1) < 1e-8;}).length,
                 quintiles: jStat.quantiles(totalScores, [0.2, 0.4, 0.6, 0.8]),
             };
@@ -2786,7 +2787,6 @@ var computeTestStats = function(tid, scores, callback) {
                     meanNAttempts: (attempts.length > 0) ? jStat.mean(attempts) : 0,
                     fracEverCorrect: (everCorrects.length > 0) ? jStat.mean(everCorrects) : 0,
                     discrimination: (totalScores.length > 0) ? jStat.corrcoeff(totalScores, questionScores) : 0,
-                    discByCorrect: (totalScores.length > 0) ? jStat.corrcoeff(totalScores, everCorrects) : 0,
                 };
                 stats.byQID[qid].meanScoreByQuintile = _(questionScoresByQuintile).map(function(scores) {
                     return (scores.length > 0) ? jStat.mean(scores) : 0;
