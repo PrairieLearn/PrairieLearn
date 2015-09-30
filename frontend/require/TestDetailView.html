@@ -72,7 +72,8 @@
       <tr><td>Minimum score</td><td>{{min}}%</td></tr>
       <tr><td>Median score</td><td>{{median}}%</td></tr>
       <tr><td>Maximum score</td><td>{{max}}%</td></tr>
-      <tr><td>Number of 100%</td><td>{{nFullScore}}</td></tr>
+      <tr><td>Number of 0%</td><td>{{nZeroScore}} ({{fracZeroScore}}% of class)</td></tr>
+      <tr><td>Number of 100%</td><td>{{nFullScore}} ({{fracFullScore}}% of class)</td></tr>
     </tbody>
   </table>
   <div class="panel-footer">
@@ -102,7 +103,6 @@
         <th>Question</th>
         <th>Mean score</th>
         <th>Discrimination</th>
-        <th>Disc by correct</th>
         <th>Number attempts</th>
         <th>Fraction solved</th>
         <th>Number of students</th>
@@ -115,7 +115,6 @@
         <td>{{title}} ({{qid}})</td>
         <td>{{meanScore}}%</td>
         <td>{{discrimination}}%</td>
-        <td>{{discByCorrect}}%</td>
         <td>{{meanNAttempts}}</td>
         <td>{{fracEverCorrect}}%</td>
         <td>{{n}}</td>
