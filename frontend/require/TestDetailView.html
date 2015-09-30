@@ -78,6 +78,7 @@
   </table>
   <div class="panel-footer">
     <div id="scoreHistogramPlot" class="scoreHistogram"></div>
+    Download <a href="{{testFilesStatsLink}}">{{testFilesStatsFilename}}</a>
   </div>
   {{/hasTestStats}}
 
@@ -123,6 +124,10 @@
       {{/qStats}}
     </tbody>
   </table>
+
+  <div class="panel-footer">
+    Download <a href="{{testFilesQStatsLink}}">{{testFilesQStatsFilename}}</a>
+  </div>
   {{/hasTestStats}}
 
   {{^hasTestStats}}
