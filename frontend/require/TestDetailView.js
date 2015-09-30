@@ -68,17 +68,23 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 var byQID = this.testStats.get("byQID");
                 data.qStats = [];
                 _(byQID).each(function(stat, qid) {
-                    var meanScoreByQuintile = _(stat.meanScoreByQuintile).map(function(s) {return (s * 100).toFixed(1);});
+                    var meanScoreByQuintile = _(stat.meanScoreByQuintile).map(function(s) {return s * 100;});
+                    var meanScoreByQuintileStrings = _(meanScoreByQuintile).map(function(s) {return s.toFixed(1);});
                     data.qStats.push({
                         qid: qid,
                         title: that.questions.get(qid).get("title"),
                         n: stat.n,
-                        meanScore: (stat.meanScore * 100).toFixed(1),
-                        meanNAttempts: stat.meanNAttempts.toFixed(1),
-                        fracEverCorrect: (stat.fracEverCorrect * 100).toFixed(1),
-                        discrimination: (stat.discrimination * 100).toFixed(1),
+                        meanScore: stat.meanScore * 100,
+                        meanScoreString: (stat.meanScore * 100).toFixed(1),
+                        meanNAttempts: stat.meanNAttempts,
+                        meanNAttemptsString: stat.meanNAttempts.toFixed(1),
+                        fracEverCorrect: stat.fracEverCorrect * 100,
+                        fracEverCorrectString: (stat.fracEverCorrect * 100).toFixed(1),
+                        discrimination: stat.discrimination * 100,
+                        discriminationString: (stat.discrimination * 100).toFixed(1),
                         meanScoreByQuintile: meanScoreByQuintile,
-                        meanScoreByQuintileString: _(meanScoreByQuintile).map(function(s) {return s + '%';}).join(', '),
+                        meanScoreByQuintileStrings: meanScoreByQuintileStrings,
+                        meanScoreByQuintileString: _(meanScoreByQuintileStrings).map(function(s) {return s + '%';}).join(', '),
                     });
                 });
             }
@@ -88,8 +94,9 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
 
             if (data.hasTestStats) {
                 this.renderScoreHistogram("#scoreHistogramPlot", data.scores, "score / %", "number of students");
+                this.renderQuestionScoreDiscPlot("#questionScoreDiscPlot", data.qStats);
             }
-            
+
             var TestDetailView = TestFactory.getClass(this.model.get("type"), "tDetailView");
             if (!TestDetailView)
                 return;
@@ -273,7 +280,114 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 this.subView.close();
             }
             this.remove();
-        }
+        },
+
+        renderQuestionScoreDiscPlot: function(selector, qStats) {
+            var margin = {top: 40, right: 20, bottom: 50, left: 70},
+            width = 500 - margin.left - margin.right,
+            height = 500 - margin.top - margin.bottom;
+
+            var x = d3.scale.linear()
+                .range([0, width]);
+
+            var y = d3.scale.linear()
+                .range([height, 0]);
+
+            var color = d3.scale.category10();
+
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .orient("bottom");
+
+            var yAxis = d3.svg.axis()
+                .scale(y)
+                .orient("left");
+
+            var xGrid = d3.svg.axis()
+                .scale(x)
+                .orient("bottom")
+                .tickSize(-height)
+                .tickFormat("");
+
+            var yGrid = d3.svg.axis()
+                .scale(y)
+                .orient("left")
+                .tickSize(-width)
+                .tickFormat("");
+
+            var svg = d3.select(this.$(selector).get(0)).append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .attr("class", "center-block")
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            var xData = _(qStats).map(function(stat) {return stat.meanScore;});
+            var yData = _(qStats).map(function(stat) {return stat.discrimination;});
+            
+            var xExtent = [0, 100]; //d3.extent(xData);
+            var yExtent = [0, 100]; //d3.extent(yData);
+            var xRange = xExtent[1] - xExtent[0];
+            var yRange = yExtent[1] - yExtent[0];
+            //xExtent = [xExtent[0] - 0.05 * xRange, xExtent[1] + 0.05 * xRange];
+            //yExtent = [yExtent[0], yExtent[1] + 0.05 * yRange];
+            x.domain(xExtent);
+            y.domain(yExtent);
+
+            svg.append("g")
+                .attr("class", "x grid")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xGrid);
+
+            svg.append("g")
+                .attr("class", "y grid")
+                .call(yGrid);
+
+            svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis)
+                .append("text")
+                .attr("class", "label")
+                .attr("x", width / 2)
+                .attr("y", "3.5em")
+                .style("text-anchor", "middle")
+                .text("mean score / %");
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+                .append("text")
+                .attr("class", "label")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height / 2)
+                .attr("y", "-3em")
+                .style("text-anchor", "middle")
+                .text("discrimination / %");
+
+            svg.append("g")
+                .append("text")
+                .attr("class", "label")
+                .attr("x", width / 2)
+                .attr("y", "-1em")
+                .style("text-anchor", "middle")
+                .text("Question discrimination versus mean score");
+
+            svg.append("line")
+                .attr({x1: 0, y1: 0, x2: width, y2: 0, "class": "x axis"})
+
+            svg.append("line")
+                .attr({x1: width, y1: 0, x2: width, y2: height, "class": "y axis"});
+
+            svg.selectAll(".bar")
+                .data(qStats)
+                .enter().append("rect")
+                .attr("class", "bar")
+                .attr("x", function(stat) {return x(stat.meanScore);})
+                .attr("y", function(stat) {return y(stat.discrimination);})
+                .attr("width", function(stat) {return 5;})
+                .attr("height", function(stat) {return 5;});
+        },
     });
 
     return TestDetailView;
