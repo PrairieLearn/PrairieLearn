@@ -2278,29 +2278,104 @@ app.get("/export.csv", function(req, res) {
     });
 });
 
+var getQDataByQID = function(test, tInstance) {
+    var qDataByQID = {};
+    if (_(tInstance).has('questionsByQID')) {
+        // RetryExam
+        _(tInstance.questionsByQID).each(function(question, qid) {
+            qDataByQID[qid] = {
+                points: question.awardedPoints,
+                score: question.awardedPoints / test.maxQScoresByQID[qid],
+                nAttempts: question.nGradedAttempts,
+                everCorrect: question.correct,
+            };
+        });
+    } else if (_(tInstance).has('qids') && _(tInstance).has('submissionsByQid')) {
+        // Exam and PracExam
+        _(tInstance.qids).each(function(qid) {
+            qDataByQID[qid] = {
+                points: 0,
+                score: 0,
+                nAttempts: 0,
+                everCorrect: false,
+            };
+        });
+        _(tInstance.submissionsByQid).each(function(submission) {
+            qDataByQID[qid].nAttempts++;
+            if (submission.score >= 0.5) {
+                qDataByQID[qid].points = 1;
+                qDataByQID[qid].score = 1;
+                qDataByQID[qid].everCorrect = true;
+            }
+        });
+    } else if (_(test).has('qids') && _(tInstance).has('qData')) {
+        // Basic and Adaptive
+        _(test.qids).each(function(qid) {
+            qDataByQID[qid] = {
+                points: 0,
+                score: 0,
+                nAttempts: 0,
+                everCorrect: false,
+            };
+        });
+        _(tInstance.qData).each(function(qid, data) {
+            if (_(data).has('nAttempt')) {
+                // Basic
+                qDataByQID[qid].points = data.avgScore;
+                qDataByQID[qid].score = data.avgScore;
+                qDataByQID[qid].nAttempts = data.nAttempt;
+                qDataByQID[qid].everCorrect = (data.maxScore > 0);
+            } else if (_(data).has('value')) {
+                // Game
+                qDataByQID[qid].points = data.score;
+                qDataByQID[qid].score = data.score / test.maxQScoresByQID[qid];
+                qDataByQID[qid].nAttempts = 0;
+                qDataByQID[qid].everCorrect = (data.score > 0);
+            }
+        });
+    } else {
+        // Adaptive
+        _(test.qids).each(function(qid) {
+            qDataByQID[qid] = {
+                points: 0,
+                score: 0,
+                nAttempts: 0,
+                everCorrect: false,
+            };
+        });
+    }
+    return qDataByQID;
+};
+
 var getScoresForTest = function(tid, callback) {
     readTest(tid, function(err, test) {
         if (err) return callback(err);
         tiCollect.find({tid: tid}, function(err, cursor) {
             if (err) return callback(err);
             var scores = {};
-            var item;
+            var tInstance;
             async.doUntil(function(cb) { // body
                 cursor.next(function(err, r) {
                     if (err) return cb(err);
-                    item = r;
-                    if (item != null) {
-                        var uid = item.uid;
-                        var score = item.score / test.maxScore;
-                        if (scores[uid] === undefined)
-                            scores[uid] = score;
-                        else
-                            scores[uid] = Math.max(scores[uid], score);
-                    }
+                    tInstance = r;
+                    try {
+                        if (tInstance != null) {
+                            var uid = tInstance.uid;
+                            var score = tInstance.score / test.maxScore;
+                            if (!scores[uid] || score > scores[uid].score) {
+                                scores[uid] = {
+                                    score: score,
+                                    qDataByQID: getQDataByQID(test, tInstance),
+                                };
+                            }
+                        }
+                    } catch (e) {
+                        return cb(e);
+                    };
                     cb(null);
                 });
             }, function() { // test
-                return (item == null);
+                return (tInstance == null);
             }, function(err) { // finalize
                 if (err) return callback(err);
                 callback(null, scores);
@@ -2331,7 +2406,7 @@ app.get("/testScores/:filename", function(req, res) {
                     username = uid.slice(0, i);
                 }
             }
-            var row = [username, score * 100];
+            var row = [username, score.score * 100];
             return row;
         });
         csvData = _(csvData).sortBy(function(row) {return row[0];});
@@ -2675,14 +2750,14 @@ app.get("/testStats/:tid", function(req, res) {
     var tid = req.params.tid;
     getScoresForTest(tid, function(err, scores) {
         if (err) return sendError(500, "Error getting scores for tid: " + tid, err);
-        scores = _(scores).values();
+        var totalScores = _(scores).pluck('score');
         var stats = {
             tid: tid,
-            n: scores.length,
-	    scores: scores,
-            mean: jStat.mean(scores),
-            median: jStat.median(scores),
-            stddev: jStat.stdev(scores),
+            n: totalScores.length,
+            scores: totalScores,
+            mean: jStat.mean(totalScores),
+            median: jStat.median(totalScores),
+            stddev: jStat.stdev(totalScores),
         };
         res.json(stats);
     });
