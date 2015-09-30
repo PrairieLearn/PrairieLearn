@@ -26,6 +26,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
         },
 
         render: function() {
+            var that = this;
             var options = this.model.get("options");
             var data = {};
             data.tid = this.model.get("tid");
@@ -54,6 +55,26 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 data.mean = (this.testStats.get("mean") * 100).toFixed(1);
                 data.median = (this.testStats.get("median") * 100).toFixed(1);
                 data.stddev = (this.testStats.get("stddev") * 100).toFixed(1);
+                data.min = (this.testStats.get("min") * 100).toFixed(1);
+                data.max = (this.testStats.get("max") * 100).toFixed(1);
+                data.nFullScore = this.testStats.get("nFullScore");
+                var byQID = this.testStats.get("byQID");
+                data.qStats = [];
+                _(byQID).each(function(stat, qid) {
+                    var meanScoreByQuintile = _(stat.meanScoreByQuintile).map(function(s) {return (s * 100).toFixed(1);});
+                    data.qStats.push({
+                        qid: qid,
+                        title: that.questions.get(qid).get("title"),
+                        n: stat.n,
+                        meanScore: (stat.meanScore * 100).toFixed(1),
+                        meanNAttempts: stat.meanNAttempts.toFixed(1),
+                        fracEverCorrect: (stat.fracEverCorrect * 100).toFixed(1),
+                        discrimination: (stat.discrimination * 100).toFixed(1),
+                        discByCorrect: (stat.discByCorrect * 100).toFixed(1),
+                        meanScoreByQuintile: meanScoreByQuintile,
+                        meanScoreByQuintileString: _(meanScoreByQuintile).map(function(s) {return s + '%';}).join(', '),
+                    });
+                });
             }
             
             var html = Mustache.render(TestDetailViewTemplate, data);

@@ -2743,23 +2743,73 @@ app.get("/testFilesZip/:filename", function(req, res) {
     });
 });
 
+var computeTestStats = function(tid, scores, callback) {
+    readTest(tid, function(err, test) {
+        if (err) return callback(err);
+        try {
+            var totalScores = _(scores).pluck('score');
+            var stats = {
+                tid: tid,
+                n: totalScores.length,
+                scores: totalScores,
+                mean: jStat.mean(totalScores),
+                median: jStat.median(totalScores),
+                stddev: jStat.stdev(totalScores),
+                min: jStat.min(totalScores),
+                max: jStat.max(totalScores),
+                nFullScore: _(totalScores).filter(function(s) {return Math.abs(s - 1) < 1e-8;}).length,
+                quintiles: jStat.quantiles(totalScores, [0.2, 0.4, 0.6, 0.8]),
+            };
+            stats.byQID = {};
+            var qids = _.chain(scores).pluck('qDataByQID').map(_.keys).flatten().uniq().value();
+            _(qids).each(function(qid) {
+                var totalScores = [];
+                var questionScores = [];
+                var attempts = [];
+                var everCorrects = [];
+                var questionScoresByQuintile = _.times(5, function() {return [];});
+                var quintile;
+                _(scores).each(function(score) {
+                    if (_(score.qDataByQID).has(qid)) {
+                        var qData = score.qDataByQID[qid];
+                        totalScores.push(score.score);
+                        questionScores.push(qData.score);
+                        attempts.push(qData.nAttempts);
+                        everCorrects.push(qData.everCorrect ? 1 : 0);
+                        quintile = jStat.sum(_(stats.quintiles).map(function(q) {return (q < score.score) ? 1 : 0;}));
+                        questionScoresByQuintile[quintile].push(qData.score);
+                    }
+                });
+                stats.byQID[qid] = {
+                    n: totalScores.length,
+                    meanScore: (questionScores.length > 0) ? jStat.mean(questionScores) : 0,
+                    meanNAttempts: (attempts.length > 0) ? jStat.mean(attempts) : 0,
+                    fracEverCorrect: (everCorrects.length > 0) ? jStat.mean(everCorrects) : 0,
+                    discrimination: (totalScores.length > 0) ? jStat.corrcoeff(totalScores, questionScores) : 0,
+                    discByCorrect: (totalScores.length > 0) ? jStat.corrcoeff(totalScores, everCorrects) : 0,
+                };
+                stats.byQID[qid].meanScoreByQuintile = _(questionScoresByQuintile).map(function(scores) {
+                    return (scores.length > 0) ? jStat.mean(scores) : 0;
+                });
+            });
+        } catch (e) {
+            return callback(e);
+        }
+        callback(null, stats);
+    });    
+};
+
 app.get("/testStats/:tid", function(req, res) {
     if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
         return sendError(res, 403, "Insufficient permissions");
     }
     var tid = req.params.tid;
     getScoresForTest(tid, function(err, scores) {
-        if (err) return sendError(500, "Error getting scores for tid: " + tid, err);
-        var totalScores = _(scores).pluck('score');
-        var stats = {
-            tid: tid,
-            n: totalScores.length,
-            scores: totalScores,
-            mean: jStat.mean(totalScores),
-            median: jStat.median(totalScores),
-            stddev: jStat.stdev(totalScores),
-        };
-        res.json(stats);
+        if (err) return sendError(res, 500, "Error getting scores for tid: " + tid, err);
+        computeTestStats(tid, scores, function(err, stats) {
+            if (err) return sendError(res, 500, "Error computing statistics for tid: " + tid, err);
+            res.json(stats);
+        });
     });
 });
 
