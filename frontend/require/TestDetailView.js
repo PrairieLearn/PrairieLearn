@@ -87,6 +87,10 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                         meanScoreByQuintileString: _(meanScoreByQuintileStrings).map(function(s) {return s + '%';}).join(', '),
                     });
                 });
+                data.qStats = _(data.qStats).sortBy('qid');
+                _(data.qStats).each(function(stat, i) {
+                    stat.number = i + 1;
+                });
             }
             
             var html = Mustache.render(TestDetailViewTemplate, data);
@@ -396,7 +400,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 .attr("x", function(stat) {return x(stat.meanScore);})
                 .attr("y", function(stat) {return y(stat.discrimination + 1);})
                 .style("text-anchor", "middle")
-                .text(function(stat) {return stat.qid;});
+                .text(function(stat) {return String(stat.number);});
         },
     });
 
