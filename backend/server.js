@@ -2759,26 +2759,24 @@ var computeTestStats = function(tid, scores, callback) {
                 max: jStat.max(totalScores),
                 nZeroScore: _(totalScores).filter(function(s) {return Math.abs(s) < 1e-8;}).length,
                 nFullScore: _(totalScores).filter(function(s) {return Math.abs(s - 1) < 1e-8;}).length,
-                quintiles: jStat.quantiles(totalScores, [0.2, 0.4, 0.6, 0.8]),
             };
             stats.byQID = {};
             var qids = _.chain(scores).pluck('qDataByQID').map(_.keys).flatten().uniq().value();
             _(qids).each(function(qid) {
+                var uids = [];
                 var totalScores = [];
                 var questionScores = [];
                 var attempts = [];
                 var everCorrects = [];
-                var questionScoresByQuintile = _.times(5, function() {return [];});
                 var quintile;
-                _(scores).each(function(score) {
+                _(scores).each(function(score, uid) {
                     if (_(score.qDataByQID).has(qid)) {
                         var qData = score.qDataByQID[qid];
+                        uids.push(uid);
                         totalScores.push(score.score);
                         questionScores.push(qData.score);
                         attempts.push(qData.nAttempts);
                         everCorrects.push(qData.everCorrect ? 1 : 0);
-                        quintile = jStat.sum(_(stats.quintiles).map(function(q) {return (q < score.score) ? 1 : 0;}));
-                        questionScoresByQuintile[quintile].push(qData.score);
                     }
                 });
                 stats.byQID[qid] = {
@@ -2788,9 +2786,32 @@ var computeTestStats = function(tid, scores, callback) {
                     fracEverCorrect: (everCorrects.length > 0) ? jStat.mean(everCorrects) : 0,
                     discrimination: (totalScores.length > 0) ? jStat.corrcoeff(totalScores, questionScores) : 0,
                 };
-                stats.byQID[qid].meanScoreByQuintile = _(questionScoresByQuintile).map(function(scores) {
-                    return (scores.length > 0) ? jStat.mean(scores) : 0;
+
+                // sort scores by totalScore and then by UID to provide a stable sort
+                var zipped = _.zip(totalScores, uids, questionScores);
+                zipped.sort(function(a, b) {
+                    return (a[0] > b[0]) ? 1
+                        : ((a[0] < b[0]) ? -1
+                           : ((a[1] > b[1]) ? 1
+                              : ((a[1] < b[1]) ? -1
+                                 : 0)));
                 });
+                var i1 = Math.round(zipped.length * 0.2);
+                var i2 = Math.round(zipped.length * 0.4);
+                var i3 = Math.round(zipped.length * 0.6);
+                var i4 = Math.round(zipped.length * 0.8);
+                var scores0 = _(zipped.slice(0, i1)).map(function(s) {return s[2];});
+                var scores1 = _(zipped.slice(i1, i2)).map(function(s) {return s[2];});
+                var scores2 = _(zipped.slice(i2, i3)).map(function(s) {return s[2];});
+                var scores3 = _(zipped.slice(i3, i4)).map(function(s) {return s[2];});
+                var scores4 = _(zipped.slice(i4)).map(function(s) {return s[2];});
+                stats.byQID[qid].meanScoreByQuintile = [
+                    (scores0.length > 0) ? jStat.mean(scores0) : 0,
+                    (scores1.length > 0) ? jStat.mean(scores1) : 0,
+                    (scores2.length > 0) ? jStat.mean(scores2) : 0,
+                    (scores3.length > 0) ? jStat.mean(scores3) : 0,
+                    (scores4.length > 0) ? jStat.mean(scores4) : 0,
+                ];
             });
         } catch (e) {
             return callback(e);
