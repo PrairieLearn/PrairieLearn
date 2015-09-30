@@ -98,6 +98,10 @@
   </div>
 
   {{#hasTestStats}}
+  <div class="panel-body">
+    <div id="questionScoreDiscPlot" class="questionScoreDiscPlot"></div>
+  </div>
+
   <table class="table table-condensed table-hover">
     <thead>
       <tr>
@@ -114,10 +118,10 @@
       {{#qStats}}
       <tr>
         <td>{{title}} ({{qid}})</td>
-        <td>{{meanScore}}%</td>
-        <td>{{discrimination}}%</td>
-        <td>{{meanNAttempts}}</td>
-        <td>{{fracEverCorrect}}%</td>
+        <td>{{meanScoreString}}%</td>
+        <td>{{discriminationString}}%</td>
+        <td>{{meanNAttemptsString}}</td>
+        <td>{{fracEverCorrectString}}%</td>
         <td>{{n}}</td>
         <td>{{meanScoreByQuintileString}}</td>
       </tr>
