@@ -35,6 +35,11 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
                 .pluck("points")
                 .map(function(a) {return Math.max.apply(null, a);})
                 .reduce(function(a, b) {return a + b;}, 0).value();
+            test.maxQScoresByQID = _.chain(options.questionGroups)
+                .flatten()
+                .map(function(q) {return [q.qid, _.max(q.points)];})
+                .object()
+                .value();
         } else {
             // new code that should always be used in the future
             test.nQuestions = _.chain(options.zones)
@@ -47,6 +52,19 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
                 .pluck("points")
                 .map(function(p) {return _.max(p);})
                 .reduce(function(a, b) {return a + b;}, 0).value();
+            test.maxQScoresByQID = {};
+            _.chain(options.zones)
+                .pluck("questions")
+                .flatten()
+                .each(function(q) {
+                    if (q.qid) {
+                        test.maxQScoresByQID[q.qid] = _.max(q.points);
+                    } else if (q.qids) {
+                        _(q.qids).each(function(qid) {
+                            test.maxQScoresByQID[qid] = _.max(q.points);
+                        });
+                    }
+                });
         }
         if (!options.unlimitedVariants) {
             test.vidsByQID = test.vidsByQID || {};
