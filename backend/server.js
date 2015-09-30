@@ -2813,6 +2813,102 @@ app.get("/testStats/:tid", function(req, res) {
     });
 });
 
+var testStatsToCSV = function(stats, callback) {
+    var csvData = [
+        ["statistic", "value"],
+        ["Number of students", stats.n],
+        ["Mean score", stats.mean * 100],
+        ["Standard deviation", stats.stddev * 100],
+        ["Minimum score", stats.min * 100],
+        ["Median score", stats.median * 100],
+        ["Maximum score", stats.max * 100],
+        ["Number of 0%", stats.nZeroScore],
+        ["Number of 100%", stats.nFullScore],
+    ];
+    csvStringify(csvData, function(err, csv) {
+        if (err) return callback(err);
+        callback(null, csv);
+    });
+};
+
+app.get("/testStatsCSV/:filename", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
+        return sendError(res, 403, "Insufficient permissions");
+    }
+    var filename = req.params.filename;
+    var tid = req.query.tid;
+    getScoresForTest(tid, function(err, scores) {
+        if (err) return sendError(res, 500, "Error getting scores for tid: " + tid, err);
+        computeTestStats(tid, scores, function(err, stats) {
+            if (err) return sendError(res, 500, "Error computing statistics for tid: " + tid, err);
+            testStatsToCSV(stats, function(err, csv) {
+                if (err) return sendError(res, 500, "Error formatting CSV", err);
+                res.attachment(filename);
+                res.send(csv);
+            });
+        });
+    });
+});
+
+var testQStatsToCSV = function(stats, callback) {
+    var csvData = [
+        [
+            "QID",
+            "Title",
+            "Mean score",
+            "Discrimination",
+            "Number attempts",
+            "Fraction solved",
+            "Number of students",
+            "Quintile 1 avg",
+            "Quintile 2 avg",
+            "Quintile 3 avg",
+            "Quintile 4 avg",
+            "Quintile 5 avg",
+        ],
+    ];
+    _(stats.byQID).each(function(stat, qid) {
+        var meanScoreByQuintile = _(stat.meanScoreByQuintile).map(function(s) {return (s * 100).toFixed(1);});
+        csvData.push([
+            qid,
+            questionDB[qid].title,
+            stat.meanScore * 100,
+            stat.discrimination * 100,
+            stat.meanNAttempts,
+            stat.fracEverCorrect * 100,
+            stat.n,
+            stat.meanScoreByQuintile[0] * 100,
+            stat.meanScoreByQuintile[1] * 100,
+            stat.meanScoreByQuintile[2] * 100,
+            stat.meanScoreByQuintile[3] * 100,
+            stat.meanScoreByQuintile[4] * 100,
+        ]);
+    });
+    csvStringify(csvData, function(err, csv) {
+        if (err) return callback(err);
+        callback(null, csv);
+    });
+};
+
+app.get("/testQStatsCSV/:filename", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
+        return sendError(res, 403, "Insufficient permissions");
+    }
+    var filename = req.params.filename;
+    var tid = req.query.tid;
+    getScoresForTest(tid, function(err, scores) {
+        if (err) return sendError(res, 500, "Error getting scores for tid: " + tid, err);
+        computeTestStats(tid, scores, function(err, stats) {
+            if (err) return sendError(res, 500, "Error computing statistics for tid: " + tid, err);
+            testQStatsToCSV(stats, function(err, csv) {
+                if (err) return sendError(res, 500, "Error formatting CSV", err);
+                res.attachment(filename);
+                res.send(csv);
+            });
+        });
+    });
+});
+
 app.get("/stats", function(req, res) {
     if (!statsCollect) {
         return sendError(res, 500, "Do not have access to the 'statistics' database collection");

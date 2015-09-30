@@ -49,6 +49,10 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
 
             data.seeTestStats = this.appModel.hasPermission("viewOtherUsers");
             data.hasTestStats = this.testStats.has("n");
+            data.testFilesStatsFilename = this.model.get("tid") + "_stats.csv";
+            data.testFilesStatsLink = this.appModel.apiURL("testStatsCSV/" + data.testFilesStatsFilename + "?tid=" + data.tid);
+            data.testFilesQStatsFilename = this.model.get("tid") + "_question_stats.csv";
+            data.testFilesQStatsLink = this.appModel.apiURL("testQStatsCSV/" + data.testFilesQStatsFilename + "?tid=" + data.tid);
             if (data.hasTestStats) {
                 data.n = this.testStats.get("n");
                 data.scores = this.testStats.get("scores");
