@@ -50,6 +50,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             data.hasTestStats = this.testStats.has("n");
             if (data.hasTestStats) {
                 data.n = this.testStats.get("n");
+                data.scores = this.testStats.get("scores");
                 data.mean = (this.testStats.get("mean") * 100).toFixed(1);
                 data.median = (this.testStats.get("median") * 100).toFixed(1);
                 data.stddev = (this.testStats.get("stddev") * 100).toFixed(1);
@@ -58,6 +59,10 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             var html = Mustache.render(TestDetailViewTemplate, data);
             this.$el.html(html);
 
+            if (data.hasTestStats) {
+                this.renderScoreHistogram("#scoreHistogramPlot", data.scores, "score / %", "number of students");
+            }
+            
             var TestDetailView = TestFactory.getClass(this.model.get("type"), "tDetailView");
             if (!TestDetailView)
                 return;
@@ -66,6 +71,88 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             this.listenTo(this.subView, "resetTestForAll", this.resetTestForAll.bind(this));
             this.subView.render();
             this.$("#tDetail").html(this.subView.el);
+        },
+
+        renderScoreHistogram: function(selector, scores, xlabel, ylabel) {
+            var values = scores.map(function(i) {return i * 100});
+            
+            var formatCount = d3.format(",.0f");
+
+            var margin = {top: 40, right: 20, bottom: 50, left: 70},
+                width = 500 - margin.left - margin.right,
+                height = 300 - margin.top - margin.bottom;
+
+            var x = d3.scale.linear()
+                .domain([0, 100])
+                .range([0, width]);
+
+            var data = d3.layout.histogram()
+                .range([0, 100])
+                .bins(20)
+                (values);
+
+            var y = d3.scale.linear()
+                .domain([0, d3.max(data, function(d) { return d.y; })])
+                .range([height, 0]);
+
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .orient("bottom");
+
+            var yAxis = d3.svg.axis()
+                .scale(y)
+                .ticks(5)
+                .orient("left");
+            
+            var svg = d3.select(this.$(selector).get(0)).append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .attr("class", "center-block")
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            var bar = svg.selectAll("bar")
+                .data(data)
+                .enter()
+                .append("g")
+                .attr("class", "bar")
+                .attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; });
+
+            bar.append("rect")
+                .attr("x", 1)
+                .attr("width", x(data[0].dx) - 1)
+                .attr("height", function(d) { return height - y(d.y); })
+                .attr("fill", "steelblue")
+                .attr("shape-rendering", "crispEdges");
+
+            bar.append("text")
+                .attr("dy", "-0.75em")
+                .attr("y", 6)
+                .attr("x", x(data[0].dx) / 2)
+                .attr("text-anchor", "middle")
+                .text(function(d) { return formatCount(d.y); });
+            
+            svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis)
+                .append("text")
+                .attr("class", "label")
+                .attr("x", width / 2)
+                .attr("y", "2.5em")
+                .style("text-anchor", "middle")
+                .text(xlabel);
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+                .append("text")
+                .attr("class", "label")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height / 2)
+                .attr("y", "-3em")
+                .style("text-anchor", "middle")
+                .text(ylabel);
         },
 
         _resetSuccess: function(data, textStatus, jqXHR) {

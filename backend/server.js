@@ -2679,6 +2679,7 @@ app.get("/testStats/:tid", function(req, res) {
         var stats = {
             tid: tid,
             n: scores.length,
+	    scores: scores,
             mean: jStat.mean(scores),
             median: jStat.median(scores),
             stddev: jStat.stdev(scores),
