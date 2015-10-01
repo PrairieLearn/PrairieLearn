@@ -139,8 +139,13 @@ line.axis {
 }
 
 .bar {
-    stroke: #00a;
-    fill: #ddf;
+    stroke: #5bc0de;
+    fill: #5bc0de;
+}
+
+.outlineBar {
+    stroke: #fff;
+    fill: #5bc0de;
 }
 
 .statsPlot .label {
