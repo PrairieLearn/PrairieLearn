@@ -139,7 +139,7 @@ line.axis {
 }
 
 .bar {
-    stroke: #5bc0de;
+    stroke: #46b8da;
     fill: #5bc0de;
 }
 
@@ -171,6 +171,6 @@ body table.no-border th {
 }
 
 .statsPlot .point {
-    stroke: #a00;
-    fill: #fdd;
+    stroke: #d43f3a;
+    fill: #d9534f;
 }
