@@ -72,12 +72,12 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 var pbar = function(val) {
                     val = Math.round(val);
                     if (val >= 50) {
-                        return '<div class="progress" style="width: 7em">'
+                        return '<div class="progress" style="min-width: 7em">'
                             + '<div class="progress-bar progress-bar-success" style="width: ' + val + '%">' + val + '%</div>'
                             + '<div class="progress-bar progress-bar-danger" style="width: ' + (100 - val) + '%"></div>'
                             + '</div>';
                     } else {
-                        return '<div class="progress" style="width: 7em">'
+                        return '<div class="progress" style="min-width: 7em">'
                             + '<div class="progress-bar progress-bar-success" style="width: ' + val + '%"></div>'
                             + '<div class="progress-bar progress-bar-danger" style="width: ' + (100 - val) + '%">' + val + '%</div>'
                             + '</div>';
@@ -87,12 +87,12 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 var pbar2 = function(val) {
                     val = Math.round(val);
                     if (val >= 50) {
-                        return '<div class="progress" style="width: 7em">'
+                        return '<div class="progress" style="min-width: 7em">'
                             + '<div class="progress-bar progress-bar-primary" style="width: ' + val + '%">' + val + '%</div>'
                             + '<div class="progress-bar progress-bar-warning" style="width: ' + (100 - val) + '%"></div>'
                             + '</div>';
                     } else {
-                        return '<div class="progress" style="width: 7em">'
+                        return '<div class="progress" style="min-width: 7em">'
                             + '<div class="progress-bar progress-bar-primary" style="width: ' + val + '%"></div>'
                             + '<div class="progress-bar progress-bar-warning" style="width: ' + (100 - val) + '%">' + val + '%</div>'
                             + '</div>';
@@ -150,7 +150,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
         },
 
         renderScoreHistogram: function(selector, hist, xlabel, ylabel) {
-            var margin = {top: 10, right: 20, bottom: 50, left: 70},
+            var margin = {top: 10, right: 20, bottom: 55, left: 70},
                 width = 600 - margin.left - margin.right,
                 height = 371 - margin.top - margin.bottom;
 
@@ -160,6 +160,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
 
             var y = d3.scale.linear()
                 .domain([0, d3.max(hist)])
+                .nice()
                 .range([height, 0]);
 
             var xAxis = d3.svg.axis()
