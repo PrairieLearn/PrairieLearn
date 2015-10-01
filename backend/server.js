@@ -200,6 +200,7 @@ var child_process = require("child_process");
 var PrairieStats = requirejs("PrairieStats");
 var PrairieModel = requirejs("PrairieModel");
 var PrairieRole = requirejs("PrairieRole");
+var PrairieGeom = requirejs("PrairieGeom");
 var express = require("express");
 var https = require('https');
 var app = express();
@@ -2757,6 +2758,7 @@ var computeTestStats = function(tid, scores, callback) {
                 stddev: jStat.stdev(totalScores),
                 min: jStat.min(totalScores),
                 max: jStat.max(totalScores),
+                hist: PrairieGeom.histogram(totalScores, 10, 0, 1),
                 nZeroScore: _(totalScores).filter(function(s) {return Math.abs(s) < 1e-8;}).length,
                 nFullScore: _(totalScores).filter(function(s) {return Math.abs(s - 1) < 1e-8;}).length,
             };

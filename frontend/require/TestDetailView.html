@@ -58,6 +58,10 @@
   </div>
 
   {{#hasTestStats}}
+  <div class="panel-body">
+    <div id="scoreHistogramPlot" class="scoreHistogram"></div>
+  </div>
+
   <table class="table table-condensed table-hover">
     <thead>
       <tr>
@@ -77,7 +81,6 @@
     </tbody>
   </table>
   <div class="panel-footer">
-    <div id="scoreHistogramPlot" class="scoreHistogram"></div>
     Download <a href="{{testFilesStatsLink}}">{{testFilesStatsFilename}}</a>
   </div>
   {{/hasTestStats}}
@@ -115,7 +118,7 @@
     <tbody>
       {{#qStats}}
       <tr>
-        <td>{{number}}. {{title}} ({{qid}})</td>
+        <td>{{number}}. {{qid}}<br /><small>{{title}}</small></td>
         <td class="cell-center">{{{meanScoreBar}}}</td>
         <td class="cell-center">{{{discriminationBar}}}</td>
         <td class="cell-center">{{{meanNAttemptsString}}}</td>

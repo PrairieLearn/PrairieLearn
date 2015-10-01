@@ -56,6 +56,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             if (data.hasTestStats) {
                 data.n = this.testStats.get("n");
                 data.scores = this.testStats.get("scores");
+                data.hist = this.testStats.get("hist");
                 data.mean = (this.testStats.get("mean") * 100).toFixed(1);
                 data.median = (this.testStats.get("median") * 100).toFixed(1);
                 data.stddev = (this.testStats.get("stddev") * 100).toFixed(1);
@@ -131,7 +132,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             this.$el.html(html);
 
             if (data.hasTestStats) {
-                this.renderScoreHistogram("#scoreHistogramPlot", data.scores, "score / %", "number of students");
+                this.renderScoreHistogram("#scoreHistogramPlot", data.hist, "score / %", "number of students");
                 this.renderQuestionScoreDiscPlot("#questionScoreDiscPlot", data.qStats);
                 _(data.qStats).each(function(stat) {
                     that.renderScoresByQuintilePlot("#scoresByQuintile" + stat.qid, stat.meanScoreByQuintile);
@@ -148,37 +149,40 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             this.$("#tDetail").html(this.subView.el);
         },
 
-        renderScoreHistogram: function(selector, scores, xlabel, ylabel) {
-            var values = scores.map(function(i) {return i * 100});
-            
-            var formatCount = d3.format(",.0f");
-
-            var margin = {top: 40, right: 20, bottom: 50, left: 70},
-                width = 500 - margin.left - margin.right,
-                height = 300 - margin.top - margin.bottom;
+        renderScoreHistogram: function(selector, hist, xlabel, ylabel) {
+            var margin = {top: 10, right: 20, bottom: 50, left: 70},
+                width = 600 - margin.left - margin.right,
+                height = 371 - margin.top - margin.bottom;
 
             var x = d3.scale.linear()
                 .domain([0, 100])
                 .range([0, width]);
 
-            var data = d3.layout.histogram()
-                .range([0, 100])
-                .bins(20)
-                (values);
-
             var y = d3.scale.linear()
-                .domain([0, d3.max(data, function(d) { return d.y; })])
+                .domain([0, d3.max(hist)])
                 .range([height, 0]);
 
             var xAxis = d3.svg.axis()
                 .scale(x)
+                .tickValues([0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
                 .orient("bottom");
 
             var yAxis = d3.svg.axis()
                 .scale(y)
-                .ticks(5)
                 .orient("left");
             
+            var xGrid = d3.svg.axis()
+                .scale(x)
+                .orient("bottom")
+                .tickSize(-height)
+                .tickFormat("");
+
+            var yGrid = d3.svg.axis()
+                .scale(y)
+                .orient("left")
+                .tickSize(-width)
+                .tickFormat("");
+
             var svg = d3.select(this.$(selector).get(0)).append("svg")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
@@ -186,27 +190,33 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-            var bar = svg.selectAll("bar")
-                .data(data)
-                .enter()
-                .append("g")
-                .attr("class", "bar")
-                .attr("transform", function(d) { return "translate(" + x(d.x) + "," + y(d.y) + ")"; });
+            svg.append("g")
+                .attr("class", "x grid")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xGrid);
 
-            bar.append("rect")
-                .attr("x", 1)
-                .attr("width", x(data[0].dx) - 1)
-                .attr("height", function(d) { return height - y(d.y); })
-                .attr("fill", "steelblue")
-                .attr("shape-rendering", "crispEdges");
+            svg.append("g")
+                .attr("class", "y grid")
+                .call(yGrid);
 
-            bar.append("text")
-                .attr("dy", "-0.75em")
-                .attr("y", 6)
-                .attr("x", x(data[0].dx) / 2)
-                .attr("text-anchor", "middle")
-                .text(function(d) { return formatCount(d.y); });
-            
+            svg.selectAll(".outlineBar")
+                .data(hist) // .data(_.times(hist.length, _.constant(0)))
+                .enter().append("rect")
+                .attr("class", "outlineBar")
+                .attr("x", function(d, i) {return x(i * 100 / hist.length);})
+                .attr("y", function(d, i) {return y(d);})
+                .attr("width", function(d, i) {return x((i + 1) * 100 / hist.length) - x(i * 100 / hist.length);})
+                .attr("height", function(d, i) {return y(0) - y(d);});
+
+            /*
+            svg.selectAll(".outlineBar")
+                .data(hist)
+                .transition()
+                .duration(3000)
+                .attr("y", function(d, i) {return y(d);})
+                .attr("height", function(d, i) {return y(0) - y(d);});
+            */
+
             svg.append("g")
                 .attr("class", "x axis")
                 .attr("transform", "translate(0," + height + ")")
@@ -214,9 +224,9 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 .append("text")
                 .attr("class", "label")
                 .attr("x", width / 2)
-                .attr("y", "2.5em")
+                .attr("y", "3em")
                 .style("text-anchor", "middle")
-                .text(xlabel);
+                .text("score / %");
 
             svg.append("g")
                 .attr("class", "y axis")
@@ -227,7 +237,13 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 .attr("x", -height / 2)
                 .attr("y", "-3em")
                 .style("text-anchor", "middle")
-                .text(ylabel);
+                .text("number of students");
+
+            svg.append("line")
+                .attr({x1: 0, y1: 0, x2: width, y2: 0, "class": "x axis"})
+
+            svg.append("line")
+                .attr({x1: width, y1: 0, x2: width, y2: height, "class": "y axis"});
         },
 
         _resetSuccess: function(data, textStatus, jqXHR) {
@@ -462,12 +478,6 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-            svg.append("line")
-                .attr({x1: 0, y1: 0, x2: width, y2: 0, "class": "x axis"})
-
-            svg.append("line")
-                .attr({x1: 0, y1: height, x2: width, y2: height, "class": "x axis"})
-
             svg.selectAll(".bar")
                 .data(hist)
                 .enter().append("rect")
@@ -476,6 +486,12 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 .attr("y", function(d, i) {return y(d);})
                 .attr("width", function(d, i) {return x.rangeBand();})
                 .attr("height", function(d, i) {return y(0) - y(d);});
+
+            svg.append("line")
+                .attr({x1: 0, y1: 0, x2: width, y2: 0, "class": "x axis"})
+
+            svg.append("line")
+                .attr({x1: 0, y1: height, x2: width, y2: height, "class": "x axis"})
         },
     });
 
