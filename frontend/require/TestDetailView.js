@@ -67,6 +67,37 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 data.fracFullScore = (data.n > 0) ? (data.nFullScore / data.n * 100).toFixed(1) : 0;
                 var byQID = this.testStats.get("byQID");
                 data.qStats = [];
+
+                var pbar = function(val) {
+                    val = Math.round(val);
+                    if (val >= 50) {
+                        return '<div class="progress" style="width: 7em">'
+                            + '<div class="progress-bar progress-bar-success" style="width: ' + val + '%">' + val + '%</div>'
+                            + '<div class="progress-bar progress-bar-danger" style="width: ' + (100 - val) + '%"></div>'
+                            + '</div>';
+                    } else {
+                        return '<div class="progress" style="width: 7em">'
+                            + '<div class="progress-bar progress-bar-success" style="width: ' + val + '%"></div>'
+                            + '<div class="progress-bar progress-bar-danger" style="width: ' + (100 - val) + '%">' + val + '%</div>'
+                            + '</div>';
+                    }
+                };
+                
+                var pbar2 = function(val) {
+                    val = Math.round(val);
+                    if (val >= 50) {
+                        return '<div class="progress" style="width: 7em">'
+                            + '<div class="progress-bar progress-bar-primary" style="width: ' + val + '%">' + val + '%</div>'
+                            + '<div class="progress-bar progress-bar-warning" style="width: ' + (100 - val) + '%"></div>'
+                            + '</div>';
+                    } else {
+                        return '<div class="progress" style="width: 7em">'
+                            + '<div class="progress-bar progress-bar-primary" style="width: ' + val + '%"></div>'
+                            + '<div class="progress-bar progress-bar-warning" style="width: ' + (100 - val) + '%">' + val + '%</div>'
+                            + '</div>';
+                    }
+                };
+                
                 _(byQID).each(function(stat, qid) {
                     var meanScoreByQuintile = _(stat.meanScoreByQuintile).map(function(s) {return s * 100;});
                     var meanScoreByQuintileStrings = _(meanScoreByQuintile).map(function(s) {return s.toFixed(1);});
@@ -75,13 +106,16 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                         title: that.questions.get(qid).get("title"),
                         n: stat.n,
                         meanScore: stat.meanScore * 100,
-                        meanScoreString: (stat.meanScore * 100).toFixed(1),
+                        meanScoreString: (stat.meanScore * 100).toFixed(0),
+                        meanScoreBar: pbar(stat.meanScore * 100),
                         meanNAttempts: stat.meanNAttempts,
                         meanNAttemptsString: stat.meanNAttempts.toFixed(1),
                         fracEverCorrect: stat.fracEverCorrect * 100,
-                        fracEverCorrectString: (stat.fracEverCorrect * 100).toFixed(1),
+                        fracEverCorrectString: (stat.fracEverCorrect * 100).toFixed(0),
+                        fracEverCorrectBar: pbar(stat.fracEverCorrect * 100),
                         discrimination: stat.discrimination * 100,
-                        discriminationString: (stat.discrimination * 100).toFixed(1),
+                        discriminationString: (stat.discrimination * 100).toFixed(0),
+                        discriminationBar: pbar2(stat.discrimination * 100),
                         meanScoreByQuintile: meanScoreByQuintile,
                         meanScoreByQuintileStrings: meanScoreByQuintileStrings,
                         meanScoreByQuintileString: _(meanScoreByQuintileStrings).map(function(s) {return s + '%';}).join(', '),
