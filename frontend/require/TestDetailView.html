@@ -106,24 +106,24 @@
     <thead>
       <tr>
         <th>Question</th>
-        <th>Mean score</th>
-        <th>Discrimination</th>
-        <th>Number attempts</th>
-        <th>Fraction solved</th>
-        <th>Number of students</th>
-        <th>Scores by quintile</th>
+        <th class="cell-center">Mean score</th>
+        <th class="cell-center">Discrimination</th>
+        <th class="cell-center">Mean attempts</th>
+        <th class="cell-center">Fraction solved</th>
+        <th class="cell-center">Number of students</th>
+        <th class="cell-center">Scores by quintile</th>
       </tr>
     </thead>
     <tbody>
       {{#qStats}}
       <tr>
         <td>{{number}}. {{title}} ({{qid}})</td>
-        <td>{{meanScoreString}}%</td>
-        <td>{{discriminationString}}%</td>
-        <td>{{meanNAttemptsString}}</td>
-        <td>{{fracEverCorrectString}}%</td>
-        <td>{{n}}</td>
-        <td>{{meanScoreByQuintileString}}</td>
+        <td class="cell-center">{{meanScoreString}}%</td>
+        <td class="cell-center">{{discriminationString}}%</td>
+        <td class="cell-center">{{meanNAttemptsString}}</td>
+        <td class="cell-center">{{fracEverCorrectString}}%</td>
+        <td class="cell-center">{{n}}</td>
+        <td class="cell-center"><div id="scoresByQuintile{{qid}}" class="scoresByQuintile"></div></td>
       </tr>
       {{/qStats}}
     </tbody>

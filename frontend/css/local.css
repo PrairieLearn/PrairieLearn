@@ -144,7 +144,7 @@ line.axis {
 }
 
 .statsPlot .label {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: normal;
 }
 
@@ -163,4 +163,9 @@ body table.no-border td {
 
 body table.no-border th {
     border: 0px;
+}
+
+.statsPlot .point {
+    stroke: #a00;
+    fill: #fdd;
 }
