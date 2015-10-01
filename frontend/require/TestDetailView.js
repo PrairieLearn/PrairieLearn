@@ -99,6 +99,9 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             if (data.hasTestStats) {
                 this.renderScoreHistogram("#scoreHistogramPlot", data.scores, "score / %", "number of students");
                 this.renderQuestionScoreDiscPlot("#questionScoreDiscPlot", data.qStats);
+                _(data.qStats).each(function(stat) {
+                    that.renderScoresByQuintilePlot("#scoresByQuintile" + stat.qid, stat.meanScoreByQuintile);
+                });
             }
 
             var TestDetailView = TestFactory.getClass(this.model.get("type"), "tDetailView");
@@ -287,9 +290,9 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
         },
 
         renderQuestionScoreDiscPlot: function(selector, qStats) {
-            var margin = {top: 40, right: 20, bottom: 50, left: 70},
-            width = 500 - margin.left - margin.right,
-            height = 500 - margin.top - margin.bottom;
+            var margin = {top: 10, right: 20, bottom: 50, left: 70},
+            width = 400 - margin.left - margin.right,
+            height = 400 - margin.top - margin.bottom;
 
             var x = d3.scale.linear()
                 .range([0, width]);
@@ -322,7 +325,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             var svg = d3.select(this.$(selector).get(0)).append("svg")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
-                .attr("class", "center-block")
+                .attr("class", "center-block statsPlot")
                 .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
@@ -354,7 +357,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 .append("text")
                 .attr("class", "label")
                 .attr("x", width / 2)
-                .attr("y", "3.5em")
+                .attr("y", "3em")
                 .style("text-anchor", "middle")
                 .text("mean score / %");
 
@@ -369,6 +372,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 .style("text-anchor", "middle")
                 .text("discrimination / %");
 
+            /*
             svg.append("g")
                 .append("text")
                 .attr("class", "label")
@@ -376,6 +380,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 .attr("y", "-1em")
                 .style("text-anchor", "middle")
                 .text("Question discrimination versus mean score");
+            */
 
             svg.append("line")
                 .attr({x1: 0, y1: 0, x2: width, y2: 0, "class": "x axis"})
@@ -383,24 +388,60 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             svg.append("line")
                 .attr({x1: width, y1: 0, x2: width, y2: height, "class": "y axis"});
 
-            svg.selectAll(".bar")
+            svg.selectAll(".point")
                 .data(qStats)
+                .enter().append("circle")
+                .attr("class", "point")
+                .attr("cx", function(stat) {return x(stat.meanScore);})
+                .attr("cy", function(stat) {return y(stat.discrimination);})
+                .attr("r", function(stat) {return 2;});
+
+            svg.selectAll(".pointLabel")
+                .data(qStats)
+                .enter().append("text")
+                .attr("class", "pointLabel")
+                .style("text-anchor", "middle")
+                .attr("x", function(stat) {return x(stat.meanScore);})
+                .attr("y", function(stat) {return y(stat.discrimination) - 6;})
+                .text(function(stat) {return stat.number;});
+        },
+
+        renderScoresByQuintilePlot: function(selector, hist) {
+            var margin = {top: 1, right: 1, bottom: 1, left: 1},
+            width = 100 - margin.left - margin.right,
+                height = 40 - margin.top - margin.bottom;
+
+            var x = d3.scale.ordinal()
+                .domain(d3.range(hist.length))
+                .rangeRoundBands([0, width], 0.2);
+
+            var y = d3.scale.linear()
+                .domain([0, 100])
+                .range([height, 0]);
+
+            var color = d3.scale.category10();
+
+            var svg = d3.select(this.$(selector).get(0)).append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .attr("class", "center-block")
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            svg.append("line")
+                .attr({x1: 0, y1: 0, x2: width, y2: 0, "class": "x axis"})
+
+            svg.append("line")
+                .attr({x1: 0, y1: height, x2: width, y2: height, "class": "x axis"})
+
+            svg.selectAll(".bar")
+                .data(hist)
                 .enter().append("rect")
                 .attr("class", "bar")
-                .attr("x", function(stat) {return x(stat.meanScore);})
-                .attr("y", function(stat) {return y(stat.discrimination);})
-                .attr("width", function(stat) {return 5;})
-                .attr("height", function(stat) {return 5;})
-
-            svg.selectAll(".qLabels")
-                .data(qStats)
-                .enter()
-                .append("text")
-                .attr("class", "label")
-                .attr("x", function(stat) {return x(stat.meanScore);})
-                .attr("y", function(stat) {return y(stat.discrimination + 1);})
-                .style("text-anchor", "middle")
-                .text(function(stat) {return String(stat.number);});
+                .attr("x", function(d, i) {return x(i);})
+                .attr("y", function(d, i) {return y(d);})
+                .attr("width", function(d, i) {return x.rangeBand();})
+                .attr("height", function(d, i) {return y(0) - y(d);});
         },
     });
 
