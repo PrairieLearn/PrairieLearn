@@ -107,7 +107,7 @@
       <tr>
         <th>Question</th>
         <th class="cell-center">Mean score</th>
-        <th class="cell-center">Discrimination</th>
+        <th class="cell-center">Discrimination</Th>
         <th class="cell-center">Attempts</th>
         <th class="cell-center">Quintiles</th>
       </tr>
@@ -126,7 +126,15 @@
   </table>
 
   <div class="panel-footer">
-    Download <a href="{{testFilesQStatsLink}}">{{testFilesQStatsFilename}}</a>
+    <p>Download <a href="{{testFilesQStatsLink}}">{{testFilesQStatsFilename}}</a></p>
+    <small>
+      <ul>
+        <li><strong>Mean score</strong> of a question is the avearge score for all students on the question. It is best to have a range of questions with different mean scores on the test, with some easy (mean score above 90%) and some hard (mean score below 50%).</li>
+        <li><strong>Discrimination</strong> of a question is the correlation coefficient between the scores on the question and the total assessment scores. Discrimination values should be above 20%, unless a question is very easy (mean score above 95%), in which case it is acceptable to have lower discriminations. It is always better to have higher discriminations for all questions, and a range of discriminations is not desired.</li>
+        <li><strong>Attempts</strong> for a question is the average number of graded attempts made per student at the question.</li>
+        <li><strong>Quintiles</strong> shows the average scores on the question for students in the lowest 20% of the class, the next 20%, etc, where the quintiles are determined by total assessment score. Good questions should have very low scores for the lowest quintile (the left-most), and very high scores for the highest quintile (the right-most). This is essentially a graphical representation of the discrimination.
+      </ul>
+    </small>
   </div>
   {{/hasTestStats}}
 
