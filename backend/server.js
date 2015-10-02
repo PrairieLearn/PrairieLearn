@@ -200,6 +200,7 @@ var child_process = require("child_process");
 var PrairieStats = requirejs("PrairieStats");
 var PrairieModel = requirejs("PrairieModel");
 var PrairieRole = requirejs("PrairieRole");
+var PrairieGeom = requirejs("PrairieGeom");
 var express = require("express");
 var https = require('https');
 var app = express();
@@ -2278,29 +2279,104 @@ app.get("/export.csv", function(req, res) {
     });
 });
 
+var getQDataByQID = function(test, tInstance) {
+    var qDataByQID = {};
+    if (_(tInstance).has('questionsByQID')) {
+        // RetryExam
+        _(tInstance.questionsByQID).each(function(question, qid) {
+            qDataByQID[qid] = {
+                points: question.awardedPoints,
+                score: question.awardedPoints / test.maxQScoresByQID[qid],
+                nAttempts: question.nGradedAttempts,
+                everCorrect: question.correct,
+            };
+        });
+    } else if (_(tInstance).has('qids') && _(tInstance).has('submissionsByQid')) {
+        // Exam and PracExam
+        _(tInstance.qids).each(function(qid) {
+            qDataByQID[qid] = {
+                points: 0,
+                score: 0,
+                nAttempts: 0,
+                everCorrect: false,
+            };
+        });
+        _(tInstance.submissionsByQid).each(function(submission) {
+            qDataByQID[qid].nAttempts++;
+            if (submission.score >= 0.5) {
+                qDataByQID[qid].points = 1;
+                qDataByQID[qid].score = 1;
+                qDataByQID[qid].everCorrect = true;
+            }
+        });
+    } else if (_(test).has('qids') && _(tInstance).has('qData')) {
+        // Basic and Game
+        _(test.qids).each(function(qid) {
+            qDataByQID[qid] = {
+                points: 0,
+                score: 0,
+                nAttempts: 0,
+                everCorrect: false,
+            };
+        });
+        _(tInstance.qData).each(function(data, qid) {
+            if (_(data).has('nAttempt')) {
+                // Basic
+                qDataByQID[qid].points = data.avgScore;
+                qDataByQID[qid].score = data.avgScore;
+                qDataByQID[qid].nAttempts = data.nAttempt;
+                qDataByQID[qid].everCorrect = (data.maxScore > 0);
+            } else if (_(data).has('value')) {
+                // Game
+                qDataByQID[qid].points = data.score;
+                qDataByQID[qid].score = data.score / test.maxQScoresByQID[qid];
+                qDataByQID[qid].nAttempts = 0;
+                qDataByQID[qid].everCorrect = (data.score > 0);
+            }
+        });
+    } else {
+        // Adaptive
+        _(test.qids).each(function(qid) {
+            qDataByQID[qid] = {
+                points: 0,
+                score: 0,
+                nAttempts: 0,
+                everCorrect: false,
+            };
+        });
+    }
+    return qDataByQID;
+};
+
 var getScoresForTest = function(tid, callback) {
     readTest(tid, function(err, test) {
         if (err) return callback(err);
         tiCollect.find({tid: tid}, function(err, cursor) {
             if (err) return callback(err);
             var scores = {};
-            var item;
+            var tInstance;
             async.doUntil(function(cb) { // body
                 cursor.next(function(err, r) {
                     if (err) return cb(err);
-                    item = r;
-                    if (item != null) {
-                        var uid = item.uid;
-                        var score = item.score / test.maxScore;
-                        if (scores[uid] === undefined)
-                            scores[uid] = score;
-                        else
-                            scores[uid] = Math.max(scores[uid], score);
-                    }
+                    tInstance = r;
+                    if (!tInstance) return cb(null);
+                    var uid = tInstance.uid;
+                    if (uidToRole(uid) != "Student") return cb(null);
+                    try {
+                        var score = tInstance.score / test.maxScore;
+                        if (!scores[uid] || score > scores[uid].score) {
+                            scores[uid] = {
+                                score: score,
+                                qDataByQID: getQDataByQID(test, tInstance),
+                            };
+                        }
+                    } catch (e) {
+                        return cb(e);
+                    };
                     cb(null);
                 });
             }, function() { // test
-                return (item == null);
+                return (tInstance == null);
             }, function(err) { // finalize
                 if (err) return callback(err);
                 callback(null, scores);
@@ -2331,7 +2407,7 @@ app.get("/testScores/:filename", function(req, res) {
                     username = uid.slice(0, i);
                 }
             }
-            var row = [username, score * 100];
+            var row = [username, score.score * 100];
             return row;
         });
         csvData = _(csvData).sortBy(function(row) {return row[0];});
@@ -2668,22 +2744,191 @@ app.get("/testFilesZip/:filename", function(req, res) {
     });
 });
 
+var computeTestStats = function(tid, scores, callback) {
+    readTest(tid, function(err, test) {
+        if (err) return callback(err);
+        try {
+            var totalScores = _(scores).pluck('score');
+            var stats = {
+                tid: tid,
+                n: totalScores.length,
+                scores: totalScores,
+                mean: jStat.mean(totalScores),
+                median: jStat.median(totalScores),
+                stddev: jStat.stdev(totalScores),
+                min: jStat.min(totalScores),
+                max: jStat.max(totalScores),
+                hist: PrairieGeom.histogram(totalScores, 10, 0, 1),
+                nZeroScore: _(totalScores).filter(function(s) {return Math.abs(s) < 1e-8;}).length,
+                nFullScore: _(totalScores).filter(function(s) {return Math.abs(s - 1) < 1e-8;}).length,
+            };
+            stats.byQID = {};
+            var qids = _.chain(scores).pluck('qDataByQID').map(_.keys).flatten().uniq().value();
+            _(qids).each(function(qid) {
+                var uids = [];
+                var totalScores = [];
+                var questionScores = [];
+                var attempts = [];
+                var everCorrects = [];
+                var quintile;
+                _(scores).each(function(score, uid) {
+                    if (_(score.qDataByQID).has(qid)) {
+                        var qData = score.qDataByQID[qid];
+                        uids.push(uid);
+                        totalScores.push(score.score);
+                        questionScores.push(qData.score);
+                        attempts.push(qData.nAttempts);
+                        everCorrects.push(qData.everCorrect ? 1 : 0);
+                    }
+                });
+                stats.byQID[qid] = {
+                    n: totalScores.length,
+                    meanScore: (questionScores.length > 0) ? jStat.mean(questionScores) : 0,
+                    meanNAttempts: (attempts.length > 0) ? jStat.mean(attempts) : 0,
+                    fracEverCorrect: (everCorrects.length > 0) ? jStat.mean(everCorrects) : 0,
+                    discrimination: (totalScores.length > 0) ? jStat.corrcoeff(totalScores, questionScores) : 0,
+                };
+
+                // sort scores by totalScore and then by UID to provide a stable sort
+                var zipped = _.zip(totalScores, uids, questionScores);
+                zipped.sort(function(a, b) {
+                    return (a[0] > b[0]) ? 1
+                        : ((a[0] < b[0]) ? -1
+                           : ((a[1] > b[1]) ? 1
+                              : ((a[1] < b[1]) ? -1
+                                 : 0)));
+                });
+                var i1 = Math.round(zipped.length * 0.2);
+                var i2 = Math.round(zipped.length * 0.4);
+                var i3 = Math.round(zipped.length * 0.6);
+                var i4 = Math.round(zipped.length * 0.8);
+                var scores0 = _(zipped.slice(0, i1)).map(function(s) {return s[2];});
+                var scores1 = _(zipped.slice(i1, i2)).map(function(s) {return s[2];});
+                var scores2 = _(zipped.slice(i2, i3)).map(function(s) {return s[2];});
+                var scores3 = _(zipped.slice(i3, i4)).map(function(s) {return s[2];});
+                var scores4 = _(zipped.slice(i4)).map(function(s) {return s[2];});
+                stats.byQID[qid].meanScoreByQuintile = [
+                    (scores0.length > 0) ? jStat.mean(scores0) : 0,
+                    (scores1.length > 0) ? jStat.mean(scores1) : 0,
+                    (scores2.length > 0) ? jStat.mean(scores2) : 0,
+                    (scores3.length > 0) ? jStat.mean(scores3) : 0,
+                    (scores4.length > 0) ? jStat.mean(scores4) : 0,
+                ];
+            });
+        } catch (e) {
+            return callback(e);
+        }
+        callback(null, stats);
+    });    
+};
+
 app.get("/testStats/:tid", function(req, res) {
     if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
         return sendError(res, 403, "Insufficient permissions");
     }
     var tid = req.params.tid;
     getScoresForTest(tid, function(err, scores) {
-        if (err) return sendError(500, "Error getting scores for tid: " + tid, err);
-        scores = _(scores).values();
-        var stats = {
-            tid: tid,
-            n: scores.length,
-            mean: jStat.mean(scores),
-            median: jStat.median(scores),
-            stddev: jStat.stdev(scores),
-        };
-        res.json(stats);
+        if (err) return sendError(res, 500, "Error getting scores for tid: " + tid, err);
+        computeTestStats(tid, scores, function(err, stats) {
+            if (err) return sendError(res, 500, "Error computing statistics for tid: " + tid, err);
+            res.json(stats);
+        });
+    });
+});
+
+var testStatsToCSV = function(stats, callback) {
+    var csvData = [
+        ["statistic", "value"],
+        ["Number of students", stats.n],
+        ["Mean score", stats.mean * 100],
+        ["Standard deviation", stats.stddev * 100],
+        ["Minimum score", stats.min * 100],
+        ["Median score", stats.median * 100],
+        ["Maximum score", stats.max * 100],
+        ["Number of 0%", stats.nZeroScore],
+        ["Number of 100%", stats.nFullScore],
+    ];
+    csvStringify(csvData, function(err, csv) {
+        if (err) return callback(err);
+        callback(null, csv);
+    });
+};
+
+app.get("/testStatsCSV/:filename", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
+        return sendError(res, 403, "Insufficient permissions");
+    }
+    var filename = req.params.filename;
+    var tid = req.query.tid;
+    getScoresForTest(tid, function(err, scores) {
+        if (err) return sendError(res, 500, "Error getting scores for tid: " + tid, err);
+        computeTestStats(tid, scores, function(err, stats) {
+            if (err) return sendError(res, 500, "Error computing statistics for tid: " + tid, err);
+            testStatsToCSV(stats, function(err, csv) {
+                if (err) return sendError(res, 500, "Error formatting CSV", err);
+                res.attachment(filename);
+                res.send(csv);
+            });
+        });
+    });
+});
+
+var testQStatsToCSV = function(stats, callback) {
+    var csvData = [
+        [
+            "QID",
+            "Title",
+            "Mean score",
+            "Discrimination",
+            "Number attempts",
+            "Fraction solved",
+            "Number of students",
+            "Quintile 1 avg",
+            "Quintile 2 avg",
+            "Quintile 3 avg",
+            "Quintile 4 avg",
+            "Quintile 5 avg",
+        ],
+    ];
+    _(stats.byQID).each(function(stat, qid) {
+        var meanScoreByQuintile = _(stat.meanScoreByQuintile).map(function(s) {return (s * 100).toFixed(1);});
+        csvData.push([
+            qid,
+            questionDB[qid].title,
+            stat.meanScore * 100,
+            stat.discrimination * 100,
+            stat.meanNAttempts,
+            stat.fracEverCorrect * 100,
+            stat.n,
+            stat.meanScoreByQuintile[0] * 100,
+            stat.meanScoreByQuintile[1] * 100,
+            stat.meanScoreByQuintile[2] * 100,
+            stat.meanScoreByQuintile[3] * 100,
+            stat.meanScoreByQuintile[4] * 100,
+        ]);
+    });
+    csvStringify(csvData, function(err, csv) {
+        if (err) return callback(err);
+        callback(null, csv);
+    });
+};
+
+app.get("/testQStatsCSV/:filename", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
+        return sendError(res, 403, "Insufficient permissions");
+    }
+    var filename = req.params.filename;
+    var tid = req.query.tid;
+    getScoresForTest(tid, function(err, scores) {
+        if (err) return sendError(res, 500, "Error getting scores for tid: " + tid, err);
+        computeTestStats(tid, scores, function(err, stats) {
+            if (err) return sendError(res, 500, "Error computing statistics for tid: " + tid, err);
+            testQStatsToCSV(stats, function(err, csv) {
+                if (err) return sendError(res, 500, "Error formatting CSV", err);
+                res.attachment(filename);
+                res.send(csv);
+            });
+        });
     });
 });
 

@@ -48,26 +48,41 @@
 </div>
 
 {{#seeTestStats}}
+<p>
+  <button class="btn btn-info reloadStats">Reload statistics</button>
+</p>
+
 <div class="panel panel-primary">
   <div class="panel-heading">
     <h3 class="panel-title">Test statistics</h3>
   </div>
 
   {{#hasTestStats}}
+  <div class="panel-body">
+    <div id="scoreHistogramPlot" class="scoreHistogram"></div>
+  </div>
+
   <table class="table table-condensed table-hover">
     <thead>
       <tr>
-        <th>Item</th>
+        <th style="width: 15em">Statistic</th>
         <th>Value</th>
       </tr>
     </thead>
     <tbody>
       <tr><td>Number of students</td><td>{{n}}</td></tr>
       <tr><td>Mean score</td><td>{{mean}}%</td></tr>
-      <tr><td>Median score</td><td>{{median}}%</td></tr>
       <tr><td>Standard deviation</td><td>{{stddev}}%</td></tr>
+      <tr><td>Minimum score</td><td>{{min}}%</td></tr>
+      <tr><td>Median score</td><td>{{median}}%</td></tr>
+      <tr><td>Maximum score</td><td>{{max}}%</td></tr>
+      <tr><td>Number of 0%</td><td>{{nZeroScore}} ({{fracZeroScore}}% of class)</td></tr>
+      <tr><td>Number of 100%</td><td>{{nFullScore}} ({{fracFullScore}}% of class)</td></tr>
     </tbody>
   </table>
+  <div class="panel-footer">
+    Download <a href="{{testFilesStatsLink}}">{{testFilesStatsFilename}}</a>
+  </div>
   {{/hasTestStats}}
 
   {{^hasTestStats}}
@@ -78,11 +93,64 @@
   </div> <!-- panel-body -->
   {{/hasTestStats}}
 
+</div>
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">Question statistics</h3>
+  </div>
+
+  {{#hasTestStats}}
+  <div class="panel-body">
+    <div id="questionScoreDiscPlot" class="questionScoreDiscPlot"></div>
+  </div>
+
+  <table class="table table-condensed table-hover">
+    <thead>
+      <tr>
+        <th>Question</th>
+        <th class="cell-center">Mean score</th>
+        <th class="cell-center">Discrimination</Th>
+        <!-- <th class="cell-center">Ever correct</Th> -->
+        <th class="cell-center">Attempts</th>
+        <th class="cell-center">Quintiles</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#qStats}}
+      <tr>
+        <td>{{number}}. {{qid}}<br /><small>{{title}}</small></td>
+        <td class="cell-center">{{{meanScoreBar}}}</td>
+        <td class="cell-center">{{{discriminationBar}}}</td>
+        <!-- <td class="cell-center">{{{fracEverCorrectBar}}}</td> -->
+        <td class="cell-center">{{{meanNAttemptsString}}}</td>
+        <td class="cell-center"><div id="scoresByQuintile{{qid}}" class="scoresByQuintile"></div></td>
+      </tr>
+      {{/qStats}}
+    </tbody>
+  </table>
+
   <div class="panel-footer">
-    <p class="text-right">
-      <button class="btn btn-info reloadStats">Reload statistics</button>
+    <p>Download <a href="{{testFilesQStatsLink}}">{{testFilesQStatsFilename}}</a></p>
+    <small>
+      <ul>
+        <li><strong>Mean score</strong> of a question is the avearge score for all students on the question. It is best to have a range of questions with different mean scores on the test, with some easy (mean score above 90%) and some hard (mean score below 50%).</li>
+        <li><strong>Discrimination</strong> of a question is the correlation coefficient between the scores on the question and the total assessment scores. Discrimination values should be above 20%, unless a question is very easy (mean score above 95%), in which case it is acceptable to have lower discriminations. It is always better to have higher discriminations for all questions, and a range of discriminations is not desired.</li>
+        <li><strong>Attempts</strong> for a question is the average number of graded attempts made per student at the question.</li>
+        <li><strong>Quintiles</strong> shows the average scores on the question for students in the lowest 20% of the class, the next 20%, etc, where the quintiles are determined by total assessment score. Good questions should have very low scores for the lowest quintile (the left-most), and very high scores for the highest quintile (the right-most). This is essentially a graphical representation of the discrimination.
+      </ul>
+    </small>
+  </div>
+  {{/hasTestStats}}
+
+  {{^hasTestStats}}
+  <div class="panel-body">
+    <p>
+      Loading...
     </p>
-  </div> <!-- panel-footer -->
+  </div> <!-- panel-body -->
+  {{/hasTestStats}}
+
 </div>
 {{/seeTestStats}}
 

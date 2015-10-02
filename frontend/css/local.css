@@ -139,12 +139,17 @@ line.axis {
 }
 
 .bar {
-    stroke: #00a;
-    fill: #ddf;
+    stroke: #46b8da;
+    fill: #5bc0de;
+}
+
+.outlineBar {
+    stroke: #fff;
+    fill: #5bc0de;
 }
 
 .statsPlot .label {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: normal;
 }
 
@@ -163,4 +168,9 @@ body table.no-border td {
 
 body table.no-border th {
     border: 0px;
+}
+
+.statsPlot .point {
+    stroke: #d43f3a;
+    fill: #d9534f;
 }

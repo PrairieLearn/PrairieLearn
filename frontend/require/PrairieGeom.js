@@ -47,6 +47,25 @@ define(["sylvester", "underscore", "numeric"], function(Sylvester, _, numeric) {
         return false;
     };
 
+    // Histogram (bin count) data
+    // From jStat, modified to include low/high args
+    PrairieGeom.prototype.histogram = function(arr, bins, low, high) {
+        var first = (low !== undefined) ? low : jStat.min(arr);
+        var last = (high !== undefined) ? high : jStat.max(arr);
+        var binCnt = bins || 4;
+        var binWidth = (last - first) / binCnt;
+        var len = arr.length;
+        var bins = [];
+        var i;
+
+        for (i = 0; i < binCnt; i++)
+            bins[i] = 0;
+        for (i = 0; i < len; i++)
+            bins[Math.min(Math.floor(((arr[i] - first) / binWidth)), binCnt - 1)] += 1;
+
+        return bins;
+    };
+
     /** Fixed modulus function (handles negatives correctly).
 
         @param {number} value The number to convert.
