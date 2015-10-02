@@ -2310,7 +2310,7 @@ var getQDataByQID = function(test, tInstance) {
             }
         });
     } else if (_(test).has('qids') && _(tInstance).has('qData')) {
-        // Basic and Adaptive
+        // Basic and Game
         _(test.qids).each(function(qid) {
             qDataByQID[qid] = {
                 points: 0,
@@ -2319,7 +2319,7 @@ var getQDataByQID = function(test, tInstance) {
                 everCorrect: false,
             };
         });
-        _(tInstance.qData).each(function(qid, data) {
+        _(tInstance.qData).each(function(data, qid) {
             if (_(data).has('nAttempt')) {
                 // Basic
                 qDataByQID[qid].points = data.avgScore;
