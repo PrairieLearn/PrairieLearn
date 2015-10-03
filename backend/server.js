@@ -2824,7 +2824,7 @@ var computeTestStats = function(tid, scores, callback) {
 
 app.get("/testStats/:tid", function(req, res) {
     if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
-        return sendError(res, 403, "Insufficient permissions");
+        return res.json({});
     }
     var tid = req.params.tid;
     getScoresForTest(tid, function(err, scores) {
@@ -2833,6 +2833,24 @@ app.get("/testStats/:tid", function(req, res) {
             if (err) return sendError(res, 500, "Error computing statistics for tid: " + tid, err);
             res.json(stats);
         });
+    });
+});
+
+app.get("/testStats", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
+        return res.json({});
+    }
+    async.map(_(testDB).keys(), function(tid, cb) {
+        getScoresForTest(tid, function(err, scores) {
+            if (err) return cb(err)
+            computeTestStats(tid, scores, function(err, stats) {
+                if (err) return cb(err);
+                cb(null, stats);
+            });
+        });
+    }, function(err, statsList) {
+        if (err) return sendError(res, 500, "Error computing exam statistics", err);
+        res.json(statsList);
     });
 });
 
