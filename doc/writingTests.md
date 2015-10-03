@@ -18,7 +18,17 @@ Each test is a single directory in the `tests` folder. The name of the directory
 
 * [Format specification for test `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/testInfo.json)
 
-The `type` of the test controls the way questions are asked, the grading scheme, and the format of the `options` data (see the next section for a list of available types). Tests are organized into `sets` such as (`homework`, `quiz`, `exam`, etc). Within each set the test has a `number`, so the short name of the test above is `Quiz 2`, for example. The `title` is a description of the test content, so the full name of the above test is `Quiz 2: Coordinates and Vectors`.
+The `type` of the test controls the way questions are asked, the grading scheme, and the format of the `options` data (see the next section for a list of available types).
+
+## Test naming
+
+Tests are organized into `sets` (e.g., `Homework`, `Quiz`, `Exam`) and within each set the test has a `number`. Additionally, each test has a `title`. Depending on the context, tests are referred to by either a _short name_ or a _long name_. The format of these is:
+
+* Short name = `Set Number` (e.g., `Quiz 2` in the above example).
+
+* Long name = `Set Number: Title` (e.g., `Quiz 2: Coordinates and Vectors` above).
+
+Test numbers can be either integers or strings, allowing `5` as well as `"5A"` and `"5B"`, for example.
 
 ## Test types
 
