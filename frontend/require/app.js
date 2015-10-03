@@ -96,6 +96,14 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         comparator: function(pull) {return -(new Date(pull.get("createDate"))).getTime();},
     });
 
+    var TestStatsModel = Backbone.Model.extend({
+        idAttribute: "tid",
+    });
+
+    var TestStatsCollection = Backbone.Collection.extend({
+        model: TestStatsModel,
+    });
+
     var AppModel = Backbone.Model.extend({
         initialize: function() {
             defaultConfig = {
@@ -563,6 +571,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             this.users = options.users;
             this.pulls = options.pulls;
             this.syncModel = options.syncModel;
+            this.testStatsColl = options.testStatsColl;
         },
 
         tiidShortName: function(tiid) {
@@ -604,6 +613,13 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             if (!test) return "Invalid test";
             return test.get("set") + ' ' + test.get("number") + ': ' + test.get("title");
         },
+
+        reloadTestStatsForTID: function(tid) {
+            var testStats = this.testStatsColl.get(tid);
+            if (testStats) {
+                testStats.fetch();
+            }
+        },
     });
 
     $(function() {
@@ -626,6 +642,9 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             url: function() {return appModel.apiURL("coursePulls");}
         });
         var syncModel = new SyncModel.SyncModel();
+        var testStatsColl = new TestStatsCollection([], {
+            url: function() {return appModel.apiURL("testStats");}
+        });
 
         var router = new AppRouter({model: appModel, tests: tests, tInstances: tInstances});
 
@@ -638,6 +657,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             users: users,
             pulls: pulls,
             syncModel: syncModel,
+            testStatsColl: testStatsColl,
         });
 
         $.ajaxPrefilter(function(options, originalOptions, jqXHR) {
@@ -696,6 +716,15 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                         $("#error").html('<div class="alert alert-danger" role="alert">' + errors.join(', ') + '</div>');
                         // no return here, keep going despite errors
                     }
+
+                    // load non-critical data
+                    store.testStatsColl.fetch({
+                        success: function() {},
+                        error: function() {
+                            $("#error").append('<div class="alert alert-danger" role="alert">Error fetching testStats</div>');
+                        },
+                    });
+
                     Backbone.history.start();
                     var appView = new AppView({
                         model: appModel,

@@ -13,20 +13,16 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
         },
 
         initialize: function() {
-            var that = this;
+            this.store = this.options.store;
             this.appModel = this.options.appModel;
             this.questions = this.options.questions;
-            var TestStats = Backbone.Model.extend({
-                url: function() {return that.appModel.apiURL("testStats/" + that.model.get("tid"));},
-             });
-            this.testStats = new TestStats;
             this.listenTo(this.model, "all", this.render);
-            this.listenTo(this.testStats, "all", this.render);
-            this.testStats.fetch();
+            this.listenTo(this.store.testStatsColl, "all", this.render);
         },
 
         render: function() {
             var that = this;
+            var tid = this.model.get("tid");
             var options = this.model.get("options");
             var data = {};
             data.tid = this.model.get("tid");
@@ -48,25 +44,27 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             data.testFilesZipLink = this.appModel.apiURL("testFilesZip/" + data.testFilesZipFilename + "?tid=" + data.tid);
 
             data.seeTestStats = this.appModel.hasPermission("viewOtherUsers");
-            data.hasTestStats = this.testStats.has("n");
             data.testFilesStatsFilename = this.model.get("tid") + "_stats.csv";
             data.testFilesStatsLink = this.appModel.apiURL("testStatsCSV/" + data.testFilesStatsFilename + "?tid=" + data.tid);
             data.testFilesQStatsFilename = this.model.get("tid") + "_question_stats.csv";
             data.testFilesQStatsLink = this.appModel.apiURL("testQStatsCSV/" + data.testFilesQStatsFilename + "?tid=" + data.tid);
+
+            data.hasTestStats = this.store.testStatsColl.get(tid) && this.store.testStatsColl.get(tid).has("n");
             if (data.hasTestStats) {
-                data.n = this.testStats.get("n");
-                data.scores = this.testStats.get("scores");
-                data.hist = this.testStats.get("hist");
-                data.mean = (this.testStats.get("mean") * 100).toFixed(1);
-                data.median = (this.testStats.get("median") * 100).toFixed(1);
-                data.stddev = (this.testStats.get("stddev") * 100).toFixed(1);
-                data.min = (this.testStats.get("min") * 100).toFixed(1);
-                data.max = (this.testStats.get("max") * 100).toFixed(1);
-                data.nZeroScore = this.testStats.get("nZeroScore");
-                data.nFullScore = this.testStats.get("nFullScore");
+                var testStats = this.store.testStatsColl.get(tid);
+                data.n = testStats.get("n");
+                data.scores = testStats.get("scores");
+                data.hist = testStats.get("hist");
+                data.mean = (testStats.get("mean") * 100).toFixed(1);
+                data.median = (testStats.get("median") * 100).toFixed(1);
+                data.stddev = (testStats.get("stddev") * 100).toFixed(1);
+                data.min = (testStats.get("min") * 100).toFixed(1);
+                data.max = (testStats.get("max") * 100).toFixed(1);
+                data.nZeroScore = testStats.get("nZeroScore");
+                data.nFullScore = testStats.get("nFullScore");
                 data.fracZeroScore = (data.n > 0) ? (data.nZeroScore / data.n * 100).toFixed(1) : 0;
                 data.fracFullScore = (data.n > 0) ? (data.nFullScore / data.n * 100).toFixed(1) : 0;
-                var byQID = this.testStats.get("byQID");
+                var byQID = testStats.get("byQID");
                 data.qStats = [];
 
                 var pbar = function(val) {
@@ -329,8 +327,8 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
         },
 
         reloadStats: function() {
-            this.testStats.clear();
-            this.testStats.fetch();
+            var tid = this.model.get("tid");
+            this.store.reloadTestStatsForTID(tid);
         },
 
         close: function() {
