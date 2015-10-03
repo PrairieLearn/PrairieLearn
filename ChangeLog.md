@@ -1,6 +1,14 @@
 
 # ChangeLog
 
+* __1.13.0__ - 2015-10-04
+
+  * Plot score histogram in test admin view (Binglin Chen @chen386).
+
+  * Add question statistics to test admin view.
+
+  * Display PrairieLearn version number on the Sync page.
+
 * __1.12.1__ - 2015-09-24
 
   * Fix test statistics for `RetryExam` using zones.
