@@ -22,7 +22,7 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
             data.userRole = this.model.get("userRole");
             data.mode = this.model.get("mode");
             data.viewOtherUsersPerm = this.model.hasPermission("viewOtherUsers", "auth");
-            data.viewSync = this.model.hasPermission("viewCoursePulls") && this.model.get("gitCourseBranch");
+            data.viewSync = this.model.hasPermission("viewCoursePulls");
 
             var tid = this.model.get("tid");
             var tiid = this.model.get("tiid");

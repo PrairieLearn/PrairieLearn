@@ -736,6 +736,7 @@ app.use(function(req, res, next) {
     if (config.localFileserver) {
         if (req.path == "/"
             || req.path == "/index.html"
+            || req.path == "/version.js"
             || req.path == "/config.js"
             || req.path == "/favicon.png"
             || /^\/require\//.test(req.path)
@@ -938,6 +939,30 @@ if (config.authType === 'eppn') {
         res.json({ "uid": req.authUID });
     });
 }
+
+var getGitDescribe = function(callback) {
+    var cmd = 'git';
+    var options = ["describe", "--long", "--abbrev=40", "HEAD"];
+    var env = {
+        'timeout': 5000, // milliseconds
+        'cwd': '.',
+    };
+    child_process.execFile(cmd, options, env, function(err, stdout, stderr) {
+        if (err) return callback(err);
+        var gitDescribe = stdout.trim();
+        callback(null, gitDescribe);
+    });
+};
+
+app.get("/version", function(req, res) {
+    getGitDescribe(function(err, gitDescribe) {
+        if (err) return sendError(res, 500, "Error determining version");
+        var PLVersion = {
+            gitDescribe: gitDescribe,
+        };
+        res.json(PLVersion);
+    });
+});
 
 app.get("/course", function(req, res) {
     var course = {
@@ -3012,6 +3037,10 @@ if (config.localFileserver) {
 
     app.get("/index.html", function(req, res) {
         res.sendfile("index.html", {root: config.frontendDir});
+    });
+
+    app.get("/version.js", function(req, res) {
+        res.sendfile("version.js", {root: config.frontendDir});
     });
 
     app.get("/config.js", function(req, res) {

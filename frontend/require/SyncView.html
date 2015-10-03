@@ -1,4 +1,24 @@
+{{#hasVersion}}
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">PrairieLearn version</h3>
+  </div>
 
+  <div class="panel-body">
+    {{#exactVersion}}
+    PrairieLearn version <strong>{{exactVersion}}</strong>
+    </br /><small>Commit {{sha1}}</small>
+    {{/exactVersion}}
+
+    {{#lastVersion}}
+    Unversioned development release of PrairieLearn
+    <br /><small>Commit {{sha1}} ({{commitsAheadString}} ahead of version {{lastVersion}})</small>
+    {{/lastVersion}}
+  </div>
+</div>
+{{/hasVersion}}
+
+{{#seePulls}}
 {{#editCoursePulls}}
 <p class="text-right">
   <button id="pullFromGitHub" class="btn btn-success" type="submit">Sync</button>
@@ -9,7 +29,6 @@
   </small>
 </div>
 {{/editCoursePulls}}
-
 
 <div class="panel-group" id="pulls" role="tablist" aria-multiselectable="true">
   {{#pullsList}}
@@ -73,3 +92,4 @@
   </div>
   {{/pullsList}}
 </div>
+{{/seePulls}}
