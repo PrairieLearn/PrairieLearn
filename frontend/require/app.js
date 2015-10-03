@@ -130,6 +130,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 courseName: "unknownCourseName",
                 courseTitle: "unknownCourseTitle",
                 timezone: "UTC",
+                version: null,
             };
             this.set(_(document.PLConfig).defaults(defaultConfig));
             if (this.get("authURL") === null)
@@ -173,6 +174,13 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                     });
                     document.title = that.get("pageTitle");
                 });
+                if (document.PLVersion && document.PLVersion.gitDescribe) {
+                    that.set('version', document.PLVersion);
+                } else {
+                    $.getJSON(that.apiURL("version"), function(version) {
+                        that.set('version', version);
+                    });
+                }
             });
         },
 

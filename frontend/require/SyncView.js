@@ -20,6 +20,28 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!SyncView.html'],
         render: function() {
             var that = this;
             var data = {};
+            var version = this.model.get("version");
+            data.hasVersion = false;
+            if (version && version.gitDescribe) {
+                var match = /^(.+)-([0-9]+)-([0-9a-z]+)$/.exec(version.gitDescribe);
+                if (match) {
+                    var tag = match[1];
+                    var commitsAhead = match[2];
+                    var sha1 = match[3];
+                    if (commitsAhead == 0) {
+                        data.hasVersion = true;
+                        data.exactVersion = tag;
+                        data.sha1 = sha1;
+                    } else {
+                        data.hasVersion = true;
+                        data.lastVersion = tag;
+                        data.commitsAhead = commitsAhead;
+                        data.commitsAheadString = commitsAhead + " " + ((commitsAhead == 1) ? "commit" : "commits");
+                        data.sha1 = sha1;
+                    }
+                }
+            }
+            data.seePulls = this.model.get("gitCourseBranch");
             data.pullError = this.syncModel.get("pullError");
             data.editCoursePulls = this.model.hasPermission("editCoursePulls");
             data.gitCourseBranch = this.model.get('gitCourseBranch');
