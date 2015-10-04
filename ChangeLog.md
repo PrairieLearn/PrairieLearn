@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.13.1__ - 2015-10-04
+
+  * Fix test statistics for `Exam` and `PracExam` tests.
+
 * __1.13.0__ - 2015-10-04
 
   * Plot score histogram in test admin view (Binglin Chen @chen386).

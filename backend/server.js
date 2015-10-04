@@ -2327,6 +2327,7 @@ var getQDataByQID = function(test, tInstance) {
             };
         });
         _(tInstance.submissionsByQid).each(function(submission) {
+            var qid = submission.qid;
             qDataByQID[qid].nAttempts++;
             if (submission.score >= 0.5) {
                 qDataByQID[qid].points = 1;
