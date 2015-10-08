@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.13.2__ - 2015-10-08
+
+  * Use a locally-hosted copy of MathJax.
+	
 * __1.13.1__ - 2015-10-04
 
   * Fix test statistics for `Exam` and `PracExam` tests.
