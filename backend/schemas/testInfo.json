@@ -43,6 +43,13 @@
                         "description": "The minimum user role required for access.",
                         "enum": ["Student", "TA", "Instructor", "Superuser"]
                     },
+                    "uids" : {
+                        "description": "A list of UIDs, one of which is required for access",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
                     "startDate" : {
                         "description": "The earliest date on which access is permitted.",
                         "type": "string"

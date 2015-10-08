@@ -101,10 +101,16 @@ By default, a test is only accessible to `Instructor` users. To change this, the
             "mode": "Exam",
             "startDate": "2014-07-07T00:00:01",
             "endDate": "2014-07-10T23:59:59"
+        },
+        {
+            "mode": "Exam",
+            "uids": ["student1@illinois.edu", "student2@illinois.edu"],
+            "startDate": "2014-07-012T00:00:01",
+            "endDate": "2014-07-12T23:59:59"
         }
     ],
 
-The above `allowAccess` directive means that this test is available under two different circumstances. First, users who are at least a `TA` can access the test in `Public` mode at any time. Second, any user can access this test in `Exam` mode from July 7th to July 10th.
+The above `allowAccess` directive means that this test is available under three different circumstances. First, users who are at least a `TA` can access the test in `Public` mode at any time. Second, any user can access this test in `Exam` mode from July 7th to July 10th. Third, there are two specific students who have access to take the exam at a later date.
 
 The general format of `allowAccess` is:
 
@@ -120,6 +126,7 @@ Access restriction | Meaning
 ---                | ---
 `mode`             | Only allow access from this server mode.
 `role`             | Require at least this role to access.
+`uids`             | Require one of the UIDs in the array to access.
 `startDate`        | Only allow access after this date.
 `endDate`          | Only access access before this date.
 
