@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.14.0__ - 2015-10-08
+
+  * Add "uids" as an access rule restriction in test "allowAccess".
+
 * __1.13.2__ - 2015-10-08
 
   * Use a locally-hosted copy of MathJax.

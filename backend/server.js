@@ -591,6 +591,9 @@ var checkTestAccessRule = function(req, tid, accessRule) {
         } else if (key == "role") {
             if (!PrairieRole.isAsPowerful(req.userRole, value))
                 avail = false;
+        } else if (key == "uids") {
+            if (!_(value).contains(req.userUID))
+                avail = false;
         } else if (key === "startDate") {
             if (!isDateBeforeNow(value))
                 avail = false;
