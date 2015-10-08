@@ -1,9 +1,13 @@
 
 # ChangeLog
 
+* __1.15.0__ - 2015-10-08
+
+  * Enable feedback in questions during exams and add `particleMotion` example.
+
 * __1.14.1__ - 2015-10-08
 
-  * Correct documentation typo in test access control section.
+  * Fix documentation typo in test access control section.
 
 * __1.14.0__ - 2015-10-08
 

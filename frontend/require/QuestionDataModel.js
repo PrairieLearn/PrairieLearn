@@ -83,7 +83,6 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                             }
                             if (_(submission).has("feedback")) {
                                 qClient.setFeedback(submission.feedback);
-                                that.set("showAnswer", true);
                             }
                         }
                     }
@@ -148,7 +147,6 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 }
                 if (_(submission).has("feedback")) {
                     qClient.setFeedback(submission.feedback);
-                    that.set("showAnswer", true);
                 }
                 that.trigger("graded");
             };

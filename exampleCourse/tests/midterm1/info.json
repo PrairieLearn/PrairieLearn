@@ -20,7 +20,8 @@
             {
                 "title": "Easy questions",
                 "questions": [
-                    {"qid": "fossilFuels", "points": [10]}
+                    {"qid": "fossilFuels", "points": [10]},
+                    {"qid": "particleMotion", "points": [10, 5, 2]}
                 ]
             },
             {

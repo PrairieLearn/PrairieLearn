@@ -103,6 +103,14 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
             this.submittedAnswer = this.options.submittedAnswer;
             this.trueAnswer = this.options.trueAnswer;
             this.feedback = this.options.feedback;
+            this.rivetsBindingsActive = false;
+            this.listenTo(this.trueAnswer, "change", this.render);
+            this.listenTo(this.feedback, "change", this.render);
+        },
+
+        render: function() {
+            if (this.rivetsBindingsActive)
+                this.rivetsView.unbind();
             var templateData = {
                 params: this.params.toJSON(),
                 submittedAnswer: this.submittedAnswer.toJSON(),
@@ -132,12 +140,9 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
         },
 
-        render: function() {
-            return this;
-        },
-
         close: function() {
-            this.rivetsView.unbind();
+            if (this.rivetsBindingsActive)
+                this.rivetsView.unbind();
             this.remove();
         },
 
