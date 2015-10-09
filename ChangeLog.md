@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.14.1__ - 2015-10-08
+
+  * Correct documentation typo in test access control section.
+
 * __1.14.0__ - 2015-10-08
 
   * Add "uids" as an access rule restriction in test "allowAccess".
