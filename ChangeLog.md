@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.15.1__ - 2015-10-08
+
+  * Clean up `particleMotion` example HTML templates.
+
 * __1.15.0__ - 2015-10-08
 
   * Enable feedback in questions during exams and add `particleMotion` example.

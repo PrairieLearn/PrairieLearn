@@ -14,17 +14,15 @@
 <p>
   $\vec{F} = $ <input data-instavalue="submittedAnswer.FT" /> $\hat\imath{\rm\ N}$
 </p>
-<% if (feedback.FTCorrect === true) { %>
+
+<% if (feedback.FTCorrect !== undefined) { %>
 <p>
   <small>
+    <% if (feedback.FTCorrect) { %>
     Your answer was correct. The exact answer is $\vec{F} = {{feedback.FT | scalarProduct \hat\imath}}{\rm\ N}$.
-  </small>
-</p>
-<% } %>
-<% if (feedback.FTCorrect === false) { %>
-<p>
-  <small>
+    <% } else { %>
     Your answer was incorrect.
+    <% } %>
   </small>
 </p>
 <% } %>
@@ -37,17 +35,15 @@
 <p>
   $\vec{a} = $ <input data-instavalue="submittedAnswer.a" /> $\hat\imath{\rm\ m/s^2}$
 </p>
-<% if (feedback.aCorrect === true) { %>
+
+<% if (feedback.aCorrect !== undefined) { %>
 <p>
   <small>
+    <% if (feedback.aCorrect) { %>
     Your answer was correct. The exact answer is $\vec{a} = {{feedback.a | scalarProduct \hat\imath}}{\rm\ m/s^2}$.
-  </small>
-</p>
-<% } %>
-<% if (feedback.aCorrect === false) { %>
-<p>
-  <small>
+    <% } else { %>
     Your answer was incorrect.
+    <% } %>
   </small>
 </p>
 <% } %>
