@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.15.2__ - 2015-10-09
+
+  * Fix doc references from "Assessment Detail" to assessment "Admin" page.
+
 * __1.15.1__ - 2015-10-08
 
   * Clean up `particleMotion` example HTML templates.

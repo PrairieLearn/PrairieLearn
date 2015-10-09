@@ -1,7 +1,7 @@
 
 # Writing tests
 
-**NOTE:** *Any time you edit or add a test, you need to stop and restart the PrairieLearn server for it to reload the changes. Exam-type tests that choose questions randomly will not change their selections when the test is edited, so you will need to "reset" the test (on the "Assessment Detail" page) to see the changes.*
+**NOTE:** *Any time you edit or add a test, you need to stop and restart the PrairieLearn server for it to reload the changes. Exam-type tests that choose questions randomly will not change their selections when the test is edited, so you will need to "reset" the test (on the test "Admin" page) to see the changes.*
 
 ## Overview
 
