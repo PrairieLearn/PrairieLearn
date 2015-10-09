@@ -105,7 +105,7 @@ By default, a test is only accessible to `Instructor` users. To change this, the
         {
             "mode": "Exam",
             "uids": ["student1@illinois.edu", "student2@illinois.edu"],
-            "startDate": "2014-07-012T00:00:01",
+            "startDate": "2014-07-12T00:00:01",
             "endDate": "2014-07-12T23:59:59"
         }
     ],
