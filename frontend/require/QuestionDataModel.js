@@ -55,18 +55,22 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 qid: qid,
                 uid: uid,
                 vid: vid, // may be undefined, server may ignore anyway
-                tiid: this.tInstance.get("tiid"),
             };
+            if (this.tInstance) {
+                qInstance.tiid = this.tInstance.get("tiid");
+            } else if (this.test) {
+                qInstance.tid = this.test.get("tid");
+            }
 
             var processQInstance = function(qInstance) {
-                var qiid = qInstance.qiid;
-                that.set("qiid", qiid);
+                that.set("qiid", qInstance.qiid);
+                that.set("vid", qInstance.vid);
                 require([that.appModel.apiURL("questions/" + qid + "/client.js")], function(qClient) {
                     qClient.initialize(qInstance.params);
                     that.set("qClient", qClient);
 
                     // restore submittedAnswer from most recent submission if we have one
-                    if (that.tInstance.has("submissionsByQid")) {
+                    if (that.tInstance && that.tInstance.has("submissionsByQid")) {
                         var submissionsByQid = that.tInstance.get("submissionsByQid");
                         var submission = submissionsByQid[qid];
                         if (submission) {
@@ -90,7 +94,7 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
             };
 
             var qiid = null;
-            if (this.tInstance !== undefined && this.tInstance.has("qiidsByQid")) {
+            if (this.tInstance && this.tInstance.has("qiidsByQid")) {
                 // already have a QIID, so GET the qInstance
                 var qiidsByQid = this.tInstance.get("qiidsByQid");
                 var qiid = qiidsByQid[qid];
@@ -170,6 +174,7 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
         },
 
         updateDirtyStatus: function() {
+            if (!this.tInstance) return;
             var testOptions = this.test.get("options");
             if (!testOptions.allowQuestionSave)
                 return;
@@ -199,6 +204,7 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
         },
 
         saveAnswer: function() {
+            if (!this.tInstance) return;
             var submission = {};
             submission.uid = this.appModel.get("userUID");
             submission.qid = this.get("qid");

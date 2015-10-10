@@ -133,6 +133,10 @@ define(['underscore'], function(_) {
             permission = true;
         if (operation === 'seeAdminPages' && rank <= this.TA)
             permission = true;
+        if (operation === 'createQIDWithoutTID' && rank <= this.INSTRUCTOR)
+            permission = true;
+        if (operation === 'createQIDWithoutTIID' && rank <= this.TA)
+            permission = true;
         return permission;
     };
 

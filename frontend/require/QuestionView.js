@@ -1,5 +1,5 @@
 
-define(['underscore', 'backbone', 'mustache', 'TestFactory', 'text!QuestionView.html', 'QuestionBodyView', 'QuestionSubmitView', 'QuestionGradingView', 'QuestionAnswerView'], function(_, Backbone, Mustache, TestFactory, questionViewTemplate, QuestionBodyView, QuestionSubmitView, QuestionGradingView, QuestionAnswerView) {
+define(['underscore', 'backbone', 'mustache', 'TestFactory', 'text!QuestionView.html', 'QuestionBodyView', 'QuestionSubmitView', 'QuestionGradingView', 'QuestionAnswerView', 'DefaultTestSidebarView'], function(_, Backbone, Mustache, TestFactory, questionViewTemplate, QuestionBodyView, QuestionSubmitView, QuestionGradingView, QuestionAnswerView, DefaultTestSidebarView) {
 
     var QuestionView = Backbone.View.extend({
 
@@ -13,14 +13,21 @@ define(['underscore', 'backbone', 'mustache', 'TestFactory', 'text!QuestionView.
             this.listenTo(this.model, "change:title", this.render);
             this.listenTo(this.test, "change:helper", this.render);
             this.listenTo(this.model, "graded", this.test.fetch.bind(this.test));
-            this.listenTo(this.model, "graded", this.tInstance.fetch.bind(this.tInstance));
+            if (this.tInstance) {
+                this.listenTo(this.model, "graded", this.tInstance.fetch.bind(this.tInstance));
+            }
             this.render();
         },
 
         render: function() {
             this.$el.html(questionViewTemplate);
 
-            var TestSidebarView = TestFactory.getClass(this.test.get("type"), "sidebarView");
+            var TestSidebarView;
+            if (this.tInstance) {
+                TestSidebarView = TestFactory.getClass(this.test.get("type"), "sidebarView");
+            } else {
+                TestSidebarView = DefaultTestSidebarView;
+            }
             this.questionSidebarView = new TestSidebarView({model: this.model, test: this.test, tInstance: this.tInstance, store: this.store});
             this.questionBodyView = new QuestionBodyView.QuestionBodyView({model: this.model, test: this.test, tInstance: this.tInstance, appModel: this.appModel, store: this.store});
             this.questionSubmitView = new QuestionSubmitView.QuestionSubmitView({model: this.model, test: this.test, tInstance: this.tInstance, store: this.store});

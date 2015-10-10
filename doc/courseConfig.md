@@ -72,4 +72,6 @@ Operation                                                             | Student 
 `editCoursePulls`: Pull the course data from git.                     |         |     | Yes        | Yes
 `deleteTInstances` : Delete and reset tests.                          |         |     | Yes        | Yes
 `seeAdminPages` : View admin pages with extra options.                |         | Yes | Yes        | Yes
+`createQIDWithoutTID`: View questions outside of a test.              |         |     | Yes        | Yes
+`createQIDWithoutTIID`: View questions outside of a test instance.    |         | Yes | Yes        | Yes
 Automatic access to all courses.                                      |         |     |            | Yes

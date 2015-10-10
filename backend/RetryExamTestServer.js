@@ -40,6 +40,10 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
                 .map(function(q) {return [q.qid, _.max(q.points)];})
                 .object()
                 .value();
+            test.qids = _.chain(options.questionGroups)
+                .flatten()
+                .pluck('qid')
+                .value();
         } else {
             // new code that should always be used in the future
             test.nQuestions = _.chain(options.zones)
@@ -65,6 +69,18 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
                         });
                     }
                 });
+            test.qids = [];
+            _.chain(options.zones)
+                .pluck("questions")
+                .flatten()
+                .each(function(q) {
+                    if (q.qid) {
+                        test.qids.push(q.qid);
+                    } else if (q.qids) {
+                        test.qids = _.union(test.qids, q.qids);
+                    }
+                });
+            test.qids = _.uniq(test.qids);
         }
         if (!options.unlimitedVariants) {
             test.vidsByQID = test.vidsByQID || {};

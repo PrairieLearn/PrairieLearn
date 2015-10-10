@@ -312,7 +312,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 var test = this.tests.get(tid);
                 view = new TestDetailView({model: test, appModel: this.model, questions: this.questions, store: this.store});
                 break;
-            case "testQuestion":
+            case "tInstanceQuestion":
                 var tiid = this.model.get("pageOptions").tiid;
                 var qNumber = this.model.get("pageOptions").qNumber;
                 var vid = this.model.get("pageOptions").vid;
@@ -335,11 +335,19 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 */
                 view = new QuestionView.QuestionView({model: questionDataModel, test: test, tInstance: tInstance, appModel: this.model, store: this.store});
                 break;
+            case "testQuestion":
+                var tid = this.model.get("pageOptions").tid;
+                var qid = this.model.get("pageOptions").qid;
+                var vid = this.model.get("pageOptions").vid;
+                var test = this.tests.get(tid);
+                var questionDataModel = new QuestionDataModel.QuestionDataModel({}, {appModel: this.model, qid: qid, vid: vid, test: test});
+                view = new QuestionView.QuestionView({model: questionDataModel, test: test, appModel: this.model, store: this.store});
+                break;
 
             /**
              * Chooses a question from an active test, excluding any questions in skipQNumbers.
              */
-            case "chooseTestQuestion":
+            case "chooseTInstanceQuestion":
                 var tiid = this.model.get("pageOptions").tiid;
                 var qInfo = this.model.get("pageOptions").qInfo;
                 var skipQNumbers = this.model.get("pageOptions").skipQNumbers;
@@ -446,8 +454,9 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         routes: {
             "stats": "goStats",
             "assess": "goAssess",
-            "q/:tiid/:qNumber(/:vid)": "goTestQuestion",
-            "cq/:tiid/:qInfo(/not/:skipQNumbers)": "goChooseTestQuestion",
+            "q/:tiid/:qNumber": "goTInstanceQuestion",
+            "tq/:tid/:qid(/:vid)": "goTestQuestion",
+            "cq/:tiid/:qInfo(/not/:skipQNumbers)": "goChooseTInstanceQuestion",
             "ti/:tiid": "goTestInstance",
             "t/:tid": "goTestDetail",
             "about": "goAbout",
@@ -504,23 +513,32 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             });
         },
 
-        goTestQuestion: function(tiid, qNumber, vid) {
+        goTInstanceQuestion: function(tiid, qNumber, vid) {
             var tInstance = this.tInstances.get(tiid);
             var tid = tInstance ? tInstance.get("tid") : null;
             this.model.set({
-                page: "testQuestion",
+                page: "tInstanceQuestion",
                 pageOptions: {tiid: tiid, qNumber: qNumber, vid: vid},
                 tid: tid,
                 tiid: tiid,
             });
         },
 
-        goChooseTestQuestion: function(tiid, qInfo, skipQNumbers) {
+        goTestQuestion: function(tid, qid, vid) {
+            this.model.set({
+                page: "testQuestion",
+                pageOptions: {tid: tid, qid: qid, vid: vid},
+                tid: tid,
+            });
+            this.checkCurrentTest();
+        },
+
+        goChooseTInstanceQuestion: function(tiid, qInfo, skipQNumbers) {
             skipQNumbers = (skipQNumbers == null) ? [] : skipQNumbers.split(",");
             var tInstance = this.tInstances.get(tiid);
             var tid = tInstance ? tInstance.get("tid") : null;
             this.model.set({
-                page: "chooseTestQuestion",
+                page: "chooseTInstanceQuestion",
                 pageOptions: {tiid: tiid, qInfo: qInfo, skipQNumbers: skipQNumbers},
                 tid: tid,
                 tiid: tiid,

@@ -17,17 +17,23 @@ define(['underscore', 'backbone', 'mustache', 'spinController', 'TestFactory', '
             var that = this;
             var qid = this.model.get("qid");
 
-            var testClient = TestFactory.getClass(this.test.get("type"), "client");
             var qTitle = this.model.get("title");
-            var qNumber = testClient.formatQNumber(qid, this.test, this.tInstance);
             var title;
-            if (this.model.get("showTitle")) {
-                title = qNumber + "&nbsp;&nbsp;" + qTitle;
+            if (this.tInstance) {
+                var testClient = TestFactory.getClass(this.test.get("type"), "client");
+                var qNumber = testClient.formatQNumber(qid, this.test, this.tInstance);
+                if (this.model.get("showTitle")) {
+                    title = qNumber + "&nbsp;&nbsp;" + qTitle;
+                } else {
+                    title = "Question " + qNumber;
+                }
+                if (this.model.appModel.hasPermission("seeQID"))
+                    title += " (" + this.model.get("qid") + ")";
             } else {
-                title = "Question " + qNumber;
+                title = "Question";
+                if (this.model.appModel.hasPermission("seeQID"))
+                    title += " " + this.model.get("qid");
             }
-            if (this.model.appModel.hasPermission("seeQID"))
-                title += " (" + this.model.get("qid") + ")";
             var data = {
                 title: title,
             };

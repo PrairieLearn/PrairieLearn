@@ -103,6 +103,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                     data.qStats.push({
                         qid: qid,
                         title: that.questions.get(qid).get("title"),
+                        link: "#tq/" + tid + "/" + qid,
                         n: stat.n,
                         meanScore: stat.meanScore * 100,
                         meanScoreString: (stat.meanScore * 100).toFixed(0),

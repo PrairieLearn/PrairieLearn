@@ -45,24 +45,39 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
         },
 
         render: function() {
-            var testOptions = this.test.get("options");
-            var data = {
-                submittable: this.model.get("submittable"),
-                submitted: this.model.get("submitted"),
-                overridable: this.model.appModel.hasPermission("overrideScore"),
-                answerStatus: '<span class="label label-danger">not saved</span>',
-                saveActive: false,
-                testOpen: true,
-            };
-            data.allowPractice = testOptions.allowPractice;
-            data.allowQuestionSubmit = testOptions.allowQuestionSubmit;
-            data.allowQuestionSave = testOptions.allowQuestionSave;
-            data.allowQuestionRetry = testOptions.allowQuestionRetry;
-            data.allowTryAgain = (this.model.get("score") != null);
-            if (this.tInstance && this.tInstance.has("open")) {
-                data.testOpen = this.tInstance.get("open");
+            if (this.tInstance) {
+                var testOptions = this.test.get("options");
+                var data = {
+                    submittable: this.model.get("submittable"),
+                    submitted: this.model.get("submitted"),
+                    overridable: this.model.appModel.hasPermission("overrideScore"),
+                    answerStatus: '<span class="label label-danger">not saved</span>',
+                    saveActive: false,
+                    testOpen: true,
+                };
+                data.allowPractice = testOptions.allowPractice;
+                data.allowQuestionSubmit = testOptions.allowQuestionSubmit;
+                data.allowQuestionSave = testOptions.allowQuestionSave;
+                data.allowQuestionRetry = testOptions.allowQuestionRetry;
+                data.allowTryAgain = (this.model.get("score") != null);
+                if (this.tInstance.has("open")) {
+                    data.testOpen = this.tInstance.get("open");
+                }
+                data.questionOpen = data.testOpen;
+            } else {
+                var data = {
+                    submittable: this.model.get("submittable"),
+                    submitted: this.model.get("submitted"),
+                    overridable: this.model.appModel.hasPermission("overrideScore"),
+                    answerStatus: '<span class="label label-danger">not saved</span>',
+                    saveActive: false,
+                    testOpen: true,
+                    allowQuestionSubmit: true,
+                    allowQuestionRetry: false,
+                    questionOpen: true,
+                };
+                data.allowTryAgain = (this.model.get("score") != null);
             }
-            data.questionOpen = data.testOpen;
             if (data.allowQuestionSave) {
                 if (this.model.get("saveInProgress")) {
                     data.answerStatus = '<span class="label label-warning">saving...</span>';

@@ -32,6 +32,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             .map(function(qid) {return [qid, 1];})
             .object()
             .value();
+        test.qids = _(options.qidGroups).flatten();
         test.text = options.text;
         test._private = ["scoresByUID", "highScoresByUID", "completeHighScoresByUID"];
     };
