@@ -689,31 +689,46 @@ var filterObjsByAuth = function(req, objs, operation, callback) {
     }, callback);
 };
 
-var ensureObjAuth = function(req, res, obj, operation, callback) {
+var ensureObjAuth = function(req, obj, operation, callback) {
     if (checkObjAuth(req, obj, operation)) {
-        callback(obj);
+        callback(null);
     } else {
-        return sendError(res, 403, "Insufficient permissions for operation " + operation + ": " + req.path);
+        callback("Insufficient permissions for operation " + operation + ": " + req.path);
     }
 };
 
-var ensureQuestionInTest = function(req, res, qid, tInstance, test, callback) {
+var ensureObjAuthBAD = function(req, res, obj, operation, callback) {
+    ensureObjAuth(req, obj, operation, function(err) {
+        if (err) return sendError(res, 403, err);
+        callback(obj);
+    });
+};
+
+var ensureQuestionInTest = function(qid, tInstance, test, callback) {
     questionInTest = false;
-    if (_(tInstance).has("qids")) {
+    if (tInstance && _(tInstance).has("qids")) {
         if (_(tInstance.qids).contains(qid)) {
             questionInTest = true;
         }
-    }
-    if (_(test).has("qids")) {
-        if (_(test.qids).contains(qid)) {
-            questionInTest = true;
+    } else {
+        if (_(test).has("qids")) {
+            if (_(test.qids).contains(qid)) {
+                questionInTest = true;
+            }
         }
     }
     if (questionInTest) {
-        return callback();
+        return callback(null);
     } else {
-        return sendError(res, 403, "Insufficient permissions to access question: " + qid);
+        return callback("Insufficient permissions to access question: " + qid);
     }
+};
+
+var ensureQuestionInTestBAD = function(req, res, qid, tInstance, test, callback) {
+    ensureQuestionInTest(qid, tInstance, test, function(err) {
+        if (err) return sendError(res, 403, err);
+        callback();
+    });
 };
 
 var stripPrivateFields = function(obj) {
@@ -1384,7 +1399,7 @@ app.get("/users/:uid", function(req, res) {
             uid: uObj.uid,
             role: uidToRole(uObj.uid),
         };
-        ensureObjAuth(req, res, obj, "read", function(obj) {
+        ensureObjAuthBAD(req, res, obj, "read", function(obj) {
             res.json(stripPrivateFields(obj));
         });
     });
@@ -1430,7 +1445,7 @@ app.get("/qInstances/:qiid", function(req, res) {
         if (!obj) {
             return sendError(res, 404, "No qInstance with qiid " + req.params.qiid);
         }
-        ensureObjAuth(req, res, obj, "read", function(obj) {
+        ensureObjAuthBAD(req, res, obj, "read", function(obj) {
             res.json(stripPrivateFields(obj));
         });
     });
@@ -1443,9 +1458,6 @@ var makeQInstance = function(req, res, qInstance, callback) {
     if (qInstance.qid === undefined) {
         return sendError(res, 400, "No question ID provided");
     }
-    if (qInstance.tiid === undefined) {
-        return sendError(res, 400, "No tInstance ID provided");
-    }
     qInstance.date = new Date();
     var info = questionDB[qInstance.qid];
     if (info === undefined) {
@@ -1454,7 +1466,7 @@ var makeQInstance = function(req, res, qInstance, callback) {
     if (!_.isString(qInstance.vid) || qInstance.vid.length === 0) {
         qInstance.vid = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
     }
-    ensureObjAuth(req, res, qInstance, "write", function(qInstance) {
+    ensureObjAuthBAD(req, res, qInstance, "write", function(qInstance) {
         newIDNoError(req, res, "qiid", function(qiid) {
             qInstance.qiid = qiid;
             loadQuestionServer(qInstance.qid, function (server) {
@@ -1483,6 +1495,56 @@ var makeQInstance = function(req, res, qInstance, callback) {
 app.post("/qInstances", function(req, res) {
     var uid = req.body.uid;
     var qid = req.body.qid;
+
+    // does not have tid or tiid
+    if (!_(req.body).has("tid") && !_(req.body).has("tiid")) {
+        if (!PrairieRole.hasPermission(req.userRole, 'createQIDWithoutTID')) {
+            return sendError(res, 403, "Insufficient permissions");
+        };
+        var qInstance = {
+            uid: uid,
+            qid: qid,
+        };
+        if (PrairieRole.hasPermission(req.userRole, 'overrideVID') && _(req.body).has('vid')) {
+            qInstance.vid = req.body.vid;
+        };
+        makeQInstance(req, res, qInstance, function(qInstance) {
+            res.json(stripPrivateFields(qInstance));
+        });
+        return;
+    }
+
+    // has tid but not tiid
+    if (_(req.body).has("tid") && !_(req.body).has("tiid")) {
+        if (!PrairieRole.hasPermission(req.userRole, 'createQIDWithoutTIID')) {
+            return sendError(res, 403, "Insufficient permissions");
+        };
+        var qInstance = {
+            uid: uid,
+            qid: qid,
+            tid: req.body.tid,
+        };
+        if (PrairieRole.hasPermission(req.userRole, 'overrideVID') && _(req.body).has('vid')) {
+            qInstance.vid = req.body.vid;
+        };
+        var tid = qInstance.tid;
+        readTest(tid, function(err, test) {
+            if (err) return sendError(res, 500, "Error reading test", err);
+            ensureObjAuth(req, test, "read", function(err) {
+                if (err) return sendError(res, 403, "Insufficient permissions", err);
+                var tInstance = null;
+                ensureQuestionInTest(qid, tInstance, test, function(err) {
+                    if (err) return sendError(res, 404, "Invalid request", err);
+                    makeQInstance(req, res, qInstance, function(qInstance) {
+                        res.json(stripPrivateFields(qInstance));
+                    });
+                });
+            });
+        });
+        return;
+    }
+
+    // assume we have a tiid from here on
     var tiid = req.body.tiid;
     var qInstance = {
         uid: uid,
@@ -1507,7 +1569,7 @@ app.post("/qInstances", function(req, res) {
                 if (!obj) {
                     return sendError(res, 404, "No qInstance with qiid " + req.params.qiid);
                 }
-                ensureObjAuth(req, res, obj, "read", function(obj) {
+                ensureObjAuthBAD(req, res, obj, "read", function(obj) {
                     res.json(stripPrivateFields(obj));
                 });
             });
@@ -1517,8 +1579,8 @@ app.post("/qInstances", function(req, res) {
                 if (test.options.autoCreateQuestions) {
                     return sendError(res, 403, "QIID creation disallowed for tiid: ", tInstance.tiid);
                 } else {
-                    ensureObjAuth(req, res, tInstance, "read", function(tInstance) {
-                        ensureQuestionInTest(req, res, qid, tInstance, test, function() {
+                    ensureObjAuthBAD(req, res, tInstance, "read", function(tInstance) {
+                        ensureQuestionInTestBAD(req, res, qid, tInstance, test, function() {
                             if (tInstance.vidsByQID) {
                                 qInstance.vid = tInstance.vidsByQID[qid];
                             }
@@ -1574,7 +1636,7 @@ app.get("/submissions/:sid", function(req, res) {
         if (!obj) {
             return sendError(res, 404, "No submission with sid " + req.params.sid);
         }
-        ensureObjAuth(req, res, obj, "read", function(obj) {
+        ensureObjAuthBAD(req, res, obj, "read", function(obj) {
             res.json(stripPrivateFields(obj));
         });
     });
@@ -1646,7 +1708,7 @@ var writeTInstance = function(req, res, obj, callback) {
         return sendError(res, 500, "No tiid for write to tInstance database", {tInstance: obj});
     if (obj._id !== undefined)
         delete obj._id;
-    ensureObjAuth(req, res, obj, "write", function(obj) {
+    ensureObjAuthBAD(req, res, obj, "write", function(obj) {
         tiCollect.update({tiid: obj.tiid}, {$set: obj}, {upsert: true, w: 1}, function(err) {
             if (err)
                 return sendError(res, 500, "Error writing tInstance to database", {tInstance: obj, err: err});
@@ -1669,7 +1731,7 @@ var writeTest = function(req, res, obj, callback) {
 
 var testProcessSubmission = function(req, res, tiid, submission, callback) {
     readTInstance(res, tiid, function(tInstance) {
-        ensureObjAuth(req, res, tInstance, "read", function(tInstance) {
+        ensureObjAuthBAD(req, res, tInstance, "read", function(tInstance) {
             var tid = tInstance.tid;
             readTestBAD(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
@@ -1725,12 +1787,23 @@ app.post("/submissions", function(req, res) {
     if (req.body.practice !== undefined) {
         submission.practice = req.body.practice;
     }
-    ensureObjAuth(req, res, submission, "write", function(submission) {
+    ensureObjAuthBAD(req, res, submission, "write", function(submission) {
         readQInstance(res, submission.qiid, function(qInstance) {
-            ensureObjAuth(req, res, qInstance, "read", function(qInstance) {
+            ensureObjAuthBAD(req, res, qInstance, "read", function(qInstance) {
                 submission.qid = qInstance.qid;
                 submission.vid = qInstance.vid;
                 var tiid = qInstance.tiid;
+                var tid = qInstance.tid;
+                if (!tid && !tiid) {
+                    if (!PrairieRole.hasPermission(req.userRole, 'createQIDWithoutTID')) {
+                        return sendError(res, 403, "Insufficient permissions");
+                    };
+                }
+                if (tid && !tiid) {
+                    if (!PrairieRole.hasPermission(req.userRole, 'createQIDWithoutTIID')) {
+                        return sendError(res, 403, "Insufficient permissions");
+                    };
+                }
                 var info = questionDB[submission.qid];
                 if (info === undefined) {
                     return sendError(res, 404, "No such QID: " + submission.qid);
@@ -1755,14 +1828,19 @@ app.post("/submissions", function(req, res) {
                     submission.trueAnswer = qInstance.trueAnswer;
                     newIDNoError(req, res, "sid", function(sid) {
                         submission.sid = sid;
-                        testProcessSubmission(req, res, tiid, submission, function(submission) {
+                        if (tiid) {
+                            testProcessSubmission(req, res, tiid, submission, function(submission) {
+                                sCollect.insert(submission, {w: 1}, function(err) {
+                                    if (err) return sendError(res, 500, "Error writing submission to database", err);
+                                    res.json(stripPrivateFields(submission));
+                                });
+                            });
+                        } else {
                             sCollect.insert(submission, {w: 1}, function(err) {
-                                if (err) {
-                                    return sendError(res, 500, "Error writing submission to database", err);
-                                }
+                                if (err) return sendError(res, 500, "Error writing submission to database", err);
                                 res.json(stripPrivateFields(submission));
                             });
-                        });
+                        }
                     });
                 });
             });
@@ -2060,7 +2138,7 @@ app.get("/tInstances/:tiid", function(req, res) {
         if (!obj) {
             return sendError(res, 404, "No tInstance with tiid " + req.params.tiid);
         }
-        ensureObjAuth(req, res, obj, "read", function(obj) {
+        ensureObjAuthBAD(req, res, obj, "read", function(obj) {
             res.json(stripPrivateFields(obj));
         });
     });
@@ -2124,7 +2202,7 @@ app.post("/tInstances", function(req, res) {
 
 var finishTest = function(req, res, tiid, callback) {
     readTInstance(res, tiid, function(tInstance) {
-        ensureObjAuth(req, res, tInstance, "write", function(tInstance) {
+        ensureObjAuthBAD(req, res, tInstance, "write", function(tInstance) {
             var tid = tInstance.tid;
             readTestBAD(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
@@ -2146,7 +2224,7 @@ var finishTest = function(req, res, tiid, callback) {
 
 var gradeTest = function(req, res, tiid, callback) {
     readTInstance(res, tiid, function(tInstance) {
-        ensureObjAuth(req, res, tInstance, "write", function(tInstance) {
+        ensureObjAuthBAD(req, res, tInstance, "write", function(tInstance) {
             var tid = tInstance.tid;
             readTestBAD(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
