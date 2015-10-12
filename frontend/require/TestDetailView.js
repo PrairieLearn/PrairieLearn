@@ -1,5 +1,5 @@
 
-define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!TestDetailView.html'], function(_, Backbone, Mustache, renderer, TestFactory, TestDetailViewTemplate) {
+define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'renderer', 'TestFactory', 'text!TestDetailView.html'], function(_, Backbone, Mustache, moment, renderer, TestFactory, TestDetailViewTemplate) {
 
     var TestDetailView = Backbone.View.extend({
 
@@ -49,11 +49,10 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             data.testFilesQStatsFilename = this.model.get("tid") + "_question_stats.csv";
             data.testFilesQStatsLink = this.appModel.apiURL("testQStatsCSV/" + data.testFilesQStatsFilename + "?tid=" + data.tid);
 
-            data.hasTestStats = this.store.testStatsColl.get(tid) && this.store.testStatsColl.get(tid).has("n");
+            data.hasTestStats = this.store.testStatsColl.get(tid) && this.store.testStatsColl.get(tid).has("count");
             if (data.hasTestStats) {
                 var testStats = this.store.testStatsColl.get(tid);
-                data.n = testStats.get("n");
-                data.scores = testStats.get("scores");
+                data.count = testStats.get("count");
                 data.hist = testStats.get("hist");
                 data.mean = (testStats.get("mean") * 100).toFixed(1);
                 data.median = (testStats.get("median") * 100).toFixed(1);
@@ -62,8 +61,13 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 data.max = (testStats.get("max") * 100).toFixed(1);
                 data.nZeroScore = testStats.get("nZeroScore");
                 data.nFullScore = testStats.get("nFullScore");
-                data.fracZeroScore = (data.n > 0) ? (data.nZeroScore / data.n * 100).toFixed(1) : 0;
-                data.fracFullScore = (data.n > 0) ? (data.nFullScore / data.n * 100).toFixed(1) : 0;
+                data.fracZeroScore = (data.count > 0) ? (data.nZeroScore / data.count * 100).toFixed(1) : 0;
+                data.fracFullScore = (data.count > 0) ? (data.nFullScore / data.count * 100).toFixed(1) : 0;
+                if (testStats.has("statsByDay")) {
+                    data.hasStatsByDay = true;
+                    data.statsByDay = testStats.get("statsByDay");
+                }
+
                 var byQID = testStats.get("byQID");
                 data.qStats = [];
 
@@ -104,7 +108,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                         qid: qid,
                         title: that.questions.get(qid).get("title"),
                         link: "#tq/" + tid + "/" + qid,
-                        n: stat.n,
+                        count: stat.count,
                         meanScore: stat.meanScore * 100,
                         meanScoreString: (stat.meanScore * 100).toFixed(0),
                         meanScoreBar: pbar(stat.meanScore * 100),
@@ -132,6 +136,11 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
 
             if (data.hasTestStats) {
                 this.renderScoreHistogram("#scoreHistogramPlot", data.hist, "score / %", "number of students");
+                if (data.hasStatsByDay) {
+                    that.renderStatsByDay("#statsByDayPlot", data.statsByDay);
+                    that.renderStatsByDayBox("#statsByDayBoxPlot", data.statsByDay);
+                    that.renderStatsByDayViolin("#statsByDayViolinPlot", data.statsByDay);
+                }
                 this.renderQuestionScoreDiscPlot("#questionScoreDiscPlot", data.qStats);
                 _(data.qStats).each(function(stat) {
                     that.renderScoresByQuintilePlot("#scoresByQuintile" + stat.qid, stat.meanScoreByQuintile);
@@ -186,7 +195,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             var svg = d3.select(this.$(selector).get(0)).append("svg")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
-                .attr("class", "center-block")
+                .attr("class", "center-block statsPlot")
                 .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
@@ -244,6 +253,630 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
 
             svg.append("line")
                 .attr({x1: width, y1: 0, x2: width, y2: height, "class": "y axis"});
+        },
+
+        renderStatsByDay: function(selector, statsByDay) {
+            var svgWidth = 600;
+            var svgHeight = 371;
+            var margin = {top: 10, right: 20, bottom: 30, left: 70, middle: 20},
+                width = 600 - margin.left - margin.right,
+                height1 = (371 - margin.top - margin.bottom - margin.middle) / 2,
+                height2 = height1,
+                offset = height1 + margin.middle;
+
+            var dates = _.chain(statsByDay).keys().map(function(d) {return moment(d);}).value();
+            if (dates.length == 0) return;
+            var firstDate = _(dates).reduce(function(a, b) {return moment.min(a, b);}, dates[0]).format("YYYY-MM-DD");
+            var lastDate = _(dates).reduce(function(a, b) {return moment.max(a, b);}, dates[0]).format("YYYY-MM-DD");
+
+            var data = _.chain(statsByDay).pairs().map(function(d) {
+                var d3Date = new Date(moment(d[0]).format("YYYY-MM-DD"));
+                return [d3Date, d[1]];
+            }).value();
+
+            var means = _.chain(statsByDay).values().pluck("mean").value();
+            var minMean = _(means).min();
+            var maxMean = _(means).max();
+
+            var counts = _.chain(statsByDay).values().pluck("count").value();
+            var minCount = _(counts).min();
+            var maxCount = _(counts).max();
+
+            var x = d3.time.scale()
+                .domain([d3.time.hour.offset(new Date(firstDate), -12),
+                         d3.time.hour.offset(new Date(lastDate), 12)])
+                .range([0, width]);
+
+            var y1 = d3.scale.linear()
+                .domain([0, maxCount + 1])
+                .nice()
+                .range([height1, 0]);
+
+            var y2 = d3.scale.linear()
+                .domain([minMean * 100 - 1, maxMean * 100 + 1])
+                .nice()
+                .range([height2 + offset, offset]);
+
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .ticks(d3.time.day, 1)
+                .tickFormat(d3.time.format("%Y-%m-%d"))
+                .orient("bottom");
+
+            var y1Axis = d3.svg.axis()
+                .scale(y1)
+                .orient("left");
+            
+            var y2Axis = d3.svg.axis()
+                .scale(y2)
+                .orient("left");
+            
+            var x1Grid = d3.svg.axis()
+                .scale(x)
+                .orient("bottom")
+                .tickSize(-height1)
+                .tickFormat("");
+
+            var x2Grid = d3.svg.axis()
+                .scale(x)
+                .orient("bottom")
+                .tickSize(-height2)
+                .tickFormat("");
+
+            var y1Grid = d3.svg.axis()
+                .scale(y1)
+                .orient("left")
+                .tickSize(-width)
+                .tickFormat("");
+
+            var y2Grid = d3.svg.axis()
+                .scale(y2)
+                .orient("left")
+                .tickSize(-width)
+                .tickFormat("");
+
+            var svg = d3.select(this.$(selector).get(0)).append("svg")
+                .attr("width", svgWidth)
+                .attr("height", svgHeight)
+                .attr("class", "center-block statsPlot")
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            svg.append("g")
+                .attr("class", "x grid")
+                .attr("transform", "translate(0," + height1 + ")")
+                .call(x1Grid);
+
+            svg.append("g")
+                .attr("class", "y grid")
+                .call(y1Grid);
+
+            svg.append("g")
+                .attr("class", "x grid")
+                .attr("transform", "translate(0," + (height2 + offset) + ")")
+                .call(x2Grid);
+
+            svg.append("g")
+                .attr("class", "y grid")
+                .call(y2Grid);
+
+            svg.selectAll(".outlineBar.data1")
+                .data(data)
+                .enter().append("rect")
+                .attr("class", "outlineBar data1")
+                .attr("x", function(d) {return x(d3.time.hour.offset(d[0], -12));})
+                .attr("y", function(d) {return y1(d[1].count);})
+                .attr("width", function(d) {return x(d3.time.hour.offset(d[0], 12)) - x(d3.time.hour.offset(d[0], -12));})
+                .attr("height", function(d) {return y1.range()[0] - y1(d[1].count);});
+
+            svg.selectAll(".outlineBar.data2")
+                .data(data)
+                .enter().append("rect")
+                .attr("class", "outlineBar data2")
+                .attr("x", function(d) {return x(d3.time.hour.offset(d[0], -12));})
+                .attr("y", function(d) {return y2(d[1].mean * 100);})
+                .attr("width", function(d) {return x(d3.time.hour.offset(d[0], 12)) - x(d3.time.hour.offset(d[0], -12));})
+                .attr("height", function(d) {return y2.range()[0] - y2(d[1].mean * 100);});
+
+            svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + (offset + height2) + ")")
+                .call(xAxis)
+                .append("text")
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(y1Axis)
+                .append("text")
+                .attr("class", "label")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height2 / 2 - offset)
+                .attr("y", "-3em")
+                .style("text-anchor", "middle")
+                .text("mean score / %");
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(y2Axis)
+                .append("text")
+                .attr("class", "label")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height1 / 2)
+                .attr("y", "-3em")
+                .style("text-anchor", "middle")
+                .text("number of students");
+
+            svg.append("line")
+                .attr({x1: 0, y1: 0, x2: width, y2: 0, "class": "x axis"})
+
+            svg.append("line")
+                .attr({x1: 0, y1: offset, x2: width, y2: offset, "class": "x axis"})
+
+            svg.append("line")
+                .attr({x1: width, y1: 0, x2: width, y2: height1, "class": "y axis"});
+
+            svg.append("line")
+                .attr({x1: width, y1: offset, x2: width, y2: offset + height2, "class": "y axis"});
+
+            svg.append("line")
+                .attr({x1: 0, y1: height1, x2: width, y2: height1, "class": "x axis"});
+        },
+
+        renderStatsByDayBox: function(selector, statsByDay) {
+            var svgWidth = 600;
+            var svgHeight = 371;
+            var margin = {top: 10, right: 20, bottom: 30, left: 70, middle: 20},
+                width = 600 - margin.left - margin.right,
+                height1 = (371 - margin.top - margin.bottom - margin.middle) / 2,
+                height2 = height1,
+                offset = height1 + margin.middle;
+
+            var dates = _.chain(statsByDay).keys().map(function(d) {return moment(d);}).value();
+            if (dates.length == 0) return;
+            var firstDate = _(dates).reduce(function(a, b) {return moment.min(a, b);}, dates[0]).format("YYYY-MM-DD");
+            var lastDate = _(dates).reduce(function(a, b) {return moment.max(a, b);}, dates[0]).format("YYYY-MM-DD");
+
+            var data = _.chain(statsByDay).pairs().map(function(d) {
+                var d3Date = new Date(moment(d[0]).format("YYYY-MM-DD"));
+                return [d3Date, d[1]];
+            }).value();
+
+            var counts = _.chain(statsByDay).values().pluck("count").value();
+            var minCount = _(counts).min();
+            var maxCount = _(counts).max();
+
+            var x = d3.time.scale()
+                .domain([d3.time.hour.offset(new Date(firstDate), -12),
+                         d3.time.hour.offset(new Date(lastDate), 12)])
+                .range([0, width]);
+
+            var y1 = d3.scale.linear()
+                .domain([0, maxCount + 1])
+                .nice()
+                .range([height1, 0]);
+
+            var y2 = d3.scale.linear()
+                .domain([-5, 105])
+                .range([height2 + offset, offset]);
+
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .ticks(d3.time.day, 1)
+                .tickFormat(d3.time.format("%Y-%m-%d"))
+                .orient("bottom");
+
+            var y1Axis = d3.svg.axis()
+                .scale(y1)
+                .orient("left");
+            
+            var y2Axis = d3.svg.axis()
+                .scale(y2)
+                .orient("left");
+            
+            var x1Grid = d3.svg.axis()
+                .scale(x)
+                .orient("bottom")
+                .tickSize(-height1)
+                .tickFormat("");
+
+            var x2Grid = d3.svg.axis()
+                .scale(x)
+                .orient("bottom")
+                .tickSize(-height2)
+                .tickFormat("");
+
+            var y1Grid = d3.svg.axis()
+                .scale(y1)
+                .orient("left")
+                .tickSize(-width)
+                .tickFormat("");
+
+            var y2Grid = d3.svg.axis()
+                .scale(y2)
+                .orient("left")
+                .tickSize(-width)
+                .tickFormat("");
+
+            var svg = d3.select(this.$(selector).get(0)).append("svg")
+                .attr("width", svgWidth)
+                .attr("height", svgHeight)
+                .attr("class", "center-block statsPlot")
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            svg.append("g")
+                .attr("class", "x grid")
+                .attr("transform", "translate(0," + height1 + ")")
+                .call(x1Grid);
+
+            svg.append("g")
+                .attr("class", "y grid")
+                .call(y1Grid);
+
+            svg.append("g")
+                .attr("class", "x grid")
+                .attr("transform", "translate(0," + (height2 + offset) + ")")
+                .call(x2Grid);
+
+            svg.append("g")
+                .attr("class", "y grid")
+                .call(y2Grid);
+
+            svg.selectAll(".outlineBar.data1")
+                .data(data)
+                .enter()
+                .append("rect")
+                .attr("class", "outlineBar data1")
+                .attr("x", function(d) {return x(d3.time.hour.offset(d[0], -12));})
+                .attr("y", function(d) {return y1(d[1].count);})
+                .attr("width", function(d) {return x(d3.time.hour.offset(d[0], 12)) - x(d3.time.hour.offset(d[0], -12));})
+                .attr("height", function(d) {return y1.range()[0] - y1(d[1].count);});
+
+            svg.selectAll(".data2")
+                .data(data)
+                .enter()
+                .append("g")
+                .attr("class", "data2")
+                .each(function(d, i) {
+                    var boxWidthMin = Math.max(30, 600 * Math.sqrt(d[1].count) / Math.sqrt(maxCount));
+                    var whiskerWidthMin = boxWidthMin / 2;
+                    d3.select(this)
+                        .append("rect")
+                        .attr("class", "boxBar")
+                        .attr("x", function(d) {return x(d3.time.minute.offset(d[0], -boxWidthMin));})
+                        .attr("y", function(d) {return y2(d[1].upperQuartile * 100);})
+                        .attr("width", function(d) {return x(d3.time.minute.offset(d[0], boxWidthMin)) - x(d3.time.minute.offset(d[0], -boxWidthMin));})
+                        .attr("height", function(d) {return y2(d[1].lowerQuartile * 100) - y2(d[1].upperQuartile * 100);});
+                    d3.select(this)
+                        .append("line")
+                        .attr("class", "whiskerStem")
+                        .attr("x1", function(d) {return x(d[0]);})
+                        .attr("x2", function(d) {return x(d[0]);})
+                        .attr("y1", function(d) {return y2(d[1].lowerQuartile * 100);})
+                        .attr("y2", function(d) {return y2(d[1].lowerWhisker * 100);});
+                    d3.select(this)
+                        .append("line")
+                        .attr("class", "whiskerStem")
+                        .attr("x1", function(d) {return x(d[0]);})
+                        .attr("x2", function(d) {return x(d[0]);})
+                        .attr("y1", function(d) {return y2(d[1].upperQuartile * 100);})
+                        .attr("y2", function(d) {return y2(d[1].upperWhisker * 100);});
+                    d3.select(this)
+                        .append("line")
+                        .attr("class", "whiskerEnd")
+                        .attr("x1", function(d) {return x(d3.time.minute.offset(d[0], -whiskerWidthMin));})
+                        .attr("x2", function(d) {return x(d3.time.minute.offset(d[0], +whiskerWidthMin));})
+                        .attr("y1", function(d) {return y2(d[1].lowerWhisker * 100);})
+                        .attr("y2", function(d) {return y2(d[1].lowerWhisker * 100);});
+                    d3.select(this)
+                        .append("line")
+                        .attr("class", "whiskerEnd")
+                        .attr("x1", function(d) {return x(d3.time.minute.offset(d[0], -whiskerWidthMin));})
+                        .attr("x2", function(d) {return x(d3.time.minute.offset(d[0], +whiskerWidthMin));})
+                        .attr("y1", function(d) {return y2(d[1].upperWhisker * 100);})
+                        .attr("y2", function(d) {return y2(d[1].upperWhisker * 100);});
+                    d3.select(this)
+                        .append("line")
+                        .attr("class", "boxMedian")
+                        .attr("x1", function(d) {return x(d3.time.minute.offset(d[0], -boxWidthMin));})
+                        .attr("x2", function(d) {return x(d3.time.minute.offset(d[0], +boxWidthMin));})
+                        .attr("y1", function(d) {return y2(d[1].median * 100);})
+                        .attr("y2", function(d) {return y2(d[1].median * 100);});
+                    d3.select(this)
+                        .selectAll(".outlier")
+                        .data(d[1].outliers)
+                        .enter()
+                        .append("circle")
+                        .attr("class", "outlier")
+                        .attr("cx", function(v) {return x(d[0]);})
+                        .attr("cy", function(v) {return y2(v * 100);})
+                        .attr("r", function(v) {return 1;});
+                });
+
+            svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + (offset + height2) + ")")
+                .call(xAxis)
+                .append("text")
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(y1Axis)
+                .append("text")
+                .attr("class", "label")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height2 / 2 - offset)
+                .attr("y", "-3em")
+                .style("text-anchor", "middle")
+                .text("score / %");
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(y2Axis)
+                .append("text")
+                .attr("class", "label")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height1 / 2)
+                .attr("y", "-3em")
+                .style("text-anchor", "middle")
+                .text("number of students");
+
+            svg.append("line")
+                .attr({x1: 0, y1: 0, x2: width, y2: 0, "class": "x axis"})
+
+            svg.append("line")
+                .attr({x1: 0, y1: offset, x2: width, y2: offset, "class": "x axis"})
+
+            svg.append("line")
+                .attr({x1: width, y1: 0, x2: width, y2: height1, "class": "y axis"});
+
+            svg.append("line")
+                .attr({x1: width, y1: offset, x2: width, y2: offset + height2, "class": "y axis"});
+
+            svg.append("line")
+                .attr({x1: 0, y1: height1, x2: width, y2: height1, "class": "x axis"});
+        },
+
+        renderStatsByDayViolin: function(selector, statsByDay) {
+            var svgWidth = 600;
+            var svgHeight = 371;
+            var margin = {top: 10, right: 20, bottom: 30, left: 70, middle: 20},
+                width = 600 - margin.left - margin.right,
+                height1 = (371 - margin.top - margin.bottom - margin.middle) / 2,
+                height2 = height1,
+                offset = height1 + margin.middle;
+
+            var dates = _.chain(statsByDay).keys().map(function(d) {return moment(d);}).value();
+            if (dates.length == 0) return;
+            var firstDate = _(dates).reduce(function(a, b) {return moment.min(a, b);}, dates[0]).format("YYYY-MM-DD");
+            var lastDate = _(dates).reduce(function(a, b) {return moment.max(a, b);}, dates[0]).format("YYYY-MM-DD");
+
+            var data = _.chain(statsByDay).pairs().map(function(d) {
+                var d3Date = new Date(moment(d[0]).format("YYYY-MM-DD"));
+                return [d3Date, d[1]];
+            }).value();
+
+            var counts = _.chain(statsByDay).values().pluck("count").value();
+            var minCount = _(counts).min();
+            var maxCount = _(counts).max();
+
+            var maxDensity = _.chain(statsByDay).values().pluck("densities").map(function(x) {return _.max(x);}).max().value();
+            
+            var x = d3.time.scale()
+                .domain([d3.time.hour.offset(new Date(firstDate), -12),
+                         d3.time.hour.offset(new Date(lastDate), 12)])
+                .range([0, width]);
+
+            var y1 = d3.scale.linear()
+                .domain([0, maxCount + 1])
+                .nice()
+                .range([height1, 0]);
+
+            var y2 = d3.scale.linear()
+                .domain([-5, 105])
+                .range([height2 + offset, offset]);
+
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .ticks(d3.time.day, 1)
+                .tickFormat(d3.time.format("%-m/%d"))
+                .orient("bottom");
+
+            var y1Axis = d3.svg.axis()
+                .scale(y1)
+                .orient("left");
+            
+            var y2Axis = d3.svg.axis()
+                .scale(y2)
+                .orient("left");
+            
+            var x1Grid = d3.svg.axis()
+                .scale(x)
+                .orient("bottom")
+                .tickSize(-height1)
+                .tickFormat("");
+
+            var x2Grid = d3.svg.axis()
+                .scale(x)
+                .orient("bottom")
+                .tickSize(-height2)
+                .tickFormat("");
+
+            var y1Grid = d3.svg.axis()
+                .scale(y1)
+                .orient("left")
+                .tickSize(-width)
+                .tickFormat("");
+
+            var y2Grid = d3.svg.axis()
+                .scale(y2)
+                .orient("left")
+                .tickSize(-width)
+                .tickFormat("");
+
+            var svg = d3.select(this.$(selector).get(0)).append("svg")
+                .attr("width", svgWidth)
+                .attr("height", svgHeight)
+                .attr("class", "center-block statsPlot")
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            svg.append("g")
+                .attr("class", "x grid")
+                .attr("transform", "translate(0," + height1 + ")")
+                .call(x1Grid);
+
+            svg.append("g")
+                .attr("class", "y grid")
+                .call(y1Grid);
+
+            svg.append("g")
+                .attr("class", "x grid")
+                .attr("transform", "translate(0," + (height2 + offset) + ")")
+                .call(x2Grid);
+
+            svg.append("g")
+                .attr("class", "y grid")
+                .call(y2Grid);
+
+            svg.selectAll(".outlineBar.data1")
+                .data(data)
+                .enter()
+                .append("rect")
+                .attr("class", "outlineBar data1")
+                .attr("x", function(d) {return x(d3.time.hour.offset(d[0], -12));})
+                .attr("y", function(d) {return y1(d[1].count);})
+                .attr("width", function(d) {return x(d3.time.hour.offset(d[0], 12)) - x(d3.time.hour.offset(d[0], -12));})
+                .attr("height", function(d) {return y1.range()[0] - y1(d[1].count);});
+
+            svg.selectAll(".data2")
+                .data(data)
+                .enter()
+                .append("g")
+                .attr("class", "data2")
+                .each(function(d, i) {
+                    var widthMin = 600;
+                    var side1 = _.zip(d[1].grid, d[1].densities);
+                    var side2 = _.zip(d[1].grid, _(d[1].densities).map(function(d) {return -d;})).reverse();
+                    var pathData = side1.concat(side2);
+                    var violinLine = d3.svg.line()
+                        .x(function(v) {return x(d3.time.minute.offset(d[0], widthMin * v[1] / maxDensity));})
+                        .y(function(v) {return y2(v[0] * 100);})
+                        .interpolate("linear");
+                    d3.select(this)
+                        .append("path")
+                        .datum(pathData)
+                        .attr("class", "violin")
+                        .attr("d", violinLine);
+
+                    var maxWidth = Math.max(60, widthMin * _.max(d[1].densities) / maxDensity);
+                    d3.select(this)
+                        .append("line")
+                        .attr("class", "violinMedian")
+                        .attr("x1", function(d) {return x(d3.time.minute.offset(d[0], -maxWidth));})
+                        .attr("x2", function(d) {return x(d3.time.minute.offset(d[0], +maxWidth));})
+                        .attr("y1", function(d) {return y2(d[1].median * 100);})
+                        .attr("y2", function(d) {return y2(d[1].median * 100);});
+                    
+/*
+                    var boxWidthMin = Math.max(30, 600 * Math.sqrt(d[1].count) / Math.sqrt(maxCount));
+                    var whiskerWidthMin = boxWidthMin / 2;
+                    d3.select(this)
+                        .append("rect")
+                        .attr("class", "boxBar")
+                        .attr("x", function(d) {return x(d3.time.minute.offset(d[0], -boxWidthMin));})
+                        .attr("y", function(d) {return y2(d[1].upperQuartile * 100);})
+                        .attr("width", function(d) {return x(d3.time.minute.offset(d[0], boxWidthMin)) - x(d3.time.minute.offset(d[0], -boxWidthMin));})
+                        .attr("height", function(d) {return y2(d[1].lowerQuartile * 100) - y2(d[1].upperQuartile * 100);});
+                    d3.select(this)
+                        .append("line")
+                        .attr("class", "whiskerStem")
+                        .attr("x1", function(d) {return x(d[0]);})
+                        .attr("x2", function(d) {return x(d[0]);})
+                        .attr("y1", function(d) {return y2(d[1].lowerQuartile * 100);})
+                        .attr("y2", function(d) {return y2(d[1].lowerWhisker * 100);});
+                    d3.select(this)
+                        .append("line")
+                        .attr("class", "whiskerStem")
+                        .attr("x1", function(d) {return x(d[0]);})
+                        .attr("x2", function(d) {return x(d[0]);})
+                        .attr("y1", function(d) {return y2(d[1].upperQuartile * 100);})
+                        .attr("y2", function(d) {return y2(d[1].upperWhisker * 100);});
+                    d3.select(this)
+                        .append("line")
+                        .attr("class", "whiskerEnd")
+                        .attr("x1", function(d) {return x(d3.time.minute.offset(d[0], -whiskerWidthMin));})
+                        .attr("x2", function(d) {return x(d3.time.minute.offset(d[0], +whiskerWidthMin));})
+                        .attr("y1", function(d) {return y2(d[1].lowerWhisker * 100);})
+                        .attr("y2", function(d) {return y2(d[1].lowerWhisker * 100);});
+                    d3.select(this)
+                        .append("line")
+                        .attr("class", "whiskerEnd")
+                        .attr("x1", function(d) {return x(d3.time.minute.offset(d[0], -whiskerWidthMin));})
+                        .attr("x2", function(d) {return x(d3.time.minute.offset(d[0], +whiskerWidthMin));})
+                        .attr("y1", function(d) {return y2(d[1].upperWhisker * 100);})
+                        .attr("y2", function(d) {return y2(d[1].upperWhisker * 100);});
+                    d3.select(this)
+                        .append("line")
+                        .attr("class", "boxMedian")
+                        .attr("x1", function(d) {return x(d3.time.minute.offset(d[0], -boxWidthMin));})
+                        .attr("x2", function(d) {return x(d3.time.minute.offset(d[0], +boxWidthMin));})
+                        .attr("y1", function(d) {return y2(d[1].median * 100);})
+                        .attr("y2", function(d) {return y2(d[1].median * 100);});
+                    d3.select(this)
+                        .selectAll(".outlier")
+                        .data(d[1].outliers)
+                        .enter()
+                        .append("circle")
+                        .attr("class", "outlier")
+                        .attr("cx", function(v) {return x(d[0]);})
+                        .attr("cy", function(v) {return y2(v * 100);})
+                        .attr("r", function(v) {return 1;});
+*/
+                });
+
+            svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + (offset + height2) + ")")
+                .call(xAxis)
+                .append("text")
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(y1Axis)
+                .append("text")
+                .attr("class", "label")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height2 / 2 - offset)
+                .attr("y", "-3em")
+                .style("text-anchor", "middle")
+                .text("score / %");
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(y2Axis)
+                .append("text")
+                .attr("class", "label")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height1 / 2)
+                .attr("y", "-3em")
+                .style("text-anchor", "middle")
+                .text("number of students");
+
+            svg.append("line")
+                .attr({x1: 0, y1: 0, x2: width, y2: 0, "class": "x axis"})
+
+            svg.append("line")
+                .attr({x1: 0, y1: offset, x2: width, y2: offset, "class": "x axis"})
+
+            svg.append("line")
+                .attr({x1: width, y1: 0, x2: width, y2: height1, "class": "y axis"});
+
+            svg.append("line")
+                .attr({x1: width, y1: offset, x2: width, y2: offset + height2, "class": "y axis"});
+
+            svg.append("line")
+                .attr({x1: 0, y1: height1, x2: width, y2: height1, "class": "x axis"});
         },
 
         _resetSuccess: function(data, textStatus, jqXHR) {
@@ -474,7 +1107,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             var svg = d3.select(this.$(selector).get(0)).append("svg")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
-                .attr("class", "center-block")
+                .attr("class", "center-block statsPlot")
                 .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 

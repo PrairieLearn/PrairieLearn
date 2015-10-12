@@ -70,7 +70,7 @@
       </tr>
     </thead>
     <tbody>
-      <tr><td>Number of students</td><td>{{n}}</td></tr>
+      <tr><td>Number of students</td><td>{{count}}</td></tr>
       <tr><td>Mean score</td><td>{{mean}}%</td></tr>
       <tr><td>Standard deviation</td><td>{{stddev}}%</td></tr>
       <tr><td>Minimum score</td><td>{{min}}%</td></tr>
@@ -94,6 +94,42 @@
   {{/hasTestStats}}
 
 </div>
+
+{{#hasStatsByDay}}
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">Test statistics by day</h3>
+  </div>
+
+  <div class="panel-body">
+    <div id="statsByDayPlot" class="statsByDayPlot"></div>
+  </div>
+</div>
+{{/hasStatsByDay}}
+
+{{#hasStatsByDay}}
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">Test statistics by day, box plot</h3>
+  </div>
+
+  <div class="panel-body">
+    <div id="statsByDayBoxPlot" class="statsByDayBoxPlot"></div>
+  </div>
+</div>
+{{/hasStatsByDay}}
+
+{{#hasStatsByDay}}
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">Test statistics by day, violin plot</h3>
+  </div>
+
+  <div class="panel-body">
+    <div id="statsByDayViolinPlot" class="statsByDayViolinPlot"></div>
+  </div>
+</div>
+{{/hasStatsByDay}}
 
 <div class="panel panel-primary">
   <div class="panel-heading">
