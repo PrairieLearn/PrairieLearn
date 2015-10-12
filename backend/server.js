@@ -2476,6 +2476,9 @@ var getScoresForTest = function(tid, callback) {
                                 score: score,
                                 qDataByQID: getQDataByQID(test, tInstance),
                             };
+                            if (_(tInstance).has("finishDate")) {
+                                scores[uid].finishDate = tInstance.finishDate;
+                            }
                         }
                     } catch (e) {
                         return cb(e);
@@ -2851,24 +2854,76 @@ app.get("/testFilesZip/:filename", function(req, res) {
     });
 });
 
+var densityEst = function(data, bandwidth, grid) {
+    var densities = _(grid).map(_.constant(0));
+    _(data).each(function(d) {
+        var kernel = _(grid).map(function(v) {return Math.exp(-Math.pow((d - v) / bandwidth, 2));});
+        densities = numeric.add(densities, kernel);
+    });
+    return densities;
+};
+
 var computeTestStats = function(tid, scores, callback) {
     readTest(tid, function(err, test) {
         if (err) return callback(err);
         try {
-            var totalScores = _(scores).pluck('score');
-            var stats = {
-                tid: tid,
-                n: totalScores.length,
-                scores: totalScores,
-                mean: jStat.mean(totalScores),
-                median: jStat.median(totalScores),
-                stddev: jStat.stdev(totalScores),
-                min: jStat.min(totalScores),
-                max: jStat.max(totalScores),
-                hist: PrairieGeom.histogram(totalScores, 10, 0, 1),
-                nZeroScore: _(totalScores).filter(function(s) {return Math.abs(s) < 1e-8;}).length,
-                nFullScore: _(totalScores).filter(function(s) {return Math.abs(s - 1) < 1e-8;}).length,
+            var totalScoresToStats = function(totalScores) {
+                var lowerQuartile = 0, upperQuartile = 0, lowerWhisker = 0, upperWhisker = 0, outliers = [];
+                if (totalScores.length > 0) {
+                    var sortedScores = totalScores.slice().sort(function(a, b) {return a - b;});
+                    lowerQuartile = sortedScores[Math.max(0, Math.round(totalScores.length * 1/4) - 1)];
+                    upperQuartile = sortedScores[Math.round(totalScores.length * 3/4) - 1];
+                    var iqr = upperQuartile - lowerQuartile;
+                    var lowerWhiskerPoints = _(totalScores).filter(function(s) {return s > lowerQuartile - 1.5 * iqr;});
+                    var upperWhiskerPoints = _(totalScores).filter(function(s) {return s < upperQuartile + 1.5 * iqr;});
+                    lowerWhisker = lowerQuartile;
+                    upperWhisker = upperQuartile;
+                    if (lowerWhiskerPoints.length > 0) lowerWhisker = _.min(lowerWhiskerPoints);
+                    if (upperWhiskerPoints.length > 0) upperWhisker = _.max(upperWhiskerPoints);
+                    outliers = _(totalScores).filter(function(s) {return (s < lowerWhisker) || (s > upperWhisker);});
+                }
+                var minScore = 0, maxScore = 0, grid = [], densities = [];
+                if (totalScores.length > 0) {
+                    minScore = jStat.min(totalScores);
+                    maxScore = jStat.max(totalScores);
+                    var bandwidth = 0.05;
+                    grid = numeric.linspace(0, 1, 401);
+                    grid = _(grid).filter(function(s) {return (s > minScore - 2 * bandwidth) && (s < maxScore + 2 * bandwidth);});
+                    densities = densityEst(totalScores, bandwidth, grid);
+                }
+                return {
+                    tid: tid,
+                    count: totalScores.length,
+                    mean: jStat.mean(totalScores),
+                    median: jStat.median(totalScores),
+                    stddev: jStat.stdev(totalScores),
+                    min: minScore,
+                    max: maxScore,
+                    hist: PrairieGeom.histogram(totalScores, 10, 0, 1),
+                    nZeroScore: _(totalScores).filter(function(s) {return Math.abs(s) < 1e-8;}).length,
+                    nFullScore: _(totalScores).filter(function(s) {return Math.abs(s - 1) < 1e-8;}).length,
+                    lowerQuartile: lowerQuartile,
+                    upperQuartile: upperQuartile,
+                    lowerWhisker: lowerWhisker,
+                    upperWhisker: upperWhisker,
+                    outliers: outliers,
+                    grid: grid,
+                    densities: densities,
+                };
             };
+            
+            var totalScores = _(scores).pluck('score');
+            var stats = totalScoresToStats(totalScores);
+            var scoresWithFinishDate = _(scores).filter(function(score) {return _(score).has("finishDate");});
+            if (scoresWithFinishDate.length > 0) {
+                scoresByDay = _(scoresWithFinishDate).groupBy(function(score) {
+                    return moment.tz(score.finishDate, config.timezone).startOf('day').format();
+                });
+                stats.statsByDay = _(scoresByDay).mapObject(function(scores) {
+                    var totalScores = _(scores).pluck('score');
+                    return totalScoresToStats(totalScores);
+                });
+            }
             stats.byQID = {};
             var qids = _.chain(scores).pluck('qDataByQID').map(_.keys).flatten().uniq().value();
             _(qids).each(function(qid) {
@@ -2889,7 +2944,7 @@ var computeTestStats = function(tid, scores, callback) {
                     }
                 });
                 stats.byQID[qid] = {
-                    n: totalScores.length,
+                    count: totalScores.length,
                     meanScore: (questionScores.length > 0) ? jStat.mean(questionScores) : 0,
                     meanNAttempts: (attempts.length > 0) ? jStat.mean(attempts) : 0,
                     fracEverCorrect: (everCorrects.length > 0) ? jStat.mean(everCorrects) : 0,
@@ -2964,7 +3019,7 @@ app.get("/testStats", function(req, res) {
 var testStatsToCSV = function(stats, callback) {
     var csvData = [
         ["statistic", "value"],
-        ["Number of students", stats.n],
+        ["Number of students", stats.count],
         ["Mean score", stats.mean * 100],
         ["Standard deviation", stats.stddev * 100],
         ["Minimum score", stats.min * 100],
@@ -3024,7 +3079,7 @@ var testQStatsToCSV = function(stats, callback) {
             stat.discrimination * 100,
             stat.meanNAttempts,
             stat.fracEverCorrect * 100,
-            stat.n,
+            stat.count,
             stat.meanScoreByQuintile[0] * 100,
             stat.meanScoreByQuintile[1] * 100,
             stat.meanScoreByQuintile[2] * 100,
