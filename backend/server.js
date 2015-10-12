@@ -3053,6 +3053,41 @@ app.get("/testStatsCSV/:filename", function(req, res) {
     });
 });
 
+var testStatsByDayToCSV = function(stats, callback) {
+    var headers = ["date", "count", "mean", "median", "stddev", "min", "max",
+                   "nZeroScore", "nFullScore", "lowerQuartile", "upperQuartile"];
+    var csvData = _(stats.statsByDay).map(function(dayStats, date) {
+        var row = [date];
+        return row.concat(_.chain(headers).rest().map(function(h) {return dayStats[h];}).value());
+    });
+    // sort by first column, which is the date
+    csvData.sort(function(a, b) {return (a[0] < b[0]) ? -1 : ((a[0] > b[0]) ? 1 : 0);});
+    csvData.splice(0, 0, headers);
+    csvStringify(csvData, function(err, csv) {
+        if (err) return callback(err);
+        callback(null, csv);
+    });
+};
+
+app.get("/testStatsByDayCSV/:filename", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
+        return sendError(res, 403, "Insufficient permissions");
+    }
+    var filename = req.params.filename;
+    var tid = req.query.tid;
+    getScoresForTest(tid, function(err, scores) {
+        if (err) return sendError(res, 500, "Error getting scores for tid: " + tid, err);
+        computeTestStats(tid, scores, function(err, stats) {
+            if (err) return sendError(res, 500, "Error computing statistics for tid: " + tid, err);
+            testStatsByDayToCSV(stats, function(err, csv) {
+                if (err) return sendError(res, 500, "Error formatting CSV", err);
+                res.attachment(filename);
+                res.send(csv);
+            });
+        });
+    });
+});
+
 var testQStatsToCSV = function(stats, callback) {
     var csvData = [
         [
