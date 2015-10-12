@@ -46,6 +46,8 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'renderer', 'Te
             data.seeTestStats = this.appModel.hasPermission("viewOtherUsers");
             data.testFilesStatsFilename = this.model.get("tid") + "_stats.csv";
             data.testFilesStatsLink = this.appModel.apiURL("testStatsCSV/" + data.testFilesStatsFilename + "?tid=" + data.tid);
+            data.testFilesStatsByDayFilename = this.model.get("tid") + "_stats_by_day.csv";
+            data.testFilesStatsByDayLink = this.appModel.apiURL("testStatsByDayCSV/" + data.testFilesStatsFilename + "?tid=" + data.tid);
             data.testFilesQStatsFilename = this.model.get("tid") + "_question_stats.csv";
             data.testFilesQStatsLink = this.appModel.apiURL("testQStatsCSV/" + data.testFilesQStatsFilename + "?tid=" + data.tid);
 
