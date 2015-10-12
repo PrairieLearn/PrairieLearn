@@ -1,6 +1,12 @@
 
 # ChangeLog
 
+* __1.16.0__ - 2015-10-12
+
+  * Link questions on test "Admin" pages to question instances.
+
+  * Add statistics by day for exam-type tests.
+
 * __1.15.2__ - 2015-10-09
 
   * Fix doc references from "Assessment Detail" to assessment "Admin" page.
