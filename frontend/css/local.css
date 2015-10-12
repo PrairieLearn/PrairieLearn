@@ -148,13 +148,41 @@ line.axis {
     fill: #5bc0de;
 }
 
-.statsPlot .label {
-    font-size: 14px;
-    font-weight: normal;
+.boxBar {
+    stroke: #000;
+    fill: #5bc0de;
 }
 
-.scoreHistogram .label {
-    font-size: 16px;
+.whiskerStem {
+    stroke: #000;
+}
+
+.whiskerEnd {
+    stroke: #000;
+}
+
+.outlier {
+    stroke: #000;
+    fill: rgba(255,255,255,0);
+}
+
+.boxMedian {
+    stroke: #000;
+    stroke-width: 3px;
+}
+
+.violin {
+    stroke: #46b8da;
+    fill: #5bc0de;
+}
+
+.violinMedian {
+    stroke: #000;
+    stroke-width: 3px;
+}
+
+.statsPlot .label {
+    font-size: 14px;
     font-weight: normal;
 }
 

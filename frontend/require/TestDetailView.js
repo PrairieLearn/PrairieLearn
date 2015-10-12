@@ -1,5 +1,5 @@
 
-define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!TestDetailView.html'], function(_, Backbone, Mustache, renderer, TestFactory, TestDetailViewTemplate) {
+define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'renderer', 'TestFactory', 'text!TestDetailView.html'], function(_, Backbone, Mustache, moment, renderer, TestFactory, TestDetailViewTemplate) {
 
     var TestDetailView = Backbone.View.extend({
 
@@ -46,14 +46,15 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             data.seeTestStats = this.appModel.hasPermission("viewOtherUsers");
             data.testFilesStatsFilename = this.model.get("tid") + "_stats.csv";
             data.testFilesStatsLink = this.appModel.apiURL("testStatsCSV/" + data.testFilesStatsFilename + "?tid=" + data.tid);
+            data.testFilesStatsByDayFilename = this.model.get("tid") + "_stats_by_day.csv";
+            data.testFilesStatsByDayLink = this.appModel.apiURL("testStatsByDayCSV/" + data.testFilesStatsFilename + "?tid=" + data.tid);
             data.testFilesQStatsFilename = this.model.get("tid") + "_question_stats.csv";
             data.testFilesQStatsLink = this.appModel.apiURL("testQStatsCSV/" + data.testFilesQStatsFilename + "?tid=" + data.tid);
 
-            data.hasTestStats = this.store.testStatsColl.get(tid) && this.store.testStatsColl.get(tid).has("n");
+            data.hasTestStats = this.store.testStatsColl.get(tid) && this.store.testStatsColl.get(tid).has("count");
             if (data.hasTestStats) {
                 var testStats = this.store.testStatsColl.get(tid);
-                data.n = testStats.get("n");
-                data.scores = testStats.get("scores");
+                data.count = testStats.get("count");
                 data.hist = testStats.get("hist");
                 data.mean = (testStats.get("mean") * 100).toFixed(1);
                 data.median = (testStats.get("median") * 100).toFixed(1);
@@ -62,8 +63,13 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 data.max = (testStats.get("max") * 100).toFixed(1);
                 data.nZeroScore = testStats.get("nZeroScore");
                 data.nFullScore = testStats.get("nFullScore");
-                data.fracZeroScore = (data.n > 0) ? (data.nZeroScore / data.n * 100).toFixed(1) : 0;
-                data.fracFullScore = (data.n > 0) ? (data.nFullScore / data.n * 100).toFixed(1) : 0;
+                data.fracZeroScore = (data.count > 0) ? (data.nZeroScore / data.count * 100).toFixed(1) : 0;
+                data.fracFullScore = (data.count > 0) ? (data.nFullScore / data.count * 100).toFixed(1) : 0;
+                if (testStats.has("statsByDay")) {
+                    data.hasStatsByDay = true;
+                    data.statsByDay = testStats.get("statsByDay");
+                }
+
                 var byQID = testStats.get("byQID");
                 data.qStats = [];
 
@@ -104,7 +110,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                         qid: qid,
                         title: that.questions.get(qid).get("title"),
                         link: "#tq/" + tid + "/" + qid,
-                        n: stat.n,
+                        count: stat.count,
                         meanScore: stat.meanScore * 100,
                         meanScoreString: (stat.meanScore * 100).toFixed(0),
                         meanScoreBar: pbar(stat.meanScore * 100),
@@ -132,6 +138,9 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
 
             if (data.hasTestStats) {
                 this.renderScoreHistogram("#scoreHistogramPlot", data.hist, "score / %", "number of students");
+                if (data.hasStatsByDay) {
+                    that.renderStatsByDay("#statsByDayPlot", data.statsByDay);
+                }
                 this.renderQuestionScoreDiscPlot("#questionScoreDiscPlot", data.qStats);
                 _(data.qStats).each(function(stat) {
                     that.renderScoresByQuintilePlot("#scoresByQuintile" + stat.qid, stat.meanScoreByQuintile);
@@ -146,104 +155,6 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             this.listenTo(this.subView, "resetTestForAll", this.resetTestForAll.bind(this));
             this.subView.render();
             this.$("#tDetail").html(this.subView.el);
-        },
-
-        renderScoreHistogram: function(selector, hist, xlabel, ylabel) {
-            var margin = {top: 10, right: 20, bottom: 55, left: 70},
-                width = 600 - margin.left - margin.right,
-                height = 371 - margin.top - margin.bottom;
-
-            var x = d3.scale.linear()
-                .domain([0, 100])
-                .range([0, width]);
-
-            var y = d3.scale.linear()
-                .domain([0, d3.max(hist)])
-                .nice()
-                .range([height, 0]);
-
-            var xAxis = d3.svg.axis()
-                .scale(x)
-                .tickValues([0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
-                .orient("bottom");
-
-            var yAxis = d3.svg.axis()
-                .scale(y)
-                .orient("left");
-            
-            var xGrid = d3.svg.axis()
-                .scale(x)
-                .orient("bottom")
-                .tickSize(-height)
-                .tickFormat("");
-
-            var yGrid = d3.svg.axis()
-                .scale(y)
-                .orient("left")
-                .tickSize(-width)
-                .tickFormat("");
-
-            var svg = d3.select(this.$(selector).get(0)).append("svg")
-                .attr("width", width + margin.left + margin.right)
-                .attr("height", height + margin.top + margin.bottom)
-                .attr("class", "center-block")
-                .append("g")
-                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
-
-            svg.append("g")
-                .attr("class", "x grid")
-                .attr("transform", "translate(0," + height + ")")
-                .call(xGrid);
-
-            svg.append("g")
-                .attr("class", "y grid")
-                .call(yGrid);
-
-            svg.selectAll(".outlineBar")
-                .data(hist) // .data(_.times(hist.length, _.constant(0)))
-                .enter().append("rect")
-                .attr("class", "outlineBar")
-                .attr("x", function(d, i) {return x(i * 100 / hist.length);})
-                .attr("y", function(d, i) {return y(d);})
-                .attr("width", function(d, i) {return x((i + 1) * 100 / hist.length) - x(i * 100 / hist.length);})
-                .attr("height", function(d, i) {return y(0) - y(d);});
-
-            /*
-            svg.selectAll(".outlineBar")
-                .data(hist)
-                .transition()
-                .duration(3000)
-                .attr("y", function(d, i) {return y(d);})
-                .attr("height", function(d, i) {return y(0) - y(d);});
-            */
-
-            svg.append("g")
-                .attr("class", "x axis")
-                .attr("transform", "translate(0," + height + ")")
-                .call(xAxis)
-                .append("text")
-                .attr("class", "label")
-                .attr("x", width / 2)
-                .attr("y", "3em")
-                .style("text-anchor", "middle")
-                .text("score / %");
-
-            svg.append("g")
-                .attr("class", "y axis")
-                .call(yAxis)
-                .append("text")
-                .attr("class", "label")
-                .attr("transform", "rotate(-90)")
-                .attr("x", -height / 2)
-                .attr("y", "-3em")
-                .style("text-anchor", "middle")
-                .text("number of students");
-
-            svg.append("line")
-                .attr({x1: 0, y1: 0, x2: width, y2: 0, "class": "x axis"})
-
-            svg.append("line")
-                .attr({x1: width, y1: 0, x2: width, y2: height, "class": "y axis"});
         },
 
         _resetSuccess: function(data, textStatus, jqXHR) {
@@ -337,6 +248,223 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
                 this.subView.close();
             }
             this.remove();
+        },
+
+        renderScoreHistogram: function(selector, hist, xlabel, ylabel) {
+            var margin = {top: 10, right: 20, bottom: 55, left: 70},
+                width = 600 - margin.left - margin.right,
+                height = 371 - margin.top - margin.bottom;
+
+            var x = d3.scale.linear()
+                .domain([0, 100])
+                .range([0, width]);
+
+            var y = d3.scale.linear()
+                .domain([0, d3.max(hist)])
+                .nice()
+                .range([height, 0]);
+
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .tickValues([0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100])
+                .orient("bottom");
+
+            var yAxis = d3.svg.axis()
+                .scale(y)
+                .orient("left");
+            
+            var xGrid = d3.svg.axis()
+                .scale(x)
+                .orient("bottom")
+                .tickSize(-height)
+                .tickFormat("");
+
+            var yGrid = d3.svg.axis()
+                .scale(y)
+                .orient("left")
+                .tickSize(-width)
+                .tickFormat("");
+
+            var svg = d3.select(this.$(selector).get(0)).append("svg")
+                .attr("width", width + margin.left + margin.right)
+                .attr("height", height + margin.top + margin.bottom)
+                .attr("class", "center-block statsPlot")
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            svg.append("g")
+                .attr("class", "x grid")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xGrid);
+
+            svg.append("g")
+                .attr("class", "y grid")
+                .call(yGrid);
+
+            svg.selectAll(".outlineBar")
+                .data(hist) // .data(_.times(hist.length, _.constant(0)))
+                .enter().append("rect")
+                .attr("class", "outlineBar")
+                .attr("x", function(d, i) {return x(i * 100 / hist.length);})
+                .attr("y", function(d, i) {return y(d);})
+                .attr("width", function(d, i) {return x((i + 1) * 100 / hist.length) - x(i * 100 / hist.length);})
+                .attr("height", function(d, i) {return y(0) - y(d);});
+
+            /*
+            svg.selectAll(".outlineBar")
+                .data(hist)
+                .transition()
+                .duration(3000)
+                .attr("y", function(d, i) {return y(d);})
+                .attr("height", function(d, i) {return y(0) - y(d);});
+            */
+
+            svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis)
+                .append("text")
+                .attr("class", "label")
+                .attr("x", width / 2)
+                .attr("y", "3em")
+                .style("text-anchor", "middle")
+                .text("score / %");
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+                .append("text")
+                .attr("class", "label")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height / 2)
+                .attr("y", "-3em")
+                .style("text-anchor", "middle")
+                .text("number of students");
+
+            svg.append("line")
+                .attr({x1: 0, y1: 0, x2: width, y2: 0, "class": "x axis"})
+
+            svg.append("line")
+                .attr({x1: width, y1: 0, x2: width, y2: height, "class": "y axis"});
+        },
+
+        renderStatsByDay: function(selector, statsByDay) {
+            var svgWidth = 600;
+            var svgHeight = 371;
+            var margin = {top: 10, right: 20, bottom: 30, left: 70},
+                width = svgWidth - margin.left - margin.right,
+                height = svgHeight - margin.top - margin.bottom;
+
+            var dates = _.chain(statsByDay).keys().map(function(d) {return moment(d);}).value();
+            if (dates.length == 0) return;
+            var firstDate = _(dates).reduce(function(a, b) {return moment.min(a, b);}, dates[0]).format("YYYY-MM-DD");
+            var lastDate = _(dates).reduce(function(a, b) {return moment.max(a, b);}, dates[0]).format("YYYY-MM-DD");
+
+            var data = _.chain(statsByDay).pairs().map(function(d) {
+                var d3Date = new Date(moment(d[0]).format("YYYY-MM-DD"));
+                return [d3Date, d[1]];
+            }).value();
+
+            var maxDensity = _.chain(statsByDay).values().pluck("densities").map(function(x) {return _.max(x);}).max().value();
+            
+            var x = d3.time.scale()
+                .domain([d3.time.hour.offset(new Date(firstDate), -12),
+                         d3.time.hour.offset(new Date(lastDate), 12)])
+                .range([0, width]);
+
+            var y = d3.scale.linear()
+                .domain([0, 100])
+                .range([height, 0]);
+
+            var xAxis = d3.svg.axis()
+                .scale(x)
+                .ticks(d3.time.day, 1)
+                .tickFormat(d3.time.format("%-m/%d"))
+                .orient("bottom");
+
+            var yAxis = d3.svg.axis()
+                .scale(y)
+                .orient("left");
+            
+            var xGrid = d3.svg.axis()
+                .scale(x)
+                .orient("bottom")
+                .tickSize(-height)
+                .tickFormat("");
+
+            var yGrid = d3.svg.axis()
+                .scale(y)
+                .orient("left")
+                .tickSize(-width)
+                .tickFormat("");
+
+            var svg = d3.select(this.$(selector).get(0)).append("svg")
+                .attr("width", svgWidth)
+                .attr("height", svgHeight)
+                .attr("class", "center-block statsPlot")
+                .append("g")
+                .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            svg.append("g")
+                .attr("class", "x grid")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xGrid);
+
+            svg.append("g")
+                .attr("class", "y grid")
+                .call(yGrid);
+
+            svg.selectAll(".violinGroup")
+                .data(data)
+                .enter()
+                .append("g")
+                .attr("class", "violinGroup")
+                .each(function(d, i) {
+                    var side1 = _.zip(d[1].grid, d[1].densities);
+                    var side2 = _.zip(d[1].grid, _(d[1].densities).map(function(d) {return -d;})).reverse();
+                    var pathData = side1.concat(side2);
+                    var violinLine = d3.svg.line()
+                        .x(function(v) {return x(d3.time.minute.offset(d[0], 660 * v[1] / maxDensity));})
+                        .y(function(v) {return y(v[0] * 100);})
+                        .interpolate("linear");
+                    d3.select(this)
+                        .append("path")
+                        .datum(pathData)
+                        .attr("class", "violin")
+                        .attr("d", violinLine);
+
+                    var maxWidth = Math.max(30, 660 * _.max(d[1].densities) / maxDensity);
+                    d3.select(this)
+                        .append("line")
+                        .attr("class", "violinMedian")
+                        .attr("x1", function(d) {return x(d3.time.minute.offset(d[0], -maxWidth));})
+                        .attr("x2", function(d) {return x(d3.time.minute.offset(d[0], +maxWidth));})
+                        .attr("y1", function(d) {return y(d[1].median * 100);})
+                        .attr("y2", function(d) {return y(d[1].median * 100);});
+                });
+
+            svg.append("g")
+                .attr("class", "x axis")
+                .attr("transform", "translate(0," + height + ")")
+                .call(xAxis)
+                .append("text")
+
+            svg.append("g")
+                .attr("class", "y axis")
+                .call(yAxis)
+                .append("text")
+                .attr("class", "label")
+                .attr("transform", "rotate(-90)")
+                .attr("x", -height / 2)
+                .attr("y", "-3em")
+                .style("text-anchor", "middle")
+                .text("score / %");
+
+            svg.append("line")
+                .attr({x1: 0, y1: 0, x2: width, y2: 0, "class": "x axis"})
+
+            svg.append("line")
+                .attr({x1: width, y1: 0, x2: width, y2: height, "class": "y axis"});
         },
 
         renderQuestionScoreDiscPlot: function(selector, qStats) {
@@ -474,7 +602,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'TestFactory', 'text!T
             var svg = d3.select(this.$(selector).get(0)).append("svg")
                 .attr("width", width + margin.left + margin.right)
                 .attr("height", height + margin.top + margin.bottom)
-                .attr("class", "center-block")
+                .attr("class", "center-block statsPlot")
                 .append("g")
                 .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
