@@ -357,11 +357,11 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'renderer', 'Te
 
             var dates = _.chain(statsByDay).keys().map(function(d) {return moment(d);}).value();
             if (dates.length == 0) return;
-            var firstDate = _(dates).reduce(function(a, b) {return moment.min(a, b);}, dates[0]).format("YYYY-MM-DD");
-            var lastDate = _(dates).reduce(function(a, b) {return moment.max(a, b);}, dates[0]).format("YYYY-MM-DD");
+            var firstDate = _(dates).reduce(function(a, b) {return moment.min(a, b);}, dates[0]).format();
+            var lastDate = _(dates).reduce(function(a, b) {return moment.max(a, b);}, dates[0]).format();
 
             var data = _.chain(statsByDay).pairs().map(function(d) {
-                var d3Date = new Date(moment(d[0]).format("YYYY-MM-DD"));
+                var d3Date = new Date(d[0]);
                 return [d3Date, d[1]];
             }).value();
 
