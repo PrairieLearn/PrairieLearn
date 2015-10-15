@@ -7,6 +7,8 @@
 
   * Fix sorting of tests with mixed integer/string numbers.
 
+  * Fix broken PrairieDraw figures after submission grading.
+
 * __1.16.1__ - 2015-10-12
 
   * Fix alignment of date plots on Safari.
