@@ -5,6 +5,8 @@
 
   * Fix missing `questionFile()` caused by upgraded underscore templating.
 
+  * Fix sorting of tests with mixed integer/string numbers.
+
 * __1.16.1__ - 2015-10-12
 
   * Fix alignment of date plots on Safari.
