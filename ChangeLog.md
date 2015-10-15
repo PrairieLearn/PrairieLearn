@@ -19,6 +19,8 @@
 
   * Fix missing user list in dropdown after UID change.
 
+  * Add "Troubleshooting" documentation page with frequently asked questions.
+
 * __1.16.1__ - 2015-10-12
 
   * Fix alignment of date plots on Safari.
