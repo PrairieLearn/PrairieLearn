@@ -9,6 +9,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!UserView.html'],
             "submit #changeUIDForm": "changeUID",
             "submit #changeRoleForm": "changeRole",
             "submit #changeModeForm": "changeMode",
+            "click #changeUIDToAuth": "changeUIDToAuth",
         },
 
         initialize: function() {
@@ -46,6 +47,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!UserView.html'],
                 }
                 return obj;
             });
+            data.seeChangeUIDToAuth = (data.authUID != data.userUID);
             var html = Mustache.render(UserViewTemplate, data);
             this.$el.html(html);
         },
@@ -57,6 +59,12 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!UserView.html'],
         changeUID: function(event) {
             event.preventDefault();
             var newUID = this.$("#changeViewUID").val();
+            this.store.changeUserUID(newUID);
+        },
+
+        changeUIDToAuth: function(event) {
+            event.preventDefault();
+            var newUID = this.model.get("authUID");
             this.store.changeUserUID(newUID);
         },
 
