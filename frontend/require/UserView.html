@@ -37,6 +37,9 @@
           </datalist>
         </div>
         <button type="submit" class="btn btn-default">Change UID</button>
+        {{#seeChangeUIDToAuth}}
+        <button id="changeUIDToAuth" type="button" class="btn btn-default">Change back to {{authUID}}</button>
+        {{/seeChangeUIDToAuth}}
       </form>
     </div>
 

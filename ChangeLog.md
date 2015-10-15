@@ -15,6 +15,8 @@
 
   * Fix User page dropdowns to default to current state.
 
+  * Add a User page button to change back to the authenticated UID.
+
 * __1.16.1__ - 2015-10-12
 
   * Fix alignment of date plots on Safari.
