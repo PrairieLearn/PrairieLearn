@@ -44,13 +44,13 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!UserView.html'],
             this.model.changeUserUID(newUID);
         },
 
-        changeRole: function() {
+        changeRole: function(event) {
             event.preventDefault();
             var newRole = this.$("#changeViewRole").val();
             this.model.changeUserRole(newRole);
         },
 
-        changeMode: function() {
+        changeMode: function(event) {
             event.preventDefault();
             var newMode = this.$("#changeMode").val();
             this.model.changeMode(newMode);
