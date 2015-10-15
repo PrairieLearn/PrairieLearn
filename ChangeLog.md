@@ -17,6 +17,8 @@
 
   * Add a User page button to change back to the authenticated UID.
 
+  * Fix missing user list in dropdown after UID change.
+
 * __1.16.1__ - 2015-10-12
 
   * Fix alignment of date plots on Safari.
