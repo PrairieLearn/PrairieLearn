@@ -365,7 +365,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 break;
 
             case "user":
-                view = new UserView.UserView({model: this.model, users: this.users, store: this.store});
+                view = new UserView.UserView({model: this.model, store: this.store});
                 break;
 
             case "sync":

@@ -14,8 +14,8 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!UserView.html'],
 
         initialize: function() {
             this.store = this.options.store;
-            this.users = this.options.users;
             this.listenTo(this.model, "change", this.render);
+            this.listenTo(this.store.users, "sync", this.render);
         },
 
         render: function() {
@@ -38,7 +38,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!UserView.html'],
                 }
                 return obj;
             });
-            data.userList = this.users.map(function(user) {return user.get("uid");});
+            data.userList = this.store.users.map(function(user) {return user.get("uid");});
             data.modeList = _(["Default", "Public", "Exam"]).map(function(mode) {
                 var obj = {value: mode, name: mode};
                 if (mode == data.mode) {
