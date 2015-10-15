@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __1.16.2__ - 2015-10-14
+
+  * Fix missing `questionFile()` caused by upgraded underscore templating.
+
 * __1.16.1__ - 2015-10-12
 
   * Fix alignment of date plots on Safari.

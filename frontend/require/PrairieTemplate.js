@@ -462,7 +462,8 @@ define(["underscore"], function(_) {
             return appModel.apiURL("clientFiles/" + name);
         };
 
-        var rendered = _.template(text, localData);
+        var compiled = _.template(text);
+        var rendered = compiled(localData);
         return rendered;
     }
 
