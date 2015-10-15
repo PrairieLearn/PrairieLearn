@@ -13,6 +13,8 @@
 
   * Fix username setting when UID is set.
 
+  * Fix User page dropdowns to default to current state.
+
 * __1.16.1__ - 2015-10-12
 
   * Fix alignment of date plots on Safari.

@@ -29,8 +29,23 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!UserView.html'],
             data.userUID = this.model.get("userUID");
             data.userName = this.model.get("userName");
             data.userRole = this.model.get("userRole");
-            data.roleList = this.model.availableRoles();
+            data.roleList = _(this.model.availableRoles()).map(function(role) {
+                var obj = {value: role, name: role};
+                if (role == data.userRole) {
+                    obj.selected = "selected";
+                    obj.name = obj.name + " (currently active)";
+                }
+                return obj;
+            });
             data.userList = this.users.map(function(user) {return user.get("uid");});
+            data.modeList = _(["Default", "Public", "Exam"]).map(function(mode) {
+                var obj = {value: mode, name: mode};
+                if (mode == data.mode) {
+                    obj.selected = "selected";
+                    obj.name = obj.name + " (currently active)";
+                }
+                return obj;
+            });
             var html = Mustache.render(UserViewTemplate, data);
             this.$el.html(html);
         },
