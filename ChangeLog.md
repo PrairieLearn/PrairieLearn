@@ -11,6 +11,8 @@
 
   * Fix role changes on User page with Firefox.
 
+  * Fix username setting when UID is set.
+
 * __1.16.1__ - 2015-10-12
 
   * Fix alignment of date plots on Safari.

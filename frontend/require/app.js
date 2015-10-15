@@ -239,24 +239,6 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             return PrairieRole.availableRoles(role);
         },
 
-        changeUserUID: function(newUID) {
-            this.set("userUID", newUID, {silent: true});
-            this.setUserCookie();
-            this.trigger("change:userUID change");
-        },
-
-        changeUserRole: function(newRole) {
-            this.set("userRole", newRole, {silent: true});
-            this.setUserCookie();
-            this.trigger("change:userRole change");
-        },
-
-        changeMode: function(newMode) {
-            this.set("mode", newMode, {silent: true});
-            this.setUserCookie();
-            this.trigger("change:mode change");
-        },
-
         formatDate: function(dateString) {
             return moment.tz(dateString, this.get("timezone")).format("ddd, MMM D, h:mma");
         },
@@ -646,6 +628,34 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 testStats.fetch();
             }
         },
+
+        changeUserUID: function(newUID) {
+            var newName;
+            var user = this.users.get(newUID);
+            if (user) {
+                newName = user.get("name");
+            } else {
+                newName = "Invalid User";
+            }
+            this.appModel.set({
+                "userUID": newUID,
+                "userName": newName,
+            }, {silent: true});
+            this.appModel.setUserCookie();
+            this.appModel.trigger("change:userUID change");
+        },
+
+        changeUserRole: function(newRole) {
+            this.appModel.set("userRole", newRole, {silent: true});
+            this.appModel.setUserCookie();
+            this.appModel.trigger("change:userRole change");
+        },
+
+        changeMode: function(newMode) {
+            this.appModel.set("mode", newMode, {silent: true});
+            this.appModel.setUserCookie();
+            this.appModel.trigger("change:mode change");
+        },
     });
 
     $(function() {
@@ -676,7 +686,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
 
         var store = new Store({}, {
             router: router,
-            model: appModel,
+            appModel: appModel,
             questions: questions,
             tests: tests,
             tInstances: tInstances,

@@ -12,6 +12,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!UserView.html'],
         },
 
         initialize: function() {
+            this.store = this.options.store;
             this.users = this.options.users;
             this.listenTo(this.model, "change", this.render);
         },
@@ -41,19 +42,19 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!UserView.html'],
         changeUID: function(event) {
             event.preventDefault();
             var newUID = this.$("#changeViewUID").val();
-            this.model.changeUserUID(newUID);
+            this.store.changeUserUID(newUID);
         },
 
         changeRole: function(event) {
             event.preventDefault();
             var newRole = this.$("#changeViewRole").val();
-            this.model.changeUserRole(newRole);
+            this.store.changeUserRole(newRole);
         },
 
         changeMode: function(event) {
             event.preventDefault();
             var newMode = this.$("#changeMode").val();
-            this.model.changeMode(newMode);
+            this.store.changeMode(newMode);
         },
     });
 
