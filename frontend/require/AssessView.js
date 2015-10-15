@@ -31,7 +31,7 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'renderer', 'Te
                     assessList: [],
                 };
                 var theseTests = new Backbone.Collection(that.tests.where({set: set}));
-                theseTests = new Backbone.Collection(theseTests.sortBy("number"));
+                theseTests = new Backbone.Collection(theseTests.sortBy(function(t) {return String(t.get("number"));}));
                 theseTests.each(function(test) {
                     var tid = test.get("tid");
                     var testTitle = that.store.tidLongName(tid);
