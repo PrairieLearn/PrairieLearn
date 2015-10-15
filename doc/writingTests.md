@@ -77,6 +77,14 @@ A `RetryExam` is broken down in to a list of zones, like this:
 
 * Rather than continually generating new random variants for each question, the test maintains a pool of possible variants for each question and selects from there. This is done to provide better statistics on question variants. To change this, set the `variantsPerQuestion` option, or set `unlimitedVariants: true` to use unlimited variants.
 
+## Test and question instances and resetting tests
+
+PrairieLearn distinguishes between *tests* and *test instances*. A *test* is determined by the code in the `course/tests`, and is something like "Midterm 1". Given a test, PrairieLearn needs to generate the random set of questions and question variants for each student, and it is this selection that is the *test instance* for the student. There is only one copy of each test, but every student has their own test instance. Once test instances have been generated they are stored persistently in the database, and they aren't automatically regenerated if the test code or configuration changes. This is a safety mechanism to avoid having student’s tests deleted/regenerated during an exam just because an instructor makes some minor change (e.g., changing the end date of a test).
+
+However, if you want to force the regeneration of test instances then you can do so with the “reset” button on the test “Admin” page. While writing a test you might need to do this many times. Once a test is live, you should of course be very careful about doing this (basically, don’t do it on a production server once a test is underway).
+
+Just like tests, PrairieLearn also distinguishes between *questions* and *question instances*. The *question* is the code in `course/questions`, which a particular randomly generated variant of the question is stored as a *question instance*. When PrairieLearn generates a test instance for a student, it also generates question instances for all the questions in that test. Just like test instances, the question instances are not automatically regenerated when an instructor changes the question code or configuration. To force a new question instance to be generated, either the test needs to be "reset", or (on a "homework"-type test) the student can get the question wrong and choose "Do this question again", which generates a new random question instance.
+
 
 ## Server modes
 

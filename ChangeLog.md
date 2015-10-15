@@ -21,6 +21,8 @@
 
   * Add "Troubleshooting" documentation page with frequently asked questions.
 
+  * Add documentation about tests and questions versus test instances and question instances.
+
 * __1.16.1__ - 2015-10-12
 
   * Fix alignment of date plots on Safari.
