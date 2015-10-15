@@ -126,6 +126,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
                 trueAnswer: this.trueAnswer,
                 feedback: this.feedback,
             });
+            this.rivetsBindingsActive = true;
             var that = this;
             _.each(_.uniq(_.pluck(_.filter(this.rivetsView.bindings,
                                            function (binding) {return binding.key === "submittedAnswer" && binding.type === "checkedoptional";}),
@@ -138,6 +139,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
             this.checkSubmittable();
             if (window.MathJax)
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+            this.trigger("renderFinished");
         },
 
         close: function() {
@@ -199,6 +201,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
             this.submittedAnswer = this.options.submittedAnswer;
             this.trueAnswer = this.options.trueAnswer;
             this.feedback = this.options.feedback;
+            this.rivetsBindingsActive = false;
             this.listenTo(this.submittedAnswer, "all", this.render);
             this.listenTo(this.trueAnswer, "all", this.render);
             this.listenTo(this.feedback, "all", this.render);
@@ -206,6 +209,8 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         },
 
         render: function() {
+            if (this.rivetsBindingsActive)
+                this.rivetsView.unbind();
             var templateData = {
                 params: this.params.toJSON(),
                 submittedAnswer: this.submittedAnswer.toJSON(),
@@ -220,13 +225,16 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
                 trueAnswer: this.trueAnswer,
                 feedback: this.feedback,
             });
+            this.rivetsBindingsActive = true;
             if (window.MathJax)
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+            this.trigger("renderFinished");
             return this;
         },
 
         close: function() {
-            this.rivetsView.unbind();
+            if (this.rivetsBindingsActive)
+                this.rivetsView.unbind();
             this.remove();
         },
     });
@@ -248,16 +256,18 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
     };
 
     SimpleClient.prototype.renderQuestion = function(questionDivID, changeCallback, questionDataModel, appModel) {
+        var that = this;
         this.listenTo(this.model, "answerChanged", changeCallback);
         this.questionView = new QuestionView({el: questionDivID, template: this.options.questionTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback});
+        this.listenTo(this.questionView, "renderFinished", function() {that.trigger("renderQuestionFinished");});
         this.questionView.render();
-        this.trigger("renderQuestionFinished");
     };
 
     SimpleClient.prototype.renderAnswer = function(answerDivID) {
+        var that = this;
         this.answerView = new AnswerView({el: answerDivID, template: this.options.answerTemplate, model: this.model, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback});
         this.answerView.render();
-        this.trigger("renderAnswerFinished");
+        this.listenTo(this.answerView, "renderFinished", function() {that.trigger("renderAnswerFinished");});
     };
 
     SimpleClient.prototype.close = function() {
