@@ -6,11 +6,12 @@ of a server component that presents questions and other data via an
 API, and a web-app that interfaces with the user and communicates with
 the server.
 
-[ChangeLog: versions of PrairieLearn with change list](https://github.com/PrairieLearn/PrairieLearn/blob/master/ChangeLog.md)
+* [ChangeLog: versions of PrairieLearn with change list](https://github.com/PrairieLearn/PrairieLearn/blob/master/ChangeLog.md)
 
 ## User Documentation
 
-* [Overview](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/overview.md)
+* [Troubleshooting and other questions](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/faq.md)
+* [Overview of PrairieLearn](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/overview.md)
 * [Installing and running PrairieLearn on Linux or OS X](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/installingLinux.md)
 * [Installing and running PrairieLearn on Windows](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/installingWindows.md)
 * [PrairieLearn server configuration](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/serverConfig.md)
