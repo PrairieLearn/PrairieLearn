@@ -7,9 +7,9 @@ Questions are all stored inside the main `questions` directory for a course. Eac
 
     questions
     |
-    |-- fossilFuels       # first question, qid is "fossilFuels"
+    |-- fossilFuelsRadio  # first question, qid is "fossilFuelsRadio"
     |   |
-    |   |-- info.json     # metadata for the fossilFuels question
+    |   |-- info.json     # metadata for the fossilFuelsRadio question
     |   |-- server.js     # secret server-side code (does grading, etc)
     |   `-- client.js     # client-side code (runs in the student's browser)
     |
@@ -48,7 +48,8 @@ The `info.json` file for each question defines properties of the question. For e
 
 Type             | Example                                                                                                       | Required Files                              | Options format                                                                                                                                                          | Description
 ---              | ---                                                                                                           | ---                                         | ---                                                                                                                                                                     | ---
-`MultipleChoice` | [`fossilFuels`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fossilFuels) | `info.json`                                 | [`MultipleChoice` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/questionOptionsMultipleChoice.json)                                 | A multiple choice question (radio button). One correct answer and several incorrect answers are selected from lists of correct and incorrect answers, and the order is randomized.
+`MultipleChoice` | [`fossilFuelsRadio`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fossilFuelsRadio) | `info.json`                                 | [`MultipleChoice` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/questionOptionsMultipleChoice.json)                                 | A multiple choice question (radio button). One correct answer and several incorrect answers are selected from lists of correct and incorrect answers, and the order is randomized.
+`Checkbox`       | [`fossilFuelsCheckbox`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fossilFuelsCheckbox) | `info.json`                                 | [`Checkbox` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/questionOptionsCheckbox.json)                                 | A multiple choice question (checkbox). Multiple correct and incorrect answers are selected from lists of correct and incorrect answers, and the order is randomized.
 `File`           | [`fibonacci`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fibonacci)     | `info.json`, `question.html`, `answer.html` |  [`File` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/questionOptionsFile.json)                                                    | A file is provided to the student for download, and they have to upload an edited file for grading.
 `Calculation`    | [`addVectors`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/addVectors)   | `info.json`, `client.js`, `server.js`       | [`Calculation` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/questionOptionsCalculation.json)                                       | A very general question type that allows server-side and client-side code to generate and grade questions.
 
@@ -58,7 +59,7 @@ Type             | Example                                                      
 A `MultipleChoice` question has an `info.json` that provides the question text, one or more correct answers, and one or more incorrect answers. One correct answer is randomly chosen, and enough incorrect answers to make `numberAnswers` total answers, which are then displayed to the student in a random order. For example:
 
     {
-        "title": "Advantages of fossil fuels",
+        "title": "Advantages of fossil fuels (radio)",
         "topic": "Energy",
         "tags": ["comparative advantages", "fossil fuels", "renewables"],
         "type": "MultipleChoice",
@@ -79,6 +80,38 @@ A `MultipleChoice` question has an `info.json` that provides the question text, 
                 "Low energy return"
             ],
             "numberAnswers": 5
+        }
+    }
+
+
+## `Checkbox` questions
+
+A `Checkbox` question has an `info.json` that provides the question text, one or more correct answers, and one or more incorrect answers. Several correct answers are randomly chosen (between `minCorrectAnswers` and `maxCorrectAnswers`, inclusive), and enough incorrect answers to make `numberAnswers` total answers, which are then displayed to the student in a random order. Depending on the values of `minCorrectAnswers` and `maxCorrectAnswers` it is possible to have all or none of the possible answers be correct. For example:
+
+    {
+        "title": "Advantages of fossil fuels (checkbox)",
+        "topic": "Energy",
+        "tags": ["comparative advantages", "fossil fuels", "renewables"],
+        "type": "Checkbox",
+        "options": {
+            "text": "Which of the following are advantages of fossil fuels relative to renewable energy sources? Select all that apply.",
+            "correctAnswers": [
+                "Cheap",
+                "High energy density",
+                "Provide energy on demand"            
+            ],
+            "incorrectAnswers": [
+                "Non-polluting",
+                "Low energy density",
+                "Low production of carbon dioxide",
+                "High production of carbon dioxide",
+                "Secure",
+                "Sustainable",
+                "Low energy return"
+            ],
+            "numberAnswers": 5,
+            "minCorrectAnswers": 1,
+            "maxCorrectAnswers": 3
         }
     }
 
