@@ -1,0 +1,24 @@
+{
+    "title": "Advantages of fossil fuels (radio)",
+    "topic": "Energy",
+    "tags": ["comparative advantages", "fossil fuels", "renewables"],
+    "type": "MultipleChoice",
+    "options": {
+        "text": "Which of the following is an advantage of fossil fuels relative to renewable energy sources?",
+        "correctAnswers": [
+            "Cheap",
+            "High energy density",
+            "Provide energy on demand"            
+        ],
+        "incorrectAnswers": [
+            "Non-polluting",
+            "Low energy density",
+            "Low production of carbon dioxide",
+            "High production of carbon dioxide",
+            "Secure",
+            "Sustainable",
+            "Low energy return"
+        ],
+        "numberAnswers": 5
+    }
+}

@@ -131,7 +131,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
             _.each(_.uniq(_.pluck(_.filter(this.rivetsView.bindings,
                                            function (binding) {return binding.key === "submittedAnswer" && binding.type === "checkedoptional";}),
                                   "keypath")),
-                   function (kp) {that.submittedAnswer.set(kp, false);});
+                   function (kp) {if (!that.submittedAnswer.has(kp)) that.submittedAnswer.set(kp, false);});
             _.each(_.uniq(_.pluck(_.filter(this.rivetsView.bindings,
                                            function (binding) {return binding.key === "submittedAnswer";}),
                                   "keypath")),

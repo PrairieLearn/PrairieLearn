@@ -1469,7 +1469,8 @@ var makeQInstance = function(req, res, qInstance, callback) {
     ensureObjAuthBAD(req, res, qInstance, "write", function(qInstance) {
         newIDNoError(req, res, "qiid", function(qiid) {
             qInstance.qiid = qiid;
-            loadQuestionServer(qInstance.qid, function (server) {
+            loadQuestionServer(qInstance.qid, function(err, server) {
+                if (err) return sendError(res, 500, "Unable to load question server for QID: " + qInstance.qid, err);
                 var questionDir = path.join(config.questionsDir, info.qid);
                 var questionData;
                 try {
@@ -1668,13 +1669,11 @@ var readQInstance = function(res, qiid, callback) {
 
 var loadQuestionServer = function(qid, callback) {
     questionFilePath(qid, "server.js", function(err, fileInfo) {
-        if (err)
-            return sendError(res, 404, "Unable to find 'server.js' for qid: " + qid, err);
+        if (err) return callback(err);
         var serverFilePath = path.join(fileInfo.root, fileInfo.filePath);
         requirejs([serverFilePath], function(server) {
-            if (server === undefined)
-                return sendError("Unable to load 'server.js' for qid: " + qid);
-            return callback(server);
+            if (server === undefined) return callback("Unable to load 'server.js' for qid: " + qid);
+            return callback(null, server);
         });
     });
 };
@@ -1810,7 +1809,8 @@ app.post("/submissions", function(req, res) {
                 }
                 var options = info.options || {};
                 options = _.defaults(options, qInstance.options || {});
-                loadQuestionServer(submission.qid, function (server) {
+                loadQuestionServer(submission.qid, function(err, server) {
+                    if (err) return sendError(res, 500, "Unable to load question server for QID: " + submission.qid, err);
                     if (submission.overrideScore !== undefined) {
                         submission.score = submission.overrideScore;
                     } else {
