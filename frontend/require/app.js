@@ -45,6 +45,9 @@ requirejs.config({
         'sha1': {
             exports: 'Sha1',
         },
+        'naturalSort': {
+            exports: 'naturalSort',
+        },
     },
     config: {
         text: {
