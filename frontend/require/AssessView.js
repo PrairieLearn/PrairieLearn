@@ -1,5 +1,5 @@
 
-define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'renderer', 'TestFactory', 'text!AssessView.html'], function(_, Backbone, Mustache, moment, renderer, TestFactory, AssessViewTemplate) {
+define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'naturalSort', 'renderer', 'TestFactory', 'text!AssessView.html'], function(_, Backbone, Mustache, moment, naturalSort, renderer, TestFactory, AssessViewTemplate) {
 
     var AssessView = Backbone.View.extend({
 
@@ -30,8 +30,9 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'renderer', 'Te
                     title: set,
                     assessList: [],
                 };
-                var theseTests = new Backbone.Collection(that.tests.where({set: set}));
-                theseTests = new Backbone.Collection(theseTests.sortBy(function(t) {return String(t.get("number"));}));
+                var theseTests = that.tests.where({set: set});
+                theseTests.sort(function(t1, t2) {var n1 = t1.get("number"), n2 = t2.get("number"); return naturalSort(n1, n2);});
+                theseTests = new Backbone.Collection(theseTests);
                 theseTests.each(function(test) {
                     var tid = test.get("tid");
                     var testTitle = that.store.tidLongName(tid);
