@@ -1,0 +1,14 @@
+{
+    "title": "Random zip file serving",
+    "topic": "Coding",
+    "type": "Calculation",
+    "options": {
+        "path": "coding",
+        "uploadName": "foobar.c",
+	"comment": "you can have as many entries below as you want.  The frequency is a relative frequency, so Q2 would get served 3 times as often as Q1", 
+        "config": [
+         { "problem": "Q1", "freq": 1},		 
+         { "problem": "Q2", "freq": 3}
+        ]
+    }
+}
