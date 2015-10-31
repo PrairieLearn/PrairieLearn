@@ -40,6 +40,9 @@
         'sha1': {
             exports: 'Sha1',
         },
+        'naturalSort': {
+            exports: 'naturalSort',
+        },
     },
     dir: "../frontend-build",
     inlineText: true,
