@@ -761,6 +761,7 @@ app.use(function(req, res, next) {
             || /^\/css\//.test(req.path)
             || /^\/text\//.test(req.path)
             || /^\/img\//.test(req.path)
+            || /^\/MathJax\//.test(req.path)
            ) {
             next();
             return;
@@ -3251,6 +3252,11 @@ if (config.localFileserver) {
 
     app.get("/img/:filename", function(req, res) {
         res.sendfile(path.join("img", req.params.filename), {root: config.frontendDir});
+    });
+
+    app.get("/MathJax/*", function(req, res) {
+        var filename = req.params[0];
+        res.sendfile(filename, {root: path.join(config.frontendDir, "MathJax")});
     });
 }
 

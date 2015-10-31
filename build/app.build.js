@@ -47,6 +47,7 @@
     dir: "../frontend-build",
     inlineText: true,
     logLevel: 0,
+    skipDirOptimize: true,
     modules: [
         {
             name: "app",
