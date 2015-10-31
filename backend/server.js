@@ -773,6 +773,12 @@ app.use(function(req, res, next) {
         return;
     }
     
+    // bypass auth for heartbeat
+    if (req.path == "/heartbeat") {
+        next();
+        return;
+    }
+
     if (req.method === 'OPTIONS') {
         // don't authenticate for OPTIONS requests, as these are just for CORS
         next();
@@ -980,6 +986,10 @@ app.get("/version", function(req, res) {
         };
         res.json(PLVersion);
     });
+});
+
+app.get("/heartbeat", function(req, res) {
+    res.send("System is up.\n");
 });
 
 app.get("/course", function(req, res) {

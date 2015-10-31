@@ -3,17 +3,19 @@ console.log('Starting monitor...');
 
 var request = require('request');
 var fs = require('fs');
+var moment = require("moment-timezone");
+var _ = require('underscore');
 
 var requestOptions = {
-    url: 'https://prairielearn2.engr.illinois.edu:/questions/Cart2Polar/2342/client.js',
+    url: 'https://prairielearn.engr.illinois.edu:/backend/tam212fa2015/heartbeat',
     timeout: 10000
 };
 
 var testInterval = 60 * 1000; // ms
 var nFailuresBeforeSend = 2;
 var errorRateLimit = 10 * 60 * 1000; // ms
-var heartbeatHourOfDay = 9;
-var heartbeatRateLimit = 12 * 60 * 60 * 1000; // ms
+var heartbeatHourOfDay = 8;
+var heartbeatRateLimit = 2 * 60 * 60 * 1000; // ms
 
 var nCurrentFails = 0;
 var errorLastTime = 0;
@@ -26,6 +28,11 @@ config.accountSid = 'FILL_IN_THIS_ACCOUNT_SID'; // override in config.json
 config.authToken = 'FILL_IN_THIS_AUTH_TOKEN';
 config.toNumber = "+19998887777";
 config.fromNumber = "+12223334444";
+config.timezone = 'America/Chicago';
+
+var getTimestamp = function() {
+    return moment().tz(config.timezone).format();
+};
 
 if (fs.existsSync('config.json')) {
     try {
@@ -41,9 +48,10 @@ if (fs.existsSync('config.json')) {
 }
 
 //require the Twilio module and create a REST client
-var twilioClient = require('twilio')(accountSid, authToken);
+var twilioClient = require('twilio')(config.accountSid, config.authToken);
 
 var sendSMS = function(msg, callback) {
+    msg = msg + ", " + getTimestamp();
     console.log("Sending SMS:", msg);
     twilioClient.messages.create({
 	to: config.toNumber,
@@ -54,7 +62,7 @@ var sendSMS = function(msg, callback) {
 	    console.log("Error sending SMS", err, message);
         } else {
             console.log("Successfully sent SMS");
-            callback();
+            if (callback) callback();
         }
     });
 };
@@ -62,7 +70,7 @@ var sendSMS = function(msg, callback) {
 var doTest = function() {
     request(requestOptions, function(error, response, body) {
         // heartbeat
-        if ((new Date()).getHours() === heartbeatHourOfDay)
+        if (moment().tz(config.timezone).hour() === heartbeatHourOfDay)
             if (Date.now() - heartbeatLastTime > heartbeatRateLimit)
                 sendSMS("heartbeat", function() {
                     heartbeatLastTime = Date.now();
@@ -71,7 +79,7 @@ var doTest = function() {
         // monitor
         var msg = null;
         if (!error && response.statusCode === 200) {
-            if (!/SimpleClient/.test(body))
+            if (!/System is up/.test(body))
                 msg = "incorrect body";
         } else {
             msg = (error ? error : ("statusCode = " + response.statusCode));
@@ -79,27 +87,28 @@ var doTest = function() {
 
         // no error
         if (msg === null) {
-            console.log((new Date()).toISOString(), "ok");
+            console.log(getTimestamp(), "ok");
             nCurrentFails = 0;
             return;
         }
 
         // error detected
         nCurrentFails++;
-        console.log((new Date()).toISOString(), "error", msg, nCurrentFails);
+        console.log(getTimestamp(), "error", msg, nCurrentFails);
         if (nCurrentFails >= nFailuresBeforeSend) {
             if (Date.now() - errorLastTime > errorRateLimit) {
                 sendSMS("error: " + msg, function() {
                     errorLastTime = Date.now();
                 });
             } else {
-                console.log((new Date()).toISOString(), "SMS rate limit exceeded, no further action");
+                console.log(getTimestamp(), "SMS rate limit exceeded, no further action");
             }
         } else {
-            console.log((new Date()).toISOString(), "number of successive failures " + nCurrentFails + " is less than " + nFailuresBeforeSend + ", no futher action");
+            console.log(getTimestamp(), "number of successive failures " + nCurrentFails + " is less than " + nFailuresBeforeSend + ", no futher action");
         }
     });
 };
 
+sendSMS("monitor started");
 doTest();
 setInterval(doTest, testInterval);
