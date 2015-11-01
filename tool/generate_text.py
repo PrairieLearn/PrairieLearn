@@ -12,11 +12,14 @@ if platform.system() == "Windows":
     if len(magicks) > 1:
         print("ERROR: Multiple files match %s" % globspec)
         for m in magicks:
-            print m
+            print(m)
         sys.exit(1)
     CONVERT_CMD = magicks[0]
 
-TEXT_RE = re.compile("(?P<quote>['\"])TEX:([^(?P=quote)]+)(?P=quote)");
+# find strings that look like "TEX:abc" or 'TEX:abc' (note different quote types
+# use <quote> to store the type of quote
+# use the negative-lookahead regex ((?!(?P=quote)).) to match non-quote characters
+TEXT_RE = re.compile("(?P<quote>['\"])TEX:(((?!(?P=quote)).)+)(?P=quote)")
 
 if len(sys.argv) <= 2:
     print("Usage: generate_text <outputdir> <basedir1> <basedir2> ...")
