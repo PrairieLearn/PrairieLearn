@@ -1,7 +1,7 @@
 
 # ChangeLog
 
-* __1.16.2__ - 2015-10-14
+* __1.17.0__ - 2015-11-04
 
   * Fix missing `questionFile()` caused by upgraded underscore templating.
 
@@ -22,6 +22,16 @@
   * Add "Troubleshooting" documentation page with frequently asked questions.
 
   * Add documentation about tests and questions versus test instances and question instances.
+
+  * Add `Checkbox` question type.
+
+  * Add `exampleCourse/questions/randomZip` example.
+
+  * Remove unused `backend/questions` and `backend/tests` templates in favor of `exampleCourse`.
+
+  * Include MathJax inside PrairieLearn.
+
+  * Fix TeX label generation scripts to support Python 3.X and `courseDir` config variable.
 
 * __1.16.1__ - 2015-10-12
 
