@@ -7,7 +7,6 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
         return {
             questions: [],
             nQuestions: 20,
-            autoCreate: true,
             autoCreateQuestions: true,
             allowQuestionSubmit: false,
             allowQuestionSave: true,

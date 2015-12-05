@@ -592,7 +592,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             var test = this.tests.get(tid);
             if (!test) return "Invalid test";
             var options = test.get("options");
-            if (options && !options.autoCreate) {
+            if (test.get("multipleInstance")) {
                 return test.get("set") + ' ' + test.get("number") + ' #' + tInstance.get("number");
             } else {
                 return test.get("set") + ' ' + test.get("number");
@@ -606,7 +606,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             var test = this.tests.get(tid);
             if (!test) return "Invalid test";
             var options = test.get("options");
-            if (options && !options.autoCreate) {
+            if (test.get("multipleInstance")) {
                 return test.get("set") + ' ' + test.get("number") + ' #' + tInstance.get("number") + ': ' + test.get("title");
             } else {
                 return test.get("set") + ' ' + test.get("number") + ': ' + test.get("title");

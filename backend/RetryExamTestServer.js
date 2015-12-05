@@ -5,7 +5,6 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
 
     RetryExamTestServer.getDefaultOptions = function() {
         return {
-            autoCreate: true,
             autoCreateQuestions: true,
             allowQuestionSubmit: false,
             allowQuestionSave: true,
