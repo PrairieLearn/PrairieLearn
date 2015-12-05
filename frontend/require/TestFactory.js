@@ -1,5 +1,5 @@
 
-define(["BasicTestClient", "BasicTestDetailView", "BasicTestInstanceView", "BasicTestSidebarView", "AdaptiveTestClient", "AdaptiveTestDetailView", "AdaptiveTestInstanceView", "AdaptiveTestSidebarView", "PracExamTestClient", "PracExamTestDetailView", "PracExamTestInstanceView", "PracExamTestSidebarView", "ExamTestClient", "ExamTestDetailView", "ExamTestInstanceView", "ExamTestSidebarView", "GameTestClient", "GameTestDetailView", "GameTestInstanceView", "GameTestSidebarView", "RetryExamTestClient", "RetryExamTestDetailView", "RetryExamTestInstanceView", "RetryExamTestSidebarView"], function(BasicTestClient, BasicTestDetailView, BasicTestInstanceView, BasicTestSidebarView, AdaptiveTestClient, AdaptiveTestDetailView, AdaptiveTestInstanceView, AdaptiveTestSidebarView, PracExamTestClient, PracExamTestDetailView, PracExamTestInstanceView, PracExamTestSidebarView, ExamTestClient, ExamTestDetailView, ExamTestInstanceView, ExamTestSidebarView, GameTestClient, GameTestDetailView, GameTestInstanceView, GameTestSidebarView, RetryExamTestClient, RetryExamTestDetailView, RetryExamTestInstanceView, RetryExamTestSidebarView) {
+define(["BasicTestClient", "BasicTestDetailView", "BasicTestInstanceView", "BasicTestSidebarView", "AdaptiveTestClient", "AdaptiveTestDetailView", "AdaptiveTestInstanceView", "AdaptiveTestSidebarView", "ExamTestClient", "ExamTestDetailView", "ExamTestInstanceView", "ExamTestSidebarView", "GameTestClient", "GameTestDetailView", "GameTestInstanceView", "GameTestSidebarView", "RetryExamTestClient", "RetryExamTestDetailView", "RetryExamTestInstanceView", "RetryExamTestSidebarView"], function(BasicTestClient, BasicTestDetailView, BasicTestInstanceView, BasicTestSidebarView, AdaptiveTestClient, AdaptiveTestDetailView, AdaptiveTestInstanceView, AdaptiveTestSidebarView, ExamTestClient, ExamTestDetailView, ExamTestInstanceView, ExamTestSidebarView, GameTestClient, GameTestDetailView, GameTestInstanceView, GameTestSidebarView, RetryExamTestClient, RetryExamTestDetailView, RetryExamTestInstanceView, RetryExamTestSidebarView) {
 
     var objectMap = {
         "Basic": {
@@ -13,12 +13,6 @@ define(["BasicTestClient", "BasicTestDetailView", "BasicTestInstanceView", "Basi
             "tDetailView": AdaptiveTestDetailView,
             "tInstanceView": AdaptiveTestInstanceView,
             "sidebarView": AdaptiveTestSidebarView,
-        },
-        "PracExam": {
-            "client": PracExamTestClient,
-            "tDetailView": PracExamTestDetailView,
-            "tInstanceView": PracExamTestInstanceView,
-            "sidebarView": PracExamTestSidebarView,
         },
         "Exam": {
             "client": ExamTestClient,

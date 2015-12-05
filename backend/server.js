@@ -450,6 +450,11 @@ var checkInfoDeprecated = function(idName, info, infoFile) {
     if (idName == "tid" && info.options && info.options.availDate) {
         logger.warn(infoFile + ': "options.availDate" is deprecated and will be removed in a future version. Please use "allowAccess" instead.');
     }
+    if (idName == "tid" && info.type == "PracExam") {
+        logger.warn(infoFile + ': "PracExam" type is deprecated and will be removed in a future version. Instead, please use "Exam" type with "multipleInstance": true.');
+        info.type = "Exam";
+        info.multipleInstance = true;
+    }
 };
 
 var questionDB, testDB;
@@ -2409,7 +2414,7 @@ var getQDataByQID = function(test, tInstance) {
             };
         });
     } else if (_(tInstance).has('qids') && _(tInstance).has('submissionsByQid')) {
-        // Exam and PracExam
+        // Exam
         _(tInstance.qids).each(function(qid) {
             qDataByQID[qid] = {
                 points: 0,
