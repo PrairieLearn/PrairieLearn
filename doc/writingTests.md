@@ -85,6 +85,11 @@ However, if you want to force the regeneration of test instances then you can do
 
 Just like tests, PrairieLearn also distinguishes between *questions* and *question instances*. The *question* is the code in `course/questions`, which a particular randomly generated variant of the question is stored as a *question instance*. When PrairieLearn generates a test instance for a student, it also generates question instances for all the questions in that test. Just like test instances, the question instances are not automatically regenerated when an instructor changes the question code or configuration. To force a new question instance to be generated, either the test needs to be "reset", or (on a "homework"-type test) the student can get the question wrong and choose "Do this question again", which generates a new random question instance.
 
+## Multiple-instance versus single-instance tests
+
+By default all tests are *single instance*, meaning that each student has exactly one instance of the test that they can complete, and once they have completed that test instance then they cannot do the test again. This is the expected behavior for homeworks, quizzes, exams, etc.
+
+For practice exams it is often desirable to make a *multiple instance* test by setting the option `"multipleInstance": true`. This will allow students to create new test instances and try the whole test repeatedly.
 
 ## Server modes
 

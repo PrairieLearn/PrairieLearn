@@ -5,7 +5,6 @@ define(["underscore", "moment-timezone"], function(_, moment) {
 
     BasicTestServer.getDefaultOptions = function() {
         return {
-            autoCreate: true,
             allowQuestionSubmit: true,
         };
     };
