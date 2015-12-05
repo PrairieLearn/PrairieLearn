@@ -5,7 +5,6 @@ define(["underscore", "moment-timezone"], function(_, moment) {
 
     GameTestServer.getDefaultOptions = function() {
         return {
-            autoCreate: true,
             allowQuestionSubmit: true,
         };
     };

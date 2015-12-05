@@ -41,7 +41,7 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'naturalSort', 
                     if (that.appModel.hasPermission("seeAdminPages")) {
                         testAdmin = '<a href="#t/' + tid + '" class="btn btn-info btn-xs">Admin</a>';
                     }
-                    if (options && !options.autoCreate) {
+                    if (test.get("multipleInstance")) {
                         var assess = {
                             title: testTitle,
                             extra: '<button class="btn btn-primary btn-xs" data-toggle="modal" data-target="#confirmGenerateVersionModal-' + tid + '">New version</button>',
@@ -62,7 +62,7 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'naturalSort', 
                         var tiid = tInstance.get("tiid");
                         var title = that.store.tiidLongName(tiid);
                         var admin = testAdmin;
-                        if (options && !options.autoCreate) {
+                        if (test.get("multipleInstance")) {
                             admin = null;
                         }
                         var score = Math.round(tInstance.get("score") / test.get("maxScore") * 100);

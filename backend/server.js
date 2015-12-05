@@ -450,6 +450,11 @@ var checkInfoDeprecated = function(idName, info, infoFile) {
     if (idName == "tid" && info.options && info.options.availDate) {
         logger.warn(infoFile + ': "options.availDate" is deprecated and will be removed in a future version. Please use "allowAccess" instead.');
     }
+    if (idName == "tid" && info.type == "PracExam") {
+        logger.warn(infoFile + ': "PracExam" type is deprecated and will be removed in a future version. Instead, please use "Exam" type with "multipleInstance": true.');
+        info.type = "Exam";
+        info.multipleInstance = true;
+    }
 };
 
 var questionDB, testDB;
@@ -2053,7 +2058,7 @@ var autoCreateTInstances = function(req, res, tInstances, autoCreateCallback) {
     var tiDB = _(tInstances).groupBy("tid");
     async.each(_(testDB).values(), function(test, callback) {
         var tid = test.tid;
-        if (checkTestAvail(req, tid) && test.options.autoCreate && tiDB[tid] === undefined && req.query.uid !== undefined) {
+        if (checkTestAvail(req, tid) && !test.multipleInstance && tiDB[tid] === undefined && req.query.uid !== undefined) {
             readTestBAD(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
                     newIDNoError(req, res, "tiid", function(tiid) {
@@ -2089,7 +2094,7 @@ var eliminateDuplicateTInstances = function(req, res, tInstances, eliminateCallb
     var cleanTIDB = {};
     async.forEachOf(tiDB, function(tiList, tid, callback) {
         readTestBAD(res, tid, function(test) {
-            if (test.options.autoCreate) {
+            if (!test.multipleInstance) {
                 // we should only have a single tInstance for this test, so enforce this
                 // if we have multiple tInstances, pick the one with the highest score
                 var sortedTIList = _(tiList).sortBy('score');
@@ -2168,7 +2173,7 @@ app.post("/tInstances", function(req, res) {
     if (testInfo === undefined) {
         return sendError(res, 400, "Invalid tid", {tid: tid});
     }
-    if (testInfo.options.autoCreate) {
+    if (!testInfo.multipleInstance) {
         return sendError(res, 400, "Test can only be autoCreated", {tid: tid});
     }
     tiCollect.find({tid: tid, uid: uid}, {"number": 1}, function(err, cursor) {
@@ -2409,7 +2414,7 @@ var getQDataByQID = function(test, tInstance) {
             };
         });
     } else if (_(tInstance).has('qids') && _(tInstance).has('submissionsByQid')) {
-        // Exam and PracExam
+        // Exam
         _(tInstance.qids).each(function(qid) {
             qDataByQID[qid] = {
                 points: 0,
