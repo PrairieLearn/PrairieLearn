@@ -60,7 +60,7 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 that.set("vid", qInstance.vid);
                 that.set("title", qInstance.title);
                 that.set("video", qInstance.video);
-                require([that.appModel.apiURL("questions/" + qid + "/client.js")], function(qClient) {
+                require([that.appModel.apiURL("qInstances/" + qInstance.qiid + "/client.js")], function(qClient) {
                     qClient.initialize(qInstance.params);
                     that.set("qClient", qClient);
 

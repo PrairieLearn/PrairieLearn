@@ -1277,8 +1277,8 @@ var questionFilePath = function(qid, filename, callback, nTemplates) {
     if (info === undefined) {
         return callback("QID not found in questionDB: " + qid);
     }
-    var filePath = path.join(qid, filename);
-    var fullFilePath = path.join(config.questionsDir, filePath);
+    var questionPath = path.join(config.questionsDir, qid);
+    var fullFilePath = path.join(questionPath, filename);
     fs.stat(fullFilePath, function(err, stats) {
         if (err) {
             // couldn't find the file
@@ -1307,31 +1307,36 @@ var questionFilePath = function(qid, filename, callback, nTemplates) {
             }
         } else {
             // found the file
-            return callback(null, {filePath: filePath, qid: qid, filename: filename, root: config.questionsDir});
+            return callback(null, {filePath: filename, qid: qid, filename: filename, root: questionPath});
         }
     });
 };
 
-var sendQuestionFile = function(req, res, filename) {
-    questionFilePath(req.params.qid, filename, function(err, fileInfo) {
-        if (err)
-            return sendError(res, 404, "No such file '" + filename + "' for qid: " + req.params.qid, err);
-        info = questionDB[fileInfo.qid];
-        if (info === undefined) {
-            return sendError(res, 404, "No such qid: " + fileInfo.qid);
-        }
-        if (!_(info).has("clientFiles")) {
-            return sendError(res, 500, "Question does not have clientFiles, qid: " + fileInfo.qid);
-        }
-        if (!_(info.clientFiles).contains(fileInfo.filename)) {
-            return sendError(res, 404, "Access denied to '" + fileInfo.filename + "' for qid: " + fileInfo.qid);
-        }
-        res.sendfile(fileInfo.filePath, {root: fileInfo.root});
+app.get("/qInstances/:qiid/:filename", function(req, res) {
+    var filename = req.params.filename;
+    var qiid = req.params.qiid;
+    readQInstance(qiid, function(err, qInstance) {
+        if (err) return sendError(res, 500, "Error reading qInstance with qiid: " + qiid, err);
+        ensureObjAuth(req, qInstance, "read", function(err) {
+            if (err) return sendError(res, 403, "Insufficient permissions", err);
+            var qid = qInstance.qid;
+            questionFilePath(qid, filename, function(err, fileInfo) {
+                if (err)
+                    return sendError(res, 404, "No such file '" + filename + "' for qid: " + req.params.qid, err);
+                info = questionDB[fileInfo.qid];
+                if (info === undefined) {
+                    return sendError(res, 404, "No such qid: " + fileInfo.qid);
+                }
+                if (!_(info).has("clientFiles")) {
+                    return sendError(res, 500, "Question does not have clientFiles, qid: " + fileInfo.qid);
+                }
+                if (!_(info.clientFiles).contains(fileInfo.filename)) {
+                    return sendError(res, 404, "Access denied to '" + fileInfo.filename + "' for qid: " + fileInfo.qid);
+                }
+                res.sendfile(fileInfo.filePath, {root: fileInfo.root});
+            });
+        });
     });
-};
-
-app.get("/questions/:qid/:filename", function(req, res) {
-    sendQuestionFile(req, res, req.params.filename);
 });
 
 var sendTestFile = function(req, res, tid, filename) {
@@ -1754,13 +1759,18 @@ var readTInstanceBAD = function(res, tiid, callback) {
     });
 };
 
-var readQInstance = function(res, qiid, callback) {
+var readQInstance = function(qiid, callback) {
     qiCollect.findOne({qiid: qiid}, function(err, obj) {
-        if (err)
-            return sendError(res, 500, "Error accessing qInstance database", {qiid: qiid, err: err});
-        if (!obj)
-            return sendError(res, 404, "No qInstance with qiid " + qiid, {qiid: qiid, err: err});
-        return callback(obj);
+        if (err) return callback(err);
+        if (!obj) return callback("No qInstance with qiid: " + qiid);
+        return callback(null, obj);
+    });
+};
+
+var readQInstanceBAD = function(res, qiid, callback) {
+    readQInstance(qiid, function(err, qInstance) {
+        if (err) return sendError(res, 500, "Error reading qInstance", {qiid: qiid, err: err});
+        return callback(qInstance);
     });
 };
 
@@ -1884,7 +1894,7 @@ app.post("/submissions", function(req, res) {
         submission.practice = req.body.practice;
     }
     ensureObjAuthBAD(req, res, submission, "write", function(submission) {
-        readQInstance(res, submission.qiid, function(qInstance) {
+        readQInstanceBAD(res, submission.qiid, function(qInstance) {
             ensureObjAuthBAD(req, res, qInstance, "read", function(qInstance) {
                 submission.qid = qInstance.qid;
                 submission.vid = qInstance.vid;
