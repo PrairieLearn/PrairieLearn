@@ -637,12 +637,19 @@ var filterTestsByAvail = function(req, tests, callback) {
     }, callback);
 };
 
-var ensureTestAvailByTID = function(req, res, tid, callback) {
+var ensureTestAvailByTID = function(req, tid, callback) {
     if (checkTestAvail(req, tid)) {
-        callback(tid);
+        callback(null, tid);
     } else {
-        return sendError(res, 403, "Test TID " + tid + " not available: " + req.path);
+        callback("Error accessing tid: " + tid);
     }
+};
+
+var ensureTestAvailByTIDBAD = function(req, res, tid, callback) {
+    ensureTestAvailByTID(req, tid, function(err, tid) {
+        if (err) return sendError(res, 500, "Error accessing tid: " + tid, err);
+        callback(tid);
+    });
 };
 
 var uidToRole = function(uid) {
@@ -1339,24 +1346,25 @@ app.get("/qInstances/:qiid/:filename", function(req, res) {
     });
 });
 
-var sendTestFile = function(req, res, tid, filename) {
-    var filePath = path.join(tid, filename);
-    var fullFilePath = path.join(config.testsDir, filePath);
+app.get("/tests/:tid/:filename", function(req, res) {
+    var tid = req.params.tid;
+    var filename = req.params.filename;
+    var testPath = path.join(config.testsDir, tid);
+    var fullFilePath = path.join(testPath, filename);
     info = testDB[tid];
     if (info === undefined) {
         return sendError(res, 404, "No such tid: " + fileInfo.tid);
     }
-    if (!_(info).has("clientFiles")) {
-        return sendError(res, 500, "Test does not have clientFiles, tid: " + tid);
-    }
-    if (!_(info.clientFiles).contains(filename)) {
-        return sendError(res, 404, "Access denied to '" + filename + "' for tid: " + tid);
-    }
-    res.sendfile(filePath, {root: config.testsDir});
-};
-
-app.get("/tests/:tid/:filename", function(req, res) {
-    sendTestFile(req, res, req.params.tid, req.params.filename);
+    ensureTestAvailByTID(req, tid, function(err, tid) {
+        if (err) return sendError(res, 500, "Unable to access tid: " + tid, err);
+        if (!_(info).has("clientFiles")) {
+            return sendError(res, 500, "Test does not have clientFiles, tid: " + tid);
+        }
+        if (!_(info.clientFiles).contains(filename)) {
+            return sendError(res, 404, "Access denied to '" + filename + "' for tid: " + tid);
+        }
+        res.sendfile(filename, {root: testPath});
+    });
 });
 
 app.get("/clientCode/:filename", function(req, res) {
@@ -1986,42 +1994,42 @@ app.get("/tests/:tid", function(req, res) {
         if (!obj) {
             return sendError(res, 404, "No test with tid " + req.params.tid);
         }
-        ensureTestAvailByTID(req, res, obj.tid, function() {
+        ensureTestAvailByTIDBAD(req, res, obj.tid, function() {
             res.json(stripPrivateFields(obj));
         });
     });
 });
 
 app.get("/tests/:tid/client.js", function(req, res) {
-    ensureTestAvailByTID(req, res, req.params.tid, function() {
+    ensureTestAvailByTIDBAD(req, res, req.params.tid, function() {
         var filePath = path.join(req.params.tid, "client.js");
         res.sendfile(filePath, {root: config.testsDir});
     });
 });
 
 app.get("/tests/:tid/common.js", function(req, res) {
-    ensureTestAvailByTID(req, res, req.params.tid, function() {
+    ensureTestAvailByTIDBAD(req, res, req.params.tid, function() {
         var filePath = path.join(req.params.tid, "common.js");
         res.sendfile(filePath, {root: config.testsDir});
     });
 });
 
 app.get("/tests/:tid/test.html", function(req, res) {
-    ensureTestAvailByTID(req, res, req.params.tid, function() {
+    ensureTestAvailByTIDBAD(req, res, req.params.tid, function() {
         var filePath = path.join(req.params.tid, "test.html");
         res.sendfile(filePath, {root: config.testsDir});
     });
 });
 
 app.get("/tests/:tid/testOverview.html", function(req, res) {
-    ensureTestAvailByTID(req, res, req.params.tid, function() {
+    ensureTestAvailByTIDBAD(req, res, req.params.tid, function() {
         var filePath = path.join(req.params.tid, "testOverview.html");
         res.sendfile(filePath, {root: config.testsDir});
     });
 });
 
 app.get("/tests/:tid/testSidebar.html", function(req, res) {
-    ensureTestAvailByTID(req, res, req.params.tid, function() {
+    ensureTestAvailByTIDBAD(req, res, req.params.tid, function() {
         var filePath = path.join(req.params.tid, "testSidebar.html");
         res.sendfile(filePath, {root: config.testsDir});
     });
@@ -2282,7 +2290,7 @@ app.post("/tInstances", function(req, res) {
             } else {
                 // end of collection
 
-                ensureTestAvailByTID(req, res, tid, function() {
+                ensureTestAvailByTIDBAD(req, res, tid, function() {
                     readTestBAD(res, tid, function(test) {
                         loadTestServer(tid, function(server) {
                             newIDNoError(req, res, "tiid", function(tiid) {
