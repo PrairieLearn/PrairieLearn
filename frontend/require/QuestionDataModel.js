@@ -44,13 +44,6 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
             var that = this;
             var qid = this.get("qid");
             var vid = this.get("vid");
-            $.getJSON(that.appModel.apiURL("questions/" + qid), function(data) {
-                that.set({
-                    "title": data.title,
-                    "number": data.number,
-                    "video": data.video
-                });
-            });
             var qInstance = {
                 qid: qid,
                 uid: uid,
@@ -65,6 +58,8 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
             var processQInstance = function(qInstance) {
                 that.set("qiid", qInstance.qiid);
                 that.set("vid", qInstance.vid);
+                that.set("title", qInstance.title);
+                that.set("video", qInstance.video);
                 require([that.appModel.apiURL("questions/" + qid + "/client.js")], function(qClient) {
                     qClient.initialize(qInstance.params);
                     that.set("qClient", qClient);
@@ -95,11 +90,11 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
 
             var qiid = null;
             if (this.tInstance && this.tInstance.has("qiidsByQid")) {
-                // already have a QIID, so GET the qInstance
                 var qiidsByQid = this.tInstance.get("qiidsByQid");
                 var qiid = qiidsByQid[qid];
             }
             if (qiid) {
+                // already have a QIID, so GET the qInstance
                 $.getJSON(that.appModel.apiURL("qInstances/" + qiid), processQInstance);
             } else {
                 // don't already have a QIID, so POST to create a new qInstance

@@ -1259,6 +1259,9 @@ app.get("/questions", function(req, res) {
 });
 
 app.get("/questions/:qid", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewAllQuestions')) {
+        return res.json({});
+    };
     var info = questionDB[req.params.qid];
     if (info === undefined)
         return sendError(res, 404, "No such question: " + req.params.qid);
@@ -1424,6 +1427,58 @@ app.get("/users/:uid", function(req, res) {
     });
 });
 
+var addQuestionToQInstance = function(qInstance, req, callback) {
+    if (!_(qInstance).has("qid")) return callback("no qid in qInstance");
+    var qid = qInstance.qid;
+    if (!_(questionDB).has(qid)) return callback("unknown qid: " + qid);
+    if (PrairieRole.hasPermission(req.userRole, 'viewAllQuestions')) {
+        qInstance.title = questionDB[qid].title;
+        qInstance.video = questionDB[qid].video;
+        return callback(null, qInstance);
+    };
+    if (!_(qInstance).has("tiid")) {
+        // no TIID, we must have authorization, just add the info
+        qInstance.title = questionDB[qid].title;
+        qInstance.video = questionDB[qid].video;
+        return callback(null, qInstance);
+    }
+    var tiid = qInstance.tiid;
+    // if we have a TIID then we should have a TID
+    if (!_(qInstance).has("tid")) return callback("no tid in qInstance");
+    var tid = qInstance.tid;
+    readTest(tid, function(err, test) {
+        if (err) return callback(err);
+        readTInstance(tiid, function(err, tInstance) {
+            if (err) return callback(err);
+            if (_(test).has("hideQuestionTitleWhileOpen") && test.hideQuestionTitleWhileOpen) {
+                if (_(tInstance).has("open") && !tInstance.open) {
+                    qInstance.title = questionDB[qid].title;
+                    qInstance.video = questionDB[qid].video;
+                } else {
+                    qInstance.title = "No title";
+                }
+                return callback(null, qInstance);
+            }
+            if (_(test).has("showQuestionTitle") && !test.showQuestionTitle) {
+                qInstance.title = "No title";
+                return callback(null, qInstance);
+            }
+            qInstance.title = questionDB[qid].title;
+            qInstance.video = questionDB[qid].video;
+            return callback(null, qInstance);
+        });
+    });
+};
+
+var addQuestionToQInstances = function(qInstances, req, callback) {
+    async.each(qInstances, function(qInstance, cb) {
+        addQuestionToQinstance(qInstance, req, cb);
+    }, function(err) {
+        if (err) return callback(err);
+        callback(null, qInstances);
+    });
+};
+
 app.get("/qInstances", function(req, res) {
     if (!qiCollect) {
         return sendError(res, 500, "Do not have access to the qInstances database collection");
@@ -1447,7 +1502,10 @@ app.get("/qInstances", function(req, res) {
                 return sendError(res, 500, "Error serializing qInstances", err);
             }
             filterObjsByAuth(req, objs, "read", function(objs) {
-                res.json(stripPrivateFields(objs));
+                addQuestionToQInstances(objs, req, function(err, objs) {
+                    if (err) return sendError(res, 500, "Error adding question to qInstance", err);
+                    res.json(stripPrivateFields(objs));
+                });
             });
         });
     });
@@ -1465,7 +1523,10 @@ app.get("/qInstances/:qiid", function(req, res) {
             return sendError(res, 404, "No qInstance with qiid " + req.params.qiid);
         }
         ensureObjAuthBAD(req, res, obj, "read", function(obj) {
-            res.json(stripPrivateFields(obj));
+            addQuestionToQInstance(obj, req, function(err, obj) {
+                if (err) return sendError(res, 500, "Error adding question to qInstance", err);
+                res.json(stripPrivateFields(obj));
+            });
         });
     });
 });
@@ -1529,7 +1590,10 @@ app.post("/qInstances", function(req, res) {
             qInstance.vid = req.body.vid;
         };
         makeQInstance(req, res, qInstance, function(qInstance) {
-            res.json(stripPrivateFields(qInstance));
+            addQuestionToQInstance(qInstance, req, function(err, qInstance) {
+                if (err) return sendError(res, 500, "Error adding question to qInstance", err);
+                res.json(stripPrivateFields(qInstance));
+            });
         });
         return;
     }
@@ -1556,7 +1620,10 @@ app.post("/qInstances", function(req, res) {
                 ensureQuestionInTest(qid, tInstance, test, function(err) {
                     if (err) return sendError(res, 404, "Invalid request", err);
                     makeQInstance(req, res, qInstance, function(qInstance) {
-                        res.json(stripPrivateFields(qInstance));
+                        addQuestionToQInstance(qInstance, req, function(err, qInstance) {
+                            if (err) return sendError(res, 500, "Error adding question to qInstance", err);
+                            res.json(stripPrivateFields(qInstance));
+                        });
                     });
                 });
             });
@@ -1574,7 +1641,7 @@ app.post("/qInstances", function(req, res) {
     if (PrairieRole.hasPermission(req.userRole, 'overrideVID') && _(req.body).has('vid')) {
         qInstance.vid = req.body.vid;
     };
-    readTInstance(res, qInstance.tiid, function(tInstance) {
+    readTInstanceBAD(res, qInstance.tiid, function(tInstance) {
         var qiid = null;
         if (tInstance.qiidsByQid) {
             if (tInstance.qiidsByQid[qid]) {
@@ -1590,7 +1657,10 @@ app.post("/qInstances", function(req, res) {
                     return sendError(res, 404, "No qInstance with qiid " + req.params.qiid);
                 }
                 ensureObjAuthBAD(req, res, obj, "read", function(obj) {
-                    res.json(stripPrivateFields(obj));
+                    addQuestionToQInstance(qInstance, req, function(err, qInstance) {
+                        if (err) return sendError(res, 500, "Error adding question to qInstance", err);
+                        res.json(stripPrivateFields(obj));
+                    });
                 });
             });
         } else {
@@ -1608,7 +1678,10 @@ app.post("/qInstances", function(req, res) {
                                 tInstance.qiidsByQid = tInstance.qiidsByQid || {};
                                 tInstance.qiidsByQid[qid] = qInstance.qiid;
                                 writeTInstance(req, res, tInstance, function() {
-                                    res.json(stripPrivateFields(qInstance));
+                                    addQuestionToQInstance(qInstance, req, function(err, qInstance) {
+                                        if (err) return sendError(res, 500, "Error adding question to qInstance", err);
+                                        res.json(stripPrivateFields(qInstance));
+                                    });
                                 });
                             });
                         });
@@ -1666,13 +1739,18 @@ var deepClone = function(obj) {
     return JSON.parse(JSON.stringify(obj));
 };
 
-var readTInstance = function(res, tiid, callback) {
+var readTInstance = function(tiid, callback) {
     tiCollect.findOne({tiid: tiid}, function(err, obj) {
-        if (err)
-            return sendError(res, 500, "Error accessing tInstance database", {tiid: tiid, err: err});
-        if (!obj)
-            return sendError(res, 404, "No tInstance with tiid " + tiid, {tiid: tiid, err: err});
-        return callback(obj);
+        if (err) return callback(err);
+        if (!obj) return callback("No tInstance with tiid: " + tiid);
+        return callback(null, obj);
+    });
+};
+
+var readTInstanceBAD = function(res, tiid, callback) {
+    readTInstance(tiid, function(err, tInstance) {
+        if (err) return sendError(res, 500, "Error reading tInstance", {tiid: tiid, err: err});
+        return callback(tInstance);
     });
 };
 
@@ -1748,7 +1826,7 @@ var writeTest = function(req, res, obj, callback) {
 };
 
 var testProcessSubmission = function(req, res, tiid, submission, callback) {
-    readTInstance(res, tiid, function(tInstance) {
+    readTInstanceBAD(res, tiid, function(tInstance) {
         ensureObjAuthBAD(req, res, tInstance, "read", function(tInstance) {
             var tid = tInstance.tid;
             readTestBAD(res, tid, function(test) {
@@ -2220,7 +2298,7 @@ app.post("/tInstances", function(req, res) {
 });
 
 var finishTest = function(req, res, tiid, callback) {
-    readTInstance(res, tiid, function(tInstance) {
+    readTInstanceBAD(res, tiid, function(tInstance) {
         ensureObjAuthBAD(req, res, tInstance, "write", function(tInstance) {
             var tid = tInstance.tid;
             readTestBAD(res, tid, function(test) {
@@ -2242,7 +2320,7 @@ var finishTest = function(req, res, tiid, callback) {
 };
 
 var gradeTest = function(req, res, tiid, callback) {
-    readTInstance(res, tiid, function(tInstance) {
+    readTInstanceBAD(res, tiid, function(tInstance) {
         ensureObjAuthBAD(req, res, tInstance, "write", function(tInstance) {
             var tid = tInstance.tid;
             readTestBAD(res, tid, function(test) {
