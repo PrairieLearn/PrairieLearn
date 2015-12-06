@@ -10,6 +10,7 @@ define(['underscore', 'backbone', 'mustache', 'spinController', 'TestFactory', '
             this.test = this.options.test;
             this.tInstance = this.options.tInstance;
             this.listenTo(this.model, "change:qClient", this.render);
+            this.listenTo(this.model, "change:title", this.render);
             this.render();
         },
 
