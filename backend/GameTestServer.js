@@ -22,7 +22,7 @@ define(["underscore", "moment-timezone"], function(_, moment) {
         test.text = options.text;
     };
 
-    GameTestServer.updateTInstance = function(tInstance, test, options) {
+    GameTestServer.updateTInstance = function(tInstance, test, options, questionDB) {
         _(tInstance).defaults({
             score: 0,
             qData: {},
@@ -34,6 +34,13 @@ define(["underscore", "moment-timezone"], function(_, moment) {
 
             tInstance.qData[question.qid].value = Math.max(tInstance.qData[question.qid].value, question.initValue);
             tInstance.qData[question.qid].score = Math.min(tInstance.qData[question.qid].score, question.maxScore);
+        });
+        tInstance.questions = [];
+        _(test.qids).each(function(qid) {
+            tInstance.questions.push({
+                qid: qid,
+                title: questionDB[qid] && questionDB[qid].title,
+            });
         });
         return tInstance;
     };

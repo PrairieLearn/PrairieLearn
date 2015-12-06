@@ -48,13 +48,14 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "ExamTestHelper
             data.nSaved = _(qids).filter(function(qid) {return _(submissionsByQid).has(qid);}).length;
 
             data.questionList = [];
-            _(qids).each(function(qid, index) {
-                var q = that.questions.get(qid);
+            var questions = this.model.get("questions");
+            _(questions).each(function(question, index) {
+                var qid = question.qid;
                 var entry = {
-                    qid: q.get("qid"),
+                    qid: qid,
                     tid: that.model.get("tid"),
                     tiid: that.model.get("tiid"),
-                    title: q.get("title"),
+                    title: question.title,
                     number: index + 1,
                 };
                 if (data.open) {

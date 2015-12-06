@@ -9,7 +9,6 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "BasicTestHelpe
             this.store = this.options.store;
             this.appModel = this.options.appModel;
             this.test = this.options.test;
-            this.questions = this.options.questions;
             this.listenTo(this.model, "change", this.render);
             this.listenTo(this.test, "change", this.render);
         },
@@ -36,13 +35,14 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "BasicTestHelpe
             var qids = this.test.get("qids");
             var qData = this.model.get("qData");
             var hwNumber = this.test.get("number");
-            _(qids).each(function(qid, index) {
-                var q = that.questions.get(qid);
+            var questions = this.model.get("questions");
+            _(questions).each(function(question, index) {
+                var qid = question.qid;
                 data.questionList.push({
-                    qid: q.get("qid"),
+                    qid: qid,
                     tid: that.model.get("tid"),
                     tiid: that.model.get("tiid"),
-                    title: q.get("title"),
+                    title: question.title,
                     number: index + 1,
                     fullNumber: "#" + hwNumber + "." + (index + 1),
                     attempts: BasicTestHelper.renderQAttempts(qData[qid]),

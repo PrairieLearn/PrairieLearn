@@ -96,7 +96,7 @@ define(["underscore", "PrairieModel", "numeric", "moment-timezone"], function(_,
             .value();
     };
 
-    AdaptiveTestServer.updateTInstance = function(tInstance, test, options) {
+    AdaptiveTestServer.updateTInstance = function(tInstance, test, options, questionDB) {
         if (tInstance.dist === undefined) {
             tInstance.dist = new PrairieModel.UserDist(tInstance.uid);
             overrideUserDist(tInstance.dist);
@@ -106,6 +106,13 @@ define(["underscore", "PrairieModel", "numeric", "moment-timezone"], function(_,
         }
         _(tInstance).defaults({
             score: 0,
+        });
+        tInstance.questions = [];
+        _(test.qids).each(function(qid) {
+            tInstance.questions.push({
+                qid: qid,
+                title: questionDB[qid] && questionDB[qid].title,
+            });
         });
         return tInstance;
     };

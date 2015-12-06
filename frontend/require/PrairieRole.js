@@ -137,6 +137,8 @@ define(['underscore'], function(_) {
             permission = true;
         if (operation === 'createQIDWithoutTIID' && rank <= this.TA)
             permission = true;
+        if (operation === 'viewAllQuestions' && rank <= this.INSTRUCTOR)
+            permission = true;
         return permission;
     };
 
