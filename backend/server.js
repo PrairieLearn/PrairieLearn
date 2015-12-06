@@ -1248,6 +1248,9 @@ app.post("/coursePulls", function(req, res) {
 });
 
 app.get("/questions", function(req, res) {
+    if (!PrairieRole.hasPermission(req.userRole, 'viewAllQuestions')) {
+        return res.json({});
+    };
     async.map(_.values(questionDB), function(item, callback) {
         callback(null, {qid: item.qid, title: item.title, number: item.number});
     }, function(err, results) {
@@ -2023,7 +2026,7 @@ var autoCreateTestQuestions = function(req, res, tInstance, test, callback) {
 };
 
 var updateTInstance = function(req, res, server, tInstance, test, callback) {
-    server.updateTInstance(tInstance, test, test.options);
+    server.updateTInstance(tInstance, test, test.options, questionDB);
     autoCreateTestQuestions(req, res, tInstance, test, function() {
         callback();
     });

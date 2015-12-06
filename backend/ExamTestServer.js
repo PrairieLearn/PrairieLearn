@@ -36,7 +36,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
         test._private = ["scoresByUID", "highScoresByUID", "completeHighScoresByUID"];
     };
 
-    ExamTestServer.updateTInstance = function(tInstance, test, options) {
+    ExamTestServer.updateTInstance = function(tInstance, test, options, questionDB) {
         if (tInstance.qids === undefined) {
             var qids = [];
             var rand = new PrairieRandom.RandomGenerator();
@@ -55,6 +55,13 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             tInstance.submissionsByQid = {},
             tInstance.score = 0;
         }
+        tInstance.questions = [];
+        _(tInstance.qids).each(function(qid) {
+            tInstance.questions.push({
+                qid: qid,
+                title: (questionDB[qid] && !tInstance.open) ? questionDB[qid].title : "No title",
+            });
+        });
         return tInstance;
     };
 

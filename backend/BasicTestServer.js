@@ -22,10 +22,17 @@ define(["underscore", "moment-timezone"], function(_, moment) {
             .value();
     };
 
-    BasicTestServer.updateTInstance = function(tInstance, test, options) {
+    BasicTestServer.updateTInstance = function(tInstance, test, options, questionDB) {
         _(tInstance).defaults({
             qData: {},
             score: 0,
+        });
+        tInstance.questions = [];
+        _(test.qids).each(function(qid) {
+            tInstance.questions.push({
+                qid: qid,
+                title: questionDB[qid] && questionDB[qid].title,
+            });
         });
     };
 

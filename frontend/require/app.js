@@ -290,12 +290,12 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
-                view = new TestInstanceView({model: tInstance, test: test, appModel: this.model, questions: this.questions, store: this.store});
+                view = new TestInstanceView({model: tInstance, test: test, appModel: this.model, store: this.store});
                 break;
             case "testDetail":
                 var tid = this.model.get("pageOptions").tid;
                 var test = this.tests.get(tid);
-                view = new TestDetailView({model: test, appModel: this.model, questions: this.questions, store: this.store});
+                view = new TestDetailView({model: test, appModel: this.model, store: this.store});
                 break;
             case "tInstanceQuestion":
                 var tiid = this.model.get("pageOptions").tiid;
