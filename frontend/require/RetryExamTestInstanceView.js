@@ -57,7 +57,9 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "RetryExamTestH
 
             data.questionList = [];
             var showZoneTitles = that.model.has("showZoneTitles") && that.model.get("showZoneTitles");
-            _(qids).each(function(qid, index) {
+            var questions = this.model.get("questions");
+            _(questions).each(function(question, index) {
+                var qid = question.qid;
                 if (showZoneTitles) {
                     var zones = that.model.get("zones");
                     if (zones[index]) {
@@ -67,15 +69,14 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "RetryExamTestH
                         data.questionList.push(entry);
                     }
                 }
-                var q = that.questions.get(qid);
                 var tiid = that.model.get("tiid");
                 var number = index + 1;
                 var entry = {
                     title: '<a href="#q/' + tiid + '/' + number + '">Question #' + number + '</a>',
                 };
                 submission = submissionsByQid[qid];
-                question = questionsByQID[qid];
-                _(entry).extend(RetryExamTestHelper.getQuestionData(submission, question, data.open));
+                questionData = questionsByQID[qid];
+                _(entry).extend(RetryExamTestHelper.getQuestionData(submission, questionData, data.open));
                 data.questionList.push(entry);
             });
 

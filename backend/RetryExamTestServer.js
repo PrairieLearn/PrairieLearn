@@ -165,6 +165,12 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             tInstance.score = 0;
             tInstance.gradingDates = [];
         }
+        tInstance.questions = [];
+        _(tInstance.qids).each(function(qid) {
+            tInstance.questions.push({
+                qid: qid,
+            });
+        });
         return tInstance;
     };
 

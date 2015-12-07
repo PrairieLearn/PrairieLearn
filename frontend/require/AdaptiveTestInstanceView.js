@@ -56,13 +56,14 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "AdaptiveTestHe
             var qDists = that.test.get("qDists");
             var userDist = that.model.get("dist");
             var hwNumber = this.test.get("number");
-            _(qids).each(function(qid, index) {
-                var q = that.questions.get(qid);
+            var questions = this.model.get("questions");
+            _(questions).each(function(question, index) {
+                var qid = question.qid;
                 data.questionList.push({
-                    qid: q.get("qid"),
+                    qid: qid,
                     tid: that.model.get("tid"),
                     tiid: that.model.get("tiid"),
-                    title: q.get("title"),
+                    title: question.title,
                     number: index + 1,
                     fullNumber: "#" + hwNumber + "." + (index + 1),
                     recommendBar: AdaptiveTestHelper.renderRecommendBar(modelData, qid),
