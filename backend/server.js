@@ -1456,29 +1456,30 @@ var addQuestionToQInstance = function(qInstance, req, callback) {
         return callback(null, qInstance);
     }
     var tiid = qInstance.tiid;
-    // if we have a TIID then we should have a TID
-    if (!_(qInstance).has("tid")) return callback("no tid in qInstance");
-    var tid = qInstance.tid;
-    readTest(tid, function(err, test) {
+    readTInstance(tiid, function(err, tInstance) {
         if (err) return callback(err);
-        readTInstance(tiid, function(err, tInstance) {
+        var tid = tInstance.tid;
+        readTest(tid, function(err, test) {
             if (err) return callback(err);
-            if (_(test).has("hideQuestionTitleWhileOpen") && test.hideQuestionTitleWhileOpen) {
-                if (_(tInstance).has("open") && !tInstance.open) {
-                    qInstance.title = questionDB[qid].title;
-                    qInstance.video = questionDB[qid].video;
-                } else {
-                    qInstance.title = "No title";
+            readTInstance(tiid, function(err, tInstance) {
+                if (err) return callback(err);
+                if (_(test).has("hideQuestionTitleWhileOpen") && test.hideQuestionTitleWhileOpen) {
+                    if (_(tInstance).has("open") && !tInstance.open) {
+                        qInstance.title = questionDB[qid].title;
+                        qInstance.video = questionDB[qid].video;
+                    } else {
+                        qInstance.title = "No title";
+                    }
+                    return callback(null, qInstance);
                 }
+                if (_(test).has("showQuestionTitle") && !test.showQuestionTitle) {
+                    qInstance.title = "No title";
+                    return callback(null, qInstance);
+                }
+                qInstance.title = questionDB[qid].title;
+                qInstance.video = questionDB[qid].video;
                 return callback(null, qInstance);
-            }
-            if (_(test).has("showQuestionTitle") && !test.showQuestionTitle) {
-                qInstance.title = "No title";
-                return callback(null, qInstance);
-            }
-            qInstance.title = questionDB[qid].title;
-            qInstance.video = questionDB[qid].video;
-            return callback(null, qInstance);
+            });
         });
     });
 };
@@ -1678,6 +1679,7 @@ app.post("/qInstances", function(req, res) {
             });
         } else {
             var tid = tInstance.tid;
+            qInstance.tid = tid;
             readTestBAD(res, tid, function(test) {
                 if (test.options.autoCreateQuestions) {
                     return sendError(res, 403, "QIID creation disallowed for tiid: ", tInstance.tiid);
