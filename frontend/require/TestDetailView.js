@@ -108,7 +108,7 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'renderer', 'Te
                     var meanScoreByQuintileStrings = _(meanScoreByQuintile).map(function(s) {return s.toFixed(1);});
                     data.qStats.push({
                         qid: qid,
-                        title: that.questions.get(qid).get("title"),
+                        title: that.store.questions.get(qid).get("title"),
                         link: "#tq/" + tid + "/" + qid,
                         count: stat.count,
                         meanScore: stat.meanScore * 100,
