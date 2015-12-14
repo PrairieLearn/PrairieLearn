@@ -888,7 +888,7 @@ app.use(function(req, res, next) {
                 n2 = parseInt(ipParts[1]);
                 n3 = parseInt(ipParts[2]);
                 n4 = parseInt(ipParts[3]);
-                if (n1 == 192 && n2 == 17 && n3 == 239 && n4 >= 128 && n4 <= 192) {
+                if (n1 == 192 && n2 == 17 && n3 == 239 && n4 >= 128 && n4 <= 255) {
                     serverMode = 'Exam';
                 }
             } catch (e) {}
