@@ -1,0 +1,6 @@
+{
+    "title": "File Download/Upload Test",
+    "options": {
+        "fileName": "test.zip"
+    }
+}
