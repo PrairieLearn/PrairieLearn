@@ -9,9 +9,6 @@
       ],
       "falseStatements": [
           "This is a false statement"
-      ],
-      "numberAnswers": 5,
-      "minCorrectAnswers": 1,
-      "maxCorrectAnswers": 3
+      ]
     }
 }
