@@ -56,6 +56,7 @@
                 "SimpleFigure",
                 "QServer",
                 "MCQServer"
+                "MTFServer"
             ]
         }
     ]
