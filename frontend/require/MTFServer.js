@@ -8,43 +8,48 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
 
     MTFServer.prototype.getData = function(vid, options) {
         var rand = new PrairieRandom.RandomGenerator(vid);
+
+        // Set some default values first.
+        // Missing values should be caught by the schemas.
         options = _.defaults(options, {
-            text: "Question text not defined.",
-            correctAnswers: ["Correct answers not defined."],
-            incorrectAnswers: ["Incorrect answers not defined."],
-            numberAnswers: 5,
+            trueStatements: [],
+            falseStatements: []
         });
 
-        var numberCorrect = 1;
-        var numberIncorrect = options.numberAnswers - numberCorrect;
-        numberIncorrect = Math.min(numberIncorrect, options.incorrectAnswers.length);
+        var numberTrue = options.trueStatements.length;
+        var numberFalse = options.falseStatements.length;
 
-        var answers = [];
-        answers = answers.concat(rand.randNElem(numberCorrect, options.correctAnswers));
-        answers = answers.concat(rand.randNElem(numberIncorrect, options.incorrectAnswers));
-        var perm = rand.shuffle(answers);
-        answers = _(answers).map(function(value, index) {
-                return {key: String.fromCharCode('a'.charCodeAt() + index), text: value};
+        // TODO(tnip): This is kinda weird. We should be checking for
+        // definedness on the full set. If empty, throw an error.
+        //
+        // Here, we want a list of all the statements so we can list them all.
+        var allStatements = [];
+        allStatements = allStatements.concat(options.trueStatements);
+        allStatements = allStatements.concat(options.falseStatements);
+
+        allStatements = _(allStatements).map(function(value, index) {
+              return {key: 'q' + index.toString(), statement: value};
         });
+
+        console.log(allStatements);
+
         var params = {
-            text: options.text,
-            answers: answers,
+            statements: allStatements
         };
-        var trueIndex = _(perm).indexOf(0);
-        var trueAnswer = {
-            key: answers[trueIndex].key,
-            text: answers[trueIndex].text,
-        };
+
         var questionData = {
             params: params,
-            trueAnswer: trueAnswer,
+            trueAnswer: {}
         };
+
         return questionData;
     }
 
+    /*
     MTFServer.prototype.transformTrueAnswer = function(vid, params, trueAns) {
         return {key: trueAns.key};
     }
+    */
 
     return MTFServer;
 });
