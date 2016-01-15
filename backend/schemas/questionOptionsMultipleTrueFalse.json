@@ -5,21 +5,16 @@
     "type": "object",
     "additionalProperties": false,
     "properties": {
-        "text": {
-            "description": "The question HTML text that comes before the options.",
-            "type": "string",
-            "required": true
-        },
-        "correctAnswers": {
-            "description": "A list of correct answers to the question. Each is an HTML string.",
+        "trueStatements": {
+            "description": "A list of true statements for the question. Each is an HTML string.",
             "type": "array",
             "items": {
                 "type": "string"
             },
             "required": true
         },
-        "incorrectAnswers": {
-            "description": "A list of incorrect answers to the question. Each is an HTML string.",
+        "falseStatements": {
+            "description": "A list of false statements for the question. Each is an HTML string.",
             "type": "array",
             "items": {
                 "type": "string"
@@ -27,6 +22,14 @@
             "required": true
         },
         "numberAnswers": {
+            "description": "The total number of answers in the list of possible answers.",
+            "type": "integer"
+        },
+        "minCorrectAnswers": {
+            "description": "The total number of answers in the list of possible answers.",
+            "type": "integer"
+        },
+        "maxCorrectAnswers": {
             "description": "The total number of answers in the list of possible answers.",
             "type": "integer"
         }
