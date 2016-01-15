@@ -20,18 +20,6 @@
                 "type": "string"
             },
             "required": true
-        },
-        "numberAnswers": {
-            "description": "The total number of answers in the list of possible answers.",
-            "type": "integer"
-        },
-        "minCorrectAnswers": {
-            "description": "The total number of answers in the list of possible answers.",
-            "type": "integer"
-        },
-        "maxCorrectAnswers": {
-            "description": "The total number of answers in the list of possible answers.",
-            "type": "integer"
         }
     }
 }
