@@ -21,7 +21,8 @@
                 "title": "Easy questions",
                 "questions": [
                     {"qid": "fossilFuelsRadio", "points": [10]},
-                    {"qid": "particleMotion", "points": [10, 5, 2]}
+                    {"qid": "particleMotion", "points": [10, 5, 2]},
+                    {"qid": "fossilFuelsTrueFalse", "points": [10, 5, 2]}
                 ]
             },
             {
