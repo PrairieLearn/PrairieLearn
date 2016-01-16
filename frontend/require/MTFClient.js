@@ -37,3 +37,18 @@ define(["underscore", "SimpleClient"], function(_, SimpleClient) {
         MTFClient: MTFClient,
     };
 });
+
+/* And here's the part that handles mutual exclusion. */
+
+$(document).on('change', 'input[type=checkbox]', function() {
+  console.log('change');
+  var questionId = $(this).attr('data-checkedoptional').split('.')[1].split('-')[0];
+  var currChoice = $(this).attr('data-checkedoptional').split('.')[1].split('-')[1];
+  var otherChoice = currChoice === 'true' ? 'false' : 'true';
+  var currSubmittedAnswer = 'submittedAnswer.' + questionId + '-' + currChoice;
+  var otherSubmittedAnswer = 'submittedAnswer.' + questionId + '-' + otherChoice;
+
+  if($('input[data-checkedoptional="' + otherSubmittedAnswer + '"]').prop('checked')) {
+    $('input[data-checkedoptional="' + otherSubmittedAnswer + '"]').click().blur();
+  }
+});
