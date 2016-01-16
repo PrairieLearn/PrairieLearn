@@ -24,16 +24,13 @@ define(["underscore", "SimpleClient"], function(_, SimpleClient) {
               '</div>' +
             '</div>' +
           '<% } %>';
-        this.options.answerTemplate = '<p>atemp</p>';
 
-
-/*
-        this.options.answerTemplate = '<p>Correct answers: <% if (trueAnswer.correctAnswers.length == 0) { %>None.<% } %></p>'
+        this.options.answerTemplate = '<p>Correct Answers: <% if (trueAnswer.correctAnswers.length == 0) { %>None.<% } %></p>'
             + '<% for (var i = 0; i < trueAnswer.correctAnswers.length; i++) { %>'
-            + '<p>(<%= trueAnswer.correctAnswers[i].key %>) <%= trueAnswer.correctAnswers[i].statement %></p>'
+            + '<p><%= trueAnswer.correctAnswers[i].toString().charAt(0).toUpperCase() + trueAnswer.correctAnswers[i].toString().slice(1) %></p>'
             + '<% } %>';
-            */
     }
+
     MTFClient.prototype = new SimpleClient.SimpleClient();
 
     return {
