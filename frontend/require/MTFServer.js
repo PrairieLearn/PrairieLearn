@@ -46,13 +46,14 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
 
         var questionData = {
             params: params,
-            trueAnswer: trueAnswer
+            trueAnswer: { 'correctAnswers' : trueAnswer }
         };
 
         return questionData;
     }
 
     MTFServer.prototype.gradeAnswer = function(vid, params, trueAnswer, submittedAnswer, options) {
+        trueAnswer = trueAnswer.correctAnswers;
         var finalScore = 0.0;
         var numberCorrect = 0.0;
 
