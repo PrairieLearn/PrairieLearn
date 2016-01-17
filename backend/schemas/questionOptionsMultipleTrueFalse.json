@@ -5,6 +5,10 @@
     "type": "object",
     "additionalProperties": false,
     "properties": {
+        "text": {
+            "description": "Text to precede the set of statements being given.",
+            "type": "string"
+        },
         "trueStatements": {
             "description": "A list of true statements for the question. Each is an HTML string.",
             "type": "array",
