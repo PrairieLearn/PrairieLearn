@@ -10,6 +10,7 @@
       ],
       "falseStatements": [
           "This is a false statement",
+          "This is another false statement",
           "Frugalness is an advantage of fossil fuels relative to renewable energy sources for its frugality and other various conditions that are consequences of frugality."
       ],
       "correctScore": 1,
