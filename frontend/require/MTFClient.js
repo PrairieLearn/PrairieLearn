@@ -3,7 +3,7 @@ define(["underscore", "SimpleClient"], function(_, SimpleClient) {
 
     function MTFClient(options) {
         SimpleClient.SimpleClient.call(this, options);
-        this.options.questionTemplate = '<p>' +
+        this.options.questionTemplate = '<p><%= params.text %></p><p>' +
           '<% for (var i = 0; i < params.statements.length; i++) { %>' +
             '<div class="trueFalse" style="display:table; width:100%;">' +
               '<div style="display:table-row; width:100%;">' +

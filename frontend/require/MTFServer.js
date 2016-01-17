@@ -12,6 +12,7 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
         // Set some default values first.
         // Missing values should be caught by the schemas.
         options = _.defaults(options, {
+            text: "",
             trueStatements: [],
             falseStatements: [],
             correctScore: 1,
@@ -44,7 +45,8 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
         }
 
         var params = {
-            statements: allStatements
+            statements: allStatements,
+            text: options.text
         };
 
         var questionData = {
