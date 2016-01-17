@@ -4,12 +4,16 @@
     "tags": ["comparative advantages", "fossil fuels", "renewables"],
     "type": "MultipleTrueFalse",
     "options": {
+      "text": "For each of the following statements, select whether it is true or false.",
       "trueStatements": [
-          "Cheapness is an advantage of fossil fuels relative to renewable energy sources.",
-          "Frugalness is an advantage of fossil fuels relative to renewable energy sources for its frugality and whateverness because whatever is whatever."
+          "Cheapness is an advantage of fossil fuels relative to renewable energy sources."
       ],
       "falseStatements": [
-          "This is a false statement"
-      ]
+          "This is a false statement",
+          "Frugalness is an advantage of fossil fuels relative to renewable energy sources for its frugality and other various conditions that are consequences of frugality."
+      ],
+      "correctScore": 1,
+      "incorrectScore": 0,
+      "guessingPenalty": -1
     }
 }
