@@ -13,7 +13,10 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
         // Missing values should be caught by the schemas.
         options = _.defaults(options, {
             trueStatements: [],
-            falseStatements: []
+            falseStatements: [],
+            correctScore: 1,
+            incorrectScore: 0,
+            guessingPenalty: -5
         });
 
         var numberTrue = options.trueStatements.length;
@@ -55,23 +58,36 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
     MTFServer.prototype.gradeAnswer = function(vid, params, trueAnswer, submittedAnswer, options) {
         trueAnswer = trueAnswer.correctAnswers;
         var finalScore = 0.0;
-        var numberCorrect = 0.0;
+        var maxScore = options.correctScore * trueAnswer.length;
 
         // Assumptions:
         //  trueAnswer[i]: T, submittedAnswer[qi-true]: T -> Correct
         //  trueAnswer[i]: F, submittedAnswer[qi-false]: T -> Correct
         //  Else: Incorrect
+        console.log('ta', trueAnswer);
+        console.log('sa', submittedAnswer);
         for (var i = 0; i < trueAnswer.length; i++) {
           var questionId = 'q' + i.toString();
 
           if ((trueAnswer[i] && submittedAnswer[questionId + '-true']) ||
             (!trueAnswer[i] && submittedAnswer[questionId + '-false'])) {
-            numberCorrect++;
+            console.log(finalScore);
+            finalScore += options.correctScore;
+            console.log('correct');
+            console.log(finalScore);
+          } else if (submittedAnswer[questionId + '-true'] || submittedAnswer[questionId + '-false']) {
+            console.log(finalScore);
+            finalScore = finalScore + (options.incorrectScore + options.guessingPenalty);
+            console.log('penalty', options.guessingPenalty);
+            console.log(finalScore);
+          } else {
+            finalScore += options.incorrectScore;
+            console.log('nothing');
           }
         }
 
-        finalScore = numberCorrect / (trueAnswer.length * 1.0);
-
+        // We floor the questions's final score to 0.
+        finalScore = Math.max(finalScore / maxScore, 0.0);
         return { 'score' : finalScore };
     }
 
