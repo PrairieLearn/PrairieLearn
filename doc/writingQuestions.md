@@ -49,6 +49,7 @@ The `info.json` file for each question defines properties of the question. For e
 Type             | Example                                                                                                       | Required Files                              | Options format                                                                                                                                                          | Description
 ---              | ---                                                                                                           | ---                                         | ---                                                                                                                                                                     | ---
 `MultipleChoice` | [`fossilFuelsRadio`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fossilFuelsRadio) | `info.json`                                 | [`MultipleChoice` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/questionOptionsMultipleChoice.json)                                 | A multiple choice question (radio button). One correct answer and several incorrect answers are selected from lists of correct and incorrect answers, and the order is randomized.
+`MultipleTrueFalse` | [`fossilFuelsTrueFalse`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fossilFuelsTrueFalse) | `info.json`                                 | [`MultipleTrueFalse` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/questionOptionsMultipleTrueFalse.json)                                 | A multiple choice question (radio button). One correct answer and several incorrect answers are selected from lists of correct and incorrect answers, and the order is randomized.
 `Checkbox`       | [`fossilFuelsCheckbox`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fossilFuelsCheckbox) | `info.json`                                 | [`Checkbox` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/questionOptionsCheckbox.json)                                 | A multiple choice question (checkbox). Multiple correct and incorrect answers are selected from lists of correct and incorrect answers, and the order is randomized.
 `File`           | [`fibonacci`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fibonacci)     | `info.json`, `question.html`, `answer.html` |  [`File` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/questionOptionsFile.json)                                                    | A file is provided to the student for download, and they have to upload an edited file for grading.
 `Calculation`    | [`addVectors`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/addVectors)   | `info.json`, `client.js`, `server.js`       | [`Calculation` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/questionOptionsCalculation.json)                                       | A very general question type that allows server-side and client-side code to generate and grade questions.
@@ -82,6 +83,32 @@ A `MultipleChoice` question has an `info.json` that provides the question text, 
             "numberAnswers": 5
         }
     }
+
+
+## `MultipleTrueFalse` questions
+
+A `MultipleTrueFalse` question has an `info.json` that provides the question text, zero or more true statements, and zero or more false statements. All the given statements are used, and are displayed to the students in a random order. For example:
+
+{
+    "title": "Advantages of fossil fuels (MTF)",
+    "topic": "Energy",
+    "tags": ["comparative advantages", "fossil fuels", "renewables"],
+    "type": "MultipleTrueFalse",
+    "options": {
+      "text": "For each of the following statements, select whether it is true or false.",
+      "trueStatements": [
+          "Cheapness is an advantage of fossil fuels relative to renewable energy sources."
+      ],
+      "falseStatements": [
+          "This is a false statement",
+          "This is another false statement",
+          "Frugalness is an advantage of fossil fuels relative to renewable energy sources for its frugality and other various conditions that are consequences of frugality."
+      ],
+      "correctScore": 1,
+      "incorrectScore": 0,
+      "guessingPenalty": -1
+    }
+}
 
 
 ## `Checkbox` questions
