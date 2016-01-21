@@ -1,6 +1,12 @@
 
 # ChangeLog
 
+* __1.18.0__ - 2016-01-20
+
+  * Fix security hole to restrict question access to accessible tests.
+
+  * Add `jsplumb` support (Terence Nip).
+
 * __1.17.0__ - 2015-11-04
 
   * Fix missing `questionFile()` caused by upgraded underscore templating.
