@@ -12,7 +12,6 @@ requirejs.config({
             'numeric': 'numeric-1.2.6.min',
             'moment': 'moment.min',
             'moment-timezone': 'moment-timezone-with-data-2010-2020',
-            'ace': 'ace/ace'
         }
     },
     waitSeconds: 60,
@@ -56,7 +55,6 @@ requirejs.config({
             deps: ['jquery', 'jquery-ui']
         },
         'ace/ace': {
-            exports: 'ace',
             deps: ['jquery', 'jquery-ui']
         }
     },
