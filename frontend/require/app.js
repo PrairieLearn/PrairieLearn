@@ -12,6 +12,7 @@ requirejs.config({
             'numeric': 'numeric-1.2.6.min',
             'moment': 'moment.min',
             'moment-timezone': 'moment-timezone-with-data-2010-2020',
+            'ace': 'ace/ace'
         }
     },
     waitSeconds: 60,
@@ -53,6 +54,10 @@ requirejs.config({
         },
         'jquery.jsplumb': {
             deps: ['jquery', 'jquery-ui']
+        },
+        'ace/ace': {
+            exports: 'ace',
+            deps: ['jquery', 'jquery-ui']
         }
     },
     config: {
@@ -71,8 +76,8 @@ requirejs.config({
     },
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'moment-timezone', 'PrairieRole', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestDetailView', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'SyncModel', 'SyncView', 'spinController', 'jquery-ui', 'jquery.jsplumb'],
-function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   moment,            PrairieRole,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestDetailView,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   SyncModel,   SyncView,   spinController, jqueryUi, jsPlumb) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'moment-timezone', 'PrairieRole', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestDetailView', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'SyncModel', 'SyncView', 'spinController', 'jquery-ui', 'jquery.jsplumb', 'ace/ace'],
+function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   moment,            PrairieRole,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestDetailView,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   SyncModel,   SyncView,   spinController, jqueryUi, jsPlumb, ace) {
 
     var QuestionModel = Backbone.Model.extend({
         idAttribute: "qid"
