@@ -1,0 +1,10 @@
+{
+    "title": "Write a Fibonacci function in an editor",
+    "topic": "Functions",
+    "tags": ["recursion"],
+    "clientFiles": ["client.js", "question.html", "answer.html", "fib.py"],
+    "type": "File",
+    "options": {
+        "fileName": "fib.py"
+    }
+}
