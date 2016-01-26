@@ -260,6 +260,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         this.listenTo(this.model, "answerChanged", changeCallback);
         this.questionView = new QuestionView({el: questionDivID, template: this.options.questionTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback});
         this.listenTo(this.questionView, "renderFinished", function() {that.trigger("renderQuestionFinished");});
+        this.listenTo(this.model, "answerChanged", function() { that.trigger("answerChanged");});
         this.questionView.render();
     };
 
