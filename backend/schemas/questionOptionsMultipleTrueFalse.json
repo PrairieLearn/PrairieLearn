@@ -24,18 +24,6 @@
                 "type": "string"
             },
             "required": true
-        },
-        "correctScore": {
-            "description": "The score given for each correct response.",
-            "type": "integer"
-        },
-        "incorrectScore": {
-            "description": "The score given for each incorrect response. This is applied to both no-answers and answered questions.",
-            "type": "integer"
-        },
-        "guessingPenalty": {
-            "description": "Additional penalty assessed for each incorrect response. This is applied to only answered questions.",
-            "type": "integer"
         }
     }
 }
