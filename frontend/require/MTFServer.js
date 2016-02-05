@@ -17,7 +17,7 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
             falseStatements: [],
             correctScore: 1,
             incorrectScore: 0,
-            guessingPenalty: -5
+            guessingPenalty: 0
         });
 
         var numberTrue = options.trueStatements.length;
@@ -66,25 +66,16 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
         //  trueAnswer[i]: T, submittedAnswer[qi-true]: T -> Correct
         //  trueAnswer[i]: F, submittedAnswer[qi-false]: T -> Correct
         //  Else: Incorrect
-        console.log('ta', trueAnswer);
-        console.log('sa', submittedAnswer);
         for (var i = 0; i < trueAnswer.length; i++) {
           var questionId = 'q' + i.toString();
 
           if ((trueAnswer[i] && submittedAnswer[questionId + '-true']) ||
             (!trueAnswer[i] && submittedAnswer[questionId + '-false'])) {
-            console.log(finalScore);
             finalScore += options.correctScore;
-            console.log('correct');
-            console.log(finalScore);
           } else if (submittedAnswer[questionId + '-true'] || submittedAnswer[questionId + '-false']) {
-            console.log(finalScore);
             finalScore = finalScore + (options.incorrectScore + options.guessingPenalty);
-            console.log('penalty', options.guessingPenalty);
-            console.log(finalScore);
           } else {
             finalScore += options.incorrectScore;
-            console.log('nothing');
           }
         }
 
