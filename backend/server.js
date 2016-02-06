@@ -3348,6 +3348,15 @@ if (config.localFileserver) {
         res.sendfile(path.join("require", "browser", req.params.filename), {root: config.frontendDir});
     });
 
+    app.get("/require/ace/:filename", function(req, res) {
+        res.sendfile(path.join("require", "ace", req.params.filename), {root: config.frontendDir});
+    });
+
+    app.get("/require/ace/*", function(req, res) {
+        var filename = req.params[0];
+        res.sendfile(path.join("require", filename), {root: config.frontendDir});
+    });
+
     app.get("/css/:filename", function(req, res) {
         res.sendfile(path.join("css", req.params.filename), {root: config.frontendDir});
     });
