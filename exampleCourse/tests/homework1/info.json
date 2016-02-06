@@ -15,6 +15,7 @@
             "addVectors",
             "fossilFuelsRadio",
             "fossilFuelsCheckbox",
+            "fossilFuelsTrueFalse",
             "fibonacci",
             "fibonacciEditor",
             "particleMotion",

@@ -1,0 +1,17 @@
+{
+    "title": "Advantages of fossil fuels (MTF)",
+    "topic": "Energy",
+    "tags": ["comparative advantages", "fossil fuels", "renewables"],
+    "type": "MultipleTrueFalse",
+    "options": {
+      "text": "For each of the following statements, select whether it is true or false.",
+      "trueStatements": [
+          "Cheapness is an advantage of fossil fuels relative to renewable energy sources."
+      ],
+      "falseStatements": [
+          "This is a false statement",
+          "This is another false statement",
+          "Frugalness is an advantage of fossil fuels relative to renewable energy sources for its frugality and other various conditions that are consequences of frugality."
+      ]
+    }
+}
