@@ -993,7 +993,7 @@ var getGitDescribe = function(callback) {
 
 app.get("/version", function(req, res) {
     getGitDescribe(function(err, gitDescribe) {
-        if (err) return sendError(res, 500, "Error determining version");
+        if (err) return res.json({});
         var PLVersion = {
             gitDescribe: gitDescribe,
         };
