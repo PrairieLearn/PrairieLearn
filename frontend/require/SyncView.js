@@ -23,7 +23,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!SyncView.html'],
             var version = this.model.get("version");
             data.hasVersion = false;
             if (version && version.gitDescribe) {
-                var match = /^(.+)-([0-9]+)-([0-9a-z]+)$/.exec(version.gitDescribe);
+                var match = /^(.+)-([0-9]+)-g([0-9a-z]+)$/.exec(version.gitDescribe);
                 if (match) {
                     var tag = match[1];
                     var commitsAhead = match[2];
