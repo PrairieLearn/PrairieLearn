@@ -21,6 +21,7 @@
         "jju": "*",
         "is-my-json-valid": "*",
         "archiver": "*",
+        "adm-zip": "*",
         "jStat": "*"
     },
     "devDependencies": {
