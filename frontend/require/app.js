@@ -456,10 +456,10 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         routes: {
             "stats": "goStats",
             "assess": "goAssess",
-            "q/:tiid/:qNumber": "goTInstanceQuestion",
+            "q/:tid/:tiNumber/:qNumber": "goTInstanceQuestion",
             "tq/:tid/:qid(/:vid)": "goTestQuestion",
             "cq/:tiid/:qInfo(/not/:skipQNumbers)": "goChooseTInstanceQuestion",
-            "ti/:tiid": "goTestInstance",
+            "ti/:tid(/:tiNumber)": "goTestInstance",
             "t/:tid": "goTestDetail",
             "about": "goAbout",
             "user": "goUser",
@@ -516,12 +516,26 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             });
         },
 
-        goTInstanceQuestion: function(tiid, qNumber, vid) {
-            var tInstance = this.tInstances.get(tiid);
-            var tid = tInstance ? tInstance.get("tid") : null;
+        goTInstanceQuestion: function(tid, tiNumber, qNumber) {
+            var testTInstances = new Backbone.Collection(this.tInstances.where({tid: tid}));
+            if (testTInstances.length == 0) {
+                window.location.replace(window.location.host);
+            }
+            var tInstance = null;
+            if (tiNumber) {
+                var theseTInstances = new Backbone.Collection(testTInstances.where({number: tiNumber}));
+                if (theseTInstances.length > 0) {
+                    tInstance = theseTInstances.first();
+                }
+            }
+            if (tInstance == null) {
+                tInstance = testTInstances.first();
+            }
+            var tid = tInstance.get("tid");
+            var tiid = tInstance.get("tiid");
             this.model.set({
                 page: "tInstanceQuestion",
-                pageOptions: {tiid: tiid, qNumber: qNumber, vid: vid},
+                pageOptions: {tiid: tiid, qNumber: qNumber},
                 tid: tid,
                 tiid: tiid,
             });
@@ -546,11 +560,26 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 tid: tid,
                 tiid: tiid,
             });
+            this.checkCurrentTest();
         },
 
-        goTestInstance: function(tiid) {
-            var tInstance = this.tInstances.get(tiid);
-            var tid = tInstance ? tInstance.get("tid") : null;
+        goTestInstance: function(tid, tiNumber) {
+            var testTInstances = new Backbone.Collection(this.tInstances.where({tid: tid}));
+            if (testTInstances.length == 0) {
+                window.location.replace(window.location.host);
+            }
+            var tInstance = null;
+            if (tiNumber) {
+                var theseTInstances = new Backbone.Collection(testTInstances.where({number: tiNumber}));
+                if (theseTInstances.length > 0) {
+                    tInstance = theseTInstances.first();
+                }
+            }
+            if (tInstance == null) {
+                tInstance = testTInstances.first();
+            }
+            var tid = tInstance.get("tid");
+            var tiid = tInstance.get("tiid");
             this.model.set({
                 page: "testInstance",
                 pageOptions: {tiid: tiid},

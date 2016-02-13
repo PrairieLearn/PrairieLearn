@@ -19,7 +19,9 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "AdaptiveTestHe
             var testOptions = this.test.get("options");
 
             var data = {};
+            data.tid = this.model.get("tid");
             data.tiid = this.model.get("tiid");
+            data.tiNumber = this.model.get("number");
             data.longName = this.store.tiidLongName(data.tiid);
 
             var modelData = this.model.get("modelData");
@@ -63,6 +65,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "AdaptiveTestHe
                     qid: qid,
                     tid: that.model.get("tid"),
                     tiid: that.model.get("tiid"),
+                    tiNumber: that.model.get("number"),
                     title: question.title,
                     number: index + 1,
                     fullNumber: "#" + hwNumber + "." + (index + 1),

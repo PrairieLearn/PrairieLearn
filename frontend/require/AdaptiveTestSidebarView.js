@@ -36,7 +36,9 @@ define(["underscore", "backbone", "mustache", "AdaptiveTestHelper", "text!Adapti
             data.testShortName = this.store.tiidShortName(data.tiid);
             
             data.hwScore = AdaptiveTestHelper.renderHWScore(this.tInstance, testOptions);
+            data.tid = this.tInstance.get("tid");
             data.tiid = this.tInstance.get("tiid");
+            data.tiNumber = this.tInstance.get("number");
 
             var modelData = this.tInstance.get("modelData");
             data.masteryScore = AdaptiveTestHelper.renderMasteryScore(modelData);

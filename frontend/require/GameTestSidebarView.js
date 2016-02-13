@@ -35,7 +35,9 @@ define(["underscore", "backbone", "mustache", "GameTestHelper", "text!GameTestSi
             var data = {};
             data.hwScore = GameTestHelper.renderHWScore(this.tInstance, this.test, testOptions);
             data.scoreBar = GameTestHelper.renderHWScoreBar(this.tInstance, this.test, testOptions);
+            data.tid = this.tInstance.get("tid");
             data.tiid = this.tInstance.get("tiid");
+            data.tiNumber = this.tInstance.get("number");
             data.testShortName = this.store.tiidShortName(data.tiid);
 
             var qid = this.model.get("qid");
