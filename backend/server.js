@@ -1019,7 +1019,11 @@ app.get("/course", function(req, res) {
         name: courseInfo.name,
         title: courseInfo.title,
         timezone: courseInfo.timezone,
+        devMode: false,
     };
+    if (config.authType == 'none') {
+        course.devMode = true;
+    }
     if (PrairieRole.hasPermission(req.userRole, 'viewCoursePulls')) {
         course.gitCourseBranch = courseInfo.gitCourseBranch;
         course.remoteFetchURL = courseInfo.remoteFetchURL;
@@ -1257,6 +1261,26 @@ app.post("/coursePulls", function(req, res) {
                             });
                         });
                     });
+                });
+            });
+        });
+    });
+});
+
+app.post("/reload", function(req, res) {
+    if (config.authType != "none") {
+        return sendError(res, 500, "Server not in dev mode");
+    }
+    loadData(function(err) {
+        if (err) return sendError(res, 500, "Error reloading data", err);
+        undefQuestionServers(function(err) {
+            if (err) return sendError(res, 500, "Error undefining question servers", err);
+            var query = {uid: req.authUID};
+            deleteObjects(req, query, tiCollect, 'tInstances', function(err) {
+                if (err) return sendError(res, 500, 'Error deleting objects', err);
+                initTestData(function(err) {
+                    if (err) return sendError(res, 500, "Error initializing tests", err);
+                    res.json({success: true});
                 });
             });
         });

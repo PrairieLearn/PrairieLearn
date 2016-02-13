@@ -186,6 +186,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                         'navTitle': 'PrairieLearn: ' + courseInfo.name,
                         'gitCourseBranch': courseInfo.gitCourseBranch,
                         'remoteFetchURL': courseInfo.remoteFetchURL,
+                        'devMode': courseInfo.devMode,
                     });
                     document.title = that.get("pageTitle");
                 });

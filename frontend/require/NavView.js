@@ -5,6 +5,10 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
 
         tagName: 'nav',
 
+        events: {
+            "click #nav-reload": "reload",
+        },
+
         initialize: function() {
             this.store = this.options.store;
             this.users = this.options.users;
@@ -24,6 +28,7 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
             data.viewOtherUsersPerm = this.model.hasPermission("viewOtherUsers", "auth");
             data.viewSync = this.model.hasPermission("viewCoursePulls");
             data.viewErrors = this.model.hasPermission("viewErrors");
+            data.devMode = this.model.get("devMode");
 
             var tid = this.model.get("tid");
             var tiid = this.model.get("tiid");
@@ -68,6 +73,29 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
 
             var html = Mustache.render(navViewTemplate, data);
             this.$el.html(html);
+        },
+
+        reload: function() {
+            var successFn = function(submission) {
+                document.location.reload(true);
+            };
+            var errorFn = function(jqXHR, textStatus, errorThrown) {
+                var e = textStatus ? textStatus : "Unknown error";
+                if (e === "error" && errorThrown)
+                    e = errorThrown;
+                $("#error").append('<div class="alert alert-danger" role="alert">Error reloading: ' + e + '</div>');
+            };
+            $.ajax({
+                dataType: "json",
+                url: this.model.apiURL("reload"),
+                type: "POST",
+                processData: false,
+                data: JSON.stringify({uid: this.model.get("authUID")}),
+                contentType: 'application/json; charset=UTF-8',
+                timeout: 7000,
+                success: successFn,
+                error: errorFn,
+            });
         },
     });
 
