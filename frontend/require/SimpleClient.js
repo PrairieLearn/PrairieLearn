@@ -117,14 +117,9 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
                 trueAnswer: this.trueAnswer.toJSON(),
                 feedback: this.feedback.toJSON(),
             };
-            console.log("options", this.options);
-            console.log("about to template HTML");
             var templatedHTML = PrairieTemplate.template(this.template, templateData, this.questionDataModel, this.appModel);
-            console.log("done template HTML");
             if (this.options.templateTwice) {
-                console.log("about to second template");
                 templatedHTML = PrairieTemplate.template(templatedHTML, {}, this.questionDataModel, this.appModel);
-                console.log("done second template");
             }
             this.$el.html(templatedHTML);
             this.rivetsView = rivets.bind(this.$el, {
