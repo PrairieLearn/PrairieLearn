@@ -62,6 +62,7 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'naturalSort', 
                         var tiid = tInstance.get("tiid");
                         var tiNumber = tInstance.get("number");
                         var title = that.store.tiidLongName(tiid);
+                        var shortTitle = that.store.tiidShortName(tiid);
                         var admin = testAdmin;
                         if (test.get("multipleInstance")) {
                             admin = null;
@@ -102,6 +103,7 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'naturalSort', 
                             rowSpec: highlightRow ? 'class="warning"' : '',
                             admin: admin,
                             title: '<a href="#ti/' + tid + '/' + tiNumber + '">' + title + '</a>',
+                            shortTitle: shortTitle,
                             score: scoreHTML,
                             date: date,
                             dateTooltip: dateTooltip,
@@ -114,7 +116,7 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'naturalSort', 
 
             var html = Mustache.render(AssessViewTemplate, data);
             this.$el.html(html);
-            $('[data-toggle=tooltip]').tooltip();
+            this.$('[data-toggle=popover]').popover();
         },
 
         generateVersion: function(event) {
