@@ -527,6 +527,13 @@ var initTestData = function(callback) {
                 item.options = options;
                 server.updateTest(obj, item.options);
                 _(obj).extend(item);
+                if (_(obj).has('qids')) {
+                    _(obj.qids).each(function(qid) {
+                        if (!_(questionDB).has(qid)) {
+                            logger.error('Test ' + obj.tid + ' contains invalid QID: ' + qid);
+                        }
+                    });
+                }
                 tCollect.update({tid: item.tid}, obj, {upsert: true, w: 1}, function(err) {
                     if (err) {
                         logger.error("Error writing to tCollect", {tid: item.tid, err: err});
