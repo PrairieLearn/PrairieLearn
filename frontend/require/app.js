@@ -74,8 +74,8 @@ requirejs.config({
     },
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'moment-timezone', 'PrairieRole', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestDetailView', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'SyncModel', 'SyncView', 'spinController', 'jquery-ui', 'jquery.jsplumb', 'ace/ace'],
-function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   moment,            PrairieRole,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestDetailView,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   SyncModel,   SyncView,   spinController, jqueryUi, jsPlumb, ace) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'moment-timezone', 'PrairieRole', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestDetailView', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'SyncModel', 'SyncView', 'ErrorsView', 'spinController', 'jquery-ui', 'jquery.jsplumb', 'ace/ace'],
+function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   moment,            PrairieRole,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestDetailView,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   SyncModel,   SyncView,   ErrorsView,   spinController, jqueryUi, jsPlumb, ace) {
 
     var QuestionModel = Backbone.Model.extend({
         idAttribute: "qid"
@@ -97,6 +97,9 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
 
     var UserCollection = Backbone.Collection.extend({
         model: UserModel
+    });
+
+    var ErrorListModel = Backbone.Model.extend({
     });
 
     var PullModel = Backbone.Model.extend({
@@ -383,6 +386,10 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             case "sync":
                 view = new SyncView.SyncView({model: this.model, pulls: this.pulls, syncModel: this.syncModel, store: this.store});
                 break;
+
+            case "errors":
+                view = new ErrorsView.ErrorsView({model: this.model, appModel: this.model, store: this.store});
+                break;
             }
             this.showView(view);
             spinController.stopSpinner(spinner);
@@ -456,6 +463,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             "about": "goAbout",
             "user": "goUser",
             "sync": "goSync",
+            "errors": "goErrors",
             "*actions": "goHome"
         },
 
@@ -579,6 +587,13 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 pageOptions: {},
             });
         },
+
+        goErrors: function() {
+            this.model.set({
+                page: "errors",
+                pageOptions: {},
+            });
+        },
     });
 
     var Store = Backbone.Model.extend({
@@ -589,6 +604,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             this.tests = options.tests;
             this.tInstances = options.tInstances;
             this.users = options.users;
+            this.errorList = options.errorList;
             this.pulls = options.pulls;
             this.syncModel = options.syncModel;
             this.testStatsColl = options.testStatsColl;
@@ -686,6 +702,9 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         var users = new UserCollection([], {
             url: function() {return appModel.apiURL("users");}
         });
+        var errorList = new ErrorListModel([], {
+            url: function() {return appModel.apiURL("errorList");}
+        });
         var pulls = new PullCollection([], {
             url: function() {return appModel.apiURL("coursePulls");}
         });
@@ -703,6 +722,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             tests: tests,
             tInstances: tInstances,
             users: users,
+            errorList: errorList,
             pulls: pulls,
             syncModel: syncModel,
             testStatsColl: testStatsColl,
@@ -749,6 +769,12 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                         });
                     },
                     function(callback) {
+                        errorList.fetch({
+                            success: function() {callback(null);},
+                            error: function() {errors.push("Error fetching errorList"); callback(null);},
+                        });
+                    },
+                    function(callback) {
                         pulls.fetch({
                             success: function() {callback(null);},
                             error: function() {errors.push("Error fetching pulls"); callback(null);},
@@ -782,6 +808,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                         tInstances: tInstances,
                         router: router,
                         users: users,
+                        errorList: errorList,
                         pulls: pulls,
                         syncModel: syncModel,
                     });

@@ -21,6 +21,10 @@
       <li {{{navSyncAttributes}}}><a href="index.html#sync">Sync</a></li>
       {{/viewSync}}
 
+      {{#viewErrors}}
+      <li {{{navSyncAttributes}}}><a href="index.html#errors">Errors</a></li>
+      {{/viewErrors}}
+
       {{#currentAssessmentName}}
       <li {{{currentAssessmentAttributes}}}><a href="{{{currentAssessmentLink}}}">{{currentAssessmentName}}</a></li>
       {{/currentAssessmentName}}

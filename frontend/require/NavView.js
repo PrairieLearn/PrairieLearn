@@ -23,6 +23,7 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
             data.mode = this.model.get("mode");
             data.viewOtherUsersPerm = this.model.hasPermission("viewOtherUsers", "auth");
             data.viewSync = this.model.hasPermission("viewCoursePulls");
+            data.viewErrors = this.model.hasPermission("viewErrors");
 
             var tid = this.model.get("tid");
             var tiid = this.model.get("tiid");
@@ -50,6 +51,7 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
             data.navAboutAttributes = '';
             data.navUserAttributes = '';
             data.navSyncAttributes = '';
+            data.navErrorsAttributes = '';
             data.currentAssessmentAttributes = '';
             data.currentDetailAttributes = '';
             switch (this.model.get("page")) {
@@ -59,6 +61,7 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
             case "about":              data.navAboutAttributes          = 'class="active"'; break;
             case "user":               data.navUserAttributes           = 'class="active"'; break;
             case "sync":               data.navSyncAttributes           = 'class="active"'; break;
+            case "errors":             data.navErrorsAttributes         = 'class="active"'; break;
             case "testInstance":       data.currentAssessmentAttributes = 'class="active"'; break;
             case "testDetail":         data.currentDetailAttributes     = 'class="active"'; break;
             }

@@ -1,0 +1,32 @@
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">Errors</h3>
+  </div>
+
+  <div class="panel-body">
+    <button id="reloadErrors" class="btn btn-info">Reload errors</button>
+    <div id="reloadResults">
+    </div>
+  </div>
+
+  <table class="table table-condensed table-hover">
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Level</th>
+        <th>Message</th>
+        <th>Data</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#errorList}}
+      <tr class="{{color}}">
+        <td>{{{date}}}</td>
+        <td>{{{level}}}</td>
+        <td>{{{msg}}}</td>
+        <td>{{{data}}}</td>
+      </tr>
+      {{/errorList}}
+    </tbody>
+  </table>
+</div>
