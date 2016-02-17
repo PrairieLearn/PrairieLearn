@@ -37,11 +37,13 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
         var perm = rand.shuffle(allStatements);
 
         var trueAnswer = [];
+        var shuffledTrueAnswer = [];
 
         // For every index we have, if it's less than the length of true list,
         // we deem it a true statement. Else, it's false.
         for(var i = 0; i < perm.length; i++) {
-          trueAnswer.push(perm[i] < options.trueStatements.length);
+          trueAnswer.push(i < options.trueStatements.length);
+          shuffledTrueAnswer.push(perm[i] < options.trueStatements.length);
         }
 
         var params = {
@@ -51,7 +53,7 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
 
         var questionData = {
             params: params,
-            trueAnswer: { 'correctAnswers' : trueAnswer }
+            trueAnswer: { 'correctAnswers' : trueAnswer, 'shuffledAnswers': shuffledTrueAnswer }
         };
 
         return questionData;
@@ -66,11 +68,12 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
         //  trueAnswer[i]: T, submittedAnswer[qi-true]: T -> Correct
         //  trueAnswer[i]: F, submittedAnswer[qi-false]: T -> Correct
         //  Else: Incorrect
+
         for (var i = 0; i < trueAnswer.length; i++) {
           var questionId = 'q' + i.toString();
 
           if ((trueAnswer[i] && submittedAnswer[questionId + '-true']) ||
-            (!trueAnswer[i] && submittedAnswer[questionId + '-false'])) {
+             (!trueAnswer[i] && submittedAnswer[questionId + '-false'])) {
             finalScore += options.correctScore;
           } else if (submittedAnswer[questionId + '-true'] || submittedAnswer[questionId + '-false']) {
             finalScore = finalScore + (options.incorrectScore + options.guessingPenalty);
