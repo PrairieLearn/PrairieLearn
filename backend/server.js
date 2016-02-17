@@ -4,13 +4,11 @@ var logger = new (winston.Logger)({
         new (winston.transports.Console)({timestamp: true, colorize: true}),
     ]
 });
-logger.info('PrairieLearn server start');
-logger.transports.console.level = 'warn';
 
 var errorList = [];
 var MemLogger = winston.transports.MemLogger = function(options) {
     this.name = 'memLogger';
-    this.level = options.level || 'error';
+    this.level = options.level || 'info';
 };
 MemLogger.prototype = new winston.Transport;
 MemLogger.prototype.log = function(level, msg, meta, callback) {
@@ -18,6 +16,10 @@ MemLogger.prototype.log = function(level, msg, meta, callback) {
     callback(null, true);
 };
 logger.add(winston.transports.MemLogger, {});
+
+logger.info('PrairieLearn server start');
+logger.transports.console.level = 'warn';
+logger.transports.memLogger.level = 'warn';
 
 var _ = require("underscore");
 var fs = require("fs");
@@ -527,6 +529,13 @@ var initTestData = function(callback) {
                 item.options = options;
                 server.updateTest(obj, item.options);
                 _(obj).extend(item);
+                if (_(obj).has('qids')) {
+                    _(obj.qids).each(function(qid) {
+                        if (!_(questionDB).has(qid)) {
+                            logger.error('Test ' + obj.tid + ' contains invalid QID: ' + qid);
+                        }
+                    });
+                }
                 tCollect.update({tid: item.tid}, obj, {upsert: true, w: 1}, function(err) {
                     if (err) {
                         logger.error("Error writing to tCollect", {tid: item.tid, err: err});
@@ -3315,9 +3324,9 @@ app.get("/stats/usersPerHour", function(req, res) {
     });
 });
 
-app.get("/errors", function(req, res) {
-    if (PrairieRole.hasPermission(req.userRole, 'readErrors')) {
-        res.json(errorList);
+app.get("/errorList", function(req, res) {
+    if (PrairieRole.hasPermission(req.userRole, 'viewErrors')) {
+        res.json({errorList: errorList});
     } else {
         res.json([]);
     }
@@ -3697,7 +3706,9 @@ async.series([
         process.exit(1);
     } else {
         logger.transports.console.level = 'info';
+        logger.transports.memLogger.level = 'info';
         logger.info("PrairieLearn server ready");
         logger.transports.console.level = 'warn';
+        logger.transports.memLogger.level = 'warn';
     }
 });
