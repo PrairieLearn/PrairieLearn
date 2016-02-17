@@ -16,7 +16,9 @@ define(["underscore", "backbone", "mustache", "ExamTestHelper", "text!ExamTestSi
 
         render: function() {
             var data = {};
+            data.tid = this.tInstance.get("tid");
             data.tiid = this.tInstance.get("tiid");
+            data.tiNumber = this.tInstance.get("number");
             data.testShortName = this.store.tiidShortName(data.tiid);
 
             var qid = this.model.get("qid");

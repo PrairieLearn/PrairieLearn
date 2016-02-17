@@ -22,7 +22,9 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "RetryExamTestH
         render: function() {
             var that = this;
             var data = {};
+            data.tid = this.model.get("tid");
             data.tiid = this.model.get("tiid");
+            data.tiNumber = this.model.get("number");
             data.longName = this.store.tiidLongName(data.tiid);
 
             var qids = that.model.get("qids");
@@ -69,10 +71,12 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "RetryExamTestH
                         data.questionList.push(entry);
                     }
                 }
+                var tid = that.model.get("tid");
                 var tiid = that.model.get("tiid");
+                var tiNumber = that.model.get("number");
                 var number = index + 1;
                 var entry = {
-                    title: '<a href="#q/' + tiid + '/' + number + '">Question #' + number + '</a>',
+                    title: '<a href="#q/' + tid + '/' + tiNumber + '/' + number + '">Question #' + number + '</a>',
                 };
                 submission = submissionsByQid[qid];
                 questionData = questionsByQID[qid];

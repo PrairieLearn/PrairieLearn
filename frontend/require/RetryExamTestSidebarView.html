@@ -1,5 +1,5 @@
 <div class="panel panel-default">
-  <div class="panel-heading"><h3 class="panel-title"><a href="#ti/{{tiid}}">{{testShortName}}</a></h3></div>
+  <div class="panel-heading"><h3 class="panel-title"><a href="#ti/{{tid}}/{{tiNumber}}">{{testShortName}}</a></h3></div>
   <div class="panel-body">
 
     {{#open}}
@@ -18,7 +18,7 @@
     {{/open}}
 
     <p class="text-center no-bottom-margin">
-      <a class="btn btn-info" href="#ti/{{tiid}}">Assessment overview</a>
+      <a class="btn btn-info" href="#ti/{{tid}}/{{tiNumber}}">Assessment overview</a>
     </p>
 
   </div>
@@ -73,7 +73,7 @@
 
 <p class="text-center">
   {{#prevQNumber}}
-  <a class="btn btn-primary" href="#q/{{tiid}}/{{prevQNumber}}">Previous question</a>
+  <a class="btn btn-primary" href="#q/{{tid}}/{{tiNumber}}/{{prevQNumber}}">Previous question</a>
   {{/prevQNumber}}
   {{^prevQNumber}}
   <a class="btn btn-primary disabled">Previous question</a>
@@ -81,7 +81,7 @@
 </p>
 <p class="text-center">
   {{#nextQNumber}}
-  <a class="btn btn-primary" href="#q/{{tiid}}/{{nextQNumber}}">Next question</a>
+  <a class="btn btn-primary" href="#q/{{tid}}/{{tiNumber}}/{{nextQNumber}}">Next question</a>
   {{/nextQNumber}}
   {{^nextQNumber}}
   <a class="btn btn-primary disabled">Next question</a>

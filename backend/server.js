@@ -21,6 +21,14 @@ logger.info('PrairieLearn server start');
 logger.transports.console.level = 'warn';
 logger.transports.memLogger.level = 'warn';
 
+var logInfoOverride = function(msg) {
+    logger.transports.console.level = 'info';
+    logger.transports.memLogger.level = 'info';
+    logger.info(msg);
+    logger.transports.console.level = 'warn';
+    logger.transports.memLogger.level = 'warn';
+}
+
 var _ = require("underscore");
 var fs = require("fs");
 var path = require("path");
@@ -1019,7 +1027,11 @@ app.get("/course", function(req, res) {
         name: courseInfo.name,
         title: courseInfo.title,
         timezone: courseInfo.timezone,
+        devMode: false,
     };
+    if (config.authType == 'none') {
+        course.devMode = true;
+    }
     if (PrairieRole.hasPermission(req.userRole, 'viewCoursePulls')) {
         course.gitCourseBranch = courseInfo.gitCourseBranch;
         course.remoteFetchURL = courseInfo.remoteFetchURL;
@@ -1204,14 +1216,19 @@ app.get("/coursePulls/current", function(req, res) {
 });
 
 var undefQuestionServers = function(callback) {
-    // We could get the list of defined server.js modules from
+    // Only try and undefine modules that are already defined, as listed in:
     //     requirejs.s.contexts._.defined
-    // and only delete modules that are actually defined, but it doesn't seem to be necessary.
+    // This is necessary because of incomplete questions (in particular, those with info.json but no server.js).
     async.each(_(questionDB).keys(), function(qid, cb) {
         questionFilePath(qid, "server.js", function(err, fileInfo) {
-            if (err) return cb(err);
+            if (err) {
+                logger.info("Unable to locate server.js path for QID: " + qid);
+                return cb(null); // don't error, just skip this question
+            }
             var serverFilePath = path.join(fileInfo.root, fileInfo.filePath);
-            requirejs.undef(serverFilePath);
+            if (_(requirejs.s.contexts._.defined).has(serverFilePath)) {
+                requirejs.undef(serverFilePath);
+            }
             cb(null);
         });
     }, function(err) {
@@ -1257,6 +1274,28 @@ app.post("/coursePulls", function(req, res) {
                             });
                         });
                     });
+                });
+            });
+        });
+    });
+});
+
+app.post("/reload", function(req, res) {
+    if (config.authType != "none") {
+        return sendError(res, 500, "Server not in dev mode");
+    }
+    logInfoOverride("Reloading all data");
+    loadData(function(err) {
+        if (err) return sendError(res, 500, "Error reloading data", err);
+        undefQuestionServers(function(err) {
+            if (err) return sendError(res, 500, "Error undefining question servers", err);
+            var query = {uid: req.authUID};
+            deleteObjects(req, query, tiCollect, 'tInstances', function(err) {
+                if (err) return sendError(res, 500, 'Error deleting objects', err);
+                initTestData(function(err) {
+                    if (err) return sendError(res, 500, "Error initializing tests", err);
+                    logInfoOverride("Reload complete");
+                    res.json({success: true});
                 });
             });
         });
@@ -3705,10 +3744,6 @@ async.series([
         logger.error("Error initializing PrairieLearn server, exiting...", err);
         process.exit(1);
     } else {
-        logger.transports.console.level = 'info';
-        logger.transports.memLogger.level = 'info';
-        logger.info("PrairieLearn server ready");
-        logger.transports.console.level = 'warn';
-        logger.transports.memLogger.level = 'warn';
+        logInfoOverride("PrairieLearn server ready");
     }
 });

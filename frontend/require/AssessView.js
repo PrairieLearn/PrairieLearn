@@ -60,6 +60,7 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'naturalSort', 
                     theseTInstances = new Backbone.Collection(theseTInstances.sortBy("number"));
                     theseTInstances.each(function(tInstance) {
                         var tiid = tInstance.get("tiid");
+                        var tiNumber = tInstance.get("number");
                         var title = that.store.tiidLongName(tiid);
                         var admin = testAdmin;
                         if (test.get("multipleInstance")) {
@@ -100,7 +101,7 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'naturalSort', 
                         var assess = {
                             rowSpec: highlightRow ? 'class="warning"' : '',
                             admin: admin,
-                            title: '<a href="#ti/' + tiid + '">' + title + '</a>',
+                            title: '<a href="#ti/' + tid + '/' + tiNumber + '">' + title + '</a>',
                             score: scoreHTML,
                             date: date,
                             dateTooltip: dateTooltip,

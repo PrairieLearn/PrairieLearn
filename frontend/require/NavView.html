@@ -32,6 +32,10 @@
       {{#currentDetailName}}
       <li {{{currentDetailAttributes}}}><a href="{{{currentDetailLink}}}">{{currentDetailName}}</a></li>
       {{/currentDetailName}}
+
+      {{#devMode}}
+      <button id="nav-reload" class="btn btn-success navbar-btn">Reload</button>
+      {{/devMode}}
     </ul>
     <div class="navbar-right">
       <p class="navbar-text">{{userName}} {{#viewOtherUsersPerm}}({{mode}}/{{userRole}}){{/viewOtherUsersPerm}}</p>

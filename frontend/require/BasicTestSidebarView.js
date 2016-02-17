@@ -17,7 +17,9 @@ define(["underscore", "backbone", "mustache", "BasicTestHelper", "text!BasicTest
         render: function() {
             var that = this;
             var data = {};
+            data.tid = this.tInstance.get("tid");
             data.tiid = this.tInstance.get("tiid");
+            data.tiNumber = this.tInstance.get("number");
             data.testShortName = this.store.tiidShortName(data.tiid);
 
             var score = this.tInstance.get("score");
