@@ -117,7 +117,15 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
                 trueAnswer: this.trueAnswer.toJSON(),
                 feedback: this.feedback.toJSON(),
             };
+            console.log("options", this.options);
+            console.log("about to template HTML");
             var templatedHTML = PrairieTemplate.template(this.template, templateData, this.questionDataModel, this.appModel);
+            console.log("done template HTML");
+            if (this.options.templateTwice) {
+                console.log("about to second template");
+                templatedHTML = PrairieTemplate.template(templatedHTML, {}, this.questionDataModel, this.appModel);
+                console.log("done second template");
+            }
             this.$el.html(templatedHTML);
             this.rivetsView = rivets.bind(this.$el, {
                 model: this.model,
@@ -243,6 +251,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         this.options = _.defaults(options || {}, {
             questionTemplate: "",
             answerTemplate: "",
+            templateTwice: false,
         });
     }
     _.extend(SimpleClient.prototype, Backbone.Events);
@@ -258,14 +267,14 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
     SimpleClient.prototype.renderQuestion = function(questionDivID, changeCallback, questionDataModel, appModel) {
         var that = this;
         this.listenTo(this.model, "answerChanged", changeCallback);
-        this.questionView = new QuestionView({el: questionDivID, template: this.options.questionTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback});
+        this.questionView = new QuestionView({el: questionDivID, template: this.options.questionTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback, templateTwice: this.options.templateTwice});
         this.listenTo(this.questionView, "renderFinished", function() {that.trigger("renderQuestionFinished");});
         this.questionView.render();
     };
 
     SimpleClient.prototype.renderAnswer = function(answerDivID) {
         var that = this;
-        this.answerView = new AnswerView({el: answerDivID, template: this.options.answerTemplate, model: this.model, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback});
+        this.answerView = new AnswerView({el: answerDivID, template: this.options.answerTemplate, model: this.model, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback, templateTwice: this.options.templateTwice});
         this.answerView.render();
         this.listenTo(this.answerView, "renderFinished", function() {that.trigger("renderAnswerFinished");});
     };

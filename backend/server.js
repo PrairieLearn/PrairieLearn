@@ -993,7 +993,7 @@ var getGitDescribe = function(callback) {
 
 app.get("/version", function(req, res) {
     getGitDescribe(function(err, gitDescribe) {
-        if (err) return sendError(res, 500, "Error determining version");
+        if (err) return res.json({});
         var PLVersion = {
             gitDescribe: gitDescribe,
         };
@@ -2526,11 +2526,13 @@ var getQDataByQID = function(test, tInstance) {
         });
         _(tInstance.submissionsByQid).each(function(submission) {
             var qid = submission.qid;
-            qDataByQID[qid].nAttempts++;
-            if (submission.score >= 0.5) {
-                qDataByQID[qid].points = 1;
-                qDataByQID[qid].score = 1;
-                qDataByQID[qid].everCorrect = true;
+            if (_(qDataByQID).has(qid)) {
+                qDataByQID[qid].nAttempts++;
+                if (submission.score >= 0.5) {
+                    qDataByQID[qid].points = 1;
+                    qDataByQID[qid].score = 1;
+                    qDataByQID[qid].everCorrect = true;
+                }
             }
         });
     } else if (_(test).has('qids') && _(tInstance).has('qData')) {
@@ -2544,18 +2546,20 @@ var getQDataByQID = function(test, tInstance) {
             };
         });
         _(tInstance.qData).each(function(data, qid) {
-            if (_(data).has('nAttempt')) {
-                // Basic
-                qDataByQID[qid].points = data.avgScore;
-                qDataByQID[qid].score = data.avgScore;
-                qDataByQID[qid].nAttempts = data.nAttempt;
-                qDataByQID[qid].everCorrect = (data.maxScore > 0);
-            } else if (_(data).has('value')) {
-                // Game
-                qDataByQID[qid].points = data.score;
-                qDataByQID[qid].score = data.score / test.maxQScoresByQID[qid];
-                qDataByQID[qid].nAttempts = 0;
-                qDataByQID[qid].everCorrect = (data.score > 0);
+            if (_(qDataByQID).has(qid)) {
+                if (_(data).has('nAttempt')) {
+                    // Basic
+                    qDataByQID[qid].points = data.avgScore;
+                    qDataByQID[qid].score = data.avgScore;
+                    qDataByQID[qid].nAttempts = data.nAttempt;
+                    qDataByQID[qid].everCorrect = (data.maxScore > 0);
+                } else if (_(data).has('value')) {
+                    // Game
+                    qDataByQID[qid].points = data.score;
+                    qDataByQID[qid].score = data.score / test.maxQScoresByQID[qid];
+                    qDataByQID[qid].nAttempts = 0;
+                    qDataByQID[qid].everCorrect = (data.score > 0);
+                }
             }
         });
     } else {
@@ -3346,6 +3350,15 @@ if (config.localFileserver) {
 
     app.get("/require/browser/:filename", function(req, res) {
         res.sendfile(path.join("require", "browser", req.params.filename), {root: config.frontendDir});
+    });
+
+    app.get("/require/ace/:filename", function(req, res) {
+        res.sendfile(path.join("require", "ace", req.params.filename), {root: config.frontendDir});
+    });
+
+    app.get("/require/ace/*", function(req, res) {
+        var filename = req.params[0];
+        res.sendfile(path.join("require", filename), {root: config.frontendDir});
     });
 
     app.get("/css/:filename", function(req, res) {

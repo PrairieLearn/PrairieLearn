@@ -7,7 +7,7 @@ var moment = require("moment-timezone");
 var _ = require('underscore');
 
 var requestOptions = {
-    url: 'https://prairielearn.engr.illinois.edu:/backend/tam212fa2015/heartbeat',
+    url: 'https://prairielearn.engr.illinois.edu:/backend/tam212/heartbeat',
     timeout: 10000
 };
 
