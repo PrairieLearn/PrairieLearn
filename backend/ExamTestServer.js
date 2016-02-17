@@ -38,6 +38,9 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
     };
 
     ExamTestServer.updateTInstance = function(tInstance, test, options, questionDB) {
+        _(tInstance).defaults({
+            scorePerc: 0,
+        });
         if (tInstance.qids === undefined) {
             var qids = [];
             var rand = new PrairieRandom.RandomGenerator();
@@ -99,8 +102,20 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             delete submission._private;
         }
         var complete = (nAnswers === tInstance.qids.length);
-        tInstance.score = score;
-        tInstance.finishDate = new Date().toJSON();
+        if (_(test.credit).isFinite() && test.credit > 0) {
+            tInstance.finishDate = new Date().toJSON();
+            tInstance.score = Math.min(score, test.maxScore);
+
+            // compute the score as a percentage, applying credit bonus/limits
+            newScorePerc = Math.round(tInstance.score / test.maxScore * 100);
+            if (test.credit < 100) {
+                newScorePerc = Math.min(newScorePerc, test.credit);
+            }
+            if (test.credit > 100) {
+                newScorePerc = Math.min(test.credit, Math.round(newScorePerc * test.credit / 100));
+            }
+            tInstance.scorePerc = newScorePerc;
+        }
 
         var uid = tInstance.uid;
         var sanitizedUID = uid.replace(/\./g, "_");

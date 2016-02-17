@@ -67,19 +67,20 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'naturalSort', 
                         if (test.get("multipleInstance")) {
                             admin = null;
                         }
-                        var score = Math.round(tInstance.get("score") / test.get("maxScore") * 100);
+                        var scorePerc = tInstance.get("scorePerc");
+                        var score = Math.min(100, scorePerc);
                         var remScore = 100 - score;
                         var scoreHTML;
                         if (tInstance.has("open") && tInstance.get("open")) {
                             scoreHTML = null;
                         } else if (score >= 50) {
                             scoreHTML = '<div class="progress" style="min-width: 5em">'
-                                + '<div class="progress-bar progress-bar-success" style="width: ' + score + '%">' + score + '%</div>'
+                                + '<div class="progress-bar progress-bar-success" style="width: ' + score + '%">' + scorePerc + '%</div>'
                                 + '<div class="progress-bar progress-bar-danger" style="width: ' + remScore + '%"></div>'
                                 + '</div>';
                         } else {
                             scoreHTML = '<div class="progress" style="min-width: 5em">'
-                                + '<div class="progress-bar progress-bar-success" style="width: ' + score + '%"></div>'
+                                + '<div class="progress-bar progress-bar-success" style="width: ' + scorePerc + '%"></div>'
                                 + '<div class="progress-bar progress-bar-danger" style="width: ' + remScore + '%">' + score + '%</div>'
                                 + '</div>';
                         }

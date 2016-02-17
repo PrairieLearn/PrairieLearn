@@ -31,7 +31,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "RetryExamTestH
             data.nQuestions = qids.length;
             data.maxScore = this.model.get("maxScore");
             data.score = this.model.get("score");
-            data.correctPercentage = (data.score / data.maxScore * 100).toFixed(0);
+            data.correctPercentage = this.model.get("scorePerc");
 
             var text = this.test.get("text");
             if (text) {

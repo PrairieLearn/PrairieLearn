@@ -55,6 +55,11 @@
                             "type": "string"
                         }
                     },
+                    "credit" : {
+                        "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
+                        "type": "integer",
+                        "minimum": 0
+                    },
                     "startDate" : {
                         "description": "The earliest date on which access is permitted.",
                         "type": "string"

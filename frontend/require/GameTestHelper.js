@@ -46,23 +46,23 @@ define(function() {
     GameTestHelper.renderHWScore = function(tInstance, test, options) {
         var score = tInstance.get("score");
         var maxScore = test.get("maxScore");
-        var scorePerc = score / maxScore * 100;
+        var scorePerc = tInstance.get("scorePerc");
         var hwScore = '<span>';
         hwScore += 'HW Score: ';
-        hwScore += '<strong>' + scorePerc.toFixed(1) + '%</strong>';
+        hwScore += '<strong>' + scorePerc + '%</strong>';
         hwScore += ' (' + score + '/' + maxScore + ')';
         hwScore += '</span>';
         return hwScore;
     };
 
     GameTestHelper.renderHWScoreBar = function(tInstance, test, options) {
-        var score = tInstance.get("score");
-        var maxScore = test.get("maxScore");
-        var scorePerc = score / maxScore * 100;
+        var scorePerc = tInstance.get("scorePerc");
+        var barPerc = Math.min(100, scorePerc);
+        var remPerc = 100 - barPerc;
         var html;
         html = '<div class="progress">';
-        html += '<div class="progress-bar progress-bar-success" style="width: ' + scorePerc.toFixed(3) + '%"></div>';
-        html += '<div class="progress-bar progress-bar-danger" style="width: ' + (100 - scorePerc).toFixed(3) + '%"></div>';
+        html += '<div class="progress-bar progress-bar-success" style="width: ' + barPerc + '%"></div>';
+        html += '<div class="progress-bar progress-bar-danger" style="width: ' + remPerc + '%"></div>';
         html += '</div>';
         return html;
     };
