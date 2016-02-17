@@ -27,10 +27,11 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'text!ErrorsView.html'
                 'error': 'danger',
             };
             if (_(errorList).isArray()) {
+                errorList = _(errorList).sortBy(function(error) {return -that.appModel.dateMilliTimestamp(error.timestamp);});
                 _(errorList).each(function(error) {
                     data.errorList.push({
                         color: colormap[error.level] || '',
-                        date: that.appModel.formatDateLong(error.timestamp),
+                        date: that.appModel.formatDatePrecise(error.timestamp),
                         level: error.level,
                         msg: error.msg,
                         data: JSON.stringify(error.meta),

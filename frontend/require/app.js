@@ -254,12 +254,20 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             return PrairieRole.availableRoles(role);
         },
 
+        dateMilliTimestamp: function(dateString) {
+            return Number(moment(dateString).format("x"));
+        },
+
         formatDate: function(dateString) {
             return moment.tz(dateString, this.get("timezone")).format("ddd, MMM D, h:mma");
         },
 
         formatDateLong: function(dateString) {
             return moment.tz(dateString, this.get("timezone")).format("dddd, YYYY‑MM‑DD, HH:mm, z (Z)");
+        },
+
+        formatDatePrecise: function(dateString) {
+            return moment.tz(dateString, this.get("timezone")).format("YYYY‑MM‑DD, HH:mm:ss.SSSS, z (Z)");
         },
     });
 
