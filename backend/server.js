@@ -621,7 +621,7 @@ var checkTestAccessRule = function(req, tid, accessRule) {
         } else if (key == "uids") {
             if (!_(value).contains(req.userUID))
                 avail = false;
-        } else if (key = "credit") {
+        } else if (key == "credit") {
             credit = value;
         } else if (key === "startDate") {
             period.startDate = value;

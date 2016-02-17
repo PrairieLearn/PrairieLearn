@@ -6,6 +6,7 @@
     "allowAccess": [
         {
             "mode": "Public",
+            "credit": 100,
             "startDate": "2014-07-07T23:59:59",
             "endDate": "2024-07-10T23:59:59"
         }
