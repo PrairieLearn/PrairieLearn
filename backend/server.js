@@ -458,15 +458,49 @@ var loadCourseInfo = function(callback) {
 
 var checkInfoDeprecated = function(idName, info, infoFile) {
     if (idName == "tid" && info.options && info.options.availDate) {
-        logger.warn(infoFile + ': "options.availDate" is deprecated and will be removed in a future version. Please use "allowAccess" instead.');
+        logger.warn(infoFile + ': "options.availDate" is deprecated and will be removed in a future version. Instead, please use "allowAccess".');
     }
     if (idName == "tid" && info.type == "PracExam") {
         logger.warn(infoFile + ': "PracExam" type is deprecated and will be removed in a future version. Instead, please use "Exam" type with "multipleInstance": true.');
         info.type = "Exam";
         info.multipleInstance = true;
     }
-    if (idName == "tid" && info.type == "RetryExam") {
-        
+    // look for exams without credit assigned and patch it in to all access rules
+    if (idName == "tid" && (info.type == "Exam" || info.type == "RetryExam")) {
+        if (_(info).has('allowAccess') && !_(info.allowAccess).any(function(a) {return _(a).has('credit');})) {
+            logger.warn(infoFile + ': No credit assigned in allowAccess rules, patching in credit = 100 to all rules. Please set "credit" in "allowAccess" rules explicitly.')
+            _(info.allowAccess).each(function(a) {
+                a.credit = 100;
+            });
+        }
+    }
+    // look for homeworks without a due date set and add an access rule with credit if possible
+    if (idName == "tid" && _(info).has('options') && _(info.options).has('dueDate')) {
+        logger.warn(infoFile + ': "options.dueDate" is deprecated and will be removed in a future version. Instead, please set "credit" in the "allowAccess" rules.');
+        if (!_(info).has('allowAccess')) info.allowAccess = [];
+        var hasStudentAccess = false, firstStartDate = null;
+        _(info.allowAccess).each(function(a) {
+            if ((!_(a).has('mode') || a.mode == 'Public') && (!_(a).has('role') || a.role == 'Student')) {
+                hasStudentAccess = true;
+                if (_(a).has('startDate')) {
+                    if (firstStartDate == null || a.startDate < firstStartDate) {
+                        firstStartDate = a.startDate;
+                    }
+                }
+            }
+        });
+        if (hasStudentAccess) {
+            var accessRule = {
+                mode: 'Public',
+                credit: 100,
+            };
+            if (firstStartDate) {
+                accessRule.startDate = firstStartDate;
+            }
+            accessRule.endDate = info.options.dueDate;
+            logger.warn(infoFile + ': Adding accessRule: ' + JSON.stringify(accessRule));
+            info.allowAccess.push(accessRule);
+        }
     }
 };
 
