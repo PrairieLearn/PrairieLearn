@@ -40,7 +40,6 @@ Type        | Randomized | Options format                                       
 `Adaptive`  | No         | [`Adaptive` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/testOptionsAdaptive.json)   | An adaptively-scored test that gives and subtracts points based on a mastery estimate for the student.
 `Game`      | No         | [`Game` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/testOptionsGame.json)           | A gamified test that rewards repeated correct answers to questions.
 `Exam`      | Yes        | [`Exam` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/testOptionsExam.json)           | A simple exam, where the score is the fraction of correct question answers.
-`PracExam`  | Yes        | [`PracExam` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/testOptionsPracExam.json)   | Like `Exam`, but students can generate their own repeated random test instances for practice.
 `RetryExam` | Yes        | [`RetryExam` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/testOptionsRetryExam.json) | An exam where students can grade their answers at any time, and retry question for reduced points.
 
 ## Randomization algorithm

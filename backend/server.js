@@ -460,11 +460,6 @@ var checkInfoDeprecated = function(idName, info, infoFile) {
     if (idName == "tid" && info.options && info.options.availDate) {
         logger.warn(infoFile + ': "options.availDate" is deprecated and will be removed in a future version. Instead, please use "allowAccess".');
     }
-    if (idName == "tid" && info.type == "PracExam") {
-        logger.warn(infoFile + ': "PracExam" type is deprecated and will be removed in a future version. Instead, please use "Exam" type with "multipleInstance": true.');
-        info.type = "Exam";
-        info.multipleInstance = true;
-    }
     // look for exams without credit assigned and patch it in to all access rules
     if (idName == "tid" && (info.type == "Exam" || info.type == "RetryExam")) {
         if (_(info).has('allowAccess') && !_(info.allowAccess).any(function(a) {return _(a).has('credit');})) {
