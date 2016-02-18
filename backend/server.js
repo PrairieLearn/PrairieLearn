@@ -2667,16 +2667,6 @@ var getQDataByQID = function(test, tInstance) {
                 }
             }
         });
-    } else {
-        // Adaptive
-        _(test.qids).each(function(qid) {
-            qDataByQID[qid] = {
-                points: 0,
-                score: 0,
-                nAttempts: 0,
-                everCorrect: false,
-            };
-        });
     }
     return qDataByQID;
 };
