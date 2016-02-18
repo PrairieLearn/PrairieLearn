@@ -83,12 +83,10 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
 
     var QuestionCollection = Backbone.Collection.extend({
         model: QuestionModel,
-        comparator: function(question) {return question.get("number");}
     });
 
     var TestCollection = Backbone.Collection.extend({
         model: TestModel.TestModel,
-        comparator: function(test) {return -(new Date(test.get("dueDate") || test.get("availDate"))).getTime();}, // sort by negative time, so later dates first
     });
 
     var UserModel = Backbone.Model.extend({

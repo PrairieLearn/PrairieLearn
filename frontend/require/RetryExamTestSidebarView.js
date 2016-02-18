@@ -37,7 +37,7 @@ define(["underscore", "backbone", "mustache", "RetryExamTestHelper", "text!Retry
             data.open = this.tInstance.get("open");
             data.maxScore = this.tInstance.get("maxScore");
             data.score = this.tInstance.get("score");
-            data.correctPercentage = (data.score / data.maxScore * 100).toFixed(0);
+            data.correctPercentage = this.tInstance.get("scorePerc");
             var submissionsByQid = this.tInstance.get("submissionsByQid");
             var questionsByQID = this.tInstance.get("questionsByQID");
             var submission = submissionsByQid[qid];

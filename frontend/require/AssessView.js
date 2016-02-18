@@ -62,23 +62,25 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'naturalSort', 
                         var tiid = tInstance.get("tiid");
                         var tiNumber = tInstance.get("number");
                         var title = that.store.tiidLongName(tiid);
+                        var shortTitle = that.store.tiidShortName(tiid);
                         var admin = testAdmin;
                         if (test.get("multipleInstance")) {
                             admin = null;
                         }
-                        var score = Math.round(tInstance.get("score") / test.get("maxScore") * 100);
+                        var scorePerc = tInstance.get("scorePerc");
+                        var score = Math.min(100, scorePerc);
                         var remScore = 100 - score;
                         var scoreHTML;
                         if (tInstance.has("open") && tInstance.get("open")) {
                             scoreHTML = null;
                         } else if (score >= 50) {
                             scoreHTML = '<div class="progress" style="min-width: 5em">'
-                                + '<div class="progress-bar progress-bar-success" style="width: ' + score + '%">' + score + '%</div>'
+                                + '<div class="progress-bar progress-bar-success" style="width: ' + score + '%">' + scorePerc + '%</div>'
                                 + '<div class="progress-bar progress-bar-danger" style="width: ' + remScore + '%"></div>'
                                 + '</div>';
                         } else {
                             scoreHTML = '<div class="progress" style="min-width: 5em">'
-                                + '<div class="progress-bar progress-bar-success" style="width: ' + score + '%"></div>'
+                                + '<div class="progress-bar progress-bar-success" style="width: ' + scorePerc + '%"></div>'
                                 + '<div class="progress-bar progress-bar-danger" style="width: ' + remScore + '%">' + score + '%</div>'
                                 + '</div>';
                         }
@@ -102,6 +104,7 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'naturalSort', 
                             rowSpec: highlightRow ? 'class="warning"' : '',
                             admin: admin,
                             title: '<a href="#ti/' + tid + '/' + tiNumber + '">' + title + '</a>',
+                            shortTitle: shortTitle,
                             score: scoreHTML,
                             date: date,
                             dateTooltip: dateTooltip,
@@ -114,7 +117,7 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'naturalSort', 
 
             var html = Mustache.render(AssessViewTemplate, data);
             this.$el.html(html);
-            $('[data-toggle=tooltip]').tooltip();
+            this.$('[data-toggle=popover]').popover();
         },
 
         generateVersion: function(event) {

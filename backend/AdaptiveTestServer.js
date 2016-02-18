@@ -83,7 +83,6 @@ define(["underscore", "PrairieModel", "numeric", "moment-timezone"], function(_,
             test.qDists[qid] = _.extend(new PrairieModel.QuestionDist(qid), initDist);
         });
         test.qids = _(options.questions).pluck("qid");
-        test.dueDate = moment.tz(options.dueDate, options.timezone).format();
         test.availDate = moment.tz(options.availDate, options.timezone).format();
         var userDist = new PrairieModel.UserDist("");
         test.initAvgProb = avgProb(test.qids, test.qDists, userDist)
@@ -106,6 +105,7 @@ define(["underscore", "PrairieModel", "numeric", "moment-timezone"], function(_,
         }
         _(tInstance).defaults({
             score: 0,
+            scorePerc: 0,
         });
         tInstance.questions = [];
         _(test.qids).each(function(qid) {
@@ -127,11 +127,23 @@ define(["underscore", "PrairieModel", "numeric", "moment-timezone"], function(_,
         if (tInstance.dist.uid !== submission.uid)
             throw Error("Mismatched UID");
 
-        var correct = (submission.score >= 0.5);
-        updateDists(correct, tInstance.dist, test.qDists[qid]);
-        tInstance.modelData = computeModelData(test.qids, test.qDists, tInstance.dist, test.initAvgProb);
-        if (Date.now() <= Date.parse(test.dueDate))
+        if (_(test.credit).isFinite() && test.credit > 0) {
+            var correct = (submission.score >= 0.5);
+            updateDists(correct, tInstance.dist, test.qDists[qid]);
+            tInstance.modelData = computeModelData(test.qids, test.qDists, tInstance.dist, test.initAvgProb);
+
             tInstance.score = Math.max(0, Math.min(1, Math.max(tInstance.score, options.scoreFactor * computeMastery(test.qids, test.qDists, tInstance.dist, test.initAvgProb))));
+            
+            // compute the score as a percentage, applying credit bonus/limits
+            newScorePerc = Math.floor(tInstance.score * 100);
+            if (test.credit < 100) {
+                newScorePerc = Math.min(newScorePerc, test.credit);
+            }
+            if (test.credit > 100 && tInstance.score == 1) {
+                newScorePerc = test.credit;
+            }
+            tInstance.scorePerc = Math.max(tInstance.scorePerc, newScorePerc);
+        }
     };
 
     return AdaptiveTestServer;

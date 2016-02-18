@@ -458,12 +458,49 @@ var loadCourseInfo = function(callback) {
 
 var checkInfoDeprecated = function(idName, info, infoFile) {
     if (idName == "tid" && info.options && info.options.availDate) {
-        logger.warn(infoFile + ': "options.availDate" is deprecated and will be removed in a future version. Please use "allowAccess" instead.');
+        logger.warn(infoFile + ': "options.availDate" is deprecated and will be removed in a future version. Instead, please use "allowAccess".');
     }
     if (idName == "tid" && info.type == "PracExam") {
         logger.warn(infoFile + ': "PracExam" type is deprecated and will be removed in a future version. Instead, please use "Exam" type with "multipleInstance": true.');
         info.type = "Exam";
         info.multipleInstance = true;
+    }
+    // look for exams without credit assigned and patch it in to all access rules
+    if (idName == "tid" && (info.type == "Exam" || info.type == "RetryExam")) {
+        if (_(info).has('allowAccess') && !_(info.allowAccess).any(function(a) {return _(a).has('credit');})) {
+            logger.warn(infoFile + ': No credit assigned in allowAccess rules, patching in credit = 100 to all rules. Please set "credit" in "allowAccess" rules explicitly.')
+            _(info.allowAccess).each(function(a) {
+                a.credit = 100;
+            });
+        }
+    }
+    // look for homeworks without a due date set and add an access rule with credit if possible
+    if (idName == "tid" && _(info).has('options') && _(info.options).has('dueDate')) {
+        logger.warn(infoFile + ': "options.dueDate" is deprecated and will be removed in a future version. Instead, please set "credit" in the "allowAccess" rules.');
+        if (!_(info).has('allowAccess')) info.allowAccess = [];
+        var hasStudentAccess = false, firstStartDate = null;
+        _(info.allowAccess).each(function(a) {
+            if ((!_(a).has('mode') || a.mode == 'Public') && (!_(a).has('role') || a.role == 'Student')) {
+                hasStudentAccess = true;
+                if (_(a).has('startDate')) {
+                    if (firstStartDate == null || a.startDate < firstStartDate) {
+                        firstStartDate = a.startDate;
+                    }
+                }
+            }
+        });
+        if (hasStudentAccess) {
+            var accessRule = {
+                mode: 'Public',
+                credit: 100,
+            };
+            if (firstStartDate) {
+                accessRule.startDate = firstStartDate;
+            }
+            accessRule.endDate = info.options.dueDate;
+            logger.warn(infoFile + ': Adding accessRule: ' + JSON.stringify(accessRule));
+            info.allowAccess.push(accessRule);
+        }
     }
 };
 
@@ -606,6 +643,8 @@ var isDateAfterNow = function(dateString) {
 var checkTestAccessRule = function(req, tid, accessRule) {
     // logical-AND the accessRule tests together (they all need to be satisfied)
     var avail = true;
+    var credit = 0;
+    var period = {startDate: null, endDate: null};
     _(accessRule).each(function(value, key) {
         if (key === "mode") {
             if (req.mode != value)
@@ -616,21 +655,28 @@ var checkTestAccessRule = function(req, tid, accessRule) {
         } else if (key == "uids") {
             if (!_(value).contains(req.userUID))
                 avail = false;
+        } else if (key == "credit") {
+            credit = value;
         } else if (key === "startDate") {
+            period.startDate = value;
             if (!isDateBeforeNow(value))
                 avail = false;
         } else if (key === "endDate") {
+            period.endDate = value;
             if (!isDateAfterNow(value))
                 avail = false;
         } else {
             avail = false;
         }
     });
-    return avail;
+    period.credit = credit;
+    return {avail: avail, credit: credit, period: period};
 };
 
 var checkTestAvail = function(req, tid) {
     var avail = false;
+    var credit = 0;
+    var periods = [];
     if (PrairieRole.hasPermission(req.userRole, 'bypassAccess')) {
         avail = true;
     }
@@ -639,34 +685,45 @@ var checkTestAvail = function(req, tid) {
         if (info.allowAccess) {
             // logical-OR the accessRules together (only need one of them to be satisfied)
             _(info.allowAccess).each(function(accessRule) {
-                if (checkTestAccessRule(req, tid, accessRule)) {
-                    avail = true;
-                }
+                result = checkTestAccessRule(req, tid, accessRule);
+                avail = avail || result.avail;
+                credit = Math.max(credit, result.credit);
+                periods.push(result.period);
             });
         }
     }
-    return avail;
+    return {avail: avail, credit: credit, periods: periods};
 };
 
 var filterTestsByAvail = function(req, tests, callback) {
     async.filter(tests, function(test, objCallback) {
-        objCallback(checkTestAvail(req, test.tid));
+        var result = checkTestAvail(req, test.tid);
+        if (result.avail) {
+            test.credit = result.credit;
+            test.periods = result.periods;
+        }
+        objCallback(result.avail);
     }, callback);
 };
 
-var ensureTestAvailByTID = function(req, tid, callback) {
-    if (checkTestAvail(req, tid)) {
-        callback(null, tid);
+var ensureTestAvail = function(req, test, callback) {
+    var result = checkTestAvail(req, test.tid);
+    if (result.avail) {
+        test.credit = result.credit;
+        test.periods = result.periods;
+        callback(null, test);
     } else {
         callback("Error accessing tid: " + tid);
     }
 };
 
-var ensureTestAvailByTIDBAD = function(req, res, tid, callback) {
-    ensureTestAvailByTID(req, tid, function(err, tid) {
-        if (err) return sendError(res, 500, "Error accessing tid: " + tid, err);
-        callback(tid);
-    });
+var ensureTestAvailByTID = function(req, tid, callback) {
+    var result = checkTestAvail(req, tid);
+    if (result.avail) {
+        callback(null, tid);
+    } else {
+        callback("Error accessing tid: " + tid);
+    }
 };
 
 var uidToRole = function(uid) {
@@ -1898,21 +1955,24 @@ var testProcessSubmission = function(req, res, tiid, submission, callback) {
         ensureObjAuthBAD(req, res, tInstance, "read", function(tInstance) {
             var tid = tInstance.tid;
             readTestBAD(res, tid, function(test) {
-                loadTestServer(tid, function(server) {
-                    var uid = submission.uid;
-                    try {
-                        server.updateWithSubmission(tInstance, test, submission, testDB[tid].options);
-                        if (!test.options.autoCreateQuestions) {
-                            if (tInstance.qiidsByQid) {
-                                delete tInstance.qiidsByQid[submission.qid];
+                ensureTestAvail(req, test, function(err, test) {
+                    if (err) return sendError(res, 400, "Error accessing tid: " + tid, err);
+                    loadTestServer(tid, function(server) {
+                        var uid = submission.uid;
+                        try {
+                            server.updateWithSubmission(tInstance, test, submission, testDB[tid].options);
+                            if (!test.options.autoCreateQuestions) {
+                                if (tInstance.qiidsByQid) {
+                                    delete tInstance.qiidsByQid[submission.qid];
+                                }
                             }
+                        } catch (e) {
+                            return sendError(res, 500, "Error updating test: " + String(e), {err: e, stack: e.stack});
                         }
-                    } catch (e) {
-                        return sendError(res, 500, "Error updating test: " + String(e), {err: e, stack: e.stack});
-                    }
-                    writeTInstance(req, res, tInstance, function() {
-                        writeTest(req, res, test, function() {
-                            return callback(submission);
+                        writeTInstance(req, res, tInstance, function() {
+                            writeTest(req, res, test, function() {
+                                return callback(submission);
+                            });
                         });
                     });
                 });
@@ -2034,52 +2094,52 @@ app.get("/tests", function(req, res) {
 });
 
 app.get("/tests/:tid", function(req, res) {
-    if (!tCollect) {
-        return sendError(res, 500, "Do not have access to the tCollect database collection");
-    }
+    if (!tCollect) return sendError(res, 500, "Do not have access to the tCollect database collection");
     tCollect.findOne({tid: req.params.tid}, function(err, obj) {
-        if (err) {
-            return sendError(res, 500, "Error accessing tCollect database for tid " + req.params.tid, err);
-        }
-        if (!obj) {
-            return sendError(res, 404, "No test with tid " + req.params.tid);
-        }
-        ensureTestAvailByTIDBAD(req, res, obj.tid, function() {
+        if (err) return sendError(res, 500, "Error accessing tCollect database for tid " + req.params.tid, err);
+        if (!obj) return sendError(res, 404, "No test with tid " + req.params.tid);
+        ensureTestAvail(req, obj, function(err) {
+            if (err) return sendError(res, 500, "Error accessing test with tid: " + req.params.tid, err);
             res.json(stripPrivateFields(obj));
         });
     });
 });
 
 app.get("/tests/:tid/client.js", function(req, res) {
-    ensureTestAvailByTIDBAD(req, res, req.params.tid, function() {
+    ensureTestAvailByTID(req, res, req.params.tid, function(err) {
+        if (err) return sendError(res, 500, "Error accessing test with tid: " + req.params.tid, err);
         var filePath = path.join(req.params.tid, "client.js");
         res.sendfile(filePath, {root: config.testsDir});
     });
 });
 
 app.get("/tests/:tid/common.js", function(req, res) {
-    ensureTestAvailByTIDBAD(req, res, req.params.tid, function() {
+    ensureTestAvailByTID(req, res, req.params.tid, function(err) {
+        if (err) return sendError(res, 500, "Error accessing test with tid: " + req.params.tid, err);
         var filePath = path.join(req.params.tid, "common.js");
         res.sendfile(filePath, {root: config.testsDir});
     });
 });
 
 app.get("/tests/:tid/test.html", function(req, res) {
-    ensureTestAvailByTIDBAD(req, res, req.params.tid, function() {
+    ensureTestAvailByTID(req, res, req.params.tid, function(err) {
+        if (err) return sendError(res, 500, "Error accessing test with tid: " + req.params.tid, err);
         var filePath = path.join(req.params.tid, "test.html");
         res.sendfile(filePath, {root: config.testsDir});
     });
 });
 
 app.get("/tests/:tid/testOverview.html", function(req, res) {
-    ensureTestAvailByTIDBAD(req, res, req.params.tid, function() {
+    ensureTestAvailByTID(req, res, req.params.tid, function(err) {
+        if (err) return sendError(res, 500, "Error accessing test with tid: " + req.params.tid, err);
         var filePath = path.join(req.params.tid, "testOverview.html");
         res.sendfile(filePath, {root: config.testsDir});
     });
 });
 
 app.get("/tests/:tid/testSidebar.html", function(req, res) {
-    ensureTestAvailByTIDBAD(req, res, req.params.tid, function() {
+    ensureTestAvailByTID(req, res, req.params.tid, function(err) {
+        if (err) return sendError(res, 500, "Error accessing test with tid: " + req.params.tid, err);
         var filePath = path.join(req.params.tid, "testSidebar.html");
         res.sendfile(filePath, {root: config.testsDir});
     });
@@ -2207,7 +2267,8 @@ var autoCreateTInstances = function(req, res, tInstances, autoCreateCallback) {
     var tiDB = _(tInstances).groupBy("tid");
     async.each(_(testDB).values(), function(test, callback) {
         var tid = test.tid;
-        if (checkTestAvail(req, tid) && !test.multipleInstance && tiDB[tid] === undefined && req.query.uid !== undefined) {
+        testStatus = checkTestAvail(req, tid);
+        if (testStatus.avail && !test.multipleInstance && tiDB[tid] === undefined && req.query.uid !== undefined) {
             readTestBAD(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
                     newIDNoError(req, res, "tiid", function(tiid) {
@@ -2320,7 +2381,7 @@ app.post("/tInstances", function(req, res) {
     }
     var testInfo = testDB[tid];
     if (testInfo === undefined) {
-        return sendError(res, 400, "Invalid tid", {tid: tid});
+        return sendError(res, 400, "Invalid tid: " + tid, {tid: tid});
     }
     if (!testInfo.multipleInstance) {
         return sendError(res, 400, "Test can only be autoCreated", {tid: tid});
@@ -2340,7 +2401,8 @@ app.post("/tInstances", function(req, res) {
             } else {
                 // end of collection
 
-                ensureTestAvailByTIDBAD(req, res, tid, function() {
+                ensureTestAvailByTID(req, tid, function(err) {
+                    if (err) return sendError(res, 400, "Invalid tid: " + tid, {tid: tid});
                     readTestBAD(res, tid, function(test) {
                         loadTestServer(tid, function(server) {
                             newIDNoError(req, res, "tiid", function(tiid) {

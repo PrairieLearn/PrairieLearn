@@ -11,7 +11,6 @@ define(["underscore", "moment-timezone"], function(_, moment) {
 
     GameTestServer.updateTest = function(test, options) {
         test.qids = _(options.questions).pluck("qid");
-        test.dueDate = moment.tz(options.dueDate, options.timezone).format();
         test.availDate = moment.tz(options.availDate, options.timezone).format();
         test.qParams = _(options.questions).indexBy('qid');
         test.maxScore = options.maxScore;
@@ -25,6 +24,7 @@ define(["underscore", "moment-timezone"], function(_, moment) {
     GameTestServer.updateTInstance = function(tInstance, test, options, questionDB) {
         _(tInstance).defaults({
             score: 0,
+            scorePerc: 0,
             qData: {},
         });
         _(options.questions).forEach(function(question) {
@@ -50,7 +50,7 @@ define(["underscore", "moment-timezone"], function(_, moment) {
         if (!_(test.qids).contains(qid))
             throw Error("Invalid QID");
 
-        if (Date.now() <= Date.parse(test.dueDate)) {
+        if (_(test.credit).isFinite() && test.credit > 0) {
             var correct = (submission.score >= 0.5);
             var qData = tInstance.qData[qid];
             if (correct) {
@@ -60,8 +60,22 @@ define(["underscore", "moment-timezone"], function(_, moment) {
             } else {
                 qData.value = test.qParams[qid].initValue;
             }
-            tInstance.score = _.chain(tInstance.qData).pick(test.qids).pluck('score').reduce(function(a, b) {return a + b;}, 0).value();
-            tInstance.score = Math.min(tInstance.score, options.maxScore);
+
+            // compute the score in points, maxing out at maxScore
+            var maxScore = options.maxScore;
+            newScore = _.chain(tInstance.qData).pick(test.qids).pluck('score').reduce(function(a, b) {return a + b;}, 0).value();
+            newScore = Math.max(newScore, maxScore);
+            tInstance.score = newScore;
+
+            // compute the score as a percentage, applying credit bonus/limits
+            newScorePerc = Math.floor(newScore / maxScore * 100);
+            if (test.credit < 100) {
+                newScorePerc = Math.min(newScorePerc, test.credit);
+            }
+            if (test.credit > 100 && newScore == maxScore) {
+                newScorePerc = test.credit;
+            }
+            tInstance.scorePerc = Math.max(tInstance.scorePerc, newScorePerc);
         }
     };
 
