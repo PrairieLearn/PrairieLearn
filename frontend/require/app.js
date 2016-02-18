@@ -74,8 +74,8 @@ requirejs.config({
     },
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'moment-timezone', 'PrairieRole', 'NavView', 'HomeView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestDetailView', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'SyncModel', 'SyncView', 'ErrorsView', 'spinController', 'jquery-ui', 'jquery.jsplumb', 'ace/ace'],
-function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   moment,            PrairieRole,   NavView,   HomeView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestDetailView,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   SyncModel,   SyncView,   ErrorsView,   spinController, jqueryUi, jsPlumb, ace) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'moment-timezone', 'PrairieRole', 'NavView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestDetailView', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'UserView', 'SyncModel', 'SyncView', 'ErrorsView', 'spinController', 'jquery-ui', 'jquery.jsplumb', 'ace/ace'],
+function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   moment,            PrairieRole,   NavView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestDetailView,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   UserView,   SyncModel,   SyncView,   ErrorsView,   spinController, jqueryUi, jsPlumb, ace) {
 
     var QuestionModel = Backbone.Model.extend({
         idAttribute: "qid"
@@ -121,7 +121,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         initialize: function() {
             defaultConfig = {
                 mode: "Default",
-                page: "home",
+                page: "assess",
                 tid: null,
                 tiid: null,
                 pageOptions: {},
@@ -294,9 +294,6 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             var spinner = spinController.startSpinner(target);
             var view;
             switch (this.model.get("page")) {
-            case "home":
-                view = new HomeView.HomeView({model: this.model});
-                break;
             case "stats":
                 var statsModel = new StatsModel.StatsModel({}, {appModel: this.model});
                 view = new StatsView.StatsView({model: statsModel, store: this.store});
@@ -382,10 +379,6 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 this.router.navigate("q/" + tiid + "/" + chosenQuestionNumber, true);
                 return;
 
-            case "about":
-                view = new AboutView.AboutView();
-                break;
-
             case "user":
                 view = new UserView.UserView({model: this.model, store: this.store});
                 break;
@@ -467,11 +460,10 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             "cq/:tiid/:qInfo(/not/:skipQNumbers)": "goChooseTInstanceQuestion",
             "ti/:tid(/:tiNumber)": "goTestInstance",
             "t/:tid": "goTestDetail",
-            "about": "goAbout",
             "user": "goUser",
             "sync": "goSync",
             "errors": "goErrors",
-            "*actions": "goHome"
+            "*actions": "goAssess"
         },
 
         initialize: function(options) {
@@ -499,13 +491,6 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                     }
                 }
             }
-        },
-
-        goHome: function(actions) {
-            this.model.set({
-                page: "assess",
-                pageOptions: {},
-            });
         },
 
         goStats: function() {
@@ -601,13 +586,6 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 tid: tid,
             });
             this.checkCurrentTest();
-        },
-
-        goAbout: function() {
-            this.model.set({
-                page: "about",
-                pageOptions: {},
-            });
         },
 
         goUser: function() {

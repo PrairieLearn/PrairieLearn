@@ -7,7 +7,7 @@
     "properties": {
         "type": {
             "description": "Type of the test.",
-            "enum": ["Adaptive", "Basic", "Exam", "Game", "PracExam", "RetryExam"],
+            "enum": ["Basic", "Exam", "Game", "RetryExam"],
             "required": true
         },
         "title": {

@@ -1,5 +1,5 @@
 
-define(["BasicTestClient", "BasicTestDetailView", "BasicTestInstanceView", "BasicTestSidebarView", "AdaptiveTestClient", "AdaptiveTestDetailView", "AdaptiveTestInstanceView", "AdaptiveTestSidebarView", "ExamTestClient", "ExamTestDetailView", "ExamTestInstanceView", "ExamTestSidebarView", "GameTestClient", "GameTestDetailView", "GameTestInstanceView", "GameTestSidebarView", "RetryExamTestClient", "RetryExamTestDetailView", "RetryExamTestInstanceView", "RetryExamTestSidebarView"], function(BasicTestClient, BasicTestDetailView, BasicTestInstanceView, BasicTestSidebarView, AdaptiveTestClient, AdaptiveTestDetailView, AdaptiveTestInstanceView, AdaptiveTestSidebarView, ExamTestClient, ExamTestDetailView, ExamTestInstanceView, ExamTestSidebarView, GameTestClient, GameTestDetailView, GameTestInstanceView, GameTestSidebarView, RetryExamTestClient, RetryExamTestDetailView, RetryExamTestInstanceView, RetryExamTestSidebarView) {
+define(["BasicTestClient", "BasicTestDetailView", "BasicTestInstanceView", "BasicTestSidebarView", "ExamTestClient", "ExamTestDetailView", "ExamTestInstanceView", "ExamTestSidebarView", "GameTestClient", "GameTestDetailView", "GameTestInstanceView", "GameTestSidebarView", "RetryExamTestClient", "RetryExamTestDetailView", "RetryExamTestInstanceView", "RetryExamTestSidebarView"], function(BasicTestClient, BasicTestDetailView, BasicTestInstanceView, BasicTestSidebarView, ExamTestClient, ExamTestDetailView, ExamTestInstanceView, ExamTestSidebarView, GameTestClient, GameTestDetailView, GameTestInstanceView, GameTestSidebarView, RetryExamTestClient, RetryExamTestDetailView, RetryExamTestInstanceView, RetryExamTestSidebarView) {
 
     var objectMap = {
         "Basic": {
@@ -7,12 +7,6 @@ define(["BasicTestClient", "BasicTestDetailView", "BasicTestInstanceView", "Basi
             "tDetailView": BasicTestDetailView,
             "tInstanceView": BasicTestInstanceView,
             "sidebarView": BasicTestSidebarView,
-        },
-        "Adaptive": {
-            "client": AdaptiveTestClient,
-            "tDetailView": AdaptiveTestDetailView,
-            "tInstanceView": AdaptiveTestInstanceView,
-            "sidebarView": AdaptiveTestSidebarView,
         },
         "Exam": {
             "client": ExamTestClient,
