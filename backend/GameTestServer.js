@@ -64,7 +64,7 @@ define(["underscore", "moment-timezone"], function(_, moment) {
             // compute the score in points, maxing out at maxScore
             var maxScore = options.maxScore;
             newScore = _.chain(tInstance.qData).pick(test.qids).pluck('score').reduce(function(a, b) {return a + b;}, 0).value();
-            newScore = Math.max(newScore, maxScore);
+            newScore = Math.min(newScore, maxScore);
             tInstance.score = newScore;
 
             // compute the score as a percentage, applying credit bonus/limits
