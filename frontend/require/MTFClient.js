@@ -25,9 +25,9 @@ define(["underscore", "SimpleClient"], function(_, SimpleClient) {
             '</div>' +
           '<% } %>';
 
-        this.options.answerTemplate = '<p>shuffled Answers: <% if (trueAnswer.shuffledAnswers.length == 0) { %>None.<% } %></p>'
-            + '<% for (var i = 0; i < trueAnswer.shuffledAnswers.length; i++) { %>'
-            + '<p><%= trueAnswer.shuffledAnswers[i].toString().charAt(0).toUpperCase() + trueAnswer.shuffledAnswers[i].toString().slice(1) %></p>'
+        this.options.answerTemplate = '<p>Correct Answers: <% if (trueAnswer.correctAnswers.length == 0) { %>None.<% } %></p>'
+            + '<% for (var i = 0; i < trueAnswer.correctAnswers.length; i++) { %>'
+            + '<p><%= trueAnswer.correctAnswers[i].toString().charAt(0).toUpperCase() + trueAnswer.correctAnswers[i].toString().slice(1) %></p>'
             + '<% } %>';
     }
 
