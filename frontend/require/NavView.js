@@ -42,10 +42,12 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
                     }
                     if (tiid) {
                         var tInstance = this.tInstances.get(tiid);
-                        var tiNumber = tInstance.get("number");
                         if (tInstance) {
-                            data.currentAssessmentName = this.store.tiidShortName(tiid);
-                            data.currentAssessmentLink = "#ti/" + tid + "/" + tiNumber;
+                            var tiNumber = tInstance.get("number");
+                            if (tInstance) {
+                                data.currentAssessmentName = this.store.tiidShortName(tiid);
+                                data.currentAssessmentLink = "#ti/" + tid + "/" + tiNumber;
+                            }
                         }
                     }
                 }
