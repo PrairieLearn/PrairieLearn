@@ -74,8 +74,8 @@ requirejs.config({
     },
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'moment-timezone', 'PrairieRole', 'NavView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestDetailView', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'AboutView', 'UserView', 'SyncModel', 'SyncView', 'ErrorsView', 'spinController', 'jquery-ui', 'jquery.jsplumb', 'ace/ace'],
-function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   moment,            PrairieRole,   NavView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestDetailView,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   AboutView,   UserView,   SyncModel,   SyncView,   ErrorsView,   spinController, jqueryUi, jsPlumb, ace) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'moment-timezone', 'PrairieRole', 'NavView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestDetailView', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'UserView', 'SyncModel', 'SyncView', 'ErrorsView', 'spinController', 'jquery-ui', 'jquery.jsplumb', 'ace/ace'],
+function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   moment,            PrairieRole,   NavView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestDetailView,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   UserView,   SyncModel,   SyncView,   ErrorsView,   spinController, jqueryUi, jsPlumb, ace) {
 
     var QuestionModel = Backbone.Model.extend({
         idAttribute: "qid"
@@ -379,10 +379,6 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 this.router.navigate("q/" + tiid + "/" + chosenQuestionNumber, true);
                 return;
 
-            case "about":
-                view = new AboutView.AboutView();
-                break;
-
             case "user":
                 view = new UserView.UserView({model: this.model, store: this.store});
                 break;
@@ -464,7 +460,6 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             "cq/:tiid/:qInfo(/not/:skipQNumbers)": "goChooseTInstanceQuestion",
             "ti/:tid(/:tiNumber)": "goTestInstance",
             "t/:tid": "goTestDetail",
-            "about": "goAbout",
             "user": "goUser",
             "sync": "goSync",
             "errors": "goErrors",
@@ -591,13 +586,6 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 tid: tid,
             });
             this.checkCurrentTest();
-        },
-
-        goAbout: function() {
-            this.model.set({
-                page: "about",
-                pageOptions: {},
-            });
         },
 
         goUser: function() {
