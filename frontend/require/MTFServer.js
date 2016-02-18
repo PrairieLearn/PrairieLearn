@@ -23,28 +23,21 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
         var numberTrue = options.trueStatements.length;
         var numberFalse = options.falseStatements.length;
 
-        // TODO(tnip): This is kinda weird. We should be checking for
-        // definedness on the full set. If empty, throw an error.
-        //
-        // Here, we want a list of all the statements so we can list them all.
         var allStatements = [];
         allStatements = allStatements.concat(options.trueStatements);
         allStatements = allStatements.concat(options.falseStatements);
 
+        // For every index we have, if it's less than the length of true list,
+        // we deem it a true statement. Else, it's false.
+        var trueAnswer = [];
+        for(var i = 0; i < allStatements.length; i++) {
+          trueAnswer.push(i < options.trueStatements.length);
+        }
+
+        var perm = rand.shuffle(allStatements, trueAnswer);
         allStatements = _(allStatements).map(function(value, index) {
               return {key: 'q' + index.toString(), statement: value};
         });
-        var perm = rand.shuffle(allStatements);
-
-        var trueAnswer = [];
-        var shuffledTrueAnswer = [];
-
-        // For every index we have, if it's less than the length of true list,
-        // we deem it a true statement. Else, it's false.
-        for(var i = 0; i < perm.length; i++) {
-          trueAnswer.push(i < options.trueStatements.length);
-          shuffledTrueAnswer.push(perm[i] < options.trueStatements.length);
-        }
 
         var params = {
             statements: allStatements,
@@ -53,7 +46,7 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
 
         var questionData = {
             params: params,
-            trueAnswer: { 'correctAnswers' : trueAnswer, 'shuffledAnswers': shuffledTrueAnswer }
+            trueAnswer: { 'correctAnswers' : trueAnswer }
         };
 
         return questionData;
@@ -68,7 +61,6 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
         //  trueAnswer[i]: T, submittedAnswer[qi-true]: T -> Correct
         //  trueAnswer[i]: F, submittedAnswer[qi-false]: T -> Correct
         //  Else: Incorrect
-
         for (var i = 0; i < trueAnswer.length; i++) {
           var questionId = 'q' + i.toString();
 
