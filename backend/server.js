@@ -496,6 +496,7 @@ var checkInfoDeprecated = function(idName, info, infoFile) {
             logger.warn(infoFile + ': Adding accessRule: ' + JSON.stringify(accessRule));
             info.allowAccess.push(accessRule);
         }
+        delete info.options.dueDate;
     }
 };
 
@@ -640,6 +641,7 @@ var checkTestAccessRule = function(req, tid, accessRule) {
     var avail = true;
     var credit = 0;
     var period = {startDate: null, endDate: null};
+    var nextEndDate = null;
     _(accessRule).each(function(value, key) {
         if (key === "mode") {
             if (req.mode != value)
@@ -660,18 +662,22 @@ var checkTestAccessRule = function(req, tid, accessRule) {
             period.endDate = value;
             if (!isDateAfterNow(value))
                 avail = false;
+            else
+                nextEndDate = value;
         } else {
             avail = false;
         }
     });
     period.credit = credit;
-    return {avail: avail, credit: credit, period: period};
+    if (credit == 0) nextEndDate = null;
+    return {avail: avail, credit: credit, period: period, nextEndDate: nextEndDate};
 };
 
 var checkTestAvail = function(req, tid) {
     var avail = false;
     var credit = 0;
     var periods = [];
+    var nextEndDate = null;
     if (PrairieRole.hasPermission(req.userRole, 'bypassAccess')) {
         avail = true;
     }
@@ -684,10 +690,13 @@ var checkTestAvail = function(req, tid) {
                 avail = avail || result.avail;
                 credit = Math.max(credit, result.credit);
                 periods.push(result.period);
+                if (nextEndDate == null || (result.nextEndDate && result.nextEndDate < nextEndDate)) {
+                    nextEndDate = result.nextEndDate;
+                }
             });
         }
     }
-    return {avail: avail, credit: credit, periods: periods};
+    return {avail: avail, credit: credit, periods: periods, nextEndDate: nextEndDate};
 };
 
 var filterTestsByAvail = function(req, tests, callback) {
@@ -696,6 +705,7 @@ var filterTestsByAvail = function(req, tests, callback) {
         if (result.avail) {
             test.credit = result.credit;
             test.periods = result.periods;
+            test.nextEndDate = result.nextEndDate;
         }
         objCallback(result.avail);
     }, callback);
@@ -706,6 +716,7 @@ var ensureTestAvail = function(req, test, callback) {
     if (result.avail) {
         test.credit = result.credit;
         test.periods = result.periods;
+        test.nextEndDate = result.nextEndDate;
         callback(null, test);
     } else {
         callback("Error accessing tid: " + tid);
@@ -1899,6 +1910,7 @@ var readTest = function(tid, callback) {
     tCollect.findOne({tid: tid}, function(err, obj) {
         if (err) return callback(err)
         if (!obj) return callback("No test with tid: " + tid);
+        delete obj.dueDate;
         return callback(null, obj);
     });
 };
@@ -2081,6 +2093,9 @@ app.get("/tests", function(req, res) {
                 return sendError(res, 500, "Error serializing tests", err);
             }
             objs = _(objs).filter(function(o) {return _(testDB).has(o.tid);});
+            _(objs).each(function(test) {
+                delete test.dueDate;
+            });
             filterTestsByAvail(req, objs, function(objs) {
                 res.json(stripPrivateFields(objs));
             });
@@ -2093,6 +2108,7 @@ app.get("/tests/:tid", function(req, res) {
     tCollect.findOne({tid: req.params.tid}, function(err, obj) {
         if (err) return sendError(res, 500, "Error accessing tCollect database for tid " + req.params.tid, err);
         if (!obj) return sendError(res, 404, "No test with tid " + req.params.tid);
+        delete obj.dueDate;
         ensureTestAvail(req, obj, function(err) {
             if (err) return sendError(res, 500, "Error accessing test with tid: " + req.params.tid, err);
             res.json(stripPrivateFields(obj));

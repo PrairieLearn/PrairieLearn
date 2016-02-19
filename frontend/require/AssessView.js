@@ -90,10 +90,37 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'naturalSort', 
                         if (tInstance.has("open") && tInstance.get("open")) {
                             date = "in progress";
                             highlightRow = true;
-                        } else if (test.has("dueDate")) {
-                            date = that.appModel.formatDate(test.get("dueDate"));
-                            dateTooltip = "Due date: " + that.appModel.formatDateLong(test.get("dueDate"));
-                            if (moment(test.get("dueDate")).isAfter(moment())) {
+                        } else if (test.has("type") && (test.get("type") == "Basic" || (test.get("type") == "Game"))) {
+                            var nextEndDate = test.get("nextEndDate");
+                            if (nextEndDate) date = that.appModel.formatDate(nextEndDate);
+                            var credit = test.get("credit");
+                            var tooltip = "Due date: " + that.appModel.formatDateLong(nextEndDate);
+                            if (credit > 100) {
+                                tooltip += ' (bonus ' + (credit - 100) + '%)';
+                            } else if (credit == 100) {
+                                tooltip += ' (full credit)';
+                            } else {
+                                tooltip += ' (' + credit + '% credit';
+                            }
+
+                            /*
+                            var tooltip = "<table><tr><th>Credit</th><th>Start</th><th>End</th></tr>";
+                            _(test.get("periods")).each(function(p) {
+                                tooltip += '<tr>';
+                                if (credit > 100) {
+                                    tooltip += '<td>bonus ' + (credit - 100) + '%</td>';
+                                } else if (credit == 100) {
+                                    tooltip += '<td>full credit</td>';
+                                } else {
+                                    tooltip += '<td>' + credit + '% credit</td>';
+                                }
+                                tooltip += '</tr>';
+                            });
+                            tooltip += '</table>';
+                            */
+                            
+                            dateTooltip = tooltip;
+                            if (nextEndDate && moment(test.get(nextEndDate)).isAfter(moment())) {
                                 highlightRow = true;
                             }
                         } else if (tInstance.has("finishDate")) {
