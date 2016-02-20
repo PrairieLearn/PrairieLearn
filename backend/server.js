@@ -147,6 +147,10 @@ var readInfoJSON = function(jsonFilename, schemaFilename, optionsSchemaPrefix, o
     });
 };
 
+var isValidDate = function(dateString) {
+    return moment(dateString, "YYYY-MM-DDTHH:mm:ss", true).isValid();
+}
+
 configFilename = 'config.json';
 if (process.argv.length > 2) {
     configFilename = process.argv[2];
@@ -456,10 +460,13 @@ var loadCourseInfo = function(callback) {
     });
 };
 
-var checkInfoDeprecated = function(idName, info, infoFile) {
+var checkInfoValid = function(idName, info, infoFile) {
+    var retVal = true; // true means valid
+
     if (idName == "tid" && info.options && info.options.availDate) {
         logger.warn(infoFile + ': "options.availDate" is deprecated and will be removed in a future version. Instead, please use "allowAccess".');
     }
+
     // look for exams without credit assigned and patch it in to all access rules
     if (idName == "tid" && (info.type == "Exam" || info.type == "RetryExam")) {
         if (_(info).has('allowAccess') && !_(info.allowAccess).any(function(a) {return _(a).has('credit');})) {
@@ -469,6 +476,7 @@ var checkInfoDeprecated = function(idName, info, infoFile) {
             });
         }
     }
+
     // look for homeworks without a due date set and add an access rule with credit if possible
     if (idName == "tid" && _(info).has('options') && _(info.options).has('dueDate')) {
         logger.warn(infoFile + ': "options.dueDate" is deprecated and will be removed in a future version. Instead, please set "credit" in the "allowAccess" rules.');
@@ -498,6 +506,21 @@ var checkInfoDeprecated = function(idName, info, infoFile) {
         }
         delete info.options.dueDate;
     }
+
+    // check dates in allowAccess
+    if (idName == "tid" && _(info).has('allowAccess')) {
+        _(info.allowAccess).each(function(r) {
+            if (r.startDate && !isValidDate(r.startDate)) {
+                logger.error(infoFile + ': invalid "startDate": "' + r.startDate + '" (must be formatted as "YYYY-MM-DDTHH:mm:ss")');
+                revVal = false;
+            }
+            if (r.endDate && !isValidDate(r.endDate)) {
+                logger.error(infoFile + ': invalid "endDate": "' + r.endDate + '" (must be formatted as "YYYY-MM-DDTHH:mm:ss")');
+                revVal = false;
+            }
+        });
+    }
+    return retVal;
 };
 
 var questionDB, testDB;
@@ -525,7 +548,10 @@ var loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, op
                         callback(null);
                         return;
                     }
-                    checkInfoDeprecated(idName, info, infoFile);
+                    if (!checkInfoValid(idName, info, infoFile)) {
+                        callback(null);
+                        return;
+                    }
                     if (info.disabled) {
                         callback(null);
                         return;
