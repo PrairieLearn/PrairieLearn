@@ -72,45 +72,5 @@ define(function() {
         return html;
     };
 
-    BasicTestHelper.renderDate = function(date) {
-        var options = {hour: "numeric", minute: "numeric"};
-        var dateString = date.toLocaleTimeString("en-US", options);
-        options = {weekday: "short", year: "numeric", month: "numeric", day: "numeric"};
-        dateString += ", " + date.toLocaleDateString("en-US", options);;
-        return dateString;
-    };
-
-    BasicTestHelper.renderDueDate = function(dueDate) {
-        var dateString = this.renderDate(dueDate);
-        var tooltip = "Due at " + dueDate.toString();
-        var html = '<span '
-            + ' data-toggle="tooltip"'
-            + ' data-placement="auto top"'
-            + ' data-original-title="' + tooltip + '"'
-            + '>';
-        html += 'Due&nbsp;Date: ';
-        html += '<strong>';
-        html += dateString;
-        html += '</strong>';
-        html += '</span>';
-        return html;
-    };
-
-    BasicTestHelper.renderAvailDate = function(availDate) {
-        var dateString = this.renderDate(availDate);
-        var tooltip = "Available at " + availDate.toString();
-        var html = '<span '
-            + ' data-toggle="tooltip"'
-            + ' data-placement="auto top"'
-            + ' data-original-title="' + tooltip + '"'
-            + '>';
-        html += 'Available: ';
-        html += '<strong>';
-        html += dateString;
-        html += '</strong>';
-        html += '</span>';
-        return html;
-    };
-
     return BasicTestHelper;
 });

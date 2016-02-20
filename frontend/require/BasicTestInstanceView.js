@@ -21,8 +21,10 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "BasicTestHelpe
             data.tiNumber = this.model.get("number");
             data.longName = this.store.tiidLongName(data.tiid);
 
-            var dueDate = new Date(this.test.get("dueDate"));
-            data.dueDate = BasicTestHelper.renderDueDate(dueDate);
+            var nextDate = this.test.get("nextDate");
+            if (nextDate) data.date = this.appModel.formatDate(nextDate);
+            var visibleAccess = this.test.get("visibleAccess");
+            data.dateTooltip = this.appModel.formatVisibleAccess(visibleAccess);
 
             var score = this.model.get("score");
             data.score = BasicTestHelper.renderHWScore(score);
@@ -55,6 +57,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "BasicTestHelpe
             var html = Mustache.render(BasicTestInstanceViewTemplate, data);
             this.$el.html(html);
             this.$('[data-toggle=tooltip]').tooltip();
+            this.$('[data-toggle=popover]').popover();
         },
 
         close: function() {

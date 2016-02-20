@@ -258,15 +258,41 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         },
 
         formatDate: function(dateString) {
-            return moment.tz(dateString, this.get("timezone")).format("ddd, MMM D, h:mma");
+            if (dateString)
+                return moment.tz(dateString, this.get("timezone")).format("ddd, MMM D, h:mma");
+            else
+                return '—';
         },
 
         formatDateLong: function(dateString) {
-            return moment.tz(dateString, this.get("timezone")).format("dddd, YYYY‑MM‑DD, HH:mm, z (Z)");
+            if (dateString)
+                return moment.tz(dateString, this.get("timezone")).format("dddd, YYYY‑MM‑DD, HH:mm, z (Z)");
+            else
+                return '—';
         },
 
         formatDatePrecise: function(dateString) {
-            return moment.tz(dateString, this.get("timezone")).format("YYYY‑MM‑DD, HH:mm:ss.SSSS, z (Z)");
+            if (dateString)
+                return moment.tz(dateString, this.get("timezone")).format("YYYY‑MM‑DD, HH:mm:ss.SSSS, z (Z)");
+            else
+                return '—';
+        },
+
+        formatVisibleAccess: function(visibleAccess) {
+            var that = this;
+            var s = null;
+            if (visibleAccess && visibleAccess.length > 0) {
+                s = '<table class="table"><tr><th>Credit</th><th>Start</th><th>End</th>';
+                _(visibleAccess).each(function(r) {
+                    s += r.active ? '<tr class="warning">' : '<tr>';
+                    s += '<td>' + ((r.credit > 0) ? (r.credit + '%') : 'None') + '</td>';
+                    s += '<td>' + that.formatDateLong(r.startDate) + '</td>';
+                    s += '<td>' + that.formatDateLong(r.endDate) + '</td>';
+                    s += '</tr>'
+                });
+                s += '</table>';
+            }
+            return s;
         },
     });
 
@@ -513,6 +539,11 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 window.location.replace(window.location.host);
             }
             var tInstance = null;
+            try {
+                tiNumber = Number(tiNumber);
+            } catch (e) {
+                tiNumber = null;
+            }
             if (tiNumber) {
                 var theseTInstances = new Backbone.Collection(testTInstances.where({number: tiNumber}));
                 if (theseTInstances.length > 0) {
@@ -560,6 +591,11 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 window.location.replace(window.location.host);
             }
             var tInstance = null;
+            try {
+                tiNumber = Number(tiNumber);
+            } catch (e) {
+                tiNumber = null;
+            }
             if (tiNumber) {
                 var theseTInstances = new Backbone.Collection(testTInstances.where({number: tiNumber}));
                 if (theseTInstances.length > 0) {

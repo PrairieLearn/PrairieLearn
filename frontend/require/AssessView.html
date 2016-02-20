@@ -42,14 +42,11 @@
       <tr {{{rowSpec}}}>
         <td>{{{title}}}</td>
         <td class="text-center">{{{score}}}</td>
-        {{#dateTooltip}}
         <td class="text-center">{{{date}}}
+        {{#dateTooltip}}
           <a tabindex="0" class="btn btn-xs btn-default" role="button" data-toggle="popover" data-trigger="focus" data-container="body" data-html="true" title="{{shortTitle}}" data-content="{{dateTooltip}}">?</a>
+        {{/dateTooltip}}
         </td>
-        {{/dateTooltip}}
-        {{^dateTooltip}}
-        <td class="text-center">{{{date}}}</td>
-        {{/dateTooltip}}
         <td class="text-center">{{{extra}}}</td>
         <td class="text-center">{{{admin}}}</td>
       </tr>

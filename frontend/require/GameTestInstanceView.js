@@ -28,22 +28,10 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "GameTestHelper
             data.hwScore = GameTestHelper.renderHWScore(this.model, this.test, testOptions);
             data.scoreBar = GameTestHelper.renderHWScoreBar(this.model, this.test, testOptions);
 
-            var dueDate = new Date(this.test.get("dueDate"));
-            var options = {hour: "numeric", minute: "numeric"};
-            var dateString = dueDate.toLocaleTimeString("en-US", options);
-            options = {weekday: "short", year: "numeric", month: "numeric", day: "numeric"};
-            dateString += ", " + dueDate.toLocaleDateString("en-US", options);;
-            var tooltip = "Due at " + dueDate.toString();
-            data.dueDate = '<span '
-                + ' data-toggle="tooltip"'
-                + ' data-placement="auto top"'
-                + ' data-original-title="' + tooltip + '"'
-                + '>';
-            data.dueDate += 'Due&nbsp;Date: ';
-            data.dueDate += '<strong>';
-            data.dueDate += dateString;
-            data.dueDate += '</strong>';
-            data.dueDate += '</span>';
+            var nextDate = this.test.get("nextDate");
+            if (nextDate) data.date = this.appModel.formatDate(nextDate);
+            var visibleAccess = this.test.get("visibleAccess");
+            data.dateTooltip = this.appModel.formatVisibleAccess(visibleAccess);
 
             var text = this.test.get("text");
             if (text) {
@@ -73,6 +61,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "GameTestHelper
             var html = Mustache.render(GameTestInstanceViewTemplate, data);
             this.$el.html(html);
             this.$('[data-toggle=tooltip]').tooltip();
+            this.$('[data-toggle=popover]').popover();
         },
 
         close: function() {

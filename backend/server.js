@@ -637,86 +637,108 @@ var isDateAfterNow = function(dateString) {
 };
 
 var checkTestAccessRule = function(req, tid, accessRule) {
-    // logical-AND the accessRule tests together (they all need to be satisfied)
-    var avail = true;
-    var credit = 0;
-    var period = {startDate: null, endDate: null};
-    var nextEndDate = null;
+    var resultRule = _(accessRule).clone();
+    _(resultRule).defaults({
+        availMode: true,
+        availIdentity: true,
+        availDate: true,
+        availDefault: true,
+        expired: false,
+        credit: 0,
+        startDate: null,
+        endDate: null,
+        mode: 'Any',
+    });
     _(accessRule).each(function(value, key) {
         if (key === "mode") {
             if (req.mode != value)
-                avail = false;
+                resultRule.availMode = false;
         } else if (key == "role") {
             if (!PrairieRole.isAsPowerful(req.userRole, value))
-                avail = false;
+                resultRule.availIdentity = false;
         } else if (key == "uids") {
             if (!_(value).contains(req.userUID))
-                avail = false;
+                resultRule.availIdentity = false;
         } else if (key == "credit") {
-            credit = value;
+            // no action
         } else if (key === "startDate") {
-            period.startDate = value;
             if (!isDateBeforeNow(value))
-                avail = false;
+                resultRule.availDate = false;
         } else if (key === "endDate") {
-            period.endDate = value;
-            if (!isDateAfterNow(value))
-                avail = false;
-            else
-                nextEndDate = value;
+            if (!isDateAfterNow(value)) {
+                resultRule.availDate = false;
+                resultRule.expired = true;
+            }
         } else {
-            avail = false;
+            // default to blocking access if we don't recognize a rule
+            availDefault = false;
         }
     });
-    period.credit = credit;
-    if (credit == 0) nextEndDate = null;
-    return {avail: avail, credit: credit, period: period, nextEndDate: nextEndDate};
+    // logical-AND the accessRule tests together (they all need to be satisfied)
+    resultRule.avail = resultRule.availMode && resultRule.availIdentity && resultRule.availDate && resultRule.availDefault;
+    return resultRule;
 };
 
 var checkTestAvail = function(req, tid) {
     var avail = false;
     var credit = 0;
-    var periods = [];
-    var nextEndDate = null;
-    if (PrairieRole.hasPermission(req.userRole, 'bypassAccess')) {
-        avail = true;
-    }
+    var nextDate = null;
+    var visibleAccess = [];
     if (_(testDB).has(tid)) {
         var info = testDB[tid];
         if (info.allowAccess) {
+            // copy and annotate the list of access rules
+            var allowAccess = _(info.allowAccess).map(function(r) {return checkTestAccessRule(req, tid, r);});
+
             // logical-OR the accessRules together (only need one of them to be satisfied)
-            _(info.allowAccess).each(function(accessRule) {
-                result = checkTestAccessRule(req, tid, accessRule);
-                avail = avail || result.avail;
-                credit = Math.max(credit, result.credit);
-                periods.push(result.period);
-                if (nextEndDate == null || (result.nextEndDate && result.nextEndDate < nextEndDate)) {
-                    nextEndDate = result.nextEndDate;
-                }
-            });
+            avail = _.chain(allowAccess).pluck('avail').any().value();
+
+            // take the maximum credit from the avail rules
+            var availAllowAccess = _(allowAccess).filter(_.matcher({avail: true}));
+            credit = _.chain(availAllowAccess).pluck('credit').max().value();
+            // find the first rule that is avail and has maximum credit, and set it to be active
+            _(availAllowAccess).find(function(r) {return r.credit == credit;}).active = true;
+
+            // only show access rules to users who will at some point be able to see them
+            var visibleAccess;
+            if (PrairieRole.hasPermission(req.userRole, 'changeMode')) {
+                visibleAccess = _(allowAccess).filter(_.matcher({availIdentity: true}));
+            } else {
+                visibleAccess = _(allowAccess).filter(_.matcher({availIdentity: true, availMode: true}));
+            }
+
+            // strip information unless authorized to view
+            if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
+                visibleAccess = _(visibleAccess).map(function(r) {return _(r).omit('role', 'uids');});
+            }
+            if (!PrairieRole.hasPermission(req.userRole, 'changeMode')) {
+                visibleAccess = _(visibleAccess).map(function(r) {return _(r).omit('mode');});
+            }
+
+            // nextDate is the first visible future endDate with positive credit, if any
+            var unexpiredCredit = _(visibleAccess).filter(function(r) {return !r.expired && (r.credit > 0);})
+            var endDates = _.chain(unexpiredCredit).pluck('endDate').reject(_.isNull).sortBy(_.identity).value();
+            nextDate = (endDates.length == 0) ? null : endDates[0];
         }
     }
-    return {avail: avail, credit: credit, periods: periods, nextEndDate: nextEndDate};
+    if (PrairieRole.hasPermission(req.userRole, 'bypassAccess')) {
+        avail = true;
+    }
+    return {avail: avail, credit: credit, nextDate: nextDate, visibleAccess: visibleAccess};
 };
 
 var filterTestsByAvail = function(req, tests, callback) {
     async.filter(tests, function(test, objCallback) {
         var result = checkTestAvail(req, test.tid);
-        if (result.avail) {
-            test.credit = result.credit;
-            test.periods = result.periods;
-            test.nextEndDate = result.nextEndDate;
-        }
+        _(test).extend(result);
         objCallback(result.avail);
     }, callback);
 };
 
 var ensureTestAvail = function(req, test, callback) {
     var result = checkTestAvail(req, test.tid);
+    _(test).extend(result);
     if (result.avail) {
-        test.credit = result.credit;
-        test.periods = result.periods;
-        test.nextEndDate = result.nextEndDate;
         callback(null, test);
     } else {
         callback("Error accessing tid: " + tid);
