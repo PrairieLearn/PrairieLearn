@@ -697,7 +697,8 @@ var checkTestAvail = function(req, tid) {
             var availAllowAccess = _(allowAccess).filter(_.matcher({avail: true}));
             credit = _.chain(availAllowAccess).pluck('credit').max().value();
             // find the first rule that is avail and has maximum credit, and set it to be active
-            _(availAllowAccess).find(function(r) {return r.credit == credit;}).active = true;
+            var activeRule = _(availAllowAccess).find(function(r) {return r.credit == credit;});
+            if (activeRule) activeRule.active = true;
 
             // only show access rules to users who will at some point be able to see them
             var visibleAccess;
