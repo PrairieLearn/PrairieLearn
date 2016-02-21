@@ -190,7 +190,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
 
         tInstance.submissionsByQid[submission.qid] = submission;
         submission.graded = false;
-        submission._private = ["score", "trueAnswer", "oldTInstance", "oldTest", "newTInstance", "newTest"];
+        submission._private = ["score", "trueAnswer", "feedback", "oldTInstance", "oldTest", "newTInstance", "newTest"];
     };
 
     RetryExamTestServer.grade = function(tInstance, test) {
@@ -215,6 +215,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
                 }
                 question.nGradedAttempts++;
                 submission.graded = true;
+                submission._private = _(submission._private).without('feedback');
             }
         }
         if (_(test.credit).isFinite() && test.credit > 0) {

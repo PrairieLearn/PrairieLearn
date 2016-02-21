@@ -45,10 +45,17 @@ define(["PrairieRandom", "PrairieGeom", "QServer"], function(PrairieRandom, Prai
     // OPTIONAL gradeAnswer() function
     // if not present, then the submittedAnswer will be automatically checked against the trueAnswer
     server.gradeAnswer = function(vid, params, trueAnswer, submittedAnswer, options) {
-        var score = 0;
-        if (PrairieGeom.checkEqual(trueAnswer, submittedAnswer, options.relTol, options.absTol))
-            score = 1;
-        return {score: score};
+        var score = 1;
+        var feedback = {wx: '', wy: ''};
+        if (!PrairieGeom.checkEqual(trueAnswer.wx, submittedAnswer.wx, options.relTol, options.absTol)) {
+            score = 0;
+            feedback.wx = 'The first component $w_x$ is incorrect.';
+        }
+        if (!PrairieGeom.checkEqual(trueAnswer.wy, submittedAnswer.wy, options.relTol, options.absTol)) {
+            score = 0;
+            feedback.wy = 'The second component $w_y$ is incorrect.';
+        }
+        return {score: score, feedback: feedback};
     };
 
     return server;
