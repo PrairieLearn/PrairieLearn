@@ -22,6 +22,10 @@ define(["underscore", "moment-timezone"], function(_, moment) {
     };
 
     GameTestServer.updateTInstance = function(tInstance, test, options, questionDB) {
+        if (_(tInstance).has('score') && !_(tInstance).has('scorePerc')) {
+            // upgrade a score to a scorePerc, without applying credit limits
+            tInstance.scorePerc = Math.floor(tInstance.score / test.maxScore * 100);
+        }
         _(tInstance).defaults({
             score: 0,
             scorePerc: 0,
