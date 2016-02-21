@@ -107,12 +107,12 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             tInstance.score = Math.min(score, test.maxScore);
 
             // compute the score as a percentage, applying credit bonus/limits
-            newScorePerc = Math.round(tInstance.score / test.maxScore * 100);
+            newScorePerc = Math.floor(tInstance.score / test.maxScore * 100);
             if (test.credit < 100) {
                 newScorePerc = Math.min(newScorePerc, test.credit);
             }
             if (test.credit > 100) {
-                newScorePerc = Math.min(test.credit, Math.round(newScorePerc * test.credit / 100));
+                newScorePerc = Math.min(test.credit, Math.floor(newScorePerc * test.credit / 100));
             }
             tInstance.scorePerc = newScorePerc;
         }
