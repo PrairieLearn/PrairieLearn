@@ -117,6 +117,15 @@ define(["underscore"], function(_) {
         return s + op;
     };
 
+    /** Convert a vector to a TeX string with brackets.
+
+        @param {Array} vec The vector components [a_1, a_2, ...], each a number or string.
+        @return {String} The formatted vector TeX string.
+    */
+    var vectorString = function(vec) {
+        return "[" + _(vec).map(String).join(", ") + "]";
+    };
+
     /** Convert a vector to a TeX string with the given basis elements.
 
         @param {Array} vec The vector components [a_1, a_2, ...], each a number or string.
@@ -125,7 +134,7 @@ define(["underscore"], function(_) {
         @param {String} basis3 The third basis element (can be "").
         @return {String} The formatted vector TeX string.
     */
-    var vectorString = function(vec, basis1, basis2, basis3, basis4, basis5, basis6) {
+    var vectorInBasisString = function(vec, basis1, basis2, basis3, basis4, basis5, basis6) {
         basis1 = (basis1 === undefined) ? "" : basis1;
         basis2 = (basis1 === undefined) ? "" : basis2;
         basis3 = (basis1 === undefined) ? "" : basis3;
@@ -161,7 +170,7 @@ define(["underscore"], function(_) {
         @return {String} The formatted vector TeX string.
     */
     var cartesianVectorString = function(vec) {
-        return vectorString(vec, "\\hat\\imath", "\\hat\\jmath", "\\hat{k}");
+        return vectorInBasisString(vec, "\\hat\\imath", "\\hat\\jmath", "\\hat{k}");
     };
 
     /** Convert a vector to a TeX string with cylindrical basis.
@@ -170,7 +179,7 @@ define(["underscore"], function(_) {
         @return {String} The formatted vector TeX string.
     */
     var cylindricalVectorString = function(vec) {
-        return vectorString(vec, "\\hat{e}_r", "\\hat{e}_{\\theta}", "\\hat{k}");
+        return vectorInBasisString(vec, "\\hat{e}_r", "\\hat{e}_{\\theta}", "\\hat{k}");
     };
 
     /** Convert a vector to a TeX string with the given basis elements and fixed precision.
@@ -184,7 +193,7 @@ define(["underscore"], function(_) {
     */
     var vectorFixedString = function(vec, n, basis1, basis2, basis3) {
         var vecFixed = _(vec).map(function(x) {return floatFixedString(x, n);});
-        return vectorString(vecFixed, basis1, basis2, basis3);
+        return vectorInBasisString(vecFixed, basis1, basis2, basis3);
     };
 
     /** Convert a vector to a TeX string with Cartesian basis and fixed precision.
@@ -215,7 +224,7 @@ define(["underscore"], function(_) {
                 basis[poly.length - 1 - i] = indVar;
             }
         }
-        return vectorString(vec, basis[0], basis[1], basis[2], basis[3], basis[4], basis[5]);
+        return vectorInBasisString(vec, basis[0], basis[1], basis[2], basis[3], basis[4], basis[5]);
     };
 
     /** Convert a polynomial to a TeX string with parentheses if needed.
@@ -439,6 +448,7 @@ define(["underscore"], function(_) {
         localData.rationalCoeffString = rationalCoeffString;
         localData.rationalCoeffZeroString = rationalCoeffZeroString;
         localData.vectorString = vectorString;
+        localData.vectorInBasisString = vectorInBasisString;
         localData.cartesianVectorString = cartesianVectorString;
         localData.cylindricalVectorString = cylindricalVectorString;
         localData.vectorFixedString = vectorFixedString;
@@ -475,6 +485,7 @@ define(["underscore"], function(_) {
         rationalCoeffString: rationalCoeffString,
         rationalCoeffZeroString: rationalCoeffZeroString,
         vectorString: vectorString,
+        vectorInBasisString: vectorInBasisString,
         cartesianVectorString: cartesianVectorString,
         cylindricalVectorString: cylindricalVectorString,
         vectorFixedString: vectorFixedString,
