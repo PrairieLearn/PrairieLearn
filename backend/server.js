@@ -768,7 +768,7 @@ var ensureTestAvail = function(req, test, callback) {
     if (result.avail) {
         callback(null, test);
     } else {
-        callback("Error accessing tid: " + tid);
+        callback("Error accessing tid: " + test.tid);
     }
 };
 
