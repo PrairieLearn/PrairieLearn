@@ -1,6 +1,38 @@
 
 # ChangeLog
 
+* __1.19.0__ - 2016-02-23
+
+  * Add Ace editor for in-question code editing (Terence Nip).
+
+  * Add `MultipleTrueFalse` question type.
+
+  * Upgrade MathJax to 2.6.0 to fix "vertical bar" rendering problem.
+
+  * Add `adm-zip` support for questions to create zip files (Craig Zilles).
+
+  * Enable embedded images in MultipleChoice and Checkbox question types.
+
+  * Fix bugs related to reporting of PrairieLearn git version.
+
+  * Add Errors tab for instructors to see server-side errors, and report more errors.
+
+  * Add Reload button in development mode.
+
+  * Add support for variable credit on tests (bonus credit and partial credit).
+
+  * Remove the Adaptive test type (superseded by Game).
+
+  * Add validation for dates on server load.
+
+  * Fix display of question answer feedback during RetryExams.
+
+  * Change all test scores to be stored as percentages without decimal places (rounded down).
+
+  * Add `{{params.a | vector}}` template for bracketed vectors.
+
+  * Support IP range checking for Siebel basement labs.
+
 * __1.18.0__ - 2016-01-20
 
   * Fix security hole to restrict question access to accessible tests.
