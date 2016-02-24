@@ -1020,20 +1020,22 @@ app.use(function(req, res, next) {
                 if (n1 == 192 && n2 == 17 && n3 == 239 && n4 >= 128 && n4 <= 255) {
                     serverMode = 'Exam';
                 }
-                if (n1 == 192 && n2 == 17 && n3 == 11 && n4 >= 82 && n4 <= 117) {
-                    serverMode = 'Exam';
-                }
-                if (n1 == 192 && n2 == 17 && n3 == 11 && n4 >= 206 && n4 <= 211) {
-                    serverMode = 'Exam';
-                }
-                if (n1 == 192 && n2 == 17 && n3 == 11 && n4 >= 128 && n4 <= 130) {
-                    serverMode = 'Exam';
-                }
-                if (n1 == 192 && n2 == 17 && n3 == 11 && n4 == 179) {
-                    serverMode = 'Exam';
-                }
-                if (n1 == 192 && n2 == 17 && n3 == 11 && n4 == 60) {
-                    serverMode = 'Exam';
+                if (courseInfo.name == "CS 225") {
+                    if (n1 == 192 && n2 == 17 && n3 == 11 && n4 >= 82 && n4 <= 117) {
+                        serverMode = 'Exam';
+                    }
+                    if (n1 == 192 && n2 == 17 && n3 == 11 && n4 >= 206 && n4 <= 211) {
+                        serverMode = 'Exam';
+                    }
+                    if (n1 == 192 && n2 == 17 && n3 == 11 && n4 >= 128 && n4 <= 130) {
+                        serverMode = 'Exam';
+                    }
+                    if (n1 == 192 && n2 == 17 && n3 == 11 && n4 == 179) {
+                        serverMode = 'Exam';
+                    }
+                    if (n1 == 192 && n2 == 17 && n3 == 11 && n4 == 60) {
+                        serverMode = 'Exam';
+                    }
                 }
             } catch (e) {}
         }
