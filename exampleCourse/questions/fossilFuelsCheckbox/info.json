@@ -2,9 +2,10 @@
     "title": "Advantages of fossil fuels (checkbox)",
     "topic": "Energy",
     "tags": ["comparative advantages", "fossil fuels", "renewables"],
+    "clientFiles": ["client.js", "power-station.jpg"],
     "type": "Checkbox",
     "options": {
-        "text": "Which of the following are advantages of fossil fuels relative to renewable energy sources? Select all that apply.",
+        "text": "Which of the following are advantages of fossil fuels relative to renewable energy sources? Select all that apply.<img src=\"<% print(questionFile(\"power-station.jpg\")) %>\" width=\"400px\" class=\"img-responsive center-block\" />",
         "correctAnswers": [
             "Cheap",
             "High energy density",

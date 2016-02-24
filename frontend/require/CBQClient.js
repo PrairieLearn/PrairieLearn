@@ -16,6 +16,7 @@ define(["underscore", "SimpleClient"], function(_, SimpleClient) {
             + '<% for (var i = 0; i < trueAnswer.correctAnswers.length; i++) { %>'
             + '<p>(<%= trueAnswer.correctAnswers[i].key %>) <%= trueAnswer.correctAnswers[i].text %></p>'
             + '<% } %>';
+        this.options.templateTwice = true;
     }
     CBQClient.prototype = new SimpleClient.SimpleClient();
     
