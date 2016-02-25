@@ -87,10 +87,6 @@ if (outputMode == 'full') {
     console.log('');
     console.log('curl ' + headers() + ' <url>');
     console.log('');
-    console.log('Curl command to export and save all user scores:');
-    console.log('');
-    console.log('curl -O ' + headers() + ' <url>/export.csv');
-    console.log('');
 } else if (outputMode == 'headers') {
     console.log(headers());
 }
