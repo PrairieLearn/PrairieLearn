@@ -2627,68 +2627,6 @@ app.post("/finishes", function(req, res) {
     });
 });
 
-app.get("/export.csv", function(req, res) {
-    if (!tiCollect) {
-        return sendError(res, 500, "Do not have access to the tiCollect database collection");
-    }
-    if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
-        return sendError(res, 403, "Insufficient permissions");
-    }
-    tiCollect.find({}, function(err, cursor) {
-        if (err) {
-            return sendError(res, 500, "Error accessing tiCollect database", err);
-        }
-        scores = {};
-        cursor.each(function(err, item) {
-            if (err) {
-                return sendError(res, 500, "Error iterating over tInstances", {err: err});
-            }
-            if (item != null) {
-                if (!checkObjAuth(req, item, "read"))
-                    return;
-                var tid = item.tid;
-                var uid = item.uid;
-                if (scores[uid] === undefined)
-                    scores[uid] = {}
-                if (scores[uid][tid] === undefined)
-                    scores[uid][tid] = item.score;
-                else
-                    scores[uid][tid] = Math.max(scores[uid][tid], item.score);
-            } else {
-                // end of collection
-                var tids = _(testDB).pluck('tid');
-                tids.sort(function(tid1, tid2) {
-                    var test1 = testDB[tid1] ? testDB[tid1] : {set: 'none', number: 0};
-                    var test2 = testDB[tid2] ? testDB[tid2] : {set: 'none', number: 0};
-                    if (test1.set === test2.set) {
-                        return test1.number - test2.number;
-                    } else {
-                        return (test1.set < test2.set) ? -1 : 1;
-                    }
-                });
-                titles = _(tids).map(function(tid) {return testDB[tid].set + testDB[tid].number;});
-                headers = ["uid"].concat(titles);
-                var csvData = [];
-                _(_(scores).keys()).each(function(uid) {
-                    var row = [uid];
-                    _(tids).each(function(tid) {
-                        if (_(scores[uid]).has(tid))
-                            row.push(scores[uid][tid])
-                        else
-                            row.push("ABS");
-                    });
-                    csvData.push(row);
-                });
-                csvData = _(csvData).sortBy(function(row) {return row[0];});
-                csvData.splice(0, 0, headers);
-                var csv = _(csvData).map(function(row) {return row.join(",") + "\n";}).join("");
-                res.attachment("export.csv");
-                res.send(csv);
-            }
-        });
-    });
-});
-
 var getQDataByQID = function(test, tInstance) {
     var qDataByQID = {};
     if (_(tInstance).has('questionsByQID')) {

@@ -79,7 +79,6 @@ Path                             | Method | Action                              
 `/tInstances/<tiid>`             | GET    | —                                                        | —                                     | JSON: Single `<tInstance>` object.
 `/tInstances`                    | POST   | Creates new tInstance object.                            | JSON: partial `<tInstance>` object.   | JSON: complete newly created `<tInstance>` object.
 `/tInstances/<tiid>`             | PATCH  | Updates an existing `<tInstance>` (used to grade tests). | JSON: partial `<tInstance>` object.   | JSON: complete updated `<tInstance>` object.
-`/export.csv`                    | GET    | —                                                        | —                                     | CSV: All test scores (maximum over every `<tInstance>`) for all users.
 `/course`                        | GET    | -                                                        | -                                     | JSON: The `<courseInfo>` object.
 `/coursePulls`                   | GET    | -                                                        | -                                     | JSON: List of all `<coursePull>` objects.
 `/coursePulls/current`           | GET    | -                                                        | -                                     | JSON: The current `<coursePull>` object.
