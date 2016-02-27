@@ -708,6 +708,8 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
         },
 
         changeUserUID: function(newUID) {
+            if (newUID === "") return;
+
             var newName;
             var user = this.users.get(newUID);
             if (user) {

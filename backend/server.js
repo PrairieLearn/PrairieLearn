@@ -1043,7 +1043,7 @@ app.use(function(req, res, next) {
     if (req.mode == 'Default' || !PrairieRole.hasPermission(req.authRole, 'changeMode')) {
         req.mode = serverMode;
     }
-    
+
     // add authUID to DB if not already present
     uCollect.update(
         {uid: req.authUID},
@@ -1053,7 +1053,17 @@ app.use(function(req, res, next) {
             if (err) {
                 return sendError(res, 500, "error adding user: " + req.authUID, err);
             }
-            next();
+
+            // Check whether or not userUID is a valid UID
+            if (userUID === authUID) {
+                return next();
+            }
+            uCollect.findOne({uid: userUID}, function(err, uObj) {
+                if (!uObj) {
+                    return sendError(res, 400, "No user with uid " + userUID);
+                }
+                next();
+            });
         }
     );
 });
