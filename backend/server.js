@@ -1045,17 +1045,31 @@ app.use(function(req, res, next) {
     }
     
     // add authUID to DB if not already present
-    uCollect.update(
-        {uid: req.authUID},
-        {$setOnInsert: {uid: req.authUID, name: req.authName, dateAdded: (new Date()).toISOString()}},
-        {upsert: true, w: 1},
-        function(err) {
-            if (err) {
-                return sendError(res, 500, "error adding user: " + req.authUID, err);
+    var addAuthUID = function() {
+        uCollect.update(
+            {uid: req.authUID},
+            {$setOnInsert: {uid: req.authUID, name: req.authName, dateAdded: (new Date()).toISOString()}},
+            {upsert: true, w: 1},
+            function(err) {
+                if (err) {
+                    return sendError(res, 500, "error adding user: " + req.authUID, err);
+                }
+                next();
             }
-            next();
-        }
-    );
+        );
+    };
+
+    // Check whether or not userUID is a valid UID
+    if (userUID !== authUID) {
+        uCollect.findOne({uid: userUID}, function(err, uObj) {
+            if (!uObj) {
+                return sendError(res, 400, "No user with uid " + userUID);
+            }
+            addAuthUID();
+        });
+    } else {
+        addAuthUID();
+    }
 });
 
 app.use(function(req, res, next) {
