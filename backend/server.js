@@ -2524,19 +2524,19 @@ var submitUnansweredQuestions = function(req, res, tInstance, test, callback) {
         var qiid = tInstance.qiidsByQid[qid];
         readQInstance(qiid, function(err, qInstance) {
             if (err) return callback("Error reading qInstance with qiid: " + qiid);
-            var submission = {
-                date: new Date(),
-                uid: tInstance.uid,
-                qid: qid,
-                qiid: qiid,
-                vid: tInstance.questionsByQID[qid].vid,
-                submittedAnswer: null,
-                score: 0,
-                trueAnswer: qInstance.trueAnswer
-            };
             newIDNoError(req, res, "sid", function(sid) {
+                var submission = {
+                    sid: sid,
+                    date: new Date(),
+                    uid: tInstance.uid,
+                    qid: qid,
+                    qiid: qiid,
+                    vid: tInstance.questionsByQID[qid].vid,
+                    submittedAnswer: null,
+                    score: 0,
+                    trueAnswer: qInstance.trueAnswer
+                };
                 var tid = tInstance.tid;
-                submission.sid = sid;
                 loadTestServer(tid, function(server) {
                     var uid = submission.uid;
                     try {
