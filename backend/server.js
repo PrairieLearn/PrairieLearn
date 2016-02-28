@@ -2514,20 +2514,65 @@ app.post("/tInstances", function(req, res) {
     });
 });
 
+var submitUnansweredQuestions = function(req, res, tInstance, test, callback) {
+    async.eachSeries(tInstance.qids, function(qid, callback) {
+        // Skip if submission already exists for this question
+        if (qid in tInstance.submissionsByQid) {
+            return callback();
+        }
+
+        var qiid = tInstance.qiidsByQid[qid];
+        readQInstance(qiid, function(err, qInstance) {
+            if (err) return callback("Error reading qInstance with qiid: " + qiid);
+            var submission = {
+                date: new Date(),
+                uid: tInstance.uid,
+                qid: qid,
+                qiid: qiid,
+                vid: tInstance.questionsByQID[qid].vid,
+                submittedAnswer: null,
+                score: 0,
+                trueAnswer: qInstance.trueAnswer
+            };
+            newIDNoError(req, res, "sid", function(sid) {
+                var tid = tInstance.tid;
+                submission.sid = sid;
+                loadTestServer(tid, function(server) {
+                    var uid = submission.uid;
+                    try {
+                        server.updateWithSubmission(tInstance, test, submission, testDB[tid].options);
+                    } catch (e) {
+                        return callback("Error updating test: " + String(e));
+                    }
+                    writeTInstance(req, res, tInstance, function() {
+                        sCollect.insert(submission, {w: 1}, function(err) {
+                            if (err) return callback("Error writing submission to database");
+                            callback();
+                        });
+                    });
+                });
+            });
+        });
+    }, callback);
+};
+
 var finishTest = function(req, res, tiid, callback) {
     readTInstanceBAD(res, tiid, function(tInstance) {
         ensureObjAuthBAD(req, res, tInstance, "write", function(tInstance) {
             var tid = tInstance.tid;
             readTestBAD(res, tid, function(test) {
-                loadTestServer(tid, function(server) {
-                    try {
-                        server.finish(tInstance, test);
-                    } catch (e) {
-                        return sendError(res, 500, "Error finishing test: " + String(e), {err: e, stack: e.stack});
-                    }
-                    writeTInstance(req, res, tInstance, function() {
-                        writeTest(req, res, test, function() {
-                            return callback(tInstance);
+                submitUnansweredQuestions(req, res, tInstance, test, function(err) {
+                    if (err) return sendError(res, 500, "Error submitting unanswered questions: " + err);
+                    loadTestServer(tid, function(server) {
+                        try {
+                            server.finish(tInstance, test);
+                        } catch (e) {
+                            return sendError(res, 500, "Error finishing test: " + String(e), {err: e, stack: e.stack});
+                        }
+                        writeTInstance(req, res, tInstance, function() {
+                            writeTest(req, res, test, function() {
+                                return callback(tInstance);
+                            });
                         });
                     });
                 });
