@@ -4,15 +4,11 @@
 
 ## My changes to a test don't show up
 
-There are several actions needed to activate changes to tests while in development mode on your local computer:
+There are a couple actions needed to activate changes to tests while in development mode on your local computer:
 
 1. Make sure the test changes are really saved to disk in the course directory that PrairieLearn is using.
 
-1. Reload the server (Ctrl-C in the server window, then re-run `node server`).
-
-1. Reload the PrairieLearn webpage in your browser.
-
-1. If this is an "exam"-style test, then you need to "reset" the test to force PrairieLearn to re-randomize the test instance (click "Reset" on the test "Admin" page). See [Writing tests](writingTests.md) for details.
+1. Reload the server by clicking the 'Reload' button in the header. (Note that this will reset all test data for the current user.)
 
 On the production server you only need to sync the new test code (on the "Sync" page). If you want existing test instances to be updated with the new code then you will need to reset the test (**but this will remove all existing progress by students on that test**).
 
@@ -28,7 +24,7 @@ When you change a question it only affects newly-generated variants of the quest
 
 1. If this is a "homework"-type style test then you should get the question wrong and click "Do this question again" to prompt the generation of a new question variant.
 
-1. If this is an "exam"-style test then you need to "reset" the test to force PrairieLearn to regenerate the question instances (click "Reset" on the test "Admin" page). See [Writing tests](writingTests.md) for details.
+1. If this is an "exam"-style test then, you can click the "Reload" button in the header to have PrairieLearn regenerate the question. (Note that this will reset all test data for the current user.)
 
 On the production server you only need to sync the new question code (on the "Sync" page), and then force a regeneration of the question variant as described above.
 
