@@ -2515,7 +2515,7 @@ app.post("/tInstances", function(req, res) {
 });
 
 var releaseTrueAnswers = function(tInstance, callback) {
-    async.eachSeries(tInstance.qids, function(qid, callback) {
+    async.each(tInstance.qids, function(qid, callback) {
         var qiid = tInstance.qiidsByQid[qid];
         qiCollect.update({qiid: qiid}, {$pull: {_private: "trueAnswer"}}, function(err) {
             callback(err);
