@@ -6,3 +6,6 @@ backend/node_modules/
 
 # Server log files
 backend/server.log
+
+# Config files
+backend/config.json
