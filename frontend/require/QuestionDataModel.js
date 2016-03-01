@@ -64,6 +64,13 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                     qClient.initialize(qInstance.params);
                     that.set("qClient", qClient);
 
+                    // Show answer if it is public in the qInstance
+                    // (i.e. the test has been finished)
+                    if (_(qInstance).has("trueAnswer")) {
+                        qClient.setTrueAnswer(qInstance.trueAnswer);
+                        that.set("showAnswer", true);
+                    }
+
                     // restore submittedAnswer from most recent submission if we have one
                     if (that.tInstance && that.tInstance.has("submissionsByQid")) {
                         var submissionsByQid = that.tInstance.get("submissionsByQid");
@@ -75,10 +82,6 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                             }
                             if (_(submission).has("score")) {
                                 that.set("score", submission.score);
-                            }
-                            if (_(submission).has("trueAnswer")) {
-                                qClient.setTrueAnswer(submission.trueAnswer);
-                                that.set("showAnswer", true);
                             }
                             if (_(submission).has("feedback")) {
                                 qClient.setFeedback(submission.feedback);

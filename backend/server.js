@@ -2514,6 +2514,15 @@ app.post("/tInstances", function(req, res) {
     });
 });
 
+var releaseTrueAnswers = function(tInstance, callback) {
+    async.each(tInstance.qids, function(qid, callback) {
+        var qiid = tInstance.qiidsByQid[qid];
+        qiCollect.update({qiid: qiid}, {$pull: {_private: "trueAnswer"}}, function(err) {
+            callback(err);
+        });
+    }, callback);
+};
+
 var finishTest = function(req, res, tiid, callback) {
     readTInstanceBAD(res, tiid, function(tInstance) {
         ensureObjAuthBAD(req, res, tInstance, "write", function(tInstance) {
@@ -2527,7 +2536,10 @@ var finishTest = function(req, res, tiid, callback) {
                     }
                     writeTInstance(req, res, tInstance, function() {
                         writeTest(req, res, test, function() {
-                            return callback(tInstance);
+                            releaseTrueAnswers(tInstance, function(err) {
+                                if (err) return sendError(res, 500, "Error releasing answers: " + err);
+                                return callback(tInstance);
+                            });
                         });
                     });
                 });
