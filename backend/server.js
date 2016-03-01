@@ -445,10 +445,15 @@ var loadCourseInfo = function(callback) {
         courseInfo.title = info.title;
         if (info.userRoles) {
             _(info.userRoles).forEach(function(value, key) {
-                // only add new role if role doesn't currently exist, so we can't overwrite superusers
-                if (!config.roles[key]) {
-                    config.roles[key] = value;
+                if (!PrairieRole.isRoleValid(value)) {
+                    logger.warn("Invalid role '" + value + "' in courseInfo.json; ignoring.");
+                    return;
                 }
+                // Don't allow adding or removing superusers
+                if (config.roles[key] === 'Superuser' || value === 'Superuser') {
+                    return;
+                }
+                config.roles[key] = value;
             });
         }
         courseInfo.gitCourseBranch = config.gitCourseBranch;
