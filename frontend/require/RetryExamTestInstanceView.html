@@ -1,6 +1,10 @@
 <div id="confirmGradeModal" class="modal fade">
   <div class="modal-dialog">
     <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">Grade and continue</h4>
+      </div>
       <div class="modal-body">
         Are you sure you want to grade all of your saved answers?
       </div>
@@ -15,11 +19,16 @@
 <div id="confirmFinishModal" class="modal fade">
   <div class="modal-dialog">
     <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h4 class="modal-title">Final submission</h4>
+      </div>
       <div class="modal-body">
-        Are you sure you want to finish? This will grade any saved answers and compute your final score. You will not be able to answer any more questions after finishing.
+        <p><strong>Warning</strong>: You will not be able to answer any more questions after the final submission.</p>
+        <p>Are you sure you want to finish?</p>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-danger finishExam" id="finishExam">Finish</button>
+        <button type="button" class="btn btn-danger finishExam" id="finishExam">Finish exam</button>
         <button type="button" data-dismiss="modal" class="btn btn-default">Cancel</button>
       </div>
     </div>
@@ -41,8 +50,8 @@
         </div>
 
         <div class="col-sm-6 col-xs-12">
-          <button class="btn btn-primary" data-toggle="modal" data-target="#confirmGradeModal">Grade all saved answers</button>
-          <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish</button>
+          <button class="btn btn-primary" data-toggle="modal" data-target="#confirmGradeModal">Grade and continue</button>
+          <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Final submission</button>
         </div>
 
       </div> <!-- row -->
