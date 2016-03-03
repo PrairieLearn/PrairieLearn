@@ -1,34 +1,4 @@
-var winston = require('winston');
-var logger = new (winston.Logger)({
-    transports: [
-        new (winston.transports.Console)({timestamp: true, colorize: true}),
-    ]
-});
-
-var errorList = [];
-var MemLogger = winston.transports.MemLogger = function(options) {
-    this.name = 'memLogger';
-    this.level = options.level || 'info';
-};
-MemLogger.prototype = new winston.Transport;
-MemLogger.prototype.log = function(level, msg, meta, callback) {
-    errorList.push({timestamp: (new Date()).toISOString(), level: level, msg: msg, meta: meta});
-    callback(null, true);
-};
-logger.add(winston.transports.MemLogger, {});
-
-logger.info('PrairieLearn server start');
-logger.transports.console.level = 'warn';
-logger.transports.memLogger.level = 'warn';
-
-var logInfoOverride = function(msg) {
-    logger.transports.console.level = 'info';
-    logger.transports.memLogger.level = 'info';
-    logger.info(msg);
-    logger.transports.console.level = 'warn';
-    logger.transports.memLogger.level = 'warn';
-}
-
+var logger = require("./logger");
 var _ = require("underscore");
 var fs = require("fs");
 var path = require("path");
@@ -36,6 +6,8 @@ var async = require("async");
 var moment = require("moment-timezone");
 var jju = require('jju');
 var validator = require('is-my-json-valid')
+
+logger.infoOverride('PrairieLearn server start');
 
 var config = {};
 
@@ -180,8 +152,10 @@ _(config.superusers).forEach(function(value, key) {
         config.roles[key] = "Student";
 });
 
-logger.add(winston.transports.File, {filename: config.logFilename, level: 'info'});
-logger.info('activated file logging: ' + config.logFilename);
+if (config.logFilename) {
+    logger.addFileLogging(config.logFilename);
+    logger.info('activated file logging: ' + config.logFilename);
+}
 
 var requirejs = require("requirejs");
 
@@ -1428,7 +1402,7 @@ app.post("/reload", function(req, res) {
     if (config.authType != "none") {
         return sendError(res, 500, "Server not in dev mode");
     }
-    logInfoOverride("Reloading all data");
+    logger.infoOverride("Reloading all data");
     loadData(function(err) {
         if (err) return sendError(res, 500, "Error reloading data", err);
         undefQuestionServers(function(err) {
@@ -1438,7 +1412,7 @@ app.post("/reload", function(req, res) {
                 if (err) return sendError(res, 500, 'Error deleting objects', err);
                 initTestData(function(err) {
                     if (err) return sendError(res, 500, "Error initializing tests", err);
-                    logInfoOverride("Reload complete");
+                    logger.infoOverride("Reload complete");
                     res.json({success: true});
                 });
             });
@@ -3459,7 +3433,7 @@ app.get("/stats/usersPerHour", function(req, res) {
 
 app.get("/errorList", function(req, res) {
     if (PrairieRole.hasPermission(req.userRole, 'viewErrors')) {
-        res.json({errorList: errorList});
+        res.json({errorList: logger.errorList});
     } else {
         res.json([]);
     }
@@ -3838,6 +3812,6 @@ async.series([
         logger.error("Error initializing PrairieLearn server, exiting...", err);
         process.exit(1);
     } else {
-        logInfoOverride("PrairieLearn server ready");
+        logger.infoOverride("PrairieLearn server ready");
     }
 });
