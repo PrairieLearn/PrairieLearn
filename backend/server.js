@@ -268,8 +268,7 @@ var processCollection = function(name, err, collection, options, callback) {
 var loadDB = function(callback) {
     MongoClient.connect(config.dbAddress, function(err, locDb) {
         if (err) {
-            logger.error("unable to connect to database at address: " + config.dbAddress, err);
-            callback(true);
+            callback("unable to connect to database at address " + config.dbAddress + ": " + err);
             return;
         }
         logger.info("successfully connected to database");
@@ -399,8 +398,7 @@ var loadDB = function(callback) {
             },
         ], function(err) {
             if (err) {
-                logger.error("Error loading DB collections");
-                callback(true);
+                callback("error loading DB collections");
             } else {
                 logger.info("Successfully loaded all DB collections");
                 callback(null);
@@ -3809,7 +3807,8 @@ async.series([
     startIntervalJobs
 ], function(err) {
     if (err) {
-        logger.error("Error initializing PrairieLearn server, exiting...", err);
+        logger.error("Error initializing PrairieLearn server:", err);
+        logger.error("Exiting...");
         process.exit(1);
     } else {
         logger.infoOverride("PrairieLearn server ready");
