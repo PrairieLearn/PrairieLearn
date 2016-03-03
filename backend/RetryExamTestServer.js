@@ -133,6 +133,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
                 tInstance.showZoneTitles = false;
                 _(options.zones).each(function(zone) {
                     if (_(zone).has("title")) {
+                        tInstance.showZoneTitles = true;
                         tInstance.zones[questions.length] = zone.title;
                     } else {
                         tInstance.zones[questions.length] = null;
