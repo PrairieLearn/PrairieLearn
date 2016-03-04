@@ -253,6 +253,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         this.options = _.defaults(options || {}, {
             questionTemplate: "",
             answerTemplate: "",
+			submissionTemplate: "",
             templateTwice: false,
         });
     }
@@ -340,6 +341,24 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
     SimpleClient.prototype.addOptionalAnswer = function(answer) {
         this.questionView.addOptionalAnswer(answer);
     };
+	
+	SimpleClient.prototype.hasSubmissionTemplate = function () {
+		if (this.options.submissionTemplate) {
+			return true;
+		}
+		else {
+			return false;
+		}
+	};
+	
+	SimpleClient.prototype.getSubmissionTemplate = function () {
+		if (this.options.submissionTemplate) {
+			return this.options.submissionTemplate;
+		}
+		else {
+			return "";
+		}
+	}
 
     return {
         SimpleClient: SimpleClient
