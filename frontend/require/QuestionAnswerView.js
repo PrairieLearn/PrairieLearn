@@ -6,6 +6,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'spinController', 'tex
         tagName: 'div',
 
         initialize: function() {
+            this.appModel = this.options.appModel;
             this.listenTo(this.model, "change:qClient change:showAnswer", this.render);
             this.render();
         },
@@ -18,7 +19,7 @@ define(['underscore', 'backbone', 'mustache', 'renderer', 'spinController', 'tex
             this.$el.html(html);
             var qClient = this.model.get("qClient");
             if (qClient && data.showAnswer) {
-                qClient.renderAnswer("#qanswerBody");
+                qClient.renderAnswer("#qanswerBody", this.appModel);
             }
         },
 

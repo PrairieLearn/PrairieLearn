@@ -200,6 +200,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
     var AnswerView = Backbone.View.extend({
 
         initialize: function() {
+            this.appModel = this.options.appModel;
             this.template = this.options.template;
             this.params = this.options.params;
             this.submittedAnswer = this.options.submittedAnswer;
@@ -221,7 +222,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
                 trueAnswer: this.trueAnswer.toJSON(),
                 feedback: this.feedback.toJSON(),
             };
-            this.$el.html(PrairieTemplate.template(this.template, templateData));
+            this.$el.html(PrairieTemplate.template(this.template, templateData, null, this.appModel));
             this.rivetsView = rivets.bind(this.$el, {
                 model: this.model,
                 params: this.params,
@@ -268,9 +269,9 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         this.questionView.render();
     };
 
-    SimpleClient.prototype.renderAnswer = function(answerDivID) {
+    SimpleClient.prototype.renderAnswer = function(answerDivID, appModel) {
         var that = this;
-        this.answerView = new AnswerView({el: answerDivID, template: this.options.answerTemplate, model: this.model, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback, templateTwice: this.options.templateTwice});
+        this.answerView = new AnswerView({el: answerDivID, template: this.options.answerTemplate, model: this.model, appModel: appModel, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback, templateTwice: this.options.templateTwice});
         this.answerView.render();
         this.listenTo(this.answerView, "renderFinished", function() {that.trigger("renderAnswerFinished");});
     };

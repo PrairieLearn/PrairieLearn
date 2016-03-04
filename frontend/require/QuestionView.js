@@ -32,7 +32,7 @@ define(['underscore', 'backbone', 'mustache', 'TestFactory', 'text!QuestionView.
             this.questionBodyView = new QuestionBodyView.QuestionBodyView({model: this.model, test: this.test, tInstance: this.tInstance, appModel: this.appModel, store: this.store});
             this.questionSubmitView = new QuestionSubmitView.QuestionSubmitView({model: this.model, test: this.test, tInstance: this.tInstance, store: this.store});
             this.questionGradingView = new QuestionGradingView.QuestionGradingView({model: this.model, store: this.store});
-            this.questionAnswerView = new QuestionAnswerView.QuestionAnswerView({model: this.model, store: this.store});
+            this.questionAnswerView = new QuestionAnswerView.QuestionAnswerView({model: this.model, store: this.store, appModel: this.appModel});
             this.questionBodyView.render();
             this.questionSubmitView.render();
             this.questionGradingView.render();
