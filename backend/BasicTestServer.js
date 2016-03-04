@@ -21,7 +21,7 @@ define(["underscore", "moment-timezone"], function(_, moment) {
             .value();
     };
 
-    BasicTestServer.updateTInstance = function(tInstance, test, options, questionDB) {
+    BasicTestServer.updateTInstance = function(tInstance, test, options, questionDB, callback) {
         if (_(tInstance).has('score') && !_(tInstance).has('scorePerc')) {
             // upgrade a score to a scorePerc, without applying credit limits
             tInstance.scorePerc = Math.floor(tInstance.score / test.maxScore * 100);
@@ -38,6 +38,7 @@ define(["underscore", "moment-timezone"], function(_, moment) {
                 title: questionDB[qid] && questionDB[qid].title,
             });
         });
+        callback(null);
     };
 
     BasicTestServer.updateWithSubmission = function(tInstance, test, submission, options) {

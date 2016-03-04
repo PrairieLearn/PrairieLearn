@@ -21,7 +21,7 @@ define(["underscore", "moment-timezone"], function(_, moment) {
         test.text = options.text;
     };
 
-    GameTestServer.updateTInstance = function(tInstance, test, options, questionDB) {
+    GameTestServer.updateTInstance = function(tInstance, test, options, questionDB, callback) {
         if (_(tInstance).has('score') && !_(tInstance).has('scorePerc')) {
             // upgrade a score to a scorePerc, without applying credit limits
             tInstance.scorePerc = Math.floor(tInstance.score / test.maxScore * 100);
@@ -46,7 +46,7 @@ define(["underscore", "moment-timezone"], function(_, moment) {
                 title: questionDB[qid] && questionDB[qid].title,
             });
         });
-        return tInstance;
+        callback(null, tInstance);
     };
 
     GameTestServer.updateWithSubmission = function(tInstance, test, submission, options) {

@@ -106,7 +106,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
             test.availDate = moment.tz(options.availDate, options.timezone).format();
     };
 
-    RetryExamTestServer.updateTInstance = function(tInstance, test, options) {
+    RetryExamTestServer.updateTInstance = function(tInstance, test, options, questionDB, callback) {
         if (_(tInstance).has('score') && !_(tInstance).has('scorePerc')) {
             // upgrade a score to a scorePerc, without applying credit limits
             tInstance.scorePerc = Math.floor(tInstance.score / test.maxScore * 100);
@@ -179,7 +179,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
                 qid: qid,
             });
         });
-        return tInstance;
+        callback(null, tInstance);
     };
 
     RetryExamTestServer.updateWithSubmission = function(tInstance, test, submission, options) {

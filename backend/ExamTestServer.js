@@ -37,7 +37,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
         test._private = ["scoresByUID", "highScoresByUID", "completeHighScoresByUID"];
     };
 
-    ExamTestServer.updateTInstance = function(tInstance, test, options, questionDB) {
+    ExamTestServer.updateTInstance = function(tInstance, test, options, questionDB, callback) {
         if (_(tInstance).has('score') && !_(tInstance).has('scorePerc')) {
             // upgrade a score to a scorePerc, without applying credit limits
             tInstance.scorePerc = Math.floor(tInstance.score / test.maxScore * 100);
@@ -70,7 +70,7 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
                 title: (questionDB[qid] && !tInstance.open) ? questionDB[qid].title : "No title",
             });
         });
-        return tInstance;
+        callback(null, tInstance);
     };
 
     ExamTestServer.updateWithSubmission = function(tInstance, test, submission, options) {
