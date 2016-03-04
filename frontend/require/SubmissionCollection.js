@@ -5,7 +5,7 @@ define(['underscore', 'backbone', 'SubmissionModel', 'moment'], function(_, Back
         model: SubmissionModel.SubmissionModel,
 
         initialize: function(models, options) {
-            this.qiid = options.qiid;
+            // Nothing here?
         },
 
         comparator: function(thisSub, thatSub) {
