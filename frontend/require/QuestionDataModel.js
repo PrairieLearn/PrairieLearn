@@ -1,5 +1,5 @@
 
-define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, async) {
+define(['underscore', 'backbone', 'jquery', 'async', 'SubmissionCollection'], function(_, Backbone, $, async, SubmissionCollection) {
 
     var QuestionDataModel = Backbone.Model.extend({
         initialize: function(attributes, options) {
@@ -26,13 +26,20 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 dirtyData: true,
                 score: null,
                 trueAnswer: null,
-                feedback: null
+                feedback: null,
+				hasSubmissionTemplate: false,
+				pastSubmissions: null,
+				showSubmissions: false,
             });
             var testOptions = this.test.get("options");
             if (testOptions.showQuestionTitle !== undefined)
                 this.set("showTitle", testOptions.showQuestionTitle);
             this.listenTo(this.appModel, "change:userUID", this.loadQuestion);
             this.on("answerChanged", this.updateDirtyStatus);
+			this.on("pastSubmissionsReady", this.fetchSubmissions);
+			this.on("pastSubmissionsFetched", this.checkShowSubmissions);
+			this.on("submissionSaved", this.fetchSubmissions);
+			this.on("submissionSubmitted", this.fetchSubmissions);
             this.loadQuestion();
         },
 
@@ -63,7 +70,19 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 require([that.appModel.apiURL("qInstances/" + qInstance.qiid + "/client.js")], function(qClient) {
                     qClient.initialize(qInstance.params);
                     that.set("qClient", qClient);
-
+					
+					if(qClient.hasSubmissionTemplate()) {
+						that.set("hasSubmissionTemplate", true);
+					}
+					
+					submissionURL = that.appModel.apiURL("submissions/?qiid="+qInstance.qiid);
+					pastSubmissions = new SubmissionCollection.SubmissionCollection([],{
+						qiid: qInstance.qiid,
+						url: submissionURL,
+					});
+					that.set("pastSubmissions", pastSubmissions);
+					that.trigger("pastSubmissionsReady");
+					
                     // Show answer if it is public in the qInstance
                     // (i.e. the test has been finished)
                     if (_(qInstance).has("trueAnswer")) {
@@ -118,6 +137,29 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 });
             }
         },
+		
+		fetchSubmissions: function() {
+			var hasSubmissionTemplate = this.get("hasSubmissionTemplate");
+			var pastSubmissions = this.get("pastSubmissions");
+			that = this;
+			if (hasSubmissionTemplate && pastSubmissions) {
+				pastSubmissions.fetch({
+					success: function() { that.trigger("pastSubmissionsFetched"); },
+				});
+			}
+		},
+	
+		checkShowSubmissions: function() {
+			var hasSubmissionTemplate = this.get("hasSubmissionTemplate");
+			var pastSubmissions = this.get("pastSubmissions");
+			if (hasSubmissionTemplate && pastSubmissions && pastSubmissions.length > 0) {
+				showSubmissions = true;
+				this.appModel.trigger("renderPastSubmissions");
+			}
+			else {
+				showSubmissions = false;
+			}
+		},
 
         submitAnswer: function(options) {
             options = _.defaults(options || {}, {
@@ -157,6 +199,7 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                     qClient.setFeedback(submission.feedback);
                 }
                 that.trigger("graded");
+				that.trigger("submissionSubmitted");
             };
             var errorFn = function(jqXHR, textStatus, errorThrown) {
                 var e = textStatus ? textStatus : "Unknown error";
@@ -226,6 +269,7 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                     submissionsByQid[submission.qid] = submission;
                 }
                 that.updateDirtyStatus();
+				that.trigger("submissionSaved");
             };
             var errorFn = function(jqXHR, textStatus, errorThrown) {
                 that.set("saveInProgress", false);
