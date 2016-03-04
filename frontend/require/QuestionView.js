@@ -1,5 +1,5 @@
 
-define(['underscore', 'backbone', 'mustache', 'TestFactory', 'text!QuestionView.html', 'QuestionBodyView', 'QuestionSubmitView', 'QuestionGradingView', 'QuestionAnswerView', 'DefaultTestSidebarView'], function(_, Backbone, Mustache, TestFactory, questionViewTemplate, QuestionBodyView, QuestionSubmitView, QuestionGradingView, QuestionAnswerView, DefaultTestSidebarView) {
+define(['underscore', 'backbone', 'mustache', 'TestFactory', 'text!QuestionView.html', 'QuestionBodyView', 'QuestionSubmitView', 'QuestionGradingView', 'QuestionAnswerView', 'QuestionSubmissionsView', 'DefaultTestSidebarView'], function(_, Backbone, Mustache, TestFactory, questionViewTemplate, QuestionBodyView, QuestionSubmitView, QuestionGradingView, QuestionAnswerView, QuestionSubmissionsView, DefaultTestSidebarView) {
 
     var QuestionView = Backbone.View.extend({
 
@@ -33,16 +33,19 @@ define(['underscore', 'backbone', 'mustache', 'TestFactory', 'text!QuestionView.
             this.questionSubmitView = new QuestionSubmitView.QuestionSubmitView({model: this.model, test: this.test, tInstance: this.tInstance, store: this.store});
             this.questionGradingView = new QuestionGradingView.QuestionGradingView({model: this.model, store: this.store});
             this.questionAnswerView = new QuestionAnswerView.QuestionAnswerView({model: this.model, store: this.store, appModel: this.appModel});
+			this.questionSubmissionsView = new QuestionSubmissionsView.QuestionSubmissionsView({model: this.model, store: this.store});
             this.questionBodyView.render();
             this.questionSubmitView.render();
             this.questionGradingView.render();
             this.questionAnswerView.render();
+			this.questionSubmissionsView.render();
 
             this.$("#qbody").html(this.questionBodyView.el);
             this.$("#qsidebar").html(this.questionSidebarView.el);
             this.$("#qsubmit").html(this.questionSubmitView.el);
             this.$("#qgrading").html(this.questionGradingView.el);
             this.$("#qanswer").html(this.questionAnswerView.el);
+			this.$("#qsubmissions").html(this.questionSubmissionsView.el);
         },
 
         close: function() {
@@ -65,6 +68,9 @@ define(['underscore', 'backbone', 'mustache', 'TestFactory', 'text!QuestionView.
             if (this.questionAnswerView) {
                 this.questionAnswerView.close();
             }
+			if (this.questionSubmissionsView) {
+				this.questionSubmissionsView.close();
+			}
             this.remove();
         }
     });
