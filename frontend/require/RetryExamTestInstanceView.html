@@ -24,6 +24,9 @@
         <h4 class="modal-title">Final submission</h4>
       </div>
       <div class="modal-body">
+        {{^allQuestionsAnswered}}
+        <div class="alert alert-warning">There are still unanswered questions.</div>
+        {{/allQuestionsAnswered}}
         <p><strong>Warning</strong>: You will not be able to answer any more questions after the final submission.</p>
         <p>Are you sure you want to finish?</p>
       </div>
