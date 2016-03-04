@@ -3,7 +3,11 @@
   <div class="panel-heading"><h3 class="panel-title">Past Submissions</h3></div>
   <div class="panel-body">
     <div id="qsubmissionsBody">
-	The template is currently incomplete.
+	{{#pastSubmissions}}
+	<div id="{{sid}}submissionBody">
+	Submission {{sid}} is loading...
+	</div>
+	{{/pastSubmissions}}
     </div>
   </div>
 </div>
