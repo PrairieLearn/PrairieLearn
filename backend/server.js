@@ -1356,7 +1356,7 @@ app.get("/submissions", function(req, res) {
 	if ("qiid" in req.query) {
 		query.qiid = req.query.qiid;
 	}
-    sCollect.find(query, function(err, cursor) {
+    db.sCollect.find(query, function(err, cursor) {
         if (err) {
             return sendError(res, 500, "Error accessing submissions database", err);
         }
