@@ -148,13 +148,6 @@ var newID = function(type, callback) {
     });
 };
 
-var newIDNoError = function(req, res, type, callback) {
-    newID(type, function(err, id) {
-        if (err) return sendError(res, 500, "Error getting new ID of type " + type, err);
-        callback(id);
-    });
-};
-
 var processCollection = function(name, err, collection, options, callback) {
     if (err) {
         logger.error("unable to fetch '" + name + "' collection", err);
@@ -1657,7 +1650,8 @@ var makeQInstance = function(req, res, qInstance, callback) {
         qInstance.vid = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
     }
     ensureObjAuthBAD(req, res, qInstance, "write", function(qInstance) {
-        newIDNoError(req, res, "qiid", function(qiid) {
+        newID("qiid", function(err, qiid) {
+            if (err) return sendError(res, 500, "Unable to get new qiid", err);
             qInstance.qiid = qiid;
             loadQuestionServer(qInstance.qid, function(err, server) {
                 if (err) return sendError(res, 500, "Unable to load question server for QID: " + qInstance.qid, err);
@@ -2043,7 +2037,8 @@ app.post("/submissions", function(req, res) {
                             submission.feedback = grading.feedback;
                     }
                     submission.trueAnswer = qInstance.trueAnswer;
-                    newIDNoError(req, res, "sid", function(sid) {
+                    newID("sid", function(err, sid) {
+                        if (err) return sendError(res, 500, "Unable to get new sid", err);
                         submission.sid = sid;
                         if (tiid) {
                             testProcessSubmission(req, res, tiid, submission, function(submission) {
@@ -2267,7 +2262,8 @@ var autoCreateTInstances = function(req, res, tInstances, autoCreateCallback) {
         if (testStatus.avail && !test.multipleInstance && tiDB[tid] === undefined && req.query.uid !== undefined) {
             readTestBAD(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
-                    newIDNoError(req, res, "tiid", function(tiid) {
+                    newID("tiid", function(err, tiid) {
+                        if (err) return sendError(res, 500, "Unable to get new tiid", err);
                         var tInstance = {
                             tiid: tiid,
                             tid: tid,
@@ -2401,7 +2397,8 @@ app.post("/tInstances", function(req, res) {
                     if (err) return sendError(res, 400, "Invalid tid: " + tid, {tid: tid});
                     readTestBAD(res, tid, function(test) {
                         loadTestServer(tid, function(server) {
-                            newIDNoError(req, res, "tiid", function(tiid) {
+                            newID("tiid", function(err, tiid) {
+                                if (err) return sendError(res, 500, "Unable to get new tiid", err);
                                 var tInstance = {
                                     tiid: tiid,
                                     tid: tid,
