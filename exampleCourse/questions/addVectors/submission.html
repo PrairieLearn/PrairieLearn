@@ -1,3 +1,11 @@
+<!-- The following attributes are available in the submission template:
+	{{index}}  				: Submission number (oldest is #1)
+	{{date}}   				: Datestamp of submission
+	{{{submissionStatus}}} 	: Label indicator correct/incorrect (if graded) or saved (if not graded)
+							- NOTE: Need three braces for this to render properly
+							- Currently, can only return saved
+	{{submittedAnswer.*}} 	: Has same internal structure as trueAnswer (specified in answer.html)
+--!>
 <p>
-  Submission {{index}} ({{date}}): $\vec{w} = [{{submittedAnswer.wx}}, {{submittedAnswer.wy}}]\rm\ m/s$
+  Submission {{index}} ({{date}}) {{{submissionStatus}}} $\vec{w} = [{{submittedAnswer.wx}}, {{submittedAnswer.wy}}]\rm\ m/s$
 </p>

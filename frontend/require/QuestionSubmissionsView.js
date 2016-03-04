@@ -35,10 +35,29 @@ define(['underscore', 'backbone', 'mustache', 'moment', 'renderer', 'spinControl
 					// Fix the datestamp to look nicer
 					prettyDate = moment(submissionTemplateData.date).format('lll');
 					submissionTemplateData.date = prettyDate;
+					// Generate a status label
+					if (submissionTemplateData.graded) {
+						/* Right now, submissions always come back with graded = false, since we
+							aren't updating the graded flag in the database (and we're not sending
+							the score attribute during the GET call)
+						   If we update the way we store grading information, then we can use the score
+							attribute to pick a correct/incorrect flag here.
+						
+						if (submissionTemplateData.correct == 1) {
+							submissionTemplateData.submissionStatus = '<span class="label label-success">correct</span>';
+						}
+						else {
+							submissionTemplateData.submissionStatus = '<span class="label label-danger">incorrect</span>';
+						} */
+					} else {
+						submissionTemplateData.submissionStatus = '<span class="label label-primary">saved</span>';
+					}
 					
 					var submissionHTML = Mustache.render(submissionTemplate, submissionTemplateData);
 					that.$(divID).html(submissionHTML);
 				});
+				if (window.MathJax)
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
 			}
         },
 
