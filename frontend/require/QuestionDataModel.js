@@ -38,8 +38,7 @@ define(['underscore', 'backbone', 'jquery', 'async', 'SubmissionCollection'], fu
             this.on("answerChanged", this.updateDirtyStatus);
 			this.on("pastSubmissionsReady", this.fetchSubmissions);
 			this.on("pastSubmissionsFetched", this.checkShowSubmissions);
-			this.on("submissionSaved", this.fetchSubmissions);
-			this.on("submissionSubmitted", this.fetchSubmissions);
+			this.on("newSubmission", this.fetchSubmissions);
             this.loadQuestion();
         },
 
@@ -150,14 +149,13 @@ define(['underscore', 'backbone', 'jquery', 'async', 'SubmissionCollection'], fu
 		},
 	
 		checkShowSubmissions: function() {
+			this.set("showSubmissions", false);
 			var hasSubmissionTemplate = this.get("hasSubmissionTemplate");
 			var pastSubmissions = this.get("pastSubmissions");
 			if (hasSubmissionTemplate && pastSubmissions && pastSubmissions.length > 0) {
 				this.set("showSubmissions",true);
 			}
-			else {
-				this.set("showSubmissions", false);
-			}
+			this.trigger("refreshSubmissionsView");
 		},
 
         submitAnswer: function(options) {
@@ -198,7 +196,7 @@ define(['underscore', 'backbone', 'jquery', 'async', 'SubmissionCollection'], fu
                     qClient.setFeedback(submission.feedback);
                 }
                 that.trigger("graded");
-				that.trigger("submissionSubmitted");
+				that.trigger("newSubmission");
             };
             var errorFn = function(jqXHR, textStatus, errorThrown) {
                 var e = textStatus ? textStatus : "Unknown error";
@@ -238,7 +236,7 @@ define(['underscore', 'backbone', 'jquery', 'async', 'SubmissionCollection'], fu
                 this.set("dirtyData", true);
                 return;
             }
-            this.set("hasSavedSubmission", true);
+            this.set("newSubmission", true);
 
             var qClient = this.get("qClient");
             var submittedAnswer = qClient.getSubmittedAnswer();
@@ -267,8 +265,8 @@ define(['underscore', 'backbone', 'jquery', 'async', 'SubmissionCollection'], fu
                     var submissionsByQid = that.tInstance.get("submissionsByQid");
                     submissionsByQid[submission.qid] = submission;
                 }
+				that.trigger("newSubmission");
                 that.updateDirtyStatus();
-				that.trigger("submissionSaved");
             };
             var errorFn = function(jqXHR, textStatus, errorThrown) {
                 that.set("saveInProgress", false);

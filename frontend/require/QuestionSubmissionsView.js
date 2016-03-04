@@ -6,7 +6,7 @@ define(['underscore', 'backbone', 'mustache', 'moment', 'renderer', 'spinControl
         tagName: 'div',
 
         initialize: function() {
-            this.listenTo(this.model, "change:qClient change:pastSubmissions change:showSubmissions", this.render);
+            this.listenTo(this.model, "change:qClient change:pastSubmissions change:showSubmissions refreshSubmissionsView", this.render);
             this.render();
         },
 
