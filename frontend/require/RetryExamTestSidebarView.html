@@ -2,6 +2,12 @@
   <div class="panel-heading"><h3 class="panel-title"><a href="#ti/{{tid}}/{{tiNumber}}">{{testShortName}}</a></h3></div>
   <div class="panel-body">
 
+    {{#open}}
+    {{#allQuestionsAnswered}}
+    <p>You have answered every question. Return to Assessment overview to finish the exam.</p>
+    {{/allQuestionsAnswered}}
+    {{/open}}
+
     {{^open}}
     <p>
       Score: {{correctPercentage}}% ({{score}}/{{maxScore}})
