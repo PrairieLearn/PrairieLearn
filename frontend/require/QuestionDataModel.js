@@ -154,7 +154,6 @@ define(['underscore', 'backbone', 'jquery', 'async', 'SubmissionCollection'], fu
 			var pastSubmissions = this.get("pastSubmissions");
 			if (hasSubmissionTemplate && pastSubmissions && pastSubmissions.length > 0) {
 				showSubmissions = true;
-				this.appModel.trigger("renderPastSubmissions");
 			}
 			else {
 				showSubmissions = false;
