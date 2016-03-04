@@ -1,5 +1,6 @@
 var logger = require("./logger");
 var config = require("./config");
+var db = require("./db");
 
 var _ = require("underscore");
 var fs = require("fs");
@@ -132,205 +133,6 @@ var STATS_INTERVAL = 10 * 60 * 1000; // ms
 
 app.use(express.json());
 app.use(express.cookieParser());
-
-var db, countersCollect, uCollect, sCollect, qiCollect, statsCollect, tCollect, tiCollect, accessCollect, pullCollect, dCollect, fCollect;
-
-var MongoClient = require('mongodb').MongoClient;
-
-var newID = function(type, callback) {
-    var query = {_id: type};
-    var sort = [['_id', 1]];
-    var doc = {$inc: {seq: 1}};
-    countersCollect.findAndModify(query, sort, doc, {w: 1, new: true}, function(err, item) {
-        if (err) return callback(err);
-        var id = type.slice(0, type.length - 2) + item.value.seq;
-        callback(null, id);
-    });
-};
-
-var processCollection = function(name, err, collection, options, callback) {
-    if (err) {
-        logger.error("unable to fetch '" + name + "' collection", err);
-        callback(true);
-        return;
-    }
-    logger.info("successfully fetched '" + name + "' collection");
-    var tasks = [];
-    if (options.indexes) {
-        _(options.indexes).each(function(index) {
-            tasks.push(function(cb) {
-                collection.ensureIndex(index.keys, index.options, function(err, indexName) {
-                    if (err) {
-                        logger.error("unable to create index on '" + name + "' collection", index, err);
-                        return cb(err);
-                    }
-                    logger.info("have '" + name + "' index: " + indexName);
-                    cb(null);
-                });
-            });
-        });
-    }
-    if (options.idPrefix) {
-        tasks.push(function(cb) {
-            var idName = options.idPrefix + "id";
-            countersCollect.update({_id: idName}, {$setOnInsert: {seq: 0}}, {w: 1, upsert: true}, function(err, result) {
-                if (err) {
-                    logger.error("unable to create counter for " + idName, index, err);
-                    return cb(err);
-                }
-                logger.info("have counter for " + idName);
-                cb(null);
-            });
-        });
-    }
-
-    async.series(tasks, function(err, results) {
-        if (err) return callback(err);
-        callback(null);
-    });
-};
-
-var loadDB = function(callback) {
-    MongoClient.connect(config.dbAddress, function(err, locDb) {
-        if (err) {
-            callback("unable to connect to database at address " + config.dbAddress + ": " + err);
-            return;
-        }
-        logger.info("successfully connected to database");
-        db = locDb;
-        async.series([
-            function(cb) {
-                db.collection('counters', function(err, collection) {
-                    countersCollect = collection;
-                    var options = {};
-                    processCollection('counters', err, collection, options, cb);
-                });
-            },
-            function(cb) {
-                db.collection('users', function(err, collection) {
-                    uCollect = collection;
-                    var options = {
-                        indexes: [
-                            {keys: {uid: 1}, options: {unique: true}},
-                        ],
-                    };
-                    processCollection('users', err, collection, options, cb);
-                });
-            },
-            function(cb) {
-                db.collection('submissions', function(err, collection) {
-                    sCollect = collection;
-                    var options = {
-                        idPrefix: "s",
-                        indexes: [
-                            {keys: {sid: 1}, options: {unique: true}},
-                            {keys: {uid: 1}, options: {}},
-                            {keys: {qiid: 1}, options: {}},
-                        ],
-                    };
-                    processCollection('submissions', err, collection, options, cb);
-                });
-            },
-            function(cb) {
-                db.collection('qInstances', function(err, collection) {
-                    qiCollect = collection;
-                    var options = {
-                        idPrefix: "qi",
-                        indexes: [
-                            {keys: {qiid: 1}, options: {unique: true}},
-                            {keys: {uid: 1}, options: {}},
-                            {keys: {tiid: 1}, options: {}},
-                        ],
-                    };
-                    processCollection('qInstances', err, collection, options, cb);
-                });
-            },
-            function(cb) {
-                db.collection('statistics', function(err, collection) {
-                    statsCollect = collection;
-                    var options = {};
-                    processCollection('statistics', err, collection, options, cb);
-                });
-            },
-            function(cb) {
-                db.collection('tests', function(err, collection) {
-                    tCollect = collection;
-                    var options = {
-                        indexes: [
-                            {keys: {tid: 1}, options: {unique: true}},
-                        ],
-                    };
-                    processCollection('tests', err, collection, options, cb);
-                });
-            },
-            function(cb) {
-                db.collection('tInstances', function(err, collection) {
-                    tiCollect = collection;
-                    var options = {
-                        idPrefix: "ti",
-                        indexes: [
-                            {keys: {tiid: 1}, options: {unique: true}},
-                            {keys: {uid: 1}, options: {}},
-                            {keys: {tid: 1}, options: {}},
-                        ],
-                    };
-                    processCollection('tInstances', err, collection, options, cb);
-                });
-            },
-            function(cb) {
-                db.collection('accesses', function(err, collection) {
-                    accessCollect = collection;
-                    var options = {};
-                    processCollection('accesses', err, collection, options, cb);
-                });
-            },
-            function(cb) {
-                db.collection('pulls', function(err, collection) {
-                    pullCollect = collection;
-                    var options = {
-                        idPrefix: "p",
-                        indexes: [
-                            {keys: {pid: 1}, options: {unique: true}},
-                            {keys: {pullHash: 1}, options: {}},
-                        ],
-                    };
-                    processCollection('pulls', err, collection, options, cb);
-                });
-            },
-            function(cb) {
-                db.collection('deleted', function(err, collection) {
-                    dCollect = collection;
-                    var options = {
-                        idPrefix: "d",
-                        indexes: [
-                            {keys: {did: 1}, options: {unique: true}},
-                        ],
-                    };
-                    processCollection('deleted', err, collection, options, cb);
-                });
-            },
-            function(cb) {
-                db.collection('finishes', function(err, collection) {
-                    fCollect = collection;
-                    var options = {
-                        idPrefix: "f",
-                        indexes: [
-                            {keys: {fid: 1}, options: {unique: true}},
-                        ],
-                    };
-                    processCollection('finishes', err, collection, options, cb);
-                });
-            },
-        ], function(err) {
-            if (err) {
-                callback("error loading DB collections");
-            } else {
-                logger.info("Successfully loaded all DB collections");
-                callback(null);
-            }
-        });
-    });
-};
 
 var courseInfo = {};
 
@@ -478,7 +280,7 @@ var loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, op
 
 var initTestData = function(callback) {
     async.each(_(testDB).values(), function(item, cb) {
-        tCollect.findOne({tid: item.tid}, function(err, obj) {
+        db.tCollect.findOne({tid: item.tid}, function(err, obj) {
             if (err) {
                 logger.error("error accessing tCollect for tid: " + item.tid, err);
                 cb(err);
@@ -505,7 +307,7 @@ var initTestData = function(callback) {
                         }
                     });
                 }
-                tCollect.update({tid: item.tid}, obj, {upsert: true, w: 1}, function(err) {
+                db.tCollect.update({tid: item.tid}, obj, {upsert: true, w: 1}, function(err) {
                     if (err) {
                         logger.error("Error writing to tCollect", {tid: item.tid, err: err});
                         cb(err);
@@ -947,7 +749,7 @@ app.use(function(req, res, next) {
     }
 
     // add authUID to DB if not already present
-    uCollect.update(
+    db.uCollect.update(
         {uid: req.authUID},
         {$setOnInsert: {uid: req.authUID, name: req.authName, dateAdded: (new Date()).toISOString()}},
         {upsert: true, w: 1},
@@ -960,7 +762,7 @@ app.use(function(req, res, next) {
             if (userUID === authUID) {
                 return next();
             }
-            uCollect.findOne({uid: userUID}, function(err, uObj) {
+            db.uCollect.findOne({uid: userUID}, function(err, uObj) {
                 if (!uObj) {
                     return sendError(res, 400, "No user with uid " + userUID);
                 }
@@ -987,8 +789,8 @@ app.use(function(req, res, next) {
             body: req.body,
         };
         logger.info("request", access);
-        if (accessCollect) {
-            accessCollect.insert(access);
+        if (db.accessCollect) {
+            db.accessCollect.insert(access);
         };
     }
     next();
@@ -1196,7 +998,7 @@ var cleanPull = function(obj) {
 var ensureDiskCommitInDB = function(callback) {
     getCourseCommitFromDisk(function(err, commit) {
         if (err) return callback(err);
-        pullCollect.findOne({commitHash: commit.commitHash}, function(err, obj) {
+        db.pullCollect.findOne({commitHash: commit.commitHash}, function(err, obj) {
             if (err) return callback(err);
             if (obj) return callback(null, cleanPull(obj));
             var pull = _.defaults(commit, {
@@ -1207,10 +1009,10 @@ var ensureDiskCommitInDB = function(callback) {
                 createBranch: '',
                 createResult: '',
             });
-            newID('pid', function(err, pid) {
+            db.newID('pid', function(err, pid) {
                 if (err) return callback(err);
                 pull.pid = pid;
-                pullCollect.insert(pull, {w: 1}, function(err) {
+                db.pullCollect.insert(pull, {w: 1}, function(err) {
                     if (err) return callback(err);
                     callback(null, pull);
                 });
@@ -1228,7 +1030,7 @@ app.get("/coursePulls", function(req, res) {
     }
     ensureDiskCommitInDB(function(err) {
         if (err) return sendError(res, 500, "Error mapping disk commit to DB", err);
-        pullCollect.find({}, function(err, cursor) {
+        db.pullCollect.find({}, function(err, cursor) {
             if (err) return sendError(res, 500, "Error accessing database", err);
             cursor.toArray(function(err, objs) {
                 if (err) return sendError(res, 500, "Error serializing", err);
@@ -1299,10 +1101,10 @@ app.post("/coursePulls", function(req, res) {
                     createBranch: config.gitCourseBranch,
                     createResult: pullResult,
                 });
-                newID('pid', function(err, pid) {
+                db.newID('pid', function(err, pid) {
                     if (err) return sendError(res, 500, "Unable to get new pid", err);
                     pull.pid = pid;
-                    pullCollect.insert(pull, {w: 1}, function(err) {
+                    db.pullCollect.insert(pull, {w: 1}, function(err) {
                         if (err) return sendError(res, 500, "Unable to insert pull", err);
                         loadData(function(err) {
                             if (err) return sendError(res, 500, "Error reloading data", err);
@@ -1331,7 +1133,7 @@ app.post("/reload", function(req, res) {
         undefQuestionServers(function(err) {
             if (err) return sendError(res, 500, "Error undefining question servers", err);
             var query = {uid: req.authUID};
-            deleteObjects(req, query, tiCollect, 'tInstances', function(err) {
+            deleteObjects(req, query, db.tiCollect, 'tInstances', function(err) {
                 if (err) return sendError(res, 500, 'Error deleting objects', err);
                 initTestData(function(err) {
                     if (err) return sendError(res, 500, "Error initializing tests", err);
@@ -1478,10 +1280,10 @@ app.get("/clientFiles/*", function(req, res) {
 });
 
 app.get("/users", function(req, res) {
-    if (!uCollect) {
+    if (!db.uCollect) {
         return sendError(res, 500, "Do not have access to the users database collection");
     }
-    uCollect.find({}, {"uid": 1, "name": 1}, function(err, cursor) {
+    db.uCollect.find({}, {"uid": 1, "name": 1}, function(err, cursor) {
         if (err) {
             return sendError(res, 500, "Error accessing users database", err);
         }
@@ -1508,10 +1310,10 @@ app.get("/users", function(req, res) {
 });
 
 app.get("/users/:uid", function(req, res) {
-    if (!uCollect) {
+    if (!db.uCollect) {
         return sendError(res, 500, "Do not have access to the users database collection");
     }
-    uCollect.findOne({uid: req.params.uid}, function(err, uObj) {
+    db.uCollect.findOne({uid: req.params.uid}, function(err, uObj) {
         if (err) {
             return sendError(res, 500, "Error accessing users database for uid " + req.params.uid, err);
         }
@@ -1583,7 +1385,7 @@ var addQuestionToQInstances = function(qInstances, req, callback) {
 };
 
 app.get("/qInstances", function(req, res) {
-    if (!qiCollect) {
+    if (!db.qiCollect) {
         return sendError(res, 500, "Do not have access to the qInstances database collection");
     }
     var query = {};
@@ -1596,7 +1398,7 @@ app.get("/qInstances", function(req, res) {
     if ("vid" in req.query) {
         query.vid = req.query.vid;
     }
-    qiCollect.find(query, function(err, cursor) {
+    db.qiCollect.find(query, function(err, cursor) {
         if (err) {
             return sendError(res, 500, "Error accessing qInstances database", err);
         }
@@ -1615,10 +1417,10 @@ app.get("/qInstances", function(req, res) {
 });
 
 app.get("/qInstances/:qiid", function(req, res) {
-    if (!qiCollect) {
+    if (!db.qiCollect) {
         return sendError(res, 500, "Do not have access to the qInstances database collection");
     }
-    qiCollect.findOne({qiid: req.params.qiid}, function(err, obj) {
+    db.qiCollect.findOne({qiid: req.params.qiid}, function(err, obj) {
         if (err) {
             return sendError(res, 500, "Error accessing qInstances database for qiid " + req.params.qiid, err);
         }
@@ -1650,7 +1452,7 @@ var makeQInstance = function(req, res, qInstance, callback) {
         qInstance.vid = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
     }
     ensureObjAuthBAD(req, res, qInstance, "write", function(qInstance) {
-        newID("qiid", function(err, qiid) {
+        db.newID("qiid", function(err, qiid) {
             if (err) return sendError(res, 500, "Unable to get new qiid", err);
             qInstance.qiid = qiid;
             loadQuestionServer(qInstance.qid, function(err, server) {
@@ -1666,7 +1468,7 @@ var makeQInstance = function(req, res, qInstance, callback) {
                 } catch (e) {
                     return sendError(res, 500, "Error in " + qInstance.qid + " getData(): " + e.toString(), {stack: e.stack});
                 }
-                qiCollect.insert(qInstance, {w: 1}, function(err) {
+                db.qiCollect.insert(qInstance, {w: 1}, function(err) {
                     if (err) {
                         return sendError(res, 500, "Error writing qInstance to database", err);
                     }
@@ -1753,7 +1555,7 @@ app.post("/qInstances", function(req, res) {
             }
         }
         if (qiid) {
-            qiCollect.findOne({qiid: qiid}, function(err, obj) {
+            db.qiCollect.findOne({qiid: qiid}, function(err, obj) {
                 if (err) {
                     return sendError(res, 500, "Error accessing qInstances database for qiid " + req.params.qiid, err);
                 }
@@ -1798,7 +1600,7 @@ app.post("/qInstances", function(req, res) {
 });
 
 app.get("/submissions", function(req, res) {
-    if (!sCollect) {
+    if (!db.sCollect) {
         return sendError(res, 500, "Do not have access to the submissions database collection");
     }
     var query = {};
@@ -1808,7 +1610,7 @@ app.get("/submissions", function(req, res) {
     if ("qid" in req.query) {
         query.qid = req.query.qid;
     }
-    sCollect.find(query, function(err, cursor) {
+    db.sCollect.find(query, function(err, cursor) {
         if (err) {
             return sendError(res, 500, "Error accessing submissions database", err);
         }
@@ -1824,10 +1626,10 @@ app.get("/submissions", function(req, res) {
 });
 
 app.get("/submissions/:sid", function(req, res) {
-    if (!sCollect) {
+    if (!db.sCollect) {
         return sendError(res, 500, "Do not have access to the submissions database collection");
     }
-    sCollect.findOne({sid: req.params.sid}, function(err, obj) {
+    db.sCollect.findOne({sid: req.params.sid}, function(err, obj) {
         if (err) {
             return sendError(res, 500, "Error accessing submissions database for sid " + req.params.sid, err);
         }
@@ -1845,7 +1647,7 @@ var deepClone = function(obj) {
 };
 
 var readTInstance = function(tiid, callback) {
-    tiCollect.findOne({tiid: tiid}, function(err, obj) {
+    db.tiCollect.findOne({tiid: tiid}, function(err, obj) {
         if (err) return callback(err);
         if (!obj) return callback("No tInstance with tiid: " + tiid);
         return callback(null, obj);
@@ -1860,7 +1662,7 @@ var readTInstanceBAD = function(res, tiid, callback) {
 };
 
 var readQInstance = function(qiid, callback) {
-    qiCollect.findOne({qiid: qiid}, function(err, obj) {
+    db.qiCollect.findOne({qiid: qiid}, function(err, obj) {
         if (err) return callback(err);
         if (!obj) return callback("No qInstance with qiid: " + qiid);
         return callback(null, obj);
@@ -1886,7 +1688,7 @@ var loadQuestionServer = function(qid, callback) {
 };
 
 var readTest = function(tid, callback) {
-    tCollect.findOne({tid: tid}, function(err, obj) {
+    db.tCollect.findOne({tid: tid}, function(err, obj) {
         if (err) return callback(err)
         if (!obj) return callback("No test with tid: " + tid);
         delete obj.dueDate;
@@ -1916,7 +1718,7 @@ var writeTInstance = function(req, res, obj, callback) {
     if (obj._id !== undefined)
         delete obj._id;
     ensureObjAuthBAD(req, res, obj, "write", function(obj) {
-        tiCollect.update({tiid: obj.tiid}, {$set: obj}, {upsert: true, w: 1}, function(err) {
+        db.tiCollect.update({tiid: obj.tiid}, {$set: obj}, {upsert: true, w: 1}, function(err) {
             if (err)
                 return sendError(res, 500, "Error writing tInstance to database", {tInstance: obj, err: err});
             return callback();
@@ -1929,7 +1731,7 @@ var writeTest = function(req, res, obj, callback) {
         return sendError(res, 500, "No tid for write to test database", {test: obj});
     if (obj._id !== undefined)
         delete obj._id;
-    tCollect.update({tid: obj.tid}, {$set: obj}, {upsert: true, w: 1}, function(err) {
+    db.tCollect.update({tid: obj.tid}, {$set: obj}, {upsert: true, w: 1}, function(err) {
         if (err)
             return sendError(res, 500, "Error writing test to database", {test: obj, err: err});
         return callback();
@@ -1968,10 +1770,10 @@ var testProcessSubmission = function(req, res, tiid, submission, callback) {
 };
 
 app.post("/submissions", function(req, res) {
-    if (!sCollect) {
+    if (!db.sCollect) {
         return sendError(res, 500, "Do not have access to the submissions database collection");
     }
-    if (!uCollect) {
+    if (!db.uCollect) {
         return sendError(res, 500, "Do not have access to the users database collection");
     }
     var submission = {
@@ -2037,18 +1839,18 @@ app.post("/submissions", function(req, res) {
                             submission.feedback = grading.feedback;
                     }
                     submission.trueAnswer = qInstance.trueAnswer;
-                    newID("sid", function(err, sid) {
+                    db.newID("sid", function(err, sid) {
                         if (err) return sendError(res, 500, "Unable to get new sid", err);
                         submission.sid = sid;
                         if (tiid) {
                             testProcessSubmission(req, res, tiid, submission, function(submission) {
-                                sCollect.insert(submission, {w: 1}, function(err) {
+                                db.sCollect.insert(submission, {w: 1}, function(err) {
                                     if (err) return sendError(res, 500, "Error writing submission to database", err);
                                     res.json(stripPrivateFields(submission));
                                 });
                             });
                         } else {
-                            sCollect.insert(submission, {w: 1}, function(err) {
+                            db.sCollect.insert(submission, {w: 1}, function(err) {
                                 if (err) return sendError(res, 500, "Error writing submission to database", err);
                                 res.json(stripPrivateFields(submission));
                             });
@@ -2061,10 +1863,10 @@ app.post("/submissions", function(req, res) {
 });
 
 app.get("/tests", function(req, res) {
-    if (!tCollect) {
+    if (!db.tCollect) {
         return sendError(res, 500, "Do not have access to the tCollect database collection");
     }
-    tCollect.find({}, function(err, cursor) {
+    db.tCollect.find({}, function(err, cursor) {
         if (err) {
             return sendError(res, 500, "Error accessing tCollect database", err);
         }
@@ -2084,8 +1886,8 @@ app.get("/tests", function(req, res) {
 });
 
 app.get("/tests/:tid", function(req, res) {
-    if (!tCollect) return sendError(res, 500, "Do not have access to the tCollect database collection");
-    tCollect.findOne({tid: req.params.tid}, function(err, obj) {
+    if (!db.tCollect) return sendError(res, 500, "Do not have access to the tCollect database collection");
+    db.tCollect.findOne({tid: req.params.tid}, function(err, obj) {
         if (err) return sendError(res, 500, "Error accessing tCollect database for tid " + req.params.tid, err);
         if (!obj) return sendError(res, 404, "No test with tid " + req.params.tid);
         delete obj.dueDate;
@@ -2141,7 +1943,7 @@ var deleteObjects = function(req, query, collect, collectName, callback) {
     var allErrs = [];
     cursor.forEach(function(doc) {
         if (!checkObjAuth(req, doc, "write")) return allErrs.push("insufficient permissions");
-        newID('did', function(err, did) {
+        db.newID('did', function(err, did) {
             if (err) return allErrs.push(err);
             var deleteRecord = {
                 did: did,
@@ -2154,7 +1956,7 @@ var deleteObjects = function(req, query, collect, collectName, callback) {
                 collection: collectName,
                 document: doc
             };
-            dCollect.insert(deleteRecord, {w: 1}, function(err) {
+            db.dCollect.insert(deleteRecord, {w: 1}, function(err) {
                 if (err) return allErrs.push(err);
                 collect.remove({_id: doc._id}, function(err) {
                     if (err) return allErrs.push(err);
@@ -2185,7 +1987,7 @@ app.delete("/tInstances", function(req, res) {
     if (uid) {
         query.uid = uid;
     }
-    deleteObjects(req, query, tiCollect, 'tInstances', function(err) {
+    deleteObjects(req, query, db.tiCollect, 'tInstances', function(err) {
         if (err) return sendError(res, 500, 'Error deleting objects', err);
         res.json({});
     });
@@ -2262,7 +2064,7 @@ var autoCreateTInstances = function(req, res, tInstances, autoCreateCallback) {
         if (testStatus.avail && !test.multipleInstance && tiDB[tid] === undefined && req.query.uid !== undefined) {
             readTestBAD(res, tid, function(test) {
                 loadTestServer(tid, function(server) {
-                    newID("tiid", function(err, tiid) {
+                    db.newID("tiid", function(err, tiid) {
                         if (err) return sendError(res, 500, "Unable to get new tiid", err);
                         var tInstance = {
                             tiid: tiid,
@@ -2314,14 +2116,14 @@ var eliminateDuplicateTInstances = function(req, res, tInstances, eliminateCallb
 }
 
 app.get("/tInstances", function(req, res) {
-    if (!tiCollect) {
+    if (!db.tiCollect) {
         return sendError(res, 500, "Do not have access to the tiCollect database collection");
     }
     var query = {};
     if ("uid" in req.query) {
         query.uid = req.query.uid;
     }
-    tiCollect.find(query, function(err, cursor) {
+    db.tiCollect.find(query, function(err, cursor) {
         if (err) {
             return sendError(res, 500, "Error accessing tiCollect database", err);
         }
@@ -2346,10 +2148,10 @@ app.get("/tInstances", function(req, res) {
 });
 
 app.get("/tInstances/:tiid", function(req, res) {
-    if (!tiCollect) {
+    if (!db.tiCollect) {
         return sendError(res, 500, "Do not have access to the tiCollect database collection");
     }
-    tiCollect.findOne({tiid: req.params.tiid}, function(err, obj) {
+    db.tiCollect.findOne({tiid: req.params.tiid}, function(err, obj) {
         if (err) {
             return sendError(res, 500, "Error accessing tiCollect database", err);
         }
@@ -2378,7 +2180,7 @@ app.post("/tInstances", function(req, res) {
     if (!testInfo.multipleInstance) {
         return sendError(res, 400, "Test can only be autoCreated", {tid: tid});
     }
-    tiCollect.find({tid: tid, uid: uid}, {"number": 1}, function(err, cursor) {
+    db.tiCollect.find({tid: tid, uid: uid}, {"number": 1}, function(err, cursor) {
         if (err) {
             return sendError(res, 400, "Error searching for pre-existing tInstances", {err: err});
         }
@@ -2397,7 +2199,7 @@ app.post("/tInstances", function(req, res) {
                     if (err) return sendError(res, 400, "Invalid tid: " + tid, {tid: tid});
                     readTestBAD(res, tid, function(test) {
                         loadTestServer(tid, function(server) {
-                            newID("tiid", function(err, tiid) {
+                            db.newID("tiid", function(err, tiid) {
                                 if (err) return sendError(res, 500, "Unable to get new tiid", err);
                                 var tInstance = {
                                     tiid: tiid,
@@ -2423,7 +2225,7 @@ app.post("/tInstances", function(req, res) {
 var releaseTrueAnswers = function(tInstance, callback) {
     async.each(tInstance.qids, function(qid, callback) {
         var qiid = tInstance.qiidsByQid[qid];
-        qiCollect.update({qiid: qiid}, {$pull: {_private: "trueAnswer"}}, function(err) {
+        db.qiCollect.update({qiid: qiid}, {$pull: {_private: "trueAnswer"}}, function(err) {
             callback(err);
         });
     }, callback);
@@ -2495,7 +2297,7 @@ app.patch("/tInstances/:tiid", function(req, res) {
 });
 
 var closeOpenTInstances = function(req, res, tid, callback) {
-    tiCollect.find({tid: tid}, function(err, cursor) {
+    db.tiCollect.find({tid: tid}, function(err, cursor) {
         if (err) return callback(err);
         var tiids = [];
         var item;
@@ -2535,7 +2337,7 @@ app.post("/finishes", function(req, res) {
     if (!tid) {
         return sendError(res, 400, "No tid provided");
     }
-    newID('fid', function(err, fid) {
+    db.newID('fid', function(err, fid) {
         if (err) return sendError(res, 500, "Error creating fid", err);
         var finish = {
             fid: fid,
@@ -2547,7 +2349,7 @@ app.post("/finishes", function(req, res) {
         closeOpenTInstances(req, res, tid, function(err, tiids) {
             if (err) return sendError(res, 500, "Error closing open tInstances", err);
             finish.tiidsClosed = tiids;
-            fCollect.insert(finish, {w: 1}, function(err) {
+            db.fCollect.insert(finish, {w: 1}, function(err) {
                 if (err) return sendError(500, "Error inserting finish", err);
                 res.json(finish);
             });
@@ -2622,7 +2424,7 @@ var getQDataByQID = function(test, tInstance) {
 var getScoresForTest = function(tid, callback) {
     readTest(tid, function(err, test) {
         if (err) return callback(err);
-        tiCollect.find({tid: tid}, function(err, cursor) {
+        db.tiCollect.find({tid: tid}, function(err, cursor) {
             if (err) return callback(err);
             var scores = {};
             var tInstance;
@@ -2695,7 +2497,7 @@ app.get("/testScores/:filename", function(req, res) {
 });
 
 var addSubsForQInstance = function(req, subs, qiid, qInstance, tInstance, callback) {
-    sCollect.find({qiid: qiid}, function(err, cursor) {
+    db.sCollect.find({qiid: qiid}, function(err, cursor) {
         if (err) return callback(err);
         var item;
         async.doUntil(function(cb) { // body
@@ -2739,7 +2541,7 @@ var addSubsForQInstance = function(req, subs, qiid, qInstance, tInstance, callba
 };
 
 var addSubsForTInstance = function(req, subs, tiid, tInstance, callback) {
-    qiCollect.find({tiid: tiid}, function(err, cursor) {
+    db.qiCollect.find({tiid: tiid}, function(err, cursor) {
         if (err) return callback(err);
         var item;
         async.doUntil(function(cb) { // body
@@ -2766,7 +2568,7 @@ var addSubsForTInstance = function(req, subs, tiid, tInstance, callback) {
 };
 
 var addSubsForTest = function(req, subs, tid, callback) {
-    tiCollect.find({tid: tid}, function(err, cursor) {
+    db.tiCollect.find({tid: tid}, function(err, cursor) {
         if (err) return callback(err);
         var item;
         async.doUntil(function(cb) { // body
@@ -2840,7 +2642,7 @@ var addFinalSubsForTInstance = function(req, subs, tiid, tInstance, callback) {
             if (!tInstance.qiidsByQid) return cb("No qiidsByQid");
             var qiid = tInstance.qiidsByQid[qid];
             if (!qiid) return cb("No qiidsByQid.qid for qid: " + qid);
-            qiCollect.findOne({qiid: qiid}, function(err, qInstance) {
+            db.qiCollect.findOne({qiid: qiid}, function(err, qInstance) {
                 if (err) return cb(err);
                 if (!qInstance) return cb("No qInstance with qiid " + qiid);
                 if (checkObjAuth(req, qInstance, "read")) {
@@ -2892,7 +2694,7 @@ var addFinalSubsForTInstance = function(req, subs, tiid, tInstance, callback) {
 };
 
 var addFinalSubsForTest = function(req, subs, tid, callback) {
-    tiCollect.find({tid: tid}, function(err, cursor) {
+    db.tiCollect.find({tid: tid}, function(err, cursor) {
         if (err) {
             return sendError(res, 500, "Error accessing tiCollect database", err);
         }
@@ -3312,10 +3114,10 @@ app.get("/testQStatsCSV/:filename", function(req, res) {
 });
 
 app.get("/stats", function(req, res) {
-    if (!statsCollect) {
+    if (!db.statsCollect) {
         return sendError(res, 500, "Do not have access to the 'statistics' database collection");
     }
-    statsCollect.find({}, {name: 1}, function(err, cursor) {
+    db.statsCollect.find({}, {name: 1}, function(err, cursor) {
         if (err) {
             return sendError(res, 500, "Error accessing 'statistics' collections", err);
         }
@@ -3329,10 +3131,10 @@ app.get("/stats", function(req, res) {
 });
 
 app.get("/stats/submissionsPerHour", function(req, res) {
-    if (!statsCollect) {
+    if (!db.statsCollect) {
         return sendError(res, 500, "Do not have access to the 'statistics' database collection");
     }
-    statsCollect.findOne({name: "submissionsPerHour"}, function(err, obj) {
+    db.statsCollect.findOne({name: "submissionsPerHour"}, function(err, obj) {
         if (err) {
             return sendError(res, 500, "Error accessing 'statistics' collections for submissionsPerHour", err);
         }
@@ -3344,10 +3146,10 @@ app.get("/stats/submissionsPerHour", function(req, res) {
 });
 
 app.get("/stats/usersPerHour", function(req, res) {
-    if (!statsCollect) {
+    if (!db.statsCollect) {
         return sendError(res, 500, "Do not have access to the 'statistics' database collection");
     }
-    statsCollect.findOne({name: "usersPerHour"}, function(err, obj) {
+    db.statsCollect.findOne({name: "usersPerHour"}, function(err, obj) {
         if (err) {
             return sendError(res, 500, "Error accessing 'statistics' collections for usersPerHour", err);
         }
@@ -3423,15 +3225,15 @@ if (config.localFileserver) {
 }
 
 var submissionsPerHour = function() {
-    if (!sCollect) {
+    if (!db.sCollect) {
         logger.error("Do not have access to the 'submissions' database collection");
         return;
     }
-    if (!statsCollect) {
+    if (!db.statsCollect) {
         logger.error("Do not have access to the 'stats' database collection");
         return;
     }
-    sCollect.find({}, {"date": 1, "uid": 1}, function(err, cursor) {
+    db.sCollect.find({}, {"date": 1, "uid": 1}, function(err, cursor) {
         if (err) {
             logger.error("unable to iterate over 'submissions' collection", err);
             return;
@@ -3474,7 +3276,7 @@ var submissionsPerHour = function() {
                     times: times,
                     submissions: submissions
                 };
-                statsCollect.update({name: "submissionsPerHour"}, {$set: obj}, {upsert: true, w: 1}, function(err) {
+                db.statsCollect.update({name: "submissionsPerHour"}, {$set: obj}, {upsert: true, w: 1}, function(err) {
                     if (err) {
                         logger.error("Error writing 'submissionsPerHour' to database 'stats' collection", err);
                     }
@@ -3485,15 +3287,15 @@ var submissionsPerHour = function() {
 };
 
 var usersPerHour = function() {
-    if (!sCollect) {
+    if (!db.sCollect) {
         logger.error("Do not have access to the 'submissions' database collection");
         return;
     }
-    if (!statsCollect) {
+    if (!db.statsCollect) {
         logger.error("Do not have access to the 'stats' database collection");
         return;
     }
-    sCollect.find({}, {"date": 1, "uid": 1}, function(err, cursor) {
+    db.sCollect.find({}, {"date": 1, "uid": 1}, function(err, cursor) {
         if (err) {
             logger.error("unable to iterate over 'submissions' collection", err);
             return;
@@ -3536,7 +3338,7 @@ var usersPerHour = function() {
                     times: times,
                     users: users
                 };
-                statsCollect.update({name: "usersPerHour"}, {$set: obj}, {upsert: true, w: 1}, function(err) {
+                db.statsCollect.update({name: "usersPerHour"}, {$set: obj}, {upsert: true, w: 1}, function(err) {
                     if (err) {
                         logger.error("Error writing 'usersPerHour' to database 'stats' collection", err);
                     }
@@ -3561,7 +3363,7 @@ var initQuestionModels = function(callback) {
 };
 
 var loadUserDB = function(callback) {
-    uCollect.find({}, {"uid": 1}, function(err, cursor) {
+    db.uCollect.find({}, {"uid": 1}, function(err, cursor) {
         if (err)
             callback(err);
         cursor.each(function(err, item) {
@@ -3605,7 +3407,7 @@ var processSubmissionBayes = function(submission, iSubmission, count) {
 };
 
 var processSubmissionsBayes = function(callback) {
-    sCollect.find({}, function(err, cursor) {
+    db.sCollect.find({}, function(err, cursor) {
         if (err)
             callback(err);
         cursor.count(function(err, count) {
@@ -3723,7 +3525,7 @@ var loadData = function(callback) {
 };
 
 async.series([
-    loadDB,
+    db.init,
     loadData,
     //runBayes,
     /*
