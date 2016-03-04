@@ -153,10 +153,10 @@ define(['underscore', 'backbone', 'jquery', 'async', 'SubmissionCollection'], fu
 			var hasSubmissionTemplate = this.get("hasSubmissionTemplate");
 			var pastSubmissions = this.get("pastSubmissions");
 			if (hasSubmissionTemplate && pastSubmissions && pastSubmissions.length > 0) {
-				showSubmissions = true;
+				this.set("showSubmissions",true);
 			}
 			else {
-				showSubmissions = false;
+				this.set("showSubmissions", false);
 			}
 		},
 
