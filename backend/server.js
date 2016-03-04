@@ -1,33 +1,5 @@
-var winston = require('winston');
-var logger = new (winston.Logger)({
-    transports: [
-        new (winston.transports.Console)({timestamp: true, colorize: true}),
-    ]
-});
-
-var errorList = [];
-var MemLogger = winston.transports.MemLogger = function(options) {
-    this.name = 'memLogger';
-    this.level = options.level || 'info';
-};
-MemLogger.prototype = new winston.Transport;
-MemLogger.prototype.log = function(level, msg, meta, callback) {
-    errorList.push({timestamp: (new Date()).toISOString(), level: level, msg: msg, meta: meta});
-    callback(null, true);
-};
-logger.add(winston.transports.MemLogger, {});
-
-logger.info('PrairieLearn server start');
-logger.transports.console.level = 'warn';
-logger.transports.memLogger.level = 'warn';
-
-var logInfoOverride = function(msg) {
-    logger.transports.console.level = 'info';
-    logger.transports.memLogger.level = 'info';
-    logger.info(msg);
-    logger.transports.console.level = 'warn';
-    logger.transports.memLogger.level = 'warn';
-}
+var logger = require("./logger");
+var config = require("./config");
 
 var _ = require("underscore");
 var fs = require("fs");
@@ -37,53 +9,7 @@ var moment = require("moment-timezone");
 var jju = require('jju');
 var validator = require('is-my-json-valid')
 
-var config = {};
-
-config.timezone = 'America/Chicago';
-config.dbAddress = 'mongodb://localhost:27017/data';
-config.logFilename = 'server.log';
-config.authType = 'none';
-config.localFileserver = true;
-config.serverType = 'http';
-config.serverPort = '3000';
-config.courseDir = "../exampleCourse";
-config.frontendDir = "../frontend";
-config.questionDefaultsDir = "questionDefaults";
-config.polyfillGitShow = false;
-config.secretKey = "THIS_IS_THE_SECRET_KEY"; // override in config.json
-config.skipUIDs = {};
-config.superusers = {};
-config.roles = {"user1@illinois.edu": "Superuser"};
-
-var readJSONSyncOrDie = function(jsonFilename, schemaFilename) {
-    try {
-        var data = fs.readFileSync(jsonFilename, {encoding: 'utf8'});
-    } catch (e) {
-        logger.error("Error reading JSON file: " + jsonFilename, e);
-        process.exit(1);
-    }
-    try {
-        var json = jju.parse(data, {mode: 'json'});
-    } catch (e) {
-        logger.error("Error in JSON file format: " + jsonFilename + " (line " + e.row + ", column " + e.column + ")\n"
-                     + e.name + ": " + e.message);
-        process.exit(1);
-    }
-    if (schemaFilename) {
-        configValidate = validator(fs.readFileSync(schemaFilename, {encoding: 'utf8'}),
-                                   {verbose: true, greedy: true});
-        configValidate(json);
-        if (configValidate.errors) {
-            logger.error("Error in JSON file specification: " + jsonFilename);
-            _(configValidate.errors).forEach(function(e) {
-                logger.error('Error in field "' + e.field + '": ' + e.message
-                            + (_(e).has('value') ? (' (value: ' + e.value + ')') : ''));
-            });
-            process.exit(1);
-        }
-    }
-    return json;
-};
+logger.infoOverride('PrairieLearn server start');
 
 var readJSON = function(jsonFilename, callback) {
     var json;
@@ -155,33 +81,13 @@ configFilename = 'config.json';
 if (process.argv.length > 2) {
     configFilename = process.argv[2];
 }
-if (fs.existsSync(configFilename)) {
-    fileConfig = readJSONSyncOrDie(configFilename, 'schemas/backendConfig.json');
-    _.defaults(fileConfig, config);
-    config = fileConfig;
-} else {
-    logger.warn("config.json not found, using default configuration");
+
+config.loadConfig(configFilename);
+
+if (config.logFilename) {
+    logger.addFileLogging(config.logFilename);
+    logger.info('activated file logging: ' + config.logFilename);
 }
-
-config.questionsDir = path.join(config.courseDir, "questions");
-config.testsDir = path.join(config.courseDir, "tests");
-config.clientCodeDir = path.join(config.courseDir, "clientCode");
-config.serverCodeDir = path.join(config.courseDir, "serverCode");
-config.clientFilesDir = path.join(config.courseDir, "clientFiles");
-
-config.requireDir = path.join(config.frontendDir, "require");
-config.relativeClientCodeDir = path.relative(path.resolve(config.requireDir), path.resolve(config.clientCodeDir));
-config.relativeServerCodeDir = path.relative(path.resolve(config.requireDir), path.resolve(config.serverCodeDir));
-
-_(config.superusers).forEach(function(value, key) {
-    if (value)
-        config.roles[key] = "Superuser";
-    else
-        config.roles[key] = "Student";
-});
-
-logger.add(winston.transports.File, {filename: config.logFilename, level: 'info'});
-logger.info('activated file logging: ' + config.logFilename);
 
 var requirejs = require("requirejs");
 
@@ -294,8 +200,7 @@ var processCollection = function(name, err, collection, options, callback) {
 var loadDB = function(callback) {
     MongoClient.connect(config.dbAddress, function(err, locDb) {
         if (err) {
-            logger.error("unable to connect to database at address: " + config.dbAddress, err);
-            callback(true);
+            callback("unable to connect to database at address " + config.dbAddress + ": " + err);
             return;
         }
         logger.info("successfully connected to database");
@@ -425,8 +330,7 @@ var loadDB = function(callback) {
             },
         ], function(err) {
             if (err) {
-                logger.error("Error loading DB collections");
-                callback(true);
+                callback("error loading DB collections");
             } else {
                 logger.info("Successfully loaded all DB collections");
                 callback(null);
@@ -1428,7 +1332,7 @@ app.post("/reload", function(req, res) {
     if (config.authType != "none") {
         return sendError(res, 500, "Server not in dev mode");
     }
-    logInfoOverride("Reloading all data");
+    logger.infoOverride("Reloading all data");
     loadData(function(err) {
         if (err) return sendError(res, 500, "Error reloading data", err);
         undefQuestionServers(function(err) {
@@ -1438,7 +1342,7 @@ app.post("/reload", function(req, res) {
                 if (err) return sendError(res, 500, 'Error deleting objects', err);
                 initTestData(function(err) {
                     if (err) return sendError(res, 500, "Error initializing tests", err);
-                    logInfoOverride("Reload complete");
+                    logger.infoOverride("Reload complete");
                     res.json({success: true});
                 });
             });
@@ -3459,7 +3363,7 @@ app.get("/stats/usersPerHour", function(req, res) {
 
 app.get("/errorList", function(req, res) {
     if (PrairieRole.hasPermission(req.userRole, 'viewErrors')) {
-        res.json({errorList: errorList});
+        res.json({errorList: logger.errorList});
     } else {
         res.json([]);
     }
@@ -3835,9 +3739,10 @@ async.series([
     startIntervalJobs
 ], function(err) {
     if (err) {
-        logger.error("Error initializing PrairieLearn server, exiting...", err);
+        logger.error("Error initializing PrairieLearn server:", err);
+        logger.error("Exiting...");
         process.exit(1);
     } else {
-        logInfoOverride("PrairieLearn server ready");
+        logger.infoOverride("PrairieLearn server ready");
     }
 });
