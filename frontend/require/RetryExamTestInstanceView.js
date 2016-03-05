@@ -84,6 +84,8 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "RetryExamTestH
                 data.questionList.push(entry);
             });
 
+            data.allQuestionsAnswered = data.nQuestions === data.nSaved;
+
             var html = Mustache.render(RetryExamTestInstanceViewTemplate, data);
             this.$el.html(html);
         },
