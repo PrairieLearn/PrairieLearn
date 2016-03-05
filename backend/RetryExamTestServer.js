@@ -1,5 +1,7 @@
-
 define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, PrairieRandom) {
+
+    var db = process.mainModule.require('./db');
+    var async = process.mainModule.require('async');
 
     var RetryExamTestServer = {};
 
@@ -179,7 +181,57 @@ define(["underscore", "moment-timezone", "PrairieRandom"], function(_, moment, P
                 qid: qid,
             });
         });
-        callback(null, tInstance);
+
+        // convert old Exam tInstances to RetryExams
+        if (tInstance.questionsByQID === undefined) {
+            tInstance.questionsByQID = {};
+            if (!tInstance.submissionsByQid) tInstance.submissionsByQid = {};
+
+            async.each(tInstance.qids, function(qid, cb) {
+                if (!tInstance.qiidsByQid) return cb("No qiidsByQid");
+                var qiid = tInstance.qiidsByQid[qid];
+                if (!qiid) return cb("No qiidsByQid.qid for qid: " + qid);
+                db.qiCollect.findOne({qiid: qiid}, function(err, qInstance) {
+                    if (err) return cb(err);
+                    if (!qInstance) return cb("No qInstance with qiid " + qiid);
+
+                    tInstance.questionsByQID[qid] = {
+                        qid: qid,
+                        vid: qInstance.vid,
+                        points: [1],
+                    };
+
+                    cb(null);
+                });
+            }, function(err) {
+                if (err) return callback(err);
+
+                tInstance.vidsByQID = _(tInstance.questionsByQID).pluck('vid');
+                tInstance.maxScore = 0;
+                tInstance.gradingDates = [];
+                if (tInstance.finishDate) {
+                    tInstance.gradingDates.push(tInstance.finishDate);
+                }
+                _(tInstance.questionsByQID).each(function(question, qid) {
+                    var submission = tInstance.submissionsByQid[qid];
+                    if (tInstance.finishDate && _(submission).has('score')) {
+                        question.nGradedAttempts = 1;
+                        question.awardedPoints = submission.score;
+                        question.correct = (submission.score >= 0.5);
+                    } else {
+                        question.nGradedAttempts = 0;
+                        question.awardedPoints = 0;
+                        question.correct = false;
+                    }
+
+                    tInstance.maxScore += Math.max.apply(null, question.points);
+                });
+
+                callback(null, tInstance);
+            });
+        } else {
+            callback(null, tInstance);
+        }
     };
 
     RetryExamTestServer.updateWithSubmission = function(tInstance, test, submission, options) {
