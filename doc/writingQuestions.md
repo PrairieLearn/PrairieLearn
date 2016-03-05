@@ -20,7 +20,7 @@ Questions are all stored inside the main `questions` directory for a course. Eac
         |-- client.js
         |-- question.html
         |-- answer.html
-		|-- submission.html
+        |-- submission.html
         |-- fig1.png      # extra files (e.g., images) for the question
         `-- notes.docx    # more files, like notes on how the question works
 
@@ -261,7 +261,7 @@ The part in the box shown to the student after the question has been graded.
       $c = {{trueAnswer.c}}\rm\ m$.
     </p>
 
-	
+    
 ### `Calculation` question: `submission.html`
 
 Each time a student saves or submits an answer, a copy of this file is presented showing the student information about this submission. Can be formatted to include the following information:
@@ -274,10 +274,10 @@ Object                   | Description
 `{{{submissionStatus}}}` | A label showing correct/incorrect (if graded) or saved (if )
 
 For example:
-	
-	<p>
-		Submission {{index}} ({{date}}) {{{submissionStatus}}} $c = {{submittedAnswer.c}}\rm\ m$.
-	</p>
+    
+    <p>
+        Submission {{index}} ({{date}}) {{{submissionStatus}}} $c = {{submittedAnswer.c}}\rm\ m$.
+    </p>
 
 ## Advanced: Generating LaTeX labels on figures
 

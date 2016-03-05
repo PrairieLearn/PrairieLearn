@@ -27,18 +27,18 @@ define(['underscore', 'backbone', 'jquery', 'async', 'SubmissionCollection'], fu
                 score: null,
                 trueAnswer: null,
                 feedback: null,
-				hasSubmissionTemplate: false,
-				pastSubmissions: null,
-				showSubmissions: false,
+                hasSubmissionTemplate: false,
+                pastSubmissions: null,
+                showSubmissions: false,
             });
             var testOptions = this.test.get("options");
             if (testOptions.showQuestionTitle !== undefined)
                 this.set("showTitle", testOptions.showQuestionTitle);
             this.listenTo(this.appModel, "change:userUID", this.loadQuestion);
             this.on("answerChanged", this.updateDirtyStatus);
-			this.on("pastSubmissionsReady", this.fetchSubmissions);
-			this.on("pastSubmissionsFetched", this.checkShowSubmissions);
-			this.on("newSubmission", this.fetchSubmissions);
+            this.on("pastSubmissionsReady", this.fetchSubmissions);
+            this.on("pastSubmissionsFetched", this.checkShowSubmissions);
+            this.on("newSubmission", this.fetchSubmissions);
             this.loadQuestion();
         },
 
@@ -69,19 +69,19 @@ define(['underscore', 'backbone', 'jquery', 'async', 'SubmissionCollection'], fu
                 require([that.appModel.apiURL("qInstances/" + qInstance.qiid + "/client.js")], function(qClient) {
                     qClient.initialize(qInstance.params);
                     that.set("qClient", qClient);
-					
-					if(qClient.hasSubmissionTemplate()) {
-						that.set("hasSubmissionTemplate", true);
-					}
-					
-					submissionURL = that.appModel.apiURL("submissions/?qiid="+qInstance.qiid);
-					pastSubmissions = new SubmissionCollection.SubmissionCollection([],{
-						qiid: qInstance.qiid,
-						url: submissionURL,
-					});
-					that.set("pastSubmissions", pastSubmissions);
-					that.trigger("pastSubmissionsReady");
-					
+                    
+                    if(qClient.hasSubmissionTemplate()) {
+                        that.set("hasSubmissionTemplate", true);
+                    }
+                    
+                    submissionURL = that.appModel.apiURL("submissions/?qiid="+qInstance.qiid);
+                    pastSubmissions = new SubmissionCollection.SubmissionCollection([],{
+                        qiid: qInstance.qiid,
+                        url: submissionURL,
+                    });
+                    that.set("pastSubmissions", pastSubmissions);
+                    that.trigger("pastSubmissionsReady");
+                    
                     // Show answer if it is public in the qInstance
                     // (i.e. the test has been finished)
                     if (_(qInstance).has("trueAnswer")) {
@@ -136,27 +136,27 @@ define(['underscore', 'backbone', 'jquery', 'async', 'SubmissionCollection'], fu
                 });
             }
         },
-		
-		fetchSubmissions: function() {
-			var hasSubmissionTemplate = this.get("hasSubmissionTemplate");
-			var pastSubmissions = this.get("pastSubmissions");
-			that = this;
-			if (hasSubmissionTemplate && pastSubmissions) {
-				pastSubmissions.fetch({
-					success: function() { that.trigger("pastSubmissionsFetched"); },
-				});
-			}
-		},
-	
-		checkShowSubmissions: function() {
-			this.set("showSubmissions", false);
-			var hasSubmissionTemplate = this.get("hasSubmissionTemplate");
-			var pastSubmissions = this.get("pastSubmissions");
-			if (hasSubmissionTemplate && pastSubmissions && pastSubmissions.length > 0) {
-				this.set("showSubmissions",true);
-			}
-			this.trigger("refreshSubmissionsView");
-		},
+        
+        fetchSubmissions: function() {
+            var hasSubmissionTemplate = this.get("hasSubmissionTemplate");
+            var pastSubmissions = this.get("pastSubmissions");
+            that = this;
+            if (hasSubmissionTemplate && pastSubmissions) {
+                pastSubmissions.fetch({
+                    success: function() { that.trigger("pastSubmissionsFetched"); },
+                });
+            }
+        },
+    
+        checkShowSubmissions: function() {
+            this.set("showSubmissions", false);
+            var hasSubmissionTemplate = this.get("hasSubmissionTemplate");
+            var pastSubmissions = this.get("pastSubmissions");
+            if (hasSubmissionTemplate && pastSubmissions && pastSubmissions.length > 0) {
+                this.set("showSubmissions",true);
+            }
+            this.trigger("refreshSubmissionsView");
+        },
 
         submitAnswer: function(options) {
             options = _.defaults(options || {}, {
@@ -196,7 +196,7 @@ define(['underscore', 'backbone', 'jquery', 'async', 'SubmissionCollection'], fu
                     qClient.setFeedback(submission.feedback);
                 }
                 that.trigger("graded");
-				that.trigger("newSubmission");
+                that.trigger("newSubmission");
             };
             var errorFn = function(jqXHR, textStatus, errorThrown) {
                 var e = textStatus ? textStatus : "Unknown error";
@@ -265,7 +265,7 @@ define(['underscore', 'backbone', 'jquery', 'async', 'SubmissionCollection'], fu
                     var submissionsByQid = that.tInstance.get("submissionsByQid");
                     submissionsByQid[submission.qid] = submission;
                 }
-				that.trigger("newSubmission");
+                that.trigger("newSubmission");
                 that.updateDirtyStatus();
             };
             var errorFn = function(jqXHR, textStatus, errorThrown) {

@@ -13,7 +13,7 @@ define(['underscore', 'backbone', 'jquery', 'PrairieQueue'], function(_, Backbon
                 base = base.slice(0, optIndex);
             return base + (base.charAt(base.length - 1) === '/' ? '' : '/') + encodeURIComponent(this.id);
         },
-
+    
         initialize: function(attributes, options) {
 
         },
