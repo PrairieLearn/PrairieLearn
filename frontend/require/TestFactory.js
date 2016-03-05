@@ -1,5 +1,6 @@
 
-define(["BasicTestClient", "BasicTestDetailView", "BasicTestInstanceView", "BasicTestSidebarView", "ExamTestClient", "ExamTestDetailView", "ExamTestInstanceView", "ExamTestSidebarView", "GameTestClient", "GameTestDetailView", "GameTestInstanceView", "GameTestSidebarView", "RetryExamTestClient", "RetryExamTestDetailView", "RetryExamTestInstanceView", "RetryExamTestSidebarView"], function(BasicTestClient, BasicTestDetailView, BasicTestInstanceView, BasicTestSidebarView, ExamTestClient, ExamTestDetailView, ExamTestInstanceView, ExamTestSidebarView, GameTestClient, GameTestDetailView, GameTestInstanceView, GameTestSidebarView, RetryExamTestClient, RetryExamTestDetailView, RetryExamTestInstanceView, RetryExamTestSidebarView) {
+define(["BasicTestClient", "BasicTestDetailView", "BasicTestInstanceView", "BasicTestSidebarView", "GameTestClient", "GameTestDetailView", "GameTestInstanceView", "GameTestSidebarView", "RetryExamTestClient", "RetryExamTestDetailView", "RetryExamTestInstanceView", "RetryExamTestSidebarView"],
+function(BasicTestClient,  BasicTestDetailView,   BasicTestInstanceView,   BasicTestSidebarView,   GameTestClient,   GameTestDetailView,   GameTestInstanceView,   GameTestSidebarView,   RetryExamTestClient,   RetryExamTestDetailView,   RetryExamTestInstanceView,   RetryExamTestSidebarView) {
 
     var objectMap = {
         "Basic": {
@@ -7,12 +8,6 @@ define(["BasicTestClient", "BasicTestDetailView", "BasicTestInstanceView", "Basi
             "tDetailView": BasicTestDetailView,
             "tInstanceView": BasicTestInstanceView,
             "sidebarView": BasicTestSidebarView,
-        },
-        "Exam": {
-            "client": ExamTestClient,
-            "tDetailView": ExamTestDetailView,
-            "tInstanceView": ExamTestInstanceView,
-            "sidebarView": ExamTestSidebarView,
         },
         "Game": {
             "client": GameTestClient,

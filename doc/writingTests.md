@@ -38,7 +38,6 @@ Type        | Randomized | Options format                                       
 ---         | ---        | ---                                                                                                                     | ---
 `Basic`     | No         | [`Basic` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/testOptionsBasic.json)         | A test scored by averaging all attempt scores for each question, then averaging the question scores.
 `Game`      | No         | [`Game` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/testOptionsGame.json)           | A gamified test that rewards repeated correct answers to questions.
-`Exam`      | Yes        | [`Exam` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/testOptionsExam.json)           | A simple exam, where the score is the fraction of correct question answers.
 `RetryExam` | Yes        | [`RetryExam` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/testOptionsRetryExam.json) | An exam where students can grade their answers at any time, and retry question for reduced points.
 
 ## Randomization algorithm

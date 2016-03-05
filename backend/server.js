@@ -204,7 +204,7 @@ var checkInfoValid = function(idName, info, infoFile) {
     }
 
     // look for exams without credit assigned and patch it in to all access rules
-    if (idName == "tid" && (info.type == "Exam" || info.type == "RetryExam")) {
+    if (idName == "tid" && info.type == "RetryExam") {
         if (_(info).has('allowAccess') && !_(info.allowAccess).any(function(a) {return _(a).has('credit');})) {
             logger.warn(infoFile + ': No credit assigned in allowAccess rules, patching in credit = 100 to all rules. Please set "credit" in "allowAccess" rules explicitly.')
             _(info.allowAccess).each(function(a) {
