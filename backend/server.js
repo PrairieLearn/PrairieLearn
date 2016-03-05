@@ -171,6 +171,38 @@ var checkInfoValid = function(idName, info, infoFile) {
         logger.warn(infoFile + ': "options.availDate" is deprecated and will be removed in a future version. Instead, please use "allowAccess".');
     }
 
+    if (idName == "tid" && info.type == "Exam") {
+        logger.warn(infoFile + ': "Exam"-type tests are deprecated and will be removed in a future version. Instead, please use "RetryExam".');
+        info.type = "RetryExam";
+        var options = info.options || {};
+        var newOptions = {
+            questionGroups: [],
+            nQuestions: 20 // 20 was the default for Exam-type tests
+        };
+
+        if (_(options).has('text')) {
+            newOptions.text = options.text;
+        }
+        if (_(options).has('nQuestions')) {
+            newOptions.nQuestions = options.nQuestions;
+        }
+        _(options.qidGroups).each(function(qidGroup) {
+            var group = [];
+            _(qidGroup).each(function(questionVariants) {
+                var variants = [];
+                _(questionVariants).each(function(question) {
+                    variants.push({
+                        qid: question,
+                        points: [1]
+                    });
+                });
+                group.push(variants);
+            });
+            newOptions.questionGroups.push(group);
+        });
+        info.options = newOptions;
+    }
+
     // look for exams without credit assigned and patch it in to all access rules
     if (idName == "tid" && (info.type == "Exam" || info.type == "RetryExam")) {
         if (_(info).has('allowAccess') && !_(info.allowAccess).any(function(a) {return _(a).has('credit');})) {
