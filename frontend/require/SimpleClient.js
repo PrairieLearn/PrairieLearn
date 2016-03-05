@@ -200,6 +200,8 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
     var AnswerView = Backbone.View.extend({
 
         initialize: function() {
+            this.questionDataModel = this.options.questionDataModel;
+            this.appModel = this.options.appModel;
             this.template = this.options.template;
             this.params = this.options.params;
             this.submittedAnswer = this.options.submittedAnswer;
@@ -221,7 +223,11 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
                 trueAnswer: this.trueAnswer.toJSON(),
                 feedback: this.feedback.toJSON(),
             };
-            this.$el.html(PrairieTemplate.template(this.template, templateData));
+            var templatedHTML = PrairieTemplate.template(this.template, templateData, this.questionDataModel, this.appModel);
+            if (this.options.templateTwice) {
+                templatedHTML = PrairieTemplate.template(templatedHTML, {}, this.questionDataModel, this.appModel);
+            }
+            this.$el.html(templatedHTML);
             this.rivetsView = rivets.bind(this.$el, {
                 model: this.model,
                 params: this.params,
@@ -268,9 +274,9 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         this.questionView.render();
     };
 
-    SimpleClient.prototype.renderAnswer = function(answerDivID) {
+    SimpleClient.prototype.renderAnswer = function(answerDivID, questionDataModel, appModel) {
         var that = this;
-        this.answerView = new AnswerView({el: answerDivID, template: this.options.answerTemplate, model: this.model, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback, templateTwice: this.options.templateTwice});
+        this.answerView = new AnswerView({el: answerDivID, template: this.options.answerTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback, templateTwice: this.options.templateTwice});
         this.answerView.render();
         this.listenTo(this.answerView, "renderFinished", function() {that.trigger("renderAnswerFinished");});
     };
