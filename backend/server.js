@@ -1,14 +1,18 @@
 var logger = require("./logger");
 var config = require("./config");
 var db = require("./db");
+var sqldb = require("./sqldb");
+var models = require("./models");
 
 var _ = require("underscore");
 var fs = require("fs");
 var path = require("path");
+var favicon = require('serve-favicon');
 var async = require("async");
 var moment = require("moment-timezone");
 var jju = require('jju');
 var validator = require('is-my-json-valid')
+var Promise = require('bluebird');
 
 logger.infoOverride('PrairieLearn server start');
 
@@ -114,6 +118,8 @@ var nSample = 0;
 var STATS_INTERVAL = 10 * 60 * 1000; // ms
 
 app.use(bodyParser.json());
+// following line is from express-generator, maybe we should enable it?
+//app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 var courseInfo = {};
@@ -137,6 +143,7 @@ var loadCourseInfo = function(callback) {
                 config.roles[key] = value;
             });
         }
+        courseInfo.userRoles = info.userRoles;
         courseInfo.gitCourseBranch = config.gitCourseBranch;
         courseInfo.timezone = config.timezone;
         getCourseOriginURL(function(err, originURL) {
@@ -151,6 +158,24 @@ var checkInfoValid = function(idName, info, infoFile) {
 
     if (idName == "tid" && info.options && info.options.availDate) {
         logger.warn(infoFile + ': "options.availDate" is deprecated and will be removed in a future version. Instead, please use "allowAccess".');
+    }
+
+    // add semesters to tests without one
+    if (idName == "tid" && !_(info).has("semester")) {
+        if (courseInfo.name == "TAM 212") {
+            if (/^sp16_/.test(info.tid)) {
+                info.semester = "Sp16";
+            } else if (/^fa15_/.test(info.tid)) {
+                info.semester = "Fa15";
+            } else if (/^sp15_/.test(info.tid)) {
+                info.semester = "Sp15";
+            } else {
+                info.semester = "Sp15";
+            }
+        } else {
+            info.semester = config.semester;
+        }
+        logger.warn(infoFile + ': "semester" is missing, setting to "' + info.semester + '".');
     }
 
     // look for exams without credit assigned and patch it in to all access rules
@@ -209,7 +234,7 @@ var checkInfoValid = function(idName, info, infoFile) {
     return retVal;
 };
 
-var questionDB, testDB;
+var questionDB = {}, testDB = {};
 
 var loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, loadCallback) {
     fs.readdir(parentDir, function(err, files) {
@@ -234,6 +259,7 @@ var loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, op
                         callback(null);
                         return;
                     }
+                    info[idName] = dir;
                     if (!checkInfoValid(idName, info, infoFile)) {
                         callback(null);
                         return;
@@ -243,7 +269,6 @@ var loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, op
                         return;
                     }
                     info = _.defaults(info, defaultInfo);
-                    info[idName] = dir;
                     db[dir] = info;
                     return callback(null);
                 });
@@ -570,6 +595,7 @@ app.use(function(req, res, next) {
             || req.path == "/version.js"
             || req.path == "/config.js"
             || req.path == "/favicon.png"
+            || req.path == "/favicon.ico"
             || /^\/require\//.test(req.path)
             || /^\/css\//.test(req.path)
             || /^\/text\//.test(req.path)
@@ -583,6 +609,22 @@ app.use(function(req, res, next) {
 
     // bypass auth for local /auth serving
     if (config.authType === 'none' && req.path == "/auth") {
+        next();
+        return;
+    }
+    
+    // bypass auth for local /admin/ serving
+    if (config.authType === 'none'
+        && (/^\/admin/.test(req.path)
+            || /^\/images\//.test(req.path)
+            || /^\/javascripts\//.test(req.path)
+            || /^\/stylesheets\//.test(req.path))) {
+        req.authUID = 'user1@illinois.edu';
+        req.authName = 'Test User';
+        req.authRole = 'Superuser';
+        req.mode = 'Public';
+        req.userUID = 'user1@illinois.edu';
+        req.userRole = 'Superuser';
         next();
         return;
     }
@@ -804,6 +846,84 @@ if (config.authType === 'eppn') {
         res.json({ "uid": req.authUID });
     });
 }
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// START OF express-generator
+
+// view engine setup
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
+
+app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+
+// static serving of all subdirectories of "./public"
+app.use(express.static(path.join(__dirname, 'public')));
+
+/*
+  Middleware handlers. For each route we do several things:
+  1. Check authorization.
+  2. Check that the implied nesting is true (e.g., that the test is inside the course).
+  3. Store URL parameters and other information in the req.locals object for templates.
+*/
+app.use('/admin/', function(req, res, next) {req.locals = {}; next();});
+app.use('/admin/:courseInstanceId', require('./middlewares/checkAdminAuth'));
+app.use('/admin/:courseInstanceId', require('./middlewares/currentCourseInstance'));
+app.use('/admin/:courseInstanceId', require('./middlewares/currentCourse'));
+app.use('/admin/:courseInstanceId', require('./middlewares/currentSemester'));
+app.use('/admin/:courseInstanceId', require('./middlewares/setURLPrefix'));
+app.use('/admin/:courseInstanceId', require('./middlewares/courseList'));
+app.use('/admin/:courseInstanceId', require('./middlewares/semesterList'));
+app.use('/admin/:courseInstanceId/tests/:testId', require('./middlewares/currentTest'));
+app.use('/admin/:courseInstanceId/tests/:testId/testQuestion/:testQuestionId', require('./middlewares/currentTestQuestion'));
+app.use('/admin/:courseInstanceId/questions/:questionId', require('./middlewares/currentQuestion'));
+
+// Actual route handlers.
+app.use('/admin', require('./routes/index'));
+app.use('/admin/:courseInstanceId', require('./routes/tests'));
+app.use('/admin/:courseInstanceId/tests', require('./routes/tests'));
+app.use('/admin/:courseInstanceId/tests/:testId', require('./routes/testView'));
+app.use('/admin/:courseInstanceId/tests/:testId/testQuestion/:testQuestionId', require('./routes/testQuestionView'));
+app.use('/admin/:courseInstanceId/users', require('./routes/users'));
+app.use('/admin/:courseInstanceId/questions', require('./routes/questions'));
+app.use('/admin/:courseInstanceId/questions/:questionId', require('./routes/questionView'));
+
+// catch 404 and forward to error handler
+app.use(function(req, res, next) {
+  var err = new Error('Not Found');
+  err.status = 404;
+  next(err);
+});
+
+// error handlers
+
+// development error handler
+// will print stacktrace
+if (app.get('env') === 'development') {
+  app.use(function(err, req, res, next) {
+    res.status(err.status || 500);
+    res.render('pages/error', {
+      message: err.message,
+      error: err
+    });
+  });
+}
+
+// production error handler
+// no stacktraces leaked to user
+app.use(function(err, req, res, next) {
+  res.status(err.status || 500);
+  res.render('pages/error', {
+    message: err.message,
+    error: {}
+  });
+});
+
+// END OF express-generator
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 var getGitDescribe = function(callback) {
     var cmd = 'git';
@@ -3478,7 +3598,7 @@ var loadData = function(callback) {
             loadCourseInfo(callback);
         },
         function(callback) {
-            questionDB = {};
+            _(questionDB).mapObject(function(val, key) {delete questionDB[key];});
             var defaultQuestionInfo = {
                 "type": "Calculation",
                 "clientFiles": ["client.js", "question.html", "answer.html"],
@@ -3486,7 +3606,7 @@ var loadData = function(callback) {
             loadInfoDB(questionDB, "qid", config.questionsDir, defaultQuestionInfo, "schemas/questionInfo.json", "schemas/questionOptions", ".json", callback);
         },
         function(callback) {
-            testDB = {};
+            _(testDB).mapObject(function(val, key) {delete testDB[key];});
             var defaultTestInfo = {
             };
             loadInfoDB(testDB, "tid", config.testsDir, defaultTestInfo, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
@@ -3497,24 +3617,91 @@ var loadData = function(callback) {
     });
 };
 
+var syncSemesters = require('./sync/fromDisk/semesters');
+var syncCourseInfo = require('./sync/fromDisk/courseInfo');
+var syncCourseStaff = require('./sync/fromDisk/courseStaff');
+var syncTopics = require('./sync/fromDisk/topics');
+var syncQuestions = require('./sync/fromDisk/questions');
+var syncTestSets = require('./sync/fromDisk/testSets');
+var syncTests = require('./sync/fromDisk/tests');
+
+var syncDiskToSQL = function(callback) {
+    logger.infoOverride("Starting sync of disk to SQL");
+    Promise.try(function() {
+        logger.infoOverride("Syncing semesters from disk to SQL DB");
+        return syncSemesters.sync();
+    }).then(function() {
+        logger.infoOverride("Syncing courseInfo from disk to SQL DB");
+        return syncCourseInfo.sync(courseInfo);
+    }).then(function() {
+        logger.infoOverride("Syncing course staff from disk to SQL DB");
+        return syncCourseStaff.sync(courseInfo);
+    }).then(function() {
+        logger.infoOverride("Syncing topics from disk to SQL DB");
+        return syncTopics.sync(courseInfo, questionDB);
+    }).then(function() {
+        logger.infoOverride("Syncing questions from disk to SQL DB");
+        return syncQuestions.sync(courseInfo, questionDB);
+    }).then(function() {
+        logger.infoOverride("Syncing test sets from disk to SQL DB");
+        return syncTestSets.sync(courseInfo, testDB);
+    }).then(function() {
+        logger.infoOverride("Syncing tests from disk to SQL DB");
+        return syncTests.sync(courseInfo, testDB);
+    }).then(function() {
+        logger.infoOverride("Completed sync of disk to SQL");
+        callback(null);
+    }).catch(function(err) {
+        callback(err);
+    });
+};
+
+var syncUsers = require('./sync/fromMongo/users');
+var syncTestInstances = require('./sync/fromMongo/testInstances');
+
+var syncMongoToSQL = function(callback) {
+    logger.infoOverride("Starting sync of Mongo to SQL");
+    async.series([
+        function(callback) {logger.infoOverride("Syncing users from Mongo to SQL DB"); callback(null);},
+        syncUsers.sync.bind(null, courseInfo, uidToRole),
+        function(callback) {logger.infoOverride("Syncing test instances from Mongo to SQL DB"); callback(null);},
+        syncTestInstances.sync.bind(null, courseInfo, testDB),
+    ], function(err) {
+        if (err) return callback(err);
+        logger.infoOverride("Completed sync of Mongo to SQL");
+        callback(null);
+    });
+};
+
 async.series([
     db.init,
+    sqldb.init,
     loadData,
-    //runBayes,
-    /*
-    function(callback) {
-        computeStats();
-        callback(null);
-    },
-    */
+    // FIXME: for dev we start server before sync tasks,
+    // this should be re-ordered for prod
     startServer,
-    startIntervalJobs
-], function(err) {
+    startIntervalJobs,
+    // FIXME: we are short-circuiting this for development,
+    // for prod these tasks should be back inline
+    function(callback) {
+        callback(null);
+        async.series([
+            syncDiskToSQL,
+            syncMongoToSQL,
+        ], function(err, data) {
+            if (err) {
+                logger.error("Error syncing SQL DB:", err, data);
+            }
+        });
+    },
+], function(err, data) {
     if (err) {
-        logger.error("Error initializing PrairieLearn server:", err);
+        logger.error("Error initializing PrairieLearn server:", err, data);
         logger.error("Exiting...");
         process.exit(1);
     } else {
         logger.infoOverride("PrairieLearn server ready");
     }
 });
+
+//module.exports = app;

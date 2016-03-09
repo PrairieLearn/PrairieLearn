@@ -1,5 +1,25 @@
 
-.PHONY: text
+.PHONY: help test lint jscs text
+
+help:
+	@echo "Please use one of:\nmake test\nmake lint\nmake jscs\nmake text"
+
+######################################################################
+
+test:
+	./node_modules/.bin/mocha tests
+
+######################################################################
+
+CHECK_FILES = models tests sync middlewares routes
+
+lint:
+	./node_modules/.bin/jshint --config jshintrc $(CHECK_FILES)
+
+jscs:
+	./node_modules/.bin/jscs --verbose --config jscsrc $(CHECK_FILES)
+
+######################################################################
 
 comma := ,
 CONFIG_COURSE_DIR := $(shell grep -s courseDir config.json)
