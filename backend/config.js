@@ -9,6 +9,7 @@ var config = module.exports;
 // defaults - can be overridden in config.json
 config.timezone = 'America/Chicago';
 config.dbAddress = 'mongodb://localhost:27017/data';
+config.sdbAddress = 'postgres://localhost/database';
 config.logFilename = 'server.log';
 config.authType = 'none';
 config.localFileserver = true;
