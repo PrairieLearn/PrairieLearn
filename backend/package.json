@@ -8,6 +8,7 @@
         "archiver": "0.21.x",
         "async": "1.5.x",
         "backbone": "1.2.x",
+        "bluebird": "3.3.x",
         "body-parser": "1.15.x",
         "cookie-parser": "1.4.x",
         "bluebird": "3.3.x",
