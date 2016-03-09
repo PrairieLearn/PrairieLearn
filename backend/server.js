@@ -3,7 +3,6 @@ var config = require("./config");
 var db = require("./db");
 var sqldb = require("./sqldb");
 var models = require("./models");
-var courseDB = require("./courseDB");
 
 var _ = require("underscore");
 var fs = require("fs");
@@ -3474,8 +3473,9 @@ var syncMongoToSQL = function(callback) {
 
 async.series([
     db.init,
-    loadAndInitCourseData,
+    function(callback) {models.init(); callback(null);},
     sqldb.init,
+    loadAndInitCourseData,
     // FIXME: for dev we start server before sync tasks,
     // this should be re-ordered for prod
     startServer,
