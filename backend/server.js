@@ -1,6 +1,7 @@
 var logger = require("./logger");
 var config = require("./config");
 var db = require("./db");
+var sdb = require("./sdb");
 
 var _ = require("underscore");
 var fs = require("fs");
@@ -3526,6 +3527,7 @@ var loadData = function(callback) {
 
 async.series([
     db.init,
+    sdb.init,
     loadData,
     //runBayes,
     /*

@@ -20,6 +20,7 @@
         "moment-timezone": "0.5.x",
         "mongodb": "2.1.x",
         "numeric": "1.2.x",
+        "pg": "4.5.x",
         "requirejs": "2.1.x",
         "underscore": "1.8.x",
         "winston": "2.2.x"
