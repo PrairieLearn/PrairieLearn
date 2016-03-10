@@ -43,6 +43,7 @@ define(["underscore", "backbone", "mustache", "RetryExamTestHelper", "text!Retry
             var submission = submissionsByQid[qid];
             var question = questionsByQID[qid];
             _(data).extend(RetryExamTestHelper.getQuestionData(submission, question, data.open));
+            data.allQuestionsAnswered = Object.keys(submissionsByQid).length === Object.keys(questionsByQID).length;
 
             if (!data.open) {
                 var finishDate = new Date(this.tInstance.get("finishDate"));

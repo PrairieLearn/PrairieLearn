@@ -1,6 +1,13 @@
 <div class="panel panel-default">
   <div class="panel-heading"><h3 class="panel-title"><a href="#ti/{{tid}}/{{tiNumber}}">{{testShortName}}</a></h3></div>
-  <div class="panel-body">
+  <div class="panel-body {{#open}}{{#allQuestionsAnswered}}bg-success{{/allQuestionsAnswered}}{{/open}}">
+
+    {{#open}}
+    {{#allQuestionsAnswered}}
+    <p class="text-success"><strong>You have answered every question.</strong></p>
+    <p class="text-success">Return to Assessment overview to finish the exam.</p>
+    {{/allQuestionsAnswered}}
+    {{/open}}
 
     {{^open}}
     <p>
