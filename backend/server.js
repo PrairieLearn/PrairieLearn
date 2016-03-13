@@ -3306,6 +3306,7 @@ async.series([
     db.init,
     loadAndInitCourseData,
     sdb.init,
+    function(callback) {sdb.initCourseInfo(courseDB.courseInfo, callback);},
     //runBayes,
     /*
     function(callback) {
@@ -3315,9 +3316,9 @@ async.series([
     */
     startServer,
     startIntervalJobs
-], function(err) {
+], function(err, data) {
     if (err) {
-        logger.error("Error initializing PrairieLearn server:", err);
+        logger.error("Error initializing PrairieLearn server:", err, data);
         logger.error("Exiting...");
         process.exit(1);
     } else {
