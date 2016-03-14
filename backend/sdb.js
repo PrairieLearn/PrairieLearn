@@ -18,11 +18,13 @@ module.exports = {
     },
 
     initSemesters: function(callback) {
-        models.Semester.upsert({
-            shortName: 'Fa15',
-            longName: 'Fall 2015',
-            startDate: moment.tz('2015-08-24T00:00:01', config.timezone).format(),
-            endDate: moment.tz('2016-12-18T23:59:59', config.timezone).format(),
+        Promise.try(function() {
+            return models.Semester.upsert({
+                shortName: 'Fa15',
+                longName: 'Fall 2015',
+                startDate: moment.tz('2015-08-24T00:00:01', config.timezone).format(),
+                endDate: moment.tz('2016-12-18T23:59:59', config.timezone).format(),
+            });
         }).then(function() {
             return models.Semester.upsert({
                 shortName: 'Sp16',
@@ -45,12 +47,16 @@ module.exports = {
     },
 
     initCourseInfo: function(courseInfo, callback) {
-        var upsertCourse = models.Course.upsert({shortName: courseInfo.name, title: courseInfo.title});
-        var course = models.Course.findOne({where: {shortName: courseInfo.name}});
-        var semester = models.Semester.findOne({where: {shortName: config.semester}});
-        Promise.join(upsertCourse, course, semester, function(courseCreated, course, semester) {
-            // We want to use an UPSERT here, but we can't because the (course_id, semester_id) pair
-            // doesn't have a unique shared index. I can't figure out how to make that happen.
+        Promise.try(function() {
+            return models.Course.upsert({
+                shortName: courseInfo.name,
+                title: courseInfo.title,
+            });
+        }).then(function() {
+            var course = models.Course.findOne({where: {shortName: courseInfo.name}});
+            var semester = models.Semester.findOne({where: {shortName: config.semester}});
+            return Promise.all([course, semester]);
+        }).spread(function(course, semester) {
             return models.CourseInstance.findOrCreate({where: {
                 course_id: course.id,
                 semester_id: semester.id,
@@ -69,21 +75,19 @@ module.exports = {
             cursor.toArray(function(err, objs) {
                 if (err) callback(err);
                 async.map(objs, function(u, callback) {
-                    var upsertUser = models.User.upsert({uid: u.uid, name: u.name});
-                    var user = models.User.findOne({uid: u.uid});
-                    Promise.join(upsertUser, user, function(userCreated, user) {
-                        // We want to use an UPSERT here, but we can't because the (user_id, course_instance_id) pair
-                        // doesn't have a unique shared index. I can't figure out how to make that happen.
-                        return models.Enrollment.findOrCreate({where: {
+                    Promise.try(function() {
+                        return models.User.upsert({
+                            uid: u.uid,
+                            name: u.name
+                        });
+                    }).then(function() {
+                        return models.User.findOne({where: {
+                            uid: u.uid
+                        }});
+                    }).then(function(user) {
+                        return models.Enrollment.upsert({
                             user_id: user.id,
                             course_instance_id: courseInfo.courseInstanceId,
-                        }, defaults: {
-                            role: uidToRole(u.uid),
-                        }});
-                    }).spread(function(enrollment, created) {
-                        // This is only necessary because we aren't using UPSERT above. findOrCreate() won't
-                        // update the role if the user already existed.
-                        return enrollment.update({
                             role: uidToRole(u.uid),
                         });
                     }).then(function() {
