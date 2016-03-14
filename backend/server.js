@@ -3308,6 +3308,7 @@ async.series([
     sdb.init,
     sdb.initSemesters,
     sdb.initCourseInfo.bind(null, courseDB.courseInfo),
+    sdb.initUsers.bind(null, courseInfo, uidToRole),
     //runBayes,
     /*
     function(callback) {

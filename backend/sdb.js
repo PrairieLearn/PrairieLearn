@@ -6,6 +6,7 @@ var models = require('./models');
 
 var config = require('./config');
 var logger = require('./logger');
+var db = require('./db');
 
 module.exports = {
     init: function(callback) {
@@ -48,6 +49,8 @@ module.exports = {
         var course = models.Course.findOne({where: {shortName: courseInfo.name}});
         var semester = models.Semester.findOne({where: {shortName: config.semester}});
         Promise.join(upsertCourse, course, semester, function(courseCreated, course, semester) {
+            // We want to use an UPSERT here, but we can't because the (course_id, semester_id) pair
+            // doesn't have a unique shared index. I can't figure out how to make that happen.
             return models.CourseInstance.findOrCreate({where: {
                 course_id: course.id,
                 semester_id: semester.id,
@@ -57,6 +60,42 @@ module.exports = {
             callback(null);
         }).catch(function(err) {
             callback(err);
+        });
+    },
+
+    initUsers: function(courseInfo, uidToRole, callback) {
+        db.uCollect.find({}, {"uid": 1, "name": 1}, function(err, cursor) {
+            if (err) callback(err);
+            cursor.toArray(function(err, objs) {
+                if (err) callback(err);
+                async.map(objs, function(u, callback) {
+                    var upsertUser = models.User.upsert({uid: u.uid, name: u.name});
+                    var user = models.User.findOne({uid: u.uid});
+                    Promise.join(upsertUser, user, function(userCreated, user) {
+                        // We want to use an UPSERT here, but we can't because the (user_id, course_instance_id) pair
+                        // doesn't have a unique shared index. I can't figure out how to make that happen.
+                        return models.Enrollment.findOrCreate({where: {
+                            user_id: user.id,
+                            course_instance_id: courseInfo.courseInstanceId,
+                        }, defaults: {
+                            role: uidToRole(u.uid),
+                        }});
+                    }).spread(function(enrollment, created) {
+                        // This is only necessary because we aren't using UPSERT above. findOrCreate() won't
+                        // update the role if the user already existed.
+                        return enrollment.update({
+                            role: uidToRole(u.uid),
+                        });
+                    }).then(function() {
+                        callback(null);
+                    }).catch(function(err) {
+                        callback(err);
+                    });
+                }, function(err, objs) {
+                    if (err) callback(err);
+                    callback(null);
+                });
+            });
         });
     },
 };
