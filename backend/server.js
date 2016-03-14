@@ -3306,6 +3306,7 @@ async.series([
     db.init,
     loadAndInitCourseData,
     sdb.init,
+    sdb.initSemesters,
     function(callback) {sdb.initCourseInfo(courseDB.courseInfo, callback);},
     //runBayes,
     /*
