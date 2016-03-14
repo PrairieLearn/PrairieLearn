@@ -1,163 +1,89 @@
 var _ = require('underscore');
-var async = require("async");
+var async = require('async');
+var moment = require('moment-timezone');
+var Promise = require('bluebird');
+var pg = require('pg');
+var Sequelize = require('sequelize');
 
 var config = require('./config');
 var logger = require('./logger');
-var moment = require("moment-timezone");
 
-var pg = require('pg');
+var sequelize = new Sequelize(config.sdbAddress, {
+    define: {
+        underscored: true,
+        updatedAt: 'updated_at',
+        deletedAt: 'deleted_at',
+    },
+});
+
+var Semester = sequelize.define('semester', {
+    shortName: {type: Sequelize.STRING, unique: true},
+    longName: Sequelize.STRING,
+    startDate: Sequelize.DATE,
+    endDate: Sequelize.DATE,
+});
+
+var Course = sequelize.define('course', {
+    shortName: {type: Sequelize.STRING, unique: true},
+    title: Sequelize.STRING,
+});
+
+var CourseInstance = sequelize.define('course_instance', {
+});
+
+CourseInstance.belongsTo(Course);
+CourseInstance.belongsTo(Semester);
 
 module.exports = {
     init: function(callback) {
-        pg.connect(config.sdbAddress, function(err, client, done) {
-            if(err) return callback('error fetching client from pool', err);
-            async.series([
-                //////////////////////////////////////////////////////////////////////
-                function(callback) {
-                    var sql = 'DROP TABLE semesters CASCADE;'
-                    client.query(sql, function(err, result) {
-                        if (err) return callback('error running query', {sql: sql, err: err});
-                        callback(null);
-                    });
-                },
-                //////////////////////////////////////////////////////////////////////
-                function(callback) {
-                    var sql = 'CREATE TABLE semesters ('
-                        + ' id            SERIAL PRIMARY KEY,'
-                        + ' short_name    VARCHAR(10),'
-                        + ' long_name     VARCHAR(100),'
-                        + ' start_date    TIMESTAMP WITH TIME ZONE,'
-                        + ' end_date      TIMESTAMP WITH TIME ZONE'
-                        + ' );'
-                    client.query(sql, function(err, result) {
-                        if (err) return callback('error running query', {sql: sql, err: err});
-                        callback(null);
-                    });
-                },
-                //////////////////////////////////////////////////////////////////////
-                function(callback) {
-                    var sql = 'INSERT INTO semesters'
-                        + ' (short_name, long_name, start_date, end_date)'
-                        + ' VALUES ($1, $2, $3, $4)'
-                        + ';'
-                    var data = ['Sp16', 'Spring 2016',
-                                moment.tz('2016-01-19T00:00:01', config.timezone).format(),
-                                moment.tz('2016-05-13T23:59:59', config.timezone).format(),
-                               ];
-                    client.query(sql, data, function(err, result) {
-                        if (err) return callback('error running query', {sql: sql, data: data, err: err});
-                        callback(null);
-                    });
-                },
-                //////////////////////////////////////////////////////////////////////
-            ], function(err, data) {
-                done();
-                if (err) return callback(err, data);
-                callback(null);
+        sequelize.sync().then(function() {
+            callback(null);
+        }).catch(function(err) {
+            callback(err);
+        });
+    },
+
+    initSemesters: function(callback) {
+        Semester.upsert({
+            shortName: 'Fa15',
+            longName: 'Fall 2015',
+            startDate: moment.tz('2015-08-24T00:00:01', config.timezone).format(),
+            endDate: moment.tz('2016-12-18T23:59:59', config.timezone).format(),
+        }).then(function() {
+            return Semester.upsert({
+                shortName: 'Sp16',
+                longName: 'Spring 2016',
+                startDate: moment.tz('2016-01-19T00:00:01', config.timezone).format(),
+                endDate: moment.tz('2016-05-13T23:59:59', config.timezone).format(),
             });
+        }).then(function() {
+            return Semester.upsert({
+                shortName: 'Su16',
+                longName: 'Summer 2016',
+                startDate: moment.tz('2016-06-13T00:00:01', config.timezone).format(),
+                endDate: moment.tz('2016-08-06T23:59:59', config.timezone).format(),
+            });
+        }).then(function() {
+            callback(null);
+        }).catch(function(err) {
+            callback(err);
         });
     },
 
     initCourseInfo: function(courseInfo, callback) {
-        pg.connect(config.sdbAddress, function(err, client, done) {
-            if(err) return callback('error fetching client from pool', err);
-            var course_id, semester_id;
-            async.series([
-                //////////////////////////////////////////////////////////////////////
-                function(callback) {
-                    var sql = 'DROP TABLE courses CASCADE;'
-                    client.query(sql, function(err, result) {
-                        callback(null);
-                    });
-                },
-                //////////////////////////////////////////////////////////////////////
-                function(callback) {
-                    var sql = 'CREATE TABLE courses ('
-                        + ' id              SERIAL PRIMARY KEY,'
-                        + ' short_name      VARCHAR(20),'
-                        + ' title           VARCHAR(100)'
-                        + ' );'
-                    client.query(sql, function(err, result) {
-                        if (err) return callback('error running query', {sql: sql, err: err});
-                        callback(null);
-                    });
-                },
-                //////////////////////////////////////////////////////////////////////
-                function(callback) {
-                    var sql = 'INSERT INTO courses'
-                        + ' (short_name, title)'
-                        + ' VALUES ($1, $2)'
-                        + ';'
-                    var data = [courseInfo.name, courseInfo.title];
-                    client.query(sql, data, function(err, result) {
-                        if (err) return callback('error running query', {sql: sql, data: data, err: err});
-                        callback(null);
-                    });
-                },
-                //////////////////////////////////////////////////////////////////////
-                function(callback) {
-                    var sql = 'DROP TABLE course_instances CASCADE;'
-                    client.query(sql, function(err, result) {
-                        callback(null);
-                    });
-                },
-                //////////////////////////////////////////////////////////////////////
-                function(callback) {
-                    var sql = 'CREATE TABLE course_instances ('
-                        + ' id              SERIAL PRIMARY KEY,'
-                        + ' course_id       INTEGER REFERENCES courses(id),'
-                        + ' semester_id     INTEGER REFERENCES semesters(id)'
-                        + ' );'
-                    client.query(sql, function(err, result) {
-                        if (err) return callback('error running query', {sql: sql, err: err});
-                        callback(null);
-                    });
-                },
-                //////////////////////////////////////////////////////////////////////
-                function(callback) {
-                    var sql = 'SELECT id FROM courses WHERE'
-                        + ' short_name = $1;'
-                    var data = [courseInfo.name];
-                    client.query(sql, data, function(err, result) {
-                        if (err) return callback('error running query', {sql: sql, data: data, err: err});
-                        if (result.rows.length != 1) return callback('invalid number of rows: ' + result.rows.length);
-                        course_id = result.rows[0].id;
-                        callback(null);
-                    });
-                },
-                //////////////////////////////////////////////////////////////////////
-                function(callback) {
-                    var sql = 'SELECT id FROM semesters WHERE'
-                        + ' short_name = $1;'
-                    var data = [config.semester];
-                    client.query(sql, data, function(err, result) {
-                        if (err) return callback('error running query', {sql: sql, data: data, err: err});
-                        if (result.rows.length != 1) return callback('invalid number of rows: ' + result.rows.length);
-                        semester_id = result.rows[0].id;
-                        callback(null);
-                    });
-                },
-                //////////////////////////////////////////////////////////////////////
-                function(callback) {
-                    var sql = 'INSERT INTO course_instances'
-                        + ' (course_id, semester_id)'
-                        + ' VALUES ($1, $2)'
-                        + ' RETURNING id'
-                        + ';'
-                    var data = [course_id, semester_id];
-                    client.query(sql, data, function(err, result) {
-                        if (err) return callback('error running query', {sql: sql, data: data, err: err});
-                        if (result.rows.length != 1) return callback('invalid number of rows: ' + result.rows.length);
-                        courseInfo.courseInstanceID = result.rows[0].id;
-                        callback(null);
-                    });
-                },
-                //////////////////////////////////////////////////////////////////////
-            ], function(err, data) {
-                done();
-                if (err) return callback(err, data);
-                callback(null);
-            });
+        var upsertCourse = Course.upsert({shortName: courseInfo.name, title: courseInfo.title});
+        var course = Course.findOne({where: {shortName: courseInfo.name}});
+        var semester = Semester.findOne({where: {shortName: config.semester}});
+        Promise.join(upsertCourse, course, semester, function(courseCreated, course, semester) {
+            return CourseInstance.findOrCreate({where: {
+                course_id: course.id,
+                semester_id: semester.id,
+            }, defaults: {}});
+        }).spread(function(courseInstance, created) {
+            courseInfo.courseInstanceId = courseInstance.id;
+            callback(null);
+        }).catch(function(err) {
+            callback(err);
         });
     },
 };

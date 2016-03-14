@@ -3528,6 +3528,7 @@ var loadData = function(callback) {
 async.series([
     db.init,
     sdb.init,
+    sdb.initSemesters,
     loadData,
     function(callback) {sdb.initCourseInfo(courseInfo, callback);},
     //runBayes,
