@@ -102,4 +102,51 @@ module.exports = {
             });
         });
     },
+
+    initTests: function(courseInfo, testDB, callback) {
+        db.tCollect.find({}, function(err, cursor) {
+            if (err) callback(err);
+            cursor.toArray(function(err, objs) {
+                if (err) callback(err);
+                objs = _(objs).filter(function(o) {return _(testDB).has(o.tid);});
+                async.map(objs, function(t, callback) {
+                    var shortName = {
+                        'Homework': 'HW',
+                        'Quiz': 'Q',
+                    }[t.set] || t.set;
+                    var testSetId;
+                    Promise.try(function() {
+                        return models.TestSet.findOrCreate({where: {
+                            shortName: shortName,
+                        }});
+                    }).spread(function(testSet, created) {
+                        return testSet.update({
+                            longName: t.set,
+                            course_instance_id: courseInfo.courseInstandId,
+                        });
+                    }).then(function(testSet) {
+                        testSetId = testSet.id;
+                        return models.Test.findOrCreate({where: {
+                            tid: t.tid,
+                        }});
+                    }).spread(function(test) {
+                        return test.update({
+                            type: t.type,
+                            number: t.number,
+                            title: t.title,
+                            config: t.options,
+                            test_set_id: testSetId,
+                        });
+                    }).then(function() {
+                        callback(null);
+                    }).catch(function(err) {
+                        callback(err);
+                    });
+                }, function(err, objs) {
+                    if (err) callbacK(err);
+                    callback(null);
+                });
+            });
+        });
+    },
 };
