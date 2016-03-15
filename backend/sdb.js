@@ -57,6 +57,8 @@ module.exports = {
             var semester = models.Semester.findOne({where: {shortName: config.semester}});
             return Promise.all([course, semester]);
         }).spread(function(course, semester) {
+            if (!course) throw Error("no course where short_name = " + courseInfo.name);
+            if (!semester) throw Error("no semester where short_name = " + config.semester);
             return models.CourseInstance.findOrCreate({where: {
                 course_id: course.id,
                 semester_id: semester.id,
@@ -85,6 +87,7 @@ module.exports = {
                             uid: u.uid
                         }});
                     }).then(function(user) {
+                        if (!user) throw Error("no user where uid = " + u.uid);
                         return models.Enrollment.upsert({
                             user_id: user.id,
                             course_instance_id: courseInfo.courseInstanceId,
@@ -156,6 +159,49 @@ module.exports = {
                     }).catch(function(err) {
                         callback(err);
                     });
+                });
+            });
+        });
+    },
+
+    initTestInstances: function(courseInfo, testDB, callback) {
+        // find all the testInstances in mongo
+        db.tiCollect.find({}, function(err, cursor) {
+            if (err) callback(err);
+            cursor.toArray(function(err, objs) {
+                if (err) callback(err);
+                // only process tInstances for tests that we have on disk
+                objs = _(objs).filter(function(o) {return _(testDB).has(o.tid);});
+                async.map(objs, function(ti, callback) {
+                    var user, test;
+                    Promise.try(function() {
+                        var user = models.User.findOne({where: {uid: ti.uid}});
+                        var test = models.Test.findOne({where: {tid: ti.tid}});
+                        return Promise.all([user, test]);
+                    }).spread(function(u, t) {
+                        user = u;
+                        test = t;
+                        if (!user) throw Error("no user where uid = " + ti.uid);
+                        if (!test) throw Error("no test where tid = " + ti.tid);
+                        return models.TestInstance.findOrCreate({where: {
+                            tiid: ti.tiid,
+                        }});
+                    }).spread(function(testInstance, created) {
+                        return testInstance.update({
+                            date: ti.date,
+                            number: ti.number,
+                            user_id: user.id,
+                            test_id: test.id,
+                        });
+                    }).then(function() {
+                        callback(null);
+                    }).catch(function(err) {
+                        logger.error(err);
+                        callback(null);
+                    });
+                }, function(err) {
+                    if (err) callback(err);
+                    callback(null);
                 });
             });
         });
