@@ -104,10 +104,12 @@ module.exports = {
     },
 
     initTests: function(courseInfo, testDB, callback) {
+        // find all the tests in mongo
         db.tCollect.find({}, function(err, cursor) {
             if (err) callback(err);
             cursor.toArray(function(err, objs) {
                 if (err) callback(err);
+                // only keep the tests that we have on disk
                 objs = _(objs).filter(function(o) {return _(testDB).has(o.tid);});
                 async.map(objs, function(t, callback) {
                     var shortName = {
@@ -142,9 +144,18 @@ module.exports = {
                     }).catch(function(err) {
                         callback(err);
                     });
-                }, function(err, objs) {
-                    if (err) callbacK(err);
-                    callback(null);
+                }, function(err) {
+                    if (err) callback(err);
+                    // delete tests from the DB that aren't on disk
+                    models.Test.destroy({where: {
+                        tid: {
+                            $notIn: _(objs).pluck('tid'),
+                        },
+                    }}).then(function() {
+                        callback(null);
+                    }).catch(function(err) {
+                        callback(err);
+                    });
                 });
             });
         });
