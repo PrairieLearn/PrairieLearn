@@ -76,7 +76,7 @@ module.exports = {
             if (err) callback(err);
             cursor.toArray(function(err, objs) {
                 if (err) callback(err);
-                async.map(objs, function(u, callback) {
+                async.each(objs, function(u, callback) {
                     Promise.try(function() {
                         return models.User.upsert({
                             uid: u.uid,
@@ -106,6 +106,49 @@ module.exports = {
         });
     },
 
+    initQuestions: function(courseInfo, questionDB, callback) {
+        async.eachSeries(_(questionDB).values(), function(q, callback) {
+            // need to do this in series because topics don't have unique names,
+            // so Topic.findAndCreate() will produce duplicates
+            var topic, question;
+            Promise.try(function() {
+                return models.Topic.findOrCreate({where: {
+                    name: q.topic,
+                }});
+            }).spread(function(t, created) {
+                topic = t;
+                return models.Question.findOrCreate({where: {
+                    qid: q.qid,
+                }});
+            }).spread(function(newQuestion, created) {
+                question = newQuestion;
+                return question.update({
+                    type: q.type,
+                    title: q.title,
+                    config: q.options,
+                    topic_id: topic.id,
+                });
+            }).then(function() {
+                callback(null);
+            }).catch(function(err) {
+                callback(err);
+            });
+        }, function(err) {
+            if (err) callback(err);
+            // delete questions from the DB that aren't on disk
+            // FIXME: use soft deletes to avoid cascading
+            models.Question.destroy({where: {
+                qid: {
+                    $notIn: _.chain(questionDB).values().pluck('tid').value(),
+                },
+            }}).then(function() {
+                callback(null);
+            }).catch(function(err) {
+                callback(err);
+            });
+        });
+    },
+
     initTests: function(courseInfo, testDB, callback) {
         // find all the tests in mongo
         db.tCollect.find({}, function(err, cursor) {
@@ -114,23 +157,25 @@ module.exports = {
                 if (err) callback(err);
                 // only keep the tests that we have on disk
                 objs = _(objs).filter(function(o) {return _(testDB).has(o.tid);});
-                async.map(objs, function(t, callback) {
+                async.eachSeries(objs, function(t, callback) {
+                    // need to do this in series because testSets don't have unique names,
+                    // so TestSet.findAndCreate() will produce duplicates
                     var shortName = {
                         'Homework': 'HW',
                         'Quiz': 'Q',
                     }[t.set] || t.set;
-                    var testSetId;
+                    var testSet;
                     Promise.try(function() {
                         return models.TestSet.findOrCreate({where: {
                             shortName: shortName,
                         }});
-                    }).spread(function(testSet, created) {
+                    }).spread(function(ts, created) {
+                        testSet = ts;
                         return testSet.update({
                             longName: t.set,
                             course_instance_id: courseInfo.courseInstandId,
                         });
-                    }).then(function(testSet) {
-                        testSetId = testSet.id;
+                    }).then(function() {
                         return models.Test.findOrCreate({where: {
                             tid: t.tid,
                         }});
@@ -140,7 +185,7 @@ module.exports = {
                             number: t.number,
                             title: t.title,
                             config: t.options,
-                            test_set_id: testSetId,
+                            test_set_id: testSet.id,
                         });
                     }).then(function() {
                         callback(null);
@@ -150,6 +195,7 @@ module.exports = {
                 }, function(err) {
                     if (err) callback(err);
                     // delete tests from the DB that aren't on disk
+                    // FIXME: use soft deletes to avoid cascading
                     models.Test.destroy({where: {
                         tid: {
                             $notIn: _(objs).pluck('tid'),
@@ -172,7 +218,7 @@ module.exports = {
                 if (err) callback(err);
                 // only process tInstances for tests that we have on disk
                 objs = _(objs).filter(function(o) {return _(testDB).has(o.tid);});
-                async.map(objs, function(ti, callback) {
+                async.each(objs, function(ti, callback) {
                     var user, test, testInstance;
                     Promise.try(function() {
                         var user = models.User.findOne({where: {uid: ti.uid}});

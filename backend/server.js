@@ -3309,6 +3309,7 @@ async.series([
     sdb.initSemesters,
     sdb.initCourseInfo.bind(null, courseDB.courseInfo),
     sdb.initUsers.bind(null, courseInfo, uidToRole),
+    sdb.initQuestions.bind(null, courseInfo, questionDB),
     sdb.initTests.bind(null, courseInfo, testDB),
     sdb.initTestInstances.bind(null, courseInfo, testDB),
     //runBayes,

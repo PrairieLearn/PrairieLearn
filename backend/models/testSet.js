@@ -1,6 +1,6 @@
 module.exports = function(sequelize, DataTypes) {
     var TestSet = sequelize.define("TestSet", {
-        shortName: {type: DataTypes.STRING, unique: true, field: 'short_name'},
+        shortName: {type: DataTypes.STRING, field: 'short_name'},
         longName: {type: DataTypes.STRING, field: 'long_name'},
     }, {
         tableName: 'test_sets',

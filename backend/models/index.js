@@ -7,8 +7,10 @@ var config = require('../config');
 var logger = require('../logger');
 
 var sequelize = new Sequelize(config.sdbAddress, {
+    logging: function() {},
     define: {
         underscored: true,
+        paranoid: true,
         updatedAt: 'updated_at',
         deletedAt: 'deleted_at',
     },
