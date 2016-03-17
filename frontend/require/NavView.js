@@ -3,7 +3,7 @@ define(['underscore', 'backbone', 'mustache', 'text!NavView.html'], function(_, 
 
     var NavView = Backbone.View.extend({
 
-        tagName: 'nav',
+        tagName: 'div',
 
         events: {
             "click #nav-reload": "reload",
