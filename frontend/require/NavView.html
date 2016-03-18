@@ -1,45 +1,47 @@
 <nav class="navbar navbar-inverse navbar-static-top" role="navigation">
-  <div class="navbar-header">
-    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-      <span class="sr-only">Toggle navigation</span>
-      <span class="icon-bar"></span>
-      <span class="icon-bar"></span>
-      <span class="icon-bar"></span>
-    </button>
-    <a class="navbar-brand" href="index.html#assess">{{navTitle}}</a>
-  </div>
-  <div class="collapse navbar-collapse">
-    <ul class="nav navbar-nav" id="main-nav">
-      <li {{{navAssessAttributes}}}><a href="index.html#assess">Assessments</a></li>
-      <li {{{navStatsAttributes}}}><a href="index.html#stats">Statistics</a></li>
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="index.html#assess">{{navTitle}}</a>
+    </div>
+    <div class="collapse navbar-collapse">
+      <ul class="nav navbar-nav" id="main-nav">
+        <li {{{navAssessAttributes}}}><a href="index.html#assess">Assessments</a></li>
+        <li {{{navStatsAttributes}}}><a href="index.html#stats">Statistics</a></li>
 
-      {{#viewOtherUsersPerm}}
-      <li {{{navUserAttributes}}}><a href="index.html#user">User</a></li>
-      {{/viewOtherUsersPerm}}
+        {{#viewOtherUsersPerm}}
+        <li {{{navUserAttributes}}}><a href="index.html#user">User</a></li>
+        {{/viewOtherUsersPerm}}
 
-      {{#viewSync}}
-      <li {{{navSyncAttributes}}}><a href="index.html#sync">Sync</a></li>
-      {{/viewSync}}
+        {{#viewSync}}
+        <li {{{navSyncAttributes}}}><a href="index.html#sync">Sync</a></li>
+        {{/viewSync}}
 
-      {{#viewErrors}}
-      <li {{{navErrorsAttributes}}}><a href="index.html#errors">Errors</a></li>
-      {{/viewErrors}}
+        {{#viewErrors}}
+        <li {{{navErrorsAttributes}}}><a href="index.html#errors">Errors</a></li>
+        {{/viewErrors}}
 
-      {{#currentAssessmentName}}
-      <li {{{currentAssessmentAttributes}}}><a href="{{{currentAssessmentLink}}}">{{currentAssessmentName}}</a></li>
-      {{/currentAssessmentName}}
+        {{#currentAssessmentName}}
+        <li {{{currentAssessmentAttributes}}}><a href="{{{currentAssessmentLink}}}">{{currentAssessmentName}}</a></li>
+        {{/currentAssessmentName}}
 
-      {{#currentDetailName}}
-      <li {{{currentDetailAttributes}}}><a href="{{{currentDetailLink}}}">{{currentDetailName}}</a></li>
-      {{/currentDetailName}}
+        {{#currentDetailName}}
+        <li {{{currentDetailAttributes}}}><a href="{{{currentDetailLink}}}">{{currentDetailName}}</a></li>
+        {{/currentDetailName}}
 
-      {{#devMode}}
-      <button id="nav-reload" class="btn btn-success navbar-btn">Reload</button>
-      {{/devMode}}
-    </ul>
-    <div class="navbar-right">
-      <p class="navbar-text">{{userName}} {{#viewOtherUsersPerm}}({{mode}}/{{userRole}}){{/viewOtherUsersPerm}}</p>
-      <a class="btn btn-default navbar-btn" href="https://prairielearn.engr.illinois.edu/Shibboleth.sso/Logout">Log out</a>
+        {{#devMode}}
+        <button id="nav-reload" class="btn btn-success navbar-btn">Reload</button>
+        {{/devMode}}
+      </ul>
+      <div class="navbar-right">
+        <p class="navbar-text">{{userName}} {{#viewOtherUsersPerm}}({{mode}}/{{userRole}}){{/viewOtherUsersPerm}}</p>
+        <a class="btn btn-default navbar-btn" href="https://prairielearn.engr.illinois.edu/Shibboleth.sso/Logout">Log out</a>
+      </div>
     </div>
   </div>
 </nav>
