@@ -1,0 +1,22 @@
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">Questions</h3>
+  </div>
+
+  <table class="table table-condensed table-hover">
+    <thead>
+      <tr>
+        <th>QID</th>
+        <th>Title</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each results}}
+      <tr>
+        <td>{{qid}}</td>
+        <td>{{title}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>

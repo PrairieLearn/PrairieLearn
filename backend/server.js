@@ -12,6 +12,8 @@ var hbs = require('hbs');
 
 var routes = require('./routes/index');
 var tests = require('./routes/tests');
+var users = require('./routes/users');
+var questions = require('./routes/questions');
 
 logger.infoOverride('PrairieLearn server start');
 
@@ -620,6 +622,8 @@ hbs.registerPartials(__dirname + '/views/partials');
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/admin', routes);
 app.use('/admin/tests', tests);
+app.use('/admin/users', users);
+app.use('/admin/questions', questions);
 
 var getGitDescribe = function(callback) {
     var cmd = 'git';

@@ -1,0 +1,22 @@
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">Users</h3>
+  </div>
+
+  <table class="table table-condensed table-hover">
+    <thead>
+      <tr>
+        <th>UID</th>
+        <th>Name</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each results}}
+      <tr>
+        <td>{{uid}}</td>
+        <td>{{name}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>
