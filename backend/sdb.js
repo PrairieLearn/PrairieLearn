@@ -65,6 +65,7 @@ module.exports = {
             }, defaults: {}});
         }).spread(function(courseInstance, created) {
             courseInfo.courseInstanceId = courseInstance.id;
+            courseInfo.courseId = courseInstance.course_id;
             callback(null);
         }).catch(function(err) {
             callback(err);
@@ -136,8 +137,8 @@ module.exports = {
         }, function(err) {
             if (err) callback(err);
             // delete questions from the DB that aren't on disk
-            // FIXME: use soft deletes to avoid cascading
             models.Question.destroy({where: {
+                course_id: courseInfo.courseId,
                 qid: {
                     $notIn: _.chain(questionDB).values().pluck('tid').value(),
                 },
@@ -149,7 +150,126 @@ module.exports = {
         });
     },
 
+    initTestQuestion: function(qid, maxPoints, pointsList, initPoints, iQuestion, zone, callback) {
+        var question, testQuestion;
+        Promise.try(function() {
+            return models.Question.findOne({where: {
+                qid: qid,
+            }});
+        }).then(function(newQuestion) {
+            if (!newQuestion) throw Error("no question where qid = " + qid);
+            question = newQuestion;
+            return models.TestQuestion.findOrCreate({where: {
+                zone_id: zone.id,
+                number: iQuestion,
+            }});
+        }).spread(function(newTestQuestion, created) {
+            testQuestion = newTestQuestion;
+            return testQuestion.update({
+                question_id: question.id,
+                maxPoints: maxPoints,
+                pointsList: pointsList,
+                initPoints: initPoints,
+            });
+        }).then(function() {
+            callback(null);
+        }).catch(function(err) {
+            callback(err);
+        });
+    },
+    
+    initTestQuestions: function(test, zoneList, callback) {
+        var that = this;
+        var iQuestion = 0;
+        async.forEachOfSeries(zoneList, function(dbZone, iDbZone, callback) {
+            var zone;
+            Promise.try(function() {
+                return models.Zone.findOrCreate({where: {
+                    test_id: test.id,
+                    number: iDbZone + 1,
+                }});
+            }).spread(function(newZone, created) {
+                zone = newZone;
+                return zone.update({
+                    title: dbZone.title,
+                });
+            }).then(function() {
+                // have the zone, make the questions
+                qidList = []
+                async.eachSeries(dbZone.questions, function(dbQuestion, callback) {
+                    var qid = null, qids = null, maxPoints = null, pointsList = null, initPoints = null;
+                    if (_(dbQuestion).isString()) {
+                        qid = dbQuestion;
+                        maxPoints = 1;
+                    } else {
+                        if (_(dbQuestion).has('qids')) {
+                            qids = dbQuestion.qids;
+                        } else {
+                            qid = dbQuestion.qid;
+                        }
+                        if (_(dbQuestion).has('points')) {
+                            maxPoints = _(dbQuestion.points).max();
+                            pointsList = dbQuestion.points;
+                        } else if (_(dbQuestion).has('initValue')) {
+                            maxPoints = dbQuestion.maxScore;
+                            initPoints = dbQuestion.initValue;
+                        }
+                    }
+                    if (qids) {
+                        async.eachSeries(qids, function(qid, callback) {
+                            qidList.push(qid);
+                            iQuestion++;
+                            that.initTestQuestion(qid, maxPoints, pointsList, initPoints, iQuestion, zone, callback);
+                        }, function(err) {
+                            if (err) callback(err);
+                            callback(null);
+                        });
+                    } else {
+                        qidList.push(dbQuestion.qid);
+                        iQuestion++;
+                        that.initTestQuestion(qid, maxPoints, pointsList, initPoints, iQuestion, zone, callback);
+                    }
+                }, function(err) {
+                    if (err) return callback(err);
+                    // delete questions from the DB that aren't on disk
+                    var sql = 'UPDATE test_questions SET deleted_at = CURRENT_TIMESTAMP'
+                        + ' WHERE (deleted_at IS NULL)'
+                        + ' AND (zone_id = :zoneId)'
+                        + ' AND ((SELECT qid FROM questions WHERE id = question_id) NOT IN (:qidList))'
+                        + ';'
+                    var params = {
+                        zoneId: zone.id,
+                        qidList: qidList,
+                    };
+                    Promise.try(function() {
+                        return models.sequelize.query(sql, {replacements: params});
+                    }).then(function() {
+                        callback(null);
+                    }).catch(function(err) {
+                        callback(err);
+                    });
+                });
+            }).catch(function(err) {
+                callback(err);
+            });
+        }, function(err) {
+            if (err) return callback(err);
+            // delete zones from the DB that aren't on disk
+            models.Zone.destroy({where: {
+                test_id: test.id,
+                number: {
+                    $notIn: _.range(1, zoneList.length + 1),
+                },
+            }}).then(function() {
+                callback(null);
+            }).catch(function(err) {
+                callback(err);
+            });
+        });
+    },
+    
     initTests: function(courseInfo, testDB, callback) {
+        var that = this;
         // find all the tests in mongo
         db.tCollect.find({}, function(err, cursor) {
             if (err) callback(err);
@@ -157,50 +277,75 @@ module.exports = {
                 if (err) callback(err);
                 // only keep the tests that we have on disk
                 objs = _(objs).filter(function(o) {return _(testDB).has(o.tid);});
-                async.eachSeries(objs, function(t, callback) {
+                async.eachSeries(objs, function(dbTest, callback) {
                     // need to do this in series because testSets don't have unique names,
                     // so TestSet.findAndCreate() will produce duplicates
                     var shortName = {
                         'Homework': 'HW',
                         'Quiz': 'Q',
-                    }[t.set] || t.set;
-                    var testSet;
+                    }[dbTest.set] || dbTest.set;
+                    var testSet, test;
                     Promise.try(function() {
                         return models.TestSet.findOrCreate({where: {
                             shortName: shortName,
                         }});
-                    }).spread(function(ts, created) {
-                        testSet = ts;
+                    }).spread(function(newTestSet, created) {
+                        testSet = newTestSet;
                         return testSet.update({
-                            longName: t.set,
-                            course_instance_id: courseInfo.courseInstandId,
+                            longName: dbTest.set,
+                            course_instance_id: courseInfo.courseInstanceId,
                         });
                     }).then(function() {
                         return models.Test.findOrCreate({where: {
-                            tid: t.tid,
+                            tid: dbTest.tid,
                         }});
-                    }).spread(function(test) {
+                    }).spread(function(newTest, created) {
+                        test = newTest;
                         return test.update({
-                            type: t.type,
-                            number: t.number,
-                            title: t.title,
-                            config: t.options,
+                            type: dbTest.type,
+                            number: dbTest.number,
+                            title: dbTest.title,
+                            config: dbTest.options,
                             test_set_id: testSet.id,
                         });
                     }).then(function() {
-                        callback(null);
+                        var zoneList = [];
+                        if (_(dbTest).has('options') && _(dbTest.options).has('zones')) {
+                            // RetryExam, new format
+                            zoneList = dbTest.options.zones;
+                        } else if (_(dbTest).has('options') && _(dbTest.options).has('questionGroups')) {
+                            // RetryExam, old format
+                            zoneList = [{questions: _(dbTest.options.questionGroups).flatten()}];
+                        } else if (_(dbTest).has('options') && _(dbTest.options).has('qidGroups')) {
+                            // Exam
+                            zoneList = [{questions: _(dbTest.options.qidGroups).flatten()}];
+                        } else if (_(dbTest).has('options') && _(dbTest.options).has('questions')) {
+                            // Game
+                            zoneList = [{questions: dbTest.options.questions}];
+                        } else if (_(dbTest).has('options') && _(dbTest.options).has('qids')) {
+                            // Basic
+                            zoneList = [{questions: dbTest.options.qids}];
+                        }
+                        that.initTestQuestions(test, zoneList, callback);
                     }).catch(function(err) {
                         callback(err);
                     });
                 }, function(err) {
                     if (err) callback(err);
                     // delete tests from the DB that aren't on disk
-                    // FIXME: use soft deletes to avoid cascading
-                    models.Test.destroy({where: {
-                        tid: {
-                            $notIn: _(objs).pluck('tid'),
-                        },
-                    }}).then(function() {
+                    var sql = 'UPDATE tests SET deleted_at = CURRENT_TIMESTAMP'
+                        + ' WHERE deleted_at IS NULL'
+                        + ' AND tid NOT IN (:tidList)'
+                        + ' AND (SELECT course_instance_id FROM test_sets WHERE id = test_set_id)'
+                        + ' = :courseInstanceId'
+                        + ';';
+                    var params = {
+                        tidList: _(objs).pluck('tid'),
+                        courseInstanceId: courseInfo.courseInstanceId,
+                    };
+                    Promise.try(function(results, info) {
+                        return models.sequelize.query(sql, {replacements: params});
+                    }).spread(function() {
                         callback(null);
                     }).catch(function(err) {
                         callback(err);
