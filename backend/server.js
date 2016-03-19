@@ -1015,6 +1015,10 @@ app.get("/qInstances/:qiid/:filename", function(req, res) {
                     // File is in neither clientFiles nor clientTemplates
                     sendError(res, 404, "Access denied to '" + fileInfo.filename + "' for qid: " + fileInfo.qid);
                 }
+<<<<<<< HEAD
+=======
+                res.sendFile(fileInfo.filePath, {root: fileInfo.root});
+>>>>>>> upgrade to Express 4.x
             });
         });
     });
@@ -1058,6 +1062,7 @@ app.get("/clientFiles/*", function(req, res) {
         if (err) {
             return sendError(res, 404, 'No such file "/clientFiles/' + filename + '"', err);
         }
+<<<<<<< HEAD
         if (filename === '') {
             filename = '/';
         }
@@ -1066,6 +1071,9 @@ app.get("/clientFiles/*", function(req, res) {
                 return sendError(res, 500, 'Error fetching "/clientFiles/' + filename + '"', err);
             }
         });
+=======
+        res.sendFile(filename, {root: config.clientFilesDir});
+>>>>>>> upgrade to Express 4.x
     });
 });
 
