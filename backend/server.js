@@ -9,6 +9,9 @@ var path = require("path");
 var async = require("async");
 var moment = require("moment-timezone");
 
+var routes = require('./routes/index');
+var tests = require('./routes/tests');
+
 logger.infoOverride('PrairieLearn server start');
 
 configFilename = 'config.json';
@@ -607,6 +610,13 @@ if (config.authType === 'eppn') {
         res.json({ "uid": req.authUID });
     });
 }
+
+// view engine setup
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'hbs');
+
+//app.use('/', routes);
+app.use('/testsNew', tests);
 
 var getGitDescribe = function(callback) {
     var cmd = 'git';
@@ -3338,3 +3348,5 @@ async.series([
         logger.infoOverride("PrairieLearn server ready");
     }
 });
+
+//module.exports = app;
