@@ -8,6 +8,7 @@ var fs = require("fs");
 var path = require("path");
 var async = require("async");
 var moment = require("moment-timezone");
+var hbs = require('hbs');
 
 var routes = require('./routes/index');
 var tests = require('./routes/tests');
@@ -614,10 +615,11 @@ if (config.authType === 'eppn') {
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
+hbs.registerPartials(__dirname + '/views/partials');
 
 app.use(express.static(path.join(__dirname, 'public')));
-//app.use('/', routes);
-app.use('/testsNew', tests);
+app.use('/admin', routes);
+app.use('/admin/tests', tests);
 
 var getGitDescribe = function(callback) {
     var cmd = 'git';
@@ -1026,10 +1028,6 @@ app.get("/qInstances/:qiid/:filename", function(req, res) {
                     // File is in neither clientFiles nor clientTemplates
                     sendError(res, 404, "Access denied to '" + fileInfo.filename + "' for qid: " + fileInfo.qid);
                 }
-<<<<<<< HEAD
-=======
-                res.sendFile(fileInfo.filePath, {root: fileInfo.root});
->>>>>>> upgrade to Express 4.x
             });
         });
     });
@@ -1073,7 +1071,6 @@ app.get("/clientFiles/*", function(req, res) {
         if (err) {
             return sendError(res, 404, 'No such file "/clientFiles/' + filename + '"', err);
         }
-<<<<<<< HEAD
         if (filename === '') {
             filename = '/';
         }
@@ -1082,9 +1079,6 @@ app.get("/clientFiles/*", function(req, res) {
                 return sendError(res, 500, 'Error fetching "/clientFiles/' + filename + '"', err);
             }
         });
-=======
-        res.sendFile(filename, {root: config.clientFilesDir});
->>>>>>> upgrade to Express 4.x
     });
 });
 

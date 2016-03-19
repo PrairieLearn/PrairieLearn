@@ -13,7 +13,7 @@ router.get('/', function(req, res, next) {
         };
         return models.sequelize.query(sql, {replacements: params});
     }).spread(function(results, info) {
-        res.render('tests', {results: results});
+        res.render('tests', {navTests: true, results: results});
     })
 });
 

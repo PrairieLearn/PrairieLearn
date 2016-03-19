@@ -1,0 +1,21 @@
+<nav class="navbar navbar-inverse navbar-static-top" role="navigation">
+  <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+      <span class="sr-only">Toggle navigation</span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
+    <a class="navbar-brand" href="/admin">PL Admin</a>
+  </div>
+  <div class="collapse navbar-collapse">
+    <ul class="nav navbar-nav" id="main-nav">
+      <li {{#if navTests}}class="active"{{/if}}><a href="/admin/tests">Tests</a></li>
+      <li {{#if navUsers}}class="active"{{/if}}><a href="/admin/users">Users</a></li>
+      <li {{#if navQuestions}}class="active"{{/if}}><a href="/admin/questions">Questions</a></li>
+    </ul>
+    <div class="navbar-right">
+      <a class="btn btn-default navbar-btn" href="https://prairielearn.engr.illinois.edu/Shibboleth.sso/Logout">Log out</a>
+    </div>
+  </div>
+</nav>
