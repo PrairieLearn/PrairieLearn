@@ -123,6 +123,8 @@ var PrairieModel = requirejs("PrairieModel");
 var PrairieRole = requirejs("PrairieRole");
 var PrairieGeom = requirejs("PrairieGeom");
 var express = require("express");
+var bodyParser = require('body-parser');
+var cookieParser = require('cookie-parser');
 var https = require('https');
 var app = express();
 
@@ -131,8 +133,8 @@ var nSample = 0;
 
 var STATS_INTERVAL = 10 * 60 * 1000; // ms
 
-app.use(express.json());
-app.use(express.cookieParser());
+app.use(bodyParser.json());
+app.use(cookieParser());
 
 var courseInfo = {};
 
@@ -355,7 +357,7 @@ var sendError = function(res, code, msg, err) {
     try {
         fullMsg += ', err: ' + String(err);
     } catch (e) {};
-    res.send(code, fullMsg);
+    res.status(code).send(fullMsg);
 };
 
 var isDateBeforeNow = function(dateString) {
@@ -1231,7 +1233,7 @@ app.get("/qInstances/:qiid/:filename", function(req, res) {
                 if (!_(info.clientFiles).contains(fileInfo.filename)) {
                     return sendError(res, 404, "Access denied to '" + fileInfo.filename + "' for qid: " + fileInfo.qid);
                 }
-                res.sendfile(fileInfo.filePath, {root: fileInfo.root});
+                res.sendFile(fileInfo.filePath, {root: fileInfo.root});
             });
         });
     });
@@ -1254,7 +1256,7 @@ app.get("/tests/:tid/:filename", function(req, res) {
         if (!_(info.clientFiles).contains(filename)) {
             return sendError(res, 404, "Access denied to '" + filename + "' for tid: " + tid);
         }
-        res.sendfile(filename, {root: testPath});
+        res.sendFile(filename, {root: testPath});
     });
 });
 
@@ -1264,7 +1266,7 @@ app.get("/clientCode/:filename", function(req, res) {
         if (err) {
             return sendError(res, 404, 'No such file "/clientCode/' + req.params.filename + '"', err);
         }
-        res.sendfile(req.params.filename, {root: config.clientCodeDir});
+        res.sendFile(req.params.filename, {root: config.clientCodeDir});
     });
 });
 
@@ -1275,7 +1277,7 @@ app.get("/clientFiles/*", function(req, res) {
         if (err) {
             return sendError(res, 404, 'No such file "/clientFiles/' + filename + '"', err);
         }
-        res.sendfile(filename, {root: config.clientFilesDir});
+        res.sendFile(filename, {root: config.clientFilesDir});
     });
 });
 
@@ -1902,7 +1904,7 @@ app.get("/tests/:tid/client.js", function(req, res) {
     ensureTestAvailByTID(req, res, req.params.tid, function(err) {
         if (err) return sendError(res, 500, "Error accessing test with tid: " + req.params.tid, err);
         var filePath = path.join(req.params.tid, "client.js");
-        res.sendfile(filePath, {root: config.testsDir});
+        res.sendFile(filePath, {root: config.testsDir});
     });
 });
 
@@ -1910,7 +1912,7 @@ app.get("/tests/:tid/common.js", function(req, res) {
     ensureTestAvailByTID(req, res, req.params.tid, function(err) {
         if (err) return sendError(res, 500, "Error accessing test with tid: " + req.params.tid, err);
         var filePath = path.join(req.params.tid, "common.js");
-        res.sendfile(filePath, {root: config.testsDir});
+        res.sendFile(filePath, {root: config.testsDir});
     });
 });
 
@@ -1918,7 +1920,7 @@ app.get("/tests/:tid/test.html", function(req, res) {
     ensureTestAvailByTID(req, res, req.params.tid, function(err) {
         if (err) return sendError(res, 500, "Error accessing test with tid: " + req.params.tid, err);
         var filePath = path.join(req.params.tid, "test.html");
-        res.sendfile(filePath, {root: config.testsDir});
+        res.sendFile(filePath, {root: config.testsDir});
     });
 });
 
@@ -1926,7 +1928,7 @@ app.get("/tests/:tid/testOverview.html", function(req, res) {
     ensureTestAvailByTID(req, res, req.params.tid, function(err) {
         if (err) return sendError(res, 500, "Error accessing test with tid: " + req.params.tid, err);
         var filePath = path.join(req.params.tid, "testOverview.html");
-        res.sendfile(filePath, {root: config.testsDir});
+        res.sendFile(filePath, {root: config.testsDir});
     });
 });
 
@@ -1934,7 +1936,7 @@ app.get("/tests/:tid/testSidebar.html", function(req, res) {
     ensureTestAvailByTID(req, res, req.params.tid, function(err) {
         if (err) return sendError(res, 500, "Error accessing test with tid: " + req.params.tid, err);
         var filePath = path.join(req.params.tid, "testSidebar.html");
-        res.sendfile(filePath, {root: config.testsDir});
+        res.sendFile(filePath, {root: config.testsDir});
     });
 });
 
@@ -3170,57 +3172,57 @@ app.get("/errorList", function(req, res) {
 
 if (config.localFileserver) {
     app.get("/", function(req, res) {
-        res.sendfile("index.html", {root: config.frontendDir});
+        res.sendFile("index.html", {root: config.frontendDir});
     });
 
     app.get("/index.html", function(req, res) {
-        res.sendfile("index.html", {root: config.frontendDir});
+        res.sendFile("index.html", {root: config.frontendDir});
     });
 
     app.get("/version.js", function(req, res) {
-        res.sendfile("version.js", {root: config.frontendDir});
+        res.sendFile("version.js", {root: config.frontendDir});
     });
 
     app.get("/config.js", function(req, res) {
-        res.sendfile("config.js", {root: config.frontendDir});
+        res.sendFile("config.js", {root: config.frontendDir});
     });
 
     app.get("/favicon.png", function(req, res) {
-        res.sendfile("favicon.png", {root: config.frontendDir});
+        res.sendFile("favicon.png", {root: config.frontendDir});
     });
 
     app.get("/require/:filename", function(req, res) {
-        res.sendfile(path.join("require", req.params.filename), {root: config.frontendDir});
+        res.sendFile(path.join("require", req.params.filename), {root: config.frontendDir});
     });
 
     app.get("/require/browser/:filename", function(req, res) {
-        res.sendfile(path.join("require", "browser", req.params.filename), {root: config.frontendDir});
+        res.sendFile(path.join("require", "browser", req.params.filename), {root: config.frontendDir});
     });
 
     app.get("/require/ace/:filename", function(req, res) {
-        res.sendfile(path.join("require", "ace", req.params.filename), {root: config.frontendDir});
+        res.sendFile(path.join("require", "ace", req.params.filename), {root: config.frontendDir});
     });
 
     app.get("/require/ace/*", function(req, res) {
         var filename = req.params[0];
-        res.sendfile(path.join("require", filename), {root: config.frontendDir});
+        res.sendFile(path.join("require", filename), {root: config.frontendDir});
     });
 
     app.get("/css/:filename", function(req, res) {
-        res.sendfile(path.join("css", req.params.filename), {root: config.frontendDir});
+        res.sendFile(path.join("css", req.params.filename), {root: config.frontendDir});
     });
 
     app.get("/text/:filename", function(req, res) {
-        res.sendfile(path.join("text", req.params.filename), {root: config.frontendDir});
+        res.sendFile(path.join("text", req.params.filename), {root: config.frontendDir});
     });
 
     app.get("/img/:filename", function(req, res) {
-        res.sendfile(path.join("img", req.params.filename), {root: config.frontendDir});
+        res.sendFile(path.join("img", req.params.filename), {root: config.frontendDir});
     });
 
     app.get("/MathJax/*", function(req, res) {
         var filename = req.params[0];
-        res.sendfile(filename, {root: path.join(config.frontendDir, "MathJax")});
+        res.sendFile(filename, {root: path.join(config.frontendDir, "MathJax")});
     });
 }
 
