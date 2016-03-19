@@ -1,14 +1,31 @@
 <h1>Tests</h1>
-<table>
-  <tr>
-    <th>tid</th>
-    <th>title</th>
-  </tr>
-  {{#each results}}
-  <tr>
-    <td>{{tid}}</td>
-    <td>{{title}}</td>
-  </tr>
-  {{/each}}
-</table>
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">Assessments</h3>
+  </div>
 
+  <table class="table table-condensed table-hover">
+    <thead>
+      <tr>
+        <th>tid</th>
+        <th>title</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each results}}
+      <tr>
+        <td>{{tid}}</td>
+        <td>{{title}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+
+  <div class="panel-footer">
+    <p>
+      <small>
+        Hover over a date to see details. For assessments with a "New version" button, clicking it will generate a new random assessment of that type. Active assessments that can still be worked on have a yellow background.
+      </small>
+    </p>
+  </div>
+</div>
