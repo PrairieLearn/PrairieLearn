@@ -6,15 +6,21 @@
   <table class="table table-condensed table-hover">
     <thead>
       <tr>
+        <th></th>
         <th>TID</th>
-        <th>Title</th>
       </tr>
     </thead>
     <tbody>
       {{#each results}}
+      {{#if start_new_set}}
       <tr>
+        <th>{{long_name}}</th>
+        <td></td>
+      </tr>
+      {{/if}}
+      <tr>
+        <td><a href="/admin/tests/{{id}}/">{{short_name}}{{number}}: {{title}}</a></td>
         <td>{{tid}}</td>
-        <td>{{title}}</td>
       </tr>
       {{/each}}
     </tbody>

@@ -6,8 +6,10 @@ var router = express.Router();
 
 router.get('/', function(req, res, next) {
     Promise.try(function() {
-        var sql = 'SELECT id,tid,type,number,title,test_set_id FROM tests'
-            + ' WHERE deleted_at IS NULL'
+        var sql = 'SELECT t.id,t.tid,t.type,t.number,t.title,s.short_name,s.long_name,'
+            + '(lag(s.id) OVER (PARTITION BY s.id ORDER BY t.number) IS NULL) AS start_new_set'
+            + ' FROM tests AS t LEFT JOIN test_sets AS s ON (s.id = t.test_set_id)'
+            + ' ORDER BY (s.long_name, s.id, t.number)'
             + ';'
         var params = {
         };

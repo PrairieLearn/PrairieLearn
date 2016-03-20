@@ -281,8 +281,11 @@ module.exports = {
                     // need to do this in series because testSets don't have unique names,
                     // so TestSet.findAndCreate() will produce duplicates
                     var shortName = {
+                        'Exam': 'E',
+                        'Practice Exam': 'PE',
                         'Homework': 'HW',
                         'Quiz': 'Q',
+                        'Practice Quiz': 'PQ',
                     }[dbTest.set] || dbTest.set;
                     var testSet, test;
                     Promise.try(function() {
