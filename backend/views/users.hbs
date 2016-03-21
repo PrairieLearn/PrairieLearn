@@ -1,3 +1,6 @@
+{{#setVar "navPage"}}users{{/setVar}}
+{{setRadio "navItem" "users"}}
+
 <div class="panel panel-primary">
   <div class="panel-heading">
     <h3 class="panel-title">Users</h3>
@@ -8,6 +11,7 @@
       <tr>
         <th>UID</th>
         <th>Name</th>
+        <th>Role</th>
       </tr>
     </thead>
     <tbody>
@@ -15,6 +19,7 @@
       <tr>
         <td>{{uid}}</td>
         <td>{{name}}</td>
+        <td>{{role}}</td>
       </tr>
       {{/each}}
     </tbody>

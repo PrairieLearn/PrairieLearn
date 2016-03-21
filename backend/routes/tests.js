@@ -8,7 +8,6 @@ var router = express.Router();
 
 router.get('/', function(req, res, next) {
     Promise.try(function() {
-        // FIXME: check auth
         var sql = 'SELECT t.id,t.tid,t.type,t.number,t.title,ts.short_name,ts.long_name,'
             + ' (lag(ts.id) OVER (PARTITION BY ts.id ORDER BY t.number) IS NULL) AS start_new_set'
             + ' FROM tests AS t LEFT JOIN test_sets AS ts ON (ts.id = t.test_set_id)'
@@ -23,7 +22,6 @@ router.get('/', function(req, res, next) {
         return models.sequelize.query(sql, {replacements: params});
     }).spread(function(results, info) {
         var locals = _.extend({
-            navTests: true,
             results: results,
         }, req.locals);
         res.render('tests', locals);

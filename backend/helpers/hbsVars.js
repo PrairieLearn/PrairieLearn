@@ -8,7 +8,7 @@ module.exports = {
             vars[name] = context.fn(this);
         });
 
-        hbs.registerHelper('refVar', function(name) {
+        hbs.registerHelper('getVar', function(name) {
             return vars[name];
         });
     },
