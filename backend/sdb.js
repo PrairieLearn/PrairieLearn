@@ -165,6 +165,7 @@ module.exports = {
                     title: q.title,
                     config: q.options,
                     topic_id: topic.id,
+                    course_id: courseInfo.courseId,
                 });
             }).then(function() {
                 callback(null);
