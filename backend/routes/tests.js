@@ -1,22 +1,33 @@
 var Promise = require('bluebird');
 var models = require('../models');
+var config = require('../config');
+var _ = require('underscore');
 
 var express = require('express');
 var router = express.Router();
 
 router.get('/', function(req, res, next) {
     Promise.try(function() {
-        var sql = 'SELECT t.id,t.tid,t.type,t.number,t.title,s.short_name,s.long_name,'
-            + '(lag(s.id) OVER (PARTITION BY s.id ORDER BY t.number) IS NULL) AS start_new_set'
-            + ' FROM tests AS t LEFT JOIN test_sets AS s ON (s.id = t.test_set_id)'
-            + ' ORDER BY (s.long_name, s.id, t.number)'
+        // FIXME: check auth
+        var sql = 'SELECT t.id,t.tid,t.type,t.number,t.title,ts.short_name,ts.long_name,'
+            + ' (lag(ts.id) OVER (PARTITION BY ts.id ORDER BY t.number) IS NULL) AS start_new_set'
+            + ' FROM tests AS t LEFT JOIN test_sets AS ts ON (ts.id = t.test_set_id)'
+            + ' WHERE ts.course_instance_id = :courseInstanceId'
+            + ' AND t.deleted_at IS NULL'
+            + ' AND ts.deleted_at IS NULL'
+            + ' ORDER BY (ts.long_name, ts.id, t.number)'
             + ';'
         var params = {
+            courseInstanceId: req.locals.courseInstanceId,
         };
         return models.sequelize.query(sql, {replacements: params});
     }).spread(function(results, info) {
-        res.render('tests', {navTests: true, results: results});
-    })
+        var locals = _.extend({
+            navTests: true,
+            results: results,
+        }, req.locals);
+        res.render('tests', locals);
+    });
 });
 
 module.exports = router;

@@ -2,6 +2,7 @@ var logger = require("./logger");
 var config = require("./config");
 var db = require("./db");
 var sdb = require("./sdb");
+var models = require("./models");
 
 var _ = require("underscore");
 var fs = require("fs");
@@ -9,11 +10,7 @@ var path = require("path");
 var async = require("async");
 var moment = require("moment-timezone");
 var hbs = require('hbs');
-
-var routes = require('./routes/index');
-var tests = require('./routes/tests');
-var users = require('./routes/users');
-var questions = require('./routes/questions');
+var Promise = require('bluebird');
 
 logger.infoOverride('PrairieLearn server start');
 
@@ -384,6 +381,22 @@ app.use(function(req, res, next) {
         return;
     }
     
+    // bypass auth for local /pl/ serving
+    if (config.authType === 'none'
+        && (/^\/pl\//.test(req.path)
+            || /^\/images\//.test(req.path)
+            || /^\/javascripts\//.test(req.path)
+            || /^\/stylesheets\//.test(req.path))) {
+        req.authUID = 'user1@illinois.edu';
+        req.authName = 'Test User';
+        req.authRole = 'Superuser';
+        req.mode = 'Public';
+        req.userUID = 'user1@illinois.edu';
+        req.userRole = 'Superuser';
+        next();
+        return;
+    }
+    
     // bypass auth for heartbeat
     if (req.path == "/heartbeat") {
         next();
@@ -619,11 +632,22 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'hbs');
 hbs.registerPartials(__dirname + '/views/partials');
 
+require('./helpers/hbsExtend').init();
+require('./helpers/hbsVars').init();
+
 app.use(express.static(path.join(__dirname, 'public')));
-app.use('/admin', routes);
-app.use('/admin/tests', tests);
-app.use('/admin/users', users);
-app.use('/admin/questions', questions);
+
+app.use('/pl/:courseInstanceId', require('./middlewares/checkAdminAuth'));
+app.use('/pl/:courseInstanceId', require('./middlewares/currentCourseInstance'));
+app.use('/pl/:courseInstanceId', require('./middlewares/currentCourse'));
+app.use('/pl/:courseInstanceId', require('./middlewares/currentSemester'));
+app.use('/pl/:courseInstanceId/admin', require('./middlewares/courseList'));
+app.use('/pl/:courseInstanceId/admin', require('./middlewares/semesterList'));
+
+app.use('/pl/:courseInstanceId/admin', require('./routes/index'));
+app.use('/pl/:courseInstanceId/admin/tests', require('./routes/tests'));
+app.use('/pl/:courseInstanceId/admin/users', require('./routes/users'));
+app.use('/pl/:courseInstanceId/admin/questions', require('./routes/questions'));
 
 var getGitDescribe = function(callback) {
     var cmd = 'git';
@@ -3325,9 +3349,9 @@ async.series([
     sdb.init,
     sdb.initSemesters,
     sdb.initCourseInfo.bind(sdb, courseDB.courseInfo),
-    sdb.initUsers.bind(sdb, courseDB.courseInfo, uidToRole),
     sdb.initQuestions.bind(sdb, courseDB.courseInfo, courseDB.questionDB),
     sdb.initTests.bind(sdb, courseDB.courseInfo, courseDB.testDB),
+    sdb.initUsers.bind(sdb, courseDB.courseInfo, uidToRole),
     sdb.initTestInstances.bind(sdb, courseDB.courseInfo, courseDB.testDB),
     //runBayes,
     /*

@@ -1,3 +1,5 @@
+{{#setVar "navPage"}}tests{{/setVar}}
+
 <div class="panel panel-primary">
   <div class="panel-heading">
     <h3 class="panel-title">Assessments</h3>
@@ -19,7 +21,7 @@
       </tr>
       {{/if}}
       <tr>
-        <td><a href="/admin/tests/{{id}}/">{{short_name}}{{number}}: {{title}}</a></td>
+        <td><a href="{{../urlPrefix}}/tests/{{id}}/">{{short_name}}{{number}}: {{title}}</a></td>
         <td>{{tid}}</td>
       </tr>
       {{/each}}

@@ -18,12 +18,20 @@ module.exports = {
     },
 
     initSemesters: function(callback) {
+        logger.infoOverride("Updating semesters in SQL DB");
         Promise.try(function() {
+            return models.Semester.upsert({
+                shortName: 'Sp15',
+                longName: 'Spring 2015',
+                startDate: moment.tz('2015-01-20T00:00:01', config.timezone).format(),
+                endDate: moment.tz('2015-05-15T23:59:59', config.timezone).format(),
+            });
+        }).then(function() {
             return models.Semester.upsert({
                 shortName: 'Fa15',
                 longName: 'Fall 2015',
                 startDate: moment.tz('2015-08-24T00:00:01', config.timezone).format(),
-                endDate: moment.tz('2016-12-18T23:59:59', config.timezone).format(),
+                endDate: moment.tz('2015-12-18T23:59:59', config.timezone).format(),
             });
         }).then(function() {
             return models.Semester.upsert({
@@ -47,6 +55,7 @@ module.exports = {
     },
 
     initCourseInfo: function(courseInfo, callback) {
+        logger.infoOverride("Updating course in SQL DB");
         Promise.try(function() {
             return models.Course.upsert({
                 shortName: courseInfo.name,
@@ -73,11 +82,13 @@ module.exports = {
     },
 
     initUsers: function(courseInfo, uidToRole, callback) {
+        logger.infoOverride("Updating users in SQL DB");
         db.uCollect.find({}, {"uid": 1, "name": 1}, function(err, cursor) {
             if (err) callback(err);
             cursor.toArray(function(err, objs) {
                 if (err) callback(err);
                 async.each(objs, function(u, callback) {
+                    var user;
                     Promise.try(function() {
                         return models.User.upsert({
                             uid: u.uid,
@@ -87,13 +98,38 @@ module.exports = {
                         return models.User.findOne({where: {
                             uid: u.uid
                         }});
-                    }).then(function(user) {
+                    }).then(function(findUser) {
+                        user = findUser;
                         if (!user) throw Error("no user where uid = " + u.uid);
-                        return models.Enrollment.upsert({
-                            user_id: user.id,
-                            course_instance_id: courseInfo.courseInstanceId,
-                            role: uidToRole(u.uid),
-                        });
+                        var role = uidToRole(u.uid);
+                        if (PrairieRole.isAsPowerful(role, 'Instructor')) {
+                            var sql = 'INSERT INTO enrollments'
+                                + ' (role,user_id,course_instance_id,created_at,updated_at)'
+                                + ' ('
+                                + '     SELECT role,user_id,id,nu.created_at,nu.updated_at'
+                                + '     FROM course_instances,'
+                                + '     (VALUES (:user_id,:role::enum_enrollments_role,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP))'
+                                + '     AS nu (user_id,role,created_at,updated_at)'
+                                + '     WHERE course_id = :course_id'
+                                + '     AND deleted_at IS NULL'
+                                + ' )'
+                                + ' ON CONFLICT (user_id,course_instance_id)'
+                                + ' DO UPDATE SET (role,updated_at) = (EXCLUDED.role,EXCLUDED.updated_at)'
+                                + ' WHERE EXCLUDED.role != enrollments.role'
+                                + ';';
+                            var params = {
+                                user_id: user.id,
+                                role: role,
+                                course_id: courseInfo.courseId,
+                            };
+                            return models.sequelize.query(sql, {replacements: params});
+                        } else {
+                            return models.Enrollment.upsert({
+                                user_id: user.id,
+                                course_instance_id: courseInfo.courseInstanceId,
+                                role: role,
+                            });
+                        }
                     }).then(function() {
                         callback(null);
                     }).catch(function(err) {
@@ -108,6 +144,7 @@ module.exports = {
     },
 
     initQuestions: function(courseInfo, questionDB, callback) {
+        logger.infoOverride("Updating questions in SQL DB");
         async.eachSeries(_(questionDB).values(), function(q, callback) {
             // need to do this in series because topics don't have unique names,
             // so Topic.findAndCreate() will produce duplicates
@@ -269,6 +306,7 @@ module.exports = {
     },
     
     initTests: function(courseInfo, testDB, callback) {
+        logger.infoOverride("Updating tests in SQL DB");
         var that = this;
         // find all the tests in mongo
         db.tCollect.find({}, function(err, cursor) {
@@ -287,16 +325,27 @@ module.exports = {
                         'Quiz': 'Q',
                         'Practice Quiz': 'PQ',
                     }[dbTest.set] || dbTest.set;
-                    var testSet, test;
+                    var testSet, test, semester, courseInstance;
                     Promise.try(function() {
+                        return models.Semester.findOne({where: {
+                            shortName: dbTest.semester,
+                        }});
+                    }).then(function(findSemester) {
+                        semester = findSemester;
+                        return models.CourseInstance.findOrCreate({where: {
+                            course_id: courseInfo.courseId,
+                            semester_id: semester.id,
+                        }});
+                    }).spread(function(newCourseInstance, created) {
+                        courseInstance = newCourseInstance;
                         return models.TestSet.findOrCreate({where: {
-                            shortName: shortName,
+                            longName: dbTest.set,
+                            course_instance_id: courseInstance.id,
                         }});
                     }).spread(function(newTestSet, created) {
                         testSet = newTestSet;
                         return testSet.update({
-                            longName: dbTest.set,
-                            course_instance_id: courseInfo.courseInstanceId,
+                            shortName: shortName,
                         });
                     }).then(function() {
                         return models.Test.findOrCreate({where: {
@@ -359,6 +408,7 @@ module.exports = {
     },
 
     initTestInstances: function(courseInfo, testDB, callback) {
+        logger.infoOverride("Updating test instances in SQL DB");
         // find all the testInstances in mongo
         db.tiCollect.find({}, function(err, cursor) {
             if (err) callback(err);
