@@ -9,15 +9,24 @@
   <table class="table table-condensed table-hover">
     <thead>
       <tr>
+        <td></td>
         <th>QID</th>
-        <th>Title</th>
+        <th>Tests</th>
       </tr>
     </thead>
     <tbody>
       {{#each results}}
+      {{#if start_new_topic}}
+      <tr class="info">
+        <th>{{topic_name}}</th>
+        <td></td>
+        <td></td>
+      </tr>
+      {{/if}}
       <tr>
+        <td><a href="{{../urlPrefix}}/questions/{{qid}}/">{{title}}</a></td>
         <td>{{qid}}</td>
-        <td>{{title}}</td>
+        <td>{{tests}}</td>
       </tr>
       {{/each}}
     </tbody>
