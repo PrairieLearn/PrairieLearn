@@ -24,9 +24,14 @@
       </tr>
       {{/if}}
       <tr>
-        <td><a href="{{../urlPrefix}}/questions/{{qid}}/">{{title}}</a></td>
+        <td><a href="{{../urlPrefix}}/questions/{{id}}/">{{title}}</a></td>
         <td>{{qid}}</td>
-        <td>{{tests}}</td>
+        <td>
+          {{#each tests}}
+          <a href="{{../../urlPrefix}}/tests/{{test_id}}" class="btn btn-{{color}} btn-xs" role="button">
+            {{label}}</a>
+          {{/each}}
+        </td>
       </tr>
       {{/each}}
     </tbody>

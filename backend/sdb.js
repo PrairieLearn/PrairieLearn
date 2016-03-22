@@ -326,6 +326,13 @@ module.exports = {
                         'Quiz': 'Q',
                         'Practice Quiz': 'PQ',
                     }[dbTest.set] || dbTest.set;
+                    var color = {
+                        'Exam': 'danger',
+                        'Practice Exam': 'warning',
+                        'Homework': 'success',
+                        'Quiz': 'danger',
+                        'Practice Quiz': 'warning',
+                    }[dbTest.set] || 'default';
                     var testSet, test, semester, courseInstance;
                     Promise.try(function() {
                         return models.Semester.findOne({where: {
@@ -347,6 +354,7 @@ module.exports = {
                         testSet = newTestSet;
                         return testSet.update({
                             shortName: shortName,
+                            color: color,
                         });
                     }).then(function() {
                         return models.Test.findOrCreate({where: {
