@@ -31,7 +31,6 @@ router.get('/', function(req, res, next) {
             + '     WHERE ts.course_instance_id = :courseInstanceId'
             + ' )'
             + ' SELECT q.id,q.qid,q.type,q.title,q.topic_name,q.start_new_topic,'
-            //+ '       ARRAY_AGG(t.test_set_short_name || t.number'
             + '     JSONB_AGG(JSONB_BUILD_OBJECT('
             + '             \'label\',t.test_set_short_name || t.number,'
             + '             \'test_id\',t.id,'
