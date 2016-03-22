@@ -11,6 +11,11 @@ module.exports = {
             radios[name][key] = true;
         });
 
+        hbs.registerHelper('unsetRadio', function(name) {
+            radios[name] = radios[name] || {};
+            _(radios[name]).each(function(v, k) {radios[name][k] = false;});
+        });
+
         hbs.registerHelper('getRadio', function(name, key) {
             if (radios[name])
                 return radios[name][key]

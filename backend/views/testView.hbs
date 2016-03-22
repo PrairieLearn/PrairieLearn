@@ -1,0 +1,36 @@
+{{#setVar "navPage"}}{{/setVar}}
+{{unsetRadio "navItem"}}
+
+<div class="panel panel-primary">
+  <div class="panel-heading">
+    <h3 class="panel-title">{{testSet.short_name}}{{test.number}}: {{test.title}}</h3>
+  </div>
+
+  <table class="table table-condensed table-hover">
+    <thead>
+      <tr>
+        <td></td>
+        <th>QID</th>
+        <th>Max Points</th>
+        <th>Init Points</th>
+        <th>Points List</th>
+      </tr>
+    </thead>
+    <tbody>
+      {{#each results}}
+      {{#if start_new_zone}}
+      <tr>
+        <th colspan="5">Zone {{zone_number}}. {{zone_title}}</th>
+      </tr>
+      {{/if}}
+      <tr>
+        <td><a href="{{../urlPrefix}}/questions/{{question_id}}/">{{number}}. {{title}}</a></td>
+        <td>{{qid}}</td>
+        <td>{{max_points}}</td>
+        <td>{{init_points}}</td>
+        <td>{{points_list}}</td>
+      </tr>
+      {{/each}}
+    </tbody>
+  </table>
+</div>

@@ -330,8 +330,8 @@ module.exports = {
                         'Exam': 'red3',
                         'Practice Exam': 'red1',
                         'Homework': 'green3',
-                        'Quiz': 'yellow3',
-                        'Practice Quiz': 'yellow1',
+                        'Quiz': 'red3',
+                        'Practice Quiz': 'red1',
                     }[dbTest.set] || 'default';
                     var testSet, test, semester, courseInstance;
                     Promise.try(function() {

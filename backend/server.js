@@ -644,9 +644,11 @@ app.use('/pl/:courseInstanceId', require('./middlewares/currentCourse'));
 app.use('/pl/:courseInstanceId', require('./middlewares/currentSemester'));
 app.use('/pl/:courseInstanceId/admin', require('./middlewares/courseList'));
 app.use('/pl/:courseInstanceId/admin', require('./middlewares/semesterList'));
+app.use('/pl/:courseInstanceId/admin/tests/:testId', require('./middlewares/currentTest'));
 
 app.use('/pl/:courseInstanceId/admin', require('./routes/index'));
 app.use('/pl/:courseInstanceId/admin/tests', require('./routes/tests'));
+app.use('/pl/:courseInstanceId/admin/tests/:testId', require('./routes/testView'));
 app.use('/pl/:courseInstanceId/admin/users', require('./routes/users'));
 app.use('/pl/:courseInstanceId/admin/questions', require('./routes/questions'));
 
