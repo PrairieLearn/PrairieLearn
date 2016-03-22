@@ -13,13 +13,14 @@
         <th>QID</th>
         <th>Topic</th>
         <th>Points</th>
+        <th>Other Tests</th>
       </tr>
     </thead>
     <tbody>
       {{#each results}}
       {{#if start_new_zone}}
       <tr>
-        <th colspan="4">Zone {{zone_number}}. {{zone_title}}</th>
+        <th colspan="5">Zone {{zone_number}}. {{zone_title}}</th>
       </tr>
       {{/if}}
       <tr>
@@ -31,6 +32,12 @@
           {{#ifEqual ../test.type "Exam"}}{{max_points}}{{/ifEqual}}
           {{#ifEqual ../test.type "Basic"}}{{max_points}}{{/ifEqual}}
           {{#ifEqual ../test.type "Game"}}{{init_points}}/{{max_points}}{{/ifEqual}}
+        </td>
+        <td>
+          {{#each tests}}
+          <a href="{{../../urlPrefix}}/tests/{{test_id}}" class="btn btn-{{color}} btn-xs" role="button">
+            {{label}}</a>
+          {{/each}}
         </td>
       </tr>
       {{/each}}
