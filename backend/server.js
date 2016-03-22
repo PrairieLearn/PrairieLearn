@@ -635,6 +635,7 @@ hbs.registerPartials(__dirname + '/views/partials');
 require('./helpers/hbsExtend').init();
 require('./helpers/hbsVars').init();
 require('./helpers/hbsRadio').init();
+require('./helpers/hbsIfEqual').init();
 
 app.use(express.static(path.join(__dirname, 'public')));
 
