@@ -3344,16 +3344,28 @@ var loadAndInitCourseData = function(callback) {
     });
 };
 
+var copyDataToSQL = function() {
+    logger.infoOverride("Starting copy of data to SQL");
+    async.series([
+        sdb.initSemesters,
+        sdb.initCourseInfo.bind(sdb, courseInfo),
+        sdb.initQuestions.bind(sdb, courseInfo, questionDB),
+        sdb.initTests.bind(sdb, courseInfo, testDB),
+        sdb.initUsers.bind(sdb, courseInfo, uidToRole),
+        sdb.initTestInstances.bind(sdb, courseInfo, testDB),
+    ], function(err, data) {
+        if (err) {
+            logger.error("Error copying data to SQL:", err, data);
+        } else {
+            logger.infoOverride("Finished copy of data to SQL");
+        }
+    });
+};
+
 async.series([
     db.init,
     loadAndInitCourseData,
     sdb.init,
-    sdb.initSemesters,
-    sdb.initCourseInfo.bind(sdb, courseDB.courseInfo),
-    sdb.initQuestions.bind(sdb, courseDB.courseInfo, courseDB.questionDB),
-    sdb.initTests.bind(sdb, courseDB.courseInfo, courseDB.testDB),
-    sdb.initUsers.bind(sdb, courseDB.courseInfo, uidToRole),
-    sdb.initTestInstances.bind(sdb, courseDB.courseInfo, courseDB.testDB),
     //runBayes,
     /*
     function(callback) {
@@ -3370,6 +3382,7 @@ async.series([
         process.exit(1);
     } else {
         logger.infoOverride("PrairieLearn server ready");
+        copyDataToSQL();
     }
 });
 
