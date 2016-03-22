@@ -9,6 +9,7 @@ var router = express.Router();
 router.get('/', function(req, res, next) {
     Promise.try(function() {
         var sql = 'SELECT t.id,t.tid,t.type,t.number,t.title,ts.short_name,ts.long_name,ts.color,'
+            + ' (ts.short_name || t.number) as label,'
             + ' (lag(ts.id) OVER (PARTITION BY ts.id ORDER BY t.number) IS NULL) AS start_new_set'
             + ' FROM tests AS t LEFT JOIN test_sets AS ts ON (ts.id = t.test_set_id)'
             + ' WHERE ts.course_instance_id = :courseInstanceId'

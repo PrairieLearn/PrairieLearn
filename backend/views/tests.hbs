@@ -9,6 +9,7 @@
   <table class="table table-condensed table-hover">
     <thead>
       <tr>
+        <th style="width: 1%"></th>
         <th></th>
         <th>TID</th>
       </tr>
@@ -17,23 +18,19 @@
       {{#each results}}
       {{#if start_new_set}}
       <tr class="{{color}}">
-        <th>{{long_name}}</th>
-        <td></td>
+        <th colspan="3">{{long_name}}</th>
       </tr>
       {{/if}}
       <tr>
-        <td><a href="{{../urlPrefix}}/tests/{{id}}/">{{short_name}}{{number}}: {{title}}</a></td>
+        <td style="width: 1%">
+          <a href="{{../urlPrefix}}/tests/{{id}}/" class="btn btn-{{color}} btn-xs" role="button">{{label}}</a>
+        </td>
+        <td>
+          <a href="{{../urlPrefix}}/tests/{{id}}/">{{title}}</a>
+        </td>
         <td>{{tid}}</td>
       </tr>
       {{/each}}
     </tbody>
   </table>
-
-  <div class="panel-footer">
-    <p>
-      <small>
-        Hover over a date to see details. For assessments with a "New version" button, clicking it will generate a new random assessment of that type. Active assessments that can still be worked on have a yellow background.
-      </small>
-    </p>
-  </div>
 </div>

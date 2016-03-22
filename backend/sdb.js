@@ -327,11 +327,11 @@ module.exports = {
                         'Practice Quiz': 'PQ',
                     }[dbTest.set] || dbTest.set;
                     var color = {
-                        'Exam': 'danger',
-                        'Practice Exam': 'warning',
-                        'Homework': 'success',
-                        'Quiz': 'danger',
-                        'Practice Quiz': 'warning',
+                        'Exam': 'red3',
+                        'Practice Exam': 'red1',
+                        'Homework': 'green3',
+                        'Quiz': 'yellow3',
+                        'Practice Quiz': 'yellow1',
                     }[dbTest.set] || 'default';
                     var testSet, test, semester, courseInstance;
                     Promise.try(function() {
