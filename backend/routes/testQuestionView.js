@@ -8,23 +8,24 @@ var router = express.Router();
 
 router.get('/', function(req, res, next) {
     Promise.try(function() {
-        var sql = 'SELECT q.*,top.name as topic_name'
-            + ' FROM questions as q'
-            + ' JOIN topics as top ON (top.id = q.topic_id)'
-            + ' WHERE q.id = :questionId'
+        var sql = 'SELECT tq.*,q.qid,q.type,q.title,top.name as topic_name'
+            + ' FROM test_questions AS tq'
+            + ' JOIN questions AS q ON (q.id = tq.question_id)'
+            + ' JOIN topics AS top ON (top.id = q.topic_id)'
+            + ' WHERE tq.id = :testQuestionId'
             + ';'
         var params = {
-            questionId: req.locals.questionId,
+            testQuestionId: req.locals.testQuestionId,
         };
         return models.sequelize.query(sql, {replacements: params});
     }).spread(function(results, info) {
         if (results.length != 1) {
-            throw Error("no valid question with id = " + req.locals.questionId);
+            throw Error("no valid test question with id = " + req.locals.testQuestionId);
         }
         var locals = _.extend({
             result: results[0],
         }, req.locals);
-        res.render('questionView', locals);
+        res.render('testQuestionView', locals);
     });
 });
 

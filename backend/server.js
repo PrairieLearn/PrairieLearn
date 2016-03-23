@@ -637,8 +637,16 @@ require('./helpers/hbsVars').init();
 require('./helpers/hbsRadio').init();
 require('./helpers/hbsIfEqual').init();
 
+// static serving of all subdirectories of "./public"
 app.use(express.static(path.join(__dirname, 'public')));
 
+/*
+  Middleware handlers. For each route we do three things:
+  1. Check authorization.
+  2. Check that the implied nesting is true (e.g., that the test is inside the course).
+  3. Store URL parameters in the req.locals object.
+*/
+app.use(function(req, res, next) {req.locals = {}; next();});
 app.use('/pl/:courseInstanceId', require('./middlewares/checkAdminAuth'));
 app.use('/pl/:courseInstanceId', require('./middlewares/currentCourseInstance'));
 app.use('/pl/:courseInstanceId', require('./middlewares/currentCourse'));
@@ -646,11 +654,14 @@ app.use('/pl/:courseInstanceId', require('./middlewares/currentSemester'));
 app.use('/pl/:courseInstanceId/admin', require('./middlewares/courseList'));
 app.use('/pl/:courseInstanceId/admin', require('./middlewares/semesterList'));
 app.use('/pl/:courseInstanceId/admin/tests/:testId', require('./middlewares/currentTest'));
+app.use('/pl/:courseInstanceId/admin/tests/:testId/testQuestion/:testQuestionId', require('./middlewares/currentTestQuestion'));
 app.use('/pl/:courseInstanceId/admin/questions/:questionId', require('./middlewares/currentQuestion'));
 
+// Actual route handlers.
 app.use('/pl/:courseInstanceId/admin', require('./routes/index'));
 app.use('/pl/:courseInstanceId/admin/tests', require('./routes/tests'));
 app.use('/pl/:courseInstanceId/admin/tests/:testId', require('./routes/testView'));
+app.use('/pl/:courseInstanceId/admin/tests/:testId/testQuestion/:testQuestionId', require('./routes/testQuestionView'));
 app.use('/pl/:courseInstanceId/admin/users', require('./routes/users'));
 app.use('/pl/:courseInstanceId/admin/questions', require('./routes/questions'));
 app.use('/pl/:courseInstanceId/admin/questions/:questionId', require('./routes/questionView'));
