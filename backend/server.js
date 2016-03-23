@@ -9,7 +9,6 @@ var fs = require("fs");
 var path = require("path");
 var async = require("async");
 var moment = require("moment-timezone");
-var hbs = require('hbs');
 var Promise = require('bluebird');
 
 logger.infoOverride('PrairieLearn server start');
@@ -52,6 +51,8 @@ var nSample = 0;
 var STATS_INTERVAL = 10 * 60 * 1000; // ms
 
 app.use(bodyParser.json());
+// following line is from express-generator, maybe we should enable it?
+//app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 
 var initTestData = function(callback) {
@@ -627,30 +628,33 @@ if (config.authType === 'eppn') {
     });
 }
 
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// START OF express-generator
+
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'hbs');
-hbs.registerPartials(__dirname + '/views/partials');
+app.set('view engine', 'ejs');
 
-require('./helpers/hbsExtend').init();
-require('./helpers/hbsVars').init();
-require('./helpers/hbsRadio').init();
-require('./helpers/hbsIfEqual').init();
+// uncomment after placing your favicon in /public
+//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
 // static serving of all subdirectories of "./public"
 app.use(express.static(path.join(__dirname, 'public')));
 
 /*
-  Middleware handlers. For each route we do three things:
+  Middleware handlers. For each route we do several things:
   1. Check authorization.
   2. Check that the implied nesting is true (e.g., that the test is inside the course).
-  3. Store URL parameters in the req.locals object.
+  3. Store URL parameters and other information in the req.locals object for templates.
 */
 app.use(function(req, res, next) {req.locals = {}; next();});
-app.use('/pl/:courseInstanceId', require('./middlewares/checkAdminAuth'));
-app.use('/pl/:courseInstanceId', require('./middlewares/currentCourseInstance'));
-app.use('/pl/:courseInstanceId', require('./middlewares/currentCourse'));
-app.use('/pl/:courseInstanceId', require('./middlewares/currentSemester'));
+app.use('/pl/:courseInstanceId/admin', require('./middlewares/checkAdminAuth'));
+app.use('/pl/:courseInstanceId/admin', require('./middlewares/currentCourseInstance'));
+app.use('/pl/:courseInstanceId/admin', require('./middlewares/currentCourse'));
+app.use('/pl/:courseInstanceId/admin', require('./middlewares/currentSemester'));
+app.use('/pl/:courseInstanceId/admin', require('./middlewares/setURLPrefix'));
 app.use('/pl/:courseInstanceId/admin', require('./middlewares/courseList'));
 app.use('/pl/:courseInstanceId/admin', require('./middlewares/semesterList'));
 app.use('/pl/:courseInstanceId/admin/tests/:testId', require('./middlewares/currentTest'));
@@ -665,6 +669,42 @@ app.use('/pl/:courseInstanceId/admin/tests/:testId/testQuestion/:testQuestionId'
 app.use('/pl/:courseInstanceId/admin/users', require('./routes/users'));
 app.use('/pl/:courseInstanceId/admin/questions', require('./routes/questions'));
 app.use('/pl/:courseInstanceId/admin/questions/:questionId', require('./routes/questionView'));
+
+// catch 404 and forward to error handler
+app.use(function(req, res, next) {
+  var err = new Error('Not Found');
+  err.status = 404;
+  next(err);
+});
+
+// error handlers
+
+// development error handler
+// will print stacktrace
+if (app.get('env') === 'development') {
+  app.use(function(err, req, res, next) {
+    res.status(err.status || 500);
+    res.render('pages/error', {
+      message: err.message,
+      error: err
+    });
+  });
+}
+
+// production error handler
+// no stacktraces leaked to user
+app.use(function(err, req, res, next) {
+  res.status(err.status || 500);
+  res.render('pages/error', {
+    message: err.message,
+    error: {}
+  });
+});
+
+// END OF express-generator
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 var getGitDescribe = function(callback) {
     var cmd = 'git';

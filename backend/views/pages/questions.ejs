@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: 'questions'}); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Questions</h3>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <thead>
+            <tr>
+              <td></td>
+              <th>QID</th>
+              <th>Tests</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% results.forEach(function(result) { %>
+            <% if (result.start_new_topic) { %>
+            <tr class="info">
+              <th><%= result.topic_name %></th>
+              <td></td>
+              <td></td>
+            </tr>
+            <% } %>
+            <tr>
+              <td><a href="%<= urlPrefix %>/questions/<%= result.id %>/"><%= result.title %></a></td>
+              <td><%= result.qid %></td>
+              <td>
+                <% if (result.tests) { %>
+                <% result.tests.forEach(function(test) { %>
+                <a href="<%= urlPrefix %>/tests/<%= test.test_id %>" class="btn btn-<%= test.color %> btn-xs" role="button">
+                  <%= test.label %></a>
+                <% }); %>
+                <% } %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>

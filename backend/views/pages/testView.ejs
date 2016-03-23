@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: 'tests'}); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title"><%= testSet.short_name %><%= test.number %>: <%= test.title %></h3>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <thead>
+            <tr>
+              <td></td>
+              <th>QID</th>
+              <th>Topic</th>
+              <th>Points</th>
+              <th>Other Tests</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% results.forEach(function(result) { %>
+            <% if (result.start_new_zone) { %>
+            <tr>
+              <th colspan="5">Zone <%= result.zone_number %>. <%= result.zone_title %></th>
+            </tr>
+            <% } %>
+            <tr>
+              <td><a href="<%= urlPrefix %>/tests/<%= test.id %>/testQuestion/<%= result.id %>/"><%= result.number %>. <%= result.title %></a></td>
+              <td><%= result.qid %></td>
+              <td><%= result.topic_name %></td>
+              <td>
+                <% if (test.type == "RetryExam") { %><%= result.points_list %><% } %>
+                <% if (test.type == "Exam")      { %><%= result.max_points %><% } %>
+                <% if (test.type == "Basic")     { %><%= result.max_points %><% } %>
+                <% if (test.type == "Game")      { %><%= result.init_points %>/<%= result.max_points %><% } %>
+              </td>
+              <td>
+                <% if (result.tests) { %>
+                <% result.tests.forEach(function(test) { %>
+                <a href="<%= urlPrefix %>/tests/<%= test.test_id %>" class="btn btn-<%= test.color %> btn-xs" role="button">
+                  <%= test.label %></a>
+                <% }); %>
+                <% } %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>

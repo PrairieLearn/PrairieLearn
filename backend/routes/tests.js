@@ -25,7 +25,7 @@ router.get('/', function(req, res, next) {
         var locals = _.extend({
             results: results,
         }, req.locals);
-        res.render('tests', locals);
+        res.render('pages/tests', locals);
     });
 });
 

@@ -4,7 +4,7 @@ var Promise = require('bluebird');
 
 module.exports = function(req, res, next) {
     Promise.try(function() {
-        var sql = 'SELECT s.short_name,s.long_name,s.start_date,s.end_date'
+        var sql = 'SELECT s.*'
             + ' FROM course_instances AS ci'
             + ' JOIN semesters AS s ON (s.id = ci.semester_id)'
             + ' WHERE ci.id = :courseInstanceId'
@@ -19,7 +19,7 @@ module.exports = function(req, res, next) {
             //return sendError(res, 404, "no course_instance with id = " + req.params.courseInstanceId);
         }
         req.locals = _.extend({
-            currentSemester: results[0],
+            semester: results[0],
         }, req.locals);
         next();
     });

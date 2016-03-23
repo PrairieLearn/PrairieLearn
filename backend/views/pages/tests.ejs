@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: 'tests'}); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Assessments</h3>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <thead>
+            <tr>
+              <th style="width: 1%"></th>
+              <th></th>
+              <th>TID</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% results.forEach(function(result) { %>
+            <% if (result.start_new_set) { %>
+            <tr class="<%= result.color %>">
+              <th colspan="3"><%= result.long_name %></th>
+            </tr>
+            <% } %>
+            <tr>
+              <td style="width: 1%">
+                <a href="<%= urlPrefix %>/tests/<%= result.id %>/" class="btn btn-<%= result.color %> btn-xs" role="button"><%= result.label %></a>
+              </td>
+              <td>
+                <a href="<%= urlPrefix %>/tests/<%= result.id %>/"><%= result.title %></a>
+              </td>
+              <td><%= result.tid %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>

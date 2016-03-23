@@ -63,7 +63,7 @@ router.get('/', function(req, res, next) {
         var locals = _.extend({
             results: results,
         }, req.locals);
-        res.render('testView', locals);
+        res.render('pages/testView', locals);
     });
 });
 

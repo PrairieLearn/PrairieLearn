@@ -24,7 +24,7 @@ router.get('/', function(req, res, next) {
         var locals = _.extend({
             results: results,
         }, req.locals);
-        res.render('users', locals);
+        res.render('pages/users', locals);
     });
 });
 
