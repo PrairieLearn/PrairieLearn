@@ -7,6 +7,7 @@ var config = require('../config');
 var logger = require('../logger');
 
 var sequelize = new Sequelize(config.sdbAddress, {
+    // comment out the logging function below to see all SQL calls
     logging: function() {}, // suppress output of SQL statements to stdout
     define: {
         underscored: true,

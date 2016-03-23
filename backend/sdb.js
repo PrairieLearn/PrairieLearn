@@ -84,9 +84,9 @@ module.exports = {
     initUsers: function(courseInfo, uidToRole, callback) {
         logger.infoOverride("Updating users in SQL DB");
         db.uCollect.find({}, {"uid": 1, "name": 1}, function(err, cursor) {
-            if (err) callback(err);
+            if (err) return callback(err);
             cursor.toArray(function(err, objs) {
-                if (err) callback(err);
+                if (err) return callback(err);
                 async.each(objs, function(u, callback) {
                     var user;
                     Promise.try(function() {
@@ -136,7 +136,7 @@ module.exports = {
                         callback(err);
                     });
                 }, function(err, objs) {
-                    if (err) callback(err);
+                    if (err) return callback(err);
                     callback(null);
                 });
             });
@@ -173,7 +173,7 @@ module.exports = {
                 callback(err);
             });
         }, function(err) {
-            if (err) callback(err);
+            if (err) return callback(err);
             // delete questions from the DB that aren't on disk
             models.Question.destroy({where: {
                 course_id: courseInfo.courseId,
@@ -259,7 +259,7 @@ module.exports = {
                             iQuestion++;
                             that.initTestQuestion(qid, maxPoints, pointsList, initPoints, iQuestion, zone, callback);
                         }, function(err) {
-                            if (err) callback(err);
+                            if (err) return callback(err);
                             callback(null);
                         });
                     } else {
@@ -269,6 +269,7 @@ module.exports = {
                     }
                 }, function(err) {
                     if (err) return callback(err);
+                    if (qidList.length == 0) return callback(null);
                     // delete questions from the DB that aren't on disk
                     var sql = 'UPDATE test_questions SET deleted_at = CURRENT_TIMESTAMP'
                         + ' WHERE (deleted_at IS NULL)'
@@ -305,15 +306,58 @@ module.exports = {
             });
         });
     },
-    
+
+    initAccessRules: function(test, dbTest, callback) {
+        if (!dbTest.allowAccess) return callback(null);
+        var saveIds = [];
+        async.eachSeries(dbTest.allowAccess, function(dbRule, callback) {
+            Promise.try(function() {
+                return models.AccessRule.findOrCreate({where: {
+                    test_id: test.id,
+                    mode: dbRule.mode ? dbRule.mode : null,
+                    role: dbRule.role ? dbRule.role : null,
+                    uids: dbRule.uids ? dbRule.uids : null,
+                    startDate: dbRule.startDate ? moment.tz(dbRule.startDate, config.timezone).format() : null,
+                    endDate: dbRule.endDate ? moment.tz(dbRule.endDate, config.timezone).format() : null,
+                    credit: _(dbRule).has('credit') ? dbRule.credit : null,
+                }});
+            }).spread(function(rule, created) {
+                saveIds.push(rule.id);
+                callback(null);
+            }).catch(function(err) {
+                callback(err);
+            });
+        }, function(err) {
+            if (err) return callback(err);
+            if (saveIds.length == 0) return callback(null);
+            // delete rules from the DB that aren't on disk
+            var sql = 'UPDATE access_rules SET deleted_at = CURRENT_TIMESTAMP'
+                + ' WHERE deleted_at IS NULL'
+                + ' AND test_id = :testId'
+                + ' AND id NOT IN (:saveIds)'
+                + ';';
+            var params = {
+                testId: test.id,
+                saveIds: saveIds,
+            };
+            Promise.try(function() {
+                return models.sequelize.query(sql, {replacements: params});
+            }).then(function() {
+                callback(null);
+            }).catch(function(err) {
+                callback(err);
+            });
+        });
+    },
+
     initTests: function(courseInfo, testDB, callback) {
         logger.infoOverride("Updating tests in SQL DB");
         var that = this;
         // find all the tests in mongo
         db.tCollect.find({}, function(err, cursor) {
-            if (err) callback(err);
+            if (err) return callback(err);
             cursor.toArray(function(err, objs) {
-                if (err) callback(err);
+                if (err) return callback(err);
                 // only keep the tests that we have on disk
                 objs = _(objs).filter(function(o) {return _(testDB).has(o.tid);});
                 async.eachSeries(objs, function(dbTest, callback) {
@@ -387,12 +431,20 @@ module.exports = {
                             // Basic
                             zoneList = [{questions: dbTest.options.qids}];
                         }
-                        that.initTestQuestions(test, zoneList, callback);
+                        that.initTestQuestions(test, zoneList, function(err) {
+                            if (err) return callback(err);
+                            that.initAccessRules(test, dbTest, function(err) {
+                                if (err) return callback(err);
+                                callback(null);
+                            });
+                        });
                     }).catch(function(err) {
                         callback(err);
                     });
                 }, function(err) {
-                    if (err) callback(err);
+                    if (err) return callback(err);
+                    var tidList = _(objs).pluck('tid');
+                    if (tidList.length == 0) return callback(null);
                     // delete tests from the DB that aren't on disk
                     var sql = 'UPDATE tests SET deleted_at = CURRENT_TIMESTAMP'
                         + ' WHERE deleted_at IS NULL'
@@ -401,7 +453,7 @@ module.exports = {
                         + ' = :courseInstanceId'
                         + ';';
                     var params = {
-                        tidList: _(objs).pluck('tid'),
+                        tidList: tidList,
                         courseInstanceId: courseInfo.courseInstanceId,
                     };
                     Promise.try(function(results, info) {
@@ -420,9 +472,9 @@ module.exports = {
         logger.infoOverride("Updating test instances in SQL DB");
         // find all the testInstances in mongo
         db.tiCollect.find({}, function(err, cursor) {
-            if (err) callback(err);
+            if (err) return callback(err);
             cursor.toArray(function(err, objs) {
-                if (err) callback(err);
+                if (err) return callback(err);
                 // only process tInstances for tests that we have on disk
                 objs = _(objs).filter(function(o) {return _(testDB).has(o.tid);});
                 async.each(objs, function(ti, callback) {
@@ -475,7 +527,7 @@ module.exports = {
                         callback(null);
                     });
                 }, function(err) {
-                    if (err) callback(err);
+                    if (err) return callback(err);
                     callback(null);
                 });
             });
