@@ -7,6 +7,7 @@ var models = require("./models");
 var _ = require("underscore");
 var fs = require("fs");
 var path = require("path");
+var favicon = require('serve-favicon');
 var async = require("async");
 var moment = require("moment-timezone");
 var Promise = require('bluebird');
@@ -365,6 +366,7 @@ app.use(function(req, res, next) {
             || req.path == "/version.js"
             || req.path == "/config.js"
             || req.path == "/favicon.png"
+            || req.path == "/favicon.ico"
             || /^\/require\//.test(req.path)
             || /^\/css\//.test(req.path)
             || /^\/text\//.test(req.path)
@@ -637,8 +639,7 @@ if (config.authType === 'eppn') {
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'ejs');
 
-// uncomment after placing your favicon in /public
-//app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
 // static serving of all subdirectories of "./public"
 app.use(express.static(path.join(__dirname, 'public')));
