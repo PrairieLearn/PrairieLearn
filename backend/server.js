@@ -1,6 +1,7 @@
 var logger = require("./logger");
 var config = require("./config");
 var db = require("./db");
+var sdb = require("./sdb");
 
 var _ = require("underscore");
 var fs = require("fs");
@@ -3526,7 +3527,10 @@ var loadData = function(callback) {
 
 async.series([
     db.init,
+    sdb.init,
+    sdb.initSemesters,
     loadData,
+    sdb.initCourseInfo.bind(null, courseInfo),
     //runBayes,
     /*
     function(callback) {
@@ -3536,9 +3540,9 @@ async.series([
     */
     startServer,
     startIntervalJobs
-], function(err) {
+], function(err, data) {
     if (err) {
-        logger.error("Error initializing PrairieLearn server:", err);
+        logger.error("Error initializing PrairieLearn server:", err, data);
         logger.error("Exiting...");
         process.exit(1);
     } else {
