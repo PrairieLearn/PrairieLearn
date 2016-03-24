@@ -3445,8 +3445,20 @@ async.series([
     // this should be re-ordered for prod
     startServer,
     startIntervalJobs,
-    syncDiskToSQL,
-    syncMongoToSQL,
+    // FIXME: we are short-circuiting this for development,
+    // for prod these tasks should be back inline
+    function(callback) {
+        callback(null);
+        async.series([
+            syncDiskToSQL,
+            syncMongoToSQL,
+        ], function(err) {
+            if (err) {
+                logger.error("Error syncing SQL DB:", err, data);
+                logger.error("Exiting...");
+            }
+        });
+    },
 ], function(err, data) {
     if (err) {
         logger.error("Error initializing PrairieLearn server:", err, data);
