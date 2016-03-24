@@ -1,7 +1,7 @@
 var logger = require("./logger");
 var config = require("./config");
 var db = require("./db");
-var sdb = require("./sdb");
+var sqldb = require("./sqldb");
 var models = require("./models");
 
 var _ = require("underscore");
@@ -3401,37 +3401,52 @@ var loadAndInitCourseData = function(callback) {
     });
 };
 
-var copyDataToSQL = function() {
-    logger.infoOverride("Starting copy of data to SQL");
+var syncSemesters = require('./sync/fromDisk/semesters');
+var syncCourseInfo = require('./sync/fromDisk/courseInfo');
+var syncCourseStaff = require('./sync/fromDisk/courseStaff');
+var syncQuestions = require('./sync/fromDisk/questions');
+var syncTests = require('./sync/fromDisk/tests');
+
+var syncDiskToSQL = function(callback) {
+    logger.infoOverride("Starting sync of disk to SQL");
     async.series([
-        sdb.initSemesters,
-        sdb.initCourseInfo.bind(sdb, courseInfo),
-        sdb.initQuestions.bind(sdb, courseInfo, questionDB),
-        sdb.initTests.bind(sdb, courseInfo, testDB),
-        sdb.initUsers.bind(sdb, courseInfo, uidToRole),
-        sdb.initTestInstances.bind(sdb, courseInfo, testDB),
-    ], function(err, data) {
-        if (err) {
-            logger.error("Error copying data to SQL:", err, data);
-        } else {
-            logger.infoOverride("Finished copy of data to SQL");
-        }
+        syncSemesters.sync.bind(null),
+        syncCourseInfo.sync.bind(null, courseInfo),
+        syncCourseStaff.sync.bind(null, courseInfo),
+        syncQuestions.sync.bind(null, courseInfo, questionDB),
+        syncTests.sync.bind(null, courseInfo, testDB),
+    ], function(err) {
+        if (err) return callback(err);
+        logger.infoOverride("Completed sync of disk to SQL");
+        callback(null);
+    });
+};
+
+var syncUsers = require('./sync/fromMongo/users');
+var syncTestInstances = require('./sync/fromMongo/testInstances');
+
+var syncMongoToSQL = function(callback) {
+    logger.infoOverride("Starting sync of Mongo to SQL");
+    async.series([
+        syncUsers.sync.bind(null, courseInfo, uidToRole),
+        syncTestInstances.sync.bind(null, courseInfo, testDB),
+    ], function(err) {
+        if (err) return callback(err);
+        logger.infoOverride("Completed sync of Mongo to SQL");
+        callback(null);
     });
 };
 
 async.series([
     db.init,
     loadAndInitCourseData,
-    sdb.init,
-    //runBayes,
-    /*
-    function(callback) {
-        computeStats();
-        callback(null);
-    },
-    */
+    sqldb.init,
+    // FIXME: for dev we start server before sync tasks,
+    // this should be re-ordered for prod
     startServer,
-    startIntervalJobs
+    startIntervalJobs,
+    syncDiskToSQL,
+    syncMongoToSQL,
 ], function(err, data) {
     if (err) {
         logger.error("Error initializing PrairieLearn server:", err, data);
@@ -3439,7 +3454,6 @@ async.series([
         process.exit(1);
     } else {
         logger.infoOverride("PrairieLearn server ready");
-        copyDataToSQL();
     }
 });
 
