@@ -171,8 +171,40 @@ var checkInfoValid = function(idName, info, infoFile) {
         logger.warn(infoFile + ': "options.availDate" is deprecated and will be removed in a future version. Instead, please use "allowAccess".');
     }
 
+    if (idName == "tid" && info.type == "Exam") {
+        logger.warn(infoFile + ': "Exam"-type tests are deprecated and will be removed in a future version. Instead, please use "RetryExam".');
+        info.type = "RetryExam";
+        var options = info.options || {};
+        var newOptions = {
+            questionGroups: [],
+            nQuestions: 20 // 20 was the default for Exam-type tests
+        };
+
+        if (_(options).has('text')) {
+            newOptions.text = options.text;
+        }
+        if (_(options).has('nQuestions')) {
+            newOptions.nQuestions = options.nQuestions;
+        }
+        _(options.qidGroups).each(function(qidGroup) {
+            var group = [];
+            _(qidGroup).each(function(questionVariants) {
+                var variants = [];
+                _(questionVariants).each(function(question) {
+                    variants.push({
+                        qid: question,
+                        points: [1]
+                    });
+                });
+                group.push(variants);
+            });
+            newOptions.questionGroups.push(group);
+        });
+        info.options = newOptions;
+    }
+
     // look for exams without credit assigned and patch it in to all access rules
-    if (idName == "tid" && (info.type == "Exam" || info.type == "RetryExam")) {
+    if (idName == "tid" && info.type == "RetryExam") {
         if (_(info).has('allowAccess') && !_(info.allowAccess).any(function(a) {return _(a).has('credit');})) {
             logger.warn(infoFile + ': No credit assigned in allowAccess rules, patching in credit = 100 to all rules. Please set "credit" in "allowAccess" rules explicitly.')
             _(info.allowAccess).each(function(a) {
@@ -2015,19 +2047,18 @@ var autoCreateTestQuestions = function(req, res, tInstance, test, callback) {
                 });
             }
         }, function(err) {
-            if (err)
-                return sendError(res, 400, "Error creating qInstances", {tiid: tInstance.tiid, err: err});
-            callback();
+            if (err) return callback("Error creating qInstances for tiid=" + tInstance.tiid + ": " + err);
+            callback(null);
         });
     } else {
-        callback();
+        callback(null);
     }
 };
 
 var updateTInstance = function(req, res, server, tInstance, test, callback) {
-    server.updateTInstance(tInstance, test, test.options, questionDB);
-    autoCreateTestQuestions(req, res, tInstance, test, function() {
-        callback();
+    server.updateTInstance(tInstance, test, test.options, questionDB, function(err) {
+        if (err) return callback(err);
+        autoCreateTestQuestions(req, res, tInstance, test, callback);
     });
 };
 
@@ -2037,7 +2068,8 @@ var updateTInstances = function(req, res, tInstances, updateCallback) {
         readTestBAD(res, tid, function(test) {
             loadTestServer(tid, function(server) {
                 var oldJSON = JSON.stringify(tInstance);
-                updateTInstance(req, res, server, tInstance, test, function() {
+                updateTInstance(req, res, server, tInstance, test, function(err) {
+                    if (err) return callback(err);
                     var newJSON = JSON.stringify(tInstance);
                     if (newJSON !== oldJSON) {
                         writeTInstance(req, res, tInstance, function() {
@@ -2073,7 +2105,8 @@ var autoCreateTInstances = function(req, res, tInstances, autoCreateCallback) {
                             date: new Date(),
                             number: 1,
                         };
-                        updateTInstance(req, res, server, tInstance, test, function() {
+                        updateTInstance(req, res, server, tInstance, test, function(err) {
+                            if (err) return callback(err);
                             writeTInstance(req, res, tInstance, function() {
                                 tiDB[tInstance.tid] = [tInstance];
                                 callback(null);
@@ -2208,7 +2241,8 @@ app.post("/tInstances", function(req, res) {
                                     date: new Date(),
                                     number: number,
                                 };
-                                updateTInstance(req, res, server, tInstance, test, function() {
+                                updateTInstance(req, res, server, tInstance, test, function(err) {
+                                    if (err) return sendError(res, 500, "Unable to update tInstance", err);
                                     writeTInstance(req, res, tInstance, function() {
                                         res.json(stripPrivateFields(tInstance));
                                     });
