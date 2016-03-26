@@ -12,8 +12,6 @@ router.get('/', function(req, res, next) {
             + ' FROM users AS u'
             + ' JOIN enrollments AS e ON (e.user_id = u.id)'
             + ' WHERE e.course_instance_id = :courseInstanceId'
-            + ' AND u.deleted_at IS NULL'
-            + ' AND e.deleted_at IS NULL'
             + ' ORDER BY e.role DESC, u.uid'
             + ';'
         var params = {

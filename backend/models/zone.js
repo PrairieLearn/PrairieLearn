@@ -6,9 +6,9 @@ module.exports = function(sequelize, DataTypes) {
         tableName: 'zones',
         classMethods: {
             associate: function(models) {
-                Zone.belongsTo(models.Test);
+                Zone.belongsTo(models.Test, {onUpdate: 'CASCADE', onDelete: 'CASCADE'});
             }
-        }
+        },
     });
 
     return Zone;

@@ -8,6 +8,7 @@ module.exports = function(req, res, next) {
             + ' FROM tests as t'
             + ' JOIN test_sets AS ts ON (ts.id = t.test_set_id)'
             + ' WHERE t.id = :testId'
+            + ' AND t.deleted_at IS NULL'
             + ' AND ts.course_instance_id = :courseInstanceId'
             + ';'
         var params = {

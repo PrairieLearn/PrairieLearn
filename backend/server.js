@@ -3404,7 +3404,9 @@ var loadAndInitCourseData = function(callback) {
 var syncSemesters = require('./sync/fromDisk/semesters');
 var syncCourseInfo = require('./sync/fromDisk/courseInfo');
 var syncCourseStaff = require('./sync/fromDisk/courseStaff');
+var syncTopics = require('./sync/fromDisk/topics');
 var syncQuestions = require('./sync/fromDisk/questions');
+var syncTestSets = require('./sync/fromDisk/testSets');
 var syncTests = require('./sync/fromDisk/tests');
 
 var syncDiskToSQL = function(callback) {
@@ -3413,7 +3415,9 @@ var syncDiskToSQL = function(callback) {
         syncSemesters.sync.bind(null),
         syncCourseInfo.sync.bind(null, courseInfo),
         syncCourseStaff.sync.bind(null, courseInfo),
+        syncTopics.sync.bind(null, courseInfo, questionDB),
         syncQuestions.sync.bind(null, courseInfo, questionDB),
+        syncTestSets.sync.bind(null, courseInfo, testDB),
         syncTests.sync.bind(null, courseInfo, testDB),
     ], function(err) {
         if (err) return callback(err);
@@ -3452,10 +3456,9 @@ async.series([
         async.series([
             syncDiskToSQL,
             syncMongoToSQL,
-        ], function(err) {
+        ], function(err, data) {
             if (err) {
                 logger.error("Error syncing SQL DB:", err, data);
-                logger.error("Exiting...");
             }
         });
     },

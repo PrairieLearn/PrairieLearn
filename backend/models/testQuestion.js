@@ -8,10 +8,12 @@ module.exports = function(sequelize, DataTypes) {
         tableName: 'test_questions',
         classMethods: {
             associate: function(models) {
-                TestQuestion.belongsTo(models.Zone);
-                TestQuestion.belongsTo(models.Question);
+                TestQuestion.belongsTo(models.Test, {onUpdate: 'SET NULL', onDelete: 'SET NULL'});
+                TestQuestion.belongsTo(models.Zone, {onUpdate: 'SET NULL', onDelete: 'SET NULL'});
+                TestQuestion.belongsTo(models.Question, {onUpdate: 'SET NULL', onDelete: 'SET NULL'});
             }
-        }
+        },
+        paranoid: true,
     });
 
     return TestQuestion;

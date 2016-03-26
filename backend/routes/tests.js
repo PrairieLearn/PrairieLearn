@@ -12,9 +12,8 @@ router.get('/', function(req, res, next) {
             + ' (ts.short_name || t.number) as label,'
             + ' (lag(ts.id) OVER (PARTITION BY ts.id ORDER BY t.number) IS NULL) AS start_new_set'
             + ' FROM tests AS t LEFT JOIN test_sets AS ts ON (ts.id = t.test_set_id)'
-            + ' WHERE ts.course_instance_id = :courseInstanceId'
+            + ' WHERE t.course_instance_id = :courseInstanceId'
             + ' AND t.deleted_at IS NULL'
-            + ' AND ts.deleted_at IS NULL'
             + ' ORDER BY (ts.long_name, ts.id, t.number)'
             + ';'
         var params = {

@@ -7,10 +7,10 @@ module.exports = function(sequelize, DataTypes) {
         tableName: 'enrollments',
         classMethods: {
             associate: function(models) {
-                Enrollment.belongsTo(models.User);
-                Enrollment.belongsTo(models.CourseInstance);
+                Enrollment.belongsTo(models.User, {onUpdate: 'SET NULL', onDelete: 'SET NULL'});
+                Enrollment.belongsTo(models.CourseInstance, {onUpdate: 'SET NULL', onDelete: 'SET NULL'});
             }
-        }
+        },
     });
 
     return Enrollment;

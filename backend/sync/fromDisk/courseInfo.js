@@ -15,18 +15,39 @@ module.exports = {
             });
         }).then(function() {
             var course = models.Course.findOne({where: {shortName: courseInfo.name}});
-            var semester = models.Semester.findOne({where: {shortName: config.semester}});
-            return Promise.all([course, semester]);
-        }).spread(function(course, semester) {
-            if (!course) throw Error("no course where short_name = " + courseInfo.name);
-            if (!semester) throw Error("no semester where short_name = " + config.semester);
-            return models.CourseInstance.findOrCreate({where: {
-                course_id: course.id,
-                semester_id: semester.id,
-            }, defaults: {}});
-        }).spread(function(courseInstance, created) {
+            var semesters = models.Semester.findAll();
+            return Promise.all([course, semesters]);
+        }).spread(function(course, semesters) {
+            if (!course) throw Error("can't find course");
+            /*
+              FIXME: For now we create a course instance for every semester, even if
+              this course wasn't actually in all semesters.
+            */
+            return Promise.all(
+                _(semesters).map(function(semester) {
+                    return models.CourseInstance.findOrCreate({where: {
+                        course_id: course.id,
+                        semester_id: semester.id,
+                    }}).spread(function(courseInstance, created) {
+                        courseInfo.courseId = courseInstance.course_id;
+                    });
+                })
+            );
+        }).then(function() {
+            return models.Semester.findOne({where: {
+                shortName: config.semester,
+            }});
+        }).then(function(semester) {
+            if (!semester) throw Error("can't find semester");
+            courseInfo.semesterId = semester.id;
+            return models.CourseInstance.findOne({where: {
+                course_id: courseInfo.courseId,
+                semester_id: courseInfo.semesterId,
+            }});
+        }).then(function(courseInstance) {
+            if (!courseInstance) throw Error("can't find courseInstance");
             courseInfo.courseInstanceId = courseInstance.id;
-            courseInfo.courseId = courseInstance.course_id;
+        }).then(function() {
             callback(null);
         }).catch(function(err) {
             callback(err);

@@ -17,7 +17,6 @@ var upsertEnrollmentsToCourseSQL
     + '     (VALUES (:user_id,:role::enum_enrollments_role,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP))'
     + '     AS nu (user_id,role,created_at,updated_at)'
     + '     WHERE course_id = :course_id'
-    + '     AND deleted_at IS NULL'
     + ' )'
     + ' ON CONFLICT (user_id,course_instance_id)'
     + ' DO UPDATE SET (role,updated_at) = (EXCLUDED.role,EXCLUDED.updated_at)'

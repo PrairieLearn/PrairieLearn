@@ -7,9 +7,9 @@ module.exports = function(req, res, next) {
         // check that the requested test question is in the requested test
         var sql = 'SELECT tq.*'
             + ' FROM test_questions AS tq'
-            + ' JOIN zones AS z ON (tq.zone_id = z.id)'
             + ' WHERE tq.id = :testQuestionId'
-            + ' AND z.test_id = :testId'
+            + ' AND tq.test_id = :testId'
+            + ' AND tq.deleted_at IS NULL'
             + ';'
         var params = {
             testQuestionId: req.params.testQuestionId,

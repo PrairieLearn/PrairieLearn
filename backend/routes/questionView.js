@@ -12,6 +12,7 @@ router.get('/', function(req, res, next) {
             + ' FROM questions as q'
             + ' JOIN topics as top ON (top.id = q.topic_id)'
             + ' WHERE q.id = :questionId'
+            + ' AND q.deleted_at IS NULL'
             + ';'
         var params = {
             questionId: req.locals.questionId,

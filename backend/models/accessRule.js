@@ -10,7 +10,7 @@ module.exports = function(sequelize, DataTypes) {
         tableName: 'access_rules',
         classMethods: {
             associate: function(models) {
-                AccessRule.belongsTo(models.Test);
+                AccessRule.belongsTo(models.Test, {onDelete: 'CASCADE'});
             }
         }
     });

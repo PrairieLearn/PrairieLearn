@@ -9,11 +9,11 @@ module.exports = function(sequelize, DataTypes) {
         tableName: 'test_instances',
         classMethods: {
             associate: function(models) {
-                TestInstance.belongsTo(models.Test);
-                TestInstance.belongsTo(models.User);
-                TestInstance.belongsTo(models.User, {as: 'auth_user'});
+                TestInstance.belongsTo(models.Test, {onUpdate: 'SET NULL', onDelete: 'SET NULL'});
+                TestInstance.belongsTo(models.User, {onUpdate: 'SET NULL', onDelete: 'SET NULL'});
+                TestInstance.belongsTo(models.User, {as: 'auth_user'}, {onUpdate: 'SET NULL', onDelete: 'SET NULL'});
             }
-        }
+        },
     });
 
     return TestInstance;

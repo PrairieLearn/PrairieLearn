@@ -1,5 +1,4 @@
 var _ = require('underscore');
-var async = require('async');
 var moment = require('moment-timezone');
 var Promise = require('bluebird');
 
@@ -11,117 +10,124 @@ module.exports = {
     sync: function(courseInfo, testDB, callback) {
         logger.infoOverride("Syncing tests from disk to SQL DB");
         var that = module.exports;
-        async.eachSeries(testDB, function(dbTest, callback) {
-            // need to do this in series because testSets don't have unique names,
-            // so TestSet.findAndCreate() will produce duplicates
-            var shortName = {
-                'Exam': 'E',
-                'Practice Exam': 'PE',
-                'Homework': 'HW',
-                'Quiz': 'Q',
-                'Practice Quiz': 'PQ',
-            }[dbTest.set] || dbTest.set;
-            var color = {
-                'Exam': 'red3',
-                'Practice Exam': 'red1',
-                'Homework': 'green3',
-                'Quiz': 'red3',
-                'Practice Quiz': 'red1',
-            }[dbTest.set] || 'default';
-            var testSet, test, semester, courseInstance;
-            Promise.try(function() {
-                return models.Semester.findOne({where: {
-                    shortName: dbTest.semester,
-                }});
-            }).then(function(findSemester) {
-                semester = findSemester;
-                return models.CourseInstance.findOrCreate({where: {
-                    course_id: courseInfo.courseId,
-                    semester_id: semester.id,
-                }});
-            }).spread(function(newCourseInstance, created) {
-                courseInstance = newCourseInstance;
-                return models.TestSet.findOrCreate({where: {
-                    longName: dbTest.set,
-                    course_instance_id: courseInstance.id,
-                }});
-            }).spread(function(newTestSet, created) {
-                testSet = newTestSet;
-                return testSet.update({
-                    shortName: shortName,
-                    color: color,
-                });
-            }).then(function() {
-                return models.Test.findOrCreate({where: {
-                    tid: dbTest.tid,
-                }});
-            }).spread(function(newTest, created) {
-                test = newTest;
-                return test.update({
-                    type: dbTest.type,
-                    number: dbTest.number,
-                    title: dbTest.title,
-                    config: dbTest.options,
-                    test_set_id: testSet.id,
-                });
-            }).then(function() {
-                var zoneList = [];
-                if (_(dbTest).has('options') && _(dbTest.options).has('zones')) {
-                    // RetryExam, new format
-                    zoneList = dbTest.options.zones;
-                } else if (_(dbTest).has('options') && _(dbTest.options).has('questionGroups')) {
-                    // RetryExam, old format
-                    zoneList = [{questions: _(dbTest.options.questionGroups).flatten()}];
-                } else if (_(dbTest).has('options') && _(dbTest.options).has('qidGroups')) {
-                    // Exam
-                    zoneList = [{questions: _(dbTest.options.qidGroups).flatten()}];
-                } else if (_(dbTest).has('options') && _(dbTest.options).has('questions')) {
-                    // Game
-                    zoneList = [{questions: dbTest.options.questions}];
-                } else if (_(dbTest).has('options') && _(dbTest.options).has('qids')) {
-                    // Basic
-                    zoneList = [{questions: dbTest.options.qids}];
-                }
-                that.syncTestQuestions(test, zoneList, function(err) {
-                    if (err) return callback(err);
-                    that.syncAccessRules(test, dbTest, function(err) {
-                        if (err) return callback(err);
-                        callback(null);
+        var testIDs = [];
+        Promise.try(function() {
+            return Promise.all(
+                _(testDB).map(function(dbTest) {
+                    var semester, courseInstance, testSet, test;
+                    var zoneList = [];
+                    return Promise.try(function() {
+                        return models.Semester.findOne({where: {
+                            shortName: dbTest.semester,
+                        }});
+                    }).then(function(findSemester) {
+                        semester = findSemester;
+                        if (!semester) throw Error("can't find semester");
+                        return models.CourseInstance.findOne({where: {
+                            course_id: courseInfo.courseId,
+                            semester_id: semester.id,
+                        }});
+                    }).then(function(findCourseInstance) {
+                        courseInstance = findCourseInstance;
+                        if (!courseInstance) throw Error("can't find couresInstance");
+                        return models.TestSet.find({where: {
+                            longName: dbTest.set,
+                            course_instance_id: courseInstance.id,
+                        }});
+                    }).then(function(findTestSet) {
+                        testSet = findTestSet;
+                        if (!testSet) throw Error("can't find testSet");
+                        return models.Test.findOrCreate({where: {
+                            tid: dbTest.tid,
+                            course_instance_id: courseInstance.id,
+                        }, paranoid: false});
+                    }).spread(function(newTest, created) {
+                        test = newTest;
+                        testIDs.push(test.id);
+                        return test.update({
+                            type: dbTest.type,
+                            number: dbTest.number,
+                            title: dbTest.title,
+                            config: dbTest.options,
+                            test_set_id: testSet.id,
+                        });
+                    }).then(function() {
+                        return test.restore(); // undo soft-delete just in case
+                    }).then(function() {
+                        return that.syncAccessRules(test, dbTest);
+                    }).then(function() {
+                        if (_(dbTest).has('options') && _(dbTest.options).has('zones')) {
+                            // RetryExam, new format
+                            zoneList = dbTest.options.zones;
+                        } else if (_(dbTest).has('options') && _(dbTest.options).has('questionGroups')) {
+                            // RetryExam, old format
+                            zoneList = [{questions: _(dbTest.options.questionGroups).flatten()}];
+                        } else if (_(dbTest).has('options') && _(dbTest.options).has('qidGroups')) {
+                            // Exam
+                            zoneList = [{questions: _(dbTest.options.qidGroups).flatten()}];
+                        } else if (_(dbTest).has('options') && _(dbTest.options).has('questions')) {
+                            // Game
+                            zoneList = [{questions: dbTest.options.questions}];
+                        } else if (_(dbTest).has('options') && _(dbTest.options).has('qids')) {
+                            // Basic
+                            zoneList = [{questions: dbTest.options.qids}];
+                        }
+                        return that.syncZones(test, zoneList);
+                    }).then(function() {
+                        return that.syncTestQuestions(test, zoneList);
                     });
-                });
-            }).catch(function(err) {
-                callback(err);
-            });
-        }, function(err) {
-            if (err) return callback(err);
-            var tidList = _(testDB).pluck('tid');
-            if (tidList.length == 0) return callback(null);
-            // delete tests from the DB that aren't on disk
-            var sql = 'UPDATE tests SET deleted_at = CURRENT_TIMESTAMP'
-                + ' WHERE deleted_at IS NULL'
-                + ' AND tid NOT IN (:tidList)'
-                + ' AND (SELECT course_instance_id FROM test_sets WHERE id = test_set_id)'
-                + ' = :courseInstanceId'
-                + ';';
+                })
+            )
+        }).then(function() {
+            // soft-delete tests from the DB that aren't on disk and are in the current course
+            var sql = 'WITH'
+                + ' course_test_ids AS ('
+                + '     SELECT t.id'
+                + '     FROM tests AS t'
+                + '     JOIN course_instances AS ci ON (ci.id = t.course_instance_id)'
+                + '     WHERE ci.course_id = :courseId'
+                + '     AND t.deleted_at IS NULL'
+                + ' )'
+                + ' UPDATE tests SET deleted_at = CURRENT_TIMESTAMP'
+                + ' WHERE id IN (SELECT * FROM course_test_ids)'
+                + (testIDs.length == 0 ? '' : ' AND id NOT IN (:testIDs)')
+                + ' ;'
             var params = {
-                tidList: tidList,
-                courseInstanceId: courseInfo.courseInstanceId,
+                testIDs: testIDs,
+                courseId: courseInfo.courseId,
             };
-            Promise.try(function(results, info) {
-                return models.sequelize.query(sql, {replacements: params});
-            }).spread(function() {
-                callback(null);
-            }).catch(function(err) {
-                callback(err);
-            });
+            return models.sequelize.query(sql, {replacements: params});
+        }).then(function() {
+            // soft-delete test_questions from DB that don't correspond to current tests
+            var sql = 'WITH'
+                + ' course_test_question_ids AS ('
+                + '     SELECT tq.id'
+                + '     FROM test_questions AS tq'
+                + '     JOIN tests AS t ON (t.id = tq.test_id)'
+                + '     JOIN course_instances AS ci ON (ci.id = t.course_instance_id)'
+                + '     WHERE ci.course_id = :courseId'
+                + '     AND tq.deleted_at IS NULL'
+                + ' )'
+                + ' UPDATE test_questions SET deleted_at = CURRENT_TIMESTAMP'
+                + ' WHERE id IN (SELECT * FROM course_test_question_ids)'
+                + (testIDs.length == 0 ? '' : ' AND test_id NOT IN (:testIDs)')
+                + ' ;'
+            var params = {
+                testIDs: testIDs,
+                courseId: courseInfo.courseId,
+            };
+            return models.sequelize.query(sql, {replacements: params});
+        }).then(function() {
+            callback(null);
+        }).catch(function(err) {
+            callback(err);
         });
     },
 
-    syncAccessRules: function(test, dbTest, callback) {
-        if (!dbTest.allowAccess) return callback(null);
-        var saveIds = [];
-        async.eachSeries(dbTest.allowAccess, function(dbRule, callback) {
-            Promise.try(function() {
+    syncAccessRules: function(test, dbTest) {
+        var accessRuleIDs = [];
+        return Promise.all(
+            _(dbTest.allowAccess || []).map(function(dbRule) {
                 return models.AccessRule.findOrCreate({where: {
                     test_id: test.id,
                     mode: dbRule.mode ? dbRule.mode : null,
@@ -130,64 +136,67 @@ module.exports = {
                     startDate: dbRule.startDate ? moment.tz(dbRule.startDate, config.timezone).format() : null,
                     endDate: dbRule.endDate ? moment.tz(dbRule.endDate, config.timezone).format() : null,
                     credit: _(dbRule).has('credit') ? dbRule.credit : null,
-                }});
-            }).spread(function(rule, created) {
-                saveIds.push(rule.id);
-                callback(null);
-            }).catch(function(err) {
-                callback(err);
-            });
-        }, function(err) {
-            if (err) return callback(err);
-            if (saveIds.length == 0) return callback(null);
-            // delete rules from the DB that aren't on disk
-            var sql = 'UPDATE access_rules SET deleted_at = CURRENT_TIMESTAMP'
-                + ' WHERE deleted_at IS NULL'
-                + ' AND test_id = :testId'
-                + ' AND id NOT IN (:saveIds)'
+                }}).spread(function(rule, created) {
+                    accessRuleIDs.push(rule.id);
+                    return Promise.resolve(null);
+                });
+            })
+        ).then(function() {
+            // delete rules from the DB that aren't on disk for this test
+            var sql = 'DELETE FROM access_rules'
+                + ' WHERE test_id = :testId'
+                + (accessRuleIDs.length == 0 ? '' : ' AND id NOT IN (:accessRuleIDs)')
                 + ';';
             var params = {
                 testId: test.id,
-                saveIds: saveIds,
+                accessRuleIDs: accessRuleIDs,
             };
-            Promise.try(function() {
-                return models.sequelize.query(sql, {replacements: params});
-            }).then(function() {
-                callback(null);
-            }).catch(function(err) {
-                callback(err);
-            });
+            return models.sequelize.query(sql, {replacements: params});
+        });
+    },
+
+    syncZones: function(test, zoneList) {
+        var zoneIDs = [];
+        return Promise.all(
+            _(zoneList).each(function(dbZone, i) {
+                return models.Zone.findOrCreate({where: {
+                    test_id: test.id,
+                    number: i + 1,
+                }}).spread(function(newZone, created) {
+                    zone = newZone;
+                    zoneIDs.push(zone.id);
+                    return zone.update({
+                        title: dbZone.title,
+                    });
+                });
+            })
+        ).then(function() {
+            // delete zones from the DB that aren't on disk and are in the current test
+            return models.Zone.destroy({where: {
+                test_id: test.id,
+                id: {
+                    $notIn: zoneIDs,
+                },
+            }});
         });
     },
 
     syncTestQuestions: function(test, zoneList, callback) {
         var that = module.exports;
-        var iQuestion = 0;
-        async.forEachOfSeries(zoneList, function(dbZone, iDbZone, callback) {
-            var zone;
-            Promise.try(function() {
-                return models.Zone.findOrCreate({where: {
-                    test_id: test.id,
-                    number: iDbZone + 1,
-                }});
-            }).spread(function(newZone, created) {
-                zone = newZone;
-                return zone.update({
-                    title: dbZone.title,
-                });
-            }).then(function() {
-                // have the zone, make the questions
-                qidList = []
-                async.eachSeries(dbZone.questions, function(dbQuestion, callback) {
-                    var qid = null, qids = null, maxPoints = null, pointsList = null, initPoints = null;
+        var iTestQuestion = 0;
+        var testQuestionIDs = [];
+        return Promise.all(
+            _.chain(zoneList).map(function(dbZone, iZone) {
+                return _(dbZone.questions).map(function(dbQuestion) {
+                    var qids = null, maxPoints = null, pointsList = null, initPoints = null;
                     if (_(dbQuestion).isString()) {
-                        qid = dbQuestion;
+                        qids = [dbQuestion];
                         maxPoints = 1;
                     } else {
                         if (_(dbQuestion).has('qids')) {
                             qids = dbQuestion.qids;
                         } else {
-                            qid = dbQuestion.qid;
+                            qids = [dbQuestion.qid];
                         }
                         if (_(dbQuestion).has('points')) {
                             maxPoints = _(dbQuestion.points).max();
@@ -197,85 +206,61 @@ module.exports = {
                             initPoints = dbQuestion.initValue;
                         }
                     }
-                    if (qids) {
-                        async.eachSeries(qids, function(qid, callback) {
-                            qidList.push(qid);
-                            iQuestion++;
-                            that.syncTestQuestion(qid, maxPoints, pointsList, initPoints, iQuestion, zone, callback);
-                        }, function(err) {
-                            if (err) return callback(err);
-                            callback(null);
-                        });
-                    } else {
-                        qidList.push(dbQuestion.qid);
-                        iQuestion++;
-                        that.syncTestQuestion(qid, maxPoints, pointsList, initPoints, iQuestion, zone, callback);
-                    }
-                }, function(err) {
-                    if (err) return callback(err);
-                    if (qidList.length == 0) return callback(null);
-                    // delete questions from the DB that aren't on disk
-                    var sql = 'UPDATE test_questions SET deleted_at = CURRENT_TIMESTAMP'
-                        + ' WHERE (deleted_at IS NULL)'
-                        + ' AND (zone_id = :zoneId)'
-                        + ' AND ((SELECT qid FROM questions WHERE id = question_id) NOT IN (:qidList))'
-                        + ';'
-                    var params = {
-                        zoneId: zone.id,
-                        qidList: qidList,
-                    };
-                    Promise.try(function() {
-                        return models.sequelize.query(sql, {replacements: params});
-                    }).then(function() {
-                        callback(null);
-                    }).catch(function(err) {
-                        callback(err);
+                    return _(qids).map(function(qid) {
+                        iTestQuestion++;
+                        return that.syncTestQuestion(qid, maxPoints, pointsList, initPoints, iTestQuestion, test, iZone)
+                            .then(function(testQuestion) {
+                                testQuestionIDs.push(testQuestion.id);
+                            });
                     });
                 });
-            }).catch(function(err) {
-                callback(err);
-            });
-        }, function(err) {
-            if (err) return callback(err);
-            // delete zones from the DB that aren't on disk
-            models.Zone.destroy({where: {
-                test_id: test.id,
-                number: {
-                    $notIn: _.range(1, zoneList.length + 1),
-                },
-            }}).then(function() {
-                callback(null);
-            }).catch(function(err) {
-                callback(err);
-            });
+            }).flatten().value()
+        ).then(function() {
+            // delete questions from the DB that aren't on disk
+            var sql = 'UPDATE test_questions SET deleted_at = CURRENT_TIMESTAMP'
+                + ' WHERE (deleted_at IS NULL)'
+                + ' AND (test_id = :testId)'
+                + (testQuestionIDs.length == 0 ? '' : ' AND id NOT IN (:testQuestionIDs)')
+                + ';'
+            var params = {
+                testId: test.id,
+                testQuestionIDs: testQuestionIDs,
+            };
+            return models.sequelize.query(sql, {replacements: params});
         });
     },
 
-    syncTestQuestion: function(qid, maxPoints, pointsList, initPoints, iQuestion, zone, callback) {
-        var question, testQuestion;
-        Promise.try(function() {
+    syncTestQuestion: function(qid, maxPoints, pointsList, initPoints, iTestQuestion, test, iZone) {
+        var question, zone, testQuestion;
+        return Promise.try(function() {
             return models.Question.findOne({where: {
                 qid: qid,
             }});
-        }).then(function(newQuestion) {
-            if (!newQuestion) throw Error("no question where qid = " + qid);
-            question = newQuestion;
+        }).then(function(findQuestion) {
+            question = findQuestion;
+            if (!question) throw Error("can't find question");
+            return models.Zone.findOne({where: {
+                test_id: test.id,
+                number: iZone + 1,
+            }});
+        }).then(function(findZone) {
+            zone = findZone;
+            if (!zone) throw Error("can't find zone");
             return models.TestQuestion.findOrCreate({where: {
-                zone_id: zone.id,
-                number: iQuestion,
+                test_id: test.id,
+                question_id: question.id,
             }});
         }).spread(function(newTestQuestion, created) {
             testQuestion = newTestQuestion;
             return testQuestion.update({
-                question_id: question.id,
+                number: iTestQuestion,
+                zone_id: zone.id,
                 maxPoints: maxPoints,
                 pointsList: pointsList,
                 initPoints: initPoints,
             });
         }).then(function() {
-            callback(null);
-        }).catch(function(err) {
-            callback(err);
+            return testQuestion.restore(); // undo soft-delete just in case
         });
     },
 };

@@ -10,6 +10,7 @@ module.exports = function(req, res, next) {
             + ' JOIN courses AS c ON (c.id = q.course_id)'
             + ' JOIN course_instances AS ci ON (ci.course_id = c.id)'
             + ' WHERE q.id = :questionId'
+            + ' AND q.deleted_at IS NULL'
             + ' AND ci.id = :courseInstanceId'
             + ';'
         var params = {

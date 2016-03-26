@@ -6,10 +6,10 @@ module.exports = function(sequelize, DataTypes) {
         tableName: 'course_instances',
         classMethods: {
             associate: function(models) {
-                CourseInstance.belongsTo(models.Course);
-                CourseInstance.belongsTo(models.Semester);
+                CourseInstance.belongsTo(models.Course, {onDelete: 'CASCADE', onUpdate: 'CASCADE'});
+                CourseInstance.belongsTo(models.Semester, {onDelete: 'CASCADE', onUpdate: 'CASCADE'});
             }
-        }
+        },
     });
 
     return CourseInstance;

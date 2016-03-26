@@ -9,7 +9,7 @@ var db = require('../../db');
 
 module.exports = {
     sync: function(courseInfo, testDB, callback) {
-        logger.infoOverride("Updating test instances in SQL DB");
+        logger.infoOverride("Syncing test instances from Mongo to SQL DB");
         // find all the testInstances in mongo
         db.tiCollect.find({}, function(err, cursor) {
             if (err) return callback(err);
@@ -20,14 +20,25 @@ module.exports = {
                 async.each(objs, function(ti, callback) {
                     var user, test, testInstance;
                     Promise.try(function() {
-                        var user = models.User.findOne({where: {uid: ti.uid}});
-                        var test = models.Test.findOne({where: {tid: ti.tid}});
-                        return Promise.all([user, test]);
-                    }).spread(function(findUser, findTest) {
+                        return models.User.findOne({where: {
+                            uid: ti.uid,
+                        }});
+                    }).then(function(findUser) {
                         user = findUser;
-                        test = findTest;
                         if (!user) throw Error("no user where uid = " + ti.uid);
-                        if (!test) throw Error("no test where tid = " + ti.tid);
+                        return models.CourseInstance.findAll({where: {
+                            course_id: courseInfo.courseId,
+                        }});
+                    }).then(function(courseInstances) {
+                        return models.Test.findOne({where: {
+                            tid: ti.tid,
+                            course_instance_id: {
+                                $in: _(courseInstances).pluck('id'),
+                            }
+                        }});
+                    }).then(function(findTest) {
+                        test = findTest;
+                        if (!test) throw Error("no test where tid = " + ti.tid + " and course_instance_id = " + courseInfo.courseInstanceId);
                         return models.TestInstance.findOrCreate({where: {
                             tiid: ti.tiid,
                         }});

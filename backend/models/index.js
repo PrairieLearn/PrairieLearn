@@ -11,9 +11,6 @@ var sequelize = new Sequelize(config.sdbAddress, {
     logging: function() {}, // suppress output of SQL statements to stdout
     define: {
         underscored: true,
-        paranoid: true,
-        updatedAt: 'updated_at',
-        deletedAt: 'deleted_at',
     },
 });
 
