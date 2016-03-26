@@ -90,27 +90,7 @@ if (config.logFilename) {
     logger.info('activated file logging: ' + config.logFilename);
 }
 
-var requirejs = require("requirejs");
-
-requirejs.config({
-    nodeRequire: require,
-    baseUrl: config.requireDir,
-    paths: {
-        clientCode: config.relativeClientCodeDir,
-        serverCode: config.relativeServerCodeDir,
-    },
-});
-
-requirejs.onError = function(err) {
-    var data = {errorMsg: err.toString()};
-    for (var e in err) {
-        if (err.hasOwnProperty(e)) {
-            data[e] = String(err[e]);
-        }
-    }
-    logger.error("requirejs load error", data);
-};
-
+var requireFrontend = require("./require-frontend");
 var hmacSha256 = require("crypto-js/hmac-sha256");
 var gamma = require("gamma");
 var numeric = require("numeric");
@@ -118,10 +98,10 @@ var csvStringify = require('csv').stringify;
 var archiver = require('archiver');
 var jStat = require("jStat").jStat;
 var child_process = require("child_process");
-var PrairieStats = requirejs("PrairieStats");
-var PrairieModel = requirejs("PrairieModel");
-var PrairieRole = requirejs("PrairieRole");
-var PrairieGeom = requirejs("PrairieGeom");
+var PrairieStats = requireFrontend("PrairieStats");
+var PrairieModel = requireFrontend("PrairieModel");
+var PrairieRole = requireFrontend("PrairieRole");
+var PrairieGeom = requireFrontend("PrairieGeom");
 var express = require("express");
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
@@ -1062,7 +1042,7 @@ app.get("/coursePulls/current", function(req, res) {
 
 var undefQuestionServers = function(callback) {
     // Only try and undefine modules that are already defined, as listed in:
-    //     requirejs.s.contexts._.defined
+    //     requireFrontend.s.contexts._.defined
     // This is necessary because of incomplete questions (in particular, those with info.json but no server.js).
     async.each(_(questionDB).keys(), function(qid, cb) {
         questionFilePath(qid, "server.js", function(err, fileInfo) {
@@ -1071,8 +1051,8 @@ var undefQuestionServers = function(callback) {
                 return cb(null); // don't error, just skip this question
             }
             var serverFilePath = path.join(fileInfo.root, fileInfo.filePath);
-            if (_(requirejs.s.contexts._.defined).has(serverFilePath)) {
-                requirejs.undef(serverFilePath);
+            if (_(requireFrontend.s.contexts._.defined).has(serverFilePath)) {
+                requireFrontend.undef(serverFilePath);
             }
             cb(null);
         });
@@ -1682,7 +1662,7 @@ var loadQuestionServer = function(qid, callback) {
     questionFilePath(qid, "server.js", function(err, fileInfo) {
         if (err) return callback(err);
         var serverFilePath = path.join(fileInfo.root, fileInfo.filePath);
-        requirejs([serverFilePath], function(server) {
+        requireFrontend([serverFilePath], function(server) {
             if (server === undefined) return callback("Unable to load 'server.js' for qid: " + qid);
             return callback(null, server);
         });
@@ -1708,10 +1688,7 @@ var readTestBAD = function(res, tid, callback) {
 var loadTestServer = function(tid, callback) {
     var info = testDB[tid];
     var testType = info.type;
-    var serverFile = testType + "TestServer.js";
-    requirejs([serverFile], function(server) {
-        return callback(server);
-    });
+    callback(require("./" + testType + "TestServer.js"));
 };
 
 var writeTInstance = function(req, res, obj, callback) {
@@ -1749,19 +1726,21 @@ var testProcessSubmission = function(req, res, tiid, submission, callback) {
                     if (err) return sendError(res, 400, "Error accessing tid: " + tid, err);
                     loadTestServer(tid, function(server) {
                         var uid = submission.uid;
-                        try {
-                            server.updateWithSubmission(tInstance, test, submission, testDB[tid].options);
+                        server.updateWithSubmission(tInstance, test, submission, testDB[tid].options, function(err) {
+                            if (err) {
+                                return sendError(res, 500, "Error updating test: " + String(err), {err: err, stack: err.stack});
+                            }
+
                             if (!test.options.autoCreateQuestions) {
                                 if (tInstance.qiidsByQid) {
                                     delete tInstance.qiidsByQid[submission.qid];
                                 }
                             }
-                        } catch (e) {
-                            return sendError(res, 500, "Error updating test: " + String(e), {err: e, stack: e.stack});
-                        }
-                        writeTInstance(req, res, tInstance, function() {
-                            writeTest(req, res, test, function() {
-                                return callback(submission);
+
+                            writeTInstance(req, res, tInstance, function() {
+                                writeTest(req, res, test, function() {
+                                    return callback(submission);
+                                });
                             });
                         });
                     });
