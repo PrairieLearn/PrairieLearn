@@ -7,9 +7,8 @@ var config = require('../../config');
 var logger = require('../../logger');
 
 module.exports = {
-    sync: function(callback) {
-        logger.infoOverride("Updating semesters in SQL DB");
-        Promise.try(function() {
+    sync: function() {
+        return Promise.try(function() {
             return models.Semester.upsert({
                 shortName: 'Sp15',
                 longName: 'Spring 2015',
@@ -30,10 +29,6 @@ module.exports = {
                 startDate: moment.tz('2016-01-19T00:00:01', config.timezone).format(),
                 endDate: moment.tz('2016-05-13T23:59:59', config.timezone).format(),
             });
-        }).then(function() {
-            callback(null);
-        }).catch(function(err) {
-            callback(err);
         });
     },
 };

@@ -3412,6 +3412,7 @@ var syncTests = require('./sync/fromDisk/tests');
 var syncDiskToSQL = function(callback) {
     logger.infoOverride("Starting sync of disk to SQL");
     async.series([
+        function(callback) {logger.infoOverride("Updating semesters in SQL DB"); callback(null);},
         syncSemesters.sync.bind(null),
         syncCourseInfo.sync.bind(null, courseInfo),
         syncCourseStaff.sync.bind(null, courseInfo),
