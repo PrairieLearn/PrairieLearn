@@ -4,12 +4,10 @@ var Promise = require('bluebird');
 
 var models = require('../../models');
 var config = require('../../config');
-var logger = require('../../logger');
 var db = require('../../db');
 
 module.exports = {
     sync: function(courseInfo, testDB, callback) {
-        logger.infoOverride("Syncing test instances from Mongo to SQL DB");
         // find all the testInstances in mongo
         db.tiCollect.find({}, function(err, cursor) {
             if (err) return callback(err);

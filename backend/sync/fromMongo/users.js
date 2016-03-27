@@ -4,12 +4,10 @@ var Promise = require('bluebird');
 
 var models = require('../../models');
 var config = require('../../config');
-var logger = require('../../logger');
 var db = require('../../db');
 
 module.exports = {
     sync: function(courseInfo, uidToRole, callback) {
-        logger.infoOverride("Syncing users from Mongo to SQL DB");
         db.uCollect.find({}, {uid: 1, name: 1}, function(err, cursor) {
             if (err) return callback(err);
             cursor.toArray(function(err, objs) {

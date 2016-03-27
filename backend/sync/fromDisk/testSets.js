@@ -5,7 +5,6 @@ var Promise = require('bluebird');
 
 var models = require('../../models');
 var config = require('../../config');
-var logger = require('../../logger');
 var colors = require('../../colors');
 
 module.exports = {
@@ -14,10 +13,9 @@ module.exports = {
       This will need to be changed when we explicitly provide the test sets
       in the courseInfo.json file.
     */
-    sync: function(courseInfo, testDB, callback) {
-        logger.infoOverride("Syncing test sets from disk to SQL DB");
+    sync: function(courseInfo, testDB) {
         var testSetIDs = [];
-        Promise.try(function() {
+        return Promise.try(function() {
             return models.CourseInstance.findAll({where: {
                 courseId: courseInfo.courseId,
             }});
@@ -74,10 +72,6 @@ module.exports = {
                 courseId: courseInfo.courseId,
             };
             return models.sequelize.query(sql, {replacements: params});
-        }).then(function() {
-            callback(null);
-        }).catch(function(err) {
-            callback(err);
         });
     },
 };

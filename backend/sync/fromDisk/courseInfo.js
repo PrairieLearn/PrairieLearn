@@ -3,12 +3,10 @@ var Promise = require('bluebird');
 
 var models = require('../../models');
 var config = require('../../config');
-var logger = require('../../logger');
 
 module.exports = {
-    sync: function(courseInfo, callback) {
-        logger.infoOverride("Syncing courseInfo from disk to SQL DB");
-        Promise.try(function() {
+    sync: function(courseInfo) {
+        return Promise.try(function() {
             return models.Course.upsert({
                 shortName: courseInfo.name,
                 title: courseInfo.title,
@@ -47,10 +45,6 @@ module.exports = {
         }).then(function(courseInstance) {
             if (!courseInstance) throw Error("can't find courseInstance");
             courseInfo.courseInstanceId = courseInstance.id;
-        }).then(function() {
-            callback(null);
-        }).catch(function(err) {
-            callback(err);
         });
     },
 };

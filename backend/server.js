@@ -3411,19 +3411,32 @@ var syncTests = require('./sync/fromDisk/tests');
 
 var syncDiskToSQL = function(callback) {
     logger.infoOverride("Starting sync of disk to SQL");
-    async.series([
-        function(callback) {logger.infoOverride("Updating semesters in SQL DB"); callback(null);},
-        syncSemesters.sync.bind(null),
-        syncCourseInfo.sync.bind(null, courseInfo),
-        syncCourseStaff.sync.bind(null, courseInfo),
-        syncTopics.sync.bind(null, courseInfo, questionDB),
-        syncQuestions.sync.bind(null, courseInfo, questionDB),
-        syncTestSets.sync.bind(null, courseInfo, testDB),
-        syncTests.sync.bind(null, courseInfo, testDB),
-    ], function(err) {
-        if (err) return callback(err);
+    Promise.try(function() {
+        logger.infoOverride("Syncing semesters from disk to SQL DB");
+        return syncSemesters.sync();
+    }).then(function() {
+        logger.infoOverride("Syncing courseInfo from disk to SQL DB");
+        return syncCourseInfo.sync(courseInfo);
+    }).then(function() {
+        logger.infoOverride("Syncing course staff from disk to SQL DB");
+        return syncCourseStaff.sync(courseInfo);
+    }).then(function() {
+        logger.infoOverride("Syncing topics from disk to SQL DB");
+        return syncTopics.sync(courseInfo, questionDB);
+    }).then(function() {
+        logger.infoOverride("Syncing questions from disk to SQL DB");
+        return syncQuestions.sync(courseInfo, questionDB);
+    }).then(function() {
+        logger.infoOverride("Syncing test sets from disk to SQL DB");
+        return syncTestSets.sync(courseInfo, testDB);
+    }).then(function() {
+        logger.infoOverride("Syncing tests from disk to SQL DB");
+        return syncTests.sync(courseInfo, testDB);
+    }).then(function() {
         logger.infoOverride("Completed sync of disk to SQL");
         callback(null);
+    }).catch(function(err) {
+        callback(err);
     });
 };
 
@@ -3433,7 +3446,9 @@ var syncTestInstances = require('./sync/fromMongo/testInstances');
 var syncMongoToSQL = function(callback) {
     logger.infoOverride("Starting sync of Mongo to SQL");
     async.series([
+        function(callback) {logger.infoOverride("Syncing users from Mongo to SQL DB"); callback(null);},
         syncUsers.sync.bind(null, courseInfo, uidToRole),
+        function(callback) {logger.infoOverride("Syncing test instances from Mongo to SQL DB"); callback(null);},
         syncTestInstances.sync.bind(null, courseInfo, testDB),
     ], function(err) {
         if (err) return callback(err);

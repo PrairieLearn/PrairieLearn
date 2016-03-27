@@ -4,7 +4,6 @@ var Promise = require('bluebird');
 
 var models = require('../../models');
 var config = require('../../config');
-var logger = require('../../logger');
 
 module.exports = {
     sync: function() {

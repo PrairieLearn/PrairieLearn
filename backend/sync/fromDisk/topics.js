@@ -3,7 +3,6 @@ var Promise = require('bluebird');
 
 var models = require('../../models');
 var config = require('../../config');
-var logger = require('../../logger');
 var colors = require('../../colors');
 
 module.exports = {
@@ -13,9 +12,8 @@ module.exports = {
       the courseInfo.json file.
     */
     sync: function(courseInfo, questionDB, callback) {
-        logger.infoOverride("Syncing topics from disk to SQL DB");
         var topicIDs = [];
-        Promise.all(
+        return Promise.all(
             _.chain(questionDB)
                 .pluck('topic')
                 .uniq()
@@ -40,10 +38,6 @@ module.exports = {
                     $notIn: topicIDs,
                 },
             }});
-        }).then(function() {
-            callback(null);
-        }).catch(function(err) {
-            callback(err);
         });
     },
 };

@@ -6,7 +6,6 @@ var PrairieRole = requirejs('PrairieRole');
 
 var models = require('../../models');
 var config = require('../../config');
-var logger = require('../../logger');
 
 var upsertEnrollmentsToCourseSQL
     = ' INSERT INTO enrollments'
@@ -24,12 +23,11 @@ var upsertEnrollmentsToCourseSQL
     + ' ;';
 
 module.exports = {
-    sync: function(courseInfo, callback) {
-        logger.infoOverride("Syncing course staff from disk to SQL DB");
+    sync: function(courseInfo) {
         var superuserUIDs = [];
         var instructorUIDs = [];
         var taUIDs = [];
-        Promise.try(function() {
+        return Promise.try(function() {
             // load all Superusers from config.roles
             return Promise.all(_(config.roles).map(function(role, uid) {
                 if (role !== "Superuser") return Promise.resolve(null);
@@ -121,10 +119,6 @@ module.exports = {
                 courseInstanceId: courseInfo.courseInstanceId,
             };
             return models.sequelize.query(sql, {replacements: params});
-        }).then(function() {
-            callback(null);
-        }).catch(function(err) {
-            callback(err);
         });
     },
 };

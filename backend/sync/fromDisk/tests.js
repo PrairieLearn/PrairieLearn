@@ -4,14 +4,12 @@ var Promise = require('bluebird');
 
 var models = require('../../models');
 var config = require('../../config');
-var logger = require('../../logger');
 
 module.exports = {
     sync: function(courseInfo, testDB, callback) {
-        logger.infoOverride("Syncing tests from disk to SQL DB");
         var that = module.exports;
         var testIDs = [];
-        Promise.try(function() {
+        return Promise.try(function() {
             return Promise.all(
                 _(testDB).map(function(dbTest) {
                     var semester, courseInstance, testSet, test;
@@ -117,10 +115,6 @@ module.exports = {
                 courseId: courseInfo.courseId,
             };
             return models.sequelize.query(sql, {replacements: params});
-        }).then(function() {
-            callback(null);
-        }).catch(function(err) {
-            callback(err);
         });
     },
 

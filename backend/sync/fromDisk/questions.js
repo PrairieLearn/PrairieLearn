@@ -3,12 +3,10 @@ var Promise = require('bluebird');
 
 var models = require('../../models');
 var config = require('../../config');
-var logger = require('../../logger');
 
 module.exports = {
-    sync: function(courseInfo, questionDB, callback) {
-        logger.infoOverride("Syncing questions from disk to SQL DB");
-        Promise.all(
+    sync: function(courseInfo, questionDB) {
+        return Promise.all(
             _(questionDB).map(function(q) {
                 var topic, question;
                 return models.Topic.findOne({where: {
@@ -41,10 +39,6 @@ module.exports = {
                     $notIn: _(questionDB).pluck('qid'),
                 },
             }});
-        }).then(function() {
-            callback(null);
-        }).catch(function(err) {
-            callback(err);
         });
     },
 };
