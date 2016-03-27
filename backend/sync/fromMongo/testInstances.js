@@ -27,12 +27,12 @@ module.exports = {
                         user = findUser;
                         if (!user) throw Error("no user where uid = " + ti.uid);
                         return models.CourseInstance.findAll({where: {
-                            course_id: courseInfo.courseId,
+                            courseId: courseInfo.courseId,
                         }});
                     }).then(function(courseInstances) {
                         return models.Test.findOne({where: {
                             tid: ti.tid,
-                            course_instance_id: {
+                            courseInstanceId: {
                                 $in: _(courseInstances).pluck('id'),
                             }
                         }});
@@ -47,12 +47,12 @@ module.exports = {
                         return testInstance.update({
                             date: ti.date,
                             number: ti.number,
-                            user_id: user.id,
-                            test_id: test.id,
-                            auth_user_id: user.id,
+                            userId: user.id,
+                            testId: test.id,
+                            authUserId: user.id,
                         });
                     }).then(function() {
-                        if (!_(ti).has('gradingDates') || ti.gradingDates.length == 0) {
+                        if (!_(ti).has('gradingDates') || ti.gradingDates.length === 0) {
                             callback(null);
                         } else {
                             // record a test closing at the last grading date, if it exists
@@ -60,11 +60,11 @@ module.exports = {
                             // if there are no gradings then test closing is determined from last submission
                             Promise.try(function() {
                                 return models.TestState.findOrCreate({where: {
-                                    test_instance_id: testInstance.id,
+                                    testInstanceId: testInstance.id,
                                     open: false,
                                 }, defaults: {
                                     date: _(ti.gradingDates).last(),
-                                    auth_user_id: user.id,
+                                    authUserId: user.id,
                                 }});
                             }).then(function() {
                                 callback(null);

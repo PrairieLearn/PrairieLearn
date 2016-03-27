@@ -1,8 +1,8 @@
 module.exports = function(sequelize, DataTypes) {
     var Enrollment = sequelize.define("Enrollment", {
         role: DataTypes.ENUM('Student', 'TA', 'Instructor', 'Superuser'),
-        user_id: {type: DataTypes.INTEGER, unique: 'composite_index'},
-        course_instance_id: {type: DataTypes.INTEGER, unique: 'composite_index'},
+        userId: {type: DataTypes.INTEGER, field: 'user_id', unique: 'composite_index'},
+        courseInstanceId: {type: DataTypes.INTEGER, field: 'course_instance_id', unique: 'composite_index'},
     }, {
         tableName: 'enrollments',
         classMethods: {

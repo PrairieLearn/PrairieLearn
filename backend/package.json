@@ -37,8 +37,7 @@
         "winston": "2.2.x"
     },
     "devDependencies": {
-        "grunt": "0.4.x",
-        "grunt-contrib-jshint": "1.0.x",
-        "request": "2.69.x"
+        "jscs": "2.11.x",
+        "jshint": "2.9.x"
     }
 }

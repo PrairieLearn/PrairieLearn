@@ -19,7 +19,7 @@ module.exports = {
         var testSetIDs = [];
         Promise.try(function() {
             return models.CourseInstance.findAll({where: {
-                course_id: courseInfo.courseId,
+                courseId: courseInfo.courseId,
             }});
         }).then(function(courseInstances) {
             return Promise.all(
@@ -31,21 +31,21 @@ module.exports = {
                     .sortBy(_.identity)
                     .map(function(longName, i) {
                         var shortName = {
-                            'Exam': 'E',
+                            Exam: 'E',
                             'Practice Exam': 'PE',
-                            'Homework': 'HW',
-                            'Quiz': 'Q',
+                            Homework: 'HW',
+                            Quiz: 'Q',
                             'Practice Quiz': 'PQ',
-                            'Practice': 'P',
+                            Practice: 'P',
                             'All Questions': 'AQ',
-                            'Activity': 'A',
+                            Activity: 'A',
                             'Full Exams': 'FE',
                             'Machine Lab': 'ML',
                         }[longName] || longName;
                         return _(courseInstances).map(function(courseInstance) {
                             return models.TestSet.findOrCreate({where: {
                                 longName: longName,
-                                course_instance_id: courseInstance.id,
+                                courseInstanceId: courseInstance.id,
                             }}).spread(function(testSet, created) {
                                 testSetIDs.push(testSet.id);
                                 return testSet.update({
@@ -67,8 +67,8 @@ module.exports = {
                 + ' )'
                 + ' DELETE FROM test_sets'
                 + ' WHERE id IN (SELECT * FROM course_test_set_ids)'
-                + (testSetIDs.length == 0 ? '' : ' AND id NOT IN (:testSetIDs)')
-                + ' ;'
+                + (testSetIDs.length === 0 ? '' : ' AND id NOT IN (:testSetIDs)')
+                + ' ;';
             var params = {
                 testSetIDs: testSetIDs,
                 courseId: courseInfo.courseId,

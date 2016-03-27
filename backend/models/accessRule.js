@@ -6,6 +6,7 @@ module.exports = function(sequelize, DataTypes) {
         startDate: {type: DataTypes.DATE, field: 'start_date'},
         endDate: {type: DataTypes.DATE, field: 'end_date'},
         credit: DataTypes.INTEGER,
+        testId: {type: DataTypes.INTEGER, field: 'test_id'},
     }, {
         tableName: 'access_rules',
         classMethods: {

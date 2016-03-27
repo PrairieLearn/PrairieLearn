@@ -8,7 +8,7 @@ module.exports = function(req, res, next) {
             + ' FROM course_instances AS ci'
             + ' JOIN courses AS c ON (c.id = ci.course_id)'
             + ' WHERE ci.id = :courseInstanceId'
-            + ';'
+            + ';';
         var params = {
             courseInstanceId: req.params.courseInstanceId,
         };

@@ -13,7 +13,7 @@ router.get('/', function(req, res, next) {
             + ' JOIN enrollments AS e ON (e.user_id = u.id)'
             + ' WHERE e.course_instance_id = :courseInstanceId'
             + ' ORDER BY e.role DESC, u.uid'
-            + ';'
+            + ';';
         var params = {
             courseInstanceId: req.locals.courseInstanceId,
         };

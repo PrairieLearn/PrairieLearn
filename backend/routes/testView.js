@@ -56,7 +56,7 @@ router.get('/', function(req, res, next) {
             + ' FROM test_questions_list AS tql'
             + ' LEFT JOIN test_lists AS tl ON (tql.id = tl.id)'
             + ' ORDER BY (tql.zone_number, tql.zone_id, tql.number)'
-            + ';'
+            + ';';
         var params = {
             testId: req.locals.testId,
             courseInstanceId: req.locals.courseInstanceId,

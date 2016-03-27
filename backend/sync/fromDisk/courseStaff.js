@@ -14,9 +14,9 @@ var upsertEnrollmentsToCourseSQL
     + ' ('
     + '     SELECT nu.role,nu.user_id,ci.id,nu.created_at,nu.updated_at'
     + '     FROM course_instances AS ci,'
-    + '     (VALUES (:user_id,:role::enum_enrollments_role,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP))'
+    + '     (VALUES (:userId,:role::enum_enrollments_role,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP))'
     + '     AS nu (user_id,role,created_at,updated_at)'
-    + '     WHERE course_id = :course_id'
+    + '     WHERE course_id = :courseId'
     + ' )'
     + ' ON CONFLICT (user_id,course_instance_id)'
     + ' DO UPDATE SET (role,updated_at) = (EXCLUDED.role,EXCLUDED.updated_at)'
@@ -32,16 +32,16 @@ module.exports = {
         Promise.try(function() {
             // load all Superusers from config.roles
             return Promise.all(_(config.roles).map(function(role, uid) {
-                if (role != "Superuser") return Promise.resolve(null);
+                if (role !== "Superuser") return Promise.resolve(null);
                 superuserUIDs.push(uid);
                 // Superusers get enrolled in all courseInstances of the course
                 return models.User.findOrCreate({where: {
                     uid: uid,
                 }}).spread(function(user, created) {
                     var params = {
-                        user_id: user.id,
+                        userId: user.id,
                         role: 'Superuser',
-                        course_id: courseInfo.courseId,
+                        courseId: courseInfo.courseId,
                     };
                     return models.sequelize.query(upsertEnrollmentsToCourseSQL, {replacements: params});
                 });
@@ -49,7 +49,7 @@ module.exports = {
         }).then(function() {
             // load Instructors and TAs from courseInfo
             return Promise.all(_(courseInfo.userRoles || []).map(function(role, uid) {
-                if (role != "Instructor" && role != "TA") return Promise.resolve(null);
+                if (role !== "Instructor" && role != "TA") return Promise.resolve(null);
                 return models.User.findOrCreate({where: {
                     uid: uid,
                 }}).spread(function(user, created) {
@@ -57,17 +57,17 @@ module.exports = {
                         instructorUIDs.push(uid);
                         // Instructors get enrolled in all courseInstances of the course
                         var params = {
-                            user_id: user.id,
+                            userId: user.id,
                             role: 'Instructor',
-                            course_id: courseInfo.courseId,
+                            courseId: courseInfo.courseId,
                         };
                         return models.sequelize.query(upsertEnrollmentsToCourseSQL, {replacements: params});
                     } else if (role == "TA") {
                         taUIDs.push(uid);
                         // TAs only get enrolled in the current courseInstance
                         return models.Enrollment.upsert({
-                            user_id: user.id,
-                            course_instance_id: courseInfo.courseInstanceId,
+                            userId: user.id,
+                            courseInstanceId: courseInfo.courseInstanceId,
                             role: role,
                         });
                     } else {
@@ -78,7 +78,7 @@ module.exports = {
         }).then(function() {
             // reduce Superuser/Instructors to Students in the current course if they are not in the above list
             var siUIDs = _.union(superuserUIDs, instructorUIDs);
-            if (siUIDs.length == 0) return Promise.resolve(null);
+            if (siUIDs.length === 0) return Promise.resolve(null);
             var sql = 'UPDATE enrollments SET role = \'Student\''
                 + ' WHERE EXISTS('
                 + '     SELECT * FROM enrollments AS e'
@@ -99,7 +99,7 @@ module.exports = {
         }).then(function() {
             // reduce TAs to Students in the current course if they are not in the above list or not in the current courseInstance
             var uids = _.union(superuserUIDs, instructorUIDs);
-            if (uids.length == 0) return Promise.resolve(null);
+            if (uids.length === 0) return Promise.resolve(null);
             var sql = 'UPDATE enrollments SET role = \'Student\''
                 + ' WHERE EXISTS('
                 + '     SELECT * FROM enrollments AS e'

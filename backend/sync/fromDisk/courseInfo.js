@@ -26,10 +26,10 @@ module.exports = {
             return Promise.all(
                 _(semesters).map(function(semester) {
                     return models.CourseInstance.findOrCreate({where: {
-                        course_id: course.id,
-                        semester_id: semester.id,
+                        courseId: course.id,
+                        semesterId: semester.id,
                     }}).spread(function(courseInstance, created) {
-                        courseInfo.courseId = courseInstance.course_id;
+                        courseInfo.courseId = courseInstance.courseId;
                     });
                 })
             );
@@ -41,8 +41,8 @@ module.exports = {
             if (!semester) throw Error("can't find semester");
             courseInfo.semesterId = semester.id;
             return models.CourseInstance.findOne({where: {
-                course_id: courseInfo.courseId,
-                semester_id: courseInfo.semesterId,
+                courseId: courseInfo.courseId,
+                semesterId: courseInfo.semesterId,
             }});
         }).then(function(courseInstance) {
             if (!courseInstance) throw Error("can't find courseInstance");

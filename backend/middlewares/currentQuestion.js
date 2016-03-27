@@ -12,7 +12,7 @@ module.exports = function(req, res, next) {
             + ' WHERE q.id = :questionId'
             + ' AND q.deleted_at IS NULL'
             + ' AND ci.id = :courseInstanceId'
-            + ';'
+            + ';';
         var params = {
             questionId: req.params.questionId,
             courseInstanceId: req.params.courseInstanceId,

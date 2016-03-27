@@ -24,22 +24,22 @@ module.exports = {
                         semester = findSemester;
                         if (!semester) throw Error("can't find semester");
                         return models.CourseInstance.findOne({where: {
-                            course_id: courseInfo.courseId,
-                            semester_id: semester.id,
+                            courseId: courseInfo.courseId,
+                            semesterId: semester.id,
                         }});
                     }).then(function(findCourseInstance) {
                         courseInstance = findCourseInstance;
                         if (!courseInstance) throw Error("can't find couresInstance");
                         return models.TestSet.find({where: {
                             longName: dbTest.set,
-                            course_instance_id: courseInstance.id,
+                            courseInstanceId: courseInstance.id,
                         }});
                     }).then(function(findTestSet) {
                         testSet = findTestSet;
                         if (!testSet) throw Error("can't find testSet");
                         return models.Test.findOrCreate({where: {
                             tid: dbTest.tid,
-                            course_instance_id: courseInstance.id,
+                            courseInstanceId: courseInstance.id,
                         }, paranoid: false});
                     }).spread(function(newTest, created) {
                         test = newTest;
@@ -49,7 +49,7 @@ module.exports = {
                             number: dbTest.number,
                             title: dbTest.title,
                             config: dbTest.options,
-                            test_set_id: testSet.id,
+                            testSetId: testSet.id,
                         });
                     }).then(function() {
                         return test.restore(); // undo soft-delete just in case
@@ -77,7 +77,7 @@ module.exports = {
                         return that.syncTestQuestions(test, zoneList);
                     });
                 })
-            )
+            );
         }).then(function() {
             // soft-delete tests from the DB that aren't on disk and are in the current course
             var sql = 'WITH'
@@ -90,8 +90,8 @@ module.exports = {
                 + ' )'
                 + ' UPDATE tests SET deleted_at = CURRENT_TIMESTAMP'
                 + ' WHERE id IN (SELECT * FROM course_test_ids)'
-                + (testIDs.length == 0 ? '' : ' AND id NOT IN (:testIDs)')
-                + ' ;'
+                + (testIDs.length === 0 ? '' : ' AND id NOT IN (:testIDs)')
+                + ' ;';
             var params = {
                 testIDs: testIDs,
                 courseId: courseInfo.courseId,
@@ -110,8 +110,8 @@ module.exports = {
                 + ' )'
                 + ' UPDATE test_questions SET deleted_at = CURRENT_TIMESTAMP'
                 + ' WHERE id IN (SELECT * FROM course_test_question_ids)'
-                + (testIDs.length == 0 ? '' : ' AND test_id NOT IN (:testIDs)')
-                + ' ;'
+                + (testIDs.length === 0 ? '' : ' AND test_id NOT IN (:testIDs)')
+                + ' ;';
             var params = {
                 testIDs: testIDs,
                 courseId: courseInfo.courseId,
@@ -129,7 +129,7 @@ module.exports = {
         return Promise.all(
             _(dbTest.allowAccess || []).map(function(dbRule) {
                 return models.AccessRule.findOrCreate({where: {
-                    test_id: test.id,
+                    testId: test.id,
                     mode: dbRule.mode ? dbRule.mode : null,
                     role: dbRule.role ? dbRule.role : null,
                     uids: dbRule.uids ? dbRule.uids : null,
@@ -145,7 +145,7 @@ module.exports = {
             // delete rules from the DB that aren't on disk for this test
             var sql = 'DELETE FROM access_rules'
                 + ' WHERE test_id = :testId'
-                + (accessRuleIDs.length == 0 ? '' : ' AND id NOT IN (:accessRuleIDs)')
+                + (accessRuleIDs.length === 0 ? '' : ' AND id NOT IN (:accessRuleIDs)')
                 + ';';
             var params = {
                 testId: test.id,
@@ -160,10 +160,9 @@ module.exports = {
         return Promise.all(
             _(zoneList).each(function(dbZone, i) {
                 return models.Zone.findOrCreate({where: {
-                    test_id: test.id,
+                    testId: test.id,
                     number: i + 1,
-                }}).spread(function(newZone, created) {
-                    zone = newZone;
+                }}).spread(function(zone, created) {
                     zoneIDs.push(zone.id);
                     return zone.update({
                         title: dbZone.title,
@@ -173,7 +172,7 @@ module.exports = {
         ).then(function() {
             // delete zones from the DB that aren't on disk and are in the current test
             return models.Zone.destroy({where: {
-                test_id: test.id,
+                testId: test.id,
                 id: {
                     $notIn: zoneIDs,
                 },
@@ -220,8 +219,8 @@ module.exports = {
             var sql = 'UPDATE test_questions SET deleted_at = CURRENT_TIMESTAMP'
                 + ' WHERE (deleted_at IS NULL)'
                 + ' AND (test_id = :testId)'
-                + (testQuestionIDs.length == 0 ? '' : ' AND id NOT IN (:testQuestionIDs)')
-                + ';'
+                + (testQuestionIDs.length === 0 ? '' : ' AND id NOT IN (:testQuestionIDs)')
+                + ';';
             var params = {
                 testId: test.id,
                 testQuestionIDs: testQuestionIDs,
@@ -240,21 +239,21 @@ module.exports = {
             question = findQuestion;
             if (!question) throw Error("can't find question");
             return models.Zone.findOne({where: {
-                test_id: test.id,
+                testId: test.id,
                 number: iZone + 1,
             }});
         }).then(function(findZone) {
             zone = findZone;
             if (!zone) throw Error("can't find zone");
             return models.TestQuestion.findOrCreate({where: {
-                test_id: test.id,
-                question_id: question.id,
+                testId: test.id,
+                questionId: question.id,
             }});
         }).spread(function(newTestQuestion, created) {
             testQuestion = newTestQuestion;
             return testQuestion.update({
                 number: iTestQuestion,
-                zone_id: zone.id,
+                zoneId: zone.id,
                 maxPoints: maxPoints,
                 pointsList: pointsList,
                 initPoints: initPoints,

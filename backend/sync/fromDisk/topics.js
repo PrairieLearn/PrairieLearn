@@ -23,7 +23,7 @@ module.exports = {
                 .map(function(name, i) {
                     return models.Topic.findOrCreate({where: {
                         name: name,
-                        course_id: courseInfo.courseId,
+                        courseId: courseInfo.courseId,
                     }}).spread(function(topic, created) {
                         topicIDs.push(topic.id);
                         topic.update({
@@ -35,7 +35,7 @@ module.exports = {
         ).then(function() {
             // delete topics from the DB that aren't on disk
             return models.Topic.destroy({where: {
-                course_id: courseInfo.courseId,
+                courseId: courseInfo.courseId,
                 id: {
                     $notIn: topicIDs,
                 },

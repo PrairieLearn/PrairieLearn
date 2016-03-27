@@ -15,7 +15,7 @@ router.get('/', function(req, res, next) {
             + ' WHERE t.course_instance_id = :courseInstanceId'
             + ' AND t.deleted_at IS NULL'
             + ' ORDER BY (ts.long_name, ts.id, t.number)'
-            + ';'
+            + ';';
         var params = {
             courseInstanceId: req.locals.courseInstanceId,
         };

@@ -4,6 +4,8 @@ module.exports = function(sequelize, DataTypes) {
         type: DataTypes.ENUM('Calculation', 'MultipleChoice', 'Checkbox', 'File', 'MultipleTrueFalse'),
         title: DataTypes.STRING,
         config: DataTypes.JSONB,
+        courseId: {type: DataTypes.INTEGER, field: 'course_id'},
+        topicId: {type: DataTypes.INTEGER, field: 'topic_id'},
     }, {
         tableName: 'questions',
         classMethods: {

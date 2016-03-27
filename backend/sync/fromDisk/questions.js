@@ -13,7 +13,7 @@ module.exports = {
                 var topic, question;
                 return models.Topic.findOne({where: {
                     name: q.topic,
-                    course_id: courseInfo.courseId,
+                    courseId: courseInfo.courseId,
                 }}).then(function(findTopic) {
                     topic = findTopic;
                     if (!topic) throw Error("no topic with name = " + q.topic);
@@ -26,8 +26,8 @@ module.exports = {
                         type: q.type,
                         title: q.title,
                         config: q.options,
-                        topic_id: topic.id,
-                        course_id: courseInfo.courseId,
+                        topicId: topic.id,
+                        courseId: courseInfo.courseId,
                     });
                 }).then(function() {
                     question.restore(); // undo soft-delete just in case
@@ -36,7 +36,7 @@ module.exports = {
         ).then(function() {
             // soft-delete questions from the DB that aren't on disk
             return models.Question.destroy({where: {
-                course_id: courseInfo.courseId,
+                courseId: courseInfo.courseId,
                 qid: {
                     $notIn: _(questionDB).pluck('qid'),
                 },

@@ -15,7 +15,7 @@ router.get('/', function(req, res, next) {
             + ' WHERE tq.id = :testQuestionId'
             + ' AND tq.deleted_at IS NULL'
             + ' AND q.deleted_at IS NULL'
-            + ';'
+            + ';';
         var params = {
             testQuestionId: req.locals.testQuestionId,
         };

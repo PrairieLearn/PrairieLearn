@@ -47,7 +47,7 @@ router.get('/', function(req, res, next) {
             + ' WHERE tq.deleted_at IS NULL'
             + ' GROUP BY q.id,q.qid,q.type,q.title,q.topic_name,q.start_new_topic'
             + ' ORDER BY (q.topic_name, q.title)'
-            + ';'
+            + ';';
         var params = {
             courseInstanceId: req.locals.courseInstanceId,
         };

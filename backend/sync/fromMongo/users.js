@@ -10,7 +10,7 @@ var db = require('../../db');
 module.exports = {
     sync: function(courseInfo, uidToRole, callback) {
         logger.infoOverride("Syncing users from Mongo to SQL DB");
-        db.uCollect.find({}, {"uid": 1, "name": 1}, function(err, cursor) {
+        db.uCollect.find({}, {uid: 1, name: 1}, function(err, cursor) {
             if (err) return callback(err);
             cursor.toArray(function(err, objs) {
                 if (err) return callback(err);
@@ -29,8 +29,8 @@ module.exports = {
                         var role = uidToRole(u.uid);
                         if (role != "Student") return Promise.resolve(null);
                         return models.Enrollment.findOrCreate({where: {
-                            user_id: user.id,
-                            course_instance_id: courseInfo.courseInstanceId,
+                            userId: user.id,
+                            courseInstanceId: courseInfo.courseInstanceId,
                         }, defaults: {
                             role: "Student",
                         }});

@@ -4,6 +4,9 @@ module.exports = function(sequelize, DataTypes) {
         maxPoints: {type: DataTypes.FLOAT, field: 'max_points'},
         pointsList: {type: DataTypes.ARRAY(DataTypes.FLOAT), field: 'points_list'},
         initPoints: {type: DataTypes.FLOAT, field: 'init_points'},
+        testId: {type: DataTypes.INTEGER, field: 'test_id'},
+        zoneId: {type: DataTypes.INTEGER, field: 'zone_id'},
+        questionId: {type: DataTypes.INTEGER, field: 'question_id'},
     }, {
         tableName: 'test_questions',
         classMethods: {

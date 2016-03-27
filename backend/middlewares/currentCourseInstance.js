@@ -7,7 +7,7 @@ module.exports = function(req, res, next) {
         var sql = 'SELECT ci.*'
             + ' FROM course_instances AS ci'
             + ' WHERE ci.id = :courseInstanceId'
-            + ';'
+            + ';';
         var params = {
             courseInstanceId: req.params.courseInstanceId,
         };

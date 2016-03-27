@@ -10,7 +10,7 @@ module.exports = function(req, res, next) {
             + ' WHERE t.id = :testId'
             + ' AND t.deleted_at IS NULL'
             + ' AND ts.course_instance_id = :courseInstanceId'
-            + ';'
+            + ';';
         var params = {
             testId: req.params.testId,
             courseInstanceId: req.params.courseInstanceId,
@@ -29,7 +29,7 @@ module.exports = function(req, res, next) {
             + ' JOIN test_sets AS ts ON (ts.id = t.test_set_id)'
             + ' WHERE t.id = :testId'
             + ' AND ts.course_instance_id = :courseInstanceId'
-            + ';'
+            + ';';
         var params = {
             testId: req.params.testId,
             courseInstanceId: req.params.courseInstanceId,

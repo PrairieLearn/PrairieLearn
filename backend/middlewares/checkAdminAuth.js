@@ -9,14 +9,14 @@ module.exports = function(req, res, next) {
             + ' WHERE e.course_instance_id = :courseInstanceId'
             + ' AND u.uid = :uid'
             + ' AND e.role >= \'TA\''
-            + ';'
+            + ';';
         var params = {
             uid: req.authUID,
             courseInstanceId: req.params.courseInstanceId,
         };
         return models.sequelize.query(sql, {replacements: params});
     }).spread(function(results, info) {
-        if (results.length == 0) {
+        if (results.length === 0) {
             return res.status(403).end();
         }
         next();

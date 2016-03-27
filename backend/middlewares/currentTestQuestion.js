@@ -10,7 +10,7 @@ module.exports = function(req, res, next) {
             + ' WHERE tq.id = :testQuestionId'
             + ' AND tq.test_id = :testId'
             + ' AND tq.deleted_at IS NULL'
-            + ';'
+            + ';';
         var params = {
             testQuestionId: req.params.testQuestionId,
             testId: req.params.testId,

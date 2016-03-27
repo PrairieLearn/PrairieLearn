@@ -1,5 +1,20 @@
 
-.PHONY: text
+.PHONY: help lint jscs text
+
+help:
+	@echo "Please use one of:\nmake lint\nmake jscs\nmake text"
+
+######################################################################
+
+CHECK_FILES = models sync middlewares routes
+
+lint:
+	./node_modules/.bin/jshint --config jshintrc $(CHECK_FILES)
+
+jscs:
+	./node_modules/.bin/jscs --verbose --config jscsrc $(CHECK_FILES)
+
+######################################################################
 
 comma := ,
 CONFIG_COURSE_DIR := $(shell grep -s courseDir config.json)

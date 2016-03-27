@@ -10,7 +10,8 @@ module.exports = function(req, res, next) {
             + ' JOIN course_instances AS other_ci ON (other_ci.course_id = c.id)'
             + ' JOIN semesters AS s ON (s.id = other_ci.semester_id)'
             + ' WHERE ci.id = :courseInstanceId'
-            + ' ORDER BY s.start_date DESC;'
+            + ' ORDER BY s.start_date DESC'
+            + ';';
         var params = {
             courseInstanceId: req.params.courseInstanceId,
         };

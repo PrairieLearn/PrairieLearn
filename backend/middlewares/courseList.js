@@ -20,7 +20,7 @@ module.exports = function(req, res, next) {
             + ' JOIN semesters AS s ON (s.end_date = q.max_end_date)'
             + ' JOIN course_instances AS ci ON (ci.semester_id = s.id)'
             + ' ORDER BY q.short_name'
-            + ';'
+            + ';';
         var params = {
             uid: req.authUID,
         };

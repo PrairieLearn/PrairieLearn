@@ -4,6 +4,7 @@ module.exports = function(sequelize, DataTypes) {
         longName: {type: DataTypes.STRING, field: 'long_name'},
         color: DataTypes.STRING,
         number: DataTypes.INTEGER,
+        courseInstanceId: {type: DataTypes.INTEGER, field: 'course_instance_id'},
     }, {
         tableName: 'test_sets',
         classMethods: {
