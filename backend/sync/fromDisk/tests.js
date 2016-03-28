@@ -70,10 +70,8 @@ module.exports = {
                             // Basic
                             zoneList = [{questions: dbTest.options.qids}];
                         }
-                        console.log("Start syncZones()", "test.id", test.id);
                         return that.syncZones(test, zoneList);
                     }).then(function() {
-                        console.log("Done syncZones()", "test.id", test.id);
                         return that.syncTestQuestions(test, zoneList);
                     });
                 })
@@ -154,13 +152,11 @@ module.exports = {
     syncZones: function(test, zoneList) {
         var zoneIDs = [];
         return Promise.all(
-            _(zoneList).each(function(dbZone, i) {
-                console.log("syncZones(): Start zone findOrCreate()", "test.id", test.id, "number", i + 1);
+            _(zoneList).map(function(dbZone, i) {
                 return models.Zone.findOrCreate({where: {
                     testId: test.id,
                     number: i + 1,
                 }}).spread(function(zone, created) {
-                    console.log("syncZones(): Done zone findOrCreate()", "test.id", test.id, "number", i + 1, "zone.id", zone.id);
                     zoneIDs.push(zone.id);
                     return zone.update({
                         title: dbZone.title,
@@ -236,14 +232,12 @@ module.exports = {
         }).then(function(findQuestion) {
             question = findQuestion;
             if (!question) throw Error("can't find question");
-            console.log("syncTestQuestion(): Start zone findOne()", "qid", qid, "test.id", test.id, "number", iZone + 1);
             return models.Zone.findOne({where: {
                 testId: test.id,
                 number: iZone + 1,
             }});
         }).then(function(findZone) {
             zone = findZone;
-            console.log("syncTestQuestion(): Done zone findOne()", "qid", qid, "test.id", test.id, "number", iZone + 1, "zone.id", zone.id);
             if (!zone) throw Error("can't find zone");
             return models.TestQuestion.findOrCreate({where: {
                 testId: test.id,
