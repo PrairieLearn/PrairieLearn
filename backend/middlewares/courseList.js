@@ -12,13 +12,13 @@ module.exports = function(req, res, next) {
             + '     JOIN courses AS c ON (ci.course_id = c.id)'
             + '     JOIN semesters AS s ON (ci.semester_id = s.id)'
             + '     WHERE uid = :uid'
-            + '     AND role >= \'Instructor\''
+            + '     AND role >= \'TA\''
             + '     GROUP BY c.id'
             + ' )'
             + ' SELECT q.short_name,ci.id AS course_instance_id'
             + ' FROM q'
             + ' JOIN semesters AS s ON (s.end_date = q.max_end_date)'
-            + ' JOIN course_instances AS ci ON (ci.semester_id = s.id)'
+            + ' JOIN course_instances AS ci ON (ci.semester_id = s.id AND ci.course_id = q.course_id)'
             + ' ORDER BY q.short_name'
             + ';';
         var params = {

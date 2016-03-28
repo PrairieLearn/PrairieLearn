@@ -1,11 +1,40 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= title %></title>
-    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <%- include('../partials/head'); %>
   </head>
   <body>
-    <h1><%= title %></h1>
-    <p>Welcome to <%= title %></p>
+    <%- include('../partials/navbar', {navPage: 'tests'}); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Courses</h3>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <thead>
+            <tr>
+              <th>Course</th>
+              <th>Semesters</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% results.forEach(function(result) { %>
+            <tr>
+              <td>
+                <a href="/admin/<%= result.course_instance_id %>"><%= result.short_name %>: <%= result.title %>
+              </td>
+              <td>
+                <% result.other_semesters.forEach(function(semester, i) { %>
+                <% if (i > 0) { %>,<% } %>
+                <a href="/admin/<%= semester.course_instance_id %>"><%= semester.long_name %>
+                <% }); %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
   </body>
 </html>

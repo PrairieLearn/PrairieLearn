@@ -384,9 +384,9 @@ app.use(function(req, res, next) {
         return;
     }
     
-    // bypass auth for local /pl/ serving
+    // bypass auth for local /admin/ serving
     if (config.authType === 'none'
-        && (/^\/pl\//.test(req.path)
+        && (/^\/admin/.test(req.path)
             || /^\/images\//.test(req.path)
             || /^\/javascripts\//.test(req.path)
             || /^\/stylesheets\//.test(req.path))) {
@@ -650,26 +650,27 @@ app.use(express.static(path.join(__dirname, 'public')));
   2. Check that the implied nesting is true (e.g., that the test is inside the course).
   3. Store URL parameters and other information in the req.locals object for templates.
 */
-app.use(function(req, res, next) {req.locals = {}; next();});
-app.use('/pl/:courseInstanceId/admin', require('./middlewares/checkAdminAuth'));
-app.use('/pl/:courseInstanceId/admin', require('./middlewares/currentCourseInstance'));
-app.use('/pl/:courseInstanceId/admin', require('./middlewares/currentCourse'));
-app.use('/pl/:courseInstanceId/admin', require('./middlewares/currentSemester'));
-app.use('/pl/:courseInstanceId/admin', require('./middlewares/setURLPrefix'));
-app.use('/pl/:courseInstanceId/admin', require('./middlewares/courseList'));
-app.use('/pl/:courseInstanceId/admin', require('./middlewares/semesterList'));
-app.use('/pl/:courseInstanceId/admin/tests/:testId', require('./middlewares/currentTest'));
-app.use('/pl/:courseInstanceId/admin/tests/:testId/testQuestion/:testQuestionId', require('./middlewares/currentTestQuestion'));
-app.use('/pl/:courseInstanceId/admin/questions/:questionId', require('./middlewares/currentQuestion'));
+app.use('/admin/', function(req, res, next) {req.locals = {}; next();});
+app.use('/admin/:courseInstanceId', require('./middlewares/checkAdminAuth'));
+app.use('/admin/:courseInstanceId', require('./middlewares/currentCourseInstance'));
+app.use('/admin/:courseInstanceId', require('./middlewares/currentCourse'));
+app.use('/admin/:courseInstanceId', require('./middlewares/currentSemester'));
+app.use('/admin/:courseInstanceId', require('./middlewares/setURLPrefix'));
+app.use('/admin/:courseInstanceId', require('./middlewares/courseList'));
+app.use('/admin/:courseInstanceId', require('./middlewares/semesterList'));
+app.use('/admin/:courseInstanceId/tests/:testId', require('./middlewares/currentTest'));
+app.use('/admin/:courseInstanceId/tests/:testId/testQuestion/:testQuestionId', require('./middlewares/currentTestQuestion'));
+app.use('/admin/:courseInstanceId/questions/:questionId', require('./middlewares/currentQuestion'));
 
 // Actual route handlers.
-app.use('/pl/:courseInstanceId/admin', require('./routes/index'));
-app.use('/pl/:courseInstanceId/admin/tests', require('./routes/tests'));
-app.use('/pl/:courseInstanceId/admin/tests/:testId', require('./routes/testView'));
-app.use('/pl/:courseInstanceId/admin/tests/:testId/testQuestion/:testQuestionId', require('./routes/testQuestionView'));
-app.use('/pl/:courseInstanceId/admin/users', require('./routes/users'));
-app.use('/pl/:courseInstanceId/admin/questions', require('./routes/questions'));
-app.use('/pl/:courseInstanceId/admin/questions/:questionId', require('./routes/questionView'));
+app.use('/admin', require('./routes/index'));
+app.use('/admin/:courseInstanceId', require('./routes/tests'));
+app.use('/admin/:courseInstanceId/tests', require('./routes/tests'));
+app.use('/admin/:courseInstanceId/tests/:testId', require('./routes/testView'));
+app.use('/admin/:courseInstanceId/tests/:testId/testQuestion/:testQuestionId', require('./routes/testQuestionView'));
+app.use('/admin/:courseInstanceId/users', require('./routes/users'));
+app.use('/admin/:courseInstanceId/questions', require('./routes/questions'));
+app.use('/admin/:courseInstanceId/questions/:questionId', require('./routes/questionView'));
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
