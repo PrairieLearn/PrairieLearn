@@ -9,13 +9,13 @@ var logger = require('./logger');
 var requireFrontend = require("./require-frontend");
 var PrairieRole = requireFrontend("PrairieRole");
 
-module.exports = {
+courseDB = {
     courseInfo: {},
     questionDB: {},
     testDB: {},
 };
 
-module.exports.getCourseOriginURL = function(callback) {
+courseDB.getCourseOriginURL = function(callback) {
     if (!config.gitCourseBranch) return callback(null, null);
     var cmd = 'git';
     var options = ['remote', 'show', '-n', 'origin'];
@@ -39,8 +39,7 @@ module.exports.getCourseOriginURL = function(callback) {
     });
 };
 
-module.exports.loadCourseInfo = function(courseInfo, callback) {
-    var that = this;
+courseDB.loadCourseInfo = function(courseInfo, callback) {
     var courseInfoFilename = path.join(config.courseDir, "courseInfo.json");
     jsonLoad.readInfoJSON(courseInfoFilename, "schemas/courseInfo.json", undefined, undefined, function(err, info) {
         if (err) return callback(err);
@@ -62,7 +61,7 @@ module.exports.loadCourseInfo = function(courseInfo, callback) {
         courseInfo.userRoles = info.userRoles;
         courseInfo.gitCourseBranch = config.gitCourseBranch;
         courseInfo.timezone = config.timezone;
-        that.getCourseOriginURL(function(err, originURL) {
+        courseDB.getCourseOriginURL(function(err, originURL) {
             courseInfo.remoteFetchURL = originURL;
             return callback(null);
         });
@@ -73,8 +72,7 @@ var isValidDate = function(dateString) {
     return moment(dateString, "YYYY-MM-DDTHH:mm:ss", true).isValid();
 }
 
-module.exports.checkInfoValid = function(idName, info, infoFile) {
-    var that = this;
+courseDB.checkInfoValid = function(idName, info, infoFile) {
     var retVal = true; // true means valid
 
     if (idName == "tid" && info.options && info.options.availDate) {
@@ -83,7 +81,7 @@ module.exports.checkInfoValid = function(idName, info, infoFile) {
 
     // add semesters to tests without one
     if (idName == "tid" && !_(info).has("semester")) {
-        if (that.courseInfo.name == "TAM 212") {
+        if (courseDB.courseInfo.name == "TAM 212") {
             if (/^sp16_/.test(info.tid)) {
                 info.semester = "Sp16";
             } else if (/^fa15_/.test(info.tid)) {
@@ -155,8 +153,7 @@ module.exports.checkInfoValid = function(idName, info, infoFile) {
     return retVal;
 };
 
-module.exports.loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, loadCallback) {
-    var that = this;
+courseDB.loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, loadCallback) {
     fs.readdir(parentDir, function(err, files) {
         if (err) {
             logger.error("unable to read info directory: " + parentDir, err);
@@ -180,7 +177,7 @@ module.exports.loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaF
                         return;
                     }
                     info[idName] = dir;
-                    if (!that.checkInfoValid(idName, info, infoFile)) {
+                    if (!courseDB.checkInfoValid(idName, info, infoFile)) {
                         callback(null);
                         return;
                     }
@@ -205,25 +202,26 @@ module.exports.loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaF
     });
 };
 
-module.exports.load = function(callback) {
-    var that = this;
+courseDB.load = function(callback) {
     async.series([
         function(callback) {
-            that.loadCourseInfo(that.courseInfo, callback);
+            courseDB.loadCourseInfo(courseDB.courseInfo, callback);
         },
         function(callback) {
-            _(that.questionDB).mapObject(function(val, key) {delete that.questionDB[key];});
+            _(courseDB.questionDB).mapObject(function(val, key) {delete courseDB.questionDB[key];});
             var defaultQuestionInfo = {
                 "type": "Calculation",
                 "clientFiles": ["client.js", "question.html", "answer.html"],
             };
-            that.loadInfoDB(that.questionDB, "qid", config.questionsDir, defaultQuestionInfo, "schemas/questionInfo.json", "schemas/questionOptions", ".json", callback);
+            courseDB.loadInfoDB(courseDB.questionDB, "qid", config.questionsDir, defaultQuestionInfo, "schemas/questionInfo.json", "schemas/questionOptions", ".json", callback);
         },
         function(callback) {
-            _(that.testDB).mapObject(function(val, key) {delete that.testDB[key];});
+            _(courseDB.testDB).mapObject(function(val, key) {delete courseDB.testDB[key];});
             var defaultTestInfo = {
             };
-            that.loadInfoDB(that.testDB, "tid", config.testsDir, defaultTestInfo, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
+            courseDB.loadInfoDB(courseDB.testDB, "tid", config.testsDir, defaultTestInfo, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
         },
     ], callback);
 };
+
+module.exports = courseDB;
