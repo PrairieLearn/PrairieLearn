@@ -92,7 +92,7 @@ courseDB.checkInfoValid = function(idName, info, infoFile) {
                 info.semester = "Sp15";
             }
         } else {
-            info.semester = config.semester;
+            info.semester = config.defaultSemester;
         }
         logger.warn(infoFile + ': "semester" is missing, setting to "' + info.semester + '".');
     }

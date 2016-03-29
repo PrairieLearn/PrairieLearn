@@ -33,7 +33,7 @@ module.exports = {
             );
         }).then(function() {
             return models.Semester.findOne({where: {
-                shortName: config.semester,
+                shortName: config.defaultSemester,
             }});
         }).then(function(semester) {
             if (!semester) throw Error("can't find semester");
