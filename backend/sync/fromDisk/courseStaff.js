@@ -1,8 +1,8 @@
 var _ = require('underscore');
 var async = require('async');
 var Promise = require('bluebird');
-var requirejs = require('requirejs');
-var PrairieRole = requirejs('PrairieRole');
+var requireFrontend = require("../../require-frontend");
+var PrairieRole = requireFrontend('PrairieRole');
 
 var models = require('../../models');
 var config = require('../../config');

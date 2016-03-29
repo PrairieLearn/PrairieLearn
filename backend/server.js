@@ -3413,6 +3413,7 @@ var syncMongoToSQL = function(callback) {
 
 async.series([
     db.init,
+    function(callback) {models.init(); callback(null);},
     sqldb.init,
     loadAndInitCourseData,
     // FIXME: for dev we start server before sync tasks,

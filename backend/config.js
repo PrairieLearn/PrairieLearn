@@ -56,7 +56,7 @@ var readJSONSyncOrDie = function(jsonFilename, schemaFilename) {
     return json;
 };
 
-var computeRelativePaths = function() {
+config.computeRelativePaths = function() {
     config.questionsDir = path.join(config.courseDir, "questions");
     config.testsDir = path.join(config.courseDir, "tests");
     config.clientCodeDir = path.join(config.courseDir, "clientCode");
@@ -69,7 +69,7 @@ var computeRelativePaths = function() {
 };
 
 // compute default paths, can be overridden later by loadConfig()
-computeRelativePaths();
+config.computeRelativePaths();
 
 config.loadConfig = function(file) {
     if (fs.existsSync(file)) {
@@ -79,7 +79,7 @@ config.loadConfig = function(file) {
         logger.warn(file + " not found, using default configuration");
     }
 
-    computeRelativePaths();
+    config.computeRelativePaths();
 
     _(config.superusers).forEach(function(value, key) {
         if (value) {
