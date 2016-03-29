@@ -1,8 +1,10 @@
+var _ = require('underscore');
 var Promise = require('bluebird');
 require('should');
 var syncTestHelper = require('./syncTestHelper');
 var models = require('../../models');
 var courseDB = require('../../courseDB');
+var config = require('../../config');
 
 describe('fromDisk/courseInfo', function() {
 
@@ -26,27 +28,25 @@ describe('fromDisk/courseInfo', function() {
             models.sequelize.query(sql).should.finally.have.property('0').with.length(1);
         });
 
-        it('should have exactly 3 course instances for TPL 101', function() {
+        it('should have exactly the correct number of course instances for TPL 101', function() {
             var sql = 'SELECT *'
                 + ' FROM course_instances AS ci'
                 + ' JOIN courses AS c ON (c.id = ci.course_id)'
                 + ' WHERE short_name = \'TPL 101\''
                 + ' ;';
-            models.sequelize.query(sql).should.finally.have.property('0').with.length(3);
+            models.sequelize.query(sql).should.finally.have.property('0')
+                .with.length(config.semesters.length);
         });
 
-        it('courseInstances should correspond to semesters: Sp15, Fa15, Sp16', function() {
+        it('courseInstances should correspond to config semesters', function() {
             var sql = 'SELECT s.short_name'
                 + ' FROM course_instances AS ci'
                 + ' JOIN courses AS c ON (c.id = ci.course_id)'
                 + ' JOIN semesters AS s ON (s.id = ci.semester_id)'
                 + ' WHERE c.short_name = \'TPL 101\''
                 + ' ;';
-            models.sequelize.query(sql).should.finally.have.property('0').which.containDeep([
-                {short_name: 'Sp15'}, // jscs:ignore
-                {short_name: 'Fa15'}, // jscs:ignore
-                {short_name: 'Sp16'}, // jscs:ignore
-            ]);
+            var semesterList = _(config.semesters).map(function(s) {return {short_name: s.shortName};}); // jscs:ignore
+            models.sequelize.query(sql).should.finally.have.property('0').which.containDeep(semesterList);
         });
     });
 });

@@ -3,13 +3,13 @@ var fs = require('fs');
 var path = require('path');
 var jju = require('jju');
 var validator = require('is-my-json-valid')
+var moment = require('moment-timezone');
 var logger = require('./logger');
 
 var config = module.exports;
 
 // defaults - can be overridden in config.json
 config.timezone = 'America/Chicago';
-config.semester = 'Sp16';
 config.dbAddress = 'mongodb://localhost:27017/data';
 config.sdbAddress = 'postgres://localhost/database';
 config.logFilename = 'server.log';
@@ -25,6 +25,27 @@ config.secretKey = "THIS_IS_THE_SECRET_KEY"; // override in config.json
 config.skipUIDs = {};
 config.superusers = {};
 config.roles = {"user1@illinois.edu": "Superuser"};
+config.defaultSemester = 'Sp16';
+config.semesters = [
+    {
+        shortName: 'Sp15',
+        longName: 'Spring 2015',
+        startDate: moment.tz('2015-01-20T00:00:01', config.timezone).format(),
+        endDate: moment.tz('2015-05-15T23:59:59', config.timezone).format(),
+    },
+    {
+        shortName: 'Fa15',
+        longName: 'Fall 2015',
+        startDate: moment.tz('2015-08-24T00:00:01', config.timezone).format(),
+        endDate: moment.tz('2015-12-18T23:59:59', config.timezone).format(),
+    },
+    {
+        shortName: 'Sp16',
+        longName: 'Spring 2016',
+        startDate: moment.tz('2016-01-19T00:00:01', config.timezone).format(),
+        endDate: moment.tz('2016-05-13T23:59:59', config.timezone).format(),
+    },
+];
 
 var readJSONSyncOrDie = function(jsonFilename, schemaFilename) {
     try {
