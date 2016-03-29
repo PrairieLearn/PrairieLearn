@@ -3,6 +3,7 @@ var config = require("./config");
 var db = require("./db");
 var sqldb = require("./sqldb");
 var models = require("./models");
+var courseDB = require("./courseDB");
 
 var _ = require("underscore");
 var fs = require("fs");
@@ -642,7 +643,7 @@ app.set('view engine', 'ejs');
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
 // static serving of all subdirectories of "./public"
-app.use(express.static(path.join(__dirname, 'public')));
+//app.use(express.static(path.join(__dirname, 'public')));
 
 /*
   Middleware handlers. For each route we do several things:
@@ -3417,22 +3418,22 @@ var syncDiskToSQL = function(callback) {
         return syncSemesters.sync();
     }).then(function() {
         logger.infoOverride("Syncing courseInfo from disk to SQL DB");
-        return syncCourseInfo.sync(courseInfo);
+        return syncCourseInfo.sync(courseDB.courseInfo);
     }).then(function() {
         logger.infoOverride("Syncing course staff from disk to SQL DB");
-        return syncCourseStaff.sync(courseInfo);
+        return syncCourseStaff.sync(courseDB.courseInfo);
     }).then(function() {
         logger.infoOverride("Syncing topics from disk to SQL DB");
-        return syncTopics.sync(courseInfo, questionDB);
+        return syncTopics.sync(courseDB.courseInfo, courseDB.questionDB);
     }).then(function() {
         logger.infoOverride("Syncing questions from disk to SQL DB");
-        return syncQuestions.sync(courseInfo, questionDB);
+        return syncQuestions.sync(courseDB.courseInfo, courseDB.questionDB);
     }).then(function() {
         logger.infoOverride("Syncing test sets from disk to SQL DB");
-        return syncTestSets.sync(courseInfo, testDB);
+        return syncTestSets.sync(courseDB.courseInfo, courseDB.testDB);
     }).then(function() {
         logger.infoOverride("Syncing tests from disk to SQL DB");
-        return syncTests.sync(courseInfo, testDB);
+        return syncTests.sync(courseDB.courseInfo, courseDB.testDB);
     }).then(function() {
         logger.infoOverride("Completed sync of disk to SQL");
         callback(null);
@@ -3448,65 +3449,9 @@ var syncMongoToSQL = function(callback) {
     logger.infoOverride("Starting sync of Mongo to SQL");
     async.series([
         function(callback) {logger.infoOverride("Syncing users from Mongo to SQL DB"); callback(null);},
-        syncUsers.sync.bind(null, courseInfo, uidToRole),
+        syncUsers.sync.bind(null, courseDB.courseInfo, uidToRole),
         function(callback) {logger.infoOverride("Syncing test instances from Mongo to SQL DB"); callback(null);},
-        syncTestInstances.sync.bind(null, courseInfo, testDB),
-    ], function(err) {
-        if (err) return callback(err);
-        logger.infoOverride("Completed sync of Mongo to SQL");
-        callback(null);
-    });
-};
-
-var syncSemesters = require('./sync/fromDisk/semesters');
-var syncCourseInfo = require('./sync/fromDisk/courseInfo');
-var syncCourseStaff = require('./sync/fromDisk/courseStaff');
-var syncTopics = require('./sync/fromDisk/topics');
-var syncQuestions = require('./sync/fromDisk/questions');
-var syncTestSets = require('./sync/fromDisk/testSets');
-var syncTests = require('./sync/fromDisk/tests');
-
-var syncDiskToSQL = function(callback) {
-    logger.infoOverride("Starting sync of disk to SQL");
-    Promise.try(function() {
-        logger.infoOverride("Syncing semesters from disk to SQL DB");
-        return syncSemesters.sync();
-    }).then(function() {
-        logger.infoOverride("Syncing courseInfo from disk to SQL DB");
-        return syncCourseInfo.sync(courseInfo);
-    }).then(function() {
-        logger.infoOverride("Syncing course staff from disk to SQL DB");
-        return syncCourseStaff.sync(courseInfo);
-    }).then(function() {
-        logger.infoOverride("Syncing topics from disk to SQL DB");
-        return syncTopics.sync(courseInfo, questionDB);
-    }).then(function() {
-        logger.infoOverride("Syncing questions from disk to SQL DB");
-        return syncQuestions.sync(courseInfo, questionDB);
-    }).then(function() {
-        logger.infoOverride("Syncing test sets from disk to SQL DB");
-        return syncTestSets.sync(courseInfo, testDB);
-    }).then(function() {
-        logger.infoOverride("Syncing tests from disk to SQL DB");
-        return syncTests.sync(courseInfo, testDB);
-    }).then(function() {
-        logger.infoOverride("Completed sync of disk to SQL");
-        callback(null);
-    }).catch(function(err) {
-        callback(err);
-    });
-};
-
-var syncUsers = require('./sync/fromMongo/users');
-var syncTestInstances = require('./sync/fromMongo/testInstances');
-
-var syncMongoToSQL = function(callback) {
-    logger.infoOverride("Starting sync of Mongo to SQL");
-    async.series([
-        function(callback) {logger.infoOverride("Syncing users from Mongo to SQL DB"); callback(null);},
-        syncUsers.sync.bind(null, courseInfo, uidToRole),
-        function(callback) {logger.infoOverride("Syncing test instances from Mongo to SQL DB"); callback(null);},
-        syncTestInstances.sync.bind(null, courseInfo, testDB),
+        syncTestInstances.sync.bind(null, courseDB.courseInfo, courseDB.testDB),
     ], function(err) {
         if (err) return callback(err);
         logger.infoOverride("Completed sync of Mongo to SQL");
