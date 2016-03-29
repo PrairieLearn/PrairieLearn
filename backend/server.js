@@ -620,7 +620,7 @@ if (config.authType === 'eppn') {
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
-// START OF express-generator
+// START OF express-generator section 1
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -629,7 +629,7 @@ app.set('view engine', 'ejs');
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
 // static serving of all subdirectories of "./public"
-//app.use(express.static(path.join(__dirname, 'public')));
+app.use(express.static(path.join(__dirname, 'public')));
 
 /*
   Middleware handlers. For each route we do several things:
@@ -659,38 +659,7 @@ app.use('/admin/:courseInstanceId/users', require('./routes/users'));
 app.use('/admin/:courseInstanceId/questions', require('./routes/questions'));
 app.use('/admin/:courseInstanceId/questions/:questionId', require('./routes/questionView'));
 
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  var err = new Error('Not Found');
-  err.status = 404;
-  next(err);
-});
-
-// error handlers
-
-// development error handler
-// will print stacktrace
-if (app.get('env') === 'development') {
-  app.use(function(err, req, res, next) {
-    res.status(err.status || 500);
-    res.render('pages/error', {
-      message: err.message,
-      error: err
-    });
-  });
-}
-
-// production error handler
-// no stacktraces leaked to user
-app.use(function(err, req, res, next) {
-  res.status(err.status || 500);
-  res.render('pages/error', {
-    message: err.message,
-    error: {}
-  });
-});
-
-// END OF express-generator
+// END OF express-generator section 1
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////////////////
@@ -3062,6 +3031,47 @@ if (config.localFileserver) {
         res.sendFile(filename, {root: path.join(config.frontendDir, "MathJax")});
     });
 }
+
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+// START OF express-generator section 2
+
+// catch 404 and forward to error handler
+app.use(function(req, res, next) {
+  var err = new Error('Not Found');
+  err.status = 404;
+  next(err);
+});
+
+// error handlers
+
+// development error handler
+// will print stacktrace
+if (app.get('env') === 'development') {
+  app.use(function(err, req, res, next) {
+    res.status(err.status || 500);
+    res.render('pages/error', {
+      message: err.message,
+      error: err
+    });
+  });
+}
+
+// production error handler
+// no stacktraces leaked to user
+app.use(function(err, req, res, next) {
+  res.status(err.status || 500);
+  res.render('pages/error', {
+    message: err.message,
+    error: {}
+  });
+});
+
+// END OF express-generator section 2
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
 
 var submissionsPerHour = function() {
     if (!db.sCollect) {
