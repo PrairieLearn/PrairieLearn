@@ -3,6 +3,7 @@ var config = require("./config");
 var db = require("./db");
 var sqldb = require("./sqldb");
 var models = require("./models");
+var courseDB = require("./courseDB");
 
 var _ = require("underscore");
 var fs = require("fs");
@@ -10,77 +11,9 @@ var path = require("path");
 var favicon = require('serve-favicon');
 var async = require("async");
 var moment = require("moment-timezone");
-var jju = require('jju');
-var validator = require('is-my-json-valid')
 var Promise = require('bluebird');
 
 logger.infoOverride('PrairieLearn server start');
-
-var readJSON = function(jsonFilename, callback) {
-    var json;
-    fs.readFile(jsonFilename, {encoding: 'utf8'}, function(err, data) {
-        if (err) {
-            return callback("Error reading JSON file: " + jsonFilename + ": " + err);
-        }
-        try {
-            json = jju.parse(data, {mode: 'json'});
-        } catch (e) {
-            return callback("Error in JSON file format: " + jsonFilename + " (line " + e.row + ", column " + e.column + ")\n"
-                            + e.name + ": " + e.message);
-        }
-        callback(null, json);
-    });
-};
-
-var validateJSON = function(json, schema, callback) {
-    var configValidate;
-    try {
-        configValidate = validator(schema, {verbose: true, greedy: true});
-    } catch (e) {
-        return callback("Error loading JSON schema file: " + schemaFilename + ": " + e);
-    }
-    configValidate(json);
-    if (configValidate.errors) {
-        return callback("Error in JSON file specification: "
-                        + _(configValidate.errors).map(function(e) {
-                            return 'Error in field "' + e.field + '": ' + e.message
-                                + (_(e).has('value') ? (' (value: ' + jju.stringify(e.value) + ')') : '');
-                        }).join('; '));
-    }
-    callback(null, json);
-};
-
-var readInfoJSON = function(jsonFilename, schemaFilename, optionsSchemaPrefix, optionsSchemaSuffix, callback) {
-    readJSON(jsonFilename, function(err, json) {
-        if (err) return callback(err);
-        if (schemaFilename) {
-            readJSON(schemaFilename, function(err, schema) {
-                if (err) return callback(err);
-                validateJSON(json, schema, function(err, json) {
-                    if (err) return callback("Error validating file '" + jsonFilename + "' against '" + schemaFilename + "': " + err);
-                    if (optionsSchemaPrefix && optionsSchemaSuffix && _(json).has('type') && _(json).has('options')) {
-                        var optionsSchemaFilename = optionsSchemaPrefix + json.type + optionsSchemaSuffix;
-                        readJSON(optionsSchemaFilename, function(err, optionsSchema) {
-                            if (err) return callback(err);
-                            validateJSON(json.options, optionsSchema, function(err, optionsJSON) {
-                                if (err) return callback("Error validating 'options' field from '" + jsonFilename + "' against '" + optionsSchemaFilename + "': " + err);
-                                callback(null, json);
-                            });
-                        });
-                    } else {
-                        return callback(null, json);
-                    }
-                });
-            });
-        } else {
-            return callback(null, json);
-        }
-    });
-};
-
-var isValidDate = function(dateString) {
-    return moment(dateString, "YYYY-MM-DDTHH:mm:ss", true).isValid();
-}
 
 configFilename = 'config.json';
 if (process.argv.length > 2) {
@@ -122,171 +55,8 @@ app.use(bodyParser.json());
 //app.use(bodyParser.urlencoded({ extended: false }));
 app.use(cookieParser());
 
-var courseInfo = {};
-
-var loadCourseInfo = function(callback) {
-    var courseInfoFilename = path.join(config.courseDir, "courseInfo.json");
-    readInfoJSON(courseInfoFilename, "schemas/courseInfo.json", undefined, undefined, function(err, info) {
-        if (err) return callback(err);
-        courseInfo.name = info.name;
-        courseInfo.title = info.title;
-        if (info.userRoles) {
-            _(info.userRoles).forEach(function(value, key) {
-                if (!PrairieRole.isRoleValid(value)) {
-                    logger.warn("Invalid role '" + value + "' in courseInfo.json; ignoring.");
-                    return;
-                }
-                // Don't allow adding or removing superusers
-                if (config.roles[key] === 'Superuser' || value === 'Superuser') {
-                    return;
-                }
-                config.roles[key] = value;
-            });
-        }
-        courseInfo.userRoles = info.userRoles;
-        courseInfo.gitCourseBranch = config.gitCourseBranch;
-        courseInfo.timezone = config.timezone;
-        getCourseOriginURL(function(err, originURL) {
-            courseInfo.remoteFetchURL = originURL;
-            return callback(null);
-        });
-    });
-};
-
-var checkInfoValid = function(idName, info, infoFile) {
-    var retVal = true; // true means valid
-
-    if (idName == "tid" && info.options && info.options.availDate) {
-        logger.warn(infoFile + ': "options.availDate" is deprecated and will be removed in a future version. Instead, please use "allowAccess".');
-    }
-
-    // add semesters to tests without one
-    if (idName == "tid" && !_(info).has("semester")) {
-        if (courseInfo.name == "TAM 212") {
-            if (/^sp16_/.test(info.tid)) {
-                info.semester = "Sp16";
-            } else if (/^fa15_/.test(info.tid)) {
-                info.semester = "Fa15";
-            } else if (/^sp15_/.test(info.tid)) {
-                info.semester = "Sp15";
-            } else {
-                info.semester = "Sp15";
-            }
-        } else {
-            info.semester = config.semester;
-        }
-        logger.warn(infoFile + ': "semester" is missing, setting to "' + info.semester + '".');
-    }
-
-    // look for exams without credit assigned and patch it in to all access rules
-    if (idName == "tid" && (info.type == "Exam" || info.type == "RetryExam")) {
-        if (_(info).has('allowAccess') && !_(info.allowAccess).any(function(a) {return _(a).has('credit');})) {
-            logger.warn(infoFile + ': No credit assigned in allowAccess rules, patching in credit = 100 to all rules. Please set "credit" in "allowAccess" rules explicitly.')
-            _(info.allowAccess).each(function(a) {
-                a.credit = 100;
-            });
-        }
-    }
-
-    // look for homeworks without a due date set and add an access rule with credit if possible
-    if (idName == "tid" && _(info).has('options') && _(info.options).has('dueDate')) {
-        logger.warn(infoFile + ': "options.dueDate" is deprecated and will be removed in a future version. Instead, please set "credit" in the "allowAccess" rules.');
-        if (!_(info).has('allowAccess')) info.allowAccess = [];
-        var hasStudentAccess = false, firstStartDate = null;
-        _(info.allowAccess).each(function(a) {
-            if ((!_(a).has('mode') || a.mode == 'Public') && (!_(a).has('role') || a.role == 'Student')) {
-                hasStudentAccess = true;
-                if (_(a).has('startDate')) {
-                    if (firstStartDate == null || a.startDate < firstStartDate) {
-                        firstStartDate = a.startDate;
-                    }
-                }
-            }
-        });
-        if (hasStudentAccess) {
-            var accessRule = {
-                mode: 'Public',
-                credit: 100,
-            };
-            if (firstStartDate) {
-                accessRule.startDate = firstStartDate;
-            }
-            accessRule.endDate = info.options.dueDate;
-            logger.warn(infoFile + ': Adding accessRule: ' + JSON.stringify(accessRule));
-            info.allowAccess.push(accessRule);
-        }
-        delete info.options.dueDate;
-    }
-
-    // check dates in allowAccess
-    if (idName == "tid" && _(info).has('allowAccess')) {
-        _(info.allowAccess).each(function(r) {
-            if (r.startDate && !isValidDate(r.startDate)) {
-                logger.error(infoFile + ': invalid "startDate": "' + r.startDate + '" (must be formatted as "YYYY-MM-DDTHH:mm:ss")');
-                revVal = false;
-            }
-            if (r.endDate && !isValidDate(r.endDate)) {
-                logger.error(infoFile + ': invalid "endDate": "' + r.endDate + '" (must be formatted as "YYYY-MM-DDTHH:mm:ss")');
-                revVal = false;
-            }
-        });
-    }
-    return retVal;
-};
-
-var questionDB = {}, testDB = {};
-
-var loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, loadCallback) {
-    fs.readdir(parentDir, function(err, files) {
-        if (err) {
-            logger.error("unable to read info directory: " + parentDir, err);
-            loadCallback(true);
-            return;
-        }
-
-        async.filter(files, function(dirName, cb) {
-            // Filter out files from questions/ as it is possible they slip in without the user putting them there (like .DS_Store).
-            var filePath = path.join(parentDir, dirName);
-            fs.lstat(filePath, function(err, fileStats){
-                cb(fileStats.isDirectory());
-            });
-        }, function(folders) {
-            async.each(folders, function(dir, callback) {
-                var infoFile = path.join(parentDir, dir, "info.json");
-                readInfoJSON(infoFile, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, function(err, info) {
-                    if (err) {
-                        logger.error("Error reading file: " + infoFile, err);
-                        callback(null);
-                        return;
-                    }
-                    info[idName] = dir;
-                    if (!checkInfoValid(idName, info, infoFile)) {
-                        callback(null);
-                        return;
-                    }
-                    if (info.disabled) {
-                        callback(null);
-                        return;
-                    }
-                    info = _.defaults(info, defaultInfo);
-                    db[dir] = info;
-                    return callback(null);
-                });
-            }, function(err) {
-                if (err) {
-                    logger.error("Error reading data", err);
-                    loadCallback(err);
-                    return;
-                }
-                logger.info("successfully loaded info from " + parentDir + ", number of items = " + _.size(db));
-                loadCallback();
-            });
-        });
-    });
-};
-
 var initTestData = function(callback) {
-    async.each(_(testDB).values(), function(item, cb) {
+    async.each(_(courseDB.testDB).values(), function(item, cb) {
         db.tCollect.findOne({tid: item.tid}, function(err, obj) {
             if (err) {
                 logger.error("error accessing tCollect for tid: " + item.tid, err);
@@ -309,7 +79,7 @@ var initTestData = function(callback) {
                 _(obj).extend(item);
                 if (_(obj).has('qids')) {
                     _(obj.qids).each(function(qid) {
-                        if (!_(questionDB).has(qid)) {
+                        if (!_(courseDB.questionDB).has(qid)) {
                             logger.error('Test ' + obj.tid + ' contains invalid QID: ' + qid);
                         }
                     });
@@ -421,8 +191,8 @@ var checkTestAvail = function(req, tid) {
     var credit = 0;
     var nextDate = null;
     var visibleAccess = [];
-    if (_(testDB).has(tid)) {
-        var info = testDB[tid];
+    if (_(courseDB.testDB).has(tid)) {
+        var info = courseDB.testDB[tid];
         if (info.allowAccess) {
             // copy and annotate the list of access rules
             var allowAccess = _(info.allowAccess).map(function(r) {return checkTestAccessRule(req, tid, r);});
@@ -734,7 +504,7 @@ app.use(function(req, res, next) {
                 if (n1 == 192 && n2 == 17 && n3 == 239 && n4 >= 128 && n4 <= 255) {
                     serverMode = 'Exam';
                 }
-                if (courseInfo.name == "CS 225") {
+                if (courseDB.courseInfo.name == "CS 225") {
                     if (n1 == 192 && n2 == 17 && n3 == 11 && n4 >= 82 && n4 <= 117) {
                         serverMode = 'Exam';
                     }
@@ -859,7 +629,7 @@ app.set('view engine', 'ejs');
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
 // static serving of all subdirectories of "./public"
-app.use(express.static(path.join(__dirname, 'public')));
+//app.use(express.static(path.join(__dirname, 'public')));
 
 /*
   Middleware handlers. For each route we do several things:
@@ -955,17 +725,17 @@ app.get("/heartbeat", function(req, res) {
 
 app.get("/course", function(req, res) {
     var course = {
-        name: courseInfo.name,
-        title: courseInfo.title,
-        timezone: courseInfo.timezone,
+        name: courseDB.courseInfo.name,
+        title: courseDB.courseInfo.title,
+        timezone: courseDB.courseInfo.timezone,
         devMode: false,
     };
     if (config.authType == 'none') {
         course.devMode = true;
     }
     if (PrairieRole.hasPermission(req.userRole, 'viewCoursePulls')) {
-        course.gitCourseBranch = courseInfo.gitCourseBranch;
-        course.remoteFetchURL = courseInfo.remoteFetchURL;
+        course.gitCourseBranch = courseDB.courseInfo.gitCourseBranch;
+        course.remoteFetchURL = courseDB.courseInfo.remoteFetchURL;
     }
     res.json(course);
 });
@@ -1021,30 +791,6 @@ var getCourseCommitFromDisk = function(callback) {
             }
         }
         callback(null, commit);
-    });
-};
-
-var getCourseOriginURL = function(callback) {
-    if (!config.gitCourseBranch) return callback(null, null);
-    var cmd = 'git';
-    var options = ['remote', 'show', '-n', 'origin'];
-    var env = {
-        'timeout': 5000, // milliseconds
-        'cwd': config.courseDir,
-    };
-    child_process.execFile(cmd, options, env, function(err, stdout, stderr) {
-        if (err) return callback(err);
-        var originURL = null;
-        _(stdout.split('\n')).each(function(line) {
-            match = /^ *Fetch URL: (.*)$/.exec(line);
-            if (!match) return;
-            originURL = match[1];
-        });
-        if (!originURL) {
-            return callback(Error('Invalid or missing "Fetch URL" from "git show"'),
-                            {cmd: cmd, options: options, env: env, stdout: stdout});
-        }
-        callback(null, originURL);
     });
 };
 
@@ -1150,7 +896,7 @@ var undefQuestionServers = function(callback) {
     // Only try and undefine modules that are already defined, as listed in:
     //     requireFrontend.s.contexts._.defined
     // This is necessary because of incomplete questions (in particular, those with info.json but no server.js).
-    async.each(_(questionDB).keys(), function(qid, cb) {
+    async.each(_(courseDB.questionDB).keys(), function(qid, cb) {
         questionFilePath(qid, "server.js", function(err, fileInfo) {
             if (err) {
                 logger.info("Unable to locate server.js path for QID: " + qid);
@@ -1194,7 +940,7 @@ app.post("/coursePulls", function(req, res) {
                     pull.pid = pid;
                     db.pullCollect.insert(pull, {w: 1}, function(err) {
                         if (err) return sendError(res, 500, "Unable to insert pull", err);
-                        loadData(function(err) {
+                        loadAndInitCourseData(function(err) {
                             if (err) return sendError(res, 500, "Error reloading data", err);
                             undefQuestionServers(function(err) {
                                 if (err) return sendError(res, 500, "Error undefining question servers", err);
@@ -1216,7 +962,7 @@ app.post("/reload", function(req, res) {
         return sendError(res, 500, "Server not in dev mode");
     }
     logger.infoOverride("Reloading all data");
-    loadData(function(err) {
+    loadAndInitCourseData(function(err) {
         if (err) return sendError(res, 500, "Error reloading data", err);
         undefQuestionServers(function(err) {
             if (err) return sendError(res, 500, "Error undefining question servers", err);
@@ -1237,7 +983,7 @@ app.get("/questions", function(req, res) {
     if (!PrairieRole.hasPermission(req.userRole, 'viewAllQuestions')) {
         return res.json({});
     };
-    async.map(_.values(questionDB), function(item, callback) {
+    async.map(_.values(courseDB.questionDB), function(item, callback) {
         callback(null, {qid: item.qid, title: item.title, number: item.number});
     }, function(err, results) {
         res.json(stripPrivateFields(results));
@@ -1248,7 +994,7 @@ app.get("/questions/:qid", function(req, res) {
     if (!PrairieRole.hasPermission(req.userRole, 'viewAllQuestions')) {
         return res.json({});
     };
-    var info = questionDB[req.params.qid];
+    var info = courseDB.questionDB[req.params.qid];
     if (info === undefined)
         return sendError(res, 404, "No such question: " + req.params.qid);
     res.json(stripPrivateFields({qid: info.qid, title: info.title, number: info.number, video: info.video}));
@@ -1259,7 +1005,7 @@ var questionFilePath = function(qid, filename, callback, nTemplates) {
     if (nTemplates > 10) {
         return callback("Too-long template recursion for qid: " + qid);
     }
-    var info = questionDB[qid];
+    var info = courseDB.questionDB[qid];
     if (info === undefined) {
         return callback("QID not found in questionDB: " + qid);
     }
@@ -1309,7 +1055,7 @@ app.get("/qInstances/:qiid/:filename", function(req, res) {
             questionFilePath(qid, filename, function(err, fileInfo) {
                 if (err)
                     return sendError(res, 404, "No such file '" + filename + "' for qid: " + req.params.qid, err);
-                info = questionDB[fileInfo.qid];
+                info = courseDB.questionDB[fileInfo.qid];
                 if (info === undefined) {
                     return sendError(res, 404, "No such qid: " + fileInfo.qid);
                 }
@@ -1330,7 +1076,7 @@ app.get("/tests/:tid/:filename", function(req, res) {
     var filename = req.params.filename;
     var testPath = path.join(config.testsDir, tid);
     var fullFilePath = path.join(testPath, filename);
-    info = testDB[tid];
+    info = courseDB.testDB[tid];
     if (info === undefined) {
         return sendError(res, 404, "No such tid: " + fileInfo.tid);
     }
@@ -1423,16 +1169,16 @@ app.get("/users/:uid", function(req, res) {
 var addQuestionToQInstance = function(qInstance, req, callback) {
     if (!_(qInstance).has("qid")) return callback("no qid in qInstance");
     var qid = qInstance.qid;
-    if (!_(questionDB).has(qid)) return callback("unknown qid: " + qid);
+    if (!_(courseDB.questionDB).has(qid)) return callback("unknown qid: " + qid);
     if (PrairieRole.hasPermission(req.userRole, 'viewAllQuestions')) {
-        qInstance.title = questionDB[qid].title;
-        qInstance.video = questionDB[qid].video;
+        qInstance.title = courseDB.questionDB[qid].title;
+        qInstance.video = courseDB.questionDB[qid].video;
         return callback(null, qInstance);
     };
     if (!_(qInstance).has("tiid")) {
         // no TIID, we must have authorization, just add the info
-        qInstance.title = questionDB[qid].title;
-        qInstance.video = questionDB[qid].video;
+        qInstance.title = courseDB.questionDB[qid].title;
+        qInstance.video = courseDB.questionDB[qid].video;
         return callback(null, qInstance);
     }
     var tiid = qInstance.tiid;
@@ -1445,8 +1191,8 @@ var addQuestionToQInstance = function(qInstance, req, callback) {
                 if (err) return callback(err);
                 if (_(test).has("hideQuestionTitleWhileOpen") && test.hideQuestionTitleWhileOpen) {
                     if (_(tInstance).has("open") && !tInstance.open) {
-                        qInstance.title = questionDB[qid].title;
-                        qInstance.video = questionDB[qid].video;
+                        qInstance.title = courseDB.questionDB[qid].title;
+                        qInstance.video = courseDB.questionDB[qid].video;
                     } else {
                         qInstance.title = "No title";
                     }
@@ -1456,8 +1202,8 @@ var addQuestionToQInstance = function(qInstance, req, callback) {
                     qInstance.title = "No title";
                     return callback(null, qInstance);
                 }
-                qInstance.title = questionDB[qid].title;
-                qInstance.video = questionDB[qid].video;
+                qInstance.title = courseDB.questionDB[qid].title;
+                qInstance.video = courseDB.questionDB[qid].video;
                 return callback(null, qInstance);
             });
         });
@@ -1534,7 +1280,7 @@ var makeQInstance = function(req, res, qInstance, callback) {
         return sendError(res, 400, "No question ID provided");
     }
     qInstance.date = new Date();
-    var info = questionDB[qInstance.qid];
+    var info = courseDB.questionDB[qInstance.qid];
     if (info === undefined) {
         return sendError(res, 400, "Invalid QID: " + qInstance.qid);
     }
@@ -1780,7 +1526,7 @@ var readTest = function(tid, callback) {
 };
 
 var loadTestServer = function(tid, callback) {
-    var info = testDB[tid];
+    var info = courseDB.testDB[tid];
     var testType = info.type;
     callback(require("./" + testType + "TestServer.js"));
 };
@@ -1824,7 +1570,7 @@ var testProcessSubmission = function(req, res, tiid, submission, callback) {
                     if (err) return sendError(res, 400, "Error accessing tid: " + tid, err);
                     loadTestServer(tid, function(server) {
                         var uid = submission.uid;
-                        server.updateWithSubmission(tInstance, test, submission, testDB[tid].options, function(err) {
+                        server.updateWithSubmission(tInstance, test, submission, courseDB.testDB[tid].options, function(err) {
                             if (err) {
                                 return sendError(res, 500, "Error updating test: " + String(err), {err: err, stack: err.stack});
                             }
@@ -1898,7 +1644,7 @@ app.post("/submissions", function(req, res) {
                         return sendError(res, 403, "Insufficient permissions");
                     };
                 }
-                var info = questionDB[submission.qid];
+                var info = courseDB.questionDB[submission.qid];
                 if (info === undefined) {
                     return sendError(res, 404, "No such QID: " + submission.qid);
                 }
@@ -1956,7 +1702,7 @@ app.get("/tests", function(req, res) {
             if (err) {
                 return sendError(res, 500, "Error serializing tests", err);
             }
-            objs = _(objs).filter(function(o) {return _(testDB).has(o.tid);});
+            objs = _(objs).filter(function(o) {return _(courseDB.testDB).has(o.tid);});
             _(objs).each(function(test) {
                 delete test.dueDate;
             });
@@ -2061,7 +1807,7 @@ app.delete("/tInstances", function(req, res) {
     if (!tid) {
         return sendError(res, 400, "No tid provided");
     }
-    var info = testDB[tid];
+    var info = courseDB.testDB[tid];
     if (!info) {
         return sendError(res, 404, "Unknown tid: " + tid);
     }
@@ -2107,7 +1853,7 @@ var autoCreateTestQuestions = function(req, res, tInstance, test, callback) {
 };
 
 var updateTInstance = function(req, res, server, tInstance, test, callback) {
-    server.updateTInstance(tInstance, test, test.options, questionDB);
+    server.updateTInstance(tInstance, test, test.options, courseDB.questionDB);
     autoCreateTestQuestions(req, res, tInstance, test, function() {
         callback();
     });
@@ -2141,7 +1887,7 @@ var updateTInstances = function(req, res, tInstances, updateCallback) {
 
 var autoCreateTInstances = function(req, res, tInstances, autoCreateCallback) {
     var tiDB = _(tInstances).groupBy("tid");
-    async.each(_(testDB).values(), function(test, callback) {
+    async.each(_(courseDB.testDB).values(), function(test, callback) {
         var tid = test.tid;
         testStatus = checkTestAvail(req, tid);
         if (testStatus.avail && !test.multipleInstance && tiDB[tid] === undefined && req.query.uid !== undefined) {
@@ -2216,7 +1962,7 @@ app.get("/tInstances", function(req, res) {
             if (err) {
                 return sendError(res, 500, "Error serializing tInstances", err);
             }
-            tInstances = _(tInstances).filter(function(ti) {return _(testDB).has(ti.tid);});
+            tInstances = _(tInstances).filter(function(ti) {return _(courseDB.testDB).has(ti.tid);});
             filterObjsByAuth(req, tInstances, "read", function(tInstances) {
                 updateTInstances(req, res, tInstances, function() {
                     autoCreateTInstances(req, res, tInstances, function(tInstances) {
@@ -2259,7 +2005,7 @@ app.post("/tInstances", function(req, res) {
     if (tid === undefined) {
         return sendError(res, 400, "No tid provided");
     }
-    var testInfo = testDB[tid];
+    var testInfo = courseDB.testDB[tid];
     if (testInfo === undefined) {
         return sendError(res, 400, "Invalid tid: " + tid, {tid: tid});
     }
@@ -3061,7 +2807,7 @@ app.get("/testStats", function(req, res) {
     if (!PrairieRole.hasPermission(req.userRole, 'viewOtherUsers')) {
         return res.json({});
     }
-    async.map(_(testDB).keys(), function(tid, cb) {
+    async.map(_(courseDB.testDB).keys(), function(tid, cb) {
         getScoresForTest(tid, function(err, scores) {
             if (err) return cb(err)
             computeTestStats(tid, scores, function(err, stats) {
@@ -3168,7 +2914,7 @@ var testQStatsToCSV = function(stats, callback) {
         var meanScoreByQuintile = _(stat.meanScoreByQuintile).map(function(s) {return (s * 100).toFixed(1);});
         csvData.push([
             qid,
-            questionDB[qid].title,
+            courseDB.questionDB[qid].title,
             stat.meanScore * 100,
             stat.discrimination * 100,
             stat.meanNAttempts,
@@ -3449,7 +3195,7 @@ var computeStats = function() {
 var userDB = {};
 
 var initQuestionModels = function(callback) {
-    async.eachSeries(_.values(questionDB), function(question, cb) {
+    async.eachSeries(_.values(courseDB.questionDB), function(question, cb) {
         question.dist = new PrairieModel.QuestionDist(question.qid);
         cb(null);
     }, callback);
@@ -3484,7 +3230,7 @@ var processSubmissionBayes = function(submission, iSubmission, count) {
     var uid = submission.uid;
     var qid = submission.qid;
     var user = userDB[uid];
-    var question = questionDB[qid];
+    var question = courseDB.questionDB[qid];
     if (user == null || question == null)
         return;
 
@@ -3527,7 +3273,7 @@ var printUserModels = function(callback) {
 };
 
 var printQuestionModels = function(callback) {
-    async.eachSeries(_.values(questionDB), function(question, cb) {
+    async.eachSeries(_.values(courseDB.questionDB), function(question, cb) {
         console.log("question", question.qid, "dist", question.dist);
         cb(null);
     }, callback);
@@ -3592,28 +3338,10 @@ var startIntervalJobs = function(callback) {
     callback(null);
 };
 
-var loadData = function(callback) {
-    async.series([
-        function(callback) {
-            loadCourseInfo(callback);
-        },
-        function(callback) {
-            _(questionDB).mapObject(function(val, key) {delete questionDB[key];});
-            var defaultQuestionInfo = {
-                "type": "Calculation",
-                "clientFiles": ["client.js", "question.html", "answer.html"],
-            };
-            loadInfoDB(questionDB, "qid", config.questionsDir, defaultQuestionInfo, "schemas/questionInfo.json", "schemas/questionOptions", ".json", callback);
-        },
-        function(callback) {
-            _(testDB).mapObject(function(val, key) {delete testDB[key];});
-            var defaultTestInfo = {
-            };
-            loadInfoDB(testDB, "tid", config.testsDir, defaultTestInfo, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
-        },
-        initTestData,
-    ], function(err) {
-        callback(err);
+var loadAndInitCourseData = function(callback) {
+    courseDB.load(function(err) {
+        if (err) return callback(err);
+        initTestData(callback);
     });
 };
 
@@ -3632,22 +3360,22 @@ var syncDiskToSQL = function(callback) {
         return syncSemesters.sync();
     }).then(function() {
         logger.infoOverride("Syncing courseInfo from disk to SQL DB");
-        return syncCourseInfo.sync(courseInfo);
+        return syncCourseInfo.sync(courseDB.courseInfo);
     }).then(function() {
         logger.infoOverride("Syncing course staff from disk to SQL DB");
-        return syncCourseStaff.sync(courseInfo);
+        return syncCourseStaff.sync(courseDB.courseInfo);
     }).then(function() {
         logger.infoOverride("Syncing topics from disk to SQL DB");
-        return syncTopics.sync(courseInfo, questionDB);
+        return syncTopics.sync(courseDB.courseInfo, courseDB.questionDB);
     }).then(function() {
         logger.infoOverride("Syncing questions from disk to SQL DB");
-        return syncQuestions.sync(courseInfo, questionDB);
+        return syncQuestions.sync(courseDB.courseInfo, courseDB.questionDB);
     }).then(function() {
         logger.infoOverride("Syncing test sets from disk to SQL DB");
-        return syncTestSets.sync(courseInfo, testDB);
+        return syncTestSets.sync(courseDB.courseInfo, courseDB.testDB);
     }).then(function() {
         logger.infoOverride("Syncing tests from disk to SQL DB");
-        return syncTests.sync(courseInfo, testDB);
+        return syncTests.sync(courseDB.courseInfo, courseDB.testDB);
     }).then(function() {
         logger.infoOverride("Completed sync of disk to SQL");
         callback(null);
@@ -3663,9 +3391,9 @@ var syncMongoToSQL = function(callback) {
     logger.infoOverride("Starting sync of Mongo to SQL");
     async.series([
         function(callback) {logger.infoOverride("Syncing users from Mongo to SQL DB"); callback(null);},
-        syncUsers.sync.bind(null, courseInfo, uidToRole),
+        syncUsers.sync.bind(null, courseDB.courseInfo, uidToRole),
         function(callback) {logger.infoOverride("Syncing test instances from Mongo to SQL DB"); callback(null);},
-        syncTestInstances.sync.bind(null, courseInfo, testDB),
+        syncTestInstances.sync.bind(null, courseDB.courseInfo, courseDB.testDB),
     ], function(err) {
         if (err) return callback(err);
         logger.infoOverride("Completed sync of Mongo to SQL");
@@ -3676,7 +3404,7 @@ var syncMongoToSQL = function(callback) {
 async.series([
     db.init,
     sqldb.init,
-    loadData,
+    loadAndInitCourseData,
     // FIXME: for dev we start server before sync tasks,
     // this should be re-ordered for prod
     startServer,

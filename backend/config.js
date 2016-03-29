@@ -56,14 +56,7 @@ var readJSONSyncOrDie = function(jsonFilename, schemaFilename) {
     return json;
 };
 
-config.loadConfig = function(file) {
-    if (fs.existsSync(file)) {
-        fileConfig = readJSONSyncOrDie(file, 'schemas/backendConfig.json');
-        _.extend(config, fileConfig);
-    } else {
-        logger.warn(file + " not found, using default configuration");
-    }
-
+var computeRelativePaths = function() {
     config.questionsDir = path.join(config.courseDir, "questions");
     config.testsDir = path.join(config.courseDir, "tests");
     config.clientCodeDir = path.join(config.courseDir, "clientCode");
@@ -73,6 +66,20 @@ config.loadConfig = function(file) {
     config.requireDir = path.join(config.frontendDir, "require");
     config.relativeClientCodeDir = path.relative(path.resolve(config.requireDir), path.resolve(config.clientCodeDir));
     config.relativeServerCodeDir = path.relative(path.resolve(config.requireDir), path.resolve(config.serverCodeDir));
+};
+
+// compute default paths, can be overridden later by loadConfig()
+computeRelativePaths();
+
+config.loadConfig = function(file) {
+    if (fs.existsSync(file)) {
+        fileConfig = readJSONSyncOrDie(file, 'schemas/backendConfig.json');
+        _.extend(config, fileConfig);
+    } else {
+        logger.warn(file + " not found, using default configuration");
+    }
+
+    computeRelativePaths();
 
     _(config.superusers).forEach(function(value, key) {
         if (value) {

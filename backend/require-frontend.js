@@ -5,6 +5,7 @@
  * modules and not AMD modules.
  */
 var config = require("./config");
+var logger = require("./logger");
 var requirejs = require("requirejs");
 
 requirejs.config({
