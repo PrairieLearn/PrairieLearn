@@ -65,7 +65,7 @@ module.exports = {
                 + ' )'
                 + ' DELETE FROM test_sets'
                 + ' WHERE id IN (SELECT * FROM course_test_set_ids)'
-                + (testSetIDs.length === 0 ? '' : ' AND id NOT IN (:testSetIDs)')
+                + ' AND ' + (testSetIDs.length === 0 ? 'TRUE' : 'id NOT IN (:testSetIDs)')
                 + ' ;';
             var params = {
                 testSetIDs: testSetIDs,
