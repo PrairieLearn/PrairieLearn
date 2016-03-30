@@ -32,12 +32,22 @@ module.exports = {
                 }).value()
         ).then(function() {
             // delete topics from the DB that aren't on disk
-            return models.Topic.destroy({where: {
+            // can't use models.Topic.destroy() because it's buggy when topicIDs = []
+            var sql = 'WITH'
+                + ' course_topic_ids AS ('
+                + '     SELECT top.id'
+                + '     FROM topics AS top'
+                + '     WHERE top.course_id = :courseId'
+                + ' )'
+                + ' DELETE FROM topics'
+                + ' WHERE id IN (SELECT * FROM course_topic_ids)'
+                + (topicIDs.length === 0 ? '' : ' AND id NOT IN (:topicIDs)')
+                + ' ;';
+            var params = {
+                topicIDs: topicIDs,
                 courseId: courseInfo.courseId,
-                id: {
-                    $notIn: topicIDs,
-                },
-            }});
+            };
+            return models.sequelize.query(sql, {replacements: params});
         });
     },
 };
