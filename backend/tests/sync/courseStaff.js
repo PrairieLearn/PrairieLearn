@@ -6,7 +6,7 @@ var models = require('../../models');
 var courseDB = require('../../courseDB');
 var config = require('../../config');
 
-describe('fromDisk/courseStaff', function() {
+describe('sync/fromDisk/courseStaff', function() {
 
     before(syncTestHelper.before);
     after(syncTestHelper.after);
