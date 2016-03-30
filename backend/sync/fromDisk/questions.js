@@ -6,6 +6,7 @@ var config = require('../../config');
 
 module.exports = {
     sync: function(courseInfo, questionDB) {
+        var questionIDs = []
         return Promise.all(
             _(questionDB).map(function(q) {
                 var topic, question;
@@ -20,6 +21,7 @@ module.exports = {
                     }, paranoid: false});
                 }).spread(function(newQuestion, created) {
                     question = newQuestion;
+                    questionIDs.push(question.id);
                     return question.update({
                         type: q.type,
                         title: q.title,
@@ -33,12 +35,22 @@ module.exports = {
             })
         ).then(function() {
             // soft-delete questions from the DB that aren't on disk
-            return models.Question.destroy({where: {
+            var sql = 'WITH'
+                + ' course_question_ids AS ('
+                + '     SELECT id'
+                + '     FROM questions'
+                + '     WHERE course_id = :courseId'
+                + '     AND deleted_at IS NULL'
+                + ' )'
+                + ' UPDATE questions SET deleted_at = CURRENT_TIMESTAMP'
+                + ' WHERE id IN (SELECT * FROM course_question_ids)'
+                + ' AND ' + (questionIDs.length === 0 ? 'TRUE' : 'id NOT IN (:questionIDs)')
+                + ' ;';
+            var params = {
+                questionIDs: questionIDs,
                 courseId: courseInfo.courseId,
-                qid: {
-                    $notIn: _(questionDB).pluck('qid'),
-                },
-            }});
+            };
+            return models.sequelize.query(sql, {replacements: params});
         });
     },
 };

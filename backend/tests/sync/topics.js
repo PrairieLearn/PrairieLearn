@@ -6,14 +6,14 @@ var models = require('../../models');
 var courseDB = require('../../courseDB');
 var config = require('../../config');
 
-describe('fromDisk/topics', function() {
+describe('sync/fromDisk/topics', function() {
 
     before(syncTestHelper.before);
     after(syncTestHelper.after);
 
     describe('sync', function() {
 
-        before('sync', function() {
+        before(function() {
             return Promise.try(function() {
                 return Promise.promisify(courseDB.load)();
             }).then(function() {
@@ -26,23 +26,26 @@ describe('fromDisk/topics', function() {
         });
 
         it('should have the correct number of topics', function() {
-            var nTopic = _.chain(courseDB.questionDB).pluck('topic').uniq().value().length;
+            var n = _.chain(courseDB.questionDB).pluck('topic').uniq().value().length;
             var sql = 'SELECT * FROM topics;';
-            return models.sequelize.query(sql).should.finally.have.property('0').with.length(nTopic);
+            return models.sequelize.query(sql).should.finally.have.property('0').with.length(n);
         });
 
         it('should have exactly the correct list of topics', function() {
-            var topicList = _.chain(courseDB.questionDB).pluck('topic').uniq()
+            var list = _.chain(courseDB.questionDB).pluck('topic').uniq()
                 .map(function(t) {return {name: t};}).value();
             var sql = 'SELECT name FROM topics;';
-            return models.sequelize.query(sql).should.finally.have.property('0').which.containDeep(topicList);
+            return models.sequelize.query(sql).should.finally.have.property('0').which.containDeep(list);
         });
     });
 
     describe('re-sync with no questions', function() {
 
-        before('sync', function() {
+        before('sync with no questions', function() {
             return syncTestHelper.syncTopics.sync(courseDB.courseInfo, []);
+        });
+        after('restore all questions', function() {
+            return syncTestHelper.syncTopics.sync(courseDB.courseInfo, courseDB.questionDB);
         });
 
         it('should have no topics', function() {

@@ -4,7 +4,7 @@ var syncTestHelper = require('./syncTestHelper');
 var models = require('../../models');
 var config = require('../../config');
 
-describe('fromDisk/semesters', function() {
+describe('sync/fromDisk/semesters', function() {
 
     before(syncTestHelper.before);
     after(syncTestHelper.after);
