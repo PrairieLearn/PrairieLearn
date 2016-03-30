@@ -1,7 +1,7 @@
 var pg = require('pg');
 var initConString = 'postgres://localhost/postgres';
 var testDB = 'pltestdb';
-var config = require('../../config');
+var config = require('../../config'); // we will use the default PrairieLearn/exampleCourse
 config.sdbAddress = 'postgres://localhost/pltestdb';
 var sqldb = require('../../sqldb');
 var models = require('../../models');
