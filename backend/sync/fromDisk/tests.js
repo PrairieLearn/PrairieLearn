@@ -115,6 +115,24 @@ module.exports = {
                 courseId: courseInfo.courseId,
             };
             return models.sequelize.query(sql, {replacements: params});
+        }).then(function() {
+            // delete access rules from DB that don't correspond to tests
+            var sql = 'DELETE FROM access_rules AS ar'
+                + ' WHERE NOT EXISTS ('
+                + '     SELECT * FROM tests AS t'
+                + '     WHERE t.id = ar.test_id'
+                + '     AND t.deleted_at IS NULL'
+                + ' );';
+            return models.sequelize.query(sql);
+        }).then(function() {
+            // delete zones from DB that don't correspond to tests
+            var sql = 'DELETE FROM zones AS z'
+                + ' WHERE NOT EXISTS ('
+                + '     SELECT * FROM tests AS t'
+                + '     WHERE t.id = z.test_id'
+                + '     AND t.deleted_at IS NULL'
+                + ' );';
+            return models.sequelize.query(sql);
         });
     },
 
