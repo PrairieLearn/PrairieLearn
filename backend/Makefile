@@ -1,8 +1,8 @@
 
-.PHONY: help test lint jscs text
+.PHONY: help test lint style text
 
 help:
-	@echo "Please use one of:\nmake test\nmake lint\nmake jscs\nmake text"
+	@echo "Please use one of:\nmake test\nmake lint\nmake style\nmake text"
 
 ######################################################################
 
@@ -16,7 +16,7 @@ CHECK_FILES = models tests sync middlewares routes
 lint:
 	./node_modules/.bin/jshint --config jshintrc $(CHECK_FILES)
 
-jscs:
+style:
 	./node_modules/.bin/jscs --verbose --config jscsrc $(CHECK_FILES)
 
 ######################################################################

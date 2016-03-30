@@ -26,7 +26,7 @@ describe('fromDisk/courseStaff', function() {
         });
 
         it('should have exactly the correct number of users', function() {
-            var sql = 'SELECT * FROM users;'
+            var sql = 'SELECT * FROM users;';
             return models.sequelize.query(sql).should.finally.have.property('0')
                 .with.length(_(courseDB.courseInfo.userRoles).size() + 1); // + 1 for local superuser
         });
@@ -93,7 +93,7 @@ describe('fromDisk/courseStaff', function() {
 
         it('should remove the Instructor completely', function() {
             var sql = 'SELECT * FROM enrollments WHERE role = \'Instructor\'';
-            return models.sequelize.query(sql).should.finally.have.property('0').with.length(0);
+            return models.sequelize.query(sql).should.finally.have.property('0').which.is.empty();
         });
 
         it('should have preserved the enrollment_ids', function() {
@@ -115,6 +115,56 @@ describe('fromDisk/courseStaff', function() {
                 + ' AND e.role != \'Student\''
                 + ' ;';
             return models.sequelize.query(sql).should.finally.have.property('0').with.length(1);
+        });
+    });
+
+    describe('deleting TA', function() {
+
+        var saveIDs;
+
+        before('delete zilles', function() {
+            return Promise.try(function() {
+                // save the IDs of the enrollment rows
+                var sql = 'SELECT e.id'
+                    + ' FROM enrollments AS e'
+                    + ' JOIN users AS u ON (u.id = e.user_id)'
+                    + ' WHERE u.uid = \'zilles@illinois.edu\''
+                    + ' ;';
+                return models.sequelize.query(sql);
+            }).spread(function(results, info) {
+                saveIDs = results;
+
+                // resync with a TA deleted
+                var tmpCourseInfo = _(courseDB.courseInfo).clone();
+                tmpCourseInfo.userRoles = _(courseDB.courseInfo.userRoles).clone();
+                delete tmpCourseInfo.userRoles['zilles@illinois.edu'];
+                return syncTestHelper.syncCourseStaff.sync(tmpCourseInfo);
+            });
+        });
+
+        after('restore zilles to TA', function() {
+            return syncTestHelper.syncCourseStaff.sync(courseDB.courseInfo);
+        });
+
+        it('should have preserved the enrollment_ids', function() {
+            // save the IDs of the enrollment rows
+            var sql = 'SELECT e.id'
+                + ' FROM enrollments AS e'
+                + ' JOIN users AS u ON (u.id = e.user_id)'
+                + ' WHERE u.uid = \'zilles@illinois.edu\''
+                + ' ;';
+            return models.sequelize.query(sql).should.finally.have.property('0').which.eql(saveIDs);
+        });
+
+        it('should have no non-student roles for the ex-TA', function() {
+            // save the IDs of the enrollment rows
+            var sql = 'SELECT e.id'
+                + ' FROM enrollments AS e'
+                + ' JOIN users AS u ON (u.id = e.user_id)'
+                + ' WHERE u.uid = \'zilles@illinois.edu\''
+                + ' AND e.role != \'Student\''
+                + ' ;';
+            return models.sequelize.query(sql).should.finally.have.property('0').which.is.empty();
         });
     });
 });

@@ -76,7 +76,6 @@ module.exports = {
         }).then(function() {
             // reduce Superuser/Instructors to Students in the current course if they are not in the above list
             var siUIDs = _.union(superuserUIDs, instructorUIDs);
-            if (siUIDs.length === 0) return Promise.resolve(null);
             var sql = 'UPDATE enrollments SET role = \'Student\''
                 + ' WHERE EXISTS('
                 + '     SELECT * FROM enrollments AS e'
@@ -86,7 +85,7 @@ module.exports = {
                 + '     WHERE e.id = enrollments.id'
                 + '     AND c.id = :courseId'
                 + '     AND e.role IN (\'Superuser\'::enum_enrollments_role, \'Instructor\'::enum_enrollments_role)'
-                + '     AND u.uid NOT IN (:siUIDs)'
+                + '     AND ' + (siUIDs.length === 0 ? 'TRUE' : 'u.uid NOT IN (:siUIDs)')
                 + ' )'
                 + ' ;';
             var params = {
@@ -96,8 +95,6 @@ module.exports = {
             return models.sequelize.query(sql, {replacements: params});
         }).then(function() {
             // reduce TAs to Students in the current course if they are not in the above list or not in the current courseInstance
-            var uids = _.union(superuserUIDs, instructorUIDs);
-            if (uids.length === 0) return Promise.resolve(null);
             var sql = 'UPDATE enrollments SET role = \'Student\''
                 + ' WHERE EXISTS('
                 + '     SELECT * FROM enrollments AS e'
@@ -108,8 +105,8 @@ module.exports = {
                 + '     AND c.id = :courseId'
                 + '     AND e.role = \'TA\'::enum_enrollments_role'
                 + '     AND ('
-                + '         u.uid NOT IN (:taUIDs)'
-                + '         OR ci.id != :courseInstanceId'
+                + '         ci.id != :courseInstanceId'
+                + '     OR ' + (taUIDs.length === 0 ? 'TRUE' : 'u.uid NOT IN (:taUIDs)')
                 + '     )'
                 + ' )'
                 + ' ;';
