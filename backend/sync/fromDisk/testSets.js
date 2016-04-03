@@ -26,7 +26,7 @@ module.exports = {
                 _.chain(testDB)
                     .pluck('set')
                     .uniq()
-                    .sortBy(_.identity)
+                    .sortBy(_.identity) // FIXME: after adding to courseInfo.json, use that order
                     .map(function(longName, i) {
                         var shortName = {
                             Exam: 'E',
@@ -47,6 +47,7 @@ module.exports = {
                             }}).spread(function(testSet, created) {
                                 testSetIDs.push(testSet.id);
                                 return testSet.update({
+                                    number: i,
                                     shortName: shortName,
                                     color: colors.testSets[i % colors.testSets.length],
                                 });
