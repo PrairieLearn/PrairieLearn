@@ -17,9 +17,9 @@ module.exports = {
                 if (err) return callback(err);
                 // only process tInstances for tests that we have on disk
                 objs = _(objs).filter(function(o) {return _(testDB).has(o.tid);});
-                Promise.all(_(objs).map(function(ti) {
+                async.eachSeries(objs, function(ti, callback) {
                     var user, test;
-                    return Promise.try(function() {
+                    Promise.try(function() {
                         return models.User.findOne({where: {
                             uid: ti.uid,
                         }});
@@ -39,7 +39,7 @@ module.exports = {
                         }});
                     }).then(function(findTest) {
                         test = findTest;
-                        if (!test) throw Error("no test where tid = " + ti.tid + " and course_instance_id = " + courseInfo.courseInstanceId);
+                        if (!test) throw Error("no test where tid = " + ti.tid + " and course_instance_id in " + _(courseInstances).pluck('id'));
                         return models.TestInstance.findOne({where: {
                             userId: user.id,
                             testId: test.id,
@@ -78,11 +78,14 @@ module.exports = {
                         }).then(function() {
                             return that.syncTestScores(testInstance, ti, user, test);
                         });
+                    }).then(function() {
+                        callback(null);
+                    }).catch(function(err) {
+                        callback(err);
                     });
-                })).then(function() {
+                }, function(err) {
+                    if (err) return callback(err);
                     callback(null);
-                }).catch(function(err) {
-                    callback(err);
                 });
             });
         });

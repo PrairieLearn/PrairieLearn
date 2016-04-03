@@ -2,8 +2,8 @@ module.exports = function(sequelize, DataTypes) {
     var TestScore = sequelize.define("TestScore", {
         date: DataTypes.DATE,
         points: DataTypes.DOUBLE,
-        maxPoints: DataTypes.DOUBLE,
-        scorePerc: DataTypes.INTEGER,
+        maxPoints: {type: DataTypes.DOUBLE, field: 'max_points'},
+        scorePerc: {type: DataTypes.INTEGER, field: 'score_perc'},
         testInstanceId: {type: DataTypes.INTEGER, field: 'test_instance_id'},
         authUserId: {type: DataTypes.INTEGER, field: 'auth_user_id'},
     }, {
