@@ -14,7 +14,7 @@ router.get('/', function(req, res, next) {
             + ' FROM tests AS t LEFT JOIN test_sets AS ts ON (ts.id = t.test_set_id)'
             + ' WHERE t.course_instance_id = :courseInstanceId'
             + ' AND t.deleted_at IS NULL'
-            + ' ORDER BY (ts.long_name, ts.id, t.number)'
+            + ' ORDER BY (ts.number, t.number)'
             + ';';
         var params = {
             courseInstanceId: req.locals.courseInstanceId,
