@@ -11,24 +11,42 @@
           <h3 class="panel-title">Users</h3>
         </div>
 
-        <table class="table table-condensed table-hover">
-          <thead>
-            <tr>
-              <th>UID</th>
-              <th>Name</th>
-              <th>Role</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% results.forEach(function(result) { %>
-            <tr>
-              <td><%= result.uid %></td>
-              <td><%= result.name %></td>
-              <td><%= result.role %></td>
-            </tr>
-            <% }); %>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-condensed table-hover">
+            <thead>
+              <tr>
+                <th>UID</th>
+                <th>Name</th>
+                <th>Role</th>
+                <% course_tests.forEach(function(test) { %>
+                <th>
+                  <a href="<%= urlPrefix %>/tests/<%= test.id %>" class="btn btn-<%= test.color %> btn-xs" role="button">
+                    <%= test.label %>
+                  </a>
+                </th>
+                <% }); %>
+              </tr>
+            </thead>
+            <tbody>
+              <% user_scores.forEach(function(row) { %>
+              <tr>
+                <td><%= row.uid %></td>
+                <td><%= row.user_name %></td>
+                <td><%= row.role %></td>
+                <% row.scores.forEach(function(score) { %>
+                <td>
+                  <% if (score == null) { %>
+                  —
+                  <% } else { %>
+                  <%= score %>%
+                  <% } %>
+                </td>
+                <% }); %>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </body>

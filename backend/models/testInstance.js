@@ -5,7 +5,7 @@ module.exports = function(sequelize, DataTypes) {
         number: {type: DataTypes.INTEGER, unique: 'composite_index'},
         testId: {type: DataTypes.INTEGER, field: 'test_id', unique: 'composite_index'},
         userId: {type: DataTypes.INTEGER, field: 'user_id', unique: 'composite_index'},
-        authUserId: {type: DataTypes.INTEGER, field: 'auth_user_id'}
+        authUserId: {type: DataTypes.INTEGER, field: 'auth_user_id'},
     }, {
         tableName: 'test_instances',
         classMethods: {

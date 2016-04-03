@@ -40,7 +40,7 @@ digraph partmc_modules {
     test_state -> { test_instance }
     topic -> { course }
     zone -> { test }
-    question_instance -> { test_question }
+    question_instance -> { test_question; test_instance }
     submission -> { question_instance }
     grading -> { submission }
     test_score -> { test_instance }
