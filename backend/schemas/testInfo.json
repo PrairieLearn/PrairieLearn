@@ -15,6 +15,10 @@
             "type": "string",
             "required": true
         },
+        "semester": {
+            "description": "Which semester this test is in.",
+            "enum": ["Fa15", "Sp16"]
+        },
         "set": {
             "description": "Which set of tests this one belongs to (e.g., 'Homework', 'Practice Quiz').",
             "type": "string",
