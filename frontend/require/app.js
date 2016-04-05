@@ -168,33 +168,65 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                     userName: data.name
                 });
                 that.setUserCookie();
-                $.getJSON(that.apiURL("users/" + that.get("authUID")), function(userData) {
-                    that.set({
-                        "authRole": userData.role,
-                        "userRole": userData.role,
-                    });
-                    that.setUserCookie();
+
+                async.parallel([
+                        function(callback) {
+                            $.getJSON(that.apiURL("users/" + that.get("authUID")))
+                                .done(function(userData) {
+                                    that.set({
+                                        "authRole": userData.role,
+                                        "userRole": userData.role,
+                                    });
+                                    that.setUserCookie();
+                                    callback(null);
+                                })
+                                .fail(function(jqxhr, textStatus, error) {
+                                    callback(error);
+                                });
+                        },
+                        function(callback) {
+                            $.getJSON(that.apiURL("course"))
+                                .done(function(courseInfo) {
+                                    that.set({
+                                        'timezone': courseInfo.timezone,
+                                        'courseName': courseInfo.name,
+                                        'courseTitle': courseInfo.title,
+                                        'pageTitle': 'PrairieLearn: ' + courseInfo.name + ' (' + courseInfo.title + ')',
+                                        'navTitle': 'PrairieLearn: ' + courseInfo.name,
+                                        'gitCourseBranch': courseInfo.gitCourseBranch,
+                                        'remoteFetchURL': courseInfo.remoteFetchURL,
+                                        'devMode': courseInfo.devMode,
+                                    });
+                                    document.title = that.get("pageTitle");
+                                    callback(null);
+                                })
+                                .fail(function(jqxhr, textStatus, error) {
+                                    callback(error);
+                                });
+                        },
+                        function(callback) {
+                            if (document.PLVersion && document.PLVersion.gitDescribe) {
+                                that.set('version', document.PLVersion);
+                                callback(null);
+                            } else {
+                                $.getJSON(that.apiURL("version"))
+                                    .done(function(version) {
+                                        that.set('version', version);
+                                        callback(null);
+                                    })
+                                .fail(function(jqxhr, textStatus, error) {
+                                    callback(error);
+                                });
+                            }
+                        },
+                ], function(err) {
+                    if (err) {
+                        $("#error").append('<div class="alert alert-danger" role="alert">' + err + '</div>');
+                        // blindly continue
+                    }
+
+                    that.trigger("initialized");
                 });
-                $.getJSON(that.apiURL("course"), function(courseInfo) {
-                    that.set({
-                        'timezone': courseInfo.timezone,
-                        'courseName': courseInfo.name,
-                        'courseTitle': courseInfo.title,
-                        'pageTitle': 'PrairieLearn: ' + courseInfo.name + ' (' + courseInfo.title + ')',
-                        'navTitle': 'PrairieLearn: ' + courseInfo.name,
-                        'gitCourseBranch': courseInfo.gitCourseBranch,
-                        'remoteFetchURL': courseInfo.remoteFetchURL,
-                        'devMode': courseInfo.devMode,
-                    });
-                    document.title = that.get("pageTitle");
-                });
-                if (document.PLVersion && document.PLVersion.gitDescribe) {
-                    that.set('version', document.PLVersion);
-                } else {
-                    $.getJSON(that.apiURL("version"), function(version) {
-                        that.set('version', version);
-                    });
-                }
             });
         },
 
@@ -792,7 +824,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
             options.headers = headers;
         });
 
-        appModel.once("change:userUID", function() {
+        appModel.once("initialized", function() {
             var errors = [];
             async.parallel(
                 [
