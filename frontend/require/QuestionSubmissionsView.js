@@ -21,6 +21,31 @@ define(['underscore', 'backbone', 'mustache', 'moment', 'renderer', 'spinControl
                     showSubmissions: showSubmissions,
                     pastSubmissions: pastSubmissions.toJSON(),
                 }
+                
+                // Insert the meta-data for each submission to draw the corresponding panel
+                _.each(templateData.pastSubmissions, function(submission, index, pastSubmissions) {
+                    submission.prettyDate = moment(submission.date).format('lll');
+                    submission.submissionIndex = pastSubmissions.length - index;
+                    // Determine the submission status and corresponding panel style
+                    if (submission.graded) {
+                        /* Right now, submissions always have graded = false, since we never update
+                            the graded flag in the database (and we don't send the score attribude 
+                            during a GET call)
+                           If we update the way we store grading information, then we can use the
+                            score here to pick a correct/incorrect flag.
+                        if (submission.correct == 1) {
+                            submission.submissionPanelStyle = 'panel-success';
+                            submission.submissionStatus = 'correct';
+                        } else {
+                            submission.submissionPanelStyle = 'panel-danger';
+                            submission.submissionStatus = 'correct';
+                        } */
+                    } else {
+                        submission.submissionPanelStyle = 'panel-info';
+                        submission.submissionStatus = 'saved';
+                    }
+                });
+                
                 var templateHTML = Mustache.render(questionSubmissionsViewTemplate, templateData);
                 this.$el.html(templateHTML);
                 
@@ -29,31 +54,7 @@ define(['underscore', 'backbone', 'mustache', 'moment', 'renderer', 'spinControl
                     var sid = submission.get("sid");
                     var divID = "#"+sid+"submissionBody";
                     
-                    var submissionTemplateData = submission.toJSON();
-                    // Draw newest submission first, but call oldest submisssion "Submission 1";
-                    submissionTemplateData.index = pastSubmissions.length-index;
-                    // Fix the datestamp to look nicer
-                    prettyDate = moment(submissionTemplateData.date).format('lll');
-                    submissionTemplateData.date = prettyDate;
-                    // Generate a status label
-                    if (submissionTemplateData.graded) {
-                        /* Right now, submissions always come back with graded = false, since we
-                            aren't updating the graded flag in the database (and we're not sending
-                            the score attribute during the GET call)
-                           If we update the way we store grading information, then we can use the score
-                            attribute to pick a correct/incorrect flag here.
-                        
-                        if (submissionTemplateData.correct == 1) {
-                            submissionTemplateData.submissionStatus = '<span class="label label-success">correct</span>';
-                        }
-                        else {
-                            submissionTemplateData.submissionStatus = '<span class="label label-danger">incorrect</span>';
-                        } */
-                    } else {
-                        submissionTemplateData.submissionStatus = '<span class="label label-primary">saved</span>';
-                    }
-                    
-                    var submissionHTML = Mustache.render(submissionTemplate, submissionTemplateData);
+                    var submissionHTML = Mustache.render(submissionTemplate, submission.toJSON());
                     that.$(divID).html(submissionHTML);
                 });
                 if (window.MathJax)

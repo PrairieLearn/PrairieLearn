@@ -1,14 +1,13 @@
 {{#showSubmissions}}
-<div class="panel panel-info">
-  <div class="panel-heading"><h3 class="panel-title">Past Submissions</h3></div>
-  <div class="panel-body">
-    <div id="qsubmissionsBody">
-    {{#pastSubmissions}}
-    <div id="{{sid}}submissionBody">
-    Submission {{sid}} is loading...
+<div class="panel-group">
+  {{#pastSubmissions}}
+  <div class="panel {{submissionPanelStyle}}">
+    <div class="panel-heading">Submission {{submissionIndex}} ({{prettyDate}}) {{submissionStatus}}</div>
+    <div id="{{sid}}submissionBody" class="panel-body">
+      Submission {{sid}} is loading...
     </div>
-    {{/pastSubmissions}}
-    </div>
+  </div>
+  {{/pastSubmissions}}
   </div>
 </div>
 {{/showSubmissions}}

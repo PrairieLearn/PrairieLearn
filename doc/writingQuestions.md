@@ -264,19 +264,10 @@ The part in the box shown to the student after the question has been graded.
     
 ### `Calculation` question: `submission.html`
 
-Each time a student saves or submits an answer, a copy of this file is presented showing the student information about this submission. Can be formatted to include the following information:
-
-Object                   | Description
----                      | ---
-`{{index}}`              | Submission number (oldest to newest)
-`{{date}}`               | Datestamp of submission.
-`{{submittedAnswer}}`    | Everything submitted by the student to answer a question.
-`{{{submissionStatus}}}` | A label showing correct/incorrect (if graded) or saved (if )
-
-For example:
+Each time a student saves or submits and answer, a copy of this is displayed in a box at the bottom of the page, showing the student information about their submission. For example:
     
     <p>
-        Submission {{index}} ({{date}}) {{{submissionStatus}}} $c = {{submittedAnswer.c}}\rm\ m$.
+        $c = {{submittedAnswer.c}}\rm\ m$.
     </p>
 
 ## Advanced: Generating LaTeX labels on figures
