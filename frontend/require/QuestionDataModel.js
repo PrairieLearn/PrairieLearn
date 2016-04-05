@@ -23,7 +23,7 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 savedPractice: false,
                 saveInProgress: false,
                 hasSavedSubmission: false,
-                dirtyData: true,
+                dirtyData: false,
                 score: null,
                 trueAnswer: null,
                 feedback: null

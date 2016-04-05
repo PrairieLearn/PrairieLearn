@@ -51,7 +51,7 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
                     submittable: this.model.get("submittable"),
                     submitted: this.model.get("submitted"),
                     overridable: this.model.appModel.hasPermission("overrideScore"),
-                    answerStatus: '<span class="label label-danger">not saved</span>',
+                    answerStatus: '<span class="label answer-not-saved">not saved</span>',
                     saveActive: false,
                     testOpen: true,
                 };
@@ -69,7 +69,7 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
                     submittable: this.model.get("submittable"),
                     submitted: this.model.get("submitted"),
                     overridable: this.model.appModel.hasPermission("overrideScore"),
-                    answerStatus: '<span class="label label-danger">not saved</span>',
+                    answerStatus: '<span class="label answer-not-saved">not saved</span>',
                     saveActive: false,
                     testOpen: true,
                     allowQuestionSubmit: true,
@@ -80,13 +80,13 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
             }
             if (data.allowQuestionSave) {
                 if (this.model.get("saveInProgress")) {
-                    data.answerStatus = '<span class="label label-warning">saving...</span>';
+                    data.answerStatus = '<span class="label answer-saving">saving...</span>';
                 } else if (this.model.get("submitError")) {
-                    data.answerStatus = '<span class="label label-danger">save failed</span>';
+                    data.answerStatus = '<span class="label answer-save-failed">save failed</span>';
                 } else if (this.model.get("hasSavedSubmission") && this.model.get("dirtyData")) {
-                    data.answerStatus = '<span class="label label-danger">change not saved</span>';
+                    data.answerStatus = '<span class="label answer-not-saved">change not saved</span>';
                 } else if (!this.model.get("dirtyData")) {
-                    data.answerStatus = '<span class="label label-primary">saved</span>';
+                    data.answerStatus = '<span class="label answer-saved">saved</span>';
                     if (data.allowQuestionRetry) {
                         if (this.tInstance.has("submissionsByQid") && this.tInstance.has("questionsByQID")) {
                             var submissionsByQid = this.tInstance.get("submissionsByQid");
@@ -99,16 +99,16 @@ define(['underscore', 'backbone', 'mustache', 'text!QuestionSubmitView.html'], f
                                     data.questionOpen = false;
                                 } else {
                                     if (submission === undefined) {
-                                        data.answerStatus = '<span class="label label-default">no answer</span>';
+                                        data.answerStatus = '<span class="label answer-none">no answer</span>';
                                     } else {
                                         if (submission.graded) {
                                             if (submission.correct) {
                                                 data.questionOpen = false;
                                             } else {
-                                                data.answerStatus = '<span class="label label-danger">incorrect</span>';
+                                                data.answerStatus = '<span class="label answer-incorrect">incorrect</span>';
                                             }
                                         } else {
-                                            data.answerStatus = '<span class="label label-primary">saved</span>';
+                                            data.answerStatus = '<span class="label answer-saved">saved</span>';
                                         }
                                     }
                                 }
