@@ -17,13 +17,13 @@
               <th style="width: 1%"></th>
               <th></th>
               <th>TID</th>
-              <th>Students</th>
-              <th>Scores</th>
-              <th>Median</th>
+              <th class="cell-center">Students</th>
+              <th class="cell-center">Scores</th>
+              <th class="cell-center">Median</th>
             </tr>
           </thead>
           <tbody>
-            <% results.forEach(function(result) { %>
+            <% results.forEach(function(result, i) { %>
             <% if (result.start_new_set) { %>
             <tr class="<%= result.color %>">
               <th colspan="6"><%= result.long_name %></th>
@@ -37,9 +37,13 @@
                 <a href="<%= urlPrefix %>/tests/<%= result.id %>/"><%= result.title %></a>
               </td>
               <td><%= result.tid %></td>
-              <td><%= result.number %></td>
-              <td></td>
-              <td><%= result.median %><% if (result.median != null) { %>%<% } %></td>
+              <td class="cell-center"><%= result.number %></td>
+              <td class="cell-center"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
+              <script>
+                var data = <%= result.median %>;
+                $("#scoreHist<%= i %>").text(data);
+              </script>
+              <td class="cell-center"><%- include('../partials/scorebar', {score: result.median}); %></td>
             </tr>
             <% }); %>
           </tbody>
