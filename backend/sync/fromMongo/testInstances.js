@@ -117,43 +117,38 @@ module.exports = {
     syncTestScores: function(testInstance, ti, user, test) {
         if (test.type == 'Exam') {
             if (!_(ti).has('score')) return Promise.resolve();
-            return Promise.try(function() {
-                return models.TestScore.findOrCreate({where: {
-                    testInstanceId: testInstance.id,
-                }});
-            }).spread(function(testScore, created) {
-                return testScore.update({
-                    date: ti.finishDate,
-                    points: ti.score,
-                    maxPoints: test.maxScore,
-                    scorePerc: ti.scorePerc,
-                    authUserId: user.id,
-                });
-            });
+            return models.TestScore.findOrCreate({where: {
+                testInstanceId: testInstance.id,
+            }, defaults: {
+                date: ti.finishDate,
+                points: ti.score,
+                maxPoints: test.maxScore,
+                scorePerc: ti.scorePerc,
+                authUserId: user.id,
+            }});
         } else if (test.type == 'RetryExam') {
             return Promise.all(_(ti.gradingDates).map(function(d, i) {
-                return Promise.try(function() {
-                    return models.TestScore.findOrCreate({where: {
-                        testInstanceId: testInstance.id,
-                        date: d,
-                    }, defaults: {
-                        authUserId: user.id,
-                    }});
-                }).spread(function(testScore, created) {
-                    if (i < ti.gradingDates.length - 1) return Promise.resolve();
-                    return testScore.update({
-                        points: ti.score,
-                        maxPoints: test.maxScore,
-                        scorePerc: ti.scorePerc,
-                    });
-                });
+                return models.TestScore.findOrCreate({where: {
+                    testInstanceId: testInstance.id,
+                    date: d,
+                }, defaults: {
+                    authUserId: user.id,
+                    maxPoints: test.maxScore,
+                    points: ((i < ti.gradingDates.length - 1) ? 0 : ti.score),
+                    scorePerc: ((i < ti.gradingDates.length - 1) ? 0 : ti.scorePerc),
+                }});
             }));
-        } else if (test.type == 'Basic') {
-            // handled during submission sync
-            return Promise.resolve();
-        } else if (test.type == 'Game') {
-            // handled during submission sync
-            return Promise.resolve();
+        } else if (test.type == 'Basic' || test.type == 'Game') {
+            return models.TestScore.findOrCreate({where: {
+                testInstanceId: testInstance.id,
+            }, defaults: {
+                date: null, // will be set in submissions sync
+                points: ti.score,
+                maxPoints: test.maxScore,
+                scorePerc: (_(ti).has('scorePerc') ? ti.scorePerc
+                            : (_(test).has('maxScore') ? Math.floor(ti.score / test.maxScore * 100) : 0)),
+                authUserId: user.id,
+            }});
         } else {
             throw Error('unknown test.type');
         }

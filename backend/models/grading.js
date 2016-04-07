@@ -13,6 +13,11 @@ module.exports = function(sequelize, DataTypes) {
                 Grading.belongsTo(models.User, {as: 'auth_user'}, {onUpdate: 'CASCADE', onDelete: 'CASCADE'});
             }
         },
+        indexes: [
+            {
+                fields: ['submission_id'],
+            },
+        ],
     });
 
     return Grading;

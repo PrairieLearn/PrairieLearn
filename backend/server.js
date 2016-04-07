@@ -3461,10 +3461,10 @@ var syncMongoToSQL = function(callback) {
     async.series([
         function(callback) {logger.infoOverride("Syncing users from Mongo to SQL DB"); callback(null);},
         syncUsers.sync.bind(null, courseDB.courseInfo, uidToRole),
-        //function(callback) {logger.infoOverride("Syncing test instances from Mongo to SQL DB"); callback(null);},
-        //syncTestInstances.sync.bind(null, courseDB.courseInfo, courseDB.testDB),
-        //function(callback) {logger.infoOverride("Syncing question instances from Mongo to SQL DB"); callback(null);},
-        //syncQuestionInstances.sync.bind(null, courseDB.courseInfo, courseDB.testDB, courseDB.questionDB),
+        function(callback) {logger.infoOverride("Syncing test instances from Mongo to SQL DB"); callback(null);},
+        syncTestInstances.sync.bind(null, courseDB.courseInfo, courseDB.testDB),
+        function(callback) {logger.infoOverride("Syncing question instances from Mongo to SQL DB"); callback(null);},
+        syncQuestionInstances.sync.bind(null, courseDB.courseInfo, courseDB.testDB, courseDB.questionDB),
         function(callback) {logger.infoOverride("Syncing submissions from Mongo to SQL DB"); callback(null);},
         syncSubmissions.sync.bind(null, courseDB.courseInfo, courseDB.testDB, courseDB.questionDB),
     ], function(err) {

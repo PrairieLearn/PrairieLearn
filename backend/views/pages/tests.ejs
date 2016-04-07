@@ -18,20 +18,15 @@
               <th></th>
               <th>TID</th>
               <th>Students</th>
-              <th>Mean</th>
-              <th>Std</th>
-              <th>Min</th>
+              <th>Scores</th>
               <th>Median</th>
-              <th>Max</th>
-              <th>N ≤ 0%</th>
-              <th>N ≥ 100%</th>
             </tr>
           </thead>
           <tbody>
             <% results.forEach(function(result) { %>
             <% if (result.start_new_set) { %>
             <tr class="<%= result.color %>">
-              <th colspan="11"><%= result.long_name %></th>
+              <th colspan="6"><%= result.long_name %></th>
             </tr>
             <% } %>
             <tr>
@@ -43,13 +38,8 @@
               </td>
               <td><%= result.tid %></td>
               <td><%= result.number %></td>
-              <td><%= result.mean %><% if (result.mean != null) { %>%<% } %></td>
-              <td><%= result.std %><% if (result.std != null) { %>%<% } %></td>
-              <td><%= result.min %><% if (result.min != null) { %>%<% } %></td>
+              <td></td>
               <td><%= result.median %><% if (result.median != null) { %>%<% } %></td>
-              <td><%= result.max %><% if (result.max != null) { %>%<% } %></td>
-              <td><%= result.n_zero %></td>
-              <td><%= result.n_hundred %></td>
             </tr>
             <% }); %>
           </tbody>
