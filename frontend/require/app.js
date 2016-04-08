@@ -214,9 +214,9 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                                         that.set('version', version);
                                         callback(null);
                                     })
-                                .fail(function(jqxhr, textStatus, error) {
-                                    callback(error);
-                                });
+                                    .fail(function(jqxhr, textStatus, error) {
+                                        callback(error);
+                                    });
                             }
                         },
                 ], function(err) {
