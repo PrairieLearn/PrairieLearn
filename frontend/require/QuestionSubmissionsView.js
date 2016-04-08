@@ -35,14 +35,14 @@ define(['underscore', 'backbone', 'mustache', 'moment', 'renderer', 'spinControl
                             score here to pick a correct/incorrect flag.
                         if (submission.correct == 1) {
                             submission.submissionPanelStyle = 'panel-success';
-                            submission.submissionStatus = 'correct';
+                            submission.submissionStatus = '<span class="label label-success">correct</div>';
                         } else {
                             submission.submissionPanelStyle = 'panel-danger';
-                            submission.submissionStatus = 'correct';
+                            submission.submissionStatus = '<span class="label label-danger">incorrect</div>';
                         } */
                     } else {
                         submission.submissionPanelStyle = 'panel-info';
-                        submission.submissionStatus = 'saved';
+                        submission.submissionStatus = '<span class="label label-primary">saved</span>';
                     }
                 });
                 

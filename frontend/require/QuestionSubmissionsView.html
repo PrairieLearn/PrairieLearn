@@ -2,7 +2,10 @@
 <div class="panel-group">
   {{#pastSubmissions}}
   <div class="panel {{submissionPanelStyle}}">
-    <div class="panel-heading">Submission {{submissionIndex}} ({{prettyDate}}) {{submissionStatus}}</div>
+    <div class="panel-heading">
+      <h3 class="panel-title">Submission {{submissionIndex}} ({{prettyDate}}) {{{submissionStatus}}}
+      </h3>
+    </div>
     <div id="{{sid}}submissionBody" class="panel-body">
       Submission {{sid}} is loading...
     </div>
