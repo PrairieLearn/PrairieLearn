@@ -1,5 +1,5 @@
 
-define(["underscore", "backbone", "mustache", "RetryExamTestHelper", "text!RetryExamTestSidebarView.html"], function(_, Backbone, Mustache, RetryExamTestHelper, RetryExamTestSidebarViewTemplate) {
+define(["underscore", "backbone", "mustache", "moment", "RetryExamTestHelper", "text!RetryExamTestSidebarView.html"], function(_, Backbone, Mustache, moment, RetryExamTestHelper, RetryExamTestSidebarViewTemplate) {
 
     var RetryExamTestSidebarView = Backbone.View.extend({
 
@@ -44,6 +44,11 @@ define(["underscore", "backbone", "mustache", "RetryExamTestHelper", "text!Retry
             var question = questionsByQID[qid];
             _(data).extend(RetryExamTestHelper.getQuestionData(submission, question, data.open));
             data.allQuestionsAnswered = Object.keys(submissionsByQid).length === Object.keys(questionsByQID).length;
+            if (submission && submission.date) {
+                data.saveDate = submission.date;
+                var dateDiff = (Date.now() - new Date(submission.date)) / 1000;
+                data.saveDateHuman = moment(submission.date).calendar();
+            }
 
             if (!data.open) {
                 var finishDate = new Date(this.tInstance.get("finishDate"));
@@ -62,6 +67,9 @@ define(["underscore", "backbone", "mustache", "RetryExamTestHelper", "text!Retry
 
             var html = Mustache.render(RetryExamTestSidebarViewTemplate, data);
             this.$el.html(html);
+            if (data.saveDate) {
+                this.$el.find("time.submitDate").livestamp(moment(data.saveDate));
+            }
         },
 
         close: function() {

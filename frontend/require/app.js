@@ -74,8 +74,8 @@ requirejs.config({
     },
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'moment-timezone', 'PrairieRole', 'NavView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestDetailView', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'UserView', 'SyncModel', 'SyncView', 'ErrorsView', 'spinController', 'jquery-ui', 'jquery.jsPlumb', 'ace/ace'],
-function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   moment,            PrairieRole,   NavView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestDetailView,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   UserView,   SyncModel,   SyncView,   ErrorsView,   spinController, jqueryUi, jsPlumb, ace) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'moment-timezone', 'PrairieRole', 'NavView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestDetailView', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'UserView', 'SyncModel', 'SyncView', 'ErrorsView', 'spinController', 'jquery-ui', 'jquery.jsPlumb', 'ace/ace', 'livestamp'],
+function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   moment,            PrairieRole,   NavView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestDetailView,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   UserView,   SyncModel,   SyncView,   ErrorsView,   spinController,   jqueryUi,    jsPlumb,          ace,       livestamp) {
 
     var QuestionModel = Backbone.Model.extend({
         idAttribute: "qid"

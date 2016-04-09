@@ -35,6 +35,12 @@
       Question status: {{{questionStatus}}}
     </p>
 
+    {{#saveDate}}
+    <p>
+      Last saved: {{saveDateHuman}} <small>(<time class="submitDate"></time>)</small>
+    </p>
+    {{/saveDate}}
+
     {{#questionOpen}}
     <p>
       Current value: {{{availablePoints}}}
