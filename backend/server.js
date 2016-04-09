@@ -1,7 +1,6 @@
 var logger = require("./logger");
 var config = require("./config");
 var db = require("./db");
-var courseDB = require("./course-db");
 
 var _ = require("underscore");
 var fs = require("fs");
@@ -24,6 +23,7 @@ if (config.logFilename) {
 }
 
 var requireFrontend = require("./require-frontend");
+var courseDB = require("./course-db");
 var hmacSha256 = require("crypto-js/hmac-sha256");
 var gamma = require("gamma");
 var numeric = require("numeric");
