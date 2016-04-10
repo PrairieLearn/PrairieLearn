@@ -389,6 +389,7 @@ app.use(function(req, res, next) {
         && (/^\/admin/.test(req.path)
             || /^\/images\//.test(req.path)
             || /^\/javascripts\//.test(req.path)
+            || /^\/localscripts\//.test(req.path)
             || /^\/stylesheets\//.test(req.path))) {
         req.authUID = 'user1@illinois.edu';
         req.authName = 'Test User';
