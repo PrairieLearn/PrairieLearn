@@ -2,6 +2,9 @@
 <html>
   <head>
     <%- include('../partials/head'); %>
+    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
+    <script type="text/javascript" src="/javascripts/d3.min.js"></script>
+    <script type="text/javascript" src="/localscripts/histogram.js"></script>
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: 'tests'}); %>
@@ -22,26 +25,26 @@
             </tr>
           </thead>
           <tbody>
-            <% results.forEach(function(result) { %>
-            <% if (result.start_new_zone) { %>
+            <% questions.forEach(function(question) { %>
+            <% if (question.start_new_zone) { %>
             <tr>
-              <th colspan="5">Zone <%= result.zone_number %>. <%= result.zone_title %></th>
+              <th colspan="5">Zone <%= question.zone_number %>. <%= question.zone_title %></th>
             </tr>
             <% } %>
             <tr>
-              <td><a href="<%= urlPrefix %>/tests/<%= test.id %>/testQuestion/<%= result.id %>/"><%= result.number %>. <%= result.title %></a></td>
-              <td><%= result.qid %></td>
-              <td><%= result.topic_name %></td>
+              <td><a href="<%= urlPrefix %>/test/<%= test.id %>/testQuestion/<%= question.id %>/"><%= question.number %>. <%= question.title %></a></td>
+              <td><%= question.qid %></td>
+              <td><%= question.topic_name %></td>
               <td>
-                <% if (test.type == "RetryExam") { %><%= result.points_list %><% } %>
-                <% if (test.type == "Exam")      { %><%= result.max_points %><% } %>
-                <% if (test.type == "Basic")     { %><%= result.max_points %><% } %>
-                <% if (test.type == "Game")      { %><%= result.init_points %>/<%= result.max_points %><% } %>
+                <% if (test.type == "RetryExam") { %><%= question.points_list %><% } %>
+                <% if (test.type == "Exam")      { %><%= question.max_points %><% } %>
+                <% if (test.type == "Basic")     { %><%= question.max_points %><% } %>
+                <% if (test.type == "Game")      { %><%= question.init_points %>/<%= question.max_points %><% } %>
               </td>
               <td>
-                <% if (result.tests) { %>
-                <% result.tests.forEach(function(test) { %>
-                <a href="<%= urlPrefix %>/tests/<%= test.test_id %>" class="btn btn-<%= test.color %> btn-xs" role="button">
+                <% if (question.tests) { %>
+                <% question.tests.forEach(function(test) { %>
+                <a href="<%= urlPrefix %>/test/<%= test.test_id %>" class="btn btn-<%= test.color %> btn-xs" role="button">
                   <%= test.label %></a>
                 <% }); %>
                 <% } %>
@@ -51,6 +54,55 @@
           </tbody>
         </table>
       </div>
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title"><%= testSet.short_name %><%= test.number %> Summary statistics</h3>
+        </div>
+
+        <% if (testStat.number > 0) { %>
+        <div class="panel-body">
+          <div id="scoreHist" class="scoreHistogram"></div>
+          <script>
+            $(function() {
+                var data = [<%= testStat.score_hist %>];
+                var xgrid = _.range(0, 110, 10);
+                var options = {
+                    xlabel: 'score / %',
+                    ylabel: 'number of students',
+                };
+                histogram("#scoreHist", data, xgrid, options);
+            });
+          </script>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <tbody>
+            <tr><td>Number of students</td><td><%= testStat.number %></td></tr>
+            <tr><td>Mean score</td><td><%= testStat.mean %>%</td></tr>
+            <tr><td>Standard deviation</td><td><%= testStat.std %>%</td></tr>
+            <tr><td>Minimum score</td><td><%= testStat.min %>%</td></tr>
+            <tr><td>Median score</td><td><%= testStat.median %>%</td></tr>
+            <tr><td>Maximum score</td><td><%= testStat.max %>%</td></tr>
+            <tr><td>Number of 0%</td><td><%= testStat.n_zero %> (<%= testStat.n_zero_perc %>% of class)</td></tr>
+            <tr><td>Number of 100%</td><td><%= testStat.n_hundred %> (<%= testStat.n_hundred_perc %>% of class)</td></tr>
+          </tbody>
+        </table>
+        <div class="panel-footer">
+          <p>
+            Download <a href="<%= urlPrefix %>/test/<%= testId %>/<%= summaryStatsCsvFilename %>"><%= summaryStatsCsvFilename %></a>
+          </p>
+        </div>
+
+        <% } else { %>
+
+        <div class="panel-body">
+          <p>No student data.</p>
+        </div>
+        
+        <% }%>
+      </div>
+
     </div>
   </body>
 </html>

@@ -26,7 +26,7 @@
                 <th>Role</th>
                 <% course_tests.forEach(function(test) { %>
                 <th>
-                  <a href="<%= urlPrefix %>/tests/<%= test.id %>" class="btn btn-<%= test.color %> btn-xs" role="button">
+                  <a href="<%= urlPrefix %>/test/<%= test.id %>" class="btn btn-<%= test.color %> btn-xs" role="button">
                     <%= test.label %>
                   </a>
                 </th>
@@ -53,6 +53,13 @@
             </tbody>
           </table>
         </div>
+
+        <div class="panel-footer">
+          <p>
+            Download <a href="<%= urlPrefix %>/users/<%= csv_filename %>"><%= csv_filename %></a>
+          </p>
+        </div>
+
       </div>
     </div>
   </body>

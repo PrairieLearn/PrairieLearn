@@ -659,19 +659,20 @@ app.use('/admin/:courseInstanceId', require('./middlewares/currentSemester'));
 app.use('/admin/:courseInstanceId', require('./middlewares/setURLPrefix'));
 app.use('/admin/:courseInstanceId', require('./middlewares/courseList'));
 app.use('/admin/:courseInstanceId', require('./middlewares/semesterList'));
-app.use('/admin/:courseInstanceId/tests/:testId', require('./middlewares/currentTest'));
-app.use('/admin/:courseInstanceId/tests/:testId/testQuestion/:testQuestionId', require('./middlewares/currentTestQuestion'));
-app.use('/admin/:courseInstanceId/questions/:questionId', require('./middlewares/currentQuestion'));
+app.use('/admin/:courseInstanceId/test/:testId', require('./middlewares/currentTest'));
+app.use('/admin/:courseInstanceId/test/:testId/testQuestion/:testQuestionId', require('./middlewares/currentTestQuestion'));
+app.use('/admin/:courseInstanceId/question/:questionId', require('./middlewares/currentQuestion'));
 
 // Actual route handlers.
 app.use('/admin', require('./routes/index'));
-app.use('/admin/:courseInstanceId', require('./routes/tests'));
+// redirect class page to tests page
+app.use(function(req, res, next) {if (/\/admin\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/tests');} next();});
 app.use('/admin/:courseInstanceId/tests', require('./routes/tests'));
-app.use('/admin/:courseInstanceId/tests/:testId', require('./routes/testView'));
-app.use('/admin/:courseInstanceId/tests/:testId/testQuestion/:testQuestionId', require('./routes/testQuestionView'));
+app.use('/admin/:courseInstanceId/test/:testId', require('./routes/testView'));
+app.use('/admin/:courseInstanceId/test/:testId/testQuestion/:testQuestionId', require('./routes/testQuestionView'));
 app.use('/admin/:courseInstanceId/users', require('./routes/users'));
 app.use('/admin/:courseInstanceId/questions', require('./routes/questions'));
-app.use('/admin/:courseInstanceId/questions/:questionId', require('./routes/questionView'));
+app.use('/admin/:courseInstanceId/question/:questionId', require('./routes/questionView'));
 
 // END OF express-generator section 1
 ///////////////////////////////////////////////////////////////////////////////

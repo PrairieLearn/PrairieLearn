@@ -34,26 +34,49 @@
             <% } %>
             <tr>
               <td style="width: 1%">
-                <a href="<%= urlPrefix %>/tests/<%= result.id %>/" class="btn btn-<%= result.color %> btn-xs" role="button"><%= result.label %></a>
+                <a href="<%= urlPrefix %>/test/<%= result.id %>/" class="btn btn-<%= result.color %> btn-xs" role="button"><%= result.label %></a>
               </td>
               <td>
-                <a href="<%= urlPrefix %>/tests/<%= result.id %>/"><%= result.title %></a>
+                <a href="<%= urlPrefix %>/test/<%= result.id %>/"><%= result.title %></a>
               </td>
               <td><%= result.tid %></td>
+
               <td class="cell-center"><%= result.number %></td>
+
+              <% if (result.number > 0) { %>
               <td class="cell-center"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
               <script>
-                var data = [<%= result.score_hist %>];
-                histmini("#scoreHist<%= i %>", data, {
-                    width: 60,
-                    height: 20,
+                $(function() {
+                    var data = [<%= result.score_hist %>];
+                    var options = {
+                        width: 60,
+                        height: 20,
+                    };
+                    histmini("#scoreHist<%= i %>", data, options);
                 });
               </script>
+              <% } else { %>
+              <td class="cell-center"></td>
+              <% } %>
+
+              <% if (result.number > 0) { %>
               <td class="cell-center"><%- include('../partials/scorebar', {score: result.median}); %></td>
+              <% } else { %>
+              <td class="cell-center"></td>
+              <% } %>
+
             </tr>
             <% }); %>
           </tbody>
         </table>
+
+        <div class="panel-footer">
+          <p>
+            Download <a href="<%= urlPrefix %>/tests/<%= csvFilename %>"><%= csvFilename %></a>
+            (includes more statistics columns than displayed above)
+          </p>
+        </div>
+
       </div>
     </div>
   </body>

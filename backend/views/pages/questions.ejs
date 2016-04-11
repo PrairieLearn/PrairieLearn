@@ -34,7 +34,7 @@
               <td>
                 <% if (result.tests) { %>
                 <% result.tests.forEach(function(test) { %>
-                <a href="<%= urlPrefix %>/tests/<%= test.test_id %>" class="btn btn-<%= test.color %> btn-xs" role="button">
+                <a href="<%= urlPrefix %>/test/<%= test.test_id %>" class="btn btn-<%= test.color %> btn-xs" role="button">
                   <%= test.label %></a>
                 <% }); %>
                 <% } %>
