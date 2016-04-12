@@ -387,15 +387,7 @@ app.use(function(req, res, next) {
         next();
         return;
     }
-    if (config.authType == 'eppn') {
-        req.authUID = req.headers['eppn'];
-
-        // FIXME: we need to figure out what headers are being passed with eppn auth
-        req.authRole = uidToRole(req.authUID);
-        req.mode = 'Default';
-        req.userUID = req.authUID;
-        req.userRole = req.authRole;
-    } else if (config.authType == 'x-auth' || config.authType === 'none') {
+    else if (config.authType == 'eppn' || config.authType == 'x-auth' || config.authType === 'none') {
         var authUID = null, authName = null, authDate = null, authSignature = null, mode = null, userUID = null, userRole = null;
         if (req.cookies.userData) {
             var cookieUserData;
@@ -443,6 +435,7 @@ app.use(function(req, res, next) {
         // authorization succeeded, store data in the request
         req.authUID = authUID;
         req.authName = authName;
+        req.authDate = authDate;
         req.authSignature = authSignature;
         req.authRole = authRole;
         req.mode = mode;
@@ -961,10 +954,37 @@ app.get("/qInstances/:qiid/:filename", function(req, res) {
                 if (!_(info).has("clientFiles")) {
                     return sendError(res, 500, "Question does not have clientFiles, qid: " + fileInfo.qid);
                 }
-                if (!_(info.clientFiles).contains(fileInfo.filename)) {
-                    return sendError(res, 404, "Access denied to '" + fileInfo.filename + "' for qid: " + fileInfo.qid);
+
+                if (_(info).has("clientTemplates") && _(info.clientTemplates).contains(fileInfo.filename)) {
+                    // File is template which needs to be rendered
+                    fs.readFile(path.join(fileInfo.root, fileInfo.filePath), function(err, data) {
+                        if (err) return sendError(res, 500, "Error reading template file", err);
+                        var template = _.template(data.toString());
+                        var templatedText;
+                        try {
+                            templatedText = template({
+                                authUID: req.authUID,
+                                authName: req.authName,
+                                authDate: req.authDate,
+                                authSignature: req.authSignature,
+                                userUID: req.userUID,
+                                qid: qid,
+                                qiid: qiid,
+                                tiid: qInstance.tiid
+                            });
+                        } catch (e) {
+                            return sendError(res, 500, "Error rendering template", e);
+                        }
+                        res.type(fileInfo.filePath);
+                        res.send(templatedText);
+                    });
+                } else if (_(info.clientFiles).contains(fileInfo.filename)) {
+                    // File is a regular file
+                    res.sendFile(fileInfo.filePath, {root: fileInfo.root});
+                } else {
+                    // File is in neither clientFiles nor clientTemplates
+                    sendError(res, 404, "Access denied to '" + fileInfo.filename + "' for qid: " + fileInfo.qid);
                 }
-                res.sendFile(fileInfo.filePath, {root: fileInfo.root});
             });
         });
     });
