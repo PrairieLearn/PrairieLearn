@@ -18,9 +18,21 @@ var summaryStatsCsvFilename = function(locals) {
         + 'summary_stats.csv';
 };
 
+var scoresCsvFilename = function(locals) {
+    return locals.course.short_name.replace(/\s+/g, '')
+        + '_'
+        + locals.semester.short_name
+        + '_'
+        + locals.testSet.short_name
+        + locals.test.number
+        + '_'
+        + 'scores.csv';
+};
+
 router.get('/', function(req, res, next) {
     var locals = _.extend({
         summaryStatsCsvFilename: summaryStatsCsvFilename(req.locals),
+        scoresCsvFilename: scoresCsvFilename(req.locals),
     }, req.locals);
     Promise.try(function() {
         var sql
@@ -92,6 +104,24 @@ router.get('/', function(req, res, next) {
             testStat: testStats[0],
         }, locals);
 
+        var sql
+            = ' SELECT u.id,u.uid,u.name,e.role,uts.score_perc'
+            + ' FROM user_test_scores AS uts'
+            + ' JOIN users AS u ON (u.id = uts.user_id)'
+            + ' JOIN tests AS t ON (t.id = uts.test_id)'
+            + ' JOIN enrollments AS e ON (e.user_id = u.id)'
+            + ' WHERE t.id = :testId'
+            + ' ORDER BY e.role DESC,u.uid,u.id'
+            + ' ;';
+        var params = {
+            testId: req.locals.testId,
+        };
+        return models.sequelize.query(sql, {replacements: params});
+    }).spread(function(userScores, info) {
+        locals = _.extend({
+            userScores: userScores,
+        }, locals);
+        
         res.render('pages/testView', locals);
     });
 });

@@ -103,6 +103,38 @@
         <% }%>
       </div>
 
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title"><%= testSet.short_name %><%= test.number %> Scores</h3>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <thead>
+            <tr>
+              <th>UID</th>
+              <th>Name</th>
+              <th class="cell-center">Role</th>
+              <th class="cell-center">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% userScores.forEach(function(row) { %>
+            <tr>
+              <td><%= row.uid %></td>
+              <td><%= row.name %></td>
+              <td class="cell-center"><%= row.role %></td>
+              <td class="cell-center"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+        <div class="panel-footer">
+          <p>
+            Download <a href="<%= urlPrefix %>/test/<%= testId %>/<%= scoresCsvFilename %>"><%= scoresCsvFilename %></a>
+          </p>
+        </div>
+      </div>
+
     </div>
   </body>
 </html>

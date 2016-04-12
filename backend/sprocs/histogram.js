@@ -27,7 +27,7 @@ module.exports.sql
     + " $$ LANGUAGE plpgsql IMMUTABLE;\n"
     + " \n"
     + " -- Tell Postgres how to use the new function\n"
-    + " DROP AGGREGATE IF EXISTS histogram (REAL, REAL, REAL, INTEGER);\n"
+    + " DROP AGGREGATE IF EXISTS histogram (REAL, REAL, REAL, INTEGER) CASCADE;\n"
     + " CREATE AGGREGATE histogram (REAL, REAL, REAL, INTEGER) (\n"
     + "     SFUNC = hist_sfunc,\n"
     + "     STYPE = INTEGER[]\n"
