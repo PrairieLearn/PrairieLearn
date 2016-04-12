@@ -387,7 +387,8 @@ app.use(function(req, res, next) {
         next();
         return;
     }
-    else if (config.authType == 'eppn' || config.authType == 'x-auth' || config.authType === 'none') {
+
+    if (config.authType == 'eppn' || config.authType == 'x-auth' || config.authType === 'none') {
         var authUID = null, authName = null, authDate = null, authSignature = null, mode = null, userUID = null, userRole = null;
         if (req.cookies.userData) {
             var cookieUserData;
