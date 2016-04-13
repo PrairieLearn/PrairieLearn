@@ -1,3 +1,3 @@
 .PHONY: upload
 upload:
-	@python .pl_upload.py
+	@python2 .pl_upload.py
