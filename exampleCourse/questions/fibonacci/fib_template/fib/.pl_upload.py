@@ -18,6 +18,8 @@ underline = lambda s: '\033[4m%s\033[24m' % s
 config = configparser.RawConfigParser()
 config.read('.pl_upload.cfg')
 
+base_url = config.get('PrairieLearn', 'base_url')
+
 auth_uid = config.get('Authentication', 'auth_uid')
 auth_name = config.get('Authentication', 'auth_name')
 auth_date = config.get('Authentication', 'auth_date')
@@ -46,7 +48,7 @@ submission = json.dumps({
     'tiid': tiid,
 })
 
-url = 'http://localhost:3000/submissions'
+url = base_url + '/submissions'
 headers = {
     'X-Auth-UID': auth_uid,
     'X-Auth-Name': auth_name,
