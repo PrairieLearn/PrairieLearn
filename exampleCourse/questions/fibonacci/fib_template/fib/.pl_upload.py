@@ -1,4 +1,3 @@
-#!/usr/bin/env python2
 import ConfigParser
 import base64
 import json
