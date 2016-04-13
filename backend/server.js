@@ -952,9 +952,6 @@ app.get("/qInstances/:qiid/:filename", function(req, res) {
                 if (info === undefined) {
                     return sendError(res, 404, "No such qid: " + fileInfo.qid);
                 }
-                if (!_(info).has("clientFiles")) {
-                    return sendError(res, 500, "Question does not have clientFiles, qid: " + fileInfo.qid);
-                }
 
                 if (_(info).has("clientTemplates") && _(info.clientTemplates).contains(fileInfo.filename)) {
                     // File is template which needs to be rendered
@@ -979,7 +976,7 @@ app.get("/qInstances/:qiid/:filename", function(req, res) {
                         res.type(fileInfo.filePath);
                         res.send(templatedText);
                     });
-                } else if (_(info.clientFiles).contains(fileInfo.filename)) {
+                } else if (_(info).has("clientFiles") && _(info.clientFiles).contains(fileInfo.filename)) {
                     // File is a regular file
                     res.sendFile(fileInfo.filePath, {root: fileInfo.root});
                 } else {
