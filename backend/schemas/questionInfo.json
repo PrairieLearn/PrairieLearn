@@ -36,6 +36,14 @@
                 "type": "string"
             }
         },
+        "clientTemplates": {
+            "description": "List of client-accessible templates to render server-side.",
+            "type": "array",
+            "items": {
+                "description": "A single template file accessible by the client.",
+                "type": "string"
+            }
+        },
         "template": {
             "description": "The QID of a question that serves at the template for this question.",
             "type": "string"

@@ -2,7 +2,8 @@
     "title": "Write a Fibonacci function",
     "topic": "Functions",
     "tags": ["recursion"],
-    "clientFiles": ["client.js", "question.html", "answer.html", "fib.py"],
+    "clientFiles": ["client.js", "question.html", "answer.html", "fib.py", "fib.tar.gz"],
+    "clientTemplates": ["checkout.py"],
     "type": "File",
     "options": {
         "fileName": "fib.py"
