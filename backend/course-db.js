@@ -3,6 +3,7 @@ var _ = require('underscore');
 var fs = require('fs');
 var async = require('async');
 var moment = require("moment-timezone");
+var child_process = require("child_process");
 var jsonLoad = require('./json-load');
 var config = require('./config');
 var logger = require('./logger');
