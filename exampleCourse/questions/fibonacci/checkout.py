@@ -1,8 +1,14 @@
-import ConfigParser
+#!/usr/bin/env python
 import os
 import sys
 import tarfile
-import urllib2
+
+if sys.version_info[0] < 3:
+    import ConfigParser as configparser
+    from urllib2 import Request, urlopen
+else:
+    import configparser
+    from urllib.request import Request, urlopen
 
 red = lambda s: '\033[31m%s\033[39m' % s
 green = lambda s: '\033[32m%s\033[39m' % s
@@ -19,9 +25,9 @@ qiid = """<%= qiid %>"""
 tiid = """<%= tiid %>"""
 
 if os.path.isdir('fib'):
-    print '%s: You have already checked out the problem code.' % (
-            red(underline('Error')))
-    print 'If you want to replace your code with a clean copy, run `rm -rf fib`.'
+    print('%s: You have already checked out the problem code.' % (
+        red(underline('Error'))))
+    print('If you want to replace your code with a clean copy, run `rm -rf fib`.')
     sys.exit(1)
 
 url = 'http://localhost:3000/qInstances/%s/fib.tar.gz' % qiid
@@ -31,13 +37,13 @@ headers = {
     'X-Auth-Date': auth_date,
     'X-Auth-Signature': auth_signature,
 }
-req = urllib2.Request(url, headers=headers)
-f = urllib2.urlopen(req)
+req = Request(url, headers=headers)
+f = urlopen(req)
 
 with tarfile.open(fileobj=f, mode='r|gz') as tar:
     tar.extractall()
 
-config = ConfigParser.RawConfigParser()
+config = configparser.RawConfigParser()
 
 config.add_section('Authentication')
 config.set('Authentication', 'auth_uid', auth_uid)
@@ -54,5 +60,5 @@ config.set('Question', 'tiid', tiid)
 with open('fib/.pl_upload.cfg', 'w') as configfile:
     config.write(configfile)
 
-print 'Problem code has been checked out to %s.' % green(os.path.abspath('fib'))
-print 'Run `make upload` to upload your code to PrairieLearn.'
+print('Problem code has been checked out to %s.' % green(os.path.abspath('fib')))
+print('Run `make upload` to upload your code to PrairieLearn.')
