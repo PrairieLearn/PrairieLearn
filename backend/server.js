@@ -814,7 +814,7 @@ app.post("/coursePulls", function(req, res) {
     if (!config.gitCourseBranch) {
         return sendError(res, 500, "Syncing not enabled.");
     }
-    getCourseOriginURL(function(err, originURL) {
+    courseDB.getCourseOriginURL(function(err, originURL) {
         if (err) return sendError(res, 500, "Unable to get originURL", err);
         gitPullCourseOrigin(function(err, pullResult) {
             if (err) return sendError(res, 500, "Unable to git pull", err);
