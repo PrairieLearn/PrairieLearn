@@ -388,6 +388,7 @@ app.use(function(req, res, next) {
     if (config.authType === 'none'
         && (/^\/admin/.test(req.path)
             || /^\/images\//.test(req.path)
+            || /^\/fonts\//.test(req.path)
             || /^\/javascripts\//.test(req.path)
             || /^\/localscripts\//.test(req.path)
             || /^\/stylesheets\//.test(req.path))) {

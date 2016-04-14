@@ -2,8 +2,11 @@
 <html>
   <head>
     <%- include('../partials/head'); %>
+    <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
     <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
     <script type="text/javascript" src="/javascripts/d3.min.js"></script>
+    <script type="text/javascript" src="/javascripts/jquery.tablesorter.min.js"></script>
+    <script type="text/javascript" src="/javascripts/jquery.tablesorter.widgets.js"></script>
     <script type="text/javascript" src="/localscripts/histogram.js"></script>
   </head>
   <body>
@@ -89,9 +92,7 @@
           </tbody>
         </table>
         <div class="panel-footer">
-          <p>
-            Download <a href="<%= urlPrefix %>/test/<%= testId %>/<%= summaryStatsCsvFilename %>"><%= summaryStatsCsvFilename %></a>
-          </p>
+          Download <a href="<%= urlPrefix %>/test/<%= testId %>/<%= summaryStatsCsvFilename %>"><%= summaryStatsCsvFilename %></a>
         </div>
 
         <% } else { %>
@@ -107,8 +108,11 @@
         <div class="panel-heading">
           <h3 class="panel-title"><%= testSet.short_name %><%= test.number %> Scores</h3>
         </div>
+        <div class="panel-body">
+          Download <a href="<%= urlPrefix %>/test/<%= testId %>/<%= scoresCsvFilename %>"><%= scoresCsvFilename %></a>
+        </div>
 
-        <table class="table table-condensed table-hover">
+        <table id="usersTable" class="table table-condensed table-hover tablesorter">
           <thead>
             <tr>
               <th>UID</th>
@@ -130,10 +134,18 @@
             <% }); %>
           </tbody>
         </table>
+        <script>
+          $(function(){
+              $("#usersTable").tablesorter({
+                  theme: "bootstrap",
+                  widthFixed: true,
+                  headerTemplate: '{content} {icon}',
+                  widgets: ["uitheme"],
+              });
+          });
+        </script>
         <div class="panel-footer">
-          <p>
-            Download <a href="<%= urlPrefix %>/test/<%= testId %>/<%= scoresCsvFilename %>"><%= scoresCsvFilename %></a>
-          </p>
+          Download <a href="<%= urlPrefix %>/test/<%= testId %>/<%= scoresCsvFilename %>"><%= scoresCsvFilename %></a>
         </div>
       </div>
 
