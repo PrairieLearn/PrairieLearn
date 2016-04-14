@@ -4,6 +4,8 @@ var histogram = require('./sprocs/histogram');
 var userTestScores = require('./sprocs/userTestScores');
 var studentTestScores = require('./sprocs/studentTestScores');
 var testStats = require('./sprocs/testStats');
+var testInstanceDurations = require('./sprocs/testInstanceDurations');
+var userTestDurations = require('./sprocs/userTestDurations');
 
 module.exports = {
     init: function(callback) {
@@ -17,6 +19,10 @@ module.exports = {
             return models.sequelize.query(studentTestScores.sql);
         }).then(function() {
             return models.sequelize.query(testStats.sql);
+        }).then(function() {
+            return models.sequelize.query(testInstanceDurations.sql);
+        }).then(function() {
+            return models.sequelize.query(userTestDurations.sql);
         }).then(function() {
             callback(null);
         }).catch(function(err) {

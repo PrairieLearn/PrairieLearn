@@ -105,18 +105,22 @@ router.get('/', function(req, res, next) {
         }, locals);
 
         var sql
-            = ' SELECT u.id,u.uid,u.name,e.role,uts.score_perc'
-            + ' FROM user_test_scores AS uts'
-            + ' JOIN users AS u ON (u.id = uts.user_id)'
-            + ' JOIN tests AS t ON (t.id = uts.test_id)'
+            = ' SELECT'
+            + '     u.id,u.uid,u.name,e.role,uts.score_perc,'
+            + '     to_char(utd.duration, \'HH24:MI:SS\') as duration'
+            + ' FROM tests AS t'
+            + ' CROSS JOIN users AS u'
             + ' JOIN enrollments AS e ON (e.user_id = u.id)'
-            + ' WHERE t.id = :testId'
+            + ' JOIN user_test_scores AS uts ON (uts.user_id = u.id AND uts.test_id = t.id)'
+            + ' JOIN user_test_durations AS utd ON (utd.user_id = u.id AND utd.test_id = t.id)'
+            + ' WHERE t.id = $testId'
+            + ' AND t.course_instance_id = e.course_instance_id'
             + ' ORDER BY e.role DESC,u.uid,u.id'
             + ' ;';
         var params = {
             testId: req.locals.testId,
         };
-        return models.sequelize.query(sql, {replacements: params});
+        return models.sequelize.query(sql, {bind: params});
     }).spread(function(userScores, info) {
         locals = _.extend({
             userScores: userScores,

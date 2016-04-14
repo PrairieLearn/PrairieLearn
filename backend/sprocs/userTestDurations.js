@@ -1,0 +1,13 @@
+module.exports.sql
+    = ' CREATE OR REPLACE VIEW user_test_durations AS'
+    + ' SELECT'
+    + '     u.id AS user_id,'
+    + '     t.id AS test_id,'
+    + '     max(durations.duration) AS duration'
+    + ' FROM users AS u'
+    + ' JOIN test_instances AS ti ON (ti.user_id = u.id)'
+    + ' JOIN tests AS t ON (t.id = ti.test_id)'
+    + ' JOIN test_instance_durations AS durations ON (durations.id = ti.id)'
+    + ' WHERE t.deleted_at IS NULL'
+    + ' GROUP BY u.id, t.id'
+    + ' ;'
