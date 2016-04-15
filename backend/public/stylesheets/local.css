@@ -1,3 +1,7 @@
+body {
+  overflow-y: scroll;
+}
+
 canvas {
     border: 1px solid #aaa;
 }
