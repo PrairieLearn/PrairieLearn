@@ -3495,7 +3495,7 @@ async.series([
         callback(null);
         async.series([
             syncDiskToSQL,
-            syncMongoToSQL,
+            //syncMongoToSQL,
         ], function(err, data) {
             if (err) {
                 logger.error("Error syncing SQL DB:", err, data);

@@ -25,7 +25,7 @@ module.exports = {
                     }}).spread(function(topic, created) {
                         topicIDs.push(topic.id);
                         topic.update({
-                            number: i,
+                            number: i + 1,
                             color: colors.topics[i % colors.topics.length],
                         });
                     });

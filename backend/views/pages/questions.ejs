@@ -2,6 +2,9 @@
 <html>
   <head>
     <%- include('../partials/head'); %>
+    <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
+    <script type="text/javascript" src="/javascripts/jquery.tablesorter.min.js"></script>
+    <script type="text/javascript" src="/javascripts/jquery.tablesorter.widgets.js"></script>
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: 'questions'}); %>
@@ -11,31 +14,35 @@
           <h3 class="panel-title">Questions</h3>
         </div>
 
-        <table class="table table-condensed table-hover">
+        <div class="panel-body">
+          <button class="btn btn-primary resetFilter">Clear all filters</button>
+        </div>
+        
+        <table id="questionsTable" class="table table-condensed table-hover tablesorter">
           <thead>
             <tr>
-              <td></td>
+              <th>Title</th>
               <th>QID</th>
-              <th>Tests</th>
+              <th class="filter-select filter-exact" data-placeholder="Choose topic">Topic</th>
+              <th data-placeholder="Choose test">Tests</th>
             </tr>
           </thead>
           <tbody>
-            <% results.forEach(function(result) { %>
-            <% if (result.start_new_topic) { %>
-            <tr class="info">
-              <th><%= result.topic_name %></th>
-              <td></td>
-              <td></td>
-            </tr>
-            <% } %>
+            <% questions.forEach(function(question) { %>
             <tr>
-              <td><a href="<%= urlPrefix %>/questions/<%= result.id %>/"><%= result.title %></a></td>
-              <td><%= result.qid %></td>
+              <td><a href="<%= urlPrefix %>/question/<%= question.id %>/"><%= question.title %></a></td>
+              <td><%= question.qid %></td>
               <td>
-                <% if (result.tests) { %>
-                <% result.tests.forEach(function(test) { %>
+                <a href="<%= urlPrefix %>/topic/<%= question.topic_id %>" class="btn btn-<%= question.topic_color %> btn-xs topic-button" role="button">
+                  <%= question.topic_number %>. <%= question.topic_name %>
+                </a>
+              </td>
+              <td>
+                <% if (question.tests) { %>
+                <% question.tests.forEach(function(test) { %>
                 <a href="<%= urlPrefix %>/test/<%= test.test_id %>" class="btn btn-<%= test.color %> btn-xs" role="button">
-                  <%= test.label %></a>
+                  <%= test.label %>
+                </a>
                 <% }); %>
                 <% } %>
               </td>
@@ -43,6 +50,28 @@
             <% }); %>
           </tbody>
         </table>
+        <script>
+          $(function(){
+              $("#questionsTable").tablesorter({
+                  theme: "bootstrap",
+                  widthFixed: true,
+                  headerTemplate: '{content} {icon}',
+                  widgets: ["uitheme", "filter", "zebra"],
+                  widgetOptions: {
+                      zebra: ["even", "odd"],
+                      filter_reset : ".resetFilter",
+                      filter_cssFilter: "form-control",
+                      filter_functions: {
+                          3: {
+                              <% tests.forEach(function(test) { %>
+                                  <%= test.label %>: function(e, n, f, i, $r, c, data) { return /\b<%= test.label %>\b/.test(e); },
+                              <% }); %>
+                          },
+                      },
+                  },
+              });
+          });
+        </script>
       </div>
     </div>
   </body>
