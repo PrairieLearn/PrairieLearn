@@ -22,14 +22,15 @@
               <th>TID</th>
               <th class="cell-center">Students</th>
               <th class="cell-center">Scores</th>
-              <th class="cell-center">Median</th>
+              <th class="cell-center">Median Score</th>
+              <th class="cell-center">Median Duration</th>
             </tr>
           </thead>
           <tbody>
             <% results.forEach(function(result, i) { %>
             <% if (result.start_new_set) { %>
             <tr class="<%= result.color %>">
-              <th colspan="6"><%= result.long_name %></th>
+              <th colspan="7"><%= result.long_name %></th>
             </tr>
             <% } %>
             <tr>
@@ -61,6 +62,12 @@
 
               <% if (result.number > 0) { %>
               <td class="cell-center"><%- include('../partials/scorebar', {score: result.median}); %></td>
+              <% } else { %>
+              <td class="cell-center"></td>
+              <% } %>
+
+              <% if (result.number > 0) { %>
+              <td class="cell-center"><%= result.median_duration %></td>
               <% } else { %>
               <td class="cell-center"></td>
               <% } %>

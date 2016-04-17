@@ -22,13 +22,16 @@ var sql
     + '     tstats.number,tstats.mean,tstats.std,tstats.min,tstats.max,'
     + '     tstats.median,tstats.n_zero,tstats.n_hundred,'
     + '     tstats.n_zero_perc,n_hundred_perc,tstats.score_hist,'
+    + '     dstats.mean AS mean_duration,format_interval(dstats.median) AS median_duration,'
+    + '     dstats.min AS min_duration,dstats.max AS max_duration,'
     + '     ts.short_name,ts.long_name,ts.color,'
     + '     (ts.short_name || t.number) as label,'
     + '     (lag(ts.id) OVER (PARTITION BY ts.id ORDER BY t.number, t.id) IS NULL) AS start_new_set'
     + ' FROM tests AS t'
     + ' LEFT JOIN test_sets AS ts ON (ts.id = t.test_set_id)'
-    + ' LEFT JOIN test_stats AS tstats ON (t.id = tstats.id)'
-    + ' WHERE t.course_instance_id = :courseInstanceId'
+    + ' LEFT JOIN test_stats AS tstats ON (tstats.id = t.id)'
+    + ' LEFT JOIN test_duration_stats AS dstats ON (dstats.id = t.id)'
+    + ' WHERE t.course_instance_id = $courseInstanceId'
     + ' AND t.deleted_at IS NULL'
     + ' ORDER BY (ts.number, t.number, t.id)'
     + ' ;';
@@ -38,7 +41,7 @@ router.get('/', function(req, res, next) {
         var params = {
             courseInstanceId: req.locals.courseInstanceId,
         };
-        return models.sequelize.query(sql, {replacements: params});
+        return models.sequelize.query(sql, {bind: params});
     }).spread(function(results, info) {
         var locals = _.extend({
             results: results,
@@ -54,7 +57,7 @@ router.get('/:filename', function(req, res, next) {
             var params = {
                 courseInstanceId: req.locals.courseInstanceId,
             };
-            return models.sequelize.query(sql, {replacements: params});
+            return models.sequelize.query(sql, {bind: params});
         }).spread(function(testStats, info) {
             var csvHeaders = ['Course', 'Semester', 'Set', 'Number', 'Test', 'Title', 'TID',
                               'NStudents', 'Mean', 'Std', 'Min', 'Max', 'Median',

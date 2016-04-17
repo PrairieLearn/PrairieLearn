@@ -1,0 +1,17 @@
+
+module.exports.sql
+    = "CREATE OR REPLACE FUNCTION format_interval(d interval) RETURNS text AS $$\n"
+    + "    WITH parts AS (\n"
+    + "        SELECT\n"
+    + "            div(CAST(floor(EXTRACT(EPOCH FROM d)) AS integer), 60 * 60 * 24)     AS days,\n"
+    + "            mod(div(CAST(floor(EXTRACT(EPOCH FROM d)) AS integer), 60 * 60), 24) AS hours,\n"
+    + "            mod(div(CAST(floor(EXTRACT(EPOCH FROM d)) AS integer), 60), 60)      AS mins\n"
+    + "    )\n"
+    + "    SELECT\n"
+    + "        CASE\n"
+    + "            WHEN days > 0 THEN days::text || 'd' || hours::text || 'h' || mins::text || 'm'\n"
+    + "            WHEN hours > 0 THEN hours::text || 'h' || mins::text || 'm'\n"
+    + "            ELSE mins::text || 'm'\n"
+    + "        END\n"
+    + "    FROM parts;\n"
+    + "$$ LANGUAGE SQL;"

@@ -7,7 +7,7 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var summaryStatsCsvFilename = function(locals) {
+var scoreStatsCsvFilename = function(locals) {
     return locals.course.short_name.replace(/\s+/g, '')
         + '_'
         + locals.semester.short_name
@@ -15,7 +15,18 @@ var summaryStatsCsvFilename = function(locals) {
         + locals.testSet.short_name
         + locals.test.number
         + '_'
-        + 'summary_stats.csv';
+        + 'score_stats.csv';
+};
+
+var durationStatsCsvFilename = function(locals) {
+    return locals.course.short_name.replace(/\s+/g, '')
+        + '_'
+        + locals.semester.short_name
+        + '_'
+        + locals.testSet.short_name
+        + locals.test.number
+        + '_'
+        + 'duration_stats.csv';
 };
 
 var scoresCsvFilename = function(locals) {
@@ -31,7 +42,8 @@ var scoresCsvFilename = function(locals) {
 
 router.get('/', function(req, res, next) {
     var locals = _.extend({
-        summaryStatsCsvFilename: summaryStatsCsvFilename(req.locals),
+        scoreStatsCsvFilename: scoreStatsCsvFilename(req.locals),
+        durationStatsCsvFilename: durationStatsCsvFilename(req.locals),
         scoresCsvFilename: scoresCsvFilename(req.locals),
     }, req.locals);
     Promise.try(function() {
@@ -87,6 +99,7 @@ router.get('/', function(req, res, next) {
             testId: req.locals.testId,
             courseInstanceId: req.locals.courseInstanceId,
         };
+        t = Date.now();
         return models.sequelize.query(sql, {replacements: params});
     }).spread(function(questions, info) {
         locals = _.extend({
@@ -106,8 +119,30 @@ router.get('/', function(req, res, next) {
 
         var sql
             = ' SELECT'
+            + '     format_interval(tds.median) AS median,'
+            + '     format_interval(tds.min) AS min,'
+            + '     format_interval(tds.max) AS max,'
+            + '     format_interval(tds.mean) AS mean,'
+            + '     threshold_seconds,'
+            + '     threshold_labels,'
+            + '     hist'
+            + ' FROM test_duration_stats AS tds'
+            + ' WHERE id = :testId'
+        var params = {
+            testId: req.locals.testId,
+        };
+        return models.sequelize.query(sql, {replacements: params});
+    }).spread(function(durationStats, info) {
+        if (durationStats.length !== 1) throw Error("could not get duration_stats for test_id = " + req.locals.testId);
+        locals = _.extend({
+            durationStat: durationStats[0],
+        }, locals);
+
+        var sql
+            = ' SELECT'
             + '     u.id,u.uid,u.name,e.role,uts.score_perc,'
-            + '     to_char(utd.duration, \'HH24:MI:SS\') as duration'
+            + '     format_interval(utd.duration) AS duration,'
+            + '     EXTRACT(EPOCH FROM utd.duration) AS duration_secs'
             + ' FROM tests AS t'
             + ' CROSS JOIN users AS u'
             + ' JOIN enrollments AS e ON (e.user_id = u.id)'
@@ -131,7 +166,7 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/:filename', function(req, res, next) {
-    if (req.params.filename == summaryStatsCsvFilename(req.locals)) {
+    if (req.params.filename == scoreStatsCsvFilename(req.locals)) {
         Promise.try(function() {
             var sql = 'SELECT * FROM test_stats WHERE id = :testId;';
             var params = {
