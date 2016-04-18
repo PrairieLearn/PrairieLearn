@@ -12,7 +12,7 @@ else:
 
 dir_name = 'fib'
 archive_name = 'fib.tar.gz'
-base_url = 'http://localhost:3000'
+base_url = """<%= apiServer %>"""
 
 red = lambda s: '\033[31m%s\033[39m' % s
 green = lambda s: '\033[32m%s\033[39m' % s

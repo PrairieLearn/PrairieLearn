@@ -35,6 +35,7 @@ var PrairieStats = requireFrontend("PrairieStats");
 var PrairieModel = requireFrontend("PrairieModel");
 var PrairieRole = requireFrontend("PrairieRole");
 var PrairieGeom = requireFrontend("PrairieGeom");
+var PLConfig = require(path.join(config.frontendDir, "config"));
 var express = require("express");
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
@@ -960,6 +961,8 @@ app.get("/qInstances/:qiid/:filename", function(req, res) {
                         var template = _.template(data.toString());
                         var templatedText;
                         try {
+                            var defaultApiServer = (
+                                config.serverType + '://localhost:' + config.serverPort);
                             templatedText = template({
                                 authUID: req.authUID,
                                 authName: req.authName,
@@ -968,7 +971,8 @@ app.get("/qInstances/:qiid/:filename", function(req, res) {
                                 userUID: req.userUID,
                                 qid: qid,
                                 qiid: qiid,
-                                tiid: qInstance.tiid
+                                tiid: qInstance.tiid,
+                                apiServer: PLConfig.apiServer || defaultApiServer
                             });
                         } catch (e) {
                             return sendError(res, 500, "Error rendering template", e);
