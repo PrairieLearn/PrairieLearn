@@ -1030,7 +1030,14 @@ app.get("/clientFiles/*", function(req, res) {
         if (err) {
             return sendError(res, 404, 'No such file "/clientFiles/' + filename + '"', err);
         }
-        res.sendFile(filename, {root: config.clientFilesDir});
+        if (filename === '') {
+            filename = '/';
+        }
+        res.sendFile(filename, {root: config.clientFilesDir}, function(err) {
+            if (err) {
+                return sendError(res, 500, 'Error fetching "/clientFiles/' + filename + '"', err);
+            }
+        });
     });
 });
 
