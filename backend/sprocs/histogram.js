@@ -3,7 +3,7 @@
 
 module.exports.sql
     = " CREATE OR REPLACE FUNCTION\n"
-    + "     hist_sfunc (state INTEGER[], val REAL, min REAL, max REAL, nbuckets INTEGER) RETURNS INTEGER[] AS $$\n"
+    + "     histogram_sfunc (state INTEGER[], val REAL, min REAL, max REAL, nbuckets INTEGER) RETURNS INTEGER[] AS $$\n"
     + " DECLARE\n"
     + "     bucket INTEGER;\n"
     + " BEGIN\n"
@@ -29,6 +29,6 @@ module.exports.sql
     + " -- Tell Postgres how to use the new function\n"
     + " DROP AGGREGATE IF EXISTS histogram (REAL, REAL, REAL, INTEGER) CASCADE;\n"
     + " CREATE AGGREGATE histogram (REAL, REAL, REAL, INTEGER) (\n"
-    + "     SFUNC = hist_sfunc,\n"
+    + "     SFUNC = histogram_sfunc,\n"
     + "     STYPE = INTEGER[]\n"
     + " );";
