@@ -49,6 +49,6 @@ module.exports.sql
 
     + " CREATE OR REPLACE FUNCTION\n"
     + "     interval_array_to_strings (durations INTERVAL[]) RETURNS TEXT[] AS $$\n"
-    + "     SELECT array_agg(format_interval(d))\n"
+    + "     SELECT array_agg(format_interval_short(d))\n"
     + "     FROM unnest(durations) AS vals (d)\n"
     + " $$ LANGUAGE SQL;\n"

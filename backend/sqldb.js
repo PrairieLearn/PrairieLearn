@@ -9,6 +9,7 @@ var testInstanceDurations = require('./sprocs/testInstanceDurations');
 var userTestDurations = require('./sprocs/userTestDurations');
 var testDurationStats = require('./sprocs/testDurationStats');
 var formatInterval = require('./sprocs/formatInterval');
+var formatIntervalShort = require('./sprocs/formatIntervalShort');
 var intervalHistThresholds = require('./sprocs/intervalHistThresholds');
 
 module.exports = {
@@ -19,6 +20,10 @@ module.exports = {
             return models.sequelize.query(histogram.sql);
         }).then(function() {
             return models.sequelize.query(arrayHistogram.sql);
+        }).then(function() {
+            return models.sequelize.query(formatInterval.sql);
+        }).then(function() {
+            return models.sequelize.query(formatIntervalShort.sql);
         }).then(function() {
             return models.sequelize.query(intervalHistThresholds.sql);
         }).then(function() {
@@ -33,8 +38,6 @@ module.exports = {
             return models.sequelize.query(userTestDurations.sql);
         }).then(function() {
             return models.sequelize.query(testDurationStats.sql);
-        }).then(function() {
-            return models.sequelize.query(formatInterval.sql);
         }).then(function() {
             callback(null);
         }).catch(function(err) {
