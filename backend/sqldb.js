@@ -14,6 +14,8 @@ var formatIntervalShort = require('./sprocs/formatIntervalShort');
 var intervalHistThresholds = require('./sprocs/intervalHistThresholds');
 
 var enum_mode = fs.readFileSync('./models/enum_mode.sql', 'utf8');
+var enum_role = fs.readFileSync('./models/enum_role.sql', 'utf8');
+var accesses = fs.readFileSync('./models/accesses.sql', 'utf8');
 
 module.exports = {
     init: function(callback) {
@@ -21,6 +23,10 @@ module.exports = {
             return models.sequelize.sync();
         }).then(function() {
             return models.sequelize.query(enum_mode);
+        }).then(function() {
+            return models.sequelize.query(enum_role);
+        }).then(function() {
+            return models.sequelize.query(accesses);
         }).then(function() {
             return models.sequelize.query(histogram.sql);
         }).then(function() {
