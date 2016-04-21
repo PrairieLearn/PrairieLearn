@@ -706,7 +706,7 @@ var gitPullCourseOrigin = function(callback) {
     });
 
     ps.stdout.on('close', function(code) {
-        if (code) return callback("git exited with non-zero exit code " + code);
+        if (code) return callback(new Error("git exited with non-zero exit code " + code));
         callback(null, Buffer.concat(bufList).toString('utf8').trim());
     });
 };
