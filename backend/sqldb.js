@@ -1,3 +1,4 @@
+var fs = require('fs');
 var Promise = require('bluebird');
 var models = require('./models');
 var histogram = require('./sprocs/histogram');
@@ -12,10 +13,14 @@ var formatInterval = require('./sprocs/formatInterval');
 var formatIntervalShort = require('./sprocs/formatIntervalShort');
 var intervalHistThresholds = require('./sprocs/intervalHistThresholds');
 
+var enum_mode = fs.readFileSync('./models/enum_mode.sql', 'utf8');
+
 module.exports = {
     init: function(callback) {
         Promise.try(function() {
             return models.sequelize.sync();
+        }).then(function() {
+            return models.sequelize.query(enum_mode);
         }).then(function() {
             return models.sequelize.query(histogram.sql);
         }).then(function() {
