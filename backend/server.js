@@ -691,14 +691,23 @@ var getCourseCommitFromDisk = function(callback) {
 var gitPullCourseOrigin = function(callback) {
     var cmd = 'git';
     if (!config.gitCourseBranch) return callback(Error('config.gitCourseBranch is not defined'));
-    var options = ['pull', 'origin', config.gitCourseBranch];
-    var env = {
+    var args = ['pull', 'origin', config.gitCourseBranch];
+    var options = {
         'timeout': 20000, // milliseconds
         'cwd': config.courseDir,
+        'stdio': ['ignore', 'pipe', 'ignore'], // we only care about stdout
     };
-    child_process.execFile(cmd, options, env, function(err, stdout, stderr) {
-        if (err) return callback(err);
-        callback(null, String(stdout).trim());
+
+    var ps = child_process.spawn(cmd, args, options);
+    var bufList = [];
+
+    ps.stdout.on('data', function(data) {
+        bufList.push(new Buffer(data));
+    });
+
+    ps.stdout.on('close', function(code) {
+        if (code) return callback(new Error("git exited with non-zero exit code " + code));
+        callback(null, Buffer.concat(bufList).toString('utf8').trim());
     });
 };
 
