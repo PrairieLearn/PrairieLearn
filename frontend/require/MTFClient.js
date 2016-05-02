@@ -12,12 +12,12 @@ define(["underscore", "SimpleClient"], function(_, SimpleClient) {
                 '</div>' +
                 '<div style="display:table-cell; text-align:center; width:20%; padding:0.75em;border-bottom:1px solid black; vertical-align:middle;">' +
                   '<label>' +
-                    '<input type="checkbox" data-checkedoptional="submittedAnswer.<%= params.statements[i].key %>-true" />' +
+                    '<input type="checkbox" class="mtf-checkbox" data-checkedoptional="submittedAnswer.<%= params.statements[i].key %>-true" />' +
                     ' True' +
                   '</label>' +
                   '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
                   '<label>' +
-                    '<input type="checkbox" data-checkedoptional="submittedAnswer.<%= params.statements[i].key %>-false" />' +
+                    '<input type="checkbox" class="mtf-checkbox" data-checkedoptional="submittedAnswer.<%= params.statements[i].key %>-false" />' +
                     ' False' +
                   '</label>' +
                 '</div>' +
@@ -40,7 +40,7 @@ define(["underscore", "SimpleClient"], function(_, SimpleClient) {
 
 /* And here's the part that handles mutual exclusion. */
 
-$(document).on('change', 'input[type=checkbox]', function() {
+$(document).on('change', '.mtf-checkbox', function() {
   console.log('change');
   var questionId = $(this).attr('data-checkedoptional').split('.')[1].split('-')[0];
   var currChoice = $(this).attr('data-checkedoptional').split('.')[1].split('-')[1];
