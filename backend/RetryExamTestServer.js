@@ -110,7 +110,7 @@ exports.updateTest = function(test, options) {
 exports.updateTInstance = function(tInstance, test, options) {
     if (_(tInstance).has('score') && !_(tInstance).has('scorePerc')) {
         // upgrade a score to a scorePerc, without applying credit limits
-        tInstance.scorePerc = Math.floor(tInstance.score / test.maxScore * 100);
+        tInstance.scorePerc = Math.floor(tInstance.score / tInstance.maxScore * 100);
     }
     _(tInstance).defaults({
         scorePerc: 0,
@@ -233,10 +233,10 @@ exports.grade = function(tInstance, test) {
         _(tInstance.questionsByQID).forEach(function(question) {
             tInstance.score += question.awardedPoints;
         });
-        tInstance.score = Math.min(tInstance.score, test.maxScore);
+        tInstance.score = Math.min(tInstance.score, tInstance.maxScore);
 
         // compute the score as a percentage, applying credit bonus/limits
-        newScorePerc = Math.floor(tInstance.score / test.maxScore * 100);
+        newScorePerc = Math.floor(tInstance.score / tInstance.maxScore * 100);
         if (test.credit < 100) {
             newScorePerc = Math.min(newScorePerc, test.credit);
         }
