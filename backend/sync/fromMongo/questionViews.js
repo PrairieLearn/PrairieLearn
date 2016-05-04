@@ -10,7 +10,6 @@ var db = require('../../db');
 module.exports = {
     sync: function(courseInfo, testDB, questionDB, callback) {
         var that = module.exports;
-        // find all the testInstances in mongo
         db.accessCollect.find({}, function(err, cursor) {
             if (err) return callback(err);
             cursor.count(function(err, nObj) {
@@ -46,7 +45,11 @@ module.exports = {
                                     questionInstanceId: questionInstance.id,
                                 });
                             }).then(function() {
-                                setTimeout(handle, 0);
+                                if (i % 1000 == 0) {
+                                    setTimeout(handle, 0);
+                                } else {
+                                    handle();
+                                }
                             }).catch(function(err) {
                                 logger.error(err);
                                 setTimeout(handle, 0);
