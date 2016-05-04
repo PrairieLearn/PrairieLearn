@@ -7,6 +7,9 @@ module.exports = function(sequelize, DataTypes) {
         submittedAnswer: {type: DataTypes.JSONB, field: 'submitted_answer'},
         type: DataTypes.ENUM('check', 'score', 'practice'),
         overrideScore: {type: DataTypes.DOUBLE, field: 'override_score'},
+        open: DataTypes.BOOLEAN,
+        credit: DataTypes.INTEGER,
+        mode: DataTypes.ENUM('Exam', 'Public'),
     }, {
         tableName: 'submissions',
         classMethods: {
