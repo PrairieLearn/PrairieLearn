@@ -3474,8 +3474,8 @@ var syncMongoToSQL = function(callback) {
         //syncSubmissions.sync.bind(null, courseDB.courseInfo, courseDB.testDB, courseDB.questionDB),
         //function(callback) {logger.infoOverride("Syncing questionViews from Mongo to SQL DB"); callback(null);},
         //syncQuestionViews.sync.bind(null, courseDB.courseInfo, courseDB.testDB, courseDB.questionDB),
-        function(callback) {logger.infoOverride("Syncing accesses from Mongo to SQL DB"); callback(null);},
-        syncAccesses.sync.bind(null, courseDB.courseInfo, courseDB.testDB, courseDB.questionDB),
+        //function(callback) {logger.infoOverride("Syncing accesses from Mongo to SQL DB"); callback(null);},
+        //syncAccesses.sync.bind(null, courseDB.courseInfo, courseDB.testDB, courseDB.questionDB),
     ], function(err) {
         if (err) return callback(err);
         logger.infoOverride("Completed sync of Mongo to SQL");
