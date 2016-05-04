@@ -473,8 +473,26 @@ app.use(function(req, res, next) {
                 n2 = parseInt(ipParts[1]);
                 n3 = parseInt(ipParts[2]);
                 n4 = parseInt(ipParts[3]);
+                // DCL L416
                 if (n1 == 192 && n2 == 17 && n3 == 239 && n4 >= 128 && n4 <= 255) {
                     serverMode = 'Exam';
+                }
+                if (moment.tz("2016-05-06T00:00:01", config.timezone).isBefore()
+                    && moment.tz("2016-05-13T23:59:59", config.timezone).isAfter()) {
+                    // DCL L520
+                    if (n1 == 130 && n2 == 126 && n3 == 246 && n4 >= 36 && n4 <= 76) {
+                        serverMode = 'Exam';
+                    }
+                }
+                if (moment.tz("2016-05-09T00:00:01", config.timezone).isBefore()
+                    && moment.tz("2016-05-13T23:59:59", config.timezone).isAfter()) {
+                    // DCL L440
+                    if (n1 == 130 && n2 == 126 && n3 == 246 && n4 == 144) {
+                        serverMode = 'Exam';
+                    }
+                    if (n1 == 130 && n2 == 126 && n3 == 246 && n4 >= 78 && n4 <= 106) {
+                        serverMode = 'Exam';
+                    }
                 }
                 if (courseDB.courseInfo.name == "CS 225") {
                     if (n1 == 192 && n2 == 17 && n3 == 11 && n4 >= 82 && n4 <= 117) {
