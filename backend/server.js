@@ -2234,6 +2234,7 @@ var getScoresForTest = function(tid, callback) {
                         if (!scores[uid] || score > scores[uid].score) {
                             scores[uid] = {
                                 score: score,
+                                scorePerc: tInstance.scorePerc,
                                 qDataByQID: getQDataByQID(test, tInstance),
                             };
                             if (_(tInstance).has("finishDate")) {
@@ -2277,7 +2278,7 @@ app.get("/testScores/:filename", function(req, res) {
                     username = uid.slice(0, i);
                 }
             }
-            var row = [username, score.score * 100];
+            var row = [username, score.scorePerc];
             return row;
         });
         csvData = _(csvData).sortBy(function(row) {return row[0];});
