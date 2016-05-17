@@ -58,15 +58,17 @@ module.exports = {
                                 });
                                 return;
                             }
-                            if (i % 100000 === 0) logger.infoOverride("accesses: " + i + " of " + nObj);
+                            //if (i % 100000 === 0) logger.infoOverride("accesses: " + i + " of " + nObj);
                             i++;
                             if (mongoIDs[a._id] != null) {
+                                // already have this object in the SQL DB, skip to next iteration
                                 if (i % 1000 == 0) {
                                     setTimeout(handle, 0);
                                 } else {
                                     handle();
                                 }
                             } else {
+                                // don't have this object yet in SQL DB, write it to the CSV file
                                 csvData = [[
                                     String(a._id),
                                     a.timestamp,
@@ -125,7 +127,7 @@ module.exports = {
         Promise.try(function() {
             return models.sequelize.query(sql, {replacements: params});
         }).spread(function(results, info) {
-            logger.infoOverride("copied to accesses: " + info.rowCount);
+            //logger.infoOverride("copied to accesses: " + info.rowCount);
             callback(null);
         }).catch(function(err) {
             callback(err);

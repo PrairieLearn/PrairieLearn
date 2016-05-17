@@ -9,55 +9,40 @@ var db = require('../../db');
 
 module.exports = {
     sync: function(courseInfo, testDB, questionDB, callback) {
-        var that = module.exports;
-        db.accessCollect.find({}, function(err, cursor) {
-            if (err) return callback(err);
-            cursor.count(function(err, nObj) {
-                if (err) return callback(err);
-                var i = 0;
-                (function handle() {
-                    cursor.next(function(err, a) {
-                        if (err) return callback(err);
-                        if (a == null) return callback(null);
-                        if (i % 1000 === 0) logger.infoOverride("accesses: " + i + " of " + nObj);
-                        i++;
-                        if (a.method !== "GET") return setTimeout(handle, 0);
-                        if (a.userUID !== a.authUID) return setTimeout(handle, 0);
-                        var result = /^\/qInstances\/([^\/]+)\/client.js/.exec(a.path);
-                        if (result == null) return setTimeout(handle, 0);
-                        var qiid = result[1];
-                        Promise.try(function() {
-                            var questionInstance;
-                            return Promise.try(function() {
-                                return models.QuestionInstance.findOne({where: {
-                                    qiid: qiid,
-                                }});
-                            }).then(function(findQuestionInstance) {
-                                questionInstance = findQuestionInstance;
-                                if (!questionInstance) throw Error('no questionInstance where qiid = ' + qiid + ' for aid = ' + a.aid);
-                                return models.QuestionView.findOrCreate({where: {
-                                    mongoId: String(a._id),
-                                }});
-                            }).spread(function(newQuestionView, created) {
-                                questionView = newQuestionView;
-                                return questionView.update({
-                                    date: a.timestamp,
-                                    questionInstanceId: questionInstance.id,
-                                });
-                            }).then(function() {
-                                if (i % 1000 == 0) {
-                                    setTimeout(handle, 0);
-                                } else {
-                                    handle();
-                                }
-                            }).catch(function(err) {
-                                logger.error(err);
-                                setTimeout(handle, 0);
-                            });
-                        });
-                    });
-                })();
-            });
+        var sql
+            = ' WITH'
+            + ' new_question_accesses AS ('
+            + '     SELECT a.*,qiid'
+            + '     FROM accesses AS a'
+            + '     LEFT JOIN substring(a.path FROM \'^/qInstances\/([^/]+)\/client.js\') qiid ON true'
+            + '     WHERE qiid IS NOT NULL'
+            + '     AND NOT EXISTS (SELECT * FROM question_views AS qv WHERE qv.access_id = a.id)'
+            + ' ),'
+            + ' annotated_question_accesses AS ('
+            + '     SELECT'
+            + '         cta.open, cta.credit,'
+            + '         qi.id AS question_instance_id,'
+            + '         nqa.id AS access_id'
+            + '     FROM new_question_accesses AS nqa'
+            + '     JOIN question_instances AS qi ON (qi.qiid = nqa.qiid)'
+            + '     JOIN test_instances AS ti ON (ti.id = qi.test_instance_id)'
+            + '     JOIN tests AS t ON (t.id = ti.test_id)'
+            + '     JOIN users AS u ON (u.id = ti.user_id)'
+            + '     JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = t.course_instance_id)'
+            + '     LEFT JOIN LATERAL check_test_access(t.id, nqa.mode, e.role, nqa.user_uid, nqa.date) cta (open,credit) ON TRUE'
+            + ' )'
+            + ' INSERT INTO question_views'
+            + '     (question_instance_id, access_id, open, credit)'
+            + '     SELECT question_instance_id, access_id, open, credit'
+            + '     FROM annotated_question_accesses'
+            + ' ;'
+        Promise.try(function() {
+            return models.sequelize.query(sql);
+        }).spread(function(results, info) {
+            logger.infoOverride("Synced " + info.rowCount + " question_views");
+            callback(null);
+        }).catch(function(err) {
+            callback(err);
         });
     },
 };

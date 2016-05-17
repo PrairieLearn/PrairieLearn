@@ -140,17 +140,43 @@ module.exports = {
         var accessRuleIDs = [];
         return Promise.all(
             _(dbTest.allowAccess || []).map(function(dbRule) {
-                return models.AccessRule.findOrCreate({where: {
+                var params = {
                     testId: test.id,
-                    mode: dbRule.mode ? dbRule.mode : null,
-                    role: dbRule.role ? dbRule.role : null,
-                    uids: dbRule.uids ? dbRule.uids : null,
-                    startDate: dbRule.startDate ? moment.tz(dbRule.startDate, config.timezone).format() : null,
-                    endDate: dbRule.endDate ? moment.tz(dbRule.endDate, config.timezone).format() : null,
+                    mode: _(dbRule).has('mode') ? dbRule.mode : null,
+                    role: _(dbRule).has('role') ? dbRule.role : null,
+                    uids: _(dbRule).has('uids') ? dbRule.uids : null,
+                    startDate: _(dbRule).has('startDate') ? moment.tz(dbRule.startDate, config.timezone).format() : null,
+                    endDate: _(dbRule).has('endDate') ? moment.tz(dbRule.endDate, config.timezone).format() : null,
                     credit: _(dbRule).has('credit') ? dbRule.credit : null,
-                }}).spread(function(rule, created) {
-                    accessRuleIDs.push(rule.id);
-                    return Promise.resolve(null);
+                };
+                return Promise.try(function() {
+                    var sql
+                        = ' SELECT id FROM access_rules'
+                        + ' WHERE test_id = $testId'
+                        + ' AND mode ' + (_(dbRule).has('mode') ? ' = $mode' : ' IS NULL')
+                        + ' AND role ' + (_(dbRule).has('role') ? ' = $role' : ' IS NULL')
+                        + ' AND uids ' + (_(dbRule).has('uids') ? ' = $uids' : ' IS NULL')
+                        + ' AND start_date ' + (_(dbRule).has('startDate') ? ' = $startDate' : ' IS NULL')
+                        + ' AND end_date ' + (_(dbRule).has('endDate') ? ' = $endDate' : ' IS NULL')
+                        + ' AND credit ' + (_(dbRule).has('credit') ? ' = $credit' : ' IS NULL')
+                        + ' ;';
+                    return models.sequelize.query(sql, {bind: params});
+                }).spread(function (results, info) {
+                    if (results.length > 0) {
+                        accessRuleIDs.push(results[0].id);
+                    } else {
+                        var sql
+                            = ' INSERT INTO access_rules'
+                            + ' (test_id, mode, role, uids, start_date, end_date, credit)'
+                            + ' VALUES ($testId, $mode, $role, $uids, $startDate, $endDate, $credit)'
+                            + ' RETURNING id'
+                            + ' ;';
+                        return Promise.try(function() {
+                            return models.sequelize.query(sql, {bind: params});
+                        }).spread(function (results, info) {
+                            accessRuleIDs.push(results.id);
+                        });
+                    }
                 });
             })
         ).then(function() {

@@ -9,16 +9,16 @@ var config = require('../../config');
 
 var upsertEnrollmentsToCourseSQL
     = ' INSERT INTO enrollments'
-    + ' (role,user_id,course_instance_id,created_at,updated_at)'
+    + ' (role,user_id,course_instance_id)'
     + ' ('
-    + '     SELECT nu.role,nu.user_id,ci.id,nu.created_at,nu.updated_at'
+    + '     SELECT nu.role,nu.user_id,ci.id'
     + '     FROM course_instances AS ci,'
-    + '     (VALUES (:userId,:role::enum_enrollments_role,CURRENT_TIMESTAMP,CURRENT_TIMESTAMP))'
-    + '     AS nu (user_id,role,created_at,updated_at)'
+    + '     (VALUES (:userId,:role::enum_role))'
+    + '     AS nu (user_id,role)'
     + '     WHERE course_id = :courseId'
     + ' )'
     + ' ON CONFLICT (user_id,course_instance_id)'
-    + ' DO UPDATE SET (role,updated_at) = (EXCLUDED.role,EXCLUDED.updated_at)'
+    + ' DO UPDATE SET role = EXCLUDED.role'
     + ' WHERE EXCLUDED.role != enrollments.role'
     + ' ;';
 
@@ -63,11 +63,18 @@ module.exports = {
                     } else if (role == "TA") {
                         taUIDs.push(uid);
                         // TAs only get enrolled in the current courseInstance
-                        return models.Enrollment.upsert({
+                        var sql
+                            = ' INSERT INTO enrollments'
+                            + ' (role,user_id,course_instance_id)'
+                            + ' VALUES (\'TA\', $userId, $courseInstanceId)'
+                            + ' ON CONFLICT (user_id,course_instance_id)'
+                            + ' DO UPDATE SET role = EXCLUDED.role'
+                            + ' ;';
+                        var params = {
                             userId: user.id,
                             courseInstanceId: courseInfo.courseInstanceId,
-                            role: role,
-                        });
+                        };
+                        return models.sequelize.query(sql, {bind: params});
                     } else {
                         throw Error("invalid role: " + role);
                     }
@@ -84,7 +91,7 @@ module.exports = {
                 + '     JOIN courses AS c ON (c.id = ci.course_id)'
                 + '     WHERE e.id = enrollments.id'
                 + '     AND c.id = :courseId'
-                + '     AND e.role IN (\'Superuser\'::enum_enrollments_role, \'Instructor\'::enum_enrollments_role)'
+                + '     AND e.role IN (\'Superuser\'::enum_role, \'Instructor\'::enum_role)'
                 + '     AND ' + (siUIDs.length === 0 ? 'TRUE' : 'u.uid NOT IN (:siUIDs)')
                 + ' )'
                 + ' ;';
@@ -103,7 +110,7 @@ module.exports = {
                 + '     JOIN courses AS c ON (c.id = ci.course_id)'
                 + '     WHERE e.id = enrollments.id'
                 + '     AND c.id = :courseId'
-                + '     AND e.role = \'TA\'::enum_enrollments_role'
+                + '     AND e.role = \'TA\'::enum_role'
                 + '     AND ('
                 + '         ci.id != :courseInstanceId'
                 + '     OR ' + (taUIDs.length === 0 ? 'TRUE' : 'u.uid NOT IN (:taUIDs)')

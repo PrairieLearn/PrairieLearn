@@ -5,6 +5,7 @@ module.exports = function(sequelize, DataTypes) {
         testQuestionId: {type: DataTypes.INTEGER, field: 'test_question_id'},
         testInstanceId: {type: DataTypes.INTEGER, field: 'test_instance_id'},
         authUserId: {type: DataTypes.INTEGER, field: 'auth_user_id'},
+        number: DataTypes.INTEGER,
         variant_seed: DataTypes.STRING,
         params: DataTypes.JSONB,
         trueAnswer: DataTypes.JSONB,

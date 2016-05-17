@@ -26,12 +26,17 @@ module.exports = {
                         if (!user) throw Error("no user where uid = " + u.uid);
                         var role = uidToRole(u.uid);
                         if (role != "Student") return Promise.resolve(null);
-                        return models.Enrollment.findOrCreate({where: {
+                        var sql
+                            = ' INSERT INTO enrollments'
+                            + ' (user_id, course_instance_id, role)'
+                            + ' VALUES ($userId, $courseInstanceId, \'Student\')'
+                            + ' ON CONFLICT (user_id, course_instance_id) DO NOTHING'
+                            + ' ;';
+                        var params = {
                             userId: user.id,
                             courseInstanceId: courseInfo.courseInstanceId,
-                        }, defaults: {
-                            role: "Student",
-                        }});
+                        };
+                        return models.sequelize.query(sql, {bind: params});
                     }).then(function() {
                         callback(null);
                     }).catch(function(err) {
