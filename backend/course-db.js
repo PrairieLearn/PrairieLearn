@@ -153,6 +153,43 @@ module.exports.checkInfoValid = function(idName, info, infoFile) {
             }
         });
     }
+
+    var validTestSets = _(that.courseInfo.testSets).pluck('longName');
+    var validTopics = _(that.courseInfo.topics).pluck('longName');
+    var validTags = _(that.courseInfo.tags).pluck('longName');
+    
+    // check tests all have a valid testSet
+    if (idName == "tid") {
+        if (!_(validTestSets).contains(info.set)) {
+            logger.error(infoFile + ': invalid "set": "' + info.set + '" (must be a "name" of the "testSets" listed in courseInfo.json)');
+            retVal = false;
+        }
+    }
+
+    // check all questions have valid topics and tags
+    if (idName == "qid") {
+        if (!_(validTopics).contains(info.topic)) {
+            logger.error(infoFile + ': invalid "topic": "' + info.topic + '" (must be a "name" of the "topics" listed in courseInfo.json)');
+            retVal = false;
+        }
+        if (_(info).has('secondaryTopics')) {
+            _(info.secondaryTopics).each(function(topic) {
+                if (!_(validTopics).contains(topic)) {
+                    logger.error(infoFile + ': invalid "secondaryTopics": "' + topic + '" (must be a "name" of the "topics" listed in courseInfo.json)');
+                    retVal = false;
+                }
+            });
+        }
+        if (_(info).has('tags')) {
+            _(info.tags).each(function(tag) {
+                if (!_(validTags).contains(tag)) {
+                    logger.error(infoFile + ': invalid "tags": "' + tag + '" (must be a "name" of the "tags" listed in courseInfo.json)');
+                    retVal = false;
+                }
+            });
+        }
+    }
+    
     return retVal;
 };
 

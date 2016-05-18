@@ -24,6 +24,85 @@
                     "enum": ["Student", "TA", "Instructor"]
                 }
             }
+        },
+        "testSets": {
+            "description": "Test sets.",
+            "type": "object",
+            "required": true,
+            "properties": {
+                "shortName": {
+                    "description": "Short name (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc.",
+                    "type": "string",
+                    "required": true,
+                },
+                "longName": {
+                    "description": "Full singular name (preferably 1 to 3 words), e.g., 'Homework', 'Quiz', 'Practice Quiz'.",
+                    "type": "string",
+                    "required": true,
+                },
+                "title": {
+                    "description": "Plural title for a group of tests (preferably 1 to 3 words), e.g., 'Homeworks', 'Quizzes'.",
+                    "type": "string",
+                    "required": true,
+                },
+                "color": {
+                    "$ref": "#/definitions/questionQID",
+                    "required": true,
+                }
+            }
+        },
+        "topics": {
+            "description": "Question topics (visible to students).",
+            "type": "object",
+            "required": true,
+            "properties": {
+                "shortName": {
+                    "description": "Short name (preferably 2 to 7 characters).",
+                    "type": "string",
+                    "required": true,
+                },
+                "longName": {
+                    "description": "Long descriptive name (preferably less than 10 words).",
+                    "type": "string",
+                    "required": true,
+                },
+                "color": {
+                    "$ref": "#/definitions/questionQID",
+                    "required": true,
+                }
+            }
+        },
+        "tags": {
+            "description": "Question tags (not visible to students).",
+            "type": "object",
+            "required": true,
+            "properties": {
+                "shortName": {
+                    "description": "Short name (preferably 2 to 7 characters).",
+                    "type": "string",
+                    "required": true,
+                },
+                "longName": {
+                    "description": "Long descriptive name (preferably less than 10 words).",
+                    "type": "string",
+                    "required": true,
+                },
+                "color": {
+                    "$ref": "#/definitions/questionQID",
+                    "required": true,
+                }
+            }
+        }
+    },
+    "definitions": {
+        "color": {
+            "description": "A color name.",
+            "enum": [
+                "red1", "red2", "red3", "pink1", "pink2", "pink3", "purple1", "purple2", "purple3",
+                "blue1", "blue2", "blue3", "turquoise1", "turquoise2", "turquoise3",
+                "green1", "green2", "green3", "yellow1", "yellow2", "yellow3",
+                "orange1", "orange2", "orange3", "brown1", "brown2", "brown3", "gray1", "gray2", "gray3"
+            ]
         }
     }
 }
