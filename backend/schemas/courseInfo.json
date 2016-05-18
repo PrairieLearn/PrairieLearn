@@ -15,6 +15,11 @@
             "type": "string",
             "required": true
         },
+        "currentSemester": {
+            "description": "The current semester for the list of tests.",
+            "enum": ["Sp15", "Su15", "Fa15", "Sp16", "Su16", "Fa16"],
+            "required": true
+        },
         "userRoles": {
             "description": "Special roles for specific users (anyone not listed is assumed to be a 'Student').",
             "type": "object",
@@ -27,69 +32,81 @@
         },
         "testSets": {
             "description": "Test sets.",
-            "type": "object",
+            "type": "array",
             "required": true,
-            "properties": {
-                "shortName": {
-                    "description": "Short name (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc.",
-                    "type": "string",
-                    "required": true,
-                },
-                "longName": {
-                    "description": "Full singular name (preferably 1 to 3 words), e.g., 'Homework', 'Quiz', 'Practice Quiz'.",
-                    "type": "string",
-                    "required": true,
-                },
-                "title": {
-                    "description": "Plural title for a group of tests (preferably 1 to 3 words), e.g., 'Homeworks', 'Quizzes'.",
-                    "type": "string",
-                    "required": true,
-                },
-                "color": {
-                    "$ref": "#/definitions/questionQID",
-                    "required": true,
+            "items": {
+                "description": "A single test set description.",
+                "type": "object",
+                "properties": {
+                    "shortName": {
+                        "description": "Short name (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc.",
+                        "type": "string",
+                        "required": true
+                    },
+                    "name": {
+                        "description": "Full singular name (preferably 1 to 3 words), e.g., 'Homework', 'Quiz', 'Practice Quiz'.",
+                        "type": "string",
+                        "required": true
+                    },
+                    "heading": {
+                        "description": "Plural heading for a group of tests (preferably 1 to 3 words), e.g., 'Homeworks', 'Quizzes'.",
+                        "type": "string",
+                        "required": true
+                    },
+                    "color": {
+                        "$ref": "#/definitions/questionQID",
+                        "required": true
+                    }
                 }
             }
         },
         "topics": {
             "description": "Question topics (visible to students).",
-            "type": "object",
+            "type": "array",
             "required": true,
-            "properties": {
-                "shortName": {
-                    "description": "Short name (preferably 2 to 7 characters).",
-                    "type": "string",
-                    "required": true,
-                },
-                "longName": {
-                    "description": "Long descriptive name (preferably less than 10 words).",
-                    "type": "string",
-                    "required": true,
-                },
-                "color": {
-                    "$ref": "#/definitions/questionQID",
-                    "required": true,
+            "items": {
+                "description": "A single test set description.",
+                "type": "object",
+                "properties": {
+                    "shortName": {
+                        "description": "Short name (preferably 2 to 7 characters).",
+                        "type": "string",
+                        "required": true
+                    },
+                    "name": {
+                        "description": "Long descriptive name (preferably less than 10 words).",
+                        "type": "string",
+                        "required": true
+                    },
+                    "color": {
+                        "$ref": "#/definitions/questionQID",
+                        "required": true
+                    }
                 }
             }
         },
         "tags": {
             "description": "Question tags (not visible to students).",
-            "type": "object",
+            "type": "array",
             "required": true,
-            "properties": {
-                "shortName": {
-                    "description": "Short name (preferably 2 to 7 characters).",
-                    "type": "string",
-                    "required": true,
-                },
-                "longName": {
-                    "description": "Long descriptive name (preferably less than 10 words).",
-                    "type": "string",
-                    "required": true,
-                },
-                "color": {
-                    "$ref": "#/definitions/questionQID",
-                    "required": true,
+            "items": {
+                "description": "A single test set description.",
+                "type": "object",
+                "properties": {
+                    "shortName": {
+                        "description": "Short name (preferably 2 to 7 characters).",
+                        "type": "string",
+                        "required": true
+                    },
+                    "name": {
+                        "description": "Long descriptive name (preferably less than 10 words).",
+                        "type": "string",
+                        "required": true
+                    },
+                    "color": {
+                        "$ref": "#/definitions/questionQID",
+                        "required": true
+                    }
                 }
             }
         }

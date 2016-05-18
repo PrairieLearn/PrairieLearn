@@ -63,6 +63,10 @@ module.exports.loadCourseInfo = function(courseInfo, callback) {
         courseInfo.userRoles = info.userRoles;
         courseInfo.gitCourseBranch = config.gitCourseBranch;
         courseInfo.timezone = config.timezone;
+        courseInfo.currentSemester = info.currentSemester;
+        courseInfo.testSets = info.testSets;
+        courseInfo.topics = info.topics;
+        courseInfo.tags = info.tags;
         that.getCourseOriginURL(function(err, originURL) {
             courseInfo.remoteFetchURL = originURL;
             return callback(null);
@@ -79,65 +83,26 @@ module.exports.checkInfoValid = function(idName, info, infoFile) {
     var retVal = true; // true means valid
 
     if (idName == "tid" && info.options && info.options.availDate) {
-        logger.warn(infoFile + ': "options.availDate" is deprecated and will be removed in a future version. Instead, please use "allowAccess".');
+        logger.error(infoFile + ': "options.availDate" is deprecated. Instead, please use "allowAccess".');
+        retVal = false;
     }
 
-    // add semesters to tests without one
-    if (idName == "tid" && !_(info).has("semester")) {
-        if (that.courseInfo.name == "TAM 212") {
-            if (/^sp16_/.test(info.tid)) {
-                info.semester = "Sp16";
-            } else if (/^fa15_/.test(info.tid)) {
-                info.semester = "Fa15";
-            } else if (/^sp15_/.test(info.tid)) {
-                info.semester = "Sp15";
-            } else {
-                info.semester = "Sp15";
-            }
-        } else {
-            info.semester = config.semester;
-        }
-        logger.warn(infoFile + ': "semester" is missing, setting to "' + info.semester + '".');
+    // add semester to tests
+    if (idName == "tid") {
+        info.semester = that.courseInfo.currentSemester;
     }
 
     // look for exams without credit assigned and patch it in to all access rules
     if (idName == "tid" && (info.type == "Exam" || info.type == "RetryExam")) {
         if (_(info).has('allowAccess') && !_(info.allowAccess).any(function(a) {return _(a).has('credit');})) {
-            logger.warn(infoFile + ': No credit assigned in allowAccess rules, patching in credit = 100 to all rules. Please set "credit" in "allowAccess" rules explicitly.')
-            _(info.allowAccess).each(function(a) {
-                a.credit = 100;
-            });
+            logger.warn(infoFile + ': No credit assigned in any allowAccess rules.')
         }
     }
 
     // look for homeworks without a due date set and add an access rule with credit if possible
     if (idName == "tid" && _(info).has('options') && _(info.options).has('dueDate')) {
-        logger.warn(infoFile + ': "options.dueDate" is deprecated and will be removed in a future version. Instead, please set "credit" in the "allowAccess" rules.');
-        if (!_(info).has('allowAccess')) info.allowAccess = [];
-        var hasStudentAccess = false, firstStartDate = null;
-        _(info.allowAccess).each(function(a) {
-            if ((!_(a).has('mode') || a.mode == 'Public') && (!_(a).has('role') || a.role == 'Student')) {
-                hasStudentAccess = true;
-                if (_(a).has('startDate')) {
-                    if (firstStartDate == null || a.startDate < firstStartDate) {
-                        firstStartDate = a.startDate;
-                    }
-                }
-            }
-        });
-        if (hasStudentAccess) {
-            var accessRule = {
-                mode: 'Public',
-                credit: 100,
-            };
-            if (firstStartDate) {
-                accessRule.startDate = firstStartDate;
-            }
-            accessRule.endDate = info.options.dueDate;
-            logger.warn(infoFile + ': Adding accessRule: ' + JSON.stringify(accessRule));
-            info.allowAccess.push(accessRule);
-        }
-        delete info.options.dueDate;
+        logger.error(infoFile + ': "options.dueDate" is deprecated.');
+        retVal = false;
     }
 
     // check dates in allowAccess
@@ -154,9 +119,9 @@ module.exports.checkInfoValid = function(idName, info, infoFile) {
         });
     }
 
-    var validTestSets = _(that.courseInfo.testSets).pluck('longName');
-    var validTopics = _(that.courseInfo.topics).pluck('longName');
-    var validTags = _(that.courseInfo.tags).pluck('longName');
+    var validTestSets = _(that.courseInfo.testSets).pluck('name');
+    var validTopics = _(that.courseInfo.topics).pluck('name');
+    var validTags = _(that.courseInfo.tags).pluck('name');
     
     // check tests all have a valid testSet
     if (idName == "tid") {
@@ -261,7 +226,7 @@ module.exports.load = function(callback) {
             _(that.testDB).mapObject(function(val, key) {delete that.testDB[key];});
             var defaultTestInfo = {
             };
-            that.loadInfoDB(that.testDB, "tid", config.testsDir, defaultTestInfo, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
+            that.loadInfoDB(that.testDB, "tid", path.join(config.testsDir, that.courseInfo.currentSemester), defaultTestInfo, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
         },
     ], callback);
 };
