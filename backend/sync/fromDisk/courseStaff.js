@@ -1,10 +1,9 @@
 var _ = require('underscore');
 var async = require('async');
-var Promise = require('bluebird');
 var requireFrontend = require("../../require-frontend");
 var PrairieRole = requireFrontend('PrairieRole');
 
-var models = require('../../models');
+var sqldb = require('../../sqldb');
 var config = require('../../config');
 
 var upsertEnrollmentsToCourseSQL
@@ -13,9 +12,9 @@ var upsertEnrollmentsToCourseSQL
     + ' ('
     + '     SELECT nu.role,nu.user_id,ci.id'
     + '     FROM course_instances AS ci,'
-    + '     (VALUES (:userId,:role::enum_role))'
+    + '     (VALUES ($1::integer,$2::enum_role))'
     + '     AS nu (user_id,role)'
-    + '     WHERE course_id = :courseId'
+    + '     WHERE course_id = $3'
     + ' )'
     + ' ON CONFLICT (user_id,course_instance_id)'
     + ' DO UPDATE SET role = EXCLUDED.role'
@@ -23,106 +22,112 @@ var upsertEnrollmentsToCourseSQL
     + ' ;';
 
 module.exports = {
-    sync: function(courseInfo) {
-        var superuserUIDs = [];
-        var instructorUIDs = [];
-        var taUIDs = [];
-        return Promise.try(function() {
-            // load all Superusers from config.roles
-            return Promise.all(_(config.roles).map(function(role, uid) {
-                if (role !== "Superuser") return Promise.resolve(null);
-                superuserUIDs.push(uid);
-                // Superusers get enrolled in all courseInstances of the course
-                return models.User.findOrCreate({where: {
-                    uid: uid,
-                }}).spread(function(user, created) {
-                    var params = {
-                        userId: user.id,
-                        role: 'Superuser',
-                        courseId: courseInfo.courseId,
-                    };
-                    return models.sequelize.query(upsertEnrollmentsToCourseSQL, {replacements: params});
+    sync: function(courseInfo, callback) {
+        var superuserIds = [];
+        var instructorIds = [];
+        var taIds = [];
+        async.forEachOfSeries(config.roles, function(role, uid, callback) {
+            if (role !== "Superuser") return callback(null);
+            // Superusers get enrolled in all courseInstances of the course
+            var sql
+                = ' INSERT INTO users (uid) VALUES ($1)'
+                + ' ON CONFLICT (uid) DO UPDATE SET uid = users.uid' // re-set uid to force row to be returned
+                + ' RETURNING *'
+                + ' ;';
+            var params = [uid];
+            sqldb.query(sql, params, function(err, result) {
+                if (err) return callback(err);
+                var userId = result.rows[0].id;
+                superuserIds.push(userId);
+                var params = [userId, 'Superuser', courseInfo.courseId];
+                sqldb.query(upsertEnrollmentsToCourseSQL, params, function(err, result) {
+                    if (err) return callback(err);
+                    callback(null);
                 });
-            }));
-        }).then(function() {
+            });
+        }, function(err) {
+            if (err) return callback(err);
             // load Instructors and TAs from courseInfo
-            return Promise.all(_(courseInfo.userRoles || []).map(function(role, uid) {
-                if (role !== "Instructor" && role != "TA") return Promise.resolve(null);
-                return models.User.findOrCreate({where: {
-                    uid: uid,
-                }}).spread(function(user, created) {
+            async.forEachOfSeries(courseInfo.userRoles || {}, function(role, uid, callback) {
+                if (role !== "Instructor" && role !== "TA") return callback(null);
+                var sql
+                    = ' INSERT INTO users (uid) VALUES ($1)'
+                    + ' ON CONFLICT (uid) DO UPDATE SET uid = users.uid'
+                    + ' RETURNING *'
+                    + ' ;';
+                var params = [uid];
+                sqldb.query(sql, params, function(err, result) {
+                    if (err) return callback(err);
+                    var userId = result.rows[0].id;
                     if (role == "Instructor") {
-                        instructorUIDs.push(uid);
+                        instructorIds.push(userId);
                         // Instructors get enrolled in all courseInstances of the course
-                        var params = {
-                            userId: user.id,
-                            role: 'Instructor',
-                            courseId: courseInfo.courseId,
-                        };
-                        return models.sequelize.query(upsertEnrollmentsToCourseSQL, {replacements: params});
+                        var params = [userId, 'Superuser', courseInfo.courseId];
+                        sqldb.query(upsertEnrollmentsToCourseSQL, params, function(err, result) {
+                            if (err) return callback(err);
+                            callback(null);
+                        });
                     } else if (role == "TA") {
-                        taUIDs.push(uid);
+                        taIds.push(userId);
                         // TAs only get enrolled in the current courseInstance
                         var sql
                             = ' INSERT INTO enrollments'
                             + ' (role,user_id,course_instance_id)'
-                            + ' VALUES (\'TA\', $userId, $courseInstanceId)'
+                            + ' VALUES (\'TA\', $1, $2)'
                             + ' ON CONFLICT (user_id,course_instance_id)'
                             + ' DO UPDATE SET role = EXCLUDED.role'
                             + ' ;';
-                        var params = {
-                            userId: user.id,
-                            courseInstanceId: courseInfo.courseInstanceId,
-                        };
-                        return models.sequelize.query(sql, {bind: params});
-                    } else {
-                        throw Error("invalid role: " + role);
+                        var params = [userId, courseInfo.courseInstanceId];
+                        sqldb.query(sql, params, function(err, result) {
+                            if (err) return callback(err);
+                            callback(null);
+                        });
                     }
                 });
-            }));
-        }).then(function() {
-            // reduce Superuser/Instructors to Students in the current course if they are not in the above list
-            var siUIDs = _.union(superuserUIDs, instructorUIDs);
-            var sql = 'UPDATE enrollments SET role = \'Student\''
-                + ' WHERE EXISTS('
-                + '     SELECT * FROM enrollments AS e'
-                + '     JOIN users AS u ON (u.id = e.user_id)'
-                + '     JOIN course_instances AS ci ON (ci.id = e.course_instance_id)'
-                + '     JOIN courses AS c ON (c.id = ci.course_id)'
-                + '     WHERE e.id = enrollments.id'
-                + '     AND c.id = :courseId'
-                + '     AND e.role IN (\'Superuser\'::enum_role, \'Instructor\'::enum_role)'
-                + '     AND ' + (siUIDs.length === 0 ? 'TRUE' : 'u.uid NOT IN (:siUIDs)')
-                + ' )'
-                + ' ;';
-            var params = {
-                siUIDs: siUIDs,
-                courseId: courseInfo.courseId,
-            };
-            return models.sequelize.query(sql, {replacements: params});
-        }).then(function() {
-            // reduce TAs to Students in the current course if they are not in the above list or not in the current courseInstance
-            var sql = 'UPDATE enrollments SET role = \'Student\''
-                + ' WHERE EXISTS('
-                + '     SELECT * FROM enrollments AS e'
-                + '     JOIN users AS u ON (u.id = e.user_id)'
-                + '     JOIN course_instances AS ci ON (ci.id = e.course_instance_id)'
-                + '     JOIN courses AS c ON (c.id = ci.course_id)'
-                + '     WHERE e.id = enrollments.id'
-                + '     AND c.id = :courseId'
-                + '     AND e.role = \'TA\'::enum_role'
-                + '     AND ('
-                + '         ci.id != :courseInstanceId'
-                + '     OR ' + (taUIDs.length === 0 ? 'TRUE' : 'u.uid NOT IN (:taUIDs)')
-                + '     )'
-                + ' )'
-                + ' ;';
-            var params = {
-                taUIDs: taUIDs,
-                courseId: courseInfo.courseId,
-                courseInstanceId: courseInfo.courseInstanceId,
-            };
-            return models.sequelize.query(sql, {replacements: params});
+            }, function(err) {
+                if (err) return callback(err);
+                // reduce Superuser/Instructors to Students in the current course if they are not in the above list
+                var siIds = _.union(superuserIds, instructorIds);
+                var paramIdxes = siIds.map(function(item, idx) {return "$" + (idx + 2);});
+                var sql
+                    = ' UPDATE enrollments AS e SET role = \'Student\''
+                    + ' WHERE EXISTS('
+                    + '     SELECT * FROM users AS u'
+                    + '     JOIN course_instances AS ci ON (ci.id = e.course_instance_id)'
+                    + '     JOIN courses AS c ON (c.id = ci.course_id)'
+                    + '     WHERE u.id = e.user_id'
+                    + '     AND c.id = $1'
+                    + '     AND e.role IN (\'Superuser\'::enum_role, \'Instructor\'::enum_role)'
+                    + '     AND ' + (siIds.length === 0 ? 'TRUE' : 'u.id NOT IN (' + paramIdxes.join(',') + ')')
+                    + ' )'
+                    + ' ;';
+                var params = [courseInfo.courseId].concat(siIds);
+                sqldb.query(sql, params, function(err, result) {
+                    if (err) return callback(err);
+                    // reduce TAs to Students in the current course if they are not in the above list or not in the current courseInstance
+                    var paramIdxes = taIds.map(function(item, idx) {return "$" + (idx + 3);});
+                    var sql
+                        = ' UPDATE enrollments AS e SET role = \'Student\''
+                        + ' WHERE EXISTS('
+                        + '     SELECT * FROM users AS u'
+                        + '     JOIN course_instances AS ci ON (ci.id = e.course_instance_id)'
+                        + '     JOIN courses AS c ON (c.id = ci.course_id)'
+                        + '     WHERE u.id = e.user_id'
+                        + '     AND c.id = $1'
+                        + '     AND e.role = \'TA\'::enum_role'
+                        + '     AND ('
+                        + '         ci.id != $2'
+                        + '     OR ' + (taIds.length === 0 ? 'TRUE' : 'u.id NOT IN (' + paramIdxes.join(',') + ')')
+                        + '     )'
+                        + ' )'
+                        + ' ;';
+                    var params = [courseInfo.courseId, courseInfo.courseInstanceId].concat(taIds);
+                    sqldb.query(sql, params, function(err, result) {
+                        if (err) return callback(err);
+                        callback(null);
+                    });
+                });
+            });
         });
     },
 };

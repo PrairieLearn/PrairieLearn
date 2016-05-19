@@ -26,6 +26,7 @@ digraph partmc_modules {
     grading [style=filled, fillcolor=lavender]
     test_score [style=filled, fillcolor=lavender]
     question_score [style=filled, fillcolor=lavender]
+    access [style=filled, fillcolor=lavender]
     question_view [style=filled, fillcolor=lavender]
     test_view [style=filled, fillcolor=lavender]
 
@@ -45,7 +46,7 @@ digraph partmc_modules {
     grading -> { submission }
     test_score -> { test_instance }
     question_score -> { grading; test_score; question_instance }
-    question_view -> { question_instance }
+    question_view -> { question_instance; access }
     test_view -> { test_instance }
 
     subgraph cluster_legend {
