@@ -37,7 +37,7 @@ digraph partmc_modules {
     test -> { course_instance; test_set }
     test_instance -> { test; user }
     test_question -> { test; zone; question }
-    test_set -> { course_instance }
+    test_set -> { course }
     test_state -> { test_instance }
     topic -> { course }
     zone -> { test }

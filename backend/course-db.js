@@ -94,6 +94,7 @@ module.exports.checkInfoValid = function(idName, info, infoFile) {
     var that = this;
     var retVal = true; // true means valid
 
+    // availDate is deprecated
     if (idName == "tid" && info.options && info.options.availDate) {
         logger.error(infoFile + ': "options.availDate" is deprecated. Instead, please use "allowAccess".');
         retVal = false;
@@ -104,14 +105,14 @@ module.exports.checkInfoValid = function(idName, info, infoFile) {
         info.semester = that.courseInfo.currentSemester;
     }
 
-    // look for exams without credit assigned and patch it in to all access rules
+    // look for exams without credit assigned and warn about it
     if (idName == "tid" && (info.type == "Exam" || info.type == "RetryExam")) {
         if (_(info).has('allowAccess') && !_(info.allowAccess).any(function(a) {return _(a).has('credit');})) {
             logger.warn(infoFile + ': No credit assigned in any allowAccess rules.')
         }
     }
 
-    // look for homeworks without a due date set and add an access rule with credit if possible
+    // due date is deprecated
     if (idName == "tid" && _(info).has('options') && _(info.options).has('dueDate')) {
         logger.error(infoFile + ': "options.dueDate" is deprecated.');
         retVal = false;

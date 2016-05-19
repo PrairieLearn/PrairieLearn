@@ -3419,10 +3419,10 @@ var loadAndInitCourseData = function(callback) {
 var syncSemesters = require('./sync/fromDisk/semesters');
 var syncCourseInfo = require('./sync/fromDisk/courseInfo');
 var syncCourseStaff = require('./sync/fromDisk/courseStaff');
-//var syncTopics = require('./sync/fromDisk/topics');
-//var syncQuestions = require('./sync/fromDisk/questions');
-//var syncTestSets = require('./sync/fromDisk/testSets');
-//var syncTests = require('./sync/fromDisk/tests');
+var syncTopics = require('./sync/fromDisk/topics');
+var syncQuestions = require('./sync/fromDisk/questions');
+var syncTestSets = require('./sync/fromDisk/testSets');
+var syncTests = require('./sync/fromDisk/tests');
 
 var syncDiskToSQL = function(callback) {
     logger.infoOverride("Starting sync of disk to SQL");
@@ -3433,38 +3433,19 @@ var syncDiskToSQL = function(callback) {
         syncCourseInfo.sync.bind(null, courseDB.courseInfo),
         function(callback) {logger.infoOverride("Syncing courseStaff from disk to SQL DB"); callback(null);},
         syncCourseStaff.sync.bind(null, courseDB.courseInfo),
+        function(callback) {logger.infoOverride("Syncing topics from disk to SQL DB"); callback(null);},
+        syncTopics.sync.bind(null, courseDB.courseInfo),
+        function(callback) {logger.infoOverride("Syncing questions from disk to SQL DB"); callback(null);},
+        syncQuestions.sync.bind(null, courseDB.courseInfo, courseDB.questionDB),
+        function(callback) {logger.infoOverride("Syncing test sets from disk to SQL DB"); callback(null);},
+        syncTestSets.sync.bind(null, courseDB.courseInfo),
+        function(callback) {logger.infoOverride("Syncing tests from disk to SQL DB"); callback(null);},
+        syncTests.sync.bind(null, courseDB.courseInfo, courseDB.testDB),
     ], function(err) {
         if (err) return callback(err);
         logger.infoOverride("Completed sync of disk to SQL");
         callback(null);
     });
-    //Promise.try(function() {
-    //    logger.infoOverride("Syncing semesters from disk to SQL DB");
-    //    return syncSemesters.sync();
-    //}).then(function() {
-    //    logger.infoOverride("Syncing courseInfo from disk to SQL DB");
-    //    return syncCourseInfo.sync(courseDB.courseInfo);
-    //}).then(function() {
-    //    logger.infoOverride("Syncing course staff from disk to SQL DB");
-    //    return syncCourseStaff.sync(courseDB.courseInfo);
-    //}).then(function() {
-    //    logger.infoOverride("Syncing topics from disk to SQL DB");
-    //    return syncTopics.sync(courseDB.courseInfo, courseDB.questionDB);
-    //}).then(function() {
-    //    logger.infoOverride("Syncing questions from disk to SQL DB");
-    //    return syncQuestions.sync(courseDB.courseInfo, courseDB.questionDB);
-    //}).then(function() {
-    //    logger.infoOverride("Syncing test sets from disk to SQL DB");
-    //    return syncTestSets.sync(courseDB.courseInfo, courseDB.testDB);
-    //}).then(function() {
-    //    logger.infoOverride("Syncing tests from disk to SQL DB");
-    //    return syncTests.sync(courseDB.courseInfo, courseDB.testDB);
-    //}).then(function() {
-    //    logger.infoOverride("Completed sync of disk to SQL");
-    //    callback(null);
-    //}).catch(function(err) {
-    //    callback(err);
-    //});
 };
 
 //var syncUsers = require('./sync/fromMongo/users');

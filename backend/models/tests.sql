@@ -7,5 +7,6 @@ CREATE TABLE IF NOT EXISTS tests (
     title varchar(255),
     config JSONB,
     test_set_id INTEGER REFERENCES test_sets,
-    deleted_at TIMESTAMP WITH TIME ZONE
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    UNIQUE (tid, course_instance_id)
 );

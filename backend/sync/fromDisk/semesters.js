@@ -18,13 +18,7 @@ module.exports = {
                 + '     end_date = EXCLUDED.end_date'
                 + ' ;';
             var params = [semester.shortName, semester.longName, semester.startDate, semester.endDate];
-            sqldb.query(sql, params, function(err, results) {
-                if (err) return callback(err);
-                callback(null);
-            });
-        }, function(err) {
-            if (err) return callback(err);
-            callback(null);
-        });
+            sqldb.query(sql, params, callback);
+        }, callback);
     },
 };

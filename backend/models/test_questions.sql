@@ -7,5 +7,6 @@ CREATE TABLE IF NOT EXISTS test_questions (
     test_id INTEGER REFERENCES tests,
     zone_id INTEGER REFERENCES zones,
     question_id INTEGER REFERENCES questions,
-    deleted_at TIMESTAMP WITH TIME ZONE
+    deleted_at TIMESTAMP WITH TIME ZONE,
+    UNIQUE (question_id, test_id)
 );

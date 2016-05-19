@@ -40,10 +40,7 @@ module.exports = {
                 var userId = result.rows[0].id;
                 superuserIds.push(userId);
                 var params = [userId, 'Superuser', courseInfo.courseId];
-                sqldb.query(upsertEnrollmentsToCourseSQL, params, function(err, result) {
-                    if (err) return callback(err);
-                    callback(null);
-                });
+                sqldb.query(upsertEnrollmentsToCourseSQL, params, callback);
             });
         }, function(err) {
             if (err) return callback(err);
@@ -78,17 +75,14 @@ module.exports = {
                             + ' DO UPDATE SET role = EXCLUDED.role'
                             + ' ;';
                         var params = [userId, courseInfo.courseInstanceId];
-                        sqldb.query(sql, params, function(err, result) {
-                            if (err) return callback(err);
-                            callback(null);
-                        });
+                        sqldb.query(sql, params, callback);
                     }
                 });
             }, function(err) {
                 if (err) return callback(err);
                 // reduce Superuser/Instructors to Students in the current course if they are not in the above list
                 var siIds = _.union(superuserIds, instructorIds);
-                var paramIdxes = siIds.map(function(item, idx) {return "$" + (idx + 2);});
+                var paramIndexes = siIds.map(function(item, idx) {return "$" + (idx + 2);});
                 var sql
                     = ' UPDATE enrollments AS e SET role = \'Student\''
                     + ' WHERE EXISTS('
@@ -98,14 +92,14 @@ module.exports = {
                     + '     WHERE u.id = e.user_id'
                     + '     AND c.id = $1'
                     + '     AND e.role IN (\'Superuser\'::enum_role, \'Instructor\'::enum_role)'
-                    + '     AND ' + (siIds.length === 0 ? 'TRUE' : 'u.id NOT IN (' + paramIdxes.join(',') + ')')
+                    + '     AND ' + (siIds.length === 0 ? 'TRUE' : 'u.id NOT IN (' + paramIndexes.join(',') + ')')
                     + ' )'
                     + ' ;';
                 var params = [courseInfo.courseId].concat(siIds);
                 sqldb.query(sql, params, function(err, result) {
                     if (err) return callback(err);
                     // reduce TAs to Students in the current course if they are not in the above list or not in the current courseInstance
-                    var paramIdxes = taIds.map(function(item, idx) {return "$" + (idx + 3);});
+                    var paramIndexes = taIds.map(function(item, idx) {return "$" + (idx + 3);});
                     var sql
                         = ' UPDATE enrollments AS e SET role = \'Student\''
                         + ' WHERE EXISTS('
@@ -117,15 +111,12 @@ module.exports = {
                         + '     AND e.role = \'TA\'::enum_role'
                         + '     AND ('
                         + '         ci.id != $2'
-                        + '     OR ' + (taIds.length === 0 ? 'TRUE' : 'u.id NOT IN (' + paramIdxes.join(',') + ')')
+                        + '     OR ' + (taIds.length === 0 ? 'TRUE' : 'u.id NOT IN (' + paramIndexes.join(',') + ')')
                         + '     )'
                         + ' )'
                         + ' ;';
                     var params = [courseInfo.courseId, courseInfo.courseInstanceId].concat(taIds);
-                    sqldb.query(sql, params, function(err, result) {
-                        if (err) return callback(err);
-                        callback(null);
-                    });
+                    sqldb.query(sql, params, callback);
                 });
             });
         });

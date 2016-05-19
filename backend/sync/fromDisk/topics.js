@@ -1,54 +1,29 @@
 var _ = require('underscore');
-var Promise = require('bluebird');
+var async = require('async');
 
-var models = require('../../models');
+var sqldb = require('../../sqldb');
 var config = require('../../config');
-var colors = require('../../colors');
 
 module.exports = {
-    /*
-      FIXME: At the moment this generates the topic list from the questions.
-      This will need to be fixed when we explicitly encode the topics in
-      the courseInfo.json file.
-    */
-    sync: function(courseInfo, questionDB, callback) {
-        var topicIDs = [];
-        return Promise.all(
-            _.chain(questionDB)
-                .pluck('topic')
-                .uniq()
-                .sortBy(_.identity)
-                .map(function(name, i) {
-                    return models.Topic.findOrCreate({where: {
-                        name: name,
-                        courseId: courseInfo.courseId,
-                    }}).spread(function(topic, created) {
-                        topicIDs.push(topic.id);
-                        topic.update({
-                            number: i + 1,
-                            color: colors.topics[i % colors.topics.length],
-                        });
-                    });
-                }).value()
-        ).then(function() {
-            // delete topics from the DB that aren't on disk
-            // can't use models.Topic.destroy() because it's buggy when topicIDs = []
-            // see https://github.com/sequelize/sequelize/issues/4859
-            var sql = 'WITH'
-                + ' course_topic_ids AS ('
-                + '     SELECT top.id'
-                + '     FROM topics AS top'
-                + '     WHERE top.course_id = :courseId'
-                + ' )'
-                + ' DELETE FROM topics'
-                + ' WHERE id IN (SELECT * FROM course_topic_ids)'
-                + ' AND ' + (topicIDs.length === 0 ? 'TRUE' : 'id NOT IN (:topicIDs)')
+    sync: function(courseInfo, callback) {
+        async.forEachOfSeries(courseInfo.topics, function(topic, i, callback) {
+            var sql
+                = ' INSERT INTO topics (short_name, name, number, color, course_id)'
+                + ' VALUES ($1, $2, $3, $4, $5)'
+                + ' ON CONFLICT (short_name, course_id) DO UPDATE'
+                + ' SET'
+                + '     name = EXCLUDED.name,'
+                + '     number = EXCLUDED.number,'
+                + '     color = EXCLUDED.color'
                 + ' ;';
-            var params = {
-                topicIDs: topicIDs,
-                courseId: courseInfo.courseId,
-            };
-            return models.sequelize.query(sql, {replacements: params});
+            var params = [topic.shortName, topic.name, i + 1, topic.color, courseInfo.courseId];
+            sqldb.query(sql, params, callback);
+        }, function(err) {
+            if (err) return callback(err);
+            // delete topics from the DB that aren't on disk
+            var sql = 'DELETE FROM topics WHERE course_id = $1 AND number > $2;';
+            var params = [courseInfo.courseId, courseInfo.topics.length];
+            sqldb.query(sql, params, callback);
         });
     },
 };
