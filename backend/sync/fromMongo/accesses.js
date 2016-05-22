@@ -49,18 +49,17 @@ module.exports = {
                     if (err) return callback(err);
                     var i = 0;
                     (function handle() {
-                        cursor.next(function(err, a) {
+                        cursor.next(function(err, obj) {
                             if (err) return callback(err);
-                            if (a == null) {
+                            if (obj == null) {
                                 fs.close(fd, function(err) {
                                     if (err) return callback(err);
                                     return callback(null);
                                 });
                                 return;
                             }
-                            //if (i % 100000 === 0) logger.infoOverride("accesses: " + i + " of " + nObj);
                             i++;
-                            if (mongoIDs[a._id] != null) {
+                            if (mongoIDs[obj._id] != null) {
                                 // already have this object in the SQL DB, skip to next iteration
                                 if (i % 1000 == 0) {
                                     setTimeout(handle, 0);
@@ -70,19 +69,19 @@ module.exports = {
                             } else {
                                 // don't have this object yet in SQL DB, write it to the CSV file
                                 csvData = [[
-                                    String(a._id),
-                                    a.timestamp,
-                                    a.mode,
-                                    a.ip,
-                                    a.forwardedIP,
-                                    a.authUID,
-                                    a.authRole,
-                                    a.userUID,
-                                    a.userRole,
-                                    a.method,
-                                    a.path,
-                                    a.params,
-                                    JSON.stringify(a.body).replace(/\\u0000/g, '')
+                                    String(obj._id),
+                                    obj.timestamp,
+                                    obj.mode,
+                                    obj.ip,
+                                    obj.forwardedIP,
+                                    obj.authUID,
+                                    obj.authRole,
+                                    obj.userUID,
+                                    obj.userRole,
+                                    obj.method,
+                                    obj.path,
+                                    obj.params,
+                                    JSON.stringify(obj.body).replace(/\\u0000/g, '')
                                 ]];
                                 csvStringify(csvData, function(err, csv) {
                                     fs.write(fd, csv, function(err) {

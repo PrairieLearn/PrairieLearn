@@ -1,52 +1,109 @@
+var fs = require('fs');
 var _ = require('underscore');
 var async = require('async');
-var Promise = require('bluebird');
+var moment = require('moment-timezone');
+var csvStringify = require('csv').stringify;
 
-var models = require('../../models');
+var sqldb = require('../../sqldb');
 var config = require('../../config');
 var db = require('../../db');
 
 module.exports = {
-    sync: function(courseInfo, uidToRole, callback) {
-        db.uCollect.find({}, {uid: 1, name: 1}, function(err, cursor) {
+    sync: function(courseInfo, callback) {
+        var that = module.exports;
+        var filename = "/tmp/users.csv";
+        that.readExistingIds(function(err, existingIds) {
             if (err) return callback(err);
-            cursor.toArray(function(err, objs) {
+            that.mongoToFile(filename, courseInfo, existingIds, function(err) {
                 if (err) return callback(err);
-                async.each(objs, function(u, callback) {
-                    Promise.try(function() {
-                        return models.User.upsert({
-                            uid: u.uid,
-                            name: u.name
-                        });
-                    }).then(function() {
-                        return models.User.findOne({where: {
-                            uid: u.uid
-                        }});
-                    }).then(function(user) {
-                        if (!user) throw Error("no user where uid = " + u.uid);
-                        var role = uidToRole(u.uid);
-                        if (role != "Student") return Promise.resolve(null);
-                        var sql
-                            = ' INSERT INTO enrollments'
-                            + ' (user_id, course_instance_id, role)'
-                            + ' VALUES ($userId, $courseInstanceId, \'Student\')'
-                            + ' ON CONFLICT (user_id, course_instance_id) DO NOTHING'
-                            + ' ;';
-                        var params = {
-                            userId: user.id,
-                            courseInstanceId: courseInfo.courseInstanceId,
-                        };
-                        return models.sequelize.query(sql, {bind: params});
-                    }).then(function() {
-                        callback(null);
-                    }).catch(function(err) {
-                        callback(err);
-                    });
-                }, function(err, objs) {
+                that.fileToSQL(filename, function(err) {
                     if (err) return callback(err);
                     callback(null);
                 });
             });
         });
+    },
+        
+    readExistingIds: function(callback) {
+        var sql = 'SELECT uid, name FROM users;'
+        sqldb.query(sql, [], function(err, result) {
+            if (err) return callback(err);
+            var existingIds = {};
+            _(result.rows).each(function(row) {
+                existingIds[row.uid] = row.name;
+            });
+            callback(null, existingIds);
+        });
+    },
+
+    mongoToFile: function(filename, courseInfo, existingIds, callback) {
+        fs.open(filename, "w", function(err, fd) {
+            if (err) return callback(err);
+            db.uCollect.find({}, function(err, cursor) {
+                if (err) return callback(err);
+                cursor.count(function(err, nObj) {
+                    if (err) return callback(err);
+                    var i = 0;
+                    (function handle() {
+                        cursor.next(function(err, obj) {
+                            if (err) return callback(err);
+                            if (obj == null) {
+                                fs.close(fd, function(err) {
+                                    if (err) return callback(err);
+                                    return callback(null);
+                                });
+                                return;
+                            }
+                            i++;
+                            var iterate = function() {
+                                if (i % 1000 == 0) {
+                                    setTimeout(handle, 0);
+                                } else {
+                                    handle();
+                                }
+                            };
+                            if (existingIds[obj.uid] !== undefined) {
+                                // already have this object in the SQL DB, skip to next iteration
+                                var name = existingIds[obj.uid];
+                                if (name === null) {
+                                    // don't have a name in the DB, write it
+                                    var sql = 'UPDATE users SET name = $1 WHERE uid = $2;';
+                                    var params = [obj.name, obj.uid];
+                                    sqldb.query(sql, params, function(err) {
+                                        if (err) return callback(err);
+                                        iterate();
+                                    });
+                                } else {
+                                    iterate();
+                                }
+                            } else {
+                                // don't have this object yet in SQL DB, write it to the CSV file
+                                csvData = [[
+                                    obj.uid,
+                                    obj.name,
+                                ]];
+                                csvStringify(csvData, function(err, csv) {
+                                    fs.write(fd, csv, function(err) {
+                                        if (err) return callback(err);
+                                        iterate();
+                                    });
+                                });
+                            }
+                        })
+                    })();
+                });
+            });
+        });
+    },
+
+    fileToSQL: function(filename, callback) {
+        var sql
+            = ' COPY users ('
+            + '     uid,'
+            + '     name'
+            + ' ) FROM \'' + filename + '\''
+            + ' WITH (FORMAT csv)'
+            + ' ;';
+        sqldb.query(sql, [], callback);
     },
 };

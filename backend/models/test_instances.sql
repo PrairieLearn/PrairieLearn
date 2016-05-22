@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS test_instances (
     date TIMESTAMP WITH TIME ZONE,
     number INTEGER,
     test_id INTEGER REFERENCES tests,
-    userId INTEGER REFERENCES users,
+    user_id INTEGER REFERENCES users,
     auth_user_id INTEGER REFERENCES users,
     UNIQUE (number, test_id, user_id)
 );
