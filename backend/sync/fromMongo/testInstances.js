@@ -60,6 +60,7 @@ module.exports = {
                             obj.scorePerc,
                             obj.finishDate,
                             JSON.stringify(obj.gradingDates),
+                            JSON.stringify(obj.qids),
                         ]];
                         csvStringify(csvData, function(err, csv) {
                             if (err) return callback(err);
@@ -84,17 +85,18 @@ module.exports = {
             + '     score DOUBLE PRECISION,'
             + '     score_perc INTEGER,'
             + '     finish_date TIMESTAMP WITH TIME ZONE,'
-            + '     grading_dates JSONB'
+            + '     grading_dates JSONB,'
+            + '     qids JSONB'
             + ' );'
-            + ' COPY test_instances_import (date, uid, tid, tiid, number, score, score_perc, finish_date, grading_dates)'
+            + ' COPY test_instances_import (date, uid, tid, tiid, number, score, score_perc, finish_date, grading_dates, qids)'
             + ' FROM \'' + filename + '\' WITH (FORMAT CSV);';
         sqldb.query(sql, [], function(err) {
             if (err) return callback(err);
             // create new test_instances from imported data
             var sql
-                = ' INSERT INTO test_instances (tiid, date, number, test_id, user_id, auth_user_id)'
+                = ' INSERT INTO test_instances (tiid, qids, date, number, test_id, user_id, auth_user_id)'
                 + ' ('
-                + '     SELECT tii.tiid, tii.date, tii.number, t.id, u.id, u.id'
+                + '     SELECT tii.tiid, tii.qids, tii.date, tii.number, t.id, u.id, u.id'
                 + '     FROM test_instances_import AS tii'
                 + '     LEFT JOIN users AS u ON (u.uid = tii.uid)'
                 + '     LEFT JOIN ('
