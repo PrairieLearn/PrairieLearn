@@ -16,10 +16,7 @@ module.exports = {
             if (err) return callback(err);
             that.mongoToFile(filename, courseInfo, existingIds, function(err) {
                 if (err) return callback(err);
-                that.fileToSQL(filename, function(err) {
-                    if (err) return callback(err);
-                    callback(null);
-                });
+                that.fileToSQL(filename, callback);
             });
         });
     },
@@ -41,57 +38,38 @@ module.exports = {
             if (err) return callback(err);
             db.uCollect.find({}, function(err, cursor) {
                 if (err) return callback(err);
-                cursor.count(function(err, nObj) {
-                    if (err) return callback(err);
-                    var i = 0;
-                    (function handle() {
-                        cursor.next(function(err, obj) {
-                            if (err) return callback(err);
-                            if (obj == null) {
-                                fs.close(fd, function(err) {
-                                    if (err) return callback(err);
-                                    return callback(null);
-                                });
-                                return;
-                            }
-                            i++;
-                            var iterate = function() {
-                                if (i % 1000 == 0) {
-                                    setTimeout(handle, 0);
-                                } else {
-                                    handle();
-                                }
-                            };
-                            if (existingIds[obj.uid] !== undefined) {
-                                // already have this object in the SQL DB, skip to next iteration
-                                var name = existingIds[obj.uid];
-                                if (name === null) {
-                                    // don't have a name in the DB, write it
-                                    var sql = 'UPDATE users SET name = $1 WHERE uid = $2;';
-                                    var params = [obj.name, obj.uid];
-                                    sqldb.query(sql, params, function(err) {
-                                        if (err) return callback(err);
-                                        iterate();
-                                    });
-                                } else {
-                                    iterate();
-                                }
+                var done = false;
+                async.doUntil(function(callback) {
+                    cursor.next(function(err, obj) {
+                        if (err) return callback(err);
+                        if (obj == null) {
+                            done = true;
+                            return callback(null);
+                        }
+                        if (existingIds[obj.uid] !== undefined) {
+                            // already have this object in the SQL DB, skip to next iteration
+                            var name = existingIds[obj.uid];
+                            if (name === null) {
+                                // don't have a name in the DB, write it
+                                var sql = 'UPDATE users SET name = $1 WHERE uid = $2;';
+                                var params = [obj.name, obj.uid];
+                                sqldb.query(sql, params, callback);
                             } else {
-                                // don't have this object yet in SQL DB, write it to the CSV file
-                                csvData = [[
-                                    obj.uid,
-                                    obj.name,
-                                ]];
-                                csvStringify(csvData, function(err, csv) {
-                                    fs.write(fd, csv, function(err) {
-                                        if (err) return callback(err);
-                                        iterate();
-                                    });
-                                });
+                                callback(null);
                             }
-                        })
-                    })();
-                });
+                        } else {
+                            // don't have this object yet in SQL DB, write it to the CSV file
+                            csvData = [[
+                                obj.uid,
+                                obj.name,
+                            ]];
+                            csvStringify(csvData, function(err, csv) {
+                                if (err) return callback(err);
+                                fs.write(fd, csv, callback);
+                            });
+                        }
+                    });
+                }, function() {return done;}, callback);
             });
         });
     },
