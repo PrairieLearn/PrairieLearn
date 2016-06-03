@@ -4,6 +4,6 @@ CREATE TABLE IF NOT EXISTS test_scores (
     points DOUBLE PRECISION,
     max_points DOUBLE PRECISION,
     score_perc INTEGER,
-    test_instance_id INTEGER REFERENCES test_instances,
-    auth_user_id INTEGER REFERENCES users
+    test_instance_id INTEGER NOT NULL REFERENCES test_instances ON DELETE CASCADE ON UPDATE CASCADE,
+    auth_user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE
 );

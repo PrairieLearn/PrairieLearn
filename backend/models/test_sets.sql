@@ -5,6 +5,6 @@ CREATE TABLE IF NOT EXISTS test_sets (
     heading varchar(255),
     color varchar(255),
     number INTEGER,
-    course_id INTEGER REFERENCES courses,
+    course_id INTEGER NOT NULL REFERENCES courses ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (name, course_id)
 );

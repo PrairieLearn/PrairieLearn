@@ -104,13 +104,13 @@ module.exports = {
                 + '             ELSE tq.number'
                 + '         END'
                 + '     FROM question_instances_import AS qii'
-                + '     LEFT JOIN users AS u ON (u.uid = qii.uid)'
-                + '     LEFT JOIN test_instances AS ti ON (ti.tiid = qii.tiid)'
-                + '     LEFT JOIN ('
+                + '     JOIN users AS u ON (u.uid = qii.uid)'
+                + '     JOIN test_instances AS ti ON (ti.tiid = qii.tiid)'
+                + '     JOIN ('
                 + '         SELECT tq.*,q.qid'
                 + '         FROM test_questions AS tq'
                 + '         JOIN questions AS q ON (q.id = tq.question_id)'
-                + '     ) AS tq ON (tq.qid = qii.qid)'
+                + '     ) AS tq ON (tq.qid = qii.qid AND tq.test_id = ti.test_id)'
                 + ' )'
                 + ' ON CONFLICT DO NOTHING;';
             sqldb.query(sql, [], callback);

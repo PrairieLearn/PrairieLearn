@@ -4,6 +4,6 @@ CREATE TABLE IF NOT EXISTS topics (
     name varchar(255),
     number INTEGER,
     color varchar(255),
-    course_id INTEGER REFERENCES courses,
+    course_id INTEGER NOT NULL REFERENCES courses ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (short_name, course_id)
 );

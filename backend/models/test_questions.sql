@@ -4,9 +4,9 @@ CREATE TABLE IF NOT EXISTS test_questions (
     max_points DOUBLE PRECISION,
     points_list DOUBLE PRECISION[],
     init_points DOUBLE PRECISION,
-    test_id INTEGER REFERENCES tests,
-    zone_id INTEGER REFERENCES zones,
-    question_id INTEGER REFERENCES questions,
+    test_id INTEGER NOT NULL REFERENCES tests ON DELETE CASCADE ON UPDATE CASCADE,
+    zone_id INTEGER NOT NULL REFERENCES zones ON DELETE CASCADE ON UPDATE CASCADE,
+    question_id INTEGER NOT NULL REFERENCES questions ON DELETE CASCADE ON UPDATE CASCADE,
     deleted_at TIMESTAMP WITH TIME ZONE,
     UNIQUE (question_id, test_id)
 );

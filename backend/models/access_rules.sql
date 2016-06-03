@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS access_rules (
     id SERIAL PRIMARY KEY,
-    test_id INTEGER REFERENCES tests,
+    test_id INTEGER NOT NULL REFERENCES tests ON DELETE CASCADE ON UPDATE CASCADE,
     number INTEGER,
     mode enum_mode,
     role enum_role,

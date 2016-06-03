@@ -3448,24 +3448,27 @@ var syncDiskToSQL = function(callback) {
     });
 };
 
+var syncTestsMongo = require('./sync/fromMongo/tests');
 var syncUsers = require('./sync/fromMongo/users');
 var syncTestInstances = require('./sync/fromMongo/testInstances');
 var syncQuestionInstances = require('./sync/fromMongo/questionInstances');
-//var syncSubmissions = require('./sync/fromMongo/submissions');
+var syncSubmissions = require('./sync/fromMongo/submissions');
 //var syncQuestionViews = require('./sync/fromMongo/questionViews');
 //var syncAccesses = require('./sync/fromMongo/accesses');
 
 var syncMongoToSQL = function(callback) {
     logger.infoOverride("Starting sync of Mongo to SQL");
     async.series([
+        function(callback) {logger.infoOverride("Syncing tests from Mongo to SQL DB"); callback(null);},
+        syncTestsMongo.sync.bind(null, courseDB.courseInfo),
         function(callback) {logger.infoOverride("Syncing users from Mongo to SQL DB"); callback(null);},
         syncUsers.sync.bind(null, courseDB.courseInfo),
         function(callback) {logger.infoOverride("Syncing test instances from Mongo to SQL DB"); callback(null);},
         syncTestInstances.sync.bind(null, courseDB.courseInfo),
         function(callback) {logger.infoOverride("Syncing question instances from Mongo to SQL DB"); callback(null);},
         syncQuestionInstances.sync.bind(null, courseDB.courseInfo),
-        //function(callback) {logger.infoOverride("Syncing submissions from Mongo to SQL DB"); callback(null);},
-        //syncSubmissions.sync.bind(null, courseDB.courseInfo),
+        function(callback) {logger.infoOverride("Syncing submissions from Mongo to SQL DB"); callback(null);},
+        syncSubmissions.sync.bind(null, courseDB.courseInfo),
         //function(callback) {logger.infoOverride("Syncing accesses from Mongo to SQL DB"); callback(null);},
         //syncAccesses.sync.bind(null, courseDB.courseInfo),
         //function(callback) {logger.infoOverride("Syncing questionViews from Mongo to SQL DB"); callback(null);},

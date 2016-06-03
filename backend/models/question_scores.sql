@@ -1,10 +1,10 @@
 CREATE TABLE IF NOT EXISTS question_scores (
     id SERIAL PRIMARY KEY,
     date TIMESTAMP WITH TIME ZONE,
-    grading_id INTEGER REFERENCES gradings,
-    question_instance_id INTEGER REFERENCES question_instances,
-    test_score_id INTEGER REFERENCES test_scores,
-    auth_user_id INTEGER REFERENCES users,
+    grading_id INTEGER NOT NULL REFERENCES gradings ON DELETE CASCADE ON UPDATE CASCADE,
+    question_instance_id INTEGER NOT NULL REFERENCES question_instances ON DELETE CASCADE ON UPDATE CASCADE,
+    test_score_id INTEGER NOT NULL REFERENCES test_scores ON DELETE CASCADE ON UPDATE CASCADE,
+    auth_user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
     points DOUBLE PRECISION,
     max_points DOUBLE PRECISION
 );
