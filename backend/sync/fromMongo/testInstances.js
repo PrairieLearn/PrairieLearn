@@ -146,7 +146,21 @@ module.exports = {
                         + '     JOIN tests AS t ON (t.id = ti.test_id)'
                         + ' )'
                         + ' ON CONFLICT DO NOTHING;';
-                    sqldb.query(sql, [], callback);
+                    sqldb.query(sql, [], function(err) {
+                        if (err) return callback(err);
+                        // ensure we have enrollments corresponding to newly imported test instances
+                        var sql
+                            = ' INSERT INTO enrollments (user_id, course_instance_id, role)'
+                            + ' ('
+                            + '     SELECT u.id, t.course_instance_id,\'Student\''
+                            + '     FROM test_instances_import AS tii'
+                            + '     JOIN users AS u ON (u.uid = tii.uid)'
+                            + '     JOIN test_instances AS ti ON (ti.tiid = tii.tiid)'
+                            + '     JOIN tests AS t ON (t.id = ti.test_id)'
+                            + ' )'
+                            + ' ON CONFLICT DO NOTHING;';
+                        sqldb.query(sql, [], callback);
+                    });
                 });
             });
         });
