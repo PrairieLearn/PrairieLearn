@@ -3,8 +3,8 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var logger = require('../logger');
-var sqldb = require('../sqldb');
+var logger = require('../../logger');
+var sqldb = require('../../sqldb');
 
 var csvFilename = function(locals) {
     return locals.course.short_name.replace(/\s+/g, '')
@@ -43,7 +43,7 @@ router.get('/', function(req, res, next) {
             rows: result.rows,
             csvFilename: csvFilename(req.locals),
         }, req.locals);
-        res.render('pages/tests', locals);
+        res.render('pages/adminTests/adminTests', locals);
     });
 });
 

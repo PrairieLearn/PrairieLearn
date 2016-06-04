@@ -637,7 +637,7 @@ if (config.authType === 'eppn') {
 // START OF express-generator section 1
 
 // view engine setup
-app.set('views', path.join(__dirname, 'views'));
+app.set('views', __dirname);
 app.set('view engine', 'ejs');
 
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
@@ -659,19 +659,19 @@ app.use('/admin/:courseInstanceId', require('./middlewares/currentSemester'));
 app.use('/admin/:courseInstanceId', require('./middlewares/setURLPrefix'));
 app.use('/admin/:courseInstanceId', require('./middlewares/courseList'));
 app.use('/admin/:courseInstanceId', require('./middlewares/semesterList'));
-/*
 app.use('/admin/:courseInstanceId/test/:testId', require('./middlewares/currentTest'));
+/*
 app.use('/admin/:courseInstanceId/test/:testId/testQuestion/:testQuestionId', require('./middlewares/currentTestQuestion'));
 app.use('/admin/:courseInstanceId/question/:questionId', require('./middlewares/currentQuestion'));
 */
 
 // Actual route handlers.
-app.use('/admin', require('./routes/index'));
+app.use('/admin', require('./pages/adminHome/adminHome'));
 // redirect class page to tests page
 app.use(function(req, res, next) {if (/\/admin\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/tests');} next();});
-app.use('/admin/:courseInstanceId/tests', require('./routes/tests'));
+app.use('/admin/:courseInstanceId/tests', require('./pages/adminTests/adminTests'));
+app.use('/admin/:courseInstanceId/test/:testId', require('./pages/adminTestView/adminTestView'));
 /*
-app.use('/admin/:courseInstanceId/test/:testId', require('./routes/testView'));
 app.use('/admin/:courseInstanceId/test/:testId/testQuestion/:testQuestionId', require('./routes/testQuestionView'));
 app.use('/admin/:courseInstanceId/users', require('./routes/users'));
 app.use('/admin/:courseInstanceId/questions', require('./routes/questions'));
@@ -3114,7 +3114,7 @@ app.use(function(req, res, next) {
 if (app.get('env') === 'development') {
   app.use(function(err, req, res, next) {
     res.status(err.status || 500);
-    res.render('pages/error', {
+    res.render('pages/error/error', {
       message: err.message,
       error: err
     });
@@ -3125,7 +3125,7 @@ if (app.get('env') === 'development') {
 // no stacktraces leaked to user
 app.use(function(err, req, res, next) {
   res.status(err.status || 500);
-  res.render('pages/error', {
+  res.render('pages/error/error', {
     message: err.message,
     error: {}
   });
