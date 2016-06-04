@@ -3453,8 +3453,8 @@ var syncUsers = require('./sync/fromMongo/users');
 var syncTestInstances = require('./sync/fromMongo/testInstances');
 var syncQuestionInstances = require('./sync/fromMongo/questionInstances');
 var syncSubmissions = require('./sync/fromMongo/submissions');
-//var syncQuestionViews = require('./sync/fromMongo/questionViews');
-//var syncAccesses = require('./sync/fromMongo/accesses');
+var syncAccesses = require('./sync/fromMongo/accesses');
+var syncQuestionViews = require('./sync/fromMongo/questionViews');
 
 var syncMongoToSQL = function(callback) {
     logger.infoOverride("Starting sync of Mongo to SQL");
@@ -3469,10 +3469,10 @@ var syncMongoToSQL = function(callback) {
         syncQuestionInstances.sync.bind(null, courseDB.courseInfo),
         function(callback) {logger.infoOverride("Syncing submissions from Mongo to SQL DB"); callback(null);},
         syncSubmissions.sync.bind(null, courseDB.courseInfo),
-        //function(callback) {logger.infoOverride("Syncing accesses from Mongo to SQL DB"); callback(null);},
-        //syncAccesses.sync.bind(null, courseDB.courseInfo),
-        //function(callback) {logger.infoOverride("Syncing questionViews from Mongo to SQL DB"); callback(null);},
-        //syncQuestionViews.sync.bind(null, courseDB.courseInfo),
+        function(callback) {logger.infoOverride("Syncing accesses from Mongo to SQL DB"); callback(null);},
+        syncAccesses.sync.bind(null, courseDB.courseInfo),
+        function(callback) {logger.infoOverride("Syncing questionViews from Mongo to SQL DB"); callback(null);},
+        syncQuestionViews.sync.bind(null, courseDB.courseInfo),
     ], function(err) {
         if (err) return callback(err);
         logger.infoOverride("Completed sync of Mongo to SQL");

@@ -1,14 +1,7 @@
-var _ = require('underscore');
-var async = require('async');
-var Promise = require('bluebird');
-
-var models = require('../../models');
-var config = require('../../config');
-var logger = require('../../logger');
-var db = require('../../db');
+var sqldb = require('../../sqldb');
 
 module.exports = {
-    sync: function(courseInfo, testDB, questionDB, callback) {
+    sync: function(courseInfo, callback) {
         var sql
             = ' WITH'
             + ' new_question_accesses AS ('
@@ -36,13 +29,6 @@ module.exports = {
             + '     SELECT question_instance_id, access_id, open, credit'
             + '     FROM annotated_question_accesses'
             + ' ;'
-        Promise.try(function() {
-            return models.sequelize.query(sql);
-        }).spread(function(results, info) {
-            logger.infoOverride("Synced " + info.rowCount + " question_views");
-            callback(null);
-        }).catch(function(err) {
-            callback(err);
-        });
+        sqldb.query(sql, [], callback);
     },
 };
