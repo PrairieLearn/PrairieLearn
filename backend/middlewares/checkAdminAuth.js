@@ -1,22 +1,18 @@
-var models = require('../models');
-var Promise = require('bluebird');
+var logger = require('../logger');
+var sqldb = require('../sqldb');
 
 module.exports = function(req, res, next) {
-    Promise.try(function() {
-        var sql = 'SELECT *'
-            + ' FROM enrollments AS e'
-            + ' JOIN users as u ON (u.id = e.user_id)'
-            + ' WHERE e.course_instance_id = :courseInstanceId'
-            + ' AND u.uid = :uid'
-            + ' AND e.role >= \'TA\''
-            + ';';
-        var params = {
-            uid: req.authUID,
-            courseInstanceId: req.params.courseInstanceId,
-        };
-        return models.sequelize.query(sql, {replacements: params});
-    }).spread(function(results, info) {
-        if (results.length === 0) {
+    var sql = 'SELECT *'
+        + ' FROM enrollments AS e'
+        + ' JOIN users as u ON (u.id = e.user_id)'
+        + ' WHERE e.course_instance_id = $1'
+        + ' AND u.uid = $2'
+        + ' AND e.role >= \'TA\''
+        + ';';
+    var params = [req.params.courseInstanceId, req.authUID];
+    sqldb.query(sql, params, function(err, result) {
+        if (err) {logger.error('admin auth query failed', err); return res.status(500).end();}
+        if (result.rowCount === 0) {
             return res.status(403).end();
         }
         next();

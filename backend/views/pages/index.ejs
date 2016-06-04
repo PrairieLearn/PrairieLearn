@@ -19,13 +19,13 @@
             </tr>
           </thead>
           <tbody>
-            <% results.forEach(function(result) { %>
+            <% rows.forEach(function(row) { %>
             <tr>
               <td>
-                <a href="/admin/<%= result.course_instance_id %>"><%= result.short_name %>: <%= result.title %>
+                <a href="/admin/<%= row.course_instance_id %>"><%= row.short_name %>: <%= row.title %>
               </td>
               <td>
-                <% result.other_semesters.forEach(function(semester, i) { %>
+                <% row.other_semesters.forEach(function(semester, i) { %>
                 <% if (i > 0) { %>,<% } %>
                 <a href="/admin/<%= semester.course_instance_id %>"><%= semester.long_name %>
                 <% }); %>

@@ -1,11 +1,10 @@
-var Promise = require('bluebird');
-var models = require('../models');
-var config = require('../config');
 var _ = require('underscore');
 var csvStringify = require('csv').stringify;
-
 var express = require('express');
 var router = express.Router();
+
+var logger = require('../logger');
+var sqldb = require('../sqldb');
 
 var csvFilename = function(locals) {
     return locals.course.short_name.replace(/\s+/g, '')
@@ -17,34 +16,31 @@ var csvFilename = function(locals) {
 
 var sql
     = ' SELECT'
-    + '     t.*,'
-    + '     t.number as test_number,'
+    + '     t.id,t.tid,t.course_instance_id,t.type,'
+    + '     t.number as test_number,t.title,t.test_set_id,'
     + '     tstats.number,tstats.mean,tstats.std,tstats.min,tstats.max,'
     + '     tstats.median,tstats.n_zero,tstats.n_hundred,'
     + '     tstats.n_zero_perc,n_hundred_perc,tstats.score_hist,'
     + '     dstats.mean AS mean_duration,format_interval(dstats.median) AS median_duration,'
     + '     dstats.min AS min_duration,dstats.max AS max_duration,'
-    + '     ts.short_name,ts.long_name,ts.color,'
-    + '     (ts.short_name || t.number) as label,'
+    + '     ts.abbrev,ts.name,ts.heading,ts.color,'
+    + '     (ts.abbrev || t.number) as label,'
     + '     (lag(ts.id) OVER (PARTITION BY ts.id ORDER BY t.number, t.id) IS NULL) AS start_new_set'
     + ' FROM tests AS t'
     + ' LEFT JOIN test_sets AS ts ON (ts.id = t.test_set_id)'
     + ' LEFT JOIN test_stats AS tstats ON (tstats.id = t.id)'
     + ' LEFT JOIN test_duration_stats AS dstats ON (dstats.id = t.id)'
-    + ' WHERE t.course_instance_id = $courseInstanceId'
+    + ' WHERE t.course_instance_id = $1'
     + ' AND t.deleted_at IS NULL'
     + ' ORDER BY (ts.number, t.number, t.id)'
     + ' ;';
 
 router.get('/', function(req, res, next) {
-    Promise.try(function() {
-        var params = {
-            courseInstanceId: req.locals.courseInstanceId,
-        };
-        return models.sequelize.query(sql, {bind: params});
-    }).spread(function(results, info) {
+    var params = [req.locals.courseInstanceId];
+    sqldb.query(sql, params, function(err, result) {
+        if (err) {logger.error('tests query failed', err); return res.status(500).end();}
         var locals = _.extend({
-            results: results,
+            rows: result.rows,
             csvFilename: csvFilename(req.locals),
         }, req.locals);
         res.render('pages/tests', locals);
@@ -53,12 +49,9 @@ router.get('/', function(req, res, next) {
 
 router.get('/:filename', function(req, res, next) {
     if (req.params.filename == csvFilename(req.locals)) {
-        Promise.try(function() {
-            var params = {
-                courseInstanceId: req.locals.courseInstanceId,
-            };
-            return models.sequelize.query(sql, {bind: params});
-        }).spread(function(testStats, info) {
+        var params = [req.locals.courseInstanceId];
+        sqldb.query(sql, params, function(err, result) {
+            if (err) {logger.error('tests query failed', err); return res.status(500).end();}
             var csvHeaders = ['Course', 'Semester', 'Set', 'Number', 'Test', 'Title', 'TID',
                               'NStudents', 'Mean', 'Std', 'Min', 'Max', 'Median',
                               'NZero', 'NHundred', 'NZeroPerc', 'NHundredPerc',

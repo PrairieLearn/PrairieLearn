@@ -27,28 +27,28 @@
             </tr>
           </thead>
           <tbody>
-            <% results.forEach(function(result, i) { %>
-            <% if (result.start_new_set) { %>
-            <tr class="<%= result.color %>">
-              <th colspan="7"><%= result.long_name %></th>
+            <% rows.forEach(function(row, i) { %>
+            <% if (row.start_new_set) { %>
+            <tr class="<%= row.color %>">
+              <th colspan="7"><%= row.heading %></th>
             </tr>
             <% } %>
             <tr>
               <td style="width: 1%">
-                <a href="<%= urlPrefix %>/test/<%= result.id %>/" class="btn btn-<%= result.color %> btn-xs" role="button"><%= result.label %></a>
+                <a href="<%= urlPrefix %>/test/<%= row.id %>/" class="btn btn-<%= row.color %> btn-xs" role="button"><%= row.label %></a>
               </td>
               <td>
-                <a href="<%= urlPrefix %>/test/<%= result.id %>/"><%= result.title %></a>
+                <a href="<%= urlPrefix %>/test/<%= row.id %>/"><%= row.title %></a>
               </td>
-              <td><%= result.tid %></td>
+              <td><%= row.tid %></td>
 
-              <td class="cell-center"><%= result.number %></td>
+              <td class="cell-center"><%= row.number %></td>
 
-              <% if (result.number > 0) { %>
+              <% if (row.number > 0) { %>
               <td class="cell-center"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
               <script>
                 $(function() {
-                    var data = [<%= result.score_hist %>];
+                    var data = [<%= row.score_hist %>];
                     var options = {
                         width: 60,
                         height: 20,
@@ -60,14 +60,14 @@
               <td class="cell-center"></td>
               <% } %>
 
-              <% if (result.number > 0) { %>
-              <td class="cell-center"><%- include('../partials/scorebar', {score: result.median}); %></td>
+              <% if (row.number > 0) { %>
+              <td class="cell-center"><%- include('../partials/scorebar', {score: row.median}); %></td>
               <% } else { %>
               <td class="cell-center"></td>
               <% } %>
 
-              <% if (result.number > 0) { %>
-              <td class="cell-center"><%= result.median_duration %></td>
+              <% if (row.number > 0) { %>
+              <td class="cell-center"><%= row.median_duration %></td>
               <% } else { %>
               <td class="cell-center"></td>
               <% } %>

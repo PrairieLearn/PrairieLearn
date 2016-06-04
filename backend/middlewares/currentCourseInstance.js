@@ -1,23 +1,17 @@
 var _ = require('underscore');
-var models = require('../models');
-var Promise = require('bluebird');
+var logger = require('../logger');
+var sqldb = require('../sqldb');
 
 module.exports = function(req, res, next) {
-    Promise.try(function() {
-        var sql = 'SELECT ci.*'
-            + ' FROM course_instances AS ci'
-            + ' WHERE ci.id = :courseInstanceId'
-            + ';';
-        var params = {
-            courseInstanceId: req.params.courseInstanceId,
-        };
-        return models.sequelize.query(sql, {replacements: params});
-    }).spread(function(results, info) {
-        if (results.length != 1) {
-            throw Error("no course_instance with id = " + req.params.courseInstanceId);
-        }
+    var sql = 'SELECT ci.*'
+        + ' FROM course_instances AS ci'
+        + ' WHERE ci.id = $1'
+        + ';';
+    var params = [req.params.courseInstanceId];
+    sqldb.query(sql, params, function(err, result) {
+        if (err) {logger.error('currentCourseInstance query failed', err); return res.status(500).end();}
         req.locals = _.extend({
-            courseInstance: results[0],
+            courseInstance: result.rows[0],
             courseInstanceId: req.params.courseInstanceId,
         }, req.locals);
         next();
