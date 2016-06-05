@@ -15,7 +15,7 @@
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title"><%= testSet.short_name %><%= test.number %>: <%= test.title %></h3>
+          <h3 class="panel-title"><%= testSet.abbrev %><%= test.number %>: <%= test.title %></h3>
         </div>
 
         <table class="table table-condensed table-hover">
@@ -64,7 +64,7 @@
       
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title"><%= testSet.short_name %><%= test.number %> Score statistics</h3>
+          <h3 class="panel-title"><%= testSet.abbrev %><%= test.number %> Score statistics</h3>
         </div>
 
         <% if (testStat.number > 0) { %>
@@ -116,7 +116,7 @@
       
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title"><%= testSet.short_name %><%= test.number %> Duration statistics</h3>
+          <h3 class="panel-title"><%= testSet.abbrev %><%= test.number %> Duration statistics</h3>
         </div>
 
         <% if (testStat.number > 0) { %>
@@ -165,7 +165,7 @@
       
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title"><%= testSet.short_name %><%= test.number %> Duration versus score</h3>
+          <h3 class="panel-title"><%= testSet.abbrev %><%= test.number %> Duration versus score</h3>
         </div>
 
         <% if (testStat.number > 0) { %>
@@ -207,7 +207,7 @@
       
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title"><%= testSet.short_name %><%= test.number %> Scores</h3>
+          <h3 class="panel-title"><%= testSet.abbrev %><%= test.number %> Scores</h3>
         </div>
         <div class="panel-body">
           <small>

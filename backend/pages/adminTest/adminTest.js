@@ -95,7 +95,7 @@ router.get('/', function(req, res, next) {
         + ' ;';
     var params = [req.locals.testId, req.locals.courseInstanceId];
     sqldb.query(sql, params, function(err, result) {
-        if (err) {logger.error('adminTestView questions query failed', err); return res.status(500).end();}
+        if (err) {logger.error('adminTest questions query failed', err); return res.status(500).end();}
         locals = _.extend({
             questions: result.rows,
         }, locals);
@@ -103,8 +103,8 @@ router.get('/', function(req, res, next) {
         var sql = 'SELECT * FROM test_stats WHERE id = $1;';
         var params = [req.locals.testId];
         sqldb.query(sql, params, function(err, result) {
-            if (err) {logger.error('adminTestView test_stats query failed', err); return res.status(500).end();}
-            if (result.rowCount !== 1) {logger.error('adminTestView no test_stats', err); return res.status(500).end();}
+            if (err) {logger.error('adminTest test_stats query failed', err); return res.status(500).end();}
+            if (result.rowCount !== 1) {logger.error('adminTest no test_stats', err); return res.status(500).end();}
             locals = _.extend({
                 testStat: result.rows[0],
             }, locals);
@@ -123,8 +123,8 @@ router.get('/', function(req, res, next) {
                 + ' ;';
             var params = [req.locals.testId];
             sqldb.query(sql, params, function(err, result) {
-                if (err) {logger.error('adminTestView test_duration_stats query failed', err); return res.status(500).end();}
-                if (result.rowCount !== 1) {logger.error('adminTestView no test_duration_stats', err); return res.status(500).end();}
+                if (err) {logger.error('adminTest test_duration_stats query failed', err); return res.status(500).end();}
+                if (result.rowCount !== 1) {logger.error('adminTest no test_duration_stats', err); return res.status(500).end();}
                 locals = _.extend({
                     durationStat: result.rows[0],
                 }, locals);
@@ -145,12 +145,12 @@ router.get('/', function(req, res, next) {
                     + ' ;';
                 var params = [req.locals.testId];
                 sqldb.query(sql, params, function(err, result) {
-                    if (err) {logger.error('adminTestView user_test_scores query failed', err); return res.status(500).end();}
+                    if (err) {logger.error('adminTest user_test_scores query failed', err); return res.status(500).end();}
                     locals = _.extend({
                         userScores: result.rows,
                     }, locals);
                     
-                    res.render('pages/adminTestView/adminTestView', locals);
+                    res.render('pages/adminTest/adminTest', locals);
                 });
             });
         });
@@ -162,8 +162,8 @@ router.get('/:filename', function(req, res, next) {
         var sql = 'SELECT * FROM test_stats WHERE id = $1;';
         var params = [req.locals.testId];
         sqldb.query(sql, params, function(err, result) {
-            if (err) {logger.error('adminTestView test_stats csv query failed', err); return res.status(500).end();}
-            if (result.rowCount !== 1) {logger.error('adminTestView no test_stats for csv', err); return res.status(500).end();}
+            if (err) {logger.error('adminTest test_stats csv query failed', err); return res.status(500).end();}
+            if (result.rowCount !== 1) {logger.error('adminTest no test_stats for csv', err); return res.status(500).end();}
             var testStat = result.row[0];
             var csvHeaders = ['Course', 'Semester', 'Set', 'Number', 'Test', 'Title', 'TID', 'NStudents', 'Mean',
                               'Std', 'Min', 'Max', 'Median', 'NZero', 'NHundred', 'NZeroPerc', 'NHundredPerc'];

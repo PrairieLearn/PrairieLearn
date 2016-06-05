@@ -660,8 +660,8 @@ app.use('/admin/:courseInstanceId', require('./middlewares/setURLPrefix'));
 app.use('/admin/:courseInstanceId', require('./middlewares/courseList'));
 app.use('/admin/:courseInstanceId', require('./middlewares/semesterList'));
 app.use('/admin/:courseInstanceId/test/:testId', require('./middlewares/currentTest'));
-/*
 app.use('/admin/:courseInstanceId/test/:testId/testQuestion/:testQuestionId', require('./middlewares/currentTestQuestion'));
+/*
 app.use('/admin/:courseInstanceId/question/:questionId', require('./middlewares/currentQuestion'));
 */
 
@@ -670,9 +670,9 @@ app.use('/admin', require('./pages/adminHome/adminHome'));
 // redirect class page to tests page
 app.use(function(req, res, next) {if (/\/admin\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/tests');} next();});
 app.use('/admin/:courseInstanceId/tests', require('./pages/adminTests/adminTests'));
-app.use('/admin/:courseInstanceId/test/:testId', require('./pages/adminTestView/adminTestView'));
+app.use('/admin/:courseInstanceId/test/:testId', require('./pages/adminTest/adminTest'));
+app.use('/admin/:courseInstanceId/test/:testId/testQuestion/:testQuestionId', require('./pages/adminTestQuestion/adminTestQuestion'));
 /*
-app.use('/admin/:courseInstanceId/test/:testId/testQuestion/:testQuestionId', require('./routes/testQuestionView'));
 app.use('/admin/:courseInstanceId/users', require('./routes/users'));
 app.use('/admin/:courseInstanceId/questions', require('./routes/questions'));
 app.use('/admin/:courseInstanceId/question/:questionId', require('./routes/questionView'));
