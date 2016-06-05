@@ -673,8 +673,8 @@ app.use('/admin/:courseInstanceId/tests', require('./pages/adminTests/adminTests
 app.use('/admin/:courseInstanceId/test/:testId', require('./pages/adminTest/adminTest'));
 app.use('/admin/:courseInstanceId/test/:testId/testQuestion/:testQuestionId', require('./pages/adminTestQuestion/adminTestQuestion'));
 app.use('/admin/:courseInstanceId/users', require('./pages/adminUsers/adminUsers'));
+app.use('/admin/:courseInstanceId/questions', require('./pages/adminQuestions/adminQuestions'));
 /*
-app.use('/admin/:courseInstanceId/questions', require('./routes/questions'));
 app.use('/admin/:courseInstanceId/question/:questionId', require('./routes/questionView'));
 */
 
