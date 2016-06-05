@@ -15,20 +15,10 @@
             "type": "string",
             "required": true
         },
-        "currentSemester": {
-            "description": "The current semester for the list of tests.",
-            "enum": ["Sp15", "Su15", "Fa15", "Sp16", "Su16", "Fa16"],
+        "currentCourseInstance": {
+            "description": "The current active course instance. Must be a subdirectory of courseInstances/",
+            "type": "string",
             "required": true
-        },
-        "userRoles": {
-            "description": "Special roles for specific users (anyone not listed is assumed to be a 'Student').",
-            "type": "object",
-            "patternProperties": {
-                ".+": {
-                    "description": "The role for a given UID.",
-                    "enum": ["Student", "TA", "Instructor"]
-                }
-            }
         },
         "testSets": {
             "description": "Test sets.",

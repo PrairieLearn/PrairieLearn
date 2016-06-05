@@ -47,6 +47,27 @@ module.exports.loadCourseInfo = function(courseInfo, callback) {
         if (err) return callback(err);
         courseInfo.name = info.name;
         courseInfo.title = info.title;
+        courseInfo.gitCourseBranch = config.gitCourseBranch;
+        courseInfo.timezone = config.timezone;
+        courseInfo.currentCourseInstance = info.currentCourseInstance;
+        courseInfo.testsDir = path.join(config.courseDir, "courseInstances", info.currentCourseInstance, "tests");
+        courseInfo.testSets = info.testSets;
+        courseInfo.topics = info.topics;
+        courseInfo.tags = info.tags;
+        that.getCourseOriginURL(function(err, originURL) {
+            courseInfo.remoteFetchURL = originURL;
+            return callback(null);
+        });
+    });
+};
+
+module.exports.loadCourseInstanceInfo = function(courseInfo, callback) {
+    var that = this;
+    var courseInfoFilename = path.join(config.courseDir, "courseInstances", courseInfo.currentCourseInstance, "courseInstanceInfo.json");
+    jsonLoad.readInfoJSON(courseInfoFilename, "schemas/courseInstanceInfo.json", undefined, undefined, function(err, info) {
+        if (err) return callback(err);
+        courseInfo.courseInstanceShortName = info.shortName;
+        courseInfo.courseInstanceLongName = info.longName;
         if (info.userRoles) {
             _(info.userRoles).forEach(function(value, key) {
                 if (!PrairieRole.isRoleValid(value)) {
@@ -61,16 +82,7 @@ module.exports.loadCourseInfo = function(courseInfo, callback) {
             });
         }
         courseInfo.userRoles = info.userRoles;
-        courseInfo.gitCourseBranch = config.gitCourseBranch;
-        courseInfo.timezone = config.timezone;
-        courseInfo.currentSemester = info.currentSemester;
-        courseInfo.testSets = info.testSets;
-        courseInfo.topics = info.topics;
-        courseInfo.tags = info.tags;
-        that.getCourseOriginURL(function(err, originURL) {
-            courseInfo.remoteFetchURL = originURL;
-            return callback(null);
-        });
+        return callback(null);
     });
 };
 
@@ -215,6 +227,9 @@ module.exports.load = function(callback) {
             that.loadCourseInfo(that.courseInfo, callback);
         },
         function(callback) {
+            that.loadCourseInstanceInfo(that.courseInfo, callback);
+        },
+        function(callback) {
             _(that.questionDB).mapObject(function(val, key) {delete that.questionDB[key];});
             var defaultQuestionInfo = {
                 "type": "Calculation",
@@ -226,7 +241,7 @@ module.exports.load = function(callback) {
             _(that.testDB).mapObject(function(val, key) {delete that.testDB[key];});
             var defaultTestInfo = {
             };
-            that.loadInfoDB(that.testDB, "tid", path.join(config.testsDir, that.courseInfo.currentSemester), defaultTestInfo, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
+            that.loadInfoDB(that.testDB, "tid", that.courseInfo.testsDir, defaultTestInfo, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
         },
     ], callback);
 };

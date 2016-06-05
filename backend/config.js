@@ -25,7 +25,6 @@ config.roles = {"user1@illinois.edu": "Superuser"};
 
 config.computeRelativePaths = function() {
     config.questionsDir = path.join(config.courseDir, "questions");
-    config.testsDir = path.join(config.courseDir, "tests");
     config.clientCodeDir = path.join(config.courseDir, "clientCode");
     config.serverCodeDir = path.join(config.courseDir, "serverCode");
     config.clientFilesDir = path.join(config.courseDir, "clientFiles");

@@ -1,0 +1,15 @@
+{
+    "shortName": "Sp15",
+    "longName": "Spring 2015",
+    "userRoles": {
+        "mwest@illinois.edu": "Instructor",
+        "zilles@illinois.edu": "TA",
+        "mussulma@illinois.edu": "TA"
+    },
+    "allowAccess": [
+        {
+            "startDate": "2015-01-19T00:00:01",
+            "endDate": "2015-05-13T23:59:59"
+        }
+    ]
+}

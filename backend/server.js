@@ -1022,7 +1022,7 @@ app.get("/qInstances/:qiid/:filename", function(req, res) {
 app.get("/tests/:tid/:filename", function(req, res) {
     var tid = req.params.tid;
     var filename = req.params.filename;
-    var testPath = path.join(config.testsDir, tid);
+    var testPath = path.join(courseDB.courseInfo.testsDir, tid);
     var fullFilePath = path.join(testPath, filename);
     info = courseDB.testDB[tid];
     if (info === undefined) {
@@ -1685,7 +1685,7 @@ app.get("/tests/:tid/client.js", function(req, res) {
     ensureTestAvailByTID(req, res, req.params.tid, function(err) {
         if (err) return sendError(res, 500, "Error accessing test with tid: " + req.params.tid, err);
         var filePath = path.join(req.params.tid, "client.js");
-        res.sendFile(filePath, {root: config.testsDir});
+        res.sendFile(filePath, {root: courseDB.courseInfo.testsDir});
     });
 });
 
@@ -1693,7 +1693,7 @@ app.get("/tests/:tid/common.js", function(req, res) {
     ensureTestAvailByTID(req, res, req.params.tid, function(err) {
         if (err) return sendError(res, 500, "Error accessing test with tid: " + req.params.tid, err);
         var filePath = path.join(req.params.tid, "common.js");
-        res.sendFile(filePath, {root: config.testsDir});
+        res.sendFile(filePath, {root: courseDB.courseInfo.testsDir});
     });
 });
 
@@ -1701,7 +1701,7 @@ app.get("/tests/:tid/test.html", function(req, res) {
     ensureTestAvailByTID(req, res, req.params.tid, function(err) {
         if (err) return sendError(res, 500, "Error accessing test with tid: " + req.params.tid, err);
         var filePath = path.join(req.params.tid, "test.html");
-        res.sendFile(filePath, {root: config.testsDir});
+        res.sendFile(filePath, {root: courseDB.courseInfo.testsDir});
     });
 });
 
@@ -1709,7 +1709,7 @@ app.get("/tests/:tid/testOverview.html", function(req, res) {
     ensureTestAvailByTID(req, res, req.params.tid, function(err) {
         if (err) return sendError(res, 500, "Error accessing test with tid: " + req.params.tid, err);
         var filePath = path.join(req.params.tid, "testOverview.html");
-        res.sendFile(filePath, {root: config.testsDir});
+        res.sendFile(filePath, {root: courseDB.courseInfo.testsDir});
     });
 });
 
@@ -1717,7 +1717,7 @@ app.get("/tests/:tid/testSidebar.html", function(req, res) {
     ensureTestAvailByTID(req, res, req.params.tid, function(err) {
         if (err) return sendError(res, 500, "Error accessing test with tid: " + req.params.tid, err);
         var filePath = path.join(req.params.tid, "testSidebar.html");
-        res.sendFile(filePath, {root: config.testsDir});
+        res.sendFile(filePath, {root: courseDB.courseInfo.testsDir});
     });
 });
 

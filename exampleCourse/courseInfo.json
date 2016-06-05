@@ -1,9 +1,27 @@
 {
     "name": "TPL 101",
     "title": "Example Course",
-    "userRoles": {
-        "mwest@illinois.edu": "Instructor",
-        "zilles@illinois.edu": "TA",
-        "mussulma@illinois.edu": "TA"
-    }
+    "currentCourseInstance": "Sp15",
+    "testSets": [
+        {"shortName": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
+        {"shortName": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1"},
+        {"shortName": "PQ", "name": "Practice Quiz", "heading": "Practice Quizzes", "color": "pink1"},
+        {"shortName": "E", "name": "Exam", "heading": "Exams", "color": "brown1"},
+        {"shortName": "PE", "name": "Practice Exam", "heading": "Practice Exams", "color": "yellow1"}
+    ],
+    "topics": [
+        {"shortName": "Vec", "name": "Vectors", "color": "blue1"},
+        {"shortName": "Func", "name": "Functions", "color": "blue1"},
+        {"shortName": "En", "name": "Energy", "color": "blue1"},
+        {"shortName": "Particles", "name": "Particle kinetics", "color": "blue1"},
+        {"shortName": "Code", "name": "Coding", "color": "blue1"}
+    ],
+    "tags": [
+        {"shortName": "Draw", "name": "Graphical drawing", "color": "gray1"},
+        {"shortName": "Est", "name": "Estimation", "color": "gray1"},
+        {"shortName": "Comp", "name": "Comparative advantages", "color": "gray1"},
+        {"shortName": "Symb", "name": "Symbolic calculation", "color": "gray1"},
+        {"shortName": "Num", "name": "Numeric calculation", "color": "gray1"},
+        {"shortName": "Code", "name": "Code writing", "color": "gray1"}
+    ]
 }
