@@ -672,8 +672,8 @@ app.use(function(req, res, next) {if (/\/admin\/[0-9]+\/?$/.test(req.url)) {req.
 app.use('/admin/:courseInstanceId/tests', require('./pages/adminTests/adminTests'));
 app.use('/admin/:courseInstanceId/test/:testId', require('./pages/adminTest/adminTest'));
 app.use('/admin/:courseInstanceId/test/:testId/testQuestion/:testQuestionId', require('./pages/adminTestQuestion/adminTestQuestion'));
+app.use('/admin/:courseInstanceId/users', require('./pages/adminUsers/adminUsers'));
 /*
-app.use('/admin/:courseInstanceId/users', require('./routes/users'));
 app.use('/admin/:courseInstanceId/questions', require('./routes/questions'));
 app.use('/admin/:courseInstanceId/question/:questionId', require('./routes/questionView'));
 */

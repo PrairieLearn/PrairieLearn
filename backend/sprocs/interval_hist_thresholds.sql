@@ -22,7 +22,14 @@ CREATE OR REPLACE FUNCTION
                 (interval '4h'),
                 (interval '6h'),
                 (interval '12h'),
-                (interval '24h')
+                (interval '1d'),
+                (interval '2d'),
+                (interval '3d'),
+                (interval '5d'),
+                (interval '10d'),
+                (interval '15d'),
+                (interval '20d'),
+                (interval '30d')
         ) AS possible_steps (step)
     ),
     selected AS (
