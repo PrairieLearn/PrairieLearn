@@ -473,8 +473,8 @@ app.use(function(req, res, next) {
                 n2 = parseInt(ipParts[1]);
                 n3 = parseInt(ipParts[2]);
                 n4 = parseInt(ipParts[3]);
-                // DCL L416
-                if (n1 == 192 && n2 == 17 && n3 == 239 && n4 >= 128 && n4 <= 255) {
+                // Grainger 57
+                if (n1 == 192 && n2 == 17 && n3 == 180 && n4 >= 128 && n4 <= 255) {
                     serverMode = 'Exam';
                 }
                 if (moment.tz("2016-05-06T00:00:01", config.timezone).isBefore()
