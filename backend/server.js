@@ -27,6 +27,7 @@ if (config.logFilename) {
 
 var requireFrontend = require("./require-frontend");
 var courseDB = require("./course-db");
+var filePaths = require("./file-paths");
 var hmacSha256 = require("crypto-js/hmac-sha256");
 var gamma = require("gamma");
 var numeric = require("numeric");
@@ -890,7 +891,7 @@ var undefQuestionServers = function(callback) {
     //     requireFrontend.s.contexts._.defined
     // This is necessary because of incomplete questions (in particular, those with info.json but no server.js).
     async.each(_(courseDB.questionDB).keys(), function(qid, cb) {
-        questionFilePath(qid, "server.js", function(err, fileInfo) {
+        filePaths.questionFilePath(qid, "server.js", function(err, fileInfo) {
             if (err) {
                 logger.info("Unable to locate server.js path for QID: " + qid);
                 return cb(null); // don't error, just skip this question
@@ -993,50 +994,6 @@ app.get("/questions/:qid", function(req, res) {
     res.json(stripPrivateFields({qid: info.qid, title: info.title, number: info.number, video: info.video}));
 });
 
-var questionFilePath = function(qid, filename, callback, nTemplates) {
-    nTemplates = (nTemplates === undefined) ? 0 : nTemplates;
-    if (nTemplates > 10) {
-        return callback("Too-long template recursion for qid: " + qid);
-    }
-    var info = courseDB.questionDB[qid];
-    if (info === undefined) {
-        return callback("QID not found in questionDB: " + qid);
-    }
-    var questionPath = path.join(config.questionsDir, qid);
-    var fullFilePath = path.join(questionPath, filename);
-    fs.stat(fullFilePath, function(err, stats) {
-        if (err) {
-            // couldn't find the file
-            if (info.template !== undefined) {
-                // have a template, try it
-                return questionFilePath(info.template, filename, callback, nTemplates + 1);
-            } else {
-                // no template, try default files
-                var filenameToSuffix = {
-                    "client.js": 'Client.js',
-                    "server.js": 'Server.js',
-                };
-                if (filenameToSuffix[filename] === undefined) {
-                    return callback("file not found: " + fullFilePath);
-                }
-                var defaultFilename = info.type + filenameToSuffix[filename];
-                var fullDefaultFilePath = path.join(config.questionDefaultsDir, defaultFilename);
-                fs.stat(fullDefaultFilePath, function(err, stats) {
-                    if (err) {
-                        // no default file, give up
-                        return callback("file not found: " + fullFilePath);
-                    }
-                    // found a default file
-                    return callback(null, {filePath: defaultFilename, qid: qid, filename: filename, root: config.questionDefaultsDir});
-                });
-            }
-        } else {
-            // found the file
-            return callback(null, {filePath: filename, qid: qid, filename: filename, root: questionPath});
-        }
-    });
-};
-
 app.get("/qInstances/:qiid/:filename", function(req, res) {
     var filename = req.params.filename;
     var qiid = req.params.qiid;
@@ -1045,7 +1002,7 @@ app.get("/qInstances/:qiid/:filename", function(req, res) {
         ensureObjAuth(req, qInstance, "read", function(err) {
             if (err) return sendError(res, 403, "Insufficient permissions", err);
             var qid = qInstance.qid;
-            questionFilePath(qid, filename, function(err, fileInfo) {
+            filePaths.questionFilePath(qid, filename, function(err, fileInfo) {
                 if (err)
                     return sendError(res, 404, "No such file '" + filename + "' for qid: " + req.params.qid, err);
                 info = courseDB.questionDB[fileInfo.qid];
@@ -1533,7 +1490,7 @@ var readQInstance = function(qiid, callback) {
 };
 
 var loadQuestionServer = function(qid, callback) {
-    questionFilePath(qid, "server.js", function(err, fileInfo) {
+    filePaths.questionFilePath(qid, "server.js", function(err, fileInfo) {
         if (err) return callback(err);
         var serverFilePath = path.join(fileInfo.root, fileInfo.filePath);
         requireFrontend([serverFilePath], function(server) {
