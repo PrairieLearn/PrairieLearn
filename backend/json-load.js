@@ -3,6 +3,8 @@ var _ = require("underscore");
 var jju = require('jju');
 var validator = require('is-my-json-valid')
 
+var logger = require("./logger");
+
 module.exports.readJSON = function(jsonFilename, callback) {
     var json;
     fs.readFile(jsonFilename, {encoding: 'utf8'}, function(err, data) {
