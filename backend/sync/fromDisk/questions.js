@@ -9,13 +9,14 @@ module.exports = {
         var questionIds = [];
         async.forEachOfSeries(questionDB, function(q, qid, callback) {
             var sql
-                = ' INSERT INTO questions (qid, type, title, config, course_id, deleted_at, topic_id)'
+                = ' INSERT INTO questions (qid, directory, type, title, config, course_id, deleted_at, topic_id)'
                 + '     (SELECT * FROM'
-                + '         (VALUES ($1, $2::enum_question_type, $3, $4::JSONB, $5::integer, NULL::timestamp with time zone)) AS vals,'
+                + '         (VALUES ($1, $1, $2::enum_question_type, $3, $4::JSONB, $5::integer, NULL::timestamp with time zone)) AS vals,'
                 + '         (SELECT COALESCE((SELECT id FROM topics WHERE name = $6 AND course_id = $5), NULL)) AS topics'
                 + '     )'
                 + ' ON CONFLICT (qid, course_id) DO UPDATE'
                 + ' SET'
+                + '     directory = EXCLUDED.directory,'
                 + '     type = EXCLUDED.type,'
                 + '     title = EXCLUDED.title,'
                 + '     config = EXCLUDED.config,'

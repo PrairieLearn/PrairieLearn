@@ -9,6 +9,14 @@
             "description": "Path to the course directory.",
             "type": "string"
         },
+        "courseDirs": {
+            "description": "Paths of the course directories.",
+            "type": "array",
+            "items": {
+                "description": "A single course directory path.",
+                "type": "string"
+            }
+        },
         "secretKey": {
             "description": "Secret key for authenticating users (should be a long random string).",
             "type": "string"

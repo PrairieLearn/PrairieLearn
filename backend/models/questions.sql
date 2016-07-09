@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS questions (
     id SERIAL PRIMARY KEY,
     qid varchar(255),
+    directory varchar(255),
     type enum_question_type,
     title varchar(255),
     config JSONB,
