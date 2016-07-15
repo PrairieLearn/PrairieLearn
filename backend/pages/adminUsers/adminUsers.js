@@ -13,7 +13,7 @@ var sql = sqlLoader.load(path.join(__dirname, 'adminUsers.sql'));
 var csv_filename = function(locals) {
     return locals.course.short_name.replace(/\s+/g, '')
         + '_'
-        + locals.semester.short_name
+        + locals.courseInstance.short_name
         + '_'
         + 'user_scores.csv';
 };

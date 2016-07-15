@@ -6,9 +6,8 @@ digraph partmc_modules {
     edge [fontsize = 10, arrowsize = 0.7];
 
     course [label="course", style=filled, fillcolor=mistyrose1]
-    course_instance [label="course_instance", style=filled, fillcolor=mistyrose1]
-    semester [label="semester", style=filled, fillcolor=mistyrose1]
 
+    course_instance [label="course_instance*", style=filled, fillcolor=honeydew1]
     access_rule [style=filled, fillcolor=honeydew1]
     question [label="question*", style=filled, fillcolor=honeydew1]
     test [label="test*", style=filled, fillcolor=honeydew1]
@@ -31,7 +30,7 @@ digraph partmc_modules {
     test_view [style=filled, fillcolor=lavender]
 
     access_rule -> { test }
-    course_instance -> { course; semester }
+    course_instance -> { course }
     enrollment -> { user; course_instance }
     question -> { course; topic }
     test -> { course_instance; test_set }

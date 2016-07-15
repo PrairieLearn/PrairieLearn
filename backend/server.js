@@ -34,6 +34,7 @@ var numeric = require("numeric");
 var csvStringify = require('csv').stringify;
 var archiver = require('archiver');
 var jStat = require("jStat").jStat;
+var syncFromDisk = require('./sync/syncFromDisk');
 var child_process = require("child_process");
 var PrairieStats = requireFrontend("PrairieStats");
 var PrairieModel = requireFrontend("PrairieModel");
@@ -656,10 +657,9 @@ app.use('/admin/', function(req, res, next) {req.locals = {}; next();});
 app.use('/admin/:courseInstanceId', require('./middlewares/checkAdminAuth'));
 app.use('/admin/:courseInstanceId', require('./middlewares/currentCourseInstance'));
 app.use('/admin/:courseInstanceId', require('./middlewares/currentCourse'));
-app.use('/admin/:courseInstanceId', require('./middlewares/currentSemester'));
 app.use('/admin/:courseInstanceId', require('./middlewares/setURLPrefix'));
 app.use('/admin/:courseInstanceId', require('./middlewares/courseList'));
-app.use('/admin/:courseInstanceId', require('./middlewares/semesterList'));
+app.use('/admin/:courseInstanceId', require('./middlewares/courseInstanceList'));
 app.use('/admin/:courseInstanceId/test/:testId', require('./middlewares/currentTest'));
 app.use('/admin/:courseInstanceId/test/:testId/testQuestion/:testQuestionId', require('./middlewares/currentTestQuestion'));
 app.use('/admin/:courseInstanceId/question/:questionId', require('./middlewares/currentQuestion'));
@@ -3371,38 +3371,6 @@ var loadAndInitCourseData = function(callback) {
     });
 };
 
-var syncSemesters = require('./sync/fromDisk/semesters');
-var syncCourseInfo = require('./sync/fromDisk/courseInfo');
-var syncCourseStaff = require('./sync/fromDisk/courseStaff');
-var syncTopics = require('./sync/fromDisk/topics');
-var syncQuestions = require('./sync/fromDisk/questions');
-var syncTestSets = require('./sync/fromDisk/testSets');
-var syncTests = require('./sync/fromDisk/tests');
-
-var syncDiskToSQL = function(callback) {
-    logger.infoOverride("Starting sync of disk to SQL");
-    async.series([
-        function(callback) {logger.infoOverride("Syncing semesters from disk to SQL DB"); callback(null);},
-        syncSemesters.sync.bind(null),
-        function(callback) {logger.infoOverride("Syncing courseInfo from disk to SQL DB"); callback(null);},
-        syncCourseInfo.sync.bind(null, courseDB.courseInfo),
-        function(callback) {logger.infoOverride("Syncing courseStaff from disk to SQL DB"); callback(null);},
-        syncCourseStaff.sync.bind(null, courseDB.courseInfo),
-        function(callback) {logger.infoOverride("Syncing topics from disk to SQL DB"); callback(null);},
-        syncTopics.sync.bind(null, courseDB.courseInfo),
-        function(callback) {logger.infoOverride("Syncing questions from disk to SQL DB"); callback(null);},
-        syncQuestions.sync.bind(null, courseDB.courseInfo, courseDB.questionDB),
-        function(callback) {logger.infoOverride("Syncing test sets from disk to SQL DB"); callback(null);},
-        syncTestSets.sync.bind(null, courseDB.courseInfo),
-        function(callback) {logger.infoOverride("Syncing tests from disk to SQL DB"); callback(null);},
-        syncTests.sync.bind(null, courseDB.courseInfo, courseDB.testDB),
-    ], function(err) {
-        if (err) return callback(err);
-        logger.infoOverride("Completed sync of disk to SQL");
-        callback(null);
-    });
-};
-
 var syncTestsMongo = require('./sync/fromMongo/tests');
 var syncUsers = require('./sync/fromMongo/users');
 var syncTestInstances = require('./sync/fromMongo/testInstances');
@@ -3448,6 +3416,17 @@ async.series([
     // for prod these tasks should be back inline
     function(callback) {
         callback(null);
+        async.eachSeries(config.courseDirs || [], function(courseDir, callback) {
+            syncFromDisk.syncDiskToSql(courseDir, callback);
+        }, function(err, data) {
+            if (err) {
+                logger.error("Error syncing SQL DB:", err, data);
+            } else {
+                logger.infoOverride("Completed sync SQL DB");
+            }
+        });
+
+        /*        
         async.series([
             syncDiskToSQL,
             syncMongoToSQL,
@@ -3456,6 +3435,7 @@ async.series([
                 logger.error("Error syncing SQL DB:", err, data);
             }
         });
+        */
     },
 ], function(err, data) {
     if (err) {

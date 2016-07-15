@@ -2,25 +2,21 @@ var _ = require('underscore');
 var async = require('async');
 var moment = require('moment-timezone');
 
+var logger = require('../../logger');
 var sqldb = require('../../sqldb');
 var config = require('../../config');
 
 module.exports = {
-    sync: function(courseInfo, testDB, callback) {
+    sync: function(courseInfo, courseInstance, callback) {
         var that = module.exports;
         var testIds = [];
-        async.forEachOfSeries(testDB, function(dbTest, tid, callback) {
+        async.forEachOfSeries(courseInstance.testDB, function(dbTest, tid, callback) {
+            logger.info('Syncing ' + tid);
             var sql
                 = ' INSERT INTO tests (tid, type, number, title, config, deleted_at, course_instance_id, test_set_id)'
                 + '     (SELECT * FROM'
-                + '         (VALUES ($1, $2::enum_test_type, $3, $4, $5::JSONB, NULL::timestamp with time zone)) AS vals,'
-                + '         (SELECT COALESCE(('
-                + '             SELECT ci.id'
-                + '             FROM course_instances AS ci'
-                + '             JOIN semesters AS s ON (s.id = ci.semester_id)'
-                + '             WHERE s.short_name = $7 AND course_id = $6'
-                + '         ), NULL)) AS course_instances,'
-                + '         (SELECT COALESCE((SELECT id FROM test_sets WHERE name = $8 AND course_id = $6), NULL)) AS test_sets'
+                + '         (VALUES ($1, $2::enum_test_type, $3, $4, $5::JSONB, NULL::timestamp with time zone, $6::INTEGER)) AS vals,'
+                + '         (SELECT COALESCE((SELECT id FROM test_sets WHERE name = $8 AND course_id = $7), NULL)) AS test_sets'
                 + '     )'
                 + ' ON CONFLICT (tid, course_instance_id) DO UPDATE'
                 + ' SET'
@@ -32,11 +28,12 @@ module.exports = {
                 + '     test_set_id = EXCLUDED.test_set_id'
                 + ' RETURNING id;';
             var params = [tid, dbTest.type, dbTest.number, dbTest.title, dbTest.options,
-                          courseInfo.courseId, dbTest.semester, dbTest.set];
+                          courseInstance.courseInstanceId, courseInfo.courseId, dbTest.set];
             sqldb.query(sql, params, function(err, result) {
                 if (err) return callback(err);
                 var testId = result.rows[0].id;
                 testIds.push(testId);
+                logger.info('Synced ' + tid + ' as test_id ' + testId);
                 that.syncAccessRules(testId, dbTest, function(err) {
                     if (err) return callback(err);
                     if (_(dbTest).has('options') && _(dbTest.options).has('zones')) {
@@ -63,42 +60,46 @@ module.exports = {
             });
         }, function(err) {
             if (err) return callback(err);
-            // soft-delete tests from the DB that aren't on disk and are in the current course
+
+            // soft-delete tests from the DB that aren't on disk and are in the current course instance
+            logger.info('Soft-deleting unused tests');
             var paramIndexes = testIds.map(function(item, idx) {return "$" + (idx + 2);});
             var sql = 'WITH'
-                + ' course_test_ids AS ('
+                + ' course_instance_test_ids AS ('
                 + '     SELECT t.id'
                 + '     FROM tests AS t'
-                + '     JOIN course_instances AS ci ON (ci.id = t.course_instance_id)'
-                + '     WHERE ci.course_id = $1'
+                + '     WHERE t.course_instance_id = $1'
                 + '     AND t.deleted_at IS NULL'
                 + ' )'
                 + ' UPDATE tests SET deleted_at = CURRENT_TIMESTAMP'
-                + ' WHERE id IN (SELECT * FROM course_test_ids)'
+                + ' WHERE id IN (SELECT * FROM course_instance_test_ids)'
                 + (testIds.length === 0 ? '' : ' AND id NOT IN (' + paramIndexes.join(',') + ')')
                 + ' ;';
-            var params = [courseInfo.courseId].concat(testIds);
+            var params = [courseInstance.courseInstanceId].concat(testIds);
             sqldb.query(sql, params, function(err) {
                 if (err) return callback(err);
+
                 // soft-delete test_questions from DB that don't correspond to current tests
+                logger.info('Soft-deleting unused test questions');
                 var paramIndexes = testIds.map(function(item, idx) {return "$" + (idx + 2);});
                 var sql = 'WITH'
-                    + ' course_test_question_ids AS ('
+                    + ' course_instance_test_question_ids AS ('
                     + '     SELECT tq.id'
                     + '     FROM test_questions AS tq'
                     + '     JOIN tests AS t ON (t.id = tq.test_id)'
-                    + '     JOIN course_instances AS ci ON (ci.id = t.course_instance_id)'
-                    + '     WHERE ci.course_id = $1'
+                    + '     WHERE t.course_instance_id = $1'
                     + '     AND tq.deleted_at IS NULL'
                     + ' )'
                     + ' UPDATE test_questions SET deleted_at = CURRENT_TIMESTAMP'
-                    + ' WHERE id IN (SELECT * FROM course_test_question_ids)'
+                    + ' WHERE id IN (SELECT * FROM course_instance_test_question_ids)'
                     + (testIds.length === 0 ? '' : ' AND test_id NOT IN (' + paramIndexes.join(',') + ')')
                     + ' ;';
-                var params = [courseInfo.courseId].concat(testIds);
+                var params = [courseInstance.courseInstanceId].concat(testIds);
                 sqldb.query(sql, params, function(err) {
                     if (err) return callback(err);
+
                     // delete access rules from DB that don't correspond to tests
+                    logger.info('Deleting unused access rules');
                     var sql = 'DELETE FROM access_rules AS ar'
                         + ' WHERE NOT EXISTS ('
                         + '     SELECT * FROM tests AS t'
@@ -107,7 +108,9 @@ module.exports = {
                         + ' );';
                     sqldb.query(sql, [], function(err) {
                         if (err) return callback(err);
+
                         // delete zones from DB that don't correspond to tests
+                        logger.info('Deleting unused zones');
                         var sql = 'DELETE FROM zones AS z'
                             + ' WHERE NOT EXISTS ('
                             + '     SELECT * FROM tests AS t'
@@ -147,10 +150,13 @@ module.exports = {
                 _(dbRule).has('endDate') ? moment.tz(dbRule.endDate, config.timezone).format() : null,
                 _(dbRule).has('credit') ? dbRule.credit : null,
             ];
+            logger.info('Syncing access rule number ' + (i + 1));
             sqldb.query(sql, params, callback);
         }, function(err) {
             if (err) return callback(err);
+
             // delete access rules from the DB that aren't on disk
+            logger.info('Deleting unused access rules for current test');
             var sql = 'DELETE FROM access_rules WHERE test_id = $1 AND number > $2;';
             var params = [testId, allowAccess.length];
             sqldb.query(sql, params, callback);
@@ -167,10 +173,13 @@ module.exports = {
                 + '     title = EXCLUDED.title'
                 + ' ;';
             var params = [testId, i + 1, dbZone.title];
+            logger.info('Syncing zone number ' + (i + 1));
             sqldb.query(sql, params, callback);
         }, function(err) {
             if (err) return callback(err);
+
             // delete zones from the DB that aren't on disk
+            logger.info('Deleting unused zones for current test');
             var sql = 'DELETE FROM zones WHERE test_id = $1 AND number > $2;';
             var params = [testId, zoneList.length];
             sqldb.query(sql, params, callback);
@@ -208,7 +217,9 @@ module.exports = {
             }, callback);
         }, function(err) {
             if (err) return callback(err);
-            // soft-delete zones from the DB that aren't on disk
+
+            // soft-delete test questions from the DB that aren't on disk
+            logger.info('Soft-deleting unused test questions for current test');
             var sql = 'UPDATE test_questions SET deleted_at = CURRENT_TIMESTAMP WHERE test_id = $1 AND number > $2;';
             var params = [testId, iTestQuestion];
             sqldb.query(sql, params, callback);
@@ -246,6 +257,7 @@ module.exports = {
                 + '     question_id = EXCLUDED.question_id'
                 + ' ;';
             var params = [iTestQuestion, maxPoints, pointsList, initPoints, testId, questionId, iZone];
+            logger.info('Syncing test question number ' + iTestQuestion + ' with QID ' + qid);
             sqldb.query(sql, params, callback);
         });
     },

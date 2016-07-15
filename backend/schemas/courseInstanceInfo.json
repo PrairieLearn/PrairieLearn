@@ -4,15 +4,14 @@
     "description": "The specification file for a course instance.",
     "type": "object",
     "properties": {
-        "shortName": {
-            "description": "The short name (e.g., 'Sp15').",
+        "longName": {
+            "description": "The long name of this course instance (e.g., 'Spring 2015').",
             "type": "string",
             "required": true
         },
-        "longName": {
-            "description": "The long name (e.g., 'Spring 2015').",
-            "type": "string",
-            "required": true
+        "number": {
+            "description": "The number of this course instance, used for sorting.",
+            "type": "integer"
         },
         "userRoles": {
             "description": "Special roles for specific users (anyone not listed is assumed to be a 'Student').",

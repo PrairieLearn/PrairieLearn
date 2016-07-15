@@ -15,20 +15,18 @@
           <thead>
             <tr>
               <th>Course</th>
-              <th>Semesters</th>
+              <th>Instances</th>
             </tr>
           </thead>
           <tbody>
             <% rows.forEach(function(row) { %>
             <tr>
               <td>
-                <a href="/admin/<%= row.course_instance_id %>"><%= row.short_name %>: <%= row.title %>
+                <%= row.short_name %>: <%= row.title %>
               </td>
               <td>
-                <% row.other_semesters.forEach(function(semester, i) { %>
-                <% if (i > 0) { %>,<% } %>
-                <a href="/admin/<%= semester.course_instance_id %>"><%= semester.long_name %>
-                <% }); %>
+                <% row.course_instances.forEach(function(course_instance, i) { %><% if (i > 0) { %>,<% } %>
+                <a href="/admin/<%= course_instance.id %>"><%= course_instance.long_name %><% }); %>
               </td>
             </tr>
             <% }); %>

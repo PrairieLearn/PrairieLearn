@@ -40,9 +40,9 @@ module.exports.getCourseOriginURL = function(callback) {
     });
 };
 
-module.exports.loadCourseInfo = function(courseInfo, callback) {
+module.exports.loadCourseInfo = function(courseInfo, courseDir, callback) {
     var that = this;
-    var courseInfoFilename = path.join(config.courseDir, "courseInfo.json");
+    var courseInfoFilename = path.join(courseDir, "courseInfo.json");
     jsonLoad.readInfoJSON(courseInfoFilename, "schemas/courseInfo.json", undefined, undefined, function(err, info) {
         if (err) return callback(err);
         courseInfo.name = info.name;
@@ -50,7 +50,9 @@ module.exports.loadCourseInfo = function(courseInfo, callback) {
         courseInfo.gitCourseBranch = config.gitCourseBranch;
         courseInfo.timezone = config.timezone;
         courseInfo.currentCourseInstance = info.currentCourseInstance;
-        courseInfo.testsDir = path.join(config.courseDir, "courseInstances", info.currentCourseInstance, "tests");
+        courseInfo.questionsDir = path.join(courseDir, "questions");
+        courseInfo.courseInstancesDir = path.join(courseDir, "courseInstances");
+        courseInfo.testsDir = path.join(courseInfo.courseInstancesDir, info.currentCourseInstance, "tests");
         courseInfo.testSets = info.testSets;
         courseInfo.topics = info.topics;
         courseInfo.tags = info.tags;
@@ -61,9 +63,9 @@ module.exports.loadCourseInfo = function(courseInfo, callback) {
     });
 };
 
-module.exports.loadCourseInstanceInfo = function(courseInfo, callback) {
+module.exports.loadCourseInstanceInfo = function(courseInfo, courseDir, courseInstance, callback) {
     var that = this;
-    var courseInfoFilename = path.join(config.courseDir, "courseInstances", courseInfo.currentCourseInstance, "courseInstanceInfo.json");
+    var courseInfoFilename = path.join(courseDir, "courseInstances", courseInstance, "courseInstanceInfo.json");
     jsonLoad.readInfoJSON(courseInfoFilename, "schemas/courseInstanceInfo.json", undefined, undefined, function(err, info) {
         if (err) return callback(err);
         courseInfo.courseInstanceShortName = info.shortName;
@@ -90,7 +92,7 @@ var isValidDate = function(dateString) {
     return moment(dateString, "YYYY-MM-DDTHH:mm:ss", true).isValid();
 }
 
-module.exports.checkInfoValid = function(idName, info, infoFile) {
+module.exports.checkInfoValid = function(idName, info, infoFile, courseInfo) {
     var that = this;
     var retVal = true; // true means valid
 
@@ -98,11 +100,6 @@ module.exports.checkInfoValid = function(idName, info, infoFile) {
     if (idName == "tid" && info.options && info.options.availDate) {
         logger.error(infoFile + ': "options.availDate" is deprecated. Instead, please use "allowAccess".');
         retVal = false;
-    }
-
-    // add semester to tests
-    if (idName == "tid") {
-        info.semester = that.courseInfo.currentSemester;
     }
 
     // look for exams without credit assigned and warn about it
@@ -132,9 +129,9 @@ module.exports.checkInfoValid = function(idName, info, infoFile) {
         });
     }
 
-    var validTestSets = _(that.courseInfo.testSets).pluck('name');
-    var validTopics = _(that.courseInfo.topics).pluck('name');
-    var validTags = _(that.courseInfo.tags).pluck('name');
+    var validTestSets = _(courseInfo.testSets).pluck('name');
+    var validTopics = _(courseInfo.topics).pluck('name');
+    var validTags = _(courseInfo.tags).pluck('name');
     
     // check tests all have a valid testSet
     if (idName == "tid") {
@@ -171,7 +168,7 @@ module.exports.checkInfoValid = function(idName, info, infoFile) {
     return retVal;
 };
 
-module.exports.loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, loadCallback) {
+module.exports.loadInfoDB = function(db, idName, parentDir, infoFilename, defaultInfo, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, courseInfo, loadCallback) {
     var that = this;
     fs.readdir(parentDir, function(err, files) {
         if (err) {
@@ -181,14 +178,14 @@ module.exports.loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaF
         }
 
         async.filter(files, function(dirName, cb) {
-            // Filter out files from questions/ as it is possible they slip in without the user putting them there (like .DS_Store).
+            // Filter out files from parentDir as it is possible they slip in without the user putting them there (like .DS_Store).
             var filePath = path.join(parentDir, dirName);
             fs.lstat(filePath, function(err, fileStats){
                 cb(fileStats.isDirectory());
             });
         }, function(folders) {
             async.each(folders, function(dir, callback) {
-                var infoFile = path.join(parentDir, dir, "info.json");
+                var infoFile = path.join(parentDir, dir, infoFilename);
                 jsonLoad.readInfoJSON(infoFile, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, function(err, info) {
                     if (err) {
                         logger.error("Error reading file: " + infoFile, err);
@@ -196,7 +193,7 @@ module.exports.loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaF
                         return;
                     }
                     info[idName] = dir;
-                    if (!that.checkInfoValid(idName, info, infoFile)) {
+                    if (!that.checkInfoValid(idName, info, infoFile, courseInfo)) {
                         callback(null);
                         return;
                     }
@@ -225,10 +222,10 @@ module.exports.load = function(callback) {
     var that = this;
     async.series([
         function(callback) {
-            that.loadCourseInfo(that.courseInfo, callback);
+            that.loadCourseInfo(that.courseInfo, config.courseDir, callback);
         },
         function(callback) {
-            that.loadCourseInstanceInfo(that.courseInfo, callback);
+            that.loadCourseInstanceInfo(that.courseInfo, config.courseDir, that.courseInfo.currentCourseInstance, callback);
         },
         function(callback) {
             _(that.questionDB).mapObject(function(val, key) {delete that.questionDB[key];});
@@ -236,13 +233,54 @@ module.exports.load = function(callback) {
                 "type": "Calculation",
                 "clientFiles": ["client.js", "question.html", "answer.html"],
             };
-            that.loadInfoDB(that.questionDB, "qid", config.questionsDir, defaultQuestionInfo, "schemas/questionInfo.json", "schemas/questionOptions", ".json", callback);
+            that.loadInfoDB(that.questionDB, "qid", config.questionsDir, "info.json", defaultQuestionInfo,
+                            "schemas/questionInfo.json", "schemas/questionOptions", ".json", that.courseInfo, callback);
         },
         function(callback) {
             _(that.testDB).mapObject(function(val, key) {delete that.testDB[key];});
             var defaultTestInfo = {
             };
-            that.loadInfoDB(that.testDB, "tid", that.courseInfo.testsDir, defaultTestInfo, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
+            that.loadInfoDB(that.testDB, "tid", that.courseInfo.testsDir, "info.json", defaultTestInfo,
+                            "schemas/testInfo.json", "schemas/testOptions", ".json", that.courseInfo, callback);
         },
     ], callback);
+};
+
+module.exports.loadFullCourse = function(courseDir, callback) {
+    var that = this;
+    var course = {
+        courseInfo: {},
+        questionDB: {},
+        courseInstanceDB: {},
+    };
+    var defaultQuestionInfo = {
+        "type": "Calculation",
+        "clientFiles": ["client.js", "question.html", "answer.html"],
+    };
+    var defaultCourseInstanceInfo = {};
+    var defaultTestInfo = {};
+    async.series([
+        that.loadCourseInfo.bind(that, course.courseInfo, courseDir),
+        function(callback) {
+            that.loadInfoDB(course.questionDB, "qid", course.courseInfo.questionsDir, "info.json",
+                            defaultQuestionInfo, "schemas/questionInfo.json", "schemas/questionOptions", ".json",
+                            course.courseInfo, callback);
+        },
+        function(callback) {
+            that.loadInfoDB(course.courseInstanceDB, "ciid", course.courseInfo.courseInstancesDir, "courseInstanceInfo.json",
+                            defaultCourseInstanceInfo, "schemas/courseInstanceInfo.json", null, null,
+                            course.courseInfo, callback);
+        },
+    ], function(err) {
+        if (err) return callback(err);
+        async.forEachOf(course.courseInstanceDB, function(courseInstance, courseInstanceDir, callback) {
+            var testsDir = path.join(course.courseInfo.courseInstancesDir, courseInstanceDir, "tests");
+            courseInstance.testDB = {};
+            that.loadInfoDB(courseInstance.testDB, "tid", testsDir, "info.json", defaultTestInfo,
+                            "schemas/testInfo.json", "schemas/testOptions", ".json", course.courseInfo, callback);
+        }, function(err) {
+            if (err) return callback(err);
+            callback(null, course);
+        });
+    });
 };

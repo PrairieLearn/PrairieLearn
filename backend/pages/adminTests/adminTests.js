@@ -13,7 +13,7 @@ var sql = sqlLoader.load(path.join(__dirname, 'adminTests.sql'));
 var csvFilename = function(locals) {
     return locals.course.short_name.replace(/\s+/g, '')
         + '_'
-        + locals.semester.short_name
+        + locals.courseInstance.short_name
         + '_'
         + 'test_stats.csv';
 };
@@ -35,7 +35,7 @@ router.get('/:filename', function(req, res, next) {
         var params = [req.locals.courseInstanceId];
         sqldb.query(sql.all, params, function(err, result) {
             if (err) {logger.error('tests query failed', err); return res.status(500).end();}
-            var csvHeaders = ['Course', 'Semester', 'Set', 'Number', 'Test', 'Title', 'TID',
+            var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Test', 'Title', 'TID',
                               'NStudents', 'Mean', 'Std', 'Min', 'Max', 'Median',
                               'NZero', 'NHundred', 'NZeroPerc', 'NHundredPerc',
                               'Hist1', 'Hist2', 'Hist3', 'Hist4', 'Hist5',
@@ -44,7 +44,7 @@ router.get('/:filename', function(req, res, next) {
             _(testStats).each(function(testStat) {
                 var csvRow = [
                     req.locals.course.short_name,
-                    req.locals.semester.short_name,
+                    req.locals.courseInstance.short_name,
                     testStat.long_name,
                     testStat.test_number,
                     testStat.label,

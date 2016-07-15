@@ -13,7 +13,7 @@ var sql = sqlLoader.load(path.join(__dirname, 'adminTest.sql'));
 var scoreStatsCsvFilename = function(locals) {
     return locals.course.short_name.replace(/\s+/g, '')
         + '_'
-        + locals.semester.short_name
+        + locals.courseInstance.short_name
         + '_'
         + locals.testSet.short_name
         + locals.test.number
@@ -24,7 +24,7 @@ var scoreStatsCsvFilename = function(locals) {
 var durationStatsCsvFilename = function(locals) {
     return locals.course.short_name.replace(/\s+/g, '')
         + '_'
-        + locals.semester.short_name
+        + locals.courseInstance.short_name
         + '_'
         + locals.testSet.short_name
         + locals.test.number
@@ -35,7 +35,7 @@ var durationStatsCsvFilename = function(locals) {
 var scoresCsvFilename = function(locals) {
     return locals.course.short_name.replace(/\s+/g, '')
         + '_'
-        + locals.semester.short_name
+        + locals.courseInstance.short_name
         + '_'
         + locals.testSet.short_name
         + locals.test.number
@@ -93,11 +93,11 @@ router.get('/:filename', function(req, res, next) {
             if (err) {logger.error('adminTest test_stats csv query failed', err); return res.status(500).end();}
             if (result.rowCount !== 1) {logger.error('adminTest no test_stats for csv', err); return res.status(500).end();}
             var testStat = result.row[0];
-            var csvHeaders = ['Course', 'Semester', 'Set', 'Number', 'Test', 'Title', 'TID', 'NStudents', 'Mean',
+            var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Test', 'Title', 'TID', 'NStudents', 'Mean',
                               'Std', 'Min', 'Max', 'Median', 'NZero', 'NHundred', 'NZeroPerc', 'NHundredPerc'];
             var csvData = [
                 req.locals.course.short_name,
-                req.locals.semester.short_name,
+                req.locals.courseInstance.short_name,
                 req.locals.testSet.name,
                 req.locals.test.number,
                 req.locals.testSet.abbrev + req.locals.test.number,
