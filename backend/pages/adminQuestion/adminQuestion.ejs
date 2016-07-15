@@ -5,6 +5,8 @@
   </head>
   <body>
     <%- include('../partials/adminNavbar', {navPage: 'questions'}); %>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML"></script>
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
@@ -39,7 +41,13 @@
         <div class="panel-heading">
           <h3 class="panel-title"><%= result.title %> (<%= result.qid %>)</h3>
         </div>
-        <%- questionHtml %>
+        <div class="panel-body">
+          <%- questionHtml %>
+        </div>
+        <div class="panel-footer">
+          <button class="btn btn-primary">Submit</button>
+          <button class="btn btn-info">Show true answer</button>
+        </div>
       </div>
     </div>
   </body>

@@ -674,6 +674,7 @@ app.use('/admin/:courseInstanceId/test/:testId/testQuestion/:testQuestionId', re
 app.use('/admin/:courseInstanceId/users', require('./pages/adminUsers/adminUsers'));
 app.use('/admin/:courseInstanceId/questions', require('./pages/adminQuestions/adminQuestions'));
 app.use('/admin/:courseInstanceId/question/:questionId', require('./pages/adminQuestion/adminQuestion'));
+app.use('/admin/:courseInstanceId/question/:questionId/file', require('./pages/adminQuestionFile/adminQuestionFile'));
 
 // END OF express-generator section 1
 ///////////////////////////////////////////////////////////////////////////////

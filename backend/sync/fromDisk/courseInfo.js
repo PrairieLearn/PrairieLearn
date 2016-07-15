@@ -9,7 +9,7 @@ var sql = sqlLoader.load(path.join(__dirname, 'courseInfo.sql'));
 
 module.exports = {
     sync: function(courseInfo, callback) {
-        var params = [courseInfo.name, courseInfo.title];
+        var params = [courseInfo.name, courseInfo.title, courseInfo.path];
         sqldb.query(sql.all, params, function(err, result) {
             if (err) return callback(err);
             courseInfo.courseId = result.rows[0].course_id;

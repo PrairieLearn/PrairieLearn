@@ -20,13 +20,23 @@ module.exports = {
         });
     },
 
-    renderQuestion: function(questionInstance, question, submission, course, callback) {
-        filePaths.questionFilePathNEW("question.html", question.directory, course.directory, function(err, questionTemplatePath) {
+    renderQuestion: function(questionInstance, question, submission, course, locals, callback) {
+        filePaths.questionFilePathNEW("question.html", question.directory, course.path, function(err, questionTemplatePath) {
             if (err) return callback(err);
             fs.readFile(questionTemplatePath, 'utf8', function(err, questionTemplate) {
                 if (err) return callback(err);
-                questionTemplate = questionTemplate.replace(/{{([^}]+)}}/, '<%= \1 %>');
-                var questionHtml = ejs.render(questionTemplate, {params: questionInstance.params});
+                questionTemplate = questionTemplate.replace(/<% *print\(([^}]+?)\) *%>/g, '<%= $1 %>');
+                questionTemplate = questionTemplate.replace(/{{([^}]+)}}/g, '<%= $1 %>');
+                var context = {
+                    params: questionInstance.params,
+                    questionFile: function(filename) {return questionHelper.questionFileUrl(filename, locals);},
+                    feedback: {},
+                };
+                try {
+                    var questionHtml = ejs.render(questionTemplate, context);
+                } catch (e) {
+                    return callback(new Error('Error rendering "' + questionTemplatePath + '": ' + String(e)));
+                }
                 callback(null, questionHtml);
             });
         });

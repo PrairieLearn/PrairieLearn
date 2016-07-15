@@ -2,15 +2,15 @@ var _ = require('underscore');
 var fs = require('fs');
 var path = require('path');
 
-var logger = require('../logger');
-var filePaths = require('../file-paths');
+var logger = require('./logger');
+var filePaths = require('./file-paths');
 
 var questionModules = {
     'Calculation': require('./questions/calculation'),
 };
 
 module.exports = {
-    get: function(type, callback) {
+    getModule: function(type, callback) {
         if (_(questionModules).has(type)) {
             callback(null, questionModules[type]);
         } else {
@@ -25,7 +25,7 @@ module.exports = {
         } else {
             vid = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
         }
-        this.get(question.type, function(err, questionModule) {
+        this.getModule(question.type, function(err, questionModule) {
             if (err) return callback(err);
             questionModule.getData(question, course, vid, function(err, questionData) {
                 if (err) return callback(err);

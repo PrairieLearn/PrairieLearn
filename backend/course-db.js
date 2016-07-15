@@ -45,6 +45,7 @@ module.exports.loadCourseInfo = function(courseInfo, courseDir, callback) {
     var courseInfoFilename = path.join(courseDir, "courseInfo.json");
     jsonLoad.readInfoJSON(courseInfoFilename, "schemas/courseInfo.json", undefined, undefined, function(err, info) {
         if (err) return callback(err);
+        courseInfo.path = courseDir;
         courseInfo.name = info.name;
         courseInfo.title = info.title;
         courseInfo.gitCourseBranch = config.gitCourseBranch;
