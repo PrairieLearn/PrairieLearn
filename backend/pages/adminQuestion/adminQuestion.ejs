@@ -7,6 +7,7 @@
     <%- include('../partials/adminNavbar', {navPage: 'questions'}); %>
     <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
     <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script type="text/javascript" src="/localscripts/adminQuestionSubmit.js"></script>
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
@@ -34,10 +35,9 @@
           </tbody>
         </table>
       </div>
-    </div>
 
-    <div id="content" class="container">
-      <div class="panel panel-primary">
+      <div class="panel panel-primary question-panel">
+        <script type="application/json" class="question-data"><%- questionJson  %></script>
         <div class="panel-heading">
           <h3 class="panel-title"><%= result.title %> (<%= result.qid %>)</h3>
         </div>
@@ -45,8 +45,7 @@
           <%- questionHtml %>
         </div>
         <div class="panel-footer">
-          <button class="btn btn-primary">Submit</button>
-          <button class="btn btn-info">Show true answer</button>
+          <button class="btn btn-primary question-submit" data-question="">Submit</button>
         </div>
       </div>
     </div>

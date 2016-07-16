@@ -27,6 +27,12 @@ router.get('/', function(req, res, next) {
                     var locals = _.extend({
                         result: result.rows[0],
                         questionHtml: questionHtml,
+                        questionJson: JSON.stringify({
+                            question: req.locals.question,
+                            course: req.locals.course,
+                            courseInstance: req.locals.courseInstance,
+                            questionInstance: questionInstance,
+                        }),
                     }, req.locals);
                     res.render(path.join(__dirname, 'adminQuestion'), locals);
                 });
