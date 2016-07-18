@@ -56,6 +56,15 @@ client.initialize = function(callback) {
             require([questionData.questionFilePath + "/client.js"], function(qc) {
                 qClient = qc;
                 qClient.initialize(questionData.questionInstance.params);
+                if (questionData.submittedAnswer) {
+                    qClient.setSubmittedAnswer(questionData.submittedAnswer);
+                    if (questionData.trueAnswer) {
+                        qClient.setTrueAnswer(questionData.trueAnswer);
+                    }
+                    if (questionData.feedback) {
+                        qClient.feedback(questionData.feedback);
+                    }
+                }
                 var questionDataModel = new Backbone.Model();
                 var appModel = new Backbone.Model();
                 qClient.renderQuestion(container, function() {}, questionDataModel, appModel);

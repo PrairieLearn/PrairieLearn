@@ -72,6 +72,9 @@ var render = function(req, res, next, questionInstance, submission, grading, sco
                             course: req.locals.course,
                             courseInstance: req.locals.courseInstance,
                             questionInstance: questionInstance,
+                            submittedAnswer: submission ? submission.submitted_answer : null,
+                            trueAnswer: questionInstance.true_answer,
+                            feedback: grading ? grading.feedback : null,
                         }),
                     }, req.locals);
                     res.render(path.join(__dirname, 'adminQuestion'), locals);
