@@ -21,6 +21,6 @@ module.exports = {
     },
 
     questionFileUrl: function(filename, locals) {
-        return path.join(locals.urlPrefix, "question", String(locals.question.id), "file", filename);
+        return locals.urlPrefix + "/question/" + String(locals.question.id) + "/file/" + filename;
     },
 };

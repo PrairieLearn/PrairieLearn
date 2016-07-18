@@ -10,75 +10,20 @@ var questionHelper = require('../questionHelper.js');
 
 module.exports = {
     renderExtraHeaders: function(question, course, locals, callback) {
-        callback(null, null);
+        var extraHeaders = '<script type="text/javascript" src="/javascripts/require.js"></script>';
+        callback(null, extraHeaders);
     },
 
     renderQuestion: function(questionInstance, question, submission, course, locals, callback) {
-        filePaths.questionFilePathNEW("question.html", question.directory, course.path, function(err, questionTemplatePath) {
-            if (err) return callback(err);
-            fs.readFile(questionTemplatePath, 'utf8', function(err, questionTemplate) {
-                if (err) return callback(err);
-                questionTemplate = questionTemplate.replace(/<% *print\(([^}]+?)\) *%>/g, '<%= $1 %>');
-                questionTemplate = questionTemplate.replace(/{{([^}]+)}}/g, '<%= $1 %>');
-                var context = {
-                    params: questionInstance.params,
-                    questionFile: function(filename) {return questionHelper.questionFileUrl(filename, locals);},
-                    feedback: {},
-                };
-                try {
-                    var questionHtml = ejs.render(questionTemplate, context);
-                } catch (e) {
-                    return callback(new Error('Error rendering "' + questionTemplatePath + '": ' + String(e)));
-                }
-                callback(null, questionHtml);
-            });
-        });
+        callback(null, "");
     },
 
     renderSubmission: function(questionInstance, question, submission, grading, course, locals, callback) {
-        filePaths.questionFilePathNEW("submission.html", question.directory, course.path, function(err, questionTemplatePath) {
-            if (err) return callback(err);
-            fs.readFile(questionTemplatePath, 'utf8', function(err, questionTemplate) {
-                if (err) return callback(err);
-                questionTemplate = questionTemplate.replace(/<% *print\(([^}]+?)\) *%>/g, '<%= $1 %>');
-                questionTemplate = questionTemplate.replace(/{{([^}]+)}}/g, '<%= $1 %>');
-                var context = {
-                    params: questionInstance.params,
-                    submittedAnswer: submission.submitted_answer,
-                    score: grading.score,
-                    feedback: grading.feedback,
-                    questionFile: function(filename) {return questionHelper.questionFileUrl(filename, locals);},
-                };
-                try {
-                    var questionHtml = ejs.render(questionTemplate, context);
-                } catch (e) {
-                    return callback(new Error('Error rendering "' + questionTemplatePath + '": ' + String(e)));
-                }
-                callback(null, questionHtml);
-            });
-        });
+        callback(null, "");
     },
 
     renderTrueAnswer: function(questionInstance, question, course, locals, callback) {
-        filePaths.questionFilePathNEW("answer.html", question.directory, course.path, function(err, questionTemplatePath) {
-            if (err) return callback(err);
-            fs.readFile(questionTemplatePath, 'utf8', function(err, questionTemplate) {
-                if (err) return callback(err);
-                questionTemplate = questionTemplate.replace(/<% *print\(([^}]+?)\) *%>/g, '<%= $1 %>');
-                questionTemplate = questionTemplate.replace(/{{([^}]+)}}/g, '<%= $1 %>');
-                var context = {
-                    params: questionInstance.params,
-                    trueAnswer: questionInstance.true_answer,
-                    questionFile: function(filename) {return questionHelper.questionFileUrl(filename, locals);},
-                };
-                try {
-                    var questionHtml = ejs.render(questionTemplate, context);
-                } catch (e) {
-                    return callback(new Error('Error rendering "' + questionTemplatePath + '": ' + String(e)));
-                }
-                callback(null, questionHtml);
-            });
-        });
+        callback(null, "");
     },
 
     getData: function(question, course, vid, callback) {

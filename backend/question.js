@@ -7,6 +7,7 @@ var filePaths = require('./file-paths');
 
 var questionModules = {
     'Calculation': require('./questions/calculation'),
+    'Backbone': require('./questions/backbone'),
 };
 
 module.exports = {

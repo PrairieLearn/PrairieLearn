@@ -3,6 +3,13 @@ document.questionClients = document.questionClients || {};
 document.questionClients.Calculation = {};
 var client = document.questionClients.Calculation;
 
+client.initialize = function(callback) {
+    callback(null);
+};
+
+client.renderQuestion = function() {
+};
+
 client.getSubmittedAnswer = function(container) {
     var submittedAnswer = {};
     container.find('input[data-instavalue^="submittedAnswer."]').each(function(i, x) {

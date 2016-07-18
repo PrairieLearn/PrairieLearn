@@ -231,7 +231,7 @@ module.exports = {
         var params = [qid, courseInfo.courseId];
         sqldb.query(sql, params, function(err, result) {
             if (err) return callback(err);
-            if (result.nRows < 1) return callback(new Error('invalid QID: "' + qid + '"'));
+            if (result.rowCount < 1) return callback(new Error('invalid QID: "' + qid + '"'));
             var questionId = result.rows[0].id;
             var sql
                 = ' INSERT INTO test_questions'

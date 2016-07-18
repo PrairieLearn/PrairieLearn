@@ -14,7 +14,8 @@
         {"shortName": "Func", "name": "Functions", "color": "blue1"},
         {"shortName": "En", "name": "Energy", "color": "blue1"},
         {"shortName": "Particles", "name": "Particle kinetics", "color": "blue1"},
-        {"shortName": "Code", "name": "Coding", "color": "blue1"}
+        {"shortName": "Code", "name": "Coding", "color": "blue1"},
+        {"shortName": "COM", "name": "Center of mass", "color": "blue1"}
     ],
     "tags": [
         {"shortName": "Draw", "name": "Graphical drawing", "color": "gray1"},

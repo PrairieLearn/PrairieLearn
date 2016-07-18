@@ -51,26 +51,31 @@ var render = function(req, res, next, questionInstance, submission, grading, sco
         if (result.rowCount !== 1) return next(error.make(500, 'incorrect rowCount', result));
         question.getModule(req.locals.question.type, function(err, questionModule) {
             if (err) return next(err);
-            questionModule.renderQuestion(questionInstance, req.locals.question, null, req.locals.course, req.locals, function(err, questionHtml) {
+            questionModule.renderExtraHeaders(req.locals.question, req.locals.course, req.locals, function(err, extraHeaders) {
                 if (err) return next(err);
-                
-                var locals = _.extend({
-                    result: result.rows[0],
-                    submission: submission,
-                    grading: grading,
-                    questionHtml: questionHtml,
-                    scoreHtml: scoreHtml,
-                    submissionHtml: submissionHtml,
-                    answerHtml: answerHtml,
-                    postUrl: req.locals.urlPrefix + "/question/" + req.locals.question.id,
-                    questionJson: JSON.stringify({
-                        question: req.locals.question,
-                        course: req.locals.course,
-                        courseInstance: req.locals.courseInstance,
-                        questionInstance: questionInstance,
-                    }),
-                }, req.locals);
-                res.render(path.join(__dirname, 'adminQuestion'), locals);
+                questionModule.renderQuestion(questionInstance, req.locals.question, null, req.locals.course, req.locals, function(err, questionHtml) {
+                    if (err) return next(err);
+                    
+                    var locals = _.extend({
+                        result: result.rows[0],
+                        submission: submission,
+                        grading: grading,
+                        extraHeaders: extraHeaders,
+                        questionHtml: questionHtml,
+                        scoreHtml: scoreHtml,
+                        submissionHtml: submissionHtml,
+                        answerHtml: answerHtml,
+                        postUrl: req.locals.urlPrefix + "/question/" + req.locals.question.id + "/",
+                        questionJson: JSON.stringify({
+                            questionFilePath: req.locals.urlPrefix + "/question/" + req.locals.question.id + "/file",
+                            question: req.locals.question,
+                            course: req.locals.course,
+                            courseInstance: req.locals.courseInstance,
+                            questionInstance: questionInstance,
+                        }),
+                    }, req.locals);
+                    res.render(path.join(__dirname, 'adminQuestion'), locals);
+                });
             });
         });
     });
