@@ -32,11 +32,39 @@ module.exports = {
                 var questionInstance = {
                     vid: vid,
                     params: questionData.params || {},
-                    trueAnswer: questionData.trueAnswer || {},
+                    true_answer: questionData.true_answer || {},
                     options: questionData.options || {},
                 };
                 callback(null, questionInstance);
             });
         });
+    },
+
+    gradeSubmission: function(submission, questionInstance, question, course, options, callback) {
+        this.getModule(question.type, function(err, questionModule) {
+            if (err) return callback(err);
+            questionModule.gradeSubmission(submission, questionInstance, question, course, function(err, grading) {
+                if (err) return callback(err);
+                grading.correct = (grading.score >= 0.5);
+                callback(null, grading);
+            });
+        });
+    },
+
+    renderScore: function(score, callback) {
+        var color, text;
+        if (score >= 0.8) {
+            color = "success";
+            text = "Correct!";
+        } else if (score >= 0.5) {
+            color = "warning";
+            text = "Correct!";
+        } else {
+            color = "danger";
+            text = "Incorrect.";
+        }
+        var perc = (score * 100).toFixed(0) + '%';
+        var html = '<span class="label label-' + color + '">' + perc + '</span> ' + text;
+        callback(null, html);
     },
 };

@@ -4,10 +4,12 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
-    <%- include('../partials/adminNavbar', {navPage: 'questions'}); %>
+    <%- include('../partials/adminNavbar', {navPage: ''}); %>
     <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
     <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
     <script type="text/javascript" src="/localscripts/adminQuestionSubmit.js"></script>
+    <script type="text/javascript" src="/localscripts/adminQuestionSubmit<%= question.type %>.js"></script>
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
@@ -32,22 +34,59 @@
               <th>Topic</th>
               <td><%= result.topic_name %></td>
             </tr>
+            <tr>
+              <th>Tags</th>
+              <td></td>
+            </tr>
+            <tr>
+              <th>Tests</th>
+              <td></td>
+            </tr>
           </tbody>
         </table>
       </div>
 
-      <div class="panel panel-primary question-panel">
+      <div class="panel panel-primary question-container">
         <script type="application/json" class="question-data"><%- questionJson  %></script>
         <div class="panel-heading">
           <h3 class="panel-title"><%= result.title %> (<%= result.qid %>)</h3>
         </div>
-        <div class="panel-body">
+        <div class="panel-body question-body">
           <%- questionHtml %>
         </div>
         <div class="panel-footer">
-          <button class="btn btn-primary question-submit" data-question="">Submit</button>
+          <button class="btn btn-primary question-submit">Submit</button>
+          <form class="question-form" name="question-form" method="POST" action="<%= postUrl %>">
+            <input type="hidden" name="postData">
+          </form>
         </div>
       </div>
+
+      <% if (submission) { %>
+      <div class="panel panel-info submission-container">
+        <div class="panel-heading">
+          <h3 class="panel-title">Submission</h3>
+        </div>
+        <div class="panel-body">
+          <p>
+            <%- scoreHtml %>
+          </p>
+          <%- submissionHtml %>
+        </div>
+      </div>
+      <% } %>
+
+      <% if (answerHtml) { %>
+      <div class="panel panel-info grading-container">
+        <div class="panel-heading">
+          <h3 class="panel-title">True answer</h3>
+        </div>
+        <div class="panel-body">
+          <%- answerHtml %>
+        </div>
+      </div>
+      <% } %>
+
     </div>
   </body>
 </html>
