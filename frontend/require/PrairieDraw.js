@@ -1687,6 +1687,42 @@ define(["sylvester", "sha1", "PrairieGeom"], function(Sylvester, Sha1, PrairieGe
         this._ctx.stroke();
         this._ctx.restore();
     };
+	
+	  /** Draw a rod with hinge points at start and end and the given width.
+
+        @param {Vector} startDw The first hinge point (center of circular end) in drawing coordinates.
+        @param {Vector} startDw The second hinge point (drawing coordinates).
+        @param {number} widthDw The width of the rod (drawing coordinates).
+    */
+    PrairieDraw.prototype.LShapeRod = function(startDw, endDw, widthDw) {
+        var offsetLengthDw = endDw.subtract(startDw);
+        var offsetWidthDw = offsetLengthDw.rotate(Math.PI/2, $V([0,0])).toUnitVector().x(widthDw);
+
+        var startPx = this.pos2Px(startDw);
+        var offsetLengthPx = this.vec2Px(offsetLengthDw);
+        var offsetWidthPx = this.vec2Px(offsetWidthDw);
+        var lengthPx = offsetLengthPx.modulus();
+        var rPx = offsetWidthPx.modulus() / 2;
+
+        this._ctx.save();
+        this._ctx.translate(startPx.e(1), startPx.e(2));
+        this._ctx.rotate(PrairieGeom.angleOf(offsetLengthPx));
+        this._ctx.beginPath();
+        this._ctx.moveTo(0, rPx);
+        this._ctx.arcTo(lengthPx + rPx, rPx, lengthPx + rPx, -rPx, rPx);
+        this._ctx.arcTo(lengthPx + rPx, -rPx, 0, -rPx, rPx);
+        this._ctx.arcTo(-rPx, -rPx, -rPx, rPx, rPx);
+        this._ctx.arcTo(-rPx, rPx, 0, rPx, rPx);
+        if (this._props.shapeInsideColor !== "none") {
+            this._ctx.fillStyle = this._props.shapeInsideColor;
+            this._ctx.fill();
+        }
+        this._ctx.lineWidth = this._props.shapeStrokeWidthPx;
+        this._ctx.setLineDash(this._dashPattern(this._props.shapeStrokePattern));
+        this._ctx.strokeStyle = this._props.shapeOutlineColor;
+        this._ctx.stroke();
+        this._ctx.restore();
+    };
 
     /** Draw a pivot.
 
