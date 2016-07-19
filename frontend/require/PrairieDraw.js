@@ -1688,42 +1688,72 @@ define(["sylvester", "sha1", "PrairieGeom"], function(Sylvester, Sha1, PrairieGe
         this._ctx.restore();
     };
 	
-	  /** Draw a rod with hinge points at start and end and the given width.
+ /** Draw a rod with hinge points at start and end and the given width.
 
         @param {Vector} startDw The first hinge point (center of circular end) in drawing coordinates.
-        @param {Vector} startDw The second hinge point (drawing coordinates).
+        @param {Vector} endDw The second hinge point (drawing coordinates).
         @param {number} widthDw The width of the rod (drawing coordinates).
     */
-    PrairieDraw.prototype.LShapeRod = function(startDw, endDw, widthDw) {
+    PrairieDraw.prototype.LShapeRod = function(startDw, centerDw, endDw, widthDw) {
+		//Create length vector
         var offsetLengthDw = endDw.subtract(startDw);
+		//Change width to vector form
         var offsetWidthDw = offsetLengthDw.rotate(Math.PI/2, $V([0,0])).toUnitVector().x(widthDw);
-
+		
+			console.log(startDw);
+			console.log(endDw);
+			console.log(offsetLengthDw);
+			console.log(widthDw);
+			console.log(offsetWidthDw);
+				
+		//Change to pixel location on the screen
         var startPx = this.pos2Px(startDw);
+		var centerPx = this.pos2Px(centerDw);
+		var endPx = this.pos2Px(endDw);
+		
         var offsetLengthPx = this.vec2Px(offsetLengthDw);
         var offsetWidthPx = this.vec2Px(offsetWidthDw);
         var lengthPx = offsetLengthPx.modulus();
         var rPx = offsetWidthPx.modulus() / 2;
 
+		//Save function in Canvas
         this._ctx.save();
         this._ctx.translate(startPx.e(1), startPx.e(2));
+		//Angles are measured in radians, not degrees. To convert degrees to radians you can use the following JavaScript expression: radians = (Math.PI/180)*degrees
         this._ctx.rotate(PrairieGeom.angleOf(offsetLengthPx));
         this._ctx.beginPath();
         this._ctx.moveTo(0, rPx);
-        this._ctx.arcTo(lengthPx + rPx, rPx, lengthPx + rPx, -rPx, rPx);
-        this._ctx.arcTo(lengthPx + rPx, -rPx, 0, -rPx, rPx);
-        this._ctx.arcTo(-rPx, -rPx, -rPx, rPx, rPx);
-        this._ctx.arcTo(-rPx, rPx, 0, rPx, rPx);
-        if (this._props.shapeInsideColor !== "none") {
-            this._ctx.fillStyle = this._props.shapeInsideColor;
-            this._ctx.fill();
-        }
+		
+				console.log(rPx);
+				console.log(lengthPx);
+				
+		//quadraticCurveTo(cp1x, cp1y, x, y)
+		//Draws a quadratic Bézier curve from the current pen position to the end point specified by x and y, using the control point specified by cp1x and cp1y.
+		//this._ctx.quadraticCurveTo(centerDw.e(1),centerDw.e(2), startPx.e(1),startPx.e(2));
+		//this._ctx.quadraticCurveTo(0,6, $V{[0,0]}],$V{[6,6]});
+
+
+			
+	    //arcTo(x1, y1, x2, y2, radius)
+		//Draws an arc with the given control points and radius, connected to the previous point by a straight line.
+		//Arc Creation for right most end
+		this._ctx.arcTo(lengthPx + rPx, rPx, lengthPx + rPx, -rPx, rPx);
+        //this._ctx.arcTo(lengthPx + rPx, -rPx, 0, -rPx, rPx);
+		//Arc Creation for left most end
+        //this._ctx.arcTo(-rPx, -rPx, -rPx, rPx, rPx);
+        //this._ctx.arcTo(-rPx, rPx, 0, rPx, rPx);
+        //if (this._props.shapeInsideColor !== "none") {
+        //    this._ctx.fillStyle = this._props.shapeInsideColor;
+        //    this._ctx.fill();
+        //}
         this._ctx.lineWidth = this._props.shapeStrokeWidthPx;
         this._ctx.setLineDash(this._dashPattern(this._props.shapeStrokePattern));
         this._ctx.strokeStyle = this._props.shapeOutlineColor;
         this._ctx.stroke();
         this._ctx.restore();
     };
-
+	
+	
     /** Draw a pivot.
 
         @param {Vector} baseDw The center of the base (drawing coordinates).
