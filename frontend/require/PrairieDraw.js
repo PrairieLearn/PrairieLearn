@@ -1694,7 +1694,7 @@ define(["sylvester", "sha1", "PrairieGeom"], function(Sylvester, Sha1, PrairieGe
         @param {Vector} endDw The second hinge point (drawing coordinates).
         @param {number} widthDw The width of the rod (drawing coordinates).
     */
-    PrairieDraw.prototype.LShapeRod = function(startDw, centerDw, endDw, widthDw) {
+    PrairieDraw.prototype.LshapeRod = function(startDw, centerDw, endDw, widthDw) {
 		//Create length vector
         var offsetLengthDw = endDw.subtract(startDw);
 		//Change width to vector form
@@ -1719,11 +1719,14 @@ define(["sylvester", "sha1", "PrairieGeom"], function(Sylvester, Sha1, PrairieGe
 		//Save function in Canvas
         this._ctx.save();
         this._ctx.translate(startPx.e(1), startPx.e(2));
-		//Angles are measured in radians, not degrees. To convert degrees to radians you can use the following JavaScript expression: radians = (Math.PI/180)*degrees
-        this._ctx.rotate(PrairieGeom.angleOf(offsetLengthPx));
+		//Rotates the canvas clockwise around the current origin by the angle number of radians.
+		//Angles are measured in radians, not degrees. 
+		//To convert degrees to radians you can use the following JavaScript expression: radians = (Math.PI/180)*degrees
+		this._ctx.rotate(PrairieGeom.angleOf(offsetLengthPx));
         this._ctx.beginPath();
         this._ctx.moveTo(0, rPx);
-		
+				console.log(startPx);
+				console.log(endPx);
 				console.log(rPx);
 				console.log(lengthPx);
 				
@@ -1737,11 +1740,11 @@ define(["sylvester", "sha1", "PrairieGeom"], function(Sylvester, Sha1, PrairieGe
 	    //arcTo(x1, y1, x2, y2, radius)
 		//Draws an arc with the given control points and radius, connected to the previous point by a straight line.
 		//Arc Creation for right most end
-		this._ctx.arcTo(lengthPx + rPx, rPx, lengthPx + rPx, -rPx, rPx);
-        //this._ctx.arcTo(lengthPx + rPx, -rPx, 0, -rPx, rPx);
+		this._ctx.arcTo(lengthPx + rPx , rPx, lengthPx + rPx ,  -rPx, rPx);
+        this._ctx.arcTo(lengthPx + rPx, -rPx, 0, -rPx, rPx);
 		//Arc Creation for left most end
-        //this._ctx.arcTo(-rPx, -rPx, -rPx, rPx, rPx);
-        //this._ctx.arcTo(-rPx, rPx, 0, rPx, rPx);
+        this._ctx.arcTo(-rPx, -rPx, -rPx, rPx, rPx);
+        this._ctx.arcTo(-rPx, rPx, 0, rPx, rPx);
         //if (this._props.shapeInsideColor !== "none") {
         //    this._ctx.fillStyle = this._props.shapeInsideColor;
         //    this._ctx.fill();
