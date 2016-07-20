@@ -42,39 +42,47 @@ requirejs.config({
     },
 });
 
-document.questionClients = document.questionClients || {};
+function BackboneClient() {
+    this.qClient = null;
+};
 
-document.questionClients.Backbone = {};
-var client = document.questionClients.Backbone;
-
-client.initialize = function(callback) {
-    var qClient;
-    
-    requirejs([], function() {
-        
-        client.renderQuestion = function(container, questionData) {
-            require([questionData.questionFilePath + "/client.js"], function(qc) {
-                qClient = qc;
-                qClient.initialize(questionData.questionInstance.params);
-                if (questionData.submittedAnswer) {
-                    qClient.setSubmittedAnswer(questionData.submittedAnswer);
-                    if (questionData.trueAnswer) {
-                        qClient.setTrueAnswer(questionData.trueAnswer);
-                    }
-                    if (questionData.feedback) {
-                        qClient.feedback(questionData.feedback);
-                    }
+BackboneClient.prototype.initialize = function(questionData, callback) {
+    var that = this;
+    requirejs(["backbone"], function(Backbone) {
+        require([questionData.questionFilePath + "/client.js"], function(qc) {
+            that.questionDataModel = new Backbone.Model();
+            that.appModel = new Backbone.Model();
+            that.qClient = qc;
+            that.qClient.initialize(questionData.questionInstance.params);
+            if (questionData.submittedAnswer) {
+                that.qClient.setSubmittedAnswer(questionData.submittedAnswer);
+                if (questionData.trueAnswer) {
+                    that.qClient.setTrueAnswer(questionData.trueAnswer);
                 }
-                var questionDataModel = new Backbone.Model();
-                var appModel = new Backbone.Model();
-                qClient.renderQuestion(container, function() {}, questionDataModel, appModel);
-            });
-        };
-
-        client.getSubmittedAnswer = function(container, questionData) {
-            return qClient.getSubmittedAnswer();
-        };
-
-        callback(null);
+                if (questionData.feedback) {
+                    that.qClient.feedback(questionData.feedback);
+                }
+            }
+            callback(null);
+        });
     });
 };
+
+BackboneClient.prototype.renderQuestion = function(container, questionData) {
+    this.qClient.renderQuestion(container, function() {}, this.questionDataModel, this.appModel);
+};
+
+BackboneClient.prototype.renderSubmission = function(container, questionData) {
+    //this.qClient.renderSubmission(container, function() {}, this.questionDataModel, this.appModel);
+};
+
+BackboneClient.prototype.renderAnswer = function(container, questionData) {
+    this.qClient.renderAnswer(container, this.questionDataModel, this.appModel);
+};
+
+BackboneClient.prototype.getSubmittedAnswer = function(container, questionData) {
+    return this.qClient.getSubmittedAnswer();
+};
+
+document.questionClients = document.questionClients || {};
+document.questionClients.Backbone = BackboneClient;

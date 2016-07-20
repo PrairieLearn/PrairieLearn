@@ -1,7 +1,6 @@
 var _ = require('underscore');
 var fs = require('fs');
 var path = require('path');
-var ejs = require('ejs');
 
 var error = require('../error');
 var logger = require('../logger');
@@ -14,71 +13,29 @@ module.exports = {
     },
 
     renderQuestion: function(questionInstance, question, submission, course, locals, callback) {
-        filePaths.questionFilePathNEW("question.html", question.directory, course.path, function(err, questionTemplatePath) {
-            if (err) return callback(err);
-            fs.readFile(questionTemplatePath, 'utf8', function(err, questionTemplate) {
-                if (err) return callback(err);
-                questionTemplate = questionTemplate.replace(/<% *print\(([^}]+?)\) *%>/g, '<%= $1 %>');
-                questionTemplate = questionTemplate.replace(/{{([^}]+)}}/g, '<%= $1 %>');
-                var context = {
-                    params: questionInstance.params,
-                    questionFile: function(filename) {return questionHelper.questionFileUrl(filename, locals);},
-                    feedback: {},
-                };
-                try {
-                    var questionHtml = ejs.render(questionTemplate, context);
-                } catch (e) {
-                    return callback(new Error('Error rendering "' + questionTemplatePath + '": ' + String(e)));
-                }
-                callback(null, questionHtml);
-            });
-        });
+        var context = {
+            params: questionInstance.params,
+            feedback: {},
+        };
+        questionHelper.renderRivetsTemplate("question.html", context, question, course, locals, callback);
     },
 
     renderSubmission: function(questionInstance, question, submission, grading, course, locals, callback) {
-        filePaths.questionFilePathNEW("submission.html", question.directory, course.path, function(err, questionTemplatePath) {
-            if (err) return callback(err);
-            fs.readFile(questionTemplatePath, 'utf8', function(err, questionTemplate) {
-                if (err) return callback(err);
-                questionTemplate = questionTemplate.replace(/<% *print\(([^}]+?)\) *%>/g, '<%= $1 %>');
-                questionTemplate = questionTemplate.replace(/{{([^}]+)}}/g, '<%= $1 %>');
-                var context = {
-                    params: questionInstance.params,
-                    submittedAnswer: submission.submitted_answer,
-                    score: grading.score,
-                    feedback: grading.feedback,
-                    questionFile: function(filename) {return questionHelper.questionFileUrl(filename, locals);},
-                };
-                try {
-                    var questionHtml = ejs.render(questionTemplate, context);
-                } catch (e) {
-                    return callback(new Error('Error rendering "' + questionTemplatePath + '": ' + String(e)));
-                }
-                callback(null, questionHtml);
-            });
-        });
+        var context = {
+            params: questionInstance.params,
+            submittedAnswer: submission.submitted_answer,
+            score: grading.score,
+            feedback: grading.feedback,
+        };
+        questionHelper.renderRivetsTemplate("submission.html", context, question, course, locals, callback);
     },
 
     renderTrueAnswer: function(questionInstance, question, course, locals, callback) {
-        filePaths.questionFilePathNEW("answer.html", question.directory, course.path, function(err, questionTemplatePath) {
-            if (err) return callback(err);
-            fs.readFile(questionTemplatePath, 'utf8', function(err, questionTemplate) {
-                if (err) return callback(err);
-                questionTemplate = questionTemplate.replace(/<% *print\(([^}]+?)\) *%>/g, '<%= $1 %>');
-                questionTemplate = questionTemplate.replace(/{{([^}]+)}}/g, '<%= $1 %>');
-                var context = {
-                    params: questionInstance.params,
-                    trueAnswer: questionInstance.true_answer,
-                    questionFile: function(filename) {return questionHelper.questionFileUrl(filename, locals);},
-                };
-                try {
-                    var questionHtml = ejs.render(questionTemplate, context);
-                } catch (e) {
-                    return callback(new Error('Error rendering "' + questionTemplatePath + '": ' + String(e)));
-                }
-                callback(null, questionHtml);
-            });
-        });
+        var context = {
+            params: questionInstance.params,
+            trueAnswer: questionInstance.true_answer,
+        };
+        questionHelper.renderRivetsTemplate("answer.html", context, question, course, locals, callback);
     },
 
     getData: function(question, course, vid, callback) {
