@@ -45,7 +45,7 @@ var handle = function(req, res, next) {
 };
 
 var render = function(req, res, next, questionInstance, submission, grading, scoreHtml, submissionHtml, answerHtml) {
-    var params = [req.locals.questionId];
+    var params = [req.locals.questionId, req.locals.courseInstanceId];
     sqldb.query(sql.all, params, function(err, result) {
         if (err) return next(err);
         if (result.rowCount !== 1) return next(error.make(500, 'incorrect rowCount', result));

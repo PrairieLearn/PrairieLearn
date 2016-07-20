@@ -14,7 +14,7 @@
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title"><%= result.title %> (<%= result.qid %>)</h3>
+          <h3 class="panel-title">Question <%= result.qid %></h3>
         </div>
 
         <table class="table table-condensed table-hover">
@@ -33,7 +33,11 @@
             </tr>
             <tr>
               <th>Topic</th>
-              <td><%= result.topic_name %></td>
+              <td>
+                <a href="<%= urlPrefix %>/topic/<%= result.topic_id %>" class="btn btn-<%= result.topic_color %> btn-xs topic-button" role="button">
+                  <%= result.topic_number %>. <%= result.topic_name %>
+                </a>
+              </td>
             </tr>
             <tr>
               <th>Tags</th>
@@ -41,7 +45,15 @@
             </tr>
             <tr>
               <th>Tests</th>
-              <td></td>
+              <td>
+                <% if (result.tests) { %>
+                <% result.tests.forEach(function(test) { %>
+                <a href="<%= urlPrefix %>/test/<%= test.test_id %>" class="btn btn-<%= test.color %> btn-xs" role="button">
+                  <%= test.label %>
+                </a>
+                <% }); %>
+                <% } %>
+              </td>
             </tr>
           </tbody>
         </table>
@@ -52,7 +64,7 @@
         
         <div class="panel panel-primary question-block">
           <div class="panel-heading">
-            <h3 class="panel-title"><%= result.title %> (<%= result.qid %>)</h3>
+            <h3 class="panel-title"><%= result.title %></h3>
           </div>
           <div class="panel-body question-body">
             <%- questionHtml %>
