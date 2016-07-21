@@ -3057,17 +3057,25 @@ if (config.localFileserver) {
 app.use(function(req, res, next) {
     var err = new Error('Not Found');
     err.status = 404;
+    err.data = {
+        url: req.url,
+        method: req.method,
+        authUID: req.authUID,
+        userUID: req.userUID,
+        mode: req.mode
+    };
     next(err);
 });
 
 // error handlers
 
+util = require('util');
 // development error handler
 // will print stacktrace
 if (app.get('env') === 'development') {
     app.use(function(err, req, res, next) {
         res.status(err.status || 500);
-        logger.error("Error page", err);
+        logger.error("Error page", {msg: err.message, data: err.data, stack: err.stack});
         res.render('pages/error/error', {
             message: err.message,
             error: err,
@@ -3080,7 +3088,7 @@ if (app.get('env') === 'development') {
 // no stacktraces leaked to user
 app.use(function(err, req, res, next) {
     res.status(err.status || 500);
-    logger.error("Error page", err);
+    logger.error("Error page", {msg: err.message, data: err.data, stack: err.stack});
     res.render('pages/error/error', {
         message: err.message,
         error: {}
