@@ -38,7 +38,11 @@
             <tr>
               <td><a href="<%= urlPrefix %>/question/<%= question.question_id %>/"><%= question.number %>. <%= question.title %></a></td>
               <td><%= question.qid %></td>
-              <td><%= question.topic_name %></td>
+              <td>
+                <a href="<%= urlPrefix %>/topic/<%= question.topic.id %>" class="btn btn-<%= question.topic.color %> btn-xs topic-button" role="button">
+                  <%= question.topic.number %>. <%= question.topic.name %>
+                </a>
+              </td>
               <td>
                 <% if (test.type == "RetryExam") { %><%= question.points_list %><% } %>
                 <% if (test.type == "Exam")      { %><%= question.max_points %><% } %>

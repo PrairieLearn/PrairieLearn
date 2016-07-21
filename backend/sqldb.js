@@ -44,6 +44,7 @@ var testDurationStats = fs.readFileSync('./sprocs/test_duration_stats.sql', 'utf
 var userTestScores = fs.readFileSync('./sprocs/user_test_scores.sql', 'utf8');
 var studentTestScores = fs.readFileSync('./sprocs/student_test_scores.sql', 'utf8');
 var testStats = fs.readFileSync('./sprocs/test_stats.sql', 'utf8');
+var testsForQuestion = fs.readFileSync('./sprocs/tests_for_question.sql', 'utf8');
 
 module.exports = {
     init: function(callback) {
@@ -91,6 +92,7 @@ module.exports = {
             userTestScores,
             studentTestScores,
             testStats,
+            testsForQuestion,
         ], function(sql, callback) {
             that.query(sql, [], callback);
         }, function(err) {

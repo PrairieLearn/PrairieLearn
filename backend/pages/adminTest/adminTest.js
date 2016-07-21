@@ -49,7 +49,7 @@ router.get('/', function(req, res, next) {
         durationStatsCsvFilename: durationStatsCsvFilename(req.locals),
         scoresCsvFilename: scoresCsvFilename(req.locals),
     }, req.locals);
-    var params = [req.locals.testId, req.locals.courseInstanceId];
+    var params = [req.locals.testId];
     sqldb.query(sql.questions, params, function(err, result) {
         if (err) {logger.error('adminTest questions query failed', err); return res.status(500).end();}
         locals = _.extend({
