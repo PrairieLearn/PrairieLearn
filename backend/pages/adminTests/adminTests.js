@@ -21,7 +21,7 @@ var csvFilename = function(locals) {
 router.get('/', function(req, res, next) {
     var params = [req.locals.courseInstanceId];
     sqldb.query(sql.all, params, function(err, result) {
-        if (err) {logger.error('tests query failed', err); return res.status(500).end();}
+        if (err) return next(err);
         var locals = _.extend({
             rows: result.rows,
             csvFilename: csvFilename(req.locals),
@@ -34,7 +34,7 @@ router.get('/:filename', function(req, res, next) {
     if (req.params.filename == csvFilename(req.locals)) {
         var params = [req.locals.courseInstanceId];
         sqldb.query(sql.all, params, function(err, result) {
-            if (err) {logger.error('tests query failed', err); return res.status(500).end();}
+            if (err) return next(err);
             var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Test', 'Title', 'TID',
                               'NStudents', 'Mean', 'Std', 'Min', 'Max', 'Median',
                               'NZero', 'NHundred', 'NZeroPerc', 'NHundredPerc',

@@ -13,12 +13,12 @@ var sql = sqlLoader.load(path.join(__dirname, 'adminQuestions.sql'));
 router.get('/', function(req, res, next) {
     var params = [req.locals.courseInstanceId];
     sqldb.query(sql.questions, params, function(err, result) {
-        if (err) {logger.error('adminQuestions questions query failed', err); return res.status(500).end();}
+        if (err) return next(err);
         req.locals.questions = result.rows;
 
         var params = [req.locals.courseInstanceId];
         sqldb.query(sql.tests, params, function(err, result) {
-            if (err) {logger.error('adminQuestions tests query failed', err); return res.status(500).end();}
+            if (err) return next(err);
             req.locals.tests = result.rows;
 
             res.render('pages/adminQuestions/adminQuestions', req.locals);

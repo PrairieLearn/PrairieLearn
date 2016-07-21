@@ -51,30 +51,28 @@ router.get('/', function(req, res, next) {
     }, req.locals);
     var params = [req.locals.testId];
     sqldb.query(sql.questions, params, function(err, result) {
-        if (err) {logger.error('adminTest questions query failed', err); return res.status(500).end();}
+        if (err) return next(err);
         locals = _.extend({
             questions: result.rows,
         }, locals);
 
         var params = [req.locals.testId];
-        sqldb.query(sql.test_stats, params, function(err, result) {
-            if (err) {logger.error('adminTest test_stats query failed', err); return res.status(500).end();}
-            if (result.rowCount !== 1) {logger.error('adminTest no test_stats', err); return res.status(500).end();}
+        sqldb.queryOneRow(sql.test_stats, params, function(err, result) {
+            if (err) return next(err);
             locals = _.extend({
                 testStat: result.rows[0],
             }, locals);
 
             var params = [req.locals.testId];
-            sqldb.query(sql.test_duration_stats, params, function(err, result) {
-                if (err) {logger.error('adminTest test_duration_stats query failed', err); return res.status(500).end();}
-                if (result.rowCount !== 1) {logger.error('adminTest no test_duration_stats', err); return res.status(500).end();}
+            sqldb.queryOneRow(sql.test_duration_stats, params, function(err, result) {
+                if (err) return next(err);
                 locals = _.extend({
                     durationStat: result.rows[0],
                 }, locals);
 
                 var params = [req.locals.testId];
                 sqldb.query(sql.user_test_scores, params, function(err, result) {
-                    if (err) {logger.error('adminTest user_test_scores query failed', err); return res.status(500).end();}
+                    if (err) return next(err);
                     locals = _.extend({
                         userScores: result.rows,
                     }, locals);
@@ -89,9 +87,8 @@ router.get('/', function(req, res, next) {
 router.get('/:filename', function(req, res, next) {
     if (req.params.filename == scoreStatsCsvFilename(req.locals)) {
         var params = [req.locals.testId];
-        sqldb.query(sql.test_stats, params, function(err, result) {
-            if (err) {logger.error('adminTest test_stats csv query failed', err); return res.status(500).end();}
-            if (result.rowCount !== 1) {logger.error('adminTest no test_stats for csv', err); return res.status(500).end();}
+        sqldb.queryOneRow(sql.test_stats, params, function(err, result) {
+            if (err) return next(err);
             var testStat = result.row[0];
             var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Test', 'Title', 'TID', 'NStudents', 'Mean',
                               'Std', 'Min', 'Max', 'Median', 'NZero', 'NHundred', 'NZeroPerc', 'NHundredPerc'];

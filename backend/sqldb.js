@@ -2,6 +2,7 @@ var fs = require('fs');
 var async = require('async');
 var pg = require('pg');
 
+var error = require('./error');
 var config = require('./config');
 
 var enumMode = fs.readFileSync('./models/enum_mode.sql', 'utf8');
@@ -107,7 +108,7 @@ module.exports = {
                 if (client) {
                     done(client);
                 }
-                callback({sql: sql, params: params, err: err});
+                callback(error.addData(err, {sql: sql, params: params}));
                 return true;
             };
             if (handleError(err)) return;
@@ -116,6 +117,13 @@ module.exports = {
                 done();
                 callback(null, result);
             });
+        });
+    },
+
+    queryOneRow: function(sql, params, callback) {
+        this.query(sql, params, function(err, result) {
+            if (result.rowCount !== 1) return callback(new Error("Incorrect rowCount: " + result.rowCount));
+            callback(null, result);
         });
     },
 };

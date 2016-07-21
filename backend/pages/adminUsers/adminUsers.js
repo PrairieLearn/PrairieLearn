@@ -21,10 +21,10 @@ var csv_filename = function(locals) {
 router.get('/', function(req, res, next) {
     var params = [req.locals.courseInstanceId];
     sqldb.query(sql.course_tests, params, function(err, result) {
-        if (err) {logger.error('adminUsers course_tests_sql query failed', err); return res.status(500).end();}
+        if (err) return next(err);
         var course_tests = result.rows;
         sqldb.query(sql.user_scores, params, function(err, result) {
-            if (err) {logger.error('adminUsers user_scores_sql query failed', err); return res.status(500).end();}
+            if (err) return next(err);
             var user_scores = result.rows;
             var locals = _.extend({
                 course_tests: course_tests,
@@ -39,10 +39,10 @@ router.get('/', function(req, res, next) {
 router.get('/:filename', function(req, res, next) {
     var params = [req.locals.courseInstanceId];
     sqldb.query(sql.course_tests, params, function(err, result) {
-        if (err) {logger.error('adminUsers course_tests_sql query failed', err); return res.status(500).end();}
+        if (err) return next(err);
         var course_tests = result.rows;
         sqldb.query(sql.user_scores, params, function(err, result) {
-            if (err) {logger.error('adminUsers user_scores_sql query failed', err); return res.status(500).end();}
+            if (err) return next(err);
             var user_scores = result.rows;
 
             var csvHeaders = ['UID', 'Name', 'Role'].concat(_(course_tests).pluck('label'));

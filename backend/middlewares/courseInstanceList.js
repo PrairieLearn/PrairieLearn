@@ -9,7 +9,7 @@ var sql = sqlLoader.load(path.join(__dirname, 'courseInstanceList.sql'));
 module.exports = function(req, res, next) {
     var params = [req.params.courseInstanceId];
     sqldb.query(sql.all, params, function(err, result) {
-        if (err) {logger.error('courseInstanceList query failed', err); return res.status(500).end();}
+        if (err) return next(err);
         req.locals = _.extend({
             courseInstanceList: result.rows,
         }, req.locals);

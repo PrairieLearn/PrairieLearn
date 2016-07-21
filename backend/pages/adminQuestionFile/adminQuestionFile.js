@@ -13,7 +13,7 @@ router.get('/:filename', function(req, res, next) {
     var course = req.locals.course;
     var filename = req.params.filename;
     filePaths.questionPath(question.directory, course.path, function(err, questionPath) {
-        if (err) {logger.error('could not determine questionPath', err); return res.status(500).end();}
+        if (err) return next(err);
         res.sendFile(filename, {root: questionPath});
     });
 });
