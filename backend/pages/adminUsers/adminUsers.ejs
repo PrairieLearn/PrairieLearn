@@ -23,11 +23,7 @@
                 <th>Name</th>
                 <th>Role</th>
                 <% course_tests.forEach(function(test) { %>
-                <th>
-                  <a href="<%= urlPrefix %>/test/<%= test.id %>" class="btn btn-<%= test.color %> btn-xs" role="button">
-                    <%= test.label %>
-                  </a>
-                </th>
+                <th><%- include('../partials/test', {test: test}); %></th>
                 <% }); %>
               </tr>
             </thead>

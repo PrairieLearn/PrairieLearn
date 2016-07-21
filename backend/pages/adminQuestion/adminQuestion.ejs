@@ -33,11 +33,7 @@
             </tr>
             <tr>
               <th>Topic</th>
-              <td>
-                <a href="<%= urlPrefix %>/topic/<%= result.topic.id %>" class="btn btn-<%= result.topic.color %> btn-xs topic-button" role="button">
-                  <%= result.topic.number %>. <%= result.topic.name %>
-                </a>
-              </td>
+              <td><%- include('../partials/topic', {topic: result.topic}); %></td>
             </tr>
             <tr>
               <th>Tags</th>
@@ -48,9 +44,7 @@
               <td>
                 <% if (result.tests) { %>
                 <% result.tests.forEach(function(test) { %>
-                <a href="<%= urlPrefix %>/test/<%= test.test_id %>" class="btn btn-<%= test.color %> btn-xs" role="button">
-                  <%= test.label %>
-                </a>
+                <%- include('../partials/test', {test: test}); %>
                 <% }); %>
                 <% } %>
               </td>
