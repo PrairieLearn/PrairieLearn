@@ -1688,67 +1688,62 @@ define(["sylvester", "sha1", "PrairieGeom"], function(Sylvester, Sha1, PrairieGe
         this._ctx.restore();
     };
 	
- /** Draw a rod with hinge points at start and end and the given width.
+ /** Draw a L-shape rod with hinge points at start, center and end, and the given width.
 
         @param {Vector} startDw The first hinge point (center of circular end) in drawing coordinates.
-        @param {Vector} endDw The second hinge point (drawing coordinates).
+		@param {Vector} centerDw The second hinge point (drawing coordinates).
+        @param {Vector} endDw The third hinge point (drawing coordinates).
         @param {number} widthDw The width of the rod (drawing coordinates).
     */
     PrairieDraw.prototype.LshapeRod = function(startDw, centerDw, endDw, widthDw) {
-		//Create length vector
-        var offsetLengthDw = endDw.subtract(startDw);
-		//Change width to vector form
-        var offsetWidthDw = offsetLengthDw.rotate(Math.PI/2, $V([0,0])).toUnitVector().x(widthDw);
 		
-			console.log(startDw);
-			console.log(endDw);
-			console.log(offsetLengthDw);
-			console.log(widthDw);
-			console.log(offsetWidthDw);
-				
-		//Change to pixel location on the screen
+        var offsetLength1Dw = centerDw.subtract(startDw);
+		var offsetLength2Dw = endDw.subtract(centerDw);
+        var offsetWidthDw = offsetLength1Dw.rotate(Math.PI/2, $V([0,0])).toUnitVector().x(widthDw);
+						
         var startPx = this.pos2Px(startDw);
 		var centerPx = this.pos2Px(centerDw);
-		var endPx = this.pos2Px(endDw);
-		
-        var offsetLengthPx = this.vec2Px(offsetLengthDw);
+		var endPx = this.pos2Px(endDw);		
+        var offsetLength1Px = this.vec2Px(offsetLength1Dw);
+        var offsetLength2Px = this.vec2Px(offsetLength2Dw);
         var offsetWidthPx = this.vec2Px(offsetWidthDw);
-        var lengthPx = offsetLengthPx.modulus();
+        var length1Px = offsetLength1Px.modulus();
+		var length2Px = offsetLength2Px.modulus();
         var rPx = offsetWidthPx.modulus() / 2;
 
-		//Save function in Canvas
         this._ctx.save();
         this._ctx.translate(startPx.e(1), startPx.e(2));
-		//Rotates the canvas clockwise around the current origin by the angle number of radians.
-		//Angles are measured in radians, not degrees. 
-		//To convert degrees to radians you can use the following JavaScript expression: radians = (Math.PI/180)*degrees
-		this._ctx.rotate(PrairieGeom.angleOf(offsetLengthPx));
+		this._ctx.rotate(PrairieGeom.angleOf(offsetLength1Px));
         this._ctx.beginPath();
         this._ctx.moveTo(0, rPx);
-				console.log(startPx);
-				console.log(endPx);
-				console.log(rPx);
-				console.log(lengthPx);
-				
-		//quadraticCurveTo(cp1x, cp1y, x, y)
-		//Draws a quadratic Bézier curve from the current pen position to the end point specified by x and y, using the control point specified by cp1x and cp1y.
-		//this._ctx.quadraticCurveTo(centerDw.e(1),centerDw.e(2), startPx.e(1),startPx.e(2));
-		//this._ctx.quadraticCurveTo(0,6, $V{[0,0]}],$V{[6,6]});
+		
+		var beta = - PrairieGeom.angleFrom(offsetLength1Px,offsetLength2Px);		
+		var x1 = length1Px + rPx/Math.sin(beta) - rPx/Math.tan(beta);
+		var y1 = rPx;
+		var x2 = length1Px + length2Px*Math.cos(beta);
+		var y2 = -length2Px*Math.sin(beta);		
+		var x3 = x2+rPx*Math.sin(beta);		
+		var y3 = y2+rPx*Math.cos(beta);		
+		var x4 = x3+rPx*Math.cos(beta);
+		var y4 = y3-rPx*Math.sin(beta);
+		var x5 = x2+rPx*Math.cos(beta);
+		var y5 = y2-rPx*Math.sin(beta);
+		var x6 = x5-rPx*Math.sin(beta);
+		var y6 = y5-rPx*Math.cos(beta);
+		var x7 = length1Px - rPx/Math.sin(beta) + rPx/Math.tan(beta);
+		var y7 = -rPx;
+		
+		this._ctx.arcTo(x1,y1,x3,y3,rPx);
+		this._ctx.arcTo(x4,y4,x5,y5,rPx);
+		this._ctx.arcTo(x6,y6,x7,y7,rPx);
+		this._ctx.arcTo(x7,y7,0,-rPx, rPx);
+		this._ctx.arcTo(-rPx, -rPx, -rPx, rPx, rPx);
+        this._ctx.arcTo(-rPx, rPx, 0, rPx, rPx);		
 
-
-			
-	    //arcTo(x1, y1, x2, y2, radius)
-		//Draws an arc with the given control points and radius, connected to the previous point by a straight line.
-		//Arc Creation for right most end
-		this._ctx.arcTo(lengthPx + rPx , rPx, lengthPx + rPx ,  -rPx, rPx);
-        this._ctx.arcTo(lengthPx + rPx, -rPx, 0, -rPx, rPx);
-		//Arc Creation for left most end
-        this._ctx.arcTo(-rPx, -rPx, -rPx, rPx, rPx);
-        this._ctx.arcTo(-rPx, rPx, 0, rPx, rPx);
-        //if (this._props.shapeInsideColor !== "none") {
-        //    this._ctx.fillStyle = this._props.shapeInsideColor;
-        //    this._ctx.fill();
-        //}
+        if (this._props.shapeInsideColor !== "none") {
+            this._ctx.fillStyle = this._props.shapeInsideColor;
+			this._ctx.fill();
+        }
         this._ctx.lineWidth = this._props.shapeStrokeWidthPx;
         this._ctx.setLineDash(this._dashPattern(this._props.shapeStrokePattern));
         this._ctx.strokeStyle = this._props.shapeOutlineColor;
