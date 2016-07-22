@@ -1,20 +1,20 @@
-function CalculationClient() {
+function ShortAnswerClient() {
 };
 
-CalculationClient.prototype.initialize = function(questionData, callback) {
+ShortAnswerClient.prototype.initialize = function(questionData, callback) {
     callback(null);
 };
 
-CalculationClient.prototype.renderQuestion = function(container, questionData) {
+ShortAnswerClient.prototype.renderQuestion = function(container, questionData) {
 };
 
-CalculationClient.prototype.renderSubmission = function(container, questionData) {
+ShortAnswerClient.prototype.renderSubmission = function(container, questionData) {
 };
 
-CalculationClient.prototype.renderAnswer = function(container, questionData) {
+ShortAnswerClient.prototype.renderAnswer = function(container, questionData) {
 };
 
-CalculationClient.prototype.getSubmittedAnswer = function(container, questionData) {
+ShortAnswerClient.prototype.getSubmittedAnswer = function(container, questionData) {
     var submittedAnswer = {};
     container.find('input[data-instavalue^="submittedAnswer."]').each(function(i, x) {
         _(x.attributes).each(function(a) {
@@ -31,4 +31,4 @@ CalculationClient.prototype.getSubmittedAnswer = function(container, questionDat
 };
 
 document.questionClients = document.questionClients || {};
-document.questionClients.Calculation = CalculationClient;
+document.questionClients.ShortAnswer = ShortAnswerClient;

@@ -6,7 +6,7 @@ var logger = require('./logger');
 var filePaths = require('./file-paths');
 
 var questionModules = {
-    'Calculation': require('./questions/calculation'),
+    'ShortAnswer': require('./questions/shortAnswer'),
     'Backbone': require('./questions/backbone'),
 };
 
