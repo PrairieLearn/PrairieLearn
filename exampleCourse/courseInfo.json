@@ -10,19 +10,20 @@
         {"shortName": "PE", "name": "Practice Exam", "heading": "Practice Exams", "color": "yellow1"}
     ],
     "topics": [
-        {"shortName": "Vec", "name": "Vectors", "color": "blue1"},
-        {"shortName": "Func", "name": "Functions", "color": "blue1"},
-        {"shortName": "En", "name": "Energy", "color": "blue1"},
-        {"shortName": "Particles", "name": "Particle kinetics", "color": "blue1"},
-        {"shortName": "Code", "name": "Coding", "color": "blue1"},
-        {"shortName": "COM", "name": "Center of mass", "color": "blue1"}
+        {"name": "Vectors", "color": "blue3"},
+        {"name": "Functions", "color": "pink3"},
+        {"name": "Energy", "color": "purple3"},
+        {"name": "Particle kinetics", "color": "red3"},
+        {"name": "Coding", "color": "turquoise3"},
+        {"name": "Center of mass", "color": "green3"}
     ],
     "tags": [
-        {"shortName": "Draw", "name": "Graphical drawing", "color": "gray1"},
-        {"shortName": "Est", "name": "Estimation", "color": "gray1"},
-        {"shortName": "Comp", "name": "Comparative advantages", "color": "gray1"},
-        {"shortName": "Symb", "name": "Symbolic calculation", "color": "gray1"},
-        {"shortName": "Num", "name": "Numeric calculation", "color": "gray1"},
-        {"shortName": "Code", "name": "Code writing", "color": "gray1"}
+        {"name": "Drawing", "color": "gray2"},
+        {"name": "MC", "color": "brown2"},
+        {"name": "Estimation", "color": "orange2"},
+        {"name": "Comparative", "color": "yellow2"},
+        {"name": "Symbolic", "color": "green2"},
+        {"name": "Numeric", "color": "turquoise2"},
+        {"name": "Code", "color": "blue2"}
     ]
 }

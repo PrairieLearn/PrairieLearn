@@ -16,15 +16,13 @@ router.get('/', function(req, res, next) {
         if (err) return next(err);
         req.locals.questions = result.rows;
 
-        var params = [req.locals.courseId];
+        var params = [req.locals.course.id];
         sqldb.query(sql.tags, params, function(err, result) {
             if (err) return next(err);
-            console.log("tags", result);
             req.locals.allTags = result.rows;
         
             var params = [req.locals.courseInstanceId];
             sqldb.query(sql.tests, params, function(err, result) {
-                console.log("tests", result);
                 if (err) return next(err);
                 req.locals.allTests = result.rows;
                 

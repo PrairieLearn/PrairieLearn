@@ -60,8 +60,7 @@
                 "properties": {
                     "shortName": {
                         "description": "Short name (preferably 2 to 7 characters).",
-                        "type": "string",
-                        "required": true
+                        "type": "string"
                     },
                     "name": {
                         "description": "Long descriptive name (preferably less than 10 words).",
@@ -85,8 +84,7 @@
                 "properties": {
                     "shortName": {
                         "description": "Short name (preferably 2 to 7 characters).",
-                        "type": "string",
-                        "required": true
+                        "type": "string"
                     },
                     "name": {
                         "description": "Long descriptive name (preferably less than 10 words).",
