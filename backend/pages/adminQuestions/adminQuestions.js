@@ -16,12 +16,20 @@ router.get('/', function(req, res, next) {
         if (err) return next(err);
         req.locals.questions = result.rows;
 
-        var params = [req.locals.courseInstanceId];
-        sqldb.query(sql.tests, params, function(err, result) {
+        var params = [req.locals.courseId];
+        sqldb.query(sql.tags, params, function(err, result) {
             if (err) return next(err);
-            req.locals.tests = result.rows;
-
-            res.render('pages/adminQuestions/adminQuestions', req.locals);
+            console.log("tags", result);
+            req.locals.allTags = result.rows;
+        
+            var params = [req.locals.courseInstanceId];
+            sqldb.query(sql.tests, params, function(err, result) {
+                console.log("tests", result);
+                if (err) return next(err);
+                req.locals.allTests = result.rows;
+                
+                res.render('pages/adminQuestions/adminQuestions', req.locals);
+            });
         });
     });
 });

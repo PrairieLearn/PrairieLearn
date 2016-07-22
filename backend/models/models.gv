@@ -10,6 +10,8 @@ digraph partmc_modules {
     course_instance [label="course_instance*", style=filled, fillcolor=honeydew1]
     access_rule [style=filled, fillcolor=honeydew1]
     question [label="question*", style=filled, fillcolor=honeydew1]
+    question_tag [style=filled, fillcolor=honeydew1]
+    tag [style=filled, fillcolor=honeydew1]
     test [label="test*", style=filled, fillcolor=honeydew1]
     test_question [label="test_question*", style=filled, fillcolor=honeydew1]
     test_set [style=filled, fillcolor=honeydew1]
@@ -33,6 +35,8 @@ digraph partmc_modules {
     course_instance -> { course }
     enrollment -> { user; course_instance }
     question -> { course; topic }
+    question_tag -> { question; tag }
+    tag -> { course }
     test -> { course_instance; test_set }
     test_instance -> { test; user }
     test_question -> { test; zone; question }

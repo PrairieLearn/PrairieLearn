@@ -20,6 +20,7 @@ module.exports = {
             sqldb.query(sql, params, callback);
         }, function(err) {
             if (err) return callback(err);
+
             // delete topics from the DB that aren't on disk
             var sql = 'DELETE FROM topics WHERE course_id = $1 AND number > $2;';
             var params = [courseInfo.courseId, courseInfo.topics.length];

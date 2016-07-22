@@ -37,16 +37,12 @@
             </tr>
             <tr>
               <th>Tags</th>
-              <td></td>
+              <td><%- include('../partials/tags', {tags: result.tags}); %></td>
             </tr>
             <tr>
               <th>Tests</th>
+              <td><%- include('../partials/tests', {tests: result.tests}); %></td>
               <td>
-                <% if (result.tests) { %>
-                <% result.tests.forEach(function(test) { %>
-                <%- include('../partials/test', {test: test}); %>
-                <% }); %>
-                <% } %>
               </td>
             </tr>
           </tbody>

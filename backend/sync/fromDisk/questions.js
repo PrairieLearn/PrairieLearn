@@ -24,8 +24,9 @@ module.exports = {
                 + '     deleted_at = EXCLUDED.deleted_at'
                 + ' RETURNING id;';
             var params = [qid, q.type, q.title, q.config, courseInfo.courseId, q.topic];
-            sqldb.query(sql, params, function(err, result) {
+            sqldb.queryOneRow(sql, params, function(err, result) {
                 if (err) return callback(err);
+                q.id = result.rows[0].id;
                 questionIds.push(result.rows[0].id);
                 callback(null);
             });

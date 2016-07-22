@@ -1,3 +1,8 @@
+
+-- Returns a JSON array describing the tests containing question
+-- in_question_id for course instance in_course_instance_id. If
+-- skip_test_id is provided then that individual test is not included.
+
 CREATE OR REPLACE FUNCTION
     tests_for_question (in_question_id integer, in_course_instance_id integer, skip_test_id integer DEFAULT NULL) RETURNS JSONB AS $$
 SELECT

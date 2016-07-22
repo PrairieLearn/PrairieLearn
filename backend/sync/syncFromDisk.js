@@ -8,6 +8,7 @@ var syncCourseInstances = require('./fromDisk/courseInstances');
 var syncCourseStaff = require('./fromDisk/courseStaff');
 var syncTopics = require('./fromDisk/topics');
 var syncQuestions = require('./fromDisk/questions');
+var syncTags = require('./fromDisk/tags');
 var syncTestSets = require('./fromDisk/testSets');
 var syncTests = require('./fromDisk/tests');
 
@@ -27,6 +28,8 @@ module.exports.syncDiskToSql = function(courseDir, callback) {
             syncTopics.sync.bind(null, course.courseInfo),
             function(callback) {logger.infoOverride("Syncing questions from disk to SQL DB"); callback(null);},
             syncQuestions.sync.bind(null, course.courseInfo, course.questionDB),
+            function(callback) {logger.infoOverride("Syncing tags from disk to SQL DB"); callback(null);},
+            syncTags.sync.bind(null, course.courseInfo, course.questionDB),
             function(callback) {logger.infoOverride("Syncing test sets from disk to SQL DB"); callback(null);},
             syncTestSets.sync.bind(null, course.courseInfo),
         ], function(err) {

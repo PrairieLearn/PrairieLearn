@@ -15,6 +15,8 @@ var semesters = fs.readFileSync('./models/semesters.sql', 'utf8');
 var courseInstances = fs.readFileSync('./models/course_instances.sql', 'utf8');
 var topics = fs.readFileSync('./models/topics.sql', 'utf8');
 var questions = fs.readFileSync('./models/questions.sql', 'utf8');
+var tags = fs.readFileSync('./models/tags.sql', 'utf8');
+var question_tags = fs.readFileSync('./models/question_tags.sql', 'utf8');
 var testSets = fs.readFileSync('./models/test_sets.sql', 'utf8');
 var tests = fs.readFileSync('./models/tests.sql', 'utf8');
 var zones = fs.readFileSync('./models/zones.sql', 'utf8');
@@ -46,6 +48,7 @@ var userTestScores = fs.readFileSync('./sprocs/user_test_scores.sql', 'utf8');
 var studentTestScores = fs.readFileSync('./sprocs/student_test_scores.sql', 'utf8');
 var testStats = fs.readFileSync('./sprocs/test_stats.sql', 'utf8');
 var testsForQuestion = fs.readFileSync('./sprocs/tests_for_question.sql', 'utf8');
+var tagsForQuestion = fs.readFileSync('./sprocs/tags_for_question.sql', 'utf8');
 
 module.exports = {
     init: function(callback) {
@@ -62,6 +65,8 @@ module.exports = {
             courseInstances,
             topics,
             questions,
+            tags,
+            question_tags,
             testSets,
             tests,
             zones,
@@ -94,6 +99,7 @@ module.exports = {
             studentTestScores,
             testStats,
             testsForQuestion,
+            tagsForQuestion,
         ], function(sql, callback) {
             that.query(sql, [], callback);
         }, function(err) {
@@ -122,6 +128,7 @@ module.exports = {
 
     queryOneRow: function(sql, params, callback) {
         this.query(sql, params, function(err, result) {
+            if (err) return callback(err);
             if (result.rowCount !== 1) return callback(new Error("Incorrect rowCount: " + result.rowCount));
             callback(null, result);
         });

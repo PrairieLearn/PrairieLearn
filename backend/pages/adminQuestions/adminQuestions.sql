@@ -2,6 +2,7 @@
 SELECT
     q.*,
     row_to_json(top) AS topic,
+    tags_for_question(q.id) AS tags,
     tests_for_question(q.id, $1) AS tests
 FROM
     questions AS q
@@ -15,6 +16,12 @@ WHERE
     AND q.deleted_at IS NULL
 GROUP BY q.id,top.id
 ORDER BY top.number,q.title;
+
+-- BLOCK tags
+SELECT tag.name AS name
+FROM tags AS tag
+WHERE tag.course_id = $1
+ORDER BY tag.number;
 
 -- BLOCK tests
 SELECT ts.abbrev || t.number AS label
