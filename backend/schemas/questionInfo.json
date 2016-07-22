@@ -7,7 +7,7 @@
     "properties": {
         "type": {
             "description": "Type of the test.",
-            "enum": ["Calculation", "ShortAnswer", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "Backbone"],
+            "enum": ["Calculation", "ShortAnswer", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse"],
             "required": true
         },
         "title": {

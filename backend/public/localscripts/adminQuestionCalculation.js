@@ -1,7 +1,7 @@
 var PRAIRIELEARN_DEFAULT_API_SERVER = "http://localhost:3000";
 
 requirejs.config({
-    baseUrl: '/localscripts/backboneQuestion',
+    baseUrl: '/localscripts/calculationQuestion',
     paths: {
         clientCode: PRAIRIELEARN_DEFAULT_API_SERVER + "/clientCode",
     },
@@ -42,11 +42,11 @@ requirejs.config({
     },
 });
 
-function BackboneClient() {
+function CalculationClient() {
     this.qClient = null;
 };
 
-BackboneClient.prototype.initialize = function(questionData, callback) {
+CalculationClient.prototype.initialize = function(questionData, callback) {
     var that = this;
     requirejs(["backbone"], function(Backbone) {
         require([questionData.questionFilePath + "/client.js"], function(qc) {
@@ -68,21 +68,21 @@ BackboneClient.prototype.initialize = function(questionData, callback) {
     });
 };
 
-BackboneClient.prototype.renderQuestion = function(container, questionData) {
+CalculationClient.prototype.renderQuestion = function(container, questionData) {
     this.qClient.renderQuestion(container, function() {}, this.questionDataModel, this.appModel);
 };
 
-BackboneClient.prototype.renderSubmission = function(container, questionData) {
+CalculationClient.prototype.renderSubmission = function(container, questionData) {
     //this.qClient.renderSubmission(container, function() {}, this.questionDataModel, this.appModel);
 };
 
-BackboneClient.prototype.renderAnswer = function(container, questionData) {
+CalculationClient.prototype.renderAnswer = function(container, questionData) {
     this.qClient.renderAnswer(container, this.questionDataModel, this.appModel);
 };
 
-BackboneClient.prototype.getSubmittedAnswer = function(container, questionData) {
+CalculationClient.prototype.getSubmittedAnswer = function(container, questionData) {
     return this.qClient.getSubmittedAnswer();
 };
 
 document.questionClients = document.questionClients || {};
-document.questionClients.Backbone = BackboneClient;
+document.questionClients.Calculation = CalculationClient;
