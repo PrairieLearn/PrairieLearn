@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS tests (
     number varchar(20),
     title varchar(255),
     config JSONB,
-    test_set_id INTEGER NOT NULL REFERENCES test_sets ON DELETE SET NULL ON UPDATE CASCADE,
+    test_set_id INTEGER REFERENCES test_sets ON DELETE SET NULL ON UPDATE CASCADE,
     deleted_at TIMESTAMP WITH TIME ZONE,
     obj JSONB,
     UNIQUE (tid, course_instance_id)

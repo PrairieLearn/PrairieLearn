@@ -384,9 +384,10 @@ app.use(function(req, res, next) {
         return;
     }
     
-    // bypass auth for local /admin/ serving
+    // bypass auth for local /admin/ and /pl/ serving
     if (config.authType === 'none'
         && (/^\/admin/.test(req.path)
+            || /^\/pl/.test(req.path)
             || /^\/images\//.test(req.path)
             || /^\/fonts\//.test(req.path)
             || /^\/javascripts\//.test(req.path)
@@ -674,6 +675,14 @@ app.use('/admin/:courseInstanceId/questions', require('./pages/adminQuestions/ad
 app.use('/admin/:courseInstanceId/question/:questionId', require('./pages/adminQuestion/adminQuestion'));
 app.use('/admin/:courseInstanceId/question/:questionId/file', require('./pages/adminQuestionFile/adminQuestionFile'));
 app.use('/admin/:courseInstanceId/question/:questionId/text', require('./pages/adminQuestionText/adminQuestionText'));
+
+// Middleware for user pages
+app.use('/pl/', function(req, res, next) {req.locals = {}; next();});
+app.use('/pl/', require('./middlewares/parsePostData'));
+
+// Route handlers for user pages
+app.use('/pl', require('./pages/userHome/userHome'));
+
 
 // END OF express-generator section 1
 ///////////////////////////////////////////////////////////////////////////////

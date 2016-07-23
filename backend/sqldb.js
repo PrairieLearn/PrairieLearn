@@ -13,6 +13,7 @@ var enumTestType = fs.readFileSync('./models/enum_test_type.sql', 'utf8');
 var courses = fs.readFileSync('./models/courses.sql', 'utf8');
 var semesters = fs.readFileSync('./models/semesters.sql', 'utf8');
 var courseInstances = fs.readFileSync('./models/course_instances.sql', 'utf8');
+var courseInstanceAccessRules = fs.readFileSync('./models/course_instance_access_rules.sql', 'utf8');
 var topics = fs.readFileSync('./models/topics.sql', 'utf8');
 var questions = fs.readFileSync('./models/questions.sql', 'utf8');
 var tags = fs.readFileSync('./models/tags.sql', 'utf8');
@@ -20,7 +21,7 @@ var question_tags = fs.readFileSync('./models/question_tags.sql', 'utf8');
 var testSets = fs.readFileSync('./models/test_sets.sql', 'utf8');
 var tests = fs.readFileSync('./models/tests.sql', 'utf8');
 var zones = fs.readFileSync('./models/zones.sql', 'utf8');
-var accessRules = fs.readFileSync('./models/access_rules.sql', 'utf8');
+var testAccessRules = fs.readFileSync('./models/test_access_rules.sql', 'utf8');
 var testQuestions = fs.readFileSync('./models/test_questions.sql', 'utf8');
 var users = fs.readFileSync('./models/users.sql', 'utf8');
 var enrollments = fs.readFileSync('./models/enrollments.sql', 'utf8');
@@ -39,7 +40,9 @@ var arrayHistogram = fs.readFileSync('./sprocs/array_histogram.sql', 'utf8');
 var formatInterval = fs.readFileSync('./sprocs/format_interval.sql', 'utf8');
 var formatIntervalShort = fs.readFileSync('./sprocs/format_interval_short.sql', 'utf8');
 var intervalHistThresholds = fs.readFileSync('./sprocs/interval_hist_thresholds.sql', 'utf8');
-var checkAccessRule = fs.readFileSync('./sprocs/check_access_rule.sql', 'utf8');
+var checkCourseInstanceAccessRule = fs.readFileSync('./sprocs/check_course_instance_access_rule.sql', 'utf8');
+var checkCourseInstanceAccess = fs.readFileSync('./sprocs/check_course_instance_access.sql', 'utf8');
+var checkTestAccessRule = fs.readFileSync('./sprocs/check_test_access_rule.sql', 'utf8');
 var checkTestAccess = fs.readFileSync('./sprocs/check_test_access.sql', 'utf8');
 var testInstanceDurations = fs.readFileSync('./sprocs/test_instance_durations.sql', 'utf8');
 var userTestDurations = fs.readFileSync('./sprocs/user_test_durations.sql', 'utf8');
@@ -63,6 +66,7 @@ module.exports = {
             courses,
             semesters,
             courseInstances,
+            courseInstanceAccessRules,
             topics,
             questions,
             tags,
@@ -70,7 +74,7 @@ module.exports = {
             testSets,
             tests,
             zones,
-            accessRules,
+            testAccessRules,
             testQuestions,
             users,
             enrollments,
@@ -90,7 +94,9 @@ module.exports = {
             formatInterval,
             formatIntervalShort,
             intervalHistThresholds,
-            checkAccessRule,
+            checkCourseInstanceAccessRule,
+            checkCourseInstanceAccess,
+            checkTestAccessRule,
             checkTestAccess,
             testInstanceDurations,
             userTestDurations,

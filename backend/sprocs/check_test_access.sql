@@ -10,9 +10,9 @@ CREATE OR REPLACE FUNCTION
         ) AS $$
 WITH
 access_rule_results AS (
-    SELECT check_access_rule(ar, check_test_access.mode, check_test_access.role, check_test_access.uid, check_test_access.date)
-    FROM access_rules AS ar
-    WHERE ar.test_id = test_id
+    SELECT check_test_access_rule(tar, check_test_access.mode, check_test_access.role, check_test_access.uid, check_test_access.date)
+    FROM test_access_rules AS tar
+    WHERE tar.test_id = test_id
 )
 SELECT
 *
