@@ -7,18 +7,12 @@ CREATE OR REPLACE FUNCTION
         IN date TIMESTAMP WITH TIME ZONE,
         OUT available boolean,
         OUT credit integer
-        ) AS $$
-WITH
-access_rule_results AS (
-    SELECT check_test_access_rule(tar, check_test_access.mode, check_test_access.role, check_test_access.uid, check_test_access.date)
-    FROM test_access_rules AS tar
-    WHERE tar.test_id = test_id
-)
+    ) AS $$
 SELECT
-*
---    COALESCE(bool_or(open), FALSE) AS open,
---    COALESCE(max(credit), 0) AS credit
-FROM access_rule_results
---WHERE open
-;
+    COALESCE(bool_or(ctar.available), FALSE) AS available,
+    COALESCE(max(ctar.credit), 0) AS credit
+FROM
+    test_access_rules AS tar
+    JOIN LATERAL (SELECT * FROM check_test_access_rule(tar, check_test_access.mode, check_test_access.role,
+        check_test_access.uid, check_test_access.date)) AS ctar ON TRUE
 $$ LANGUAGE SQL;

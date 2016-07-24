@@ -658,7 +658,7 @@ app.use('/admin/', require('./middlewares/parsePostData'));
 app.use('/admin/:courseInstanceId', require('./middlewares/checkAdminAuth'));
 app.use('/admin/:courseInstanceId', require('./middlewares/currentCourseInstance'));
 app.use('/admin/:courseInstanceId', require('./middlewares/currentCourse'));
-app.use('/admin/:courseInstanceId', require('./middlewares/setURLPrefix'));
+app.use('/admin/:courseInstanceId', require('./middlewares/adminUrlPrefix'));
 app.use('/admin/:courseInstanceId', require('./middlewares/courseList'));
 app.use('/admin/:courseInstanceId', require('./middlewares/courseInstanceList'));
 app.use('/admin/:courseInstanceId/test/:testId', require('./middlewares/currentTest'));
@@ -679,10 +679,18 @@ app.use('/admin/:courseInstanceId/question/:questionId/text', require('./pages/a
 // Middleware for user pages
 app.use('/pl/', function(req, res, next) {req.locals = {}; next();});
 app.use('/pl/', require('./middlewares/parsePostData'));
+app.use('/pl/', require('./middlewares/ensureUser'));
+app.use('/pl/', require('./middlewares/userCourseInstanceList'));
+app.use('/pl/:courseInstanceId', require('./middlewares/ensureEnrollment'));
+app.use('/pl/:courseInstanceId', require('./middlewares/currentCourseInstance'));
+app.use('/pl/:courseInstanceId', require('./middlewares/currentCourse'));
+app.use('/pl/:courseInstanceId', require('./middlewares/userUrlPrefix'));
 
 // Route handlers for user pages
 app.use('/pl', require('./pages/userHome/userHome'));
-
+// redirect class page to tests page
+app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/tests');} next();});
+app.use('/pl/:courseInstanceId/tests', require('./pages/userTests/userTests'));
 
 // END OF express-generator section 1
 ///////////////////////////////////////////////////////////////////////////////

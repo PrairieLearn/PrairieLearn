@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS tests (
     number varchar(20),
     title varchar(255),
     config JSONB,
+    multiple_instance boolean,
     test_set_id INTEGER REFERENCES test_sets ON DELETE SET NULL ON UPDATE CASCADE,
     deleted_at TIMESTAMP WITH TIME ZONE,
     obj JSONB,
@@ -13,3 +14,11 @@ CREATE TABLE IF NOT EXISTS tests (
 );
 
 ALTER TABLE tests DROP CONSTRAINT IF EXISTS tests_tid_key;
+
+DO $$ 
+    BEGIN
+        ALTER TABLE tests ADD COLUMN multiple_instance boolean;
+    EXCEPTION
+        WHEN duplicate_column THEN -- do nothing
+    END;
+$$;

@@ -13,11 +13,13 @@
 
         <table class="table table-condensed table-hover table-striped">
           <tbody>
-            <% rows.forEach(function(row) { %>
+            <% courseInstanceList.forEach(function(courseInstance) { %>
             <tr>
               <td>
-                <a href="/pl/<%= row.course_instance_id %>">
-                  <%= row.course_short_name %>: <%= row.course_title %>, <%= row.course_instance_long_name %>
+                <a href="/pl/<%= courseInstance.course_instance_id %>">
+                  <%= courseInstance.course_short_name %>:
+                  <%= courseInstance.course_title %>,
+                  <%= courseInstance.course_instance_long_name %>
                 </a>
               </td>
             </tr>

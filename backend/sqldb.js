@@ -1,3 +1,4 @@
+var _ = require('lodash');
 var fs = require('fs');
 var async = require('async');
 var pg = require('pg');
@@ -113,7 +114,36 @@ module.exports = {
         });
     },
 
+    paramsToArray: function(sql, params, callback) {
+        if (_.isArray(params)) return callback(null, sql, params);
+        var re = /\$([-_a-zA-Z0-9]+)/;
+        var result;
+        var processedSql = '';
+        var remainingSql = sql;
+        var nParams = 0;
+        var map = {};
+        while ((result = re.exec(remainingSql)) !== null) {
+            var v = result[1];
+            if (!_(map).has(v)) {
+                nParams++;
+                map[v] = nParams;
+            }
+            processedSql += remainingSql.substring(0, result.index) + '$' + map[v];
+            remainingSql = remainingSql.substring(result.index + result[0].length);
+        }
+        processedSql += remainingSql;
+        remainingSql = '';
+        var paramsArray = [];
+        var invertedMap = _.invert(map);
+        for (var i = 0; i < nParams; i++) {
+            if (!_(params).has(invertedMap[i + 1])) return callback(new Error("Missing parameter: " + invertedMap[i + 1]));
+            paramsArray.push(params[invertedMap[i + 1]]);
+        }
+        callback(null, processedSql, paramsArray);
+    },
+
     query: function(sql, params, callback) {
+        var that = this;
         pg.connect(config.sdbAddress, function(err, client, done) {
             var handleError = function(err) {
                 if (!err) return false;
@@ -124,10 +154,13 @@ module.exports = {
                 return true;
             };
             if (handleError(err)) return;
-            client.query(sql, params, function(err, result) {
-                if (handleError(err)) return;
-                done();
-                callback(null, result);
+            that.paramsToArray(sql, params, function(err, newSql, newParams) {
+                if (err) return callback(error.addData({sql: sql, params: params}));
+                client.query(newSql, newParams, function(err, result) {
+                    if (handleError(err)) return;
+                    done();
+                    callback(null, result);
+                });
             });
         });
     },

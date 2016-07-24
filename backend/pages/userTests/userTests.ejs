@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/userNavbar', {navPage: 'tests'}); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Assessments</h3>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <thead>
+            <tr>
+              <th></th>
+              <th class="cell-center">Score</th>
+              <th class="cell-center">Date</th>
+              <th class="cell-center"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% rows.forEach(function(row, i) { %>
+            <% if (row.start_new_set) { %>
+            <tr class="<%= row.test_set_color %>">
+              <th colspan="7"><%= row.test_set_heading %></th>
+            </tr>
+            <% } %>
+            <tr>
+              <td>
+                <a href="<%= urlPrefix %>/test/<%= row.id %>/" class="btn btn-<%= row.test_set_color %> btn-xs" role="button"><%= row.test_set_abbrev %><%= row.test_number %></a> <a href="<%= urlPrefix %>/test/<%= row.id %>/"><%= row.test_title %></a>
+              </td>
+              <td class="cell-center">No score</td>
+              <td class="cell-center">No date</td>
+              <td class="cell-center">button</td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>
