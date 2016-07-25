@@ -1649,9 +1649,67 @@ define(["sylvester", "sha1", "PrairieGeom"], function(Sylvester, Sha1, PrairieGe
         this._ctx.fill();
         this._ctx.restore();
     };
+    
+    /*****************************************************************************/    
+    /** Draw a triagular distributed load
 
+        @param {Vector} startDw The first point (in drawing coordinates) of the distributed load
+        @param {Vector} endDw The end point (in drawing coordinates) of the distributed load
+        @param {number} sizeStartDw length of the arrow at startDw
+        @param {number} sizeEndDw length of the arrow at endDw
+        @param {string} label the arrow size at startDw
+        @param {string} label the arrow size at endDw
+        @param {boolean} true if arrow heads are towards the line that connects points startDw and endDw, opposite direction if false
+        @param {boolean} true if arrow points up (positive y-axis), false otherwise
+    */
+    PrairieDraw.prototype.triangularDistributedLoad = function(startDw, endDw, sizeStartDw, sizeEndDw, labelStart, labelEnd, arrowToLine, arrowDown ) {
+                
+        var LengthDw = endDw.subtract(startDw);
+        var L = LengthDw.modulus();
+        if (arrowDown) {
+            var sizeStartDwSign = sizeStartDw; 
+            var sizeEndDwSign = sizeEndDw;
+        }
+        else {
+            var sizeStartDwSign = -sizeStartDw; 
+            var sizeEndDwSign = -sizeEndDw;
+        }
+        var nSpaces = Math.ceil(2*L/sizeStartDw);
+        var spacing = L/nSpaces;
+        var inc = 0;
+        
+        this.save();
+        this.setProp("shapeOutlineColor", "rgb(255,0,0)");
+        this.setProp("arrowLineWidthPx", 1);
+        this.setProp("arrowheadLengthRatio", 11);
+
+        if (arrowToLine) {            
+            this.line( startDw.add($V([0, sizeStartDwSign])), endDw.add($V([0, sizeEndDwSign])) );
+            var startArrow = startDw.add($V([0, sizeStartDwSign]));
+            var endArrow = startDw;
+            for (i=0;i<=nSpaces;i++) {
+                this.arrow( startArrow.add($V([inc, inc*(sizeEndDwSign-sizeStartDwSign)/L])), endArrow.add($V([inc, 0])) );
+                inc = inc + spacing;
+            }
+            this.text(startArrow, $V([2, 0]), labelStart);
+            this.text(startArrow.add($V([inc-spacing, (inc-spacing)*(sizeEndDwSign-sizeStartDwSign)/L])), $V([-2, 0]), labelEnd);
+        }
+        else {
+            this.line( startDw, endDw );
+            var startArrow = startDw;
+            var endArrow = startDw.subtract($V([0, sizeStartDwSign]));
+            for (i=0;i<=nSpaces;i++)  {
+                this.arrow( startArrow.add($V([inc, 0])), endArrow.add($V([inc, -inc*(sizeEndDwSign-sizeStartDwSign)/L])) );
+                inc = inc + spacing;
+            }
+            this.text(endArrow, $V([2, 0]), labelStart);
+            this.text(endArrow.add($V([inc-spacing, -(inc-spacing)*(sizeEndDwSign-sizeStartDwSign)/L])), $V([-2, 0]), labelEnd);
+        }
+            
+        this.restore();
+        
+    };
     /*****************************************************************************/
-
     /** Draw a rod with hinge points at start and end and the given width.
 
         @param {Vector} startDw The first hinge point (center of circular end) in drawing coordinates.
@@ -1687,7 +1745,7 @@ define(["sylvester", "sha1", "PrairieGeom"], function(Sylvester, Sha1, PrairieGe
         this._ctx.stroke();
         this._ctx.restore();
     };
-    
+       
  /** Draw a L-shape rod with hinge points at start, center and end, and the given width.
 
         @param {Vector} startDw The first hinge point (center of circular end) in drawing coordinates.
@@ -1789,7 +1847,6 @@ define(["sylvester", "sha1", "PrairieGeom"], function(Sylvester, Sha1, PrairieGe
         var angleEndToCenter = PrairieGeom.angleFrom(offsetEndRodPx,offsetCenterRodPx);
 
         if (Math.abs(angleEndToCenter) < Math.PI ) {
-            console.log("Leg is up");
             var length1Px = lengthStartRodPx;
             var length2Px = lengthEndRodPx;
             var length3Px = lengthCenterRodPx;
@@ -1797,7 +1854,6 @@ define(["sylvester", "sha1", "PrairieGeom"], function(Sylvester, Sha1, PrairieGe
             var alpha = -angleEndToCenter;
         }
         else {
-            console.log("Leg is down");
             var length1Px = lengthStartRodPx;
             var length2Px = lengthCenterRodPx;
             var length3Px = lengthEndRodPx;
