@@ -63,6 +63,7 @@ router.get('/', function(req, res, next) {
                 testStat: result.rows[0],
             }, locals);
 
+            // FIXME: change to test_instance_duration_stats and show all instances
             var params = [req.locals.testId];
             sqldb.queryOneRow(sql.test_duration_stats, params, function(err, result) {
                 if (err) return next(err);
@@ -70,6 +71,7 @@ router.get('/', function(req, res, next) {
                     durationStat: result.rows[0],
                 }, locals);
 
+                // FIXME: change to test_instance_scores and show all instances
                 var params = [req.locals.testId];
                 sqldb.query(sql.user_test_scores, params, function(err, result) {
                     if (err) return next(err);

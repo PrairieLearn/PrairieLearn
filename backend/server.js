@@ -685,12 +685,17 @@ app.use('/pl/:courseInstanceId', require('./middlewares/ensureEnrollment'));
 app.use('/pl/:courseInstanceId', require('./middlewares/currentCourseInstance'));
 app.use('/pl/:courseInstanceId', require('./middlewares/currentCourse'));
 app.use('/pl/:courseInstanceId', require('./middlewares/userUrlPrefix'));
+app.use('/pl/:courseInstanceId/test/:testId', require('./middlewares/currentTest'));
+app.use('/pl/:courseInstanceId/testInstance/:testInstanceId', require('./middlewares/currentTestInstance'));
+app.use('/pl/:courseInstanceId/testInstance/:testInstanceId', require('./middlewares/currentTest'));
 
 // Route handlers for user pages
 app.use('/pl', require('./pages/userHome/userHome'));
 // redirect class page to tests page
 app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/tests');} next();});
 app.use('/pl/:courseInstanceId/tests', require('./pages/userTests/userTests'));
+app.use('/pl/:courseInstanceId/test/:testId', require('./pages/userTests/userTest'));
+app.use('/pl/:courseInstanceId/testInstance/:testInstanceId', require('./pages/userTests/userTestInstance'));
 
 // END OF express-generator section 1
 ///////////////////////////////////////////////////////////////////////////////

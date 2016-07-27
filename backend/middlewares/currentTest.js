@@ -7,7 +7,13 @@ var sqlLoader = require('../sql-loader');
 var sql = sqlLoader.load(path.join(__dirname, 'currentTest.sql'));
 
 module.exports = function(req, res, next) {
-    var params = [req.params.testId, req.params.courseInstanceId];
+    var params = {
+        testId: req.locals.testInstance ? req.locals.testInstance.test_id : req.params.testInstanceId,
+        courseInstanceId: req.params.courseInstanceId,
+        userId: req.locals.user.id,
+        mode: req.mode,
+        role: req.locals.enrollment.role,
+    };
     sqldb.queryOneRow(sql.test, params, function(err, result) {
         if (err) return next(err);
         req.locals = _.extend({
@@ -15,7 +21,7 @@ module.exports = function(req, res, next) {
             testId: req.params.testId,
         }, req.locals);
 
-        var params = [req.params.testId, req.params.courseInstanceId];
+        var params = {testId: req.params.testId, courseInstanceId: req.params.courseInstanceId};
         sqldb.queryOneRow(sql.test_set, params, function(err, result) {
             if (err) return next(err);
             req.locals = _.extend({

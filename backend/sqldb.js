@@ -142,10 +142,56 @@ module.exports = {
         callback(null, processedSql, paramsArray);
     },
 
+    getClient: function(callback) {
+        pg.connect(config.sdbAddress, function(err, client, done) {
+            if (err) {
+                if (client) {
+                    done(client);
+                }
+                return callback(err);
+            }
+            callback(null, client, done);
+        });
+    },
+
+    queryWithClient: function(client, done, sql, params, callback) {
+        var handleError = function(err, extraData) {
+            if (!err) return false;
+            if (client) {
+                done(client);
+            }
+            callback(error.addData(err, {sql: sql, params: params}));
+            return true;
+        };
+        that.paramsToArray(sql, params, function(err, newSql, newParams) {
+            if (err) return callback(error.addData(err, {sql: sql, params: params}));
+            client.query(newSql, newParams, function(err, result) {
+                if (handleError(err)) return;
+                callback(null, result);
+            });
+        });
+    },
+
+    releaseClient: function(client, done) {
+        done();
+    };
+
+    rollbackWithClient: function(client, done) {
+        // from https://github.com/brianc/node-postgres/wiki/Transactions
+        client.query('ROLLBACK', function(err) {
+            //if there was a problem rolling back the query
+            //something is seriously messed up.  Return the error
+            //to the done function to close & remove this client from
+            //the pool.  If you leave a client in the pool with an unaborted
+            //transaction weird, hard to diagnose problems might happen.
+            return done(err);
+        });
+    },
+
     query: function(sql, params, callback) {
         var that = this;
         pg.connect(config.sdbAddress, function(err, client, done) {
-            var handleError = function(err) {
+            var handleError = function(err, extraData) {
                 if (!err) return false;
                 if (client) {
                     done(client);
@@ -155,7 +201,7 @@ module.exports = {
             };
             if (handleError(err)) return;
             that.paramsToArray(sql, params, function(err, newSql, newParams) {
-                if (err) return callback(error.addData({sql: sql, params: params}));
+                if (err) return callback(error.addData(err, {sql: sql, params: params}));
                 client.query(newSql, newParams, function(err, result) {
                     if (handleError(err)) return;
                     done();
