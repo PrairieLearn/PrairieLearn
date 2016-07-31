@@ -11,30 +11,33 @@ var enumQuestionType = fs.readFileSync('./models/enum_question_type.sql', 'utf8'
 var enumRole = fs.readFileSync('./models/enum_role.sql', 'utf8');
 var enumSubmissionType = fs.readFileSync('./models/enum_submission_type.sql', 'utf8');
 var enumTestType = fs.readFileSync('./models/enum_test_type.sql', 'utf8');
+
 var courses = fs.readFileSync('./models/courses.sql', 'utf8');
-var semesters = fs.readFileSync('./models/semesters.sql', 'utf8');
 var courseInstances = fs.readFileSync('./models/course_instances.sql', 'utf8');
 var courseInstanceAccessRules = fs.readFileSync('./models/course_instance_access_rules.sql', 'utf8');
 var topics = fs.readFileSync('./models/topics.sql', 'utf8');
 var questions = fs.readFileSync('./models/questions.sql', 'utf8');
 var tags = fs.readFileSync('./models/tags.sql', 'utf8');
-var question_tags = fs.readFileSync('./models/question_tags.sql', 'utf8');
+var questionTags = fs.readFileSync('./models/question_tags.sql', 'utf8');
 var testSets = fs.readFileSync('./models/test_sets.sql', 'utf8');
 var tests = fs.readFileSync('./models/tests.sql', 'utf8');
 var zones = fs.readFileSync('./models/zones.sql', 'utf8');
 var testAccessRules = fs.readFileSync('./models/test_access_rules.sql', 'utf8');
 var testQuestions = fs.readFileSync('./models/test_questions.sql', 'utf8');
+
 var users = fs.readFileSync('./models/users.sql', 'utf8');
 var enrollments = fs.readFileSync('./models/enrollments.sql', 'utf8');
 var testInstances = fs.readFileSync('./models/test_instances.sql', 'utf8');
-var testStates = fs.readFileSync('./models/test_states.sql', 'utf8');
-var testScores = fs.readFileSync('./models/test_scores.sql', 'utf8');
-var questionInstances = fs.readFileSync('./models/question_instances.sql', 'utf8');
-var accesses = fs.readFileSync('./models/accesses.sql', 'utf8');
-var questionViews = fs.readFileSync('./models/question_views.sql', 'utf8');
+var instanceQuestions = fs.readFileSync('./models/instance_questions.sql', 'utf8');
+var variants = fs.readFileSync('./models/variants.sql', 'utf8');
 var submissions = fs.readFileSync('./models/submissions.sql', 'utf8');
-var gradings = fs.readFileSync('./models/gradings.sql', 'utf8');
-var questionScores = fs.readFileSync('./models/question_scores.sql', 'utf8');
+
+var testStateLogs = fs.readFileSync('./models/test_state_logs.sql', 'utf8');
+var testScoreLogs = fs.readFileSync('./models/test_score_logs.sql', 'utf8');
+var accesseLogs = fs.readFileSync('./models/access_logs.sql', 'utf8');
+var questionViewLogs = fs.readFileSync('./models/question_view_logs.sql', 'utf8');
+var gradingLogs = fs.readFileSync('./models/grading_logs.sql', 'utf8');
+var questionScoreLogs = fs.readFileSync('./models/question_score_logs.sql', 'utf8');
 
 var histogram = fs.readFileSync('./sprocs/histogram.sql', 'utf8');
 var arrayHistogram = fs.readFileSync('./sprocs/array_histogram.sql', 'utf8');
@@ -65,13 +68,12 @@ module.exports = {
             enumSubmissionType,
             enumTestType,
             courses,
-            semesters,
             courseInstances,
             courseInstanceAccessRules,
             topics,
             questions,
             tags,
-            question_tags,
+            questionTags,
             testSets,
             tests,
             zones,
@@ -80,14 +82,15 @@ module.exports = {
             users,
             enrollments,
             testInstances,
-            testStates,
-            testScores,
-            questionInstances,
-            accesses,
-            questionViews,
+            instanceQuestions,
+            variants,
             submissions,
-            gradings,
-            questionScores,
+            testStateLogs,
+            testScoreLogs,
+            accesseLogs,
+            questionViewLogs,
+            gradingLogs,
+            questionScoreLogs,
 
             // sprocs
             histogram,
@@ -174,7 +177,7 @@ module.exports = {
 
     releaseClient: function(client, done) {
         done();
-    };
+    },
 
     rollbackWithClient: function(client, done) {
         // from https://github.com/brianc/node-postgres/wiki/Transactions

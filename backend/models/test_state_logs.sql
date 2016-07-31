@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS test_states (
+CREATE TABLE IF NOT EXISTS test_state_logs (
     id SERIAL PRIMARY KEY,
     date TIMESTAMP WITH TIME ZONE,
     open BOOLEAN,

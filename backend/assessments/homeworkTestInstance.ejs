@@ -1,0 +1,23 @@
+<table class="table table-condensed table-hover">
+  <thead>
+    <tr>
+      <th>Question</th>
+      <th class="cell-center">Points</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% instanceQuestions.forEach(function(instanceQuestion) { %>
+    <% if (instanceQuestion.start_new_zone && instanceQuestion.zone_title) { %>
+    <tr>
+      <th colspan="2"><%= instanceQuestion.zone_title %></th>
+    </tr>
+    <% } %>
+    <tr>
+      <td>
+        <a href="<%= urlPrefix %>/instanceQuestion/<%= instanceQuestion.id %>/"><%= instanceQuestion.question_title %></a>
+      </td>
+      <td class="cell-center">No points</td>
+    </tr>
+    <% }); %>
+  </tbody>
+</table>

@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS question_view_logs (
+    id SERIAL PRIMARY KEY,
+    instance_question_id INTEGER NOT NULL REFERENCES instance_questions ON DELETE CASCADE ON UPDATE CASCADE,
+    access_log_id INTEGER UNIQUE NOT NULL REFERENCES accesses ON DELETE CASCADE ON UPDATE CASCADE,
+    open BOOLEAN,
+    credit INTEGER
+);

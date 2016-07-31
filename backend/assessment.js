@@ -6,29 +6,38 @@ var logger = require('./logger');
 var filePaths = require('./file-paths');
 
 var assessmentModules = {
-    'homework': require('./assessments/homework'),
+    'Homework': require('./assessments/homework'),
 };
 
 module.exports = {
     getModule: function(type, callback) {
-        if (_(assessmentModules).has(type)) {
-            callback(null, assessmentModules[type]);
+        var useType = type;
+        if (useType == 'Game') useType = 'Homework';
+        if (_(assessmentModules).has(useType)) {
+            callback(null, assessmentModules[useType]);
         } else {
             callback(new Error('Unknown type: ' + type));
         }
     },
 
-     makeQuestionInstances: function(test, course, callback) {
+    newTestInstance: function(testInstance, test, course, callback) {
         this.getModule(test.type, function(err, assessmentModule) {
             if (err) return callback(err);
-            assessmentModule.makeQuestionInstances(test, course, callback);
+            assessmentModule.newTestInstance(testInstance, test, course, callback);
         });
      },
 
-    renderTestInstance: function(testInstance, test, course, callback) {
+    updateTestInstance: function(testInstance, test, course, locals, callback) {
         this.getModule(test.type, function(err, assessmentModule) {
             if (err) return callback(err);
-            assessmentModule.renderTestInstance(test, course, callback);
+            assessmentModule.updateTestInstance(testInstance, test, course, locals, callback);
+        });
+     },
+
+    renderTestInstance: function(testInstance, locals, callback) {
+        this.getModule(locals.test.type, function(err, assessmentModule) {
+            if (err) return callback(err);
+            assessmentModule.renderTestInstance(testInstance, locals, callback);
         });
     },
 };

@@ -9,25 +9,19 @@ var logger = require('../../logger');
 var sqldb = require('../../sqldb');
 var sqlLoader = require('../../sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'userTests.sql'));
+var sql = sqlLoader.load(path.join(__dirname, 'userTestInstance.sql'));
 
 router.get('/', function(req, res, next) {
-    assessment.render(req.locals.testInstance, req.locals.test, req.locals.course, 
-
-    
-    var params = {
-        courseInstanceId: req.locals.courseInstanceId,
-        userId: req.locals.user.id,
-        uid: req.locals.user.uid,
-        mode: req.mode,
-        role: req.locals.enrollment.role,
-    };
-    sqldb.query(sql.all, params, function(err, result) {
+    assessment.updateTestInstance(req.locals.testInstance, req.locals.test, req.locals.course, req.locals, function(err) {
         if (err) return next(err);
-        var locals = _.extend({
-            rows: result.rows,
-        }, req.locals);
-        res.render(path.join(__dirname, 'userTests'), locals);
+        assessment.renderTestInstance(req.locals.testInstance, req.locals, function(err, extraHeader, testInstanceHtml) {
+            if (err) return next(err);
+            var locals = _.extend({
+                extraHeader: extraHeader,
+                testInstanceHtml: testInstanceHtml,
+            }, req.locals);
+            res.render(path.join(__dirname, 'userTestInstance'), locals);
+        });
     });
 });
 

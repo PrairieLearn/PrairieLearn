@@ -12,14 +12,14 @@ WHERE
 WITH
     max_existing_number AS (
         SELECT
-            COALESCE(max(ti.number), 0) as val
+            COALESCE(max(ti.number), 0) AS val
         FROM
             test_instances AS ti
         WHERE
             ti.test_id = $test_id
-            AND ti_user_id = $user_id
+            AND ti.user_id = $user_id
     )
-INSERT INTO test_instances (date, number, test_id, user_id) AS ti
+INSERT INTO test_instances AS ti (date, number, test_id, user_id)
 (
     SELECT
         current_timestamp, 
@@ -34,7 +34,7 @@ INSERT INTO test_instances (date, number, test_id, user_id) AS ti
         max_existing_number,
         (VALUES ($test_id, $user_id)) AS val (test_id, user_id)
     WHERE
-        t.test_id = $test_id
+        t.id = $test_id
 )
 RETURNING ti.*;
 

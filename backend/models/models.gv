@@ -22,42 +22,49 @@ digraph partmc_modules {
     enrollment [style=filled, fillcolor=lavender]
     user [style=filled, fillcolor=lavender]
     test_instance [style=filled, fillcolor=lavender]
-    test_state [style=filled, fillcolor=lavender]
-    question_instance [style=filled, fillcolor=lavender]
+    instance_question [style=filled, fillcolor=lavender]
+    variant [style=filled, fillcolor=lavender]
     submission [style=filled, fillcolor=lavender]
-    grading [style=filled, fillcolor=lavender]
-    test_score [style=filled, fillcolor=lavender]
-    question_score [style=filled, fillcolor=lavender]
-    access [style=filled, fillcolor=lavender]
-    question_view [style=filled, fillcolor=lavender]
-    test_view [style=filled, fillcolor=lavender]
+
+    test_state_log [style=filled, fillcolor=white]
+    grading_log [style=filled, fillcolor=white]
+    test_score_log [style=filled, fillcolor=white]
+    question_score_log [style=filled, fillcolor=white]
+    question_view_log [style=filled, fillcolor=white]
+    test_view_log [style=filled, fillcolor=white]
 
     test_access_rule -> { test }
     course_instance -> { course }
     course_instance_access_rule -> { course_instance }
-    enrollment -> { user; course_instance }
     question -> { course; topic }
     question_tag -> { question; tag }
     tag -> { course }
     test -> { course_instance; test_set }
-    test_instance -> { test; user }
     test_question -> { test; zone; question }
     test_set -> { course }
-    test_state -> { test_instance }
     topic -> { course }
     zone -> { test }
-    question_instance -> { test_question; test_instance }
-    submission -> { question_instance }
-    grading -> { submission }
-    test_score -> { test_instance }
-    question_score -> { grading; test_score; question_instance }
-    question_view -> { question_instance; access }
-    test_view -> { test_instance }
+
+    enrollment -> { user; course_instance }
+    test_instance -> { test; user }
+    instance_question -> { test_question; test_instance }
+    variant -> { instance_question }
+    submission -> { variant }
+
+    test_state_log -> { test_instance }
+    grading_log -> { submission }
+    test_score_log -> { test_instance }
+    question_score_log -> { instance_question }
+    question_view_log -> { instance_question }
+    test_view_log -> { test_instance }
 
     subgraph cluster_legend {
 
         labelloc=b;
         label="Legend";
+
+        k4 [shape=plaintext, style=solid, label="Logging objects,\lnot needed for operation.\lCannot be deleted.\l"];
+        kc4[label=" ", style=filled, fillcolor=white];
 
         k3 [shape=plaintext, style=solid, label="Loaded from Mongo\land generated in realtime.\lCannot be deleted.\l"];
         kc3[label=" ", style=filled, fillcolor=lavender];
@@ -68,8 +75,10 @@ digraph partmc_modules {
         k1 [shape=plaintext, style=solid, label="Made by superuser.\lWill not be deleted.\l"];
         kc1[label=" ", style=filled, fillcolor=mistyrose1];
 
+        kc4 -> kc3 [style=invis];
         kc3 -> kc2 [style=invis];
         kc2 -> kc1 [style=invis];
+        k4 -> k3 [style=invis];
         k3 -> k2 [style=invis];
         k2 -> k1 [style=invis];
     }

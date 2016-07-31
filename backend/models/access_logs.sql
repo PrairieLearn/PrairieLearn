@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS accesses (
+CREATE TABLE IF NOT EXISTS access_logs (
     id SERIAL PRIMARY KEY,
     mongo_id varchar(255) UNIQUE,
     date timestamp with time zone,
