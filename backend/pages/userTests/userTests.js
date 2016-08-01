@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var path = require('path');
 var csvStringify = require('csv').stringify;
@@ -19,7 +20,7 @@ router.get('/', function(req, res, next) {
         role: req.locals.enrollment.role,
     };
     sqldb.query(sql.all, params, function(err, result) {
-        if (err) return next(err);
+        if (ERR(err, next)) return;
         var locals = _.extend({
             rows: result.rows,
         }, req.locals);

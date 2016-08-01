@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var path = require('path');
 var logger = require('../logger');
@@ -15,7 +16,7 @@ module.exports = function(req, res, next) {
         role: req.locals.enrollment.role,
     };
     sqldb.queryOneRow(sql.test, params, function(err, result) {
-        if (err) return next(err);
+        if (ERR(err, next)) return;
         req.locals.test = result.rows[0];
         req.locals.testId = req.params.testId;
 
@@ -24,7 +25,7 @@ module.exports = function(req, res, next) {
             courseInstanceId: req.params.courseInstanceId,
         };
         sqldb.queryOneRow(sql.test_set, params, function(err, result) {
-            if (err) return next(err);
+            if (ERR(err, next)) return;
             req.locals.testSet = result.rows[0];
             next();
         });

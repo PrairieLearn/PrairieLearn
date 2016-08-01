@@ -1,7 +1,4 @@
-if (process.env.NODE_ENV !== 'production'){
-  require('longjohn');
-}
-
+var ERR = require('async-stacktrace');
 var logger = require("./logger");
 var config = require("./config");
 var db = require("./db");

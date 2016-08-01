@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var path = require('path');
 var csvStringify = require('csv').stringify;
@@ -51,14 +52,14 @@ router.get('/', function(req, res, next) {
     }, req.locals);
     var params = [req.locals.testId];
     sqldb.query(sql.questions, params, function(err, result) {
-        if (err) return next(err);
+        if (ERR(err, next)) return;
         locals = _.extend({
             questions: result.rows,
         }, locals);
 
         var params = [req.locals.testId];
         sqldb.queryOneRow(sql.test_stats, params, function(err, result) {
-            if (err) return next(err);
+            if (ERR(err, next)) return;
             locals = _.extend({
                 testStat: result.rows[0],
             }, locals);
@@ -66,7 +67,7 @@ router.get('/', function(req, res, next) {
             // FIXME: change to test_instance_duration_stats and show all instances
             var params = [req.locals.testId];
             sqldb.queryOneRow(sql.test_duration_stats, params, function(err, result) {
-                if (err) return next(err);
+                if (ERR(err, next)) return;
                 locals = _.extend({
                     durationStat: result.rows[0],
                 }, locals);
@@ -74,7 +75,7 @@ router.get('/', function(req, res, next) {
                 // FIXME: change to test_instance_scores and show all instances
                 var params = [req.locals.testId];
                 sqldb.query(sql.user_test_scores, params, function(err, result) {
-                    if (err) return next(err);
+                    if (ERR(err, next)) return;
                     locals = _.extend({
                         userScores: result.rows,
                     }, locals);
@@ -90,7 +91,7 @@ router.get('/:filename', function(req, res, next) {
     if (req.params.filename == scoreStatsCsvFilename(req.locals)) {
         var params = [req.locals.testId];
         sqldb.queryOneRow(sql.test_stats, params, function(err, result) {
-            if (err) return next(err);
+            if (ERR(err, next)) return;
             var testStat = result.row[0];
             var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Test', 'Title', 'TID', 'NStudents', 'Mean',
                               'Std', 'Min', 'Max', 'Median', 'NZero', 'NHundred', 'NZeroPerc', 'NHundredPerc'];

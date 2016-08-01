@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var fs = require('fs');
 var path = require('path');
@@ -27,9 +28,9 @@ module.exports = {
             vid = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
         }
         this.getModule(question.type, function(err, questionModule) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
             questionModule.getData(question, course, vid, function(err, questionData) {
-                if (err) return callback(err);
+                if (ERR(err, callback)) return;
                 var questionInstance = {
                     vid: vid,
                     params: questionData.params || {},
@@ -43,9 +44,9 @@ module.exports = {
 
     gradeSubmission: function(submission, questionInstance, question, course, options, callback) {
         this.getModule(question.type, function(err, questionModule) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
             questionModule.gradeSubmission(submission, questionInstance, question, course, function(err, grading) {
-                if (err) return callback(err);
+                if (ERR(err, callback)) return;
                 grading.correct = (grading.score >= 0.5);
                 callback(null, grading);
             });

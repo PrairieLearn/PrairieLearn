@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var path = require('path');
 var express = require('express');
@@ -12,7 +13,7 @@ var sql = sqlLoader.load(path.join(__dirname, 'adminHome.sql'));
 router.get('/', function(req, res, next) {
     var params = [req.authUID];
     sqldb.query(sql.all, params, function(err, result) {
-        if (err) return next(err);
+        if (ERR(err, next)) return;
         var locals = _.extend({
             rows: result.rows,
         }, req.locals);

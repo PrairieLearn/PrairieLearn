@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var fs = require('fs');
 var path = require('path');
@@ -13,7 +14,7 @@ router.get('/:filename', function(req, res, next) {
     var course = req.locals.course;
     var filename = req.params.filename;
     filePaths.questionPath(question.directory, course.path, function(err, questionPath) {
-        if (err) return next(err);
+        if (ERR(err, next)) return;
         res.sendFile(filename, {root: questionPath});
     });
 });

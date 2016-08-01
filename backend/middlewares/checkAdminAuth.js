@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var path = require('path');
 var logger = require('../logger');
 var sqldb = require('../sqldb');
@@ -8,7 +9,7 @@ var sql = sqlLoader.load(path.join(__dirname, 'checkAdminAuth.sql'));
 module.exports = function(req, res, next) {
     var params = [req.params.courseInstanceId, req.authUID];
     sqldb.query(sql.all, params, function(err, result) {
-        if (err) return next(err);
+        if (ERR(err, next)) return;
         if (result.rowCount === 0) return next(error.make(403, "Unauthorized"));
         next();
     });

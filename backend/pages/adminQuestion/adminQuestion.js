@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var path = require('path');
 var csvStringify = require('csv').stringify;
@@ -20,15 +21,15 @@ var handle = function(req, res, next) {
                 submitted_answer: req.postData.submittedAnswer,
             };
             question.gradeSubmission(submission, questionInstance, req.locals.question, req.locals.course, {}, function(err, grading) {
-                if (err) return next(err);
+                if (ERR(err, next)) return;
                 question.getModule(req.locals.question.type, function(err, questionModule) {
-                    if (err) return next(err);
+                    if (ERR(err, next)) return;
                     question.renderScore(grading.score, function(err, scoreHtml) {
-                        if (err) return next(err);
+                        if (ERR(err, next)) return;
                         questionModule.renderSubmission(questionInstance, req.locals.question, submission, grading, req.locals.course, req.locals, function(err, submissionHtml) {
-                            if (err) return next(err);
+                            if (ERR(err, next)) return;
                             questionModule.renderTrueAnswer(questionInstance, req.locals.question, req.locals.course, req.locals, function(err, answerHtml) {
-                                if (err) return next(err);
+                                if (ERR(err, next)) return;
                                 render(req, res, next, questionInstance, submission, grading, scoreHtml, submissionHtml, answerHtml);
                             });
                         });
@@ -38,7 +39,7 @@ var handle = function(req, res, next) {
         } else return next(error.make(400, 'unknown action', {postData: req.postData}));
     } else {
         question.makeQuestionInstance(req.locals.question, req.locals.course, {}, function(err, questionInstance) {
-            if (err) return next(err);
+            if (ERR(err, next)) return;
             render(req, res, next, questionInstance);
         });
     }
@@ -47,13 +48,13 @@ var handle = function(req, res, next) {
 var render = function(req, res, next, questionInstance, submission, grading, scoreHtml, submissionHtml, answerHtml) {
     var params = [req.locals.questionId, req.locals.courseInstanceId];
     sqldb.queryOneRow(sql.all, params, function(err, result) {
-        if (err) return next(err);
+        if (ERR(err, next)) return;
         question.getModule(req.locals.question.type, function(err, questionModule) {
-            if (err) return next(err);
+            if (ERR(err, next)) return;
             questionModule.renderExtraHeaders(req.locals.question, req.locals.course, req.locals, function(err, extraHeaders) {
-                if (err) return next(err);
+                if (ERR(err, next)) return;
                 questionModule.renderQuestion(questionInstance, req.locals.question, null, req.locals.course, req.locals, function(err, questionHtml) {
-                    if (err) return next(err);
+                    if (ERR(err, next)) return;
                     
                     var locals = _.extend({
                         result: result.rows[0],

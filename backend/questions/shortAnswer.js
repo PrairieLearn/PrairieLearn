@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var fs = require('fs');
 var path = require('path');
@@ -40,7 +41,7 @@ module.exports = {
 
     getData: function(question, course, vid, callback) {
         questionHelper.loadServer(question, course, function(err, server) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
             try {
                 var questionData = server.getData(vid, question.options, 'INVALID QUESTION DIRECTORY');
             } catch (e) {
@@ -89,7 +90,7 @@ module.exports = {
     gradeSubmission: function(submission, questionInstance, question, course, callback) {
         var that = this;
         questionHelper.loadServer(question, course, function(err, server) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
             var grading;
             try {
                 var vid = questionInstance.vid;

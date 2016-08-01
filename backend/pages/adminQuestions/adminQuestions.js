@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var path = require('path');
 var csvStringify = require('csv').stringify;
@@ -13,17 +14,17 @@ var sql = sqlLoader.load(path.join(__dirname, 'adminQuestions.sql'));
 router.get('/', function(req, res, next) {
     var params = [req.locals.courseInstanceId];
     sqldb.query(sql.questions, params, function(err, result) {
-        if (err) return next(err);
+        if (ERR(err, next)) return;
         req.locals.questions = result.rows;
 
         var params = [req.locals.course.id];
         sqldb.query(sql.tags, params, function(err, result) {
-            if (err) return next(err);
+            if (ERR(err, next)) return;
             req.locals.allTags = result.rows;
         
             var params = [req.locals.courseInstanceId];
             sqldb.query(sql.tests, params, function(err, result) {
-                if (err) return next(err);
+                if (ERR(err, next)) return;
                 req.locals.allTests = result.rows;
                 
                 res.render('pages/adminQuestions/adminQuestions', req.locals);

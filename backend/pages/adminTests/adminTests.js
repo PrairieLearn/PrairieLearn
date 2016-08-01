@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var path = require('path');
 var csvStringify = require('csv').stringify;
@@ -21,7 +22,7 @@ var csvFilename = function(locals) {
 router.get('/', function(req, res, next) {
     var params = [req.locals.courseInstanceId];
     sqldb.query(sql.all, params, function(err, result) {
-        if (err) return next(err);
+        if (ERR(err, next)) return;
         var locals = _.extend({
             rows: result.rows,
             csvFilename: csvFilename(req.locals),
@@ -34,7 +35,7 @@ router.get('/:filename', function(req, res, next) {
     if (req.params.filename == csvFilename(req.locals)) {
         var params = [req.locals.courseInstanceId];
         sqldb.query(sql.all, params, function(err, result) {
-            if (err) return next(err);
+            if (ERR(err, next)) return;
             var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Test', 'Title', 'TID',
                               'NStudents', 'Mean', 'Std', 'Min', 'Max', 'Median',
                               'NZero', 'NHundred', 'NZeroPerc', 'NHundredPerc',

@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var path = require('path');
 var csvStringify = require('csv').stringify;
@@ -21,10 +22,10 @@ var csv_filename = function(locals) {
 router.get('/', function(req, res, next) {
     var params = [req.locals.courseInstanceId];
     sqldb.query(sql.course_tests, params, function(err, result) {
-        if (err) return next(err);
+        if (ERR(err, next)) return;
         var course_tests = result.rows;
         sqldb.query(sql.user_scores, params, function(err, result) {
-            if (err) return next(err);
+            if (ERR(err, next)) return;
             var user_scores = result.rows;
             var locals = _.extend({
                 course_tests: course_tests,
@@ -39,10 +40,10 @@ router.get('/', function(req, res, next) {
 router.get('/:filename', function(req, res, next) {
     var params = [req.locals.courseInstanceId];
     sqldb.query(sql.course_tests, params, function(err, result) {
-        if (err) return next(err);
+        if (ERR(err, next)) return;
         var course_tests = result.rows;
         sqldb.query(sql.user_scores, params, function(err, result) {
-            if (err) return next(err);
+            if (ERR(err, next)) return;
             var user_scores = result.rows;
 
             var csvHeaders = ['UID', 'Name', 'Role'].concat(_(course_tests).pluck('label'));

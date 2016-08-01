@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var path = require('path');
 var csvStringify = require('csv').stringify;
@@ -13,20 +14,20 @@ var sql = sqlLoader.load(path.join(__dirname, 'userTest.sql'));
 
 function makeTestInstance_OLD_UNUSED_SAVE_FIXME(req, res, next) {
     assessment.makeQuestionInstances(req.locals.test, req.locals.course, function(err, questionInstances) {
-        if (err) return next(err);
+        if (ERR(err, next)) return;
 
         sqldb.getClient(function(err, client, done) {
-            if (err) return next(err);
+            if (ERR(err, next)) return;
 
             sqldb.queryWithClient(client, done, 'START TRANSACTION', [], function(err, result) {
-                if (err) return next(err);
+                if (ERR(err, next)) return;
 
                 var params = {
                     test_id: req.locals.test.id,
                     user_id: req.locals.user.id,
                 };
                 sqldb.queryWithClient(client, done, sql.new_test_instance, params, function(err, result) {
-                    if (err) return next(err);
+                    if (ERR(err, next)) return;
                     if (result.rowCount !== 1) {
                         done();
                         return next(new Error("new_test_instance did not return exactly 1 row"));
@@ -46,10 +47,10 @@ function makeTestInstance_OLD_UNUSED_SAVE_FIXME(req, res, next) {
                         };
                         sqldb.queryWithClient(client, done, sql.new_question_instance, params, callback);
                     }, function(err) {
-                        if (err) return next(err);
+                        if (ERR(err, next)) return;
                         
                         sqldb.queryWithClient(client, done, 'COMMIT', [], function(err, result) {
-                            if (err) return next(err);
+                            if (ERR(err, next)) return;
                             sqldb.releaseClient(client, done);
                             res.redirect(req.locals.urlPrefix + '/testInstance/' + result.rows[0].test_instance_id);
                         });
@@ -66,14 +67,14 @@ function makeTestInstance(req, res, next) {
         user_id: req.locals.user.id,
     };
     sqldb.query(sql.new_test_instance, params, function(err, result) {
-        if (err) return next(err);
+        if (ERR(err, next)) return;
         if (result.rowCount !== 1) {
             done();
             return next(new Error("new_test_instance did not return exactly 1 row"));
         }
         req.locals.testInstance = result.rows[0];
         assessment.newTestInstance(req.locals.testInstance, req.locals.test, req.locals.course, function(err) {
-            if (err) return next(err);
+            if (ERR(err, next)) return;
             res.redirect(req.locals.urlPrefix + '/testInstance/' + req.locals.testInstance.id);
         });
     });
@@ -85,7 +86,7 @@ router.get('/', function(req, res, next) {
     } else {
         var params = {test_id: req.locals.test.id, user_id: req.locals.user.id};
         sqldb.query(sql.find_single_test_instance, params, function(err, result) {
-            if (err) return next(err);
+            if (ERR(err, next)) return;
             if (result.rowCount == 0) {
                 makeTestInstance(req, res, next);
             } else {

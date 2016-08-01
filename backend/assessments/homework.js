@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var fs = require('fs');
 var path = require('path');
@@ -21,7 +22,10 @@ module.exports = {
             test_instance_id: testInstance.id,
             test_id: test.id,
         };
-        sqldb.query(sql.update, params, callback);
+        sqldb.query(sql.update, params, function(err, result) {
+            if (ERR(err, callback)) return;
+            callback(null, result);
+        });
     },
     
     renderTestInstance: function(testInstance, locals, callback) {
@@ -30,13 +34,13 @@ module.exports = {
             test_instance_id: testInstance.id,
         };
         sqldb.query(sql.get_questions, params, function(err, result) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
             var loc = _.extend({
                 instanceQuestions: result.rows,
             }, locals);
             console.log(loc.instanceQuestions);
             ejs.renderFile(path.join(__dirname, 'homeworkTestInstance.ejs'), loc, function(err, html) {
-                if (err) return callback(err);
+                if (ERR(err, callback)) return;
                 callback(null, extraHeader, html);
             });
         });

@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var fs = require('fs');
 var path = require('path');
@@ -11,7 +12,7 @@ var requireFrontend = require("./require-frontend");
 module.exports = {
     loadServer: function(question, course, callback) {
         filePaths.questionFilePathNEW("server.js", question.directory, course.path, function(err, questionServerPath) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
             requireFrontend([questionServerPath], function(server) {
                 if (server === undefined) return callback("Unable to load 'server.js' for qid: " + question.qid);
                 setTimeout(function() {
@@ -29,9 +30,9 @@ module.exports = {
     renderRivetsTemplate: function(filename, context, question, course, locals, callback) {
         var that = this;
         filePaths.questionFilePathNEW(filename, question.directory, course.path, function(err, templatePath) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
             fs.readFile(templatePath, 'utf8', function(err, template) {
-                if (err) return callback(err);
+                if (ERR(err, callback)) return;
                 template = template.replace(/<% *print\(([^}]+?)\) *%>/g, '<%= $1 %>');
                 template = template.replace(/{{([^}]+)}}/g, '<%= $1 %>');
                 var extContext = _.defaults({

@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var fs = require('fs');
 var path = require('path');
@@ -22,21 +23,21 @@ module.exports = {
 
     newTestInstance: function(testInstance, test, course, callback) {
         this.getModule(test.type, function(err, assessmentModule) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
             assessmentModule.newTestInstance(testInstance, test, course, callback);
         });
      },
 
     updateTestInstance: function(testInstance, test, course, locals, callback) {
         this.getModule(test.type, function(err, assessmentModule) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
             assessmentModule.updateTestInstance(testInstance, test, course, locals, callback);
         });
      },
 
     renderTestInstance: function(testInstance, locals, callback) {
         this.getModule(locals.test.type, function(err, assessmentModule) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
             assessmentModule.renderTestInstance(testInstance, locals, callback);
         });
     },
