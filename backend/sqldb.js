@@ -217,7 +217,10 @@ module.exports = {
     queryOneRow: function(sql, params, callback) {
         this.query(sql, params, function(err, result) {
             if (err) return callback(err);
-            if (result.rowCount !== 1) return callback(new Error("Incorrect rowCount: " + result.rowCount));
+            if (result.rowCount !== 1) {
+                var data = {sql: sql, params: params};
+                return callback(error.makeWithData("Incorrect rowCount: " + result.rowCount, data));
+            }
             callback(null, result);
         });
     },

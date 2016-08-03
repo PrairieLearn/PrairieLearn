@@ -1,4 +1,5 @@
 var ERR = require('async-stacktrace');
+var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var fs = require('fs');
 var path = require('path');
@@ -38,7 +39,6 @@ module.exports = {
             var loc = _.extend({
                 instanceQuestions: result.rows,
             }, locals);
-            console.log(loc.instanceQuestions);
             ejs.renderFile(path.join(__dirname, 'homeworkTestInstance.ejs'), loc, function(err, html) {
                 if (ERR(err, callback)) return;
                 callback(null, extraHeader, html);

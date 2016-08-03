@@ -7,5 +7,6 @@ CREATE TABLE IF NOT EXISTS variants (
     variant_seed varchar(255),
     params JSONB,
     true_answer JSONB,
-    options JSONB
+    options JSONB,
+    UNIQUE (number, instance_question_id)
 );

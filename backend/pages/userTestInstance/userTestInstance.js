@@ -10,8 +10,6 @@ var logger = require('../../logger');
 var sqldb = require('../../sqldb');
 var sqlLoader = require('../../sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'userTestInstance.sql'));
-
 router.get('/', function(req, res, next) {
     assessment.updateTestInstance(req.locals.testInstance, req.locals.test, req.locals.course, req.locals, function(err) {
         if (ERR(err, next)) return;

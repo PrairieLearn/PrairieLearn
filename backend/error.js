@@ -8,6 +8,12 @@ module.exports = {
         return err;
     },
 
+    makeWithData: function(message, data) {
+        var err = new Error(message);
+        err.data = data;
+        return err;
+    },
+
     addData: function(err, data) {
         console.log("err", err);
         console.log("data", data);

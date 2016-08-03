@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
+    <script type="text/javascript" src="/localscripts/question.js"></script>
+    <%- extraHeaders %>
+    <script type="text/javascript" src="/localscripts/question<%= question.type %>.js"></script>
+  </head>
+  <body>
+    <%- include('../partials/userNavbar', {navPage: ''}); %>
+    <div id="content" class="container">
+      <div class="row">
+        <div class="col-md-9 col-sm-12">
+
+          <div id="question-0" class="question-container">
+            <script type="application/json" class="question-data"><%- questionJson  %></script>
+            
+            <div class="panel panel-primary question-block">
+              <div class="panel-heading">
+                <h3 class="panel-title"><%= question.title %></h3>
+              </div>
+              <div class="panel-body question-body">
+                <%- questionHtml %>
+              </div>
+              <div class="panel-footer">
+                <button class="btn btn-primary question-submit">Submit</button>
+                <form class="question-form" name="question-form" method="POST" action="<%= postUrl %>">
+                  <input type="hidden" name="postData">
+                </form>
+              </div>
+            </div>
+
+            <% if (submission && submission.graded) { %>
+            <div class="panel panel-info submission-block">
+              <div class="panel-heading">
+                <h3 class="panel-title">Submission</h3>
+              </div>
+              <div class="panel-body">
+                <p>
+                  <%- scoreHtml %>
+                </p>
+                <div class="submission-body">
+                  <%- submissionHtml %>
+                </div>
+              </div>
+            </div>
+
+            <div class="panel panel-info grading-block">
+              <div class="panel-heading">
+                <h3 class="panel-title">True answer</h3>
+              </div>
+              <div class="panel-body answer-body">
+                <%- answerHtml %>
+              </div>
+            </div>
+            <% } %>
+
+          </div> <!-- question-container -->
+        </div>
+
+        <!-- SIDEBAR ---------------------------------------------------------------------->
+        <div class="col-md-3 col-sm-4 col-xs-12">
+
+          <div class="panel panel-default">
+            <div class="panel-heading"><h3 class="panel-title"><a href="<%= urlPrefix %>/testInstance/<%= testInstance.id %>/"><%= testSet.name %> <%= test.number %></a></h3></div>
+            <table class="table table-condensed">
+              <tbody>
+                <tr>
+                  <td>Points:</td>
+                  <td><%= testInstance.points %>/<%= testInstance.max_points %></td>
+                </tr>
+                <tr>
+                  <td>Score:</td>
+                  <td><%- include('../partials/scorebar', {score: testInstance.score_perc}) %></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="panel panel-default">
+            <div class="panel-heading"><h3 class="panel-title">Question <%= instanceQuestion.number %></h3></div>
+            <table class="table table-condensed">
+              <tbody>
+                <tr>
+                  <td>Current value:</td>
+                  <td><%= instanceQuestion.current_value %></td>
+                </tr>
+                <tr>
+                  <td>Awarded points:</td>
+                  <td><%= instanceQuestion.points %></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="text-center">
+            <% if (prevInstanceQuestionId) { %>
+            <a class="btn btn-primary" href="<%= urlPrefix %>/instanceQuestion/<%= prevQuestionId %>/">Previous question</a>
+            <% } else { %>
+            <a class="btn btn-primary disabled">Previous question</a>
+            <% } %>
+          </p>
+          <p class="text-center">
+            <% if (nextInstanceQuestionId) { %>
+            <a class="btn btn-primary" href="<%= urlPrefix %>/instanceQuestion/<%= nextQuestionId %>/">Nextious question</a>
+            <% } else { %>
+            <a class="btn btn-primary disabled">Next question</a>
+            <% } %>
+          </p>
+          <% if (video) { %>
+          <div class="modal" id="youtubemodal">
+            <div class="modal-dialog" style="width: 620px">
+              <div class="modal-content">
+                <div class="modal-body no-overflow">
+                  <iframe id="player" width="560" height="315" data-url="https://www.youtube.com/embed/{{video}}?rel=0&wmode=Opaque&enablejsapi=1&autoplay=1" frameborder="0"></iframe>
+                  <button type="button" class="close" data-dismiss="modal" id="youtubeclose">x</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="text-center">
+            <a class="btn btn-warning" href="#youtubemodal" data-toggle="modal">Help video</a>
+          </p>
+          <% } %>
+          
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

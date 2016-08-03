@@ -20,7 +20,7 @@ module.exports = {
         }
     },
 
-    makeQuestionInstance: function(question, course, options, callback) {
+    makeVariant: function(question, course, options, callback) {
         var vid;
         if (_(options).has('vid')) {
             vid = options.vid;
@@ -31,13 +31,13 @@ module.exports = {
             if (ERR(err, callback)) return;
             questionModule.getData(question, course, vid, function(err, questionData) {
                 if (ERR(err, callback)) return;
-                var questionInstance = {
+                var variant = {
                     vid: vid,
                     params: questionData.params || {},
                     true_answer: questionData.true_answer || {},
                     options: questionData.options || {},
                 };
-                callback(null, questionInstance);
+                callback(null, variant);
             });
         });
     },

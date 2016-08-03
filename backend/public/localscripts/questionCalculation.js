@@ -53,7 +53,7 @@ CalculationClient.prototype.initialize = function(questionData, callback) {
             that.questionDataModel = new Backbone.Model();
             that.appModel = new Backbone.Model();
             that.qClient = qc;
-            that.qClient.initialize(questionData.questionInstance.params);
+            that.qClient.initialize(questionData.variant.params);
             if (questionData.submittedAnswer) {
                 that.qClient.setSubmittedAnswer(questionData.submittedAnswer);
                 if (questionData.trueAnswer) {

@@ -674,8 +674,8 @@ app.use('/admin/:courseInstanceId/test/:testId', require('./pages/adminTest/admi
 app.use('/admin/:courseInstanceId/users', require('./pages/adminUsers/adminUsers'));
 app.use('/admin/:courseInstanceId/questions', require('./pages/adminQuestions/adminQuestions'));
 app.use('/admin/:courseInstanceId/question/:questionId', require('./pages/adminQuestion/adminQuestion'));
-app.use('/admin/:courseInstanceId/question/:questionId/file', require('./pages/adminQuestionFile/adminQuestionFile'));
-app.use('/admin/:courseInstanceId/question/:questionId/text', require('./pages/adminQuestionText/adminQuestionText'));
+app.use('/admin/:courseInstanceId/question/:questionId/file', require('./pages/questionFile/questionFile'));
+app.use('/admin/:courseInstanceId/question/:questionId/text', require('./pages/questionText/questionText'));
 
 // Middleware for user pages
 app.use('/pl/', function(req, res, next) {req.locals = {}; next();});
@@ -689,6 +689,24 @@ app.use('/pl/:courseInstanceId', require('./middlewares/userUrlPrefix'));
 app.use('/pl/:courseInstanceId/test/:testId', require('./middlewares/currentTest'));
 app.use('/pl/:courseInstanceId/testInstance/:testInstanceId', require('./middlewares/currentTestInstance'));
 app.use('/pl/:courseInstanceId/testInstance/:testInstanceId', require('./middlewares/currentTest'));
+app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentInstanceQuestion'));
+app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentTestInstance'));
+app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentTest'));
+app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentQuestion'));
+
+function routeByTestType(req, res, next, handlers) {
+    if (req.locals.test && req.locals.test.type) {
+        var testType = req.locals.test.type;
+        if (testType == 'Game') testType = 'Homework'; // FIXME: temporary hack
+        if (_(handlers).has(req.locals.test.type)) {
+            handlers[req.locals.test.type](req, res, next);
+        } else {
+            next(new Error("unknown test type: " + req.locals.test.type));
+        }
+    } else {
+        next(new Error("unable to determine test type"));
+    }
+}
 
 // Route handlers for user pages
 app.use('/pl', require('./pages/userHome/userHome'));
@@ -697,6 +715,20 @@ app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url
 app.use('/pl/:courseInstanceId/tests', require('./pages/userTests/userTests'));
 app.use('/pl/:courseInstanceId/test/:testId', require('./pages/userTest/userTest'));
 app.use('/pl/:courseInstanceId/testInstance/:testInstanceId', require('./pages/userTestInstance/userTestInstance'));
+//app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./pages/userInstanceQuestion/userInstanceQuestion'));
+/*
+app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId',
+        routeByTestType(req, res, next,
+                        {
+                            'Homework': require('./pages/userInstanceQuestionHomework/userInstanceQuestionHomework'),
+                        }));
+*/
+// following handlers will call next() if they don't match the correct test type
+app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./pages/userInstanceQuestionHomework/userInstanceQuestionHomework'));
+//app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./pages/userInstanceQuestionExam/userInstanceQuestionExam'));
+app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId/file', require('./pages/questionFile/questionFile'));
+app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId/text', require('./pages/questionText/questionText'));
+
 
 // END OF express-generator section 1
 ///////////////////////////////////////////////////////////////////////////////
