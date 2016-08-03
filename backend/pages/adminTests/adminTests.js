@@ -1,5 +1,5 @@
 var ERR = require('async-stacktrace');
-var _ = require('underscore');
+var _ = require('lodash');
 var path = require('path');
 var csvStringify = require('csv').stringify;
 var express = require('express');
@@ -20,20 +20,19 @@ var csvFilename = function(locals) {
 };
 
 router.get('/', function(req, res, next) {
-    var params = [req.locals.courseInstanceId];
+    var params = {course_instance_id: res.locals.courseInstanceId};
     sqldb.query(sql.all, params, function(err, result) {
         if (ERR(err, next)) return;
-        var locals = _.extend({
-            rows: result.rows,
-            csvFilename: csvFilename(req.locals),
-        }, req.locals);
+        
+        res.locals.rows = result.rows;
+        res.locals.csvFilename = csvFilename(res.locals);
         res.render(path.join(__dirname, 'adminTests'), locals);
     });
 });
 
 router.get('/:filename', function(req, res, next) {
-    if (req.params.filename == csvFilename(req.locals)) {
-        var params = [req.locals.courseInstanceId];
+    if (req.params.filename == csvFilename(res.locals)) {
+        var params = {course_instance_id: res.locals.courseInstanceId};
         sqldb.query(sql.all, params, function(err, result) {
             if (ERR(err, next)) return;
             var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Test', 'Title', 'TID',
@@ -44,8 +43,8 @@ router.get('/:filename', function(req, res, next) {
             var csvData = [];
             _(testStats).each(function(testStat) {
                 var csvRow = [
-                    req.locals.course.short_name,
-                    req.locals.courseInstance.short_name,
+                    res.locals.course.short_name,
+                    res.locals.courseInstance.short_name,
                     testStat.long_name,
                     testStat.test_number,
                     testStat.label,

@@ -6,7 +6,7 @@ SELECT
 FROM tests AS t
 JOIN test_sets AS ts ON (ts.id = t.test_set_id)
 WHERE t.deleted_at IS NULL
-AND t.course_instance_id = $1
+AND t.course_instance_id = $course_instance_id
 ORDER BY (ts.number, t.number);
 
 -- BLOCK user_scores
@@ -15,14 +15,14 @@ course_users AS (
     SELECT u.id,u.uid,u.name AS user_name,e.role
     FROM users AS u
     JOIN enrollments AS e ON (e.user_id = u.id)
-    WHERE e.course_instance_id = $1
+    WHERE e.course_instance_id = $course_instance_id
 ),
 course_tests AS (
     SELECT t.id,t.number AS test_number,ts.number AS test_set_number
     FROM tests AS t
     JOIN test_sets AS ts ON (ts.id = t.test_set_id)
     WHERE t.deleted_at IS NULL
-    AND t.course_instance_id = $1
+    AND t.course_instance_id = $course_instance_id
 ),
 user_test_scores AS (
     SELECT u.id AS user_id,u.uid,u.user_name,u.role,

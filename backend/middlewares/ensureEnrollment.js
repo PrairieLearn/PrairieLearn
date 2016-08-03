@@ -7,11 +7,14 @@ var sqlLoader = require('../sql-loader');
 var sql = sqlLoader.load(path.join(__dirname, 'ensureEnrollment.sql'));
 
 module.exports = function(req, res, next) {
-    var params = [req.locals.user.id, req.params.courseInstanceId];
+    var params = {
+        user_id: res.locals.user.id,
+        course_instance_id: req.params.courseInstanceId,
+    };
     sqldb.query(sql.all, params, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount === 0) return next(error.make(403, "Unauthorized"));
-        req.locals.enrollment = result.rows[0];
+        res.locals.enrollment = result.rows[0];
         next();
     });
 };

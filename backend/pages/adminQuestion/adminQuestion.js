@@ -1,5 +1,5 @@
 var ERR = require('async-stacktrace');
-var _ = require('underscore');
+var _ = require('lodash');
 var path = require('path');
 var csvStringify = require('csv').stringify;
 var express = require('express');
@@ -20,15 +20,15 @@ var handle = function(req, res, next) {
             submission = {
                 submitted_answer: req.postData.submittedAnswer,
             };
-            question.gradeSubmission(submission, questionInstance, req.locals.question, req.locals.course, {}, function(err, grading) {
+            question.gradeSubmission(submission, questionInstance, res.locals.question, res.locals.course, {}, function(err, grading) {
                 if (ERR(err, next)) return;
-                question.getModule(req.locals.question.type, function(err, questionModule) {
+                question.getModule(res.locals.question.type, function(err, questionModule) {
                     if (ERR(err, next)) return;
                     question.renderScore(grading.score, function(err, scoreHtml) {
                         if (ERR(err, next)) return;
-                        questionModule.renderSubmission(questionInstance, req.locals.question, submission, grading, req.locals.course, req.locals, function(err, submissionHtml) {
+                        questionModule.renderSubmission(questionInstance, res.locals.question, submission, grading, res.locals.course, res.locals, function(err, submissionHtml) {
                             if (ERR(err, next)) return;
-                            questionModule.renderTrueAnswer(questionInstance, req.locals.question, req.locals.course, req.locals, function(err, answerHtml) {
+                            questionModule.renderTrueAnswer(questionInstance, res.locals.question, res.locals.course, res.locals, function(err, answerHtml) {
                                 if (ERR(err, next)) return;
                                 render(req, res, next, questionInstance, submission, grading, scoreHtml, submissionHtml, answerHtml);
                             });
@@ -38,7 +38,7 @@ var handle = function(req, res, next) {
             });
         } else return next(error.make(400, 'unknown action', {postData: req.postData}));
     } else {
-        question.makeQuestionInstance(req.locals.question, req.locals.course, {}, function(err, questionInstance) {
+        question.makeQuestionInstance(res.locals.question, res.locals.course, {}, function(err, questionInstance) {
             if (ERR(err, next)) return;
             render(req, res, next, questionInstance);
         });
@@ -46,38 +46,36 @@ var handle = function(req, res, next) {
 };
 
 var render = function(req, res, next, questionInstance, submission, grading, scoreHtml, submissionHtml, answerHtml) {
-    var params = [req.locals.questionId, req.locals.courseInstanceId];
+    var params = [res.locals.questionId, res.locals.courseInstanceId];
     sqldb.queryOneRow(sql.all, params, function(err, result) {
         if (ERR(err, next)) return;
-        question.getModule(req.locals.question.type, function(err, questionModule) {
+        question.getModule(res.locals.question.type, function(err, questionModule) {
             if (ERR(err, next)) return;
-            questionModule.renderExtraHeaders(req.locals.question, req.locals.course, req.locals, function(err, extraHeaders) {
+            questionModule.renderExtraHeaders(res.locals.question, res.locals.course, res.locals, function(err, extraHeaders) {
                 if (ERR(err, next)) return;
-                questionModule.renderQuestion(questionInstance, req.locals.question, null, req.locals.course, req.locals, function(err, questionHtml) {
+                questionModule.renderQuestion(questionInstance, res.locals.question, null, res.locals.course, res.locals, function(err, questionHtml) {
                     if (ERR(err, next)) return;
                     
-                    var locals = _.extend({
-                        result: result.rows[0],
-                        submission: submission,
-                        grading: grading,
-                        extraHeaders: extraHeaders,
-                        questionHtml: questionHtml,
-                        scoreHtml: scoreHtml,
-                        submissionHtml: submissionHtml,
-                        answerHtml: answerHtml,
-                        postUrl: req.locals.urlPrefix + "/question/" + req.locals.question.id + "/",
-                        questionJson: JSON.stringify({
-                            questionFilePath: req.locals.urlPrefix + "/question/" + req.locals.question.id + "/file",
-                            question: req.locals.question,
-                            course: req.locals.course,
-                            courseInstance: req.locals.courseInstance,
-                            questionInstance: questionInstance,
-                            submittedAnswer: submission ? submission.submitted_answer : null,
-                            trueAnswer: questionInstance.true_answer,
-                            feedback: grading ? grading.feedback : null,
-                        }),
-                    }, req.locals);
-                    res.render(path.join(__dirname, 'adminQuestion'), locals);
+                    res.locals.result = result.rows[0];
+                    res.locals.submission = submission;
+                    res.locals.grading = grading;
+                    res.locals.extraHeaders = extraHeaders;
+                    res.locals.questionHtml = questionHtml;
+                    res.locals.scoreHtml = scoreHtml;
+                    res.locals.submissionHtml = submissionHtml;
+                    res.locals.answerHtml = answerHtml;
+                    res.locals.postUrl = res.locals.urlPrefix + "/question/" + res.locals.question.id + "/";
+                    res.locals.questionJson = JSON.stringify({
+                        questionFilePath: res.locals.urlPrefix + "/question/" + res.locals.question.id + "/file",
+                        question: res.locals.question,
+                        course: res.locals.course,
+                        courseInstance: res.locals.courseInstance,
+                        questionInstance: questionInstance,
+                        submittedAnswer: submission ? submission.submitted_answer : null,
+                        trueAnswer: questionInstance.true_answer,
+                        feedback: grading ? grading.feedback : null,
+                    });
+                    res.render(path.join(__dirname, 'adminQuestion'), res.locals);
                 });
             });
         });

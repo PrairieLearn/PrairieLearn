@@ -1,5 +1,5 @@
 var ERR = require('async-stacktrace');
-var _ = require('underscore');
+var _ = require('lodash');
 var path = require('path');
 var express = require('express');
 var router = express.Router();
@@ -9,7 +9,7 @@ var sqldb = require('../../sqldb');
 var sqlLoader = require('../../sql-loader');
 
 router.get('/', function(req, res, next) {
-    res.render(path.join(__dirname, 'userHome'), req.locals);
+    res.render(path.join(__dirname, 'userHome'), res.locals);
 });
 
 module.exports = router;

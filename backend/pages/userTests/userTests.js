@@ -1,5 +1,5 @@
 var ERR = require('async-stacktrace');
-var _ = require('underscore');
+var _ = require('lodash');
 var path = require('path');
 var csvStringify = require('csv').stringify;
 var express = require('express');
@@ -13,18 +13,16 @@ var sql = sqlLoader.load(path.join(__dirname, 'userTests.sql'));
 
 router.get('/', function(req, res, next) {
     var params = {
-        courseInstanceId: req.locals.courseInstanceId,
-        userId: req.locals.user.id,
-        uid: req.locals.user.uid,
+        courseInstanceId: res.locals.courseInstanceId,
+        userId: res.locals.user.id,
+        uid: res.locals.user.uid,
         mode: req.mode,
-        role: req.locals.enrollment.role,
+        role: res.locals.enrollment.role,
     };
     sqldb.query(sql.all, params, function(err, result) {
         if (ERR(err, next)) return;
-        var locals = _.extend({
-            rows: result.rows,
-        }, req.locals);
-        res.render(path.join(__dirname, 'userTests'), locals);
+        res.locals.rows = result.rows;
+        res.render(path.join(__dirname, 'userTests'), res.locals);
     });
 });
 

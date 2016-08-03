@@ -13,6 +13,6 @@ FROM tests AS t
 LEFT JOIN test_sets AS ts ON (ts.id = t.test_set_id)
 LEFT JOIN test_stats AS tstats ON (tstats.id = t.id)
 LEFT JOIN test_duration_stats AS dstats ON (dstats.id = t.id)
-WHERE t.course_instance_id = $1
+WHERE t.course_instance_id = $course_instance_id
 AND t.deleted_at IS NULL
 ORDER BY (ts.number, t.number, t.id);

@@ -7,7 +7,7 @@ WITH
             JOIN enrollments AS e ON (e.course_instance_id = ci.id)
             JOIN users AS u ON (u.id = e.user_id)
         WHERE
-            u.uid = $1
+            u.uid = $uid
             AND ci.deleted_at IS NULL
             AND check_course_instance_access(ci.id, e.role, u.uid, CURRENT_TIMESTAMP)
     ),

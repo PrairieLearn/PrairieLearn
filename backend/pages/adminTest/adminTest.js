@@ -1,5 +1,5 @@
 var ERR = require('async-stacktrace');
-var _ = require('underscore');
+var _ = require('lodash');
 var path = require('path');
 var csvStringify = require('csv').stringify;
 var express = require('express');
@@ -45,42 +45,32 @@ var scoresCsvFilename = function(locals) {
 };
 
 router.get('/', function(req, res, next) {
-    var locals = _.extend({
-        scoreStatsCsvFilename: scoreStatsCsvFilename(req.locals),
-        durationStatsCsvFilename: durationStatsCsvFilename(req.locals),
-        scoresCsvFilename: scoresCsvFilename(req.locals),
-    }, req.locals);
-    var params = [req.locals.testId];
+    res.locals.scoreStatsCsvFilename = scoreStatsCsvFilename(res.locals);
+    res.locals.durationStatsCsvFilename = durationStatsCsvFilename(res.locals);
+    res.locals.scoresCsvFilename = scoresCsvFilename(res.locals);
+    var params = {test_id: res.locals.testId};
     sqldb.query(sql.questions, params, function(err, result) {
         if (ERR(err, next)) return;
-        locals = _.extend({
-            questions: result.rows,
-        }, locals);
+        res.locals.questions = result.rows;
 
-        var params = [req.locals.testId];
+        var params = {test_id: res.locals.testId};
         sqldb.queryOneRow(sql.test_stats, params, function(err, result) {
             if (ERR(err, next)) return;
-            locals = _.extend({
-                testStat: result.rows[0],
-            }, locals);
+            res.locals.testStat = result.rows[0];
 
             // FIXME: change to test_instance_duration_stats and show all instances
-            var params = [req.locals.testId];
+            var params = {test_id: res.locals.testId};
             sqldb.queryOneRow(sql.test_duration_stats, params, function(err, result) {
                 if (ERR(err, next)) return;
-                locals = _.extend({
-                    durationStat: result.rows[0],
-                }, locals);
+                res.locals.durationStat = result.rows[0];
 
                 // FIXME: change to test_instance_scores and show all instances
-                var params = [req.locals.testId];
+                var params = {test_id: res.locals.testId};
                 sqldb.query(sql.user_test_scores, params, function(err, result) {
                     if (ERR(err, next)) return;
-                    locals = _.extend({
-                        userScores: result.rows,
-                    }, locals);
+                    res.locals.userScores = result.rows;
                     
-                    res.render(path.join(__dirname, 'adminTest'), locals);
+                    res.render(path.join(__dirname, 'adminTest'), res.locals);
                 });
             });
         });
@@ -88,21 +78,21 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/:filename', function(req, res, next) {
-    if (req.params.filename == scoreStatsCsvFilename(req.locals)) {
-        var params = [req.locals.testId];
+    if (req.params.filename == scoreStatsCsvFilename(res.locals)) {
+        var params = {test_id: res.locals.testId};
         sqldb.queryOneRow(sql.test_stats, params, function(err, result) {
             if (ERR(err, next)) return;
             var testStat = result.row[0];
             var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Test', 'Title', 'TID', 'NStudents', 'Mean',
                               'Std', 'Min', 'Max', 'Median', 'NZero', 'NHundred', 'NZeroPerc', 'NHundredPerc'];
             var csvData = [
-                req.locals.course.short_name,
-                req.locals.courseInstance.short_name,
-                req.locals.testSet.name,
-                req.locals.test.number,
-                req.locals.testSet.abbrev + req.locals.test.number,
-                req.locals.test.title,
-                req.locals.test.tid,
+                res.locals.course.short_name,
+                res.locals.courseInstance.short_name,
+                res.locals.testSet.name,
+                res.locals.test.number,
+                res.locals.testSet.abbrev + res.locals.test.number,
+                res.locals.test.title,
+                res.locals.test.tid,
                 testStat.number,
                 testStat.mean,
                 testStat.std,

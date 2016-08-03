@@ -1,5 +1,5 @@
 var ERR = require('async-stacktrace');
-var _ = require('underscore');
+var _ = require('lodash');
 var path = require('path');
 var csvStringify = require('csv').stringify;
 var express = require('express');
@@ -20,25 +20,24 @@ var csv_filename = function(locals) {
 };
 
 router.get('/', function(req, res, next) {
-    var params = [req.locals.courseInstanceId];
+    res.locals.csv_filename = csv_filename(res.locals);
+    var params = {course_instance_id: res.locals.courseInstanceId};
     sqldb.query(sql.course_tests, params, function(err, result) {
         if (ERR(err, next)) return;
-        var course_tests = result.rows;
+        res.locals.course_tests = result.rows;
+
+        var params = {course_instance_id: res.locals.courseInstanceId};
         sqldb.query(sql.user_scores, params, function(err, result) {
             if (ERR(err, next)) return;
-            var user_scores = result.rows;
-            var locals = _.extend({
-                course_tests: course_tests,
-                user_scores: user_scores,
-                csv_filename: csv_filename(req.locals),
-            }, req.locals);
-            res.render('pages/adminUsers/adminUsers', locals);
+
+            res.locals.user_scores = result.rows;
+            res.render('pages/adminUsers/adminUsers', res.locals);
         });
     });
 });
 
 router.get('/:filename', function(req, res, next) {
-    var params = [req.locals.courseInstanceId];
+    var params = {course_instance_id: res.locals.courseInstanceId};
     sqldb.query(sql.course_tests, params, function(err, result) {
         if (ERR(err, next)) return;
         var course_tests = result.rows;

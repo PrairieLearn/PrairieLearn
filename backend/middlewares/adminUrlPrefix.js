@@ -1,9 +1,7 @@
 var ERR = require('async-stacktrace');
-var _ = require('underscore');
+var _ = require('lodash');
 
 module.exports = function(req, res, next) {
-    req.locals = _.extend({
-        urlPrefix: '/admin/' + req.params.courseInstanceId,
-    }, req.locals);
+    res.locals.urlPrefix = '/admin/' + req.params.courseInstanceId;
     next();
 };

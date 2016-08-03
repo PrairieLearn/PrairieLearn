@@ -1,5 +1,5 @@
 var ERR = require('async-stacktrace');
-var _ = require('underscore');
+var _ = require('lodash');
 var path = require('path');
 var async = require('async');
 var csvStringify = require('csv').stringify;
@@ -17,17 +17,17 @@ function ensureVariant(req, res, callback) {
     // if we have an existing variant that is ungraded (may have an ungraded submission)
     // then use that one, otherwise make a new one
     var params = {
-        instance_question_id: req.locals.instanceQuestion.id,
+        instance_question_id: res.locals.instanceQuestion.id,
     };
     sqldb.query(sql.get_variant, params, function(err, result) {
         if (ERR(err, callback)) return;
         if (result.rowCount == 1) {
             return callback(null, result.rows[0]);
         }
-        question.makeVariant(req.locals.question, req.locals.course, {}, function(err, variant) {
+        question.makeVariant(res.locals.question, res.locals.course, {}, function(err, variant) {
             if (ERR(err, callback)) return;
             var params = {
-                instance_question_id: req.locals.instanceQuestion.id,
+                instance_question_id: res.locals.instanceQuestion.id,
                 variant_seed: variant.vid,
                 question_params: variant.params,
                 true_answer: variant.true_answer,
@@ -56,65 +56,65 @@ function getSubmission(variantId, callback) {
 };
 
 router.get('/', function(req, res, next) {
-    if (req.locals.test.type !== 'Homework' && req.locals.test.type !== 'Game') next(); // FIXME: hack to handle 'Game'
+    if (res.locals.test.type !== 'Homework' && res.locals.test.type !== 'Game') next(); // FIXME: hack to handle 'Game'
     var questionModule;
     async.series([
         function(callback) {
             ensureVariant(req, res, function(err, variant) {
                 if (ERR(err, callback)) return;
-                req.locals.variant = variant;
+                res.locals.variant = variant;
                 callback(null);
             });
         },
         function(callback) {
-            getSubmission(req.locals.variant.id, function(err, submission) {
+            getSubmission(res.locals.variant.id, function(err, submission) {
                 if (ERR(err, callback)) return;
-                req.locals.submission = submission;
+                res.locals.submission = submission;
                 callback(null);
             });
         },
         function(callback) {
-            question.getModule(req.locals.question.type, function(err, qm) {
+            question.getModule(res.locals.question.type, function(err, qm) {
                 if (ERR(err, callback)) return;
                 questionModule = qm;
                 callback(null);
             });
         },
         function(callback) {
-            questionModule.renderExtraHeaders(req.locals.question, req.locals.course, req.locals, function(err, extraHeaders) {
+            questionModule.renderExtraHeaders(res.locals.question, res.locals.course, res.locals, function(err, extraHeaders) {
                 if (ERR(err, callback)) return;
-                req.locals.extraHeaders = extraHeaders;
+                res.locals.extraHeaders = extraHeaders;
                 callback(null);
             });
         },
         function(callback) {
-            questionModule.renderQuestion(req.locals.variant, req.locals.question, req.locals.submission, req.locals.course, req.locals, function(err, questionHtml) {
+            questionModule.renderQuestion(res.locals.variant, res.locals.question, res.locals.submission, res.locals.course, res.locals, function(err, questionHtml) {
                 if (ERR(err, callback)) return;
-                req.locals.questionHtml = questionHtml;
+                res.locals.questionHtml = questionHtml;
                 callback(null);
             });
         },
         function(callback) {
-            req.locals.postUrl = req.locals.urlPrefix + "/instanceQuestion/" + req.locals.instanceQuestion.id + "/";
-            req.locals.questionJson = JSON.stringify({
-                questionFilePath: req.locals.urlPrefix + "/instanceQuestion/" + req.locals.instanceQuestion.id + "/file",
-                question: req.locals.question,
-                course: req.locals.course,
-                courseInstance: req.locals.courseInstance,
-                variant: req.locals.variant,
+            res.locals.postUrl = res.locals.urlPrefix + "/instanceQuestion/" + res.locals.instanceQuestion.id + "/";
+            res.locals.questionJson = JSON.stringify({
+                questionFilePath: res.locals.urlPrefix + "/instanceQuestion/" + res.locals.instanceQuestion.id + "/file",
+                question: res.locals.question,
+                course: res.locals.course,
+                courseInstance: res.locals.courseInstance,
+                variant: res.locals.variant,
                 //questionInstance: questionInstance,
                 //submittedAnswer: submission ? submission.submitted_answer : null,
                 //trueAnswer: questionInstance.true_answer,
                 //feedback: grading ? grading.feedback : null,
             });
-            req.locals.prevInstanceQuestionId = null;
-            req.locals.nextInstanceQuestionId = null;
-            req.locals.video = null;
+            res.locals.prevInstanceQuestionId = null;
+            res.locals.nextInstanceQuestionId = null;
+            res.locals.video = null;
             callback(null);
         },
     ], function(err) {
         if (ERR(err, next)) return;
-        res.render(path.join(__dirname, 'userInstanceQuestionHomework'), req.locals);
+        res.render(path.join(__dirname, 'userInstanceQuestionHomework'), res.locals);
     });
 });
 

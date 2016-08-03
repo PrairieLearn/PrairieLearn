@@ -1,5 +1,5 @@
 var ERR = require('async-stacktrace');
-var _ = require('underscore');
+var _ = require('lodash');
 var path = require('path');
 var logger = require('../logger');
 var sqldb = require('../sqldb');
@@ -9,13 +9,13 @@ var sql = sqlLoader.load(path.join(__dirname, 'currentTestInstance.sql'));
 
 module.exports = function(req, res, next) {
     var params = {
-        testInstanceId: req.locals.testInstanceId ? req.locals.testInstanceId : req.params.testInstanceId,
-        userId: req.locals.user.id,
+        testInstanceId: res.locals.testInstanceId ? res.locals.testInstanceId : req.params.testInstanceId,
+        userId: res.locals.user.id,
     };
     sqldb.queryOneRow(sql.all, params, function(err, result) {
         if (ERR(err, next)) return;
-        req.locals.testInstance = result.rows[0];
-        req.locals.testId = req.locals.testInstance.test_id;
+        res.locals.testInstance = result.rows[0];
+        res.locals.testId = res.locals.testInstance.test_id;
         next();
     });
 };

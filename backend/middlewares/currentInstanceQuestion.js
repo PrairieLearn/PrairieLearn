@@ -1,5 +1,5 @@
 var ERR = require('async-stacktrace');
-var _ = require('underscore');
+var _ = require('lodash');
 var path = require('path');
 var logger = require('../logger');
 var sqldb = require('../sqldb');
@@ -13,9 +13,9 @@ module.exports = function(req, res, next) {
     };
     sqldb.queryOneRow(sql.all, params, function(err, result) {
         if (ERR(err, next)) return;
-        req.locals.instanceQuestion = result.rows[0];
-        req.locals.testInstanceId = req.locals.instanceQuestion.test_instance_id;
-        req.locals.questionId = req.locals.instanceQuestion.question_id;
+        res.locals.instanceQuestion = result.rows[0];
+        res.locals.testInstanceId = res.locals.instanceQuestion.test_instance_id;
+        res.locals.questionId = res.locals.instanceQuestion.question_id;
         next();
     });
 };

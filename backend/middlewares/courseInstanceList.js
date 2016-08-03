@@ -1,5 +1,5 @@
 var ERR = require('async-stacktrace');
-var _ = require('underscore');
+var _ = require('lodash');
 var path = require('path');
 var logger = require('../logger');
 var sqldb = require('../sqldb');
@@ -11,9 +11,7 @@ module.exports = function(req, res, next) {
     var params = [req.params.courseInstanceId];
     sqldb.query(sql.all, params, function(err, result) {
         if (ERR(err, next)) return;
-        req.locals = _.extend({
-            courseInstanceList: result.rows,
-        }, req.locals);
+        res.locals.courseInstanceList = result.rows;
         next();
     });
 };

@@ -8,17 +8,22 @@ var sqlLoader = require('../sql-loader');
 var sql = sqlLoader.load(path.join(__dirname, 'ensureUser.sql'));
 
 module.exports = function(req, res, next) {
-    var params = {uid: req.userUID};
+    var params = {
+        uid: req.userUID,
+    };
     sqldb.query(sql.get, params, function(err, result) {
         if (err) return next(err);
         if (result.rowCount == 0) {
             // the user doesn't exist so try to make it
             if (req.authUID == req.userUID) {
                 // we aren't emulating so we can proceed
-                var params = {uid: req.authUID, name: req.authName};
+                var params = {
+                    uid: req.authUID,
+                    name: req.authName,
+                };
                 sqldb.queryOneRow(sql.set, params, function(err, result) {
                     if (err) return next(err);
-                    req.locals.user = result.rows[0];
+                    res.locals.user = result.rows[0];
                     next();
                 });
             } else {
@@ -33,21 +38,24 @@ module.exports = function(req, res, next) {
                 // we aren't emulating so we can proceed
                 if (user.name == req.userName) {
                     // everything matches so just store the data
-                    req.locals.user = user;
+                    res.locals.user = user;
                     next();
                 } else {
                     // username doesn't match so update it
-                    var params = {uid: req.authUID, name: req.authName};
+                    var params = {
+                        uid: req.authUID,
+                        name: req.authName,
+                    };
                     sqldb.queryOneRow(sql.set, params, function(err, result) {
                         if (err) return next(err);
-                        req.locals.user = result.rows[0];
+                        res.locals.user = result.rows[0];
                         next();
                     });
                 }
             } else {
                 // we are an instructor emulating a user so we
                 // can't check that the username is correct
-                req.locals.user = user;
+                res.locals.user = user;
                 next();
             }
         }

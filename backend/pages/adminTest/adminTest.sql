@@ -12,14 +12,14 @@ FROM
     JOIN tests AS t ON (t.id = tq.test_id)
     JOIN course_instances AS ci ON (ci.id = t.course_instance_id)
 WHERE
-    t.id = $1
+    t.id = $test_id
     AND tq.deleted_at IS NULL
     AND q.deleted_at IS NULL
 ORDER BY z.number, z.id, tq.number;
 
 
 -- BLOCK test_stats
-SELECT * FROM test_stats WHERE id = $1;
+SELECT * FROM test_stats WHERE id = $test_id;
 
 
 -- BLOCK test_duration_stats
@@ -32,7 +32,7 @@ SELECT
     threshold_labels,
     hist
 FROM test_duration_stats AS tds
-WHERE id = $1;
+WHERE id = $test_id;
 
 
 -- BLOCK user_test_scores
@@ -45,6 +45,6 @@ CROSS JOIN users AS u
 JOIN enrollments AS e ON (e.user_id = u.id)
 JOIN user_test_scores AS uts ON (uts.user_id = u.id AND uts.test_id = t.id)
 JOIN user_test_durations AS utd ON (utd.user_id = u.id AND utd.test_id = t.id)
-WHERE t.id = $1
+WHERE t.id = $test_id
 AND t.course_instance_id = e.course_instance_id
 ORDER BY e.role DESC,u.uid,u.id;
