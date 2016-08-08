@@ -16,21 +16,21 @@ var sql = sqlLoader.load(path.join(__dirname, 'adminQuestion.sql'));
 var handle = function(req, res, next) {
     if (req.postData) {
         if (req.postData.action == 'submitQuestionAnswer') {
-            var questionInstance = req.postData.questionInstance;
+            var variant = req.postData.variant;
             submission = {
                 submitted_answer: req.postData.submittedAnswer,
             };
-            question.gradeSubmission(submission, questionInstance, res.locals.question, res.locals.course, {}, function(err, grading) {
+            question.gradeSubmission(submission, variant, res.locals.question, res.locals.course, {}, function(err, grading) {
                 if (ERR(err, next)) return;
                 question.getModule(res.locals.question.type, function(err, questionModule) {
                     if (ERR(err, next)) return;
                     question.renderScore(grading.score, function(err, scoreHtml) {
                         if (ERR(err, next)) return;
-                        questionModule.renderSubmission(questionInstance, res.locals.question, submission, grading, res.locals.course, res.locals, function(err, submissionHtml) {
+                        questionModule.renderSubmission(variant, res.locals.question, submission, grading, res.locals.course, res.locals, function(err, submissionHtml) {
                             if (ERR(err, next)) return;
-                            questionModule.renderTrueAnswer(questionInstance, res.locals.question, res.locals.course, res.locals, function(err, answerHtml) {
+                            questionModule.renderTrueAnswer(variant, res.locals.question, res.locals.course, res.locals, function(err, answerHtml) {
                                 if (ERR(err, next)) return;
-                                render(req, res, next, questionInstance, submission, grading, scoreHtml, submissionHtml, answerHtml);
+                                render(req, res, next, variant, submission, grading, scoreHtml, submissionHtml, answerHtml);
                             });
                         });
                     });
@@ -38,14 +38,14 @@ var handle = function(req, res, next) {
             });
         } else return next(error.make(400, 'unknown action', {postData: req.postData}));
     } else {
-        question.makeQuestionInstance(res.locals.question, res.locals.course, {}, function(err, questionInstance) {
+        question.makeVariant(res.locals.question, res.locals.course, {}, function(err, variant) {
             if (ERR(err, next)) return;
-            render(req, res, next, questionInstance);
+            render(req, res, next, variant);
         });
     }
 };
 
-var render = function(req, res, next, questionInstance, submission, grading, scoreHtml, submissionHtml, answerHtml) {
+var render = function(req, res, next, variant, submission, grading, scoreHtml, submissionHtml, answerHtml) {
     var params = [res.locals.questionId, res.locals.courseInstanceId];
     sqldb.queryOneRow(sql.all, params, function(err, result) {
         if (ERR(err, next)) return;
@@ -53,7 +53,7 @@ var render = function(req, res, next, questionInstance, submission, grading, sco
             if (ERR(err, next)) return;
             questionModule.renderExtraHeaders(res.locals.question, res.locals.course, res.locals, function(err, extraHeaders) {
                 if (ERR(err, next)) return;
-                questionModule.renderQuestion(questionInstance, res.locals.question, null, res.locals.course, res.locals, function(err, questionHtml) {
+                questionModule.renderQuestion(variant, res.locals.question, null, res.locals.course, res.locals, function(err, questionHtml) {
                     if (ERR(err, next)) return;
                     
                     res.locals.result = result.rows[0];
@@ -70,9 +70,9 @@ var render = function(req, res, next, questionInstance, submission, grading, sco
                         question: res.locals.question,
                         course: res.locals.course,
                         courseInstance: res.locals.courseInstance,
-                        questionInstance: questionInstance,
+                        variant: variant,
                         submittedAnswer: submission ? submission.submitted_answer : null,
-                        trueAnswer: questionInstance.true_answer,
+                        trueAnswer: variant.true_answer,
                         feedback: grading ? grading.feedback : null,
                     });
                     res.render(path.join(__dirname, 'adminQuestion'), res.locals);

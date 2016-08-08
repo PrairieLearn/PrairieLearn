@@ -657,6 +657,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use('/admin/', require('./middlewares/parsePostData'));
 app.use('/admin/:courseInstanceId', require('./middlewares/checkAdminAuth'));
 app.use('/admin/:courseInstanceId', require('./middlewares/currentCourseInstance'));
+app.use('/admin/:courseInstanceId', require('./middlewares/currentEnrollment'));
 app.use('/admin/:courseInstanceId', require('./middlewares/currentCourse'));
 app.use('/admin/:courseInstanceId', require('./middlewares/adminUrlPrefix'));
 app.use('/admin/:courseInstanceId', require('./middlewares/courseList'));

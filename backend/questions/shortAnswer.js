@@ -13,17 +13,17 @@ module.exports = {
         callback(null, null);
     },
 
-    renderQuestion: function(questionInstance, question, submission, course, locals, callback) {
+    renderQuestion: function(variant, question, submission, course, locals, callback) {
         var context = {
-            params: questionInstance.params,
+            params: variant.params,
             feedback: {},
         };
         questionHelper.renderRivetsTemplate("question.html", context, question, course, locals, callback);
     },
 
-    renderSubmission: function(questionInstance, question, submission, grading, course, locals, callback) {
+    renderSubmission: function(variant, question, submission, grading, course, locals, callback) {
         var context = {
-            params: questionInstance.params,
+            params: variant.params,
             submittedAnswer: submission.submitted_answer,
             score: grading.score,
             feedback: grading.feedback,
@@ -31,10 +31,10 @@ module.exports = {
         questionHelper.renderRivetsTemplate("submission.html", context, question, course, locals, callback);
     },
 
-    renderTrueAnswer: function(questionInstance, question, course, locals, callback) {
+    renderTrueAnswer: function(variant, question, course, locals, callback) {
         var context = {
-            params: questionInstance.params,
-            trueAnswer: questionInstance.true_answer,
+            params: variant.params,
+            trueAnswer: variant.true_answer,
         };
         questionHelper.renderRivetsTemplate("answer.html", context, question, course, locals, callback);
     },
@@ -87,27 +87,26 @@ module.exports = {
         return {score: score};
     },
 
-    gradeSubmission: function(submission, questionInstance, question, course, callback) {
+    gradeSubmission: function(submission, variant, question, course, callback) {
         var that = this;
         questionHelper.loadServer(question, course, function(err, server) {
             if (ERR(err, callback)) return;
             var grading;
             try {
-                var vid = questionInstance.vid;
-                var params = questionInstance.params;
-                var trueAnswer = questionInstance.true_answer;
+                var vid = variant.vid;
+                var params = variant.params;
+                var trueAnswer = variant.true_answer;
                 var submittedAnswer = submission.submitted_answer;
-                var options = questionInstance.options;
+                var options = variant.options;
                 if (server.gradeAnswer) {
                     grading = server.gradeAnswer(vid, params, trueAnswer, submittedAnswer, options);
                 } else {
                     grading = that.defaultGradeAnswer(vid, params, trueAnswer, submittedAnswer, options);
                 }
             } catch (e) {
-                console.log("e.stack", e.stack);
                 var data = {
                     submission: submission,
-                    questionInstance: questionInstance,
+                    variant: variant,
                     question: question,
                     course: course,
                 };

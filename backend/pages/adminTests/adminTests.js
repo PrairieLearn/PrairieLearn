@@ -26,7 +26,7 @@ router.get('/', function(req, res, next) {
         
         res.locals.rows = result.rows;
         res.locals.csvFilename = csvFilename(res.locals);
-        res.render(path.join(__dirname, 'adminTests'), locals);
+        res.render(path.join(__dirname, 'adminTests'), res.locals);
     });
 });
 

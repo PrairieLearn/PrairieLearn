@@ -8,7 +8,7 @@ var sqlLoader = require('../sql-loader');
 var sql = sqlLoader.load(path.join(__dirname, 'currentCourseInstance.sql'));
 
 module.exports = function(req, res, next) {
-    var params = [req.params.courseInstanceId];
+    var params = {course_instance_id: req.params.courseInstanceId};
     sqldb.query(sql.all, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.courseInstance = result.rows[0];

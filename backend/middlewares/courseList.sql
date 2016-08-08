@@ -10,7 +10,7 @@ FROM
     JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
     JOIN courses AS c ON (c.id = ci.course_id)
 WHERE
-    u.uid = $1
+    u.uid = $uid
     AND role >= 'TA'
     AND ci.deleted_at IS NULL
     )
