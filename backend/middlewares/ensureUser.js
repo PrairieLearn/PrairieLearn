@@ -36,7 +36,7 @@ module.exports = function(req, res, next) {
             var user = result.rows[0];
             if (req.authUID == req.userUID) {
                 // we aren't emulating so we can proceed
-                if (user.name == req.userName) {
+                if (user.name == req.authName) {
                     // everything matches so just store the data
                     res.locals.user = user;
                     next();
