@@ -95,15 +95,15 @@
             </table>
           </div>
           <p class="text-center">
-            <% if (prevInstanceQuestionId) { %>
-            <a class="btn btn-primary" href="<%= urlPrefix %>/instanceQuestion/<%= prevQuestionId %>/">Previous question</a>
+            <% if (instanceQuestion.prev_instance_question_id) { %>
+            <a class="btn btn-primary" href="<%= urlPrefix %>/instanceQuestion/<%= instanceQuestion.prev_instance_question_id %>/">Previous question</a>
             <% } else { %>
             <a class="btn btn-primary disabled">Previous question</a>
             <% } %>
           </p>
           <p class="text-center">
-            <% if (nextInstanceQuestionId) { %>
-            <a class="btn btn-primary" href="<%= urlPrefix %>/instanceQuestion/<%= nextQuestionId %>/">Nextious question</a>
+            <% if (instanceQuestion.next_instance_question_id) { %>
+            <a class="btn btn-primary" href="<%= urlPrefix %>/instanceQuestion/<%= instanceQuestion.next_instance_question_id %>/">Next question</a>
             <% } else { %>
             <a class="btn btn-primary disabled">Next question</a>
             <% } %>

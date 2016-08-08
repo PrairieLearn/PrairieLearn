@@ -31,7 +31,8 @@ FROM
 WHERE
     iq.test_instance_id = $test_instance_id
     AND tq.deleted_at IS NULL
-ORDER BY (z.number, iq.order_by, iq.id);
+ORDER BY
+    z.number, iq.order_by, iq.id;
 
 -- BLOCK get_variant
 -- find the most recent variant without a graded submission, if one exists
