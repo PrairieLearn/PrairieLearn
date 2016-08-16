@@ -39,7 +39,7 @@ function ensureVariant(req, res, callback) {
             });
         });
     });
-};
+}
 
 function getSubmission(variantId, callback) {
     var params = {
@@ -53,7 +53,7 @@ function getSubmission(variantId, callback) {
             return callback(null, null);
         }
     });    
-};
+}
 
 router.get('/', function(req, res, next) {
     if (res.locals.test.type !== 'Homework' && res.locals.test.type !== 'Game') next(); // FIXME: hack to handle 'Game'

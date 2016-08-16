@@ -699,7 +699,10 @@ app.use('/pl', require('./pages/userHome/userHome'));
 app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/tests');} next();});
 app.use('/pl/:courseInstanceId/tests', require('./pages/userTests/userTests'));
 app.use('/pl/:courseInstanceId/test/:testId', require('./pages/userTest/userTest'));
-app.use('/pl/:courseInstanceId/testInstance/:testInstanceId', require('./pages/userTestInstance/userTestInstance'));
+app.use('/pl/:courseInstanceId/testInstance/:testInstanceId', [
+    // following handlers will call next() if they don't match the correct test type
+    require('./pages/userTestInstanceHomework/userTestInstanceHomework'),
+]);
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', [
     // following handlers will call next() if they don't match the correct test type
     require('./pages/userInstanceQuestionHomework/userInstanceQuestionHomework'),
