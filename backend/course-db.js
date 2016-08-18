@@ -97,7 +97,7 @@ module.exports.checkInfoValid = function(idName, info, infoFile) {
         } else {
             info.semester = config.semester;
         }
-        logger.warn(infoFile + ': "semester" is missing, setting to "' + info.semester + '".');
+        //logger.warn(infoFile + ': "semester" is missing, setting to "' + info.semester + '".');
     }
 
     // look for exams without credit assigned and patch it in to all access rules
