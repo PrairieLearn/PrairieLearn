@@ -147,6 +147,33 @@ define(["mersenne", "underscore", "PrairieGeom"], function(mersenne, _, PrairieG
         return a;
     };
 
+    /** Return a random array with unique integer elements between min and max (inclusive).
+
+        @param {Number} n (Optional, default 3) The length of the array.
+        @param {Number} min (Optional, default 0) The minimum possible value.
+        @param {Number} max (Optional, default 10) The maximum possible value.
+        @param {Number} step (Optional, default 1) The step incrememnt for possible values.
+        @return {Number} An array of unique random numbers.
+    */
+    RandomGenerator.prototype.randArrayUniqueInt = function(n, min, max, step) {
+        n = (n === undefined) ? 3 : n;
+        var a = [];
+        while (a.length < n) {
+            var e = this.randInt(min, max, step);
+            var duplicate = false;
+            for (var i = 0; i < n; i++) {
+                if (a[i] == e) {
+                    duplicate = true;
+                    break;
+                }
+            }
+            if (!duplicate) {
+                a.push(e);
+            }
+        }
+        return a;
+    };
+
     /** Return a random element from an array.
 
         @param {Array} arr The array of options.

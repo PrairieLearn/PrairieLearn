@@ -74,8 +74,8 @@ requirejs.config({
     },
 });
 
-requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'moment-timezone', 'PrairieRole', 'NavView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestDetailView', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'UserView', 'SyncModel', 'SyncView', 'ErrorsView', 'spinController', 'jquery-ui', 'jquery.jsPlumb', 'ace/ace'],
-function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   moment,            PrairieRole,   NavView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestDetailView,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   UserView,   SyncModel,   SyncView,   ErrorsView,   spinController, jqueryUi, jsPlumb, ace) {
+requirejs(['jquery', 'jquery.cookie', 'underscore', 'async', 'backbone', 'bootstrap', 'mustache', 'moment-timezone', 'PrairieRole', 'PrairieRandom', 'NavView', 'QuestionDataModel', 'QuestionView', 'TestInstanceCollection', 'TestDetailView', 'TestInstanceView', 'TestModel', 'StatsModel', 'StatsView', 'AssessView', 'UserView', 'SyncModel', 'SyncView', 'ErrorsView', 'spinController', 'jquery-ui', 'jquery.jsPlumb', 'ace/ace'],
+function(   $,        jqueryCookie,    _,            async,   Backbone,   bootstrap,   Mustache,   moment,            PrairieRole,   PrairieRandom,   NavView,   QuestionDataModel,   QuestionView,   TestInstanceCollection,   TestDetailView,   TestInstanceView,   TestModel,   StatsModel,   StatsView,   AssessView,   UserView,   SyncModel,   SyncView,   ErrorsView,   spinController,   jqueryUi,    jsPlumb,          ace) {
 
     var QuestionModel = Backbone.Model.extend({
         idAttribute: "qid"
@@ -364,6 +364,30 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
+
+                if (this.model.get("userRole") === "Student" && test.get("shuffleQuestions") && !tInstance.get("shuffled")) {
+                    var uniqueIdKey = tInstance.get("tid");
+                    var uniqueIdRand = new PrairieRandom.RandomGenerator(uniqueIdKey);
+                    var shuffleKey = this.model.get("userUID") + "_" + tInstance.get("tid");
+                    var shuffleRand = new PrairieRandom.RandomGenerator(shuffleKey);
+
+                    var questions = tInstance.get("questions");
+                    var uniqueIds = uniqueIdRand.randArrayUniqueInt(questions.length, 100, 999, 1);
+                    var shuffledIndices = shuffleRand.randPerm(questions.length);
+                    var shuffledQuestions = new Array();
+                    var shuffledQids = new Array();
+                    var shuffledUniqueIds = new Array();
+                    _(questions).each(function(question, index) {
+                        shuffledQuestions.push(questions[shuffledIndices[index]]);
+                        shuffledQids.push(shuffledQuestions[index]["qid"]);
+                        shuffledUniqueIds.push(uniqueIds[shuffledIndices[index]]);
+                    });
+                    tInstance.set("questions", shuffledQuestions);
+                    tInstance.set("qids", shuffledQids);
+                    tInstance.set("uniqueIds", uniqueIds);
+                    tInstance.set("shuffled", true);
+                }
+
                 view = new TestInstanceView({model: tInstance, test: test, appModel: this.model, store: this.store});
                 break;
             case "testDetail":
@@ -379,6 +403,30 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 var tInstance = this.tInstances.get(tiid);
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
+
+                if (this.model.get("userRole") === "Student" && test.get("shuffleQuestions") && !tInstance.get("shuffled")) {
+                    var uniqueIdKey = tInstance.get("tid");
+                    var uniqueIdRand = new PrairieRandom.RandomGenerator(uniqueIdKey);
+                    var shuffleKey = this.model.get("userUID") + "_" + tInstance.get("tid");
+                    var shuffleRand = new PrairieRandom.RandomGenerator(shuffleKey);
+
+                    var questions = tInstance.get("questions");
+                    var uniqueIds = uniqueIdRand.randArrayUniqueInt(questions.length, 100, 999, 1);
+                    var shuffledIndices = shuffleRand.randPerm(questions.length);
+                    var shuffledQuestions = new Array();
+                    var shuffledQids = new Array();
+                    var shuffledUniqueIds = new Array();
+                    _(questions).each(function(question, index) {
+                        shuffledQuestions.push(questions[shuffledIndices[index]]);
+                        shuffledQids.push(shuffledQuestions[index]["qid"]);
+                        shuffledUniqueIds.push(uniqueIds[shuffledIndices[index]]);
+                    });
+                    tInstance.set("questions", shuffledQuestions);
+                    tInstance.set("qids", shuffledQids);
+                    tInstance.set("uniqueIds", uniqueIds);
+                    tInstance.set("shuffled", true);
+                }
+
                 var qid;
                 if (tInstance.has("qids"))
                     qid = tInstance.get("qids")[qIndex];
