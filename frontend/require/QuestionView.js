@@ -13,6 +13,7 @@ define(['underscore', 'backbone', 'mustache', 'TestFactory', 'text!QuestionView.
             this.listenTo(this.model, "change:title", this.render);
             this.listenTo(this.test, "change:helper", this.render);
             this.listenTo(this.model, "graded", this.test.fetch.bind(this.test));
+            this.listenTo(this.model, "change:dirtyData", this.updateState);
             if (this.tInstance) {
                 this.listenTo(this.model, "graded", this.tInstance.fetch.bind(this.tInstance));
             }
@@ -21,6 +22,8 @@ define(['underscore', 'backbone', 'mustache', 'TestFactory', 'text!QuestionView.
 
         render: function() {
             this.$el.html(questionViewTemplate);
+
+            this.updateState();
 
             var TestSidebarView;
             if (this.tInstance) {
@@ -43,6 +46,14 @@ define(['underscore', 'backbone', 'mustache', 'TestFactory', 'text!QuestionView.
             this.$("#qsubmit").html(this.questionSubmitView.el);
             this.$("#qgrading").html(this.questionGradingView.el);
             this.$("#qanswer").html(this.questionAnswerView.el);
+        },
+
+        updateState: function() {
+            if (this.model.get("dirtyData")) {
+                this.$el.addClass("dirty");
+            } else {
+                this.$el.removeClass("dirty");
+            }
         },
 
         close: function() {

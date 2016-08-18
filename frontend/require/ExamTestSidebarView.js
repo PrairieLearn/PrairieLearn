@@ -48,15 +48,15 @@ define(["underscore", "backbone", "mustache", "ExamTestHelper", "text!ExamTestSi
                 data.nCorrect = this.tInstance.get("score");
                 data.correctPercentage = (data.nCorrect / data.nQuestions * 100).toFixed(0);
                 data.showQuestionScore = false;
-                data.questionGrade = '<span class="label label-default">not answered</span>';
+                data.questionGrade = '<span class="label answer-none">not answered</span>';
                 if (_(submissionsByQid).has(qid)) {
                     var submission = submissionsByQid[qid];
                     data.showQuestionScore = true;
                     data.questionScore = (submission.score * 100).toFixed(0);
                     if (submission.score >= 0.5)
-                        data.questionGrade = '<span class="label label-success">correct</span>';
+                        data.questionGrade = '<span class="label answer-correct">correct</span>';
                     else
-                        data.questionGrade = '<span class="label label-danger">incorrect</span>';
+                        data.questionGrade = '<span class="label answer-incorrect">incorrect</span>';
                 }
             }
 

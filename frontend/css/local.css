@@ -202,3 +202,50 @@ body table.no-border th {
     stroke: #d43f3a;
     fill: #d9534f;
 }
+
+.answer-not-saved {
+    background-color: #f0ad4e; /* label-warning */
+}
+
+.answer-saving {
+    background-color: #5bc0de; /* label-info */
+}
+
+.answer-save-failed {
+    background-color: #d9534f; /* label-danger */
+}
+
+.answer-saved {
+    background-color: #337ab7; /* label-primary */
+}
+
+.answer-none {
+    background-color: #777; /* label-default */
+}
+
+.answer-incorrect {
+    background-color: #d9534f; /* label-danger */
+}
+
+.answer-correct {
+    background-color: #5cb85c; /* label-correct */
+}
+
+#qbody .panel-heading {
+    -webkit-transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+            transition: background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+.dirty #qbody .panel-heading {
+    background-color: #f0ad4e;
+    border-color: #f0ad4e;
+    color: #fff;
+    font-weight: bold;
+}
+
+#qbody .panel {
+    -webkit-transition: border-color 0.2s;
+            transition: border-color 0.2s;
+}
+.dirty #qbody .panel {
+    border-color: #f0ad4e;
+}

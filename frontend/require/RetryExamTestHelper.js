@@ -14,11 +14,11 @@ define(function() {
             else
                 data.availablePoints = 0;
             if (submission && submission.graded && submission.correct) {
-                data.questionStatus = '<span class="label label-success">correct</span>';
+                data.questionStatus = '<span class="label answer-correct">correct</span>';
                 data.points = question.awardedPoints;
                 data.availablePoints = '';
             } else {
-                data.questionStatus = '<span class="label label-danger">incorrect</span>';
+                data.questionStatus = '<span class="label answer-incorrect">incorrect</span>';
                 data.points = 0;
                 data.availablePoints = '';
             }
@@ -34,28 +34,28 @@ define(function() {
             data.availablePoints = 0;
 
         if (submission === undefined) {
-            data.questionStatus = '<span class="label label-default">no answer</span>';
+            data.questionStatus = '<span class="label answer-none">no answer</span>';
             return data;
         }
         if (submission.graded && submission.correct) {
-            data.questionStatus = '<span class="label label-success">correct</span>';
+            data.questionStatus = '<span class="label answer-correct">correct</span>';
             data.points = question.awardedPoints;
             data.availablePoints = '';
             data.questionOpen = false;
             return data;
         }
         if (data.remainingAttempts <= 0) {
-            data.questionStatus = '<span class="label label-danger">incorrect</span>';
+            data.questionStatus = '<span class="label answer-incorrect">incorrect</span>';
             data.points = 0;
             data.availablePoints = '';
             data.questionOpen = false;
             return data;
         }
         if (submission.graded && !submission.correct) {
-            data.questionStatus = '<span class="label label-danger">incorrect</span>';
+            data.questionStatus = '<span class="label answer-incorrect">incorrect</span>';
             return data;
         }
-        data.questionStatus = '<span class="label label-primary">saved</span>';
+        data.questionStatus = '<span class="label answer-saved">saved</span>';
         return data;
     };
     

@@ -63,17 +63,17 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "ExamTestHelper
                 };
                 if (data.open) {
                     if (_(submissionsByQid).has(qid))
-                        entry.saveStatus = '<span class="label label-success">saved</span>';
+                        entry.saveStatus = '<span class="label answer-saved">saved</span>';
                     else
-                        entry.saveStatus = '<span class="label label-danger">not saved</span>';
+                        entry.saveStatus = '<span class="label answer-not-saved">not saved</span>';
                 } else {
-                    entry.grade = '<span class="label label-default">not answered</span>';
+                    entry.grade = '<span class="label answer-none">not answered</span>';
                     if (_(submissionsByQid).has(qid)) {
                         var submission = submissionsByQid[qid];
                         if (submission.score >= 0.5)
-                            entry.grade = '<span class="label label-success">correct</span>';
+                            entry.grade = '<span class="label answer-correct">correct</span>';
                         else
-                            entry.grade = '<span class="label label-danger">incorrect</span>';
+                            entry.grade = '<span class="label answer-incorrect">incorrect</span>';
                     }
                 }
                 data.questionList.push(entry);
