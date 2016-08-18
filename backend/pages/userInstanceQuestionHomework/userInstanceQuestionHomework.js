@@ -55,8 +55,9 @@ function getSubmission(variantId, callback) {
     });    
 }
 
-router.get('/', function(req, res, next) {
+function handle(req, res, next) {
     if (res.locals.test.type !== 'Homework' && res.locals.test.type !== 'Game') next(); // FIXME: hack to handle 'Game'
+    
     var questionModule;
     async.series([
         function(callback) {
@@ -117,5 +118,8 @@ router.get('/', function(req, res, next) {
         res.render(path.join(__dirname, 'userInstanceQuestionHomework'), res.locals);
     });
 });
+
+router.get('/', handle);
+router.post('/', handle);
 
 module.exports = router;
