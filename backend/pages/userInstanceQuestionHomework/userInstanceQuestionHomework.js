@@ -117,7 +117,7 @@ function handle(req, res, next) {
         if (ERR(err, next)) return;
         res.render(path.join(__dirname, 'userInstanceQuestionHomework'), res.locals);
     });
-});
+}
 
 router.get('/', handle);
 router.post('/', handle);
