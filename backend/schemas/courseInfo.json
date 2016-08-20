@@ -27,13 +27,11 @@
         },
         "currentCourseInstance": {
             "description": "The current active course instance. Must be a subdirectory of courseInstances/",
-            "type": "string",
-            "required": true
+            "type": "string"
         },
         "testSets": {
             "description": "Test sets.",
             "type": "array",
-            "required": true,
             "items": {
                 "description": "A single test set description.",
                 "type": "object",
@@ -63,7 +61,6 @@
         "topics": {
             "description": "Question topics (visible to students).",
             "type": "array",
-            "required": true,
             "items": {
                 "description": "A single test set description.",
                 "type": "object",
@@ -87,7 +84,6 @@
         "tags": {
             "description": "Question tags (not visible to students).",
             "type": "array",
-            "required": true,
             "items": {
                 "description": "A single test set description.",
                 "type": "object",
