@@ -1068,6 +1068,10 @@ app.get("/clientFiles/*", function(req, res) {
     });
 });
 
+app.get("/text/:filename", function(req, res) {
+    res.sendFile(req.params.filename, {root: path.join(config.courseDir, "text")});
+});
+
 app.get("/users", function(req, res) {
     if (!db.uCollect) {
         return sendError(res, 500, "Do not have access to the users database collection");
@@ -3003,10 +3007,6 @@ if (config.localFileserver) {
 
     app.get("/css/:filename", function(req, res) {
         res.sendFile(path.join("css", req.params.filename), {root: config.frontendDir});
-    });
-
-    app.get("/text/:filename", function(req, res) {
-        res.sendFile(path.join("text", req.params.filename), {root: config.frontendDir});
     });
 
     app.get("/img/:filename", function(req, res) {
