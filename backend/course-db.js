@@ -53,7 +53,7 @@ module.exports.loadCourseInfo = function(courseInfo, courseDir, callback) {
         courseInfo.currentCourseInstance = info.currentCourseInstance;
         courseInfo.questionsDir = path.join(courseDir, "questions");
         courseInfo.courseInstancesDir = path.join(courseDir, "courseInstances");
-        courseInfo.testsDir = path.join(courseInfo.courseInstancesDir, info.currentCourseInstance, "tests");
+        courseInfo.testsDir = path.join(courseDir, "tests");
         courseInfo.testSets = info.testSets;
         courseInfo.topics = info.topics;
         courseInfo.tags = info.tags;
@@ -111,8 +111,7 @@ module.exports.checkInfoValid = function(idName, info, infoFile, courseInfo) {
 
     // due date is deprecated
     if (idName == "tid" && _(info).has('options') && _(info.options).has('dueDate')) {
-        logger.error(infoFile + ': "options.dueDate" is deprecated.');
-        retVal = false;
+        logger.warn(infoFile + ': "options.dueDate" is deprecated. Use "allowAccess" instead.');
     }
 
     // check dates in allowAccess
@@ -135,7 +134,7 @@ module.exports.checkInfoValid = function(idName, info, infoFile, courseInfo) {
     
     // check tests all have a valid testSet
     if (idName == "tid") {
-        if (!_(validTestSets).contains(info.set)) {
+        if (courseInfo.testSets && !_(validTestSets).contains(info.set)) {
             logger.error(infoFile + ': invalid "set": "' + info.set + '" (must be a "name" of the "testSets" listed in courseInfo.json)');
             retVal = false;
         }
@@ -143,7 +142,7 @@ module.exports.checkInfoValid = function(idName, info, infoFile, courseInfo) {
 
     // check all questions have valid topics and tags
     if (idName == "qid") {
-        if (!_(validTopics).contains(info.topic)) {
+        if (courseInfo.topics && !_(validTopics).contains(info.topic)) {
             logger.error(infoFile + ': invalid "topic": "' + info.topic + '" (must be a "name" of the "topics" listed in courseInfo.json)');
             retVal = false;
         }
@@ -157,7 +156,7 @@ module.exports.checkInfoValid = function(idName, info, infoFile, courseInfo) {
         }
         if (_(info).has('tags')) {
             _(info.tags).each(function(tag) {
-                if (!_(validTags).contains(tag)) {
+                if (courseInfo.tags && !_(validTags).contains(tag)) {
                     logger.error(infoFile + ': invalid "tags": "' + tag + '" (must be a "name" of the "tags" listed in courseInfo.json)');
                     retVal = false;
                 }
@@ -223,9 +222,6 @@ module.exports.load = function(callback) {
     async.series([
         function(callback) {
             that.loadCourseInfo(that.courseInfo, config.courseDir, callback);
-        },
-        function(callback) {
-            that.loadCourseInstanceInfo(that.courseInfo, config.courseDir, that.courseInfo.currentCourseInstance, callback);
         },
         function(callback) {
             _(that.questionDB).mapObject(function(val, key) {delete that.questionDB[key];});
