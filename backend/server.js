@@ -1,13 +1,10 @@
-var ERR = require('async-stacktrace');
 var logger = require("./logger");
 var config = require("./config");
 var db = require("./db");
-var sqldb = require("./sqldb");
 
 var _ = require("underscore");
 var fs = require("fs");
 var path = require("path");
-var favicon = require('serve-favicon');
 var async = require("async");
 var moment = require("moment-timezone");
 var Promise = require('bluebird');
@@ -35,7 +32,6 @@ var numeric = require("numeric");
 var csvStringify = require('csv').stringify;
 var archiver = require('archiver');
 var jStat = require("jStat").jStat;
-var syncFromDisk = require('./sync/syncFromDisk');
 var child_process = require("child_process");
 var PrairieStats = requireFrontend("PrairieStats");
 var PrairieModel = requireFrontend("PrairieModel");
@@ -366,7 +362,6 @@ app.use(function(req, res, next) {
             || req.path == "/index.html"
             || req.path == "/version.js"
             || req.path == "/config.js"
-            || req.path == "/favicon.png"
             || req.path == "/favicon.ico"
             || /^\/require\//.test(req.path)
             || /^\/css\//.test(req.path)
@@ -381,25 +376,6 @@ app.use(function(req, res, next) {
 
     // bypass auth for local /auth serving
     if (config.authType === 'none' && req.path == "/auth") {
-        next();
-        return;
-    }
-    
-    // bypass auth for local /admin/ and /pl/ serving
-    if (config.authType === 'none'
-        && (/^\/admin/.test(req.path)
-            || /^\/pl/.test(req.path)
-            || /^\/images\//.test(req.path)
-            || /^\/fonts\//.test(req.path)
-            || /^\/javascripts\//.test(req.path)
-            || /^\/localscripts\//.test(req.path)
-            || /^\/stylesheets\//.test(req.path))) {
-        req.authUID = 'user1@illinois.edu';
-        req.authName = 'Test User';
-        req.authRole = 'Superuser';
-        req.mode = 'Public';
-        req.userUID = 'user1@illinois.edu';
-        req.userRole = 'Superuser';
         next();
         return;
     }
@@ -633,89 +609,6 @@ if (config.authType === 'eppn') {
         res.json({ "uid": req.authUID });
     });
 }
-
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-// START OF express-generator section 1
-
-// view engine setup
-app.set('views', __dirname);
-app.set('view engine', 'ejs');
-
-app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
-
-// static serving of all subdirectories of "./public"
-app.use(express.static(path.join(__dirname, 'public')));
-
-/*
-  Middleware handlers. For each route we do several things:
-  1. Check authorization.
-  2. Check that the implied nesting is true (e.g., that the test is inside the course).
-  3. Store URL parameters and other information in the req.locals object for templates.
-*/
-app.use('/admin/', require('./middlewares/parsePostData'));
-app.use('/admin/:courseInstanceId', require('./middlewares/checkAdminAuth'));
-app.use('/admin/:courseInstanceId', require('./middlewares/currentCourseInstance'));
-app.use('/admin/:courseInstanceId', require('./middlewares/currentEnrollment'));
-app.use('/admin/:courseInstanceId', require('./middlewares/currentCourse'));
-app.use('/admin/:courseInstanceId', require('./middlewares/adminUrlPrefix'));
-app.use('/admin/:courseInstanceId', require('./middlewares/courseList'));
-app.use('/admin/:courseInstanceId', require('./middlewares/courseInstanceList'));
-app.use('/admin/:courseInstanceId/test/:testId', require('./middlewares/currentTest'));
-app.use('/admin/:courseInstanceId/question/:questionId', require('./middlewares/currentQuestion'));
-
-// Actual route handlers.
-app.use('/admin', require('./pages/adminHome/adminHome'));
-// redirect class page to tests page
-app.use(function(req, res, next) {if (/\/admin\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/tests');} next();});
-app.use('/admin/:courseInstanceId/tests', require('./pages/adminTests/adminTests'));
-app.use('/admin/:courseInstanceId/test/:testId', require('./pages/adminTest/adminTest'));
-app.use('/admin/:courseInstanceId/users', require('./pages/adminUsers/adminUsers'));
-app.use('/admin/:courseInstanceId/questions', require('./pages/adminQuestions/adminQuestions'));
-app.use('/admin/:courseInstanceId/question/:questionId', require('./pages/adminQuestion/adminQuestion'));
-app.use('/admin/:courseInstanceId/question/:questionId/file', require('./pages/questionFile/questionFile'));
-app.use('/admin/:courseInstanceId/question/:questionId/text', require('./pages/questionText/questionText'));
-
-// Middleware for user pages
-app.use('/pl/', require('./middlewares/parsePostData'));
-app.use('/pl/', require('./middlewares/ensureUser'));
-app.use('/pl/', require('./middlewares/userCourseInstanceList'));
-app.use('/pl/:courseInstanceId', require('./middlewares/ensureEnrollment'));
-app.use('/pl/:courseInstanceId', require('./middlewares/currentCourseInstance'));
-app.use('/pl/:courseInstanceId', require('./middlewares/currentCourse'));
-app.use('/pl/:courseInstanceId', require('./middlewares/userUrlPrefix'));
-app.use('/pl/:courseInstanceId/test/:testId', require('./middlewares/currentTest'));
-app.use('/pl/:courseInstanceId/testInstance/:testInstanceId', require('./middlewares/currentTestInstance'));
-app.use('/pl/:courseInstanceId/testInstance/:testInstanceId', require('./middlewares/currentTest'));
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentInstanceQuestion'));
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentTestInstance'));
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentTest'));
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentQuestion'));
-
-// Route handlers for user pages
-app.use('/pl', require('./pages/userHome/userHome'));
-// redirect class page to tests page
-app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/tests');} next();});
-app.use('/pl/:courseInstanceId/tests', require('./pages/userTests/userTests'));
-app.use('/pl/:courseInstanceId/test/:testId', require('./pages/userTest/userTest'));
-app.use('/pl/:courseInstanceId/testInstance/:testInstanceId', [
-    // following handlers will call next() if they don't match the correct test type
-    require('./pages/userTestInstanceHomework/userTestInstanceHomework'),
-]);
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', [
-    // following handlers will call next() if they don't match the correct test type
-    require('./pages/userInstanceQuestionHomework/userInstanceQuestionHomework'),
-    //require('./pages/userInstanceQuestionExam/userInstanceQuestionExam'),
-]);
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId/file', require('./pages/questionFile/questionFile'));
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId/text', require('./pages/questionText/questionText'));
-
-
-// END OF express-generator section 1
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
 
 var getGitDescribe = function(callback) {
     var cmd = 'git';
@@ -3085,58 +2978,6 @@ if (config.localFileserver) {
     });
 }
 
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-// START OF express-generator section 2
-
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-    var err = new Error('Not Found');
-    err.status = 404;
-    err.data = {
-        url: req.url,
-        method: req.method,
-        authUID: req.authUID,
-        userUID: req.userUID,
-        mode: req.mode
-    };
-    next(err);
-});
-
-// error handlers
-
-util = require('util');
-// development error handler
-// will print stacktrace
-if (app.get('env') === 'development') {
-    app.use(function(err, req, res, next) {
-        res.status(err.status || 500);
-        logger.error("Error page", {msg: err.message, data: err.data, stack: err.stack});
-        res.render('pages/error/error', {
-            message: err.message,
-            error: err,
-            data: err.data,
-        });
-    });
-}
-
-// production error handler
-// no stacktraces leaked to user
-app.use(function(err, req, res, next) {
-    res.status(err.status || 500);
-    logger.error("Error page", {msg: err.message, data: err.data, stack: err.stack});
-    res.render('pages/error/error', {
-        message: err.message,
-        error: {}
-    });
-});
-
-// END OF express-generator section 2
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-///////////////////////////////////////////////////////////////////////////////
-
 var submissionsPerHour = function() {
     if (!db.sCollect) {
         logger.error("Do not have access to the 'submissions' database collection");
@@ -3419,72 +3260,12 @@ var loadAndInitCourseData = function(callback) {
     });
 };
 
-var syncTestsMongo = require('./sync/fromMongo/tests');
-var syncUsers = require('./sync/fromMongo/users');
-var syncTestInstances = require('./sync/fromMongo/testInstances');
-var syncQuestionInstances = require('./sync/fromMongo/questionInstances');
-var syncSubmissions = require('./sync/fromMongo/submissions');
-var syncAccesses = require('./sync/fromMongo/accesses');
-var syncQuestionViews = require('./sync/fromMongo/questionViews');
-
-var syncMongoToSQL = function(callback) {
-    logger.infoOverride("Starting sync of Mongo to SQL");
-    async.series([
-        function(callback) {logger.infoOverride("Syncing tests from Mongo to SQL DB"); callback(null);},
-        syncTestsMongo.sync.bind(null, courseDB.courseInfo),
-        function(callback) {logger.infoOverride("Syncing users from Mongo to SQL DB"); callback(null);},
-        syncUsers.sync.bind(null, courseDB.courseInfo),
-        function(callback) {logger.infoOverride("Syncing test instances from Mongo to SQL DB"); callback(null);},
-        syncTestInstances.sync.bind(null, courseDB.courseInfo),
-        function(callback) {logger.infoOverride("Syncing question instances from Mongo to SQL DB"); callback(null);},
-        syncQuestionInstances.sync.bind(null, courseDB.courseInfo),
-        function(callback) {logger.infoOverride("Syncing submissions from Mongo to SQL DB"); callback(null);},
-        syncSubmissions.sync.bind(null, courseDB.courseInfo),
-        function(callback) {logger.infoOverride("Syncing accesses from Mongo to SQL DB"); callback(null);},
-        syncAccesses.sync.bind(null, courseDB.courseInfo),
-        function(callback) {logger.infoOverride("Syncing questionViews from Mongo to SQL DB"); callback(null);},
-        syncQuestionViews.sync.bind(null, courseDB.courseInfo),
-    ], function(err) {
-        if (err) return callback(err);
-        logger.infoOverride("Completed sync of Mongo to SQL");
-        callback(null);
-    });
-};
-
 async.series([
     db.init,
     //function(callback) {models.init(); callback(null);},
-    sqldb.init,
     loadAndInitCourseData,
-    // FIXME: for dev we start server before sync tasks,
-    // this should be re-ordered for prod
     startServer,
     startIntervalJobs,
-    // FIXME: we are short-circuiting this for development,
-    // for prod these tasks should be back inline
-    function(callback) {
-        callback(null);
-        async.eachSeries(config.courseDirs || [], function(courseDir, callback) {
-            syncFromDisk.syncDiskToSql(courseDir, callback);
-        }, function(err, data) {
-            if (err) {
-                logger.error("Error syncing SQL DB:", err, data);
-            } else {
-                logger.infoOverride("Completed sync SQL DB");
-            }
-        });
-
-        /*        
-        async.series([
-            syncDiskToSQL,
-            syncMongoToSQL,
-        ], function(err, data) {
-            if (err) {
-                logger.error("Error syncing SQL DB:", err, data);
-            }
-        });
-        */
-    },
 ], function(err, data) {
     if (err) {
         logger.error("Error initializing PrairieLearn server:", err, data);
@@ -3494,5 +3275,3 @@ async.series([
         logger.infoOverride("PrairieLearn server ready");
     }
 });
-
-//module.exports = app;
