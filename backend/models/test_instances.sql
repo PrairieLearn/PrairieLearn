@@ -19,7 +19,7 @@ ALTER TABLE test_instances ALTER COLUMN auth_user_id DROP NOT NULL;
 
 DO $$
     BEGIN
-        ALTER TABLE submissions ADD COLUMN points DOUBLE PRECISION;
+        ALTER TABLE test_instances ADD COLUMN points DOUBLE PRECISION;
     EXCEPTION
         WHEN duplicate_column THEN -- do nothing
     END;
@@ -27,7 +27,7 @@ $$;
 
 DO $$
     BEGIN
-        ALTER TABLE submissions ADD COLUMN max_points DOUBLE PRECISION;
+        ALTER TABLE test_instances ADD COLUMN max_points DOUBLE PRECISION;
     EXCEPTION
         WHEN duplicate_column THEN -- do nothing
     END;
@@ -35,7 +35,7 @@ $$;
 
 DO $$
     BEGIN
-        ALTER TABLE submissions ADD COLUMN score_perc INTEGER;
+        ALTER TABLE test_instances ADD COLUMN score_perc INTEGER;
     EXCEPTION
         WHEN duplicate_column THEN -- do nothing
     END;

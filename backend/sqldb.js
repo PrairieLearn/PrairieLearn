@@ -36,7 +36,7 @@ var submissions = fs.readFileSync('./models/submissions.sql', 'utf8');
 var testStateLogs = fs.readFileSync('./models/test_state_logs.sql', 'utf8');
 var testScoreLogs = fs.readFileSync('./models/test_score_logs.sql', 'utf8');
 var accesseLogs = fs.readFileSync('./models/access_logs.sql', 'utf8');
-var questionViewLogs = fs.readFileSync('./models/question_view_logs.sql', 'utf8');
+var variantViewLogs = fs.readFileSync('./models/variant_view_logs.sql', 'utf8');
 var gradingLogs = fs.readFileSync('./models/grading_logs.sql', 'utf8');
 var questionScoreLogs = fs.readFileSync('./models/question_score_logs.sql', 'utf8');
 
@@ -104,7 +104,7 @@ module.exports = {
             testStateLogs,
             testScoreLogs,
             accesseLogs,
-            questionViewLogs,
+            variantViewLogs,
             gradingLogs,
             questionScoreLogs,
 

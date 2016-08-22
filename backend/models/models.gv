@@ -30,7 +30,7 @@ digraph partmc_modules {
     grading_log [style=filled, fillcolor=white]
     test_score_log [style=filled, fillcolor=white]
     question_score_log [style=filled, fillcolor=white]
-    question_view_log [style=filled, fillcolor=white]
+    variant_view_log [style=filled, fillcolor=white]
     test_view_log [style=filled, fillcolor=white]
 
     test_access_rule -> { test }
@@ -55,7 +55,7 @@ digraph partmc_modules {
     grading_log -> { submission }
     test_score_log -> { test_instance }
     question_score_log -> { instance_question }
-    question_view_log -> { instance_question }
+    variant_view_log -> { variant }
     test_view_log -> { test_instance }
 
     subgraph cluster_legend {
