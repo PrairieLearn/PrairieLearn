@@ -35,6 +35,18 @@
             "description": "The address for connecting to the database.",
             "type": "string"
         },
+        "postgresqlUser": {
+            "description": "The user for connecting to the PostgreSQL database.",
+            "type": "string"
+        },
+        "postgresqlDatabase": {
+            "description": "The database for connecting to the PostgreSQL database.",
+            "type": "string"
+        },
+        "postgresqlHost": {
+            "description": "The host for connecting to the PostgreSQL database.",
+            "type": "string"
+        },
         "logFilename": {
             "description": "Filename to use for server logging.",
             "type": "string"

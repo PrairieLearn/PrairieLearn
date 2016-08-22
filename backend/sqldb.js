@@ -5,6 +5,7 @@ var pg = require('pg');
 
 var error = require('./error');
 var config = require('./config');
+var logger = require('./logger');
 
 var enumMode = fs.readFileSync('./models/enum_mode.sql', 'utf8');
 var enumQuestionType = fs.readFileSync('./models/enum_question_type.sql', 'utf8');
@@ -58,8 +59,23 @@ var testsForQuestion = fs.readFileSync('./sprocs/tests_for_question.sql', 'utf8'
 var tagsForQuestion = fs.readFileSync('./sprocs/tags_for_question.sql', 'utf8');
 
 module.exports = {
+    pool: null,
+
     init: function(callback) {
         var that = module.exports;
+
+        var pgConfig = {
+            user: config.postgresqlUser,
+            database: config.postgresqlDatabase,
+            host: config.postgresqlHost,
+            max: 10,
+            idleTimeoutMillis: 30000,
+        };
+        that.pool = new pg.Pool(pgConfig);
+        that.pool.on('error', function(err, client) {
+            logger.error(error.makeWithData('idle client error', {message: err.message, stack: err.stack}));
+        });
+
         async.eachSeries([
             // models
             enumMode,
@@ -146,7 +162,7 @@ module.exports = {
     },
 
     getClient: function(callback) {
-        pg.connect(config.sdbAddress, function(err, client, done) {
+        that.pool.connect(function(err, client, done) {
             if (err) {
                 if (client) {
                     done(client);
@@ -193,7 +209,7 @@ module.exports = {
 
     query: function(sql, params, callback) {
         var that = this;
-        pg.connect(config.sdbAddress, function(err, client, done) {
+        that.pool.connect(function(err, client, done) {
             var handleError = function(err, extraData) {
                 if (!err) return false;
                 if (client) {

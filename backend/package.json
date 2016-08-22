@@ -28,7 +28,7 @@
         "mongodb": "2.1.x",
         "morgan": "1.7.x",
         "numeric": "1.2.x",
-        "pg": "4.5.x",
+        "pg": "6.1.x",
         "pg-hstore": "2.3.x",
         "requirejs": "2.1.x",
         "sequelize": "3.19.x",
