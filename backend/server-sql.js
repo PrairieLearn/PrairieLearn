@@ -116,7 +116,16 @@ app.use(function(req, res, next) {
         return;
     }
 
-    if (config.authType == 'eppn' || config.authType == 'x-auth' || config.authType === 'none') {
+    if (config.authType == 'x-trust-auth') {
+        var authUID = null, authName = null;
+        if (req.headers['x-trust-auth-uid']) authUID = req.headers['x-trust-auth-uid'];
+        if (req.headers['x-trust-auth-name']) authName = req.headers['x-trust-auth-name'];
+        if (!authUID) return next(error.make(403, "No X-Trust-Auth-UID header", {path: req.path}));
+        if (!authName) return next(error.make(403, "No X-Trust-Auth-Name header", {path: req.path}));
+        req.authUID = authUID;
+        req.authName = authName;
+        req.userUID = authUID;
+    } else if (config.authType == 'eppn' || config.authType == 'x-auth' || config.authType === 'none') {
         var authUID = null, authName = null, authDate = null, authSignature = null, mode = null, userUID = null, userRole = null;
         if (req.cookies.userData) {
             var cookieUserData;

@@ -53,7 +53,7 @@
         },
         "authType": {
             "description": "The type of authentication to use.",
-            "enum": ["none", "x-auth", "eppn"]
+            "enum": ["none", "x-auth", "eppn", "x-trust-auth"]
         },
         "authURL": {
             "description": "The URL to use for authentication.",
