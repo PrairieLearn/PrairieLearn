@@ -231,6 +231,7 @@ app.use(function(req, res, next) {
         }
     }
     req.mode = serverMode;
+    next();
 });
 
 app.use(function(req, res, next) {
