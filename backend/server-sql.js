@@ -1,5 +1,6 @@
 var ERR = require('async-stacktrace');
 var logger = require("./logger");
+var error = require("./error");
 var config = require("./config");
 var db = require("./db");
 var sqldb = require("./sqldb");
