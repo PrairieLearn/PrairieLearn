@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/adminNavbar', {navPage: ''}); %>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
+    <script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
+    <script type="text/javascript" src="/localscripts/question.js"></script>
+    <%- extraHeaders %>
+    <script type="text/javascript" src="/localscripts/question<%= question.type %>.js"></script>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Question <%= result.qid %></h3>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <tbody>
+            <tr>
+              <th>Title</th>
+              <td><%= result.title %></td>
+            </tr>
+            <tr>
+              <th>QID</th>
+              <td><%= result.qid %></td>
+            </tr>
+            <tr>
+              <th>Type</th>
+              <td><%= result.type %></td>
+            </tr>
+            <tr>
+              <th>Topic</th>
+              <td><%- include('../partials/topic', {topic: result.topic}); %></td>
+            </tr>
+            <tr>
+              <th>Tags</th>
+              <td><%- include('../partials/tags', {tags: result.tags}); %></td>
+            </tr>
+            <tr>
+              <th>Tests</th>
+              <td><%- include('../partials/tests', {tests: result.tests}); %></td>
+              <td>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div id="question-0" class="question-container">
+        <script type="application/json" class="question-data"><%- questionJson  %></script>
+        
+        <div class="panel panel-primary question-block">
+          <div class="panel-heading">
+            <h3 class="panel-title"><%= result.title %></h3>
+          </div>
+          <div class="panel-body question-body">
+            <%- questionHtml %>
+          </div>
+          <div class="panel-footer">
+            <button class="btn btn-primary question-submit">Submit</button>
+            <a class="btn btn-info" href=".">New variant</a>
+            <form class="question-form" name="question-form" method="POST" action="<%= postUrl %>">
+              <input type="hidden" name="postData">
+            </form>
+          </div>
+        </div>
+
+        <% if (submission) { %>
+        <div class="panel panel-info submission-block">
+          <div class="panel-heading">
+            <h3 class="panel-title">Submission</h3>
+          </div>
+          <div class="panel-body">
+            <p>
+              <%- scoreHtml %>
+            </p>
+            <div class="submission-body">
+              <%- submissionHtml %>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel panel-info grading-block">
+          <div class="panel-heading">
+            <h3 class="panel-title">True answer</h3>
+          </div>
+          <div class="panel-body answer-body">
+            <%- answerHtml %>
+          </div>
+        </div>
+        <% } %>
+
+      </div> <!-- question-container -->
+
+    </div>
+  </body>
+</html>

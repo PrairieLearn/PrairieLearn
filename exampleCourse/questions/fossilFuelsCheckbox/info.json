@@ -1,7 +1,7 @@
 {
     "title": "Advantages of fossil fuels (checkbox)",
     "topic": "Energy",
-    "tags": ["comparative advantages", "fossil fuels", "renewables"],
+    "tags": ["Comparative"],
     "clientFiles": ["client.js", "power-station.jpg"],
     "type": "Checkbox",
     "options": {

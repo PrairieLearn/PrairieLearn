@@ -1,0 +1,85 @@
+digraph partmc_modules {
+
+    rankdir = BT;
+    node [fontsize = 10, height = 0.3, width = 0.5];
+    graph [nodesep = 0.2, ranksep = 0.3];
+    edge [fontsize = 10, arrowsize = 0.7];
+
+    course [label="course", style=filled, fillcolor=mistyrose1]
+
+    course_instance [label="course_instance*", style=filled, fillcolor=honeydew1]
+    course_instance_access_rule [style=filled, fillcolor=honeydew1]
+    test_access_rule [style=filled, fillcolor=honeydew1]
+    question [label="question*", style=filled, fillcolor=honeydew1]
+    question_tag [style=filled, fillcolor=honeydew1]
+    tag [style=filled, fillcolor=honeydew1]
+    test [label="test*", style=filled, fillcolor=honeydew1]
+    test_question [label="test_question*", style=filled, fillcolor=honeydew1]
+    test_set [style=filled, fillcolor=honeydew1]
+    topic [style=filled, fillcolor=honeydew1]
+    zone [style=filled, fillcolor=honeydew1]
+
+    enrollment [style=filled, fillcolor=lavender]
+    user [style=filled, fillcolor=lavender]
+    test_instance [style=filled, fillcolor=lavender]
+    instance_question [style=filled, fillcolor=lavender]
+    variant [style=filled, fillcolor=lavender]
+    submission [style=filled, fillcolor=lavender]
+
+    test_state_log [style=filled, fillcolor=white]
+    grading_log [style=filled, fillcolor=white]
+    test_score_log [style=filled, fillcolor=white]
+    question_score_log [style=filled, fillcolor=white]
+    question_view_log [style=filled, fillcolor=white]
+    test_view_log [style=filled, fillcolor=white]
+
+    test_access_rule -> { test }
+    course_instance -> { course }
+    course_instance_access_rule -> { course_instance }
+    question -> { course; topic }
+    question_tag -> { question; tag }
+    tag -> { course }
+    test -> { course_instance; test_set }
+    test_question -> { test; zone; question }
+    test_set -> { course }
+    topic -> { course }
+    zone -> { test }
+
+    enrollment -> { user; course_instance }
+    test_instance -> { test; user }
+    instance_question -> { test_question; test_instance }
+    variant -> { instance_question }
+    submission -> { variant }
+
+    test_state_log -> { test_instance }
+    grading_log -> { submission }
+    test_score_log -> { test_instance }
+    question_score_log -> { instance_question }
+    question_view_log -> { instance_question }
+    test_view_log -> { test_instance }
+
+    subgraph cluster_legend {
+
+        labelloc=b;
+        label="Legend";
+
+        k4 [shape=plaintext, style=solid, label="Logging objects,\lnot needed for operation.\lCannot be deleted.\l"];
+        kc4[label=" ", style=filled, fillcolor=white];
+
+        k3 [shape=plaintext, style=solid, label="Loaded from Mongo\land generated in realtime.\lCannot be deleted.\l"];
+        kc3[label=" ", style=filled, fillcolor=lavender];
+
+        k2 [shape=plaintext, style=solid, label="Made by instructors\lfrom course git repo.\lCan be deleted,\l'*' means soft deletes.\l"];
+        kc2[label=" ", style=filled, fillcolor=honeydew1];
+
+        k1 [shape=plaintext, style=solid, label="Made by superuser.\lWill not be deleted.\l"];
+        kc1[label=" ", style=filled, fillcolor=mistyrose1];
+
+        kc4 -> kc3 [style=invis];
+        kc3 -> kc2 [style=invis];
+        kc2 -> kc1 [style=invis];
+        k4 -> k3 [style=invis];
+        k3 -> k2 [style=invis];
+        k2 -> k1 [style=invis];
+    }
+}

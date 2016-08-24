@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/userNavbar', {navPage: 'tests'}); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Assessments</h3>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <thead>
+            <tr>
+              <th></th>
+              <th class="cell-center">Score</th>
+              <th class="cell-center">Date</th>
+              <th class="cell-center"></th>
+            </tr>
+          </thead>
+          <tbody>
+            <% rows.forEach(function(row) { %>
+            <% if (row.start_new_set) { %>
+            <tr class="<%= row.test_set_color %>">
+              <th colspan="7"><%= row.test_set_heading %></th>
+            </tr>
+            <% } %>
+            <tr>
+              <td>
+                <a
+                   <% if (row.test_instance_id) { %>
+                   href="<%= urlPrefix %>/testInstance/<%= row.test_instance_id %>/"
+                   <% } else { %>
+                   href="<%= urlPrefix %>/test/<%= row.test_id %>/"
+                   <% } %>
+                   class="btn btn-<%= row.test_set_color %> btn-xs" role="button"
+                   ><%= row.test_set_abbrev %><%= row.test_number %></a>
+                <a
+                   <% if (row.test_instance_id) { %>
+                   href="<%= urlPrefix %>/testInstance/<%= row.test_instance_id %>/"
+                   <% } else { %>
+                   href="<%= urlPrefix %>/test/<%= row.test_id %>/"
+                   <% } %>
+                   ><%= row.test_title %></a>
+              </td>
+              <td class="cell-center">No score</td>
+              <td class="cell-center">No date</td>
+              <td class="cell-center">button</td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>

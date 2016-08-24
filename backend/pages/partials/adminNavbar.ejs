@@ -1,0 +1,41 @@
+<nav class="navbar navbar-inverse navbar-static-top" role="navigation">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="/admin">PL Admin</a>
+    </div>
+    <div class="collapse navbar-collapse">
+      <% if (typeof courseInstanceId !== "undefined") { %>
+      <ul class="nav navbar-nav" id="main-nav">
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><%= course.short_name %><span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <% courseList.forEach(function(course) { %>
+            <li><a href="/admin/<%= course.course_instance_id %>/<%= navPage %>"><%= course.short_name %></a></li>
+            <% }); %>
+          </ul>
+        </li>
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><%= courseInstance.short_name %><span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <% courseInstanceList.forEach(function(courseInstance) { %>
+            <li><a href="/admin/<%= courseInstance.id %>/<%= navPage %>"><%= courseInstance.short_name %></a></li>
+            <% }); %>
+          </ul>
+        </li>
+        <li <% if (navPage == "tests")     { %>class="active"<% } %>><a href="<%= urlPrefix %>/tests">Tests</a></li>
+        <li <% if (navPage == "questions") { %>class="active"<% } %>><a href="<%= urlPrefix %>/questions">Questions</a></li>
+        <li <% if (navPage == "users")     { %>class="active"<% } %>><a href="<%= urlPrefix %>/users">Users</a></li>
+      </ul>
+      <% } %>
+      <div class="navbar-right">
+        <a class="btn btn-default navbar-btn" href="https://prairielearn.engr.illinois.edu/Shibboleth.sso/Logout">Log out</a>
+      </div>
+    </div>
+  </div>
+</nav>

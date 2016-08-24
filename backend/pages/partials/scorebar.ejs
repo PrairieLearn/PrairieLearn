@@ -1,0 +1,11 @@
+<% if (score != null) { %>
+<div class="progress" style="min-width: 5em">
+<% if (score >= 50) { %>
+<div class="progress-bar progress-bar-success" style="width: <%= Math.min(100, score) %>%"><%= score %>%</div>
+<div class="progress-bar progress-bar-danger" style="width: <%= 100 - Math.min(100, score) %>%"></div>
+<% } else { %>
+<div class="progress-bar progress-bar-success" style="width: <%= Math.min(100, score) %>%"></div>
+<div class="progress-bar progress-bar-danger" style="width: <%= 100 - Math.min(100, score) %>%"><%= score %>%</div>
+<% } %>
+</div>
+<% } %>

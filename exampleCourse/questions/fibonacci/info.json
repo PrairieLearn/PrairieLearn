@@ -1,7 +1,7 @@
 {
     "title": "Write a Fibonacci function",
     "topic": "Functions",
-    "tags": ["recursion"],
+    "tags": ["Code"],
     "clientFiles": ["client.js", "question.html", "answer.html", "fib.py", "fib.tar.gz"],
     "clientTemplates": ["checkout.py"],
     "type": "File",

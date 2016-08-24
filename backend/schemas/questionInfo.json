@@ -7,7 +7,7 @@
     "properties": {
         "type": {
             "description": "Type of the test.",
-            "enum": ["Calculation", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse"],
+            "enum": ["Calculation", "ShortAnswer", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse"],
             "required": true
         },
         "title": {
@@ -20,11 +20,19 @@
             "type": "string",
             "required": true
         },
-        "tags": {
-            "description": "Extra tags associated with the question (e.g., 'Cartesian', 'graphics').",
+        "secondaryTopics": {
+            "description": "Other topics also covered by the question (e.g., 'Vectors', 'Energy').",
             "type": "array",
             "items": {
-                "description": "An arbitrary tag associated with a question.",
+                "description": "A single topic covered by the question.",
+                "type": "string"
+            }
+        },
+        "tags": {
+            "description": "Extra tags associated with the question (e.g., 'Exam Only', 'Broken').",
+            "type": "array",
+            "items": {
+                "description": "A tag associated with a question.",
                 "type": "string"
             }
         },

@@ -16,22 +16,39 @@ if platform.system() == "Windows":
         sys.exit(1)
     CONVERT_CMD = magicks[0]
 
+print("Convert command: %s" % CONVERT_CMD)
+
 # find strings that look like "TEX:abc" or 'TEX:abc' (note different quote types
 # use <quote> to store the type of quote
 # use the negative-lookahead regex ((?!(?P=quote)).) to match non-quote characters
 TEXT_RE = re.compile("(?P<quote>['\"])TEX:(((?!(?P=quote)).)+)(?P=quote)")
 
+# filename regexp for generated files
+FILENAME_RE = re.compile("[0-9a-fA-F]{40}\\..{3}")
+
 if len(sys.argv) <= 2:
     print("Usage: generate_text <outputdir> <basedir1> <basedir2> ...")
-    sys.exit(0);
+    print("or: generate_text --subdir <basedir1> <basedir2> ...")
+    sys.exit(0)
 
-TEXT_DIR = sys.argv[1]
-print("Convert command: %s" % CONVERT_CMD)
-print("Output directory: %s" % TEXT_DIR)
+if sys.argv[1] == "--subdir":
+    MODE = "subdir"
+    print("Output directory: 'text/' within each subdirectory")
+else:
+    MODE = "textdir"
+    TEXT_DIR = sys.argv[1]
+    print("Output directory: %s" % TEXT_DIR)
 
-if not os.path.isdir(TEXT_DIR):
-    os.mkdir(TEXT_DIR)
+def output_dir(filename):
+    if MODE == "textdir":
+        return TEXT_DIR
+    else:
+        return os.path.join(os.path.dirname(filename), "text")
 
+def ensure_dir_exists(d):
+    if not os.path.isdir(d):
+        os.mkdir(d)
+    
 escape_seqs = {
     "b": "\b",
     "f": "\f",
@@ -61,6 +78,7 @@ def unescape(s):
 
 def process_file(filename):
     print(filename)
+    img_filenames = []
     with open(filename) as file:
         for line in file:
             for match in TEXT_RE.finditer(line):
@@ -71,10 +89,12 @@ def process_file(filename):
                 tex_filename = hash + ".tex"
                 pdf_filename = hash + ".pdf"
                 img_filename = hash + ".png"
-                tex_full_filename = os.path.join(TEXT_DIR, tex_filename)
-                img_full_filename = os.path.join(TEXT_DIR, img_filename)
+                outdir = output_dir(filename)
+                ensure_dir_exists(outdir)
+                tex_full_filename = os.path.join(outdir, tex_filename)
+                img_full_filename = os.path.join(outdir, img_filename)
                 if not os.path.exists(img_full_filename):
-                    print("Writing tex file " + tex_full_filename);
+                    print("Writing tex file " + tex_full_filename)
                     with open(tex_full_filename, "w") as texfile:
                         texfile.write("\\documentclass[12pt]{article}\n")
                         texfile.write("\\usepackage{amsmath,amsthm,amssymb}\n")
@@ -82,25 +102,42 @@ def process_file(filename):
                         texfile.write("\\thispagestyle{empty}\n")
                         texfile.write(text + "\n")
                         texfile.write("\\end{document}\n")
-                    print("Running pdflatex on " + tex_filename);
-                    subprocess.check_call(["pdflatex", tex_filename], cwd=TEXT_DIR)
-                    print("Running convert on " + pdf_filename);
+                    print("Running pdflatex on " + tex_filename)
+                    subprocess.check_call(["pdflatex", tex_filename], cwd=outdir)
+                    print("Running convert on " + pdf_filename)
                     subprocess.check_call([CONVERT_CMD, "-density", "96",
                                            pdf_filename, "-trim", "+repage",
-                                           img_filename], cwd=TEXT_DIR)
+                                           img_filename], cwd=outdir)
+                img_filenames.append(img_filename)
+    return img_filenames
 
-for basedir in sys.argv[2:]:
-    print("########################################")
-    print("Processing %s" % basedir)
-    for (dirpath, dirnames, filenames) in os.walk(basedir):
-        for filename in fnmatch.filter(filenames, "*.js"):
-            process_file(os.path.join(dirpath, filename))
+def delete_non_matching(basedir, nondelete_filenames):
+    if not os.path.exists(basedir) or not os.path.isdir(basedir):
+        return
+    filenames = os.listdir(basedir)
+    for filename in filenames:
+        if filename not in nondelete_filenames:
+            if FILENAME_RE.match(filename):
+                full_filename = os.path.join(basedir, filename)
+                print("deleting " + full_filename)
+                os.unlink(full_filename)
 
-print("########################################")
-print("Deleting intermediate files from %s" % TEXT_DIR)
-filenames = os.listdir(TEXT_DIR)
-for filename in filenames:
-    (root, ext) = os.path.splitext(filename)
-    if ext.lower() in [".pdf", ".tex", ".aux", ".log"]:
-        full_filename = os.path.join(TEXT_DIR, filename)
-        os.unlink(full_filename)
+if MODE == "subdir":
+    for basedir in sys.argv[2:]:
+        print("########################################")
+        print("Processing %s" % basedir)
+        for (dirpath, dirnames, filenames) in os.walk(basedir):
+            img_filenames = []
+            for filename in fnmatch.filter(filenames, "*.js"):
+                img_filenames += process_file(os.path.join(dirpath, filename))
+            text_dir = os.path.join(dirpath, "text")
+            delete_non_matching(text_dir, img_filenames)
+else:
+    img_filenames = []
+    for basedir in sys.argv[2:]:
+        print("########################################")
+        print("Processing %s" % basedir)
+        for (dirpath, dirnames, filenames) in os.walk(basedir):
+            for filename in fnmatch.filter(filenames, "*.js"):
+                img_filenames += process_file(os.path.join(dirpath, filename))
+    delete_non_matching(TEXT_DIR, img_filenames)

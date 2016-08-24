@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/userNavbar'); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Courses</h3>
+        </div>
+
+        <table class="table table-condensed table-hover table-striped">
+          <tbody>
+            <% courseInstanceList.forEach(function(courseInstance) { %>
+            <tr>
+              <td>
+                <a href="/pl/<%= courseInstance.course_instance_id %>">
+                  <%= courseInstance.course_short_name %>:
+                  <%= courseInstance.course_title %>,
+                  <%= courseInstance.course_instance_long_name %>
+                </a>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>

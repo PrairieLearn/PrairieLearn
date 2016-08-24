@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/userNavbar', {navPage: ''}); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title"><%= testSet.abbrev %><%= test.number %>: <%= test.title %></h3>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <thead>
+            <tr>
+              <th>Question</th>
+              <th class="cell-center">Points</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% instanceQuestions.forEach(function(instanceQuestion) { %>
+            <% if (instanceQuestion.start_new_zone && instanceQuestion.zone_title) { %>
+            <tr>
+              <th colspan="2"><%= instanceQuestion.zone_title %></th>
+            </tr>
+            <% } %>
+            <tr>
+              <td>
+                <a href="<%= urlPrefix %>/instanceQuestion/<%= instanceQuestion.id %>/"><%= instanceQuestion.question_title %></a>
+              </td>
+              <td class="cell-center">No points</td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+
+      </div>
+    </div>
+  </body>
+</html>

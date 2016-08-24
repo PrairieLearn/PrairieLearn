@@ -40,13 +40,37 @@ module.exports.getCourseOriginURL = function(callback) {
     });
 };
 
-module.exports.loadCourseInfo = function(courseInfo, callback) {
+module.exports.loadCourseInfo = function(courseInfo, courseDir, callback) {
     var that = this;
-    var courseInfoFilename = path.join(config.courseDir, "courseInfo.json");
+    var courseInfoFilename = path.join(courseDir, "courseInfo.json");
     jsonLoad.readInfoJSON(courseInfoFilename, "schemas/courseInfo.json", undefined, undefined, function(err, info) {
         if (err) return callback(err);
+        courseInfo.path = courseDir;
         courseInfo.name = info.name;
         courseInfo.title = info.title;
+        courseInfo.gitCourseBranch = config.gitCourseBranch;
+        courseInfo.timezone = config.timezone;
+        courseInfo.currentCourseInstance = info.currentCourseInstance;
+        courseInfo.questionsDir = path.join(courseDir, "questions");
+        courseInfo.courseInstancesDir = path.join(courseDir, "courseInstances");
+        courseInfo.testsDir = path.join(courseInfo.courseInstancesDir, info.currentCourseInstance, "tests");
+        courseInfo.testSets = info.testSets;
+        courseInfo.topics = info.topics;
+        courseInfo.tags = info.tags;
+        that.getCourseOriginURL(function(err, originURL) {
+            courseInfo.remoteFetchURL = originURL;
+            return callback(null);
+        });
+    });
+};
+
+module.exports.loadCourseInstanceInfo = function(courseInfo, courseDir, courseInstance, callback) {
+    var that = this;
+    var courseInfoFilename = path.join(courseDir, "courseInstances", courseInstance, "courseInstanceInfo.json");
+    jsonLoad.readInfoJSON(courseInfoFilename, "schemas/courseInstanceInfo.json", undefined, undefined, function(err, info) {
+        if (err) return callback(err);
+        courseInfo.courseInstanceShortName = info.shortName;
+        courseInfo.courseInstanceLongName = info.longName;
         if (info.userRoles) {
             _(info.userRoles).forEach(function(value, key) {
                 if (!PrairieRole.isRoleValid(value)) {
@@ -61,12 +85,7 @@ module.exports.loadCourseInfo = function(courseInfo, callback) {
             });
         }
         courseInfo.userRoles = info.userRoles;
-        courseInfo.gitCourseBranch = config.gitCourseBranch;
-        courseInfo.timezone = config.timezone;
-        that.getCourseOriginURL(function(err, originURL) {
-            courseInfo.remoteFetchURL = originURL;
-            return callback(null);
-        });
+        return callback(null);
     });
 };
 
@@ -74,70 +93,26 @@ var isValidDate = function(dateString) {
     return moment(dateString, "YYYY-MM-DDTHH:mm:ss", true).isValid();
 }
 
-module.exports.checkInfoValid = function(idName, info, infoFile) {
+module.exports.checkInfoValid = function(idName, info, infoFile, courseInfo) {
     var that = this;
     var retVal = true; // true means valid
 
+    // availDate is deprecated
     if (idName == "tid" && info.options && info.options.availDate) {
         logger.warn(infoFile + ': "options.availDate" is deprecated and will be removed in a future version. Instead, please use "allowAccess".');
     }
 
-    // add semesters to tests without one
-    if (idName == "tid" && !_(info).has("semester")) {
-        if (that.courseInfo.name == "TAM 212") {
-            if (/^sp16_/.test(info.tid)) {
-                info.semester = "Sp16";
-            } else if (/^fa15_/.test(info.tid)) {
-                info.semester = "Fa15";
-            } else if (/^sp15_/.test(info.tid)) {
-                info.semester = "Sp15";
-            } else {
-                info.semester = "Sp15";
-            }
-        } else {
-            info.semester = config.semester;
-        }
-        //logger.warn(infoFile + ': "semester" is missing, setting to "' + info.semester + '".');
-    }
-
-    // look for exams without credit assigned and patch it in to all access rules
+    // look for exams without credit assigned and warn about it
     if (idName == "tid" && (info.type == "Exam" || info.type == "RetryExam")) {
         if (_(info).has('allowAccess') && !_(info.allowAccess).any(function(a) {return _(a).has('credit');})) {
-            logger.warn(infoFile + ': No credit assigned in allowAccess rules, patching in credit = 100 to all rules. Please set "credit" in "allowAccess" rules explicitly.')
-            _(info.allowAccess).each(function(a) {
-                a.credit = 100;
-            });
+            logger.warn(infoFile + ': No credit assigned in any allowAccess rules.')
         }
     }
 
-    // look for homeworks without a due date set and add an access rule with credit if possible
+    // due date is deprecated
     if (idName == "tid" && _(info).has('options') && _(info.options).has('dueDate')) {
-        logger.warn(infoFile + ': "options.dueDate" is deprecated and will be removed in a future version. Instead, please set "credit" in the "allowAccess" rules.');
-        if (!_(info).has('allowAccess')) info.allowAccess = [];
-        var hasStudentAccess = false, firstStartDate = null;
-        _(info.allowAccess).each(function(a) {
-            if ((!_(a).has('mode') || a.mode == 'Public') && (!_(a).has('role') || a.role == 'Student')) {
-                hasStudentAccess = true;
-                if (_(a).has('startDate')) {
-                    if (firstStartDate == null || a.startDate < firstStartDate) {
-                        firstStartDate = a.startDate;
-                    }
-                }
-            }
-        });
-        if (hasStudentAccess) {
-            var accessRule = {
-                mode: 'Public',
-                credit: 100,
-            };
-            if (firstStartDate) {
-                accessRule.startDate = firstStartDate;
-            }
-            accessRule.endDate = info.options.dueDate;
-            logger.warn(infoFile + ': Adding accessRule: ' + JSON.stringify(accessRule));
-            info.allowAccess.push(accessRule);
-        }
-        delete info.options.dueDate;
+        logger.error(infoFile + ': "options.dueDate" is deprecated.');
+        retVal = false;
     }
 
     // check dates in allowAccess
@@ -153,10 +128,47 @@ module.exports.checkInfoValid = function(idName, info, infoFile) {
             }
         });
     }
+
+    var validTestSets = _(courseInfo.testSets).pluck('name');
+    var validTopics = _(courseInfo.topics).pluck('name');
+    var validTags = _(courseInfo.tags).pluck('name');
+    
+    // check tests all have a valid testSet
+    if (idName == "tid") {
+        if (!_(validTestSets).contains(info.set)) {
+            logger.error(infoFile + ': invalid "set": "' + info.set + '" (must be a "name" of the "testSets" listed in courseInfo.json)');
+            retVal = false;
+        }
+    }
+
+    // check all questions have valid topics and tags
+    if (idName == "qid") {
+        if (!_(validTopics).contains(info.topic)) {
+            logger.error(infoFile + ': invalid "topic": "' + info.topic + '" (must be a "name" of the "topics" listed in courseInfo.json)');
+            retVal = false;
+        }
+        if (_(info).has('secondaryTopics')) {
+            _(info.secondaryTopics).each(function(topic) {
+                if (!_(validTopics).contains(topic)) {
+                    logger.error(infoFile + ': invalid "secondaryTopics": "' + topic + '" (must be a "name" of the "topics" listed in courseInfo.json)');
+                    retVal = false;
+                }
+            });
+        }
+        if (_(info).has('tags')) {
+            _(info.tags).each(function(tag) {
+                if (!_(validTags).contains(tag)) {
+                    logger.error(infoFile + ': invalid "tags": "' + tag + '" (must be a "name" of the "tags" listed in courseInfo.json)');
+                    retVal = false;
+                }
+            });
+        }
+    }
+    
     return retVal;
 };
 
-module.exports.loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, loadCallback) {
+module.exports.loadInfoDB = function(db, idName, parentDir, infoFilename, defaultInfo, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, courseInfo, loadCallback) {
     var that = this;
     fs.readdir(parentDir, function(err, files) {
         if (err) {
@@ -166,14 +178,14 @@ module.exports.loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaF
         }
 
         async.filter(files, function(dirName, cb) {
-            // Filter out files from questions/ as it is possible they slip in without the user putting them there (like .DS_Store).
+            // Filter out files from parentDir as it is possible they slip in without the user putting them there (like .DS_Store).
             var filePath = path.join(parentDir, dirName);
             fs.lstat(filePath, function(err, fileStats){
                 cb(fileStats.isDirectory());
             });
         }, function(folders) {
             async.each(folders, function(dir, callback) {
-                var infoFile = path.join(parentDir, dir, "info.json");
+                var infoFile = path.join(parentDir, dir, infoFilename);
                 jsonLoad.readInfoJSON(infoFile, schemaFilename, optionSchemaPrefix, optionSchemaSuffix, function(err, info) {
                     if (err) {
                         logger.error("Error reading file: " + infoFile, err);
@@ -181,7 +193,7 @@ module.exports.loadInfoDB = function(db, idName, parentDir, defaultInfo, schemaF
                         return;
                     }
                     info[idName] = dir;
-                    if (!that.checkInfoValid(idName, info, infoFile)) {
+                    if (!that.checkInfoValid(idName, info, infoFile, courseInfo)) {
                         callback(null);
                         return;
                     }
@@ -210,7 +222,10 @@ module.exports.load = function(callback) {
     var that = this;
     async.series([
         function(callback) {
-            that.loadCourseInfo(that.courseInfo, callback);
+            that.loadCourseInfo(that.courseInfo, config.courseDir, callback);
+        },
+        function(callback) {
+            that.loadCourseInstanceInfo(that.courseInfo, config.courseDir, that.courseInfo.currentCourseInstance, callback);
         },
         function(callback) {
             _(that.questionDB).mapObject(function(val, key) {delete that.questionDB[key];});
@@ -218,13 +233,54 @@ module.exports.load = function(callback) {
                 "type": "Calculation",
                 "clientFiles": ["client.js", "question.html", "answer.html"],
             };
-            that.loadInfoDB(that.questionDB, "qid", config.questionsDir, defaultQuestionInfo, "schemas/questionInfo.json", "schemas/questionOptions", ".json", callback);
+            that.loadInfoDB(that.questionDB, "qid", config.questionsDir, "info.json", defaultQuestionInfo,
+                            "schemas/questionInfo.json", "schemas/questionOptions", ".json", that.courseInfo, callback);
         },
         function(callback) {
             _(that.testDB).mapObject(function(val, key) {delete that.testDB[key];});
             var defaultTestInfo = {
             };
-            that.loadInfoDB(that.testDB, "tid", config.testsDir, defaultTestInfo, "schemas/testInfo.json", "schemas/testOptions", ".json", callback);
+            that.loadInfoDB(that.testDB, "tid", that.courseInfo.testsDir, "info.json", defaultTestInfo,
+                            "schemas/testInfo.json", "schemas/testOptions", ".json", that.courseInfo, callback);
         },
     ], callback);
+};
+
+module.exports.loadFullCourse = function(courseDir, callback) {
+    var that = this;
+    var course = {
+        courseInfo: {},
+        questionDB: {},
+        courseInstanceDB: {},
+    };
+    var defaultQuestionInfo = {
+        "type": "Calculation",
+        "clientFiles": ["client.js", "question.html", "answer.html"],
+    };
+    var defaultCourseInstanceInfo = {};
+    var defaultTestInfo = {};
+    async.series([
+        that.loadCourseInfo.bind(that, course.courseInfo, courseDir),
+        function(callback) {
+            that.loadInfoDB(course.questionDB, "qid", course.courseInfo.questionsDir, "info.json",
+                            defaultQuestionInfo, "schemas/questionInfo.json", "schemas/questionOptions", ".json",
+                            course.courseInfo, callback);
+        },
+        function(callback) {
+            that.loadInfoDB(course.courseInstanceDB, "ciid", course.courseInfo.courseInstancesDir, "courseInstanceInfo.json",
+                            defaultCourseInstanceInfo, "schemas/courseInstanceInfo.json", null, null,
+                            course.courseInfo, callback);
+        },
+    ], function(err) {
+        if (err) return callback(err);
+        async.forEachOf(course.courseInstanceDB, function(courseInstance, courseInstanceDir, callback) {
+            var testsDir = path.join(course.courseInfo.courseInstancesDir, courseInstanceDir, "tests");
+            courseInstance.testDB = {};
+            that.loadInfoDB(courseInstance.testDB, "tid", testsDir, "info.json", defaultTestInfo,
+                            "schemas/testInfo.json", "schemas/testOptions", ".json", course.courseInfo, callback);
+        }, function(err) {
+            if (err) return callback(err);
+            callback(null, course);
+        });
+    });
 };
