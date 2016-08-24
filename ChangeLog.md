@@ -1,11 +1,75 @@
 
 # ChangeLog
 
+* __1.20.0__ - 2016-08-24
+
+  * Fix `jsPlumb` naming case (Jeffrey Tolar).
+
+  * Remove `/export.csv` endpoint (Kevin Wang).
+
+  * Explicitly specify dependency versions in `package.json` (Kevin Wang).
+
+  * Validate effective UID before creating tInstances (Kevin Wang).
+
+  * Fix display of `trueAnswers` for all questions (Kevin Wang).
+
+  * Document the Reload button (Jeffrey Tolar).
+
+  * Fix role changing restrictions (Jeffrey Tolar).
+
+  * Improve naming of exam grade/finish buttons and modal texts (Kevin Wang).
+
+  * Show zone titles within tests (Jeffrey Tolar).
+
+  * Remove current exam score from sidebar (Kevin Wang).
+
+  * Split out helper modules from server code (Jeffrey Tolar).
+
+  * Warn user when exam has unanswered questions (Kevin Wang).
+
+  * Improve user feedback when all exam questions are answered (Kevin Wang).
+
+  * Fix viewport width handling (Jeffrey Tolar).
+
+  * Upgrade to ExpressJS 4.x.
+
+  * Disallow multiple submissions for a single homework question instance (Kevin Wang).
+
+  * Fix all server-side error handling to use standard NodeJS convention (Kevin Wang).
+
+  * Fix race condition on client initialization (Jeffrey Tolar).
+
+  * Improve server-side RequireJS usage (Jeffrey Tolar).
+
+  * Add submissions directly from the command line (Kevin Wang).
+
+  * Improve docs for Windows installations (Dave Mussulman).
+
+  * Expose `PLConfig` to backend to access server URL (Kevin Wang).
+
+  * Fix crash on `GET /clientFiles/` (Kevin Wang).
+
+  * Fix handling of large git pulls of class data (Jeffrey Tolar).
+
+  * Fix `mtfclient` to properly handle checkbox listening (Terence Nip).
+
+  * Fix percentage score exports.
+
+  * Switch exam-mode IP blocks to new CBTF location in Grainger.
+
+  * Add new drawing commands for LShape, TShape, DistLoad (Mariana Silva).
+
+  * Store latex text images per-course rather than globally.
+
+  * Add homework random shuffle mode with global question numbers (Binglin Chen).
+
+  * Add experimental backend using PostgresQL and server-side rendering.
+
 * __1.19.0__ - 2016-02-23
 
   * Add Ace editor for in-question code editing (Terence Nip).
 
-  * Add `MultipleTrueFalse` question type.
+  * Add `MultipleTrueFalse` question type (Terence Nip).
 
   * Upgrade MathJax to 2.6.0 to fix "vertical bar" rendering problem.
 
