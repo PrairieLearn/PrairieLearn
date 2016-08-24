@@ -28,11 +28,15 @@ define(["underscore", "backbone", "mustache", "BasicTestHelper", "text!BasicTest
 
             var qid = this.model.get("qid");
             var qids = that.test.get("qids");
+            if (that.tInstance.get("shuffled")) {
+                qids = that.tInstance.get("qids");
+            }
             var qIndex = _.indexOf(qids, qid);
 
             data.qNumber = qIndex + 1;
             var hwNumber = this.test.get("number");
-            data.qFullNumber = "#" + hwNumber + "." + (qIndex + 1);
+            var uniqueIds = this.tInstance.get("uniqueIds");
+            data.qFullNumber = that.tInstance.get("shuffled") ? "#" + hwNumber + "." + uniqueIds[qIndex] : "#" + hwNumber + "." + (qIndex + 1);
             data.prevQNumber = null;
             data.nextQNumber = null;
             if (qIndex > 0)

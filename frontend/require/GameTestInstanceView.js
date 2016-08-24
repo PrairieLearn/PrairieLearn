@@ -44,6 +44,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "GameTestHelper
             var qids = that.test.get("qids");
             var hwNumber = this.test.get("number");
             var questions = this.model.get("questions");
+            var uniqueIds = this.model.get("uniqueIds");
             _(questions).each(function(question, index) {
                 var qid = question.qid;
                 data.questionList.push({
@@ -53,7 +54,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "GameTestHelper
                     tiNumber: that.model.get("number"),
                     title: question.title,
                     number: index + 1,
-                    fullNumber: "#" + hwNumber + "." + (index + 1),
+                    fullNumber: that.model.get("shuffled") ? "#" + hwNumber + "." + uniqueIds[index] : "#" + hwNumber + "." + (index + 1),
                     value: GameTestHelper.renderQuestionValue(qData[qid].value, qParams[qid].initValue),
                     score: GameTestHelper.renderQuestionScore(qData[qid].score, qParams[qid].maxScore),
                 });

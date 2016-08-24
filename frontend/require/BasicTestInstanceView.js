@@ -40,6 +40,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "BasicTestHelpe
             var qData = this.model.get("qData");
             var hwNumber = this.test.get("number");
             var questions = this.model.get("questions");
+            var uniqueIds = this.model.get("uniqueIds");
             _(questions).each(function(question, index) {
                 var qid = question.qid;
                 data.questionList.push({
@@ -49,7 +50,7 @@ define(["underscore", "backbone", "mustache", "PrairieTemplate", "BasicTestHelpe
                     tiNumber: that.model.get("number"),
                     title: question.title,
                     number: index + 1,
-                    fullNumber: "#" + hwNumber + "." + (index + 1),
+                    fullNumber: that.model.get("shuffled") ? "#" + hwNumber + "." + uniqueIds[index] : "#" + hwNumber + "." + (index + 1),
                     attempts: BasicTestHelper.renderQAttempts(qData[qid]),
                     score: BasicTestHelper.renderQScore(qData[qid]),
                 });
