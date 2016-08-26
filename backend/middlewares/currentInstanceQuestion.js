@@ -15,6 +15,7 @@ module.exports = function(req, res, next) {
         if (ERR(err, next)) return;
         res.locals.instanceQuestion = result.rows[0];
         res.locals.testInstanceId = res.locals.instanceQuestion.test_instance_id;
+        res.locals.testQuestionId = res.locals.instanceQuestion.test_question_id;
         res.locals.questionId = res.locals.instanceQuestion.question_id;
         next();
     });

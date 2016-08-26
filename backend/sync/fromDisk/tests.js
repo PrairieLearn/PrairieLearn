@@ -15,10 +15,10 @@ module.exports = {
                 async.forEachOfSeries(courseInstance.testDB, function(dbTest, tid, callback) {
                     logger.info('Syncing ' + tid);
                     var sql
-                        = ' INSERT INTO tests (tid, type, number, title, config, multiple_instance, deleted_at, course_instance_id, test_set_id)'
+                        = ' INSERT INTO tests (tid, type, number, title, config, multiple_instance, max_points, deleted_at, course_instance_id, test_set_id)'
                         + '     (SELECT * FROM'
-                        + '         (VALUES ($1, $2::enum_test_type, $3, $4, $5::JSONB, $6::BOOLEAN, NULL::timestamp with time zone, $7::INTEGER)) AS vals,'
-                        + '         (SELECT COALESCE((SELECT id FROM test_sets WHERE name = $9 AND course_id = $8), NULL)) AS test_sets'
+                        + '         (VALUES ($1, $2::enum_test_type, $3, $4, $5::JSONB, $6::BOOLEAN, $7::DOUBLE PRECISION, NULL::timestamp with time zone, $8::INTEGER)) AS vals,'
+                        + '         (SELECT COALESCE((SELECT id FROM test_sets WHERE name = $10 AND course_id = $9), NULL)) AS test_sets'
                         + '     )'
                         + ' ON CONFLICT (tid, course_instance_id) DO UPDATE'
                         + ' SET'
@@ -27,11 +27,13 @@ module.exports = {
                         + '     title = EXCLUDED.title,'
                         + '     config = EXCLUDED.config,'
                         + '     multiple_instance = EXCLUDED.multiple_instance,'
+                        + '     max_points = EXCLUDED.max_points,'
                         + '     deleted_at = EXCLUDED.deleted_at,'
                         + '     test_set_id = EXCLUDED.test_set_id'
                         + ' RETURNING id;';
                     var params = [tid, dbTest.type, dbTest.number, dbTest.title, dbTest.options,
                                   dbTest.options && dbTest.options.multipleInstance ? true : false,
+                                  dbTest.options ? dbTest.options.maxScore : null,
                                   courseInstance.courseInstanceId, courseInfo.courseId, dbTest.set];
                     sqldb.query(sql, params, function(err, result) {
                         if (err) return callback(err);

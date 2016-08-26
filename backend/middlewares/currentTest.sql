@@ -1,5 +1,7 @@
 -- BLOCK test
-SELECT t.*
+SELECT
+    t.*,
+    cta.credit
 FROM
     tests AS t,
     users AS u,

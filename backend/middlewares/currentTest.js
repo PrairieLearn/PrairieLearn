@@ -18,10 +18,10 @@ module.exports = function(req, res, next) {
     sqldb.queryOneRow(sql.test, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.test = result.rows[0];
-        res.locals.testId = res.locals.testId ? res.locals.testId : req.params.testId;
+        res.locals.testId = res.locals.test.id;
 
         var params = {
-            test_id: res.locals.testId ? res.locals.testId : req.params.testId,
+            test_id: res.locals.testId,
             course_instance_id: req.params.courseInstanceId,
         };
         sqldb.queryOneRow(sql.test_set, params, function(err, result) {

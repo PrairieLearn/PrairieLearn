@@ -26,14 +26,19 @@
                 <%- questionHtml %>
               </div>
               <div class="panel-footer">
+                <% if (showSubmitButton) { %>
                 <button class="btn btn-primary question-submit">Submit</button>
                 <form class="question-form" name="question-form" method="POST" action="<%= postUrl %>">
                   <input type="hidden" name="postData">
                 </form>
+                <% } %>
+                <% if (showNewVariantButton) { %>
+                <a href="." class="btn btn-primary">Try question again</a>
+                <% } %>
               </div>
             </div>
 
-            <% if (submission && submission.graded) { %>
+            <% if (showSubmission) { %>
             <div class="panel panel-info submission-block">
               <div class="panel-heading">
                 <h3 class="panel-title">Submission</h3>
@@ -47,7 +52,9 @@
                 </div>
               </div>
             </div>
+            <% } %>
 
+            <% if (showTrueAnswer) { %>
             <div class="panel panel-info grading-block">
               <div class="panel-heading">
                 <h3 class="panel-title">True answer</h3>

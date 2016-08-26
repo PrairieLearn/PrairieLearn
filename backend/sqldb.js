@@ -57,6 +57,7 @@ var studentTestScores = fs.readFileSync('./sprocs/student_test_scores.sql', 'utf
 var testStats = fs.readFileSync('./sprocs/test_stats.sql', 'utf8');
 var testsForQuestion = fs.readFileSync('./sprocs/tests_for_question.sql', 'utf8');
 var tagsForQuestion = fs.readFileSync('./sprocs/tags_for_question.sql', 'utf8');
+var testPointsHomework = fs.readFileSync('./sprocs/test_points_homework.sql', 'utf8');
 
 module.exports = {
     pool: null,
@@ -126,6 +127,7 @@ module.exports = {
             testStats,
             testsForQuestion,
             tagsForQuestion,
+            testPointsHomework,
         ], function(sql, callback) {
             that.query(sql, [], callback);
         }, function(err) {

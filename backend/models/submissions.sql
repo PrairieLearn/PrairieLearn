@@ -7,7 +7,6 @@ CREATE TABLE IF NOT EXISTS submissions (
     submitted_answer JSONB,
     type enum_submission_type,
     override_score DOUBLE PRECISION,
-    open BOOLEAN,
     credit INTEGER,
     mode enum_mode,
     graded_at TIMESTAMP WITH TIME ZONE,

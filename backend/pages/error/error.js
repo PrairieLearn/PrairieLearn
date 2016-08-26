@@ -1,10 +1,8 @@
 var path = require('path');
-var express = require('express');
-var router = express.Router();
 
 var logger = require('../../logger');
 
-router.use(function(err, req, res, next) {
+module.exports = function(err, req, res, next) {
     if (req.app.get('env') === 'development') {
         // development error handler
         // will print stacktrace
@@ -25,6 +23,4 @@ router.use(function(err, req, res, next) {
             error: {}
         });
     }
-});
-
-module.exports = router;
+};
