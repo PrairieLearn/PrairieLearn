@@ -387,6 +387,13 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                         tInstance.set("questions", shuffledQuestions);
                         tInstance.set("qids", shuffledQids);
                     }
+                    else {
+                        var qids = new Array();
+                        _(questions).each(function(question, index) {
+                            qids.push(question["qid"]);
+                        });
+                        tInstance.set("qids", qids);
+                    }
 
                     tInstance.set("uniqueIds", uniqueIds);
                     tInstance.set("shuffled", true);
@@ -429,6 +436,13 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                         });
                         tInstance.set("questions", shuffledQuestions);
                         tInstance.set("qids", shuffledQids);
+                    }
+                    else {
+                        var qids = new Array();
+                        _(questions).each(function(question, index) {
+                            qids.push(question["qid"]);
+                        });
+                        tInstance.set("qids", qids);
                     }
 
                     tInstance.set("uniqueIds", uniqueIds);
