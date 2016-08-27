@@ -29,9 +29,9 @@ router.get('/', function(req, res, next) {
             var params = {
                 course_instance_id: res.locals.courseInstanceId,
             };
-            sqldb.query(sql.tests, params, function(err, result) {
+            sqldb.query(sql.assessments, params, function(err, result) {
                 if (ERR(err, next)) return;
-                res.locals.allTests = result.rows;
+                res.locals.allAssessments = result.rows;
                 
                 res.render('pages/adminQuestions/adminQuestions', res.locals);
             });

@@ -9,54 +9,54 @@ digraph partmc_modules {
 
     course_instance [label="course_instance*", style=filled, fillcolor=honeydew1]
     course_instance_access_rule [style=filled, fillcolor=honeydew1]
-    test_access_rule [style=filled, fillcolor=honeydew1]
+    assessment_access_rule [style=filled, fillcolor=honeydew1]
     question [label="question*", style=filled, fillcolor=honeydew1]
     question_tag [style=filled, fillcolor=honeydew1]
     tag [style=filled, fillcolor=honeydew1]
-    test [label="test*", style=filled, fillcolor=honeydew1]
-    test_question [label="test_question*", style=filled, fillcolor=honeydew1]
-    test_set [style=filled, fillcolor=honeydew1]
+    assessment [label="assessment*", style=filled, fillcolor=honeydew1]
+    assessment_question [label="assessment_question*", style=filled, fillcolor=honeydew1]
+    assessment_set [style=filled, fillcolor=honeydew1]
     topic [style=filled, fillcolor=honeydew1]
     zone [style=filled, fillcolor=honeydew1]
 
     enrollment [style=filled, fillcolor=lavender]
     user [style=filled, fillcolor=lavender]
-    test_instance [style=filled, fillcolor=lavender]
+    assessment_instance [style=filled, fillcolor=lavender]
     instance_question [style=filled, fillcolor=lavender]
     variant [style=filled, fillcolor=lavender]
     submission [style=filled, fillcolor=lavender]
 
-    test_state_log [style=filled, fillcolor=white]
+    assessment_state_log [style=filled, fillcolor=white]
     grading_log [style=filled, fillcolor=white]
-    test_score_log [style=filled, fillcolor=white]
+    assessment_score_log [style=filled, fillcolor=white]
     question_score_log [style=filled, fillcolor=white]
     variant_view_log [style=filled, fillcolor=white]
-    test_view_log [style=filled, fillcolor=white]
+    assessment_view_log [style=filled, fillcolor=white]
 
-    test_access_rule -> { test }
+    assessment_access_rule -> { assessment }
     course_instance -> { course }
     course_instance_access_rule -> { course_instance }
     question -> { course; topic }
     question_tag -> { question; tag }
     tag -> { course }
-    test -> { course_instance; test_set }
-    test_question -> { test; zone; question }
-    test_set -> { course }
+    assessment -> { course_instance; assessment_set }
+    assessment_question -> { assessment; zone; question }
+    assessment_set -> { course }
     topic -> { course }
-    zone -> { test }
+    zone -> { assessment }
 
     enrollment -> { user; course_instance }
-    test_instance -> { test; user }
-    instance_question -> { test_question; test_instance }
+    assessment_instance -> { assessment; user }
+    instance_question -> { assessment_question; assessment_instance }
     variant -> { instance_question }
     submission -> { variant }
 
-    test_state_log -> { test_instance }
+    assessment_state_log -> { assessment_instance }
     grading_log -> { submission }
-    test_score_log -> { test_instance }
+    assessment_score_log -> { assessment_instance }
     question_score_log -> { instance_question }
     variant_view_log -> { variant }
-    test_view_log -> { test_instance }
+    assessment_view_log -> { assessment_instance }
 
     subgraph cluster_legend {
 

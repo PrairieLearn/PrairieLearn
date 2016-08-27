@@ -46,7 +46,7 @@ module.exports = {
                 sqldb.query(sql, params, callback);
             },
             function(callback) {
-                // delete access rules from DB that don't correspond to tests
+                // delete access rules from DB that don't correspond to assessments
                 logger.info('Deleting unused course instance access rules');
                 var sql
                     = 'DELETE FROM course_instance_access_rules AS ciar'
@@ -88,7 +88,7 @@ module.exports = {
             if (err) return callback(err);
 
             // delete access rules from the DB that aren't on disk
-            logger.info('Deleting unused course instance access rules for current test');
+            logger.info('Deleting unused course instance access rules for current assessment');
             var sql = 'DELETE FROM course_instance_access_rules WHERE course_instance_id = $1 AND number > $2;';
             var params = [courseInstance.courseInstanceId, allowAccess.length];
             sqldb.query(sql, params, callback);

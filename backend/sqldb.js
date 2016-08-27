@@ -11,7 +11,7 @@ var enumMode = fs.readFileSync('./models/enum_mode.sql', 'utf8');
 var enumQuestionType = fs.readFileSync('./models/enum_question_type.sql', 'utf8');
 var enumRole = fs.readFileSync('./models/enum_role.sql', 'utf8');
 var enumSubmissionType = fs.readFileSync('./models/enum_submission_type.sql', 'utf8');
-var enumTestType = fs.readFileSync('./models/enum_test_type.sql', 'utf8');
+var enumAssessmentType = fs.readFileSync('./models/enum_assessment_type.sql', 'utf8');
 
 var courses = fs.readFileSync('./models/courses.sql', 'utf8');
 var courseInstances = fs.readFileSync('./models/course_instances.sql', 'utf8');
@@ -20,21 +20,21 @@ var topics = fs.readFileSync('./models/topics.sql', 'utf8');
 var questions = fs.readFileSync('./models/questions.sql', 'utf8');
 var tags = fs.readFileSync('./models/tags.sql', 'utf8');
 var questionTags = fs.readFileSync('./models/question_tags.sql', 'utf8');
-var testSets = fs.readFileSync('./models/test_sets.sql', 'utf8');
-var tests = fs.readFileSync('./models/tests.sql', 'utf8');
+var assessmentSets = fs.readFileSync('./models/assessment_sets.sql', 'utf8');
+var assessments = fs.readFileSync('./models/assessments.sql', 'utf8');
 var zones = fs.readFileSync('./models/zones.sql', 'utf8');
-var testAccessRules = fs.readFileSync('./models/test_access_rules.sql', 'utf8');
-var testQuestions = fs.readFileSync('./models/test_questions.sql', 'utf8');
+var assessmentAccessRules = fs.readFileSync('./models/assessment_access_rules.sql', 'utf8');
+var assessmentQuestions = fs.readFileSync('./models/assessment_questions.sql', 'utf8');
 
 var users = fs.readFileSync('./models/users.sql', 'utf8');
 var enrollments = fs.readFileSync('./models/enrollments.sql', 'utf8');
-var testInstances = fs.readFileSync('./models/test_instances.sql', 'utf8');
+var assessmentInstances = fs.readFileSync('./models/assessment_instances.sql', 'utf8');
 var instanceQuestions = fs.readFileSync('./models/instance_questions.sql', 'utf8');
 var variants = fs.readFileSync('./models/variants.sql', 'utf8');
 var submissions = fs.readFileSync('./models/submissions.sql', 'utf8');
 
-var testStateLogs = fs.readFileSync('./models/test_state_logs.sql', 'utf8');
-var testScoreLogs = fs.readFileSync('./models/test_score_logs.sql', 'utf8');
+var assessmentStateLogs = fs.readFileSync('./models/assessment_state_logs.sql', 'utf8');
+var assessmentScoreLogs = fs.readFileSync('./models/assessment_score_logs.sql', 'utf8');
 var accesseLogs = fs.readFileSync('./models/access_logs.sql', 'utf8');
 var variantViewLogs = fs.readFileSync('./models/variant_view_logs.sql', 'utf8');
 var gradingLogs = fs.readFileSync('./models/grading_logs.sql', 'utf8');
@@ -47,17 +47,17 @@ var formatIntervalShort = fs.readFileSync('./sprocs/format_interval_short.sql', 
 var intervalHistThresholds = fs.readFileSync('./sprocs/interval_hist_thresholds.sql', 'utf8');
 var checkCourseInstanceAccessRule = fs.readFileSync('./sprocs/check_course_instance_access_rule.sql', 'utf8');
 var checkCourseInstanceAccess = fs.readFileSync('./sprocs/check_course_instance_access.sql', 'utf8');
-var checkTestAccessRule = fs.readFileSync('./sprocs/check_test_access_rule.sql', 'utf8');
-var checkTestAccess = fs.readFileSync('./sprocs/check_test_access.sql', 'utf8');
-var testInstanceDurations = fs.readFileSync('./sprocs/test_instance_durations.sql', 'utf8');
-var userTestDurations = fs.readFileSync('./sprocs/user_test_durations.sql', 'utf8');
-var testDurationStats = fs.readFileSync('./sprocs/test_duration_stats.sql', 'utf8');
-var userTestScores = fs.readFileSync('./sprocs/user_test_scores.sql', 'utf8');
-var studentTestScores = fs.readFileSync('./sprocs/student_test_scores.sql', 'utf8');
-var testStats = fs.readFileSync('./sprocs/test_stats.sql', 'utf8');
-var testsForQuestion = fs.readFileSync('./sprocs/tests_for_question.sql', 'utf8');
+var checkAssessmentAccessRule = fs.readFileSync('./sprocs/check_assessment_access_rule.sql', 'utf8');
+var checkAssessmentAccess = fs.readFileSync('./sprocs/check_assessment_access.sql', 'utf8');
+var assessmentInstanceDurations = fs.readFileSync('./sprocs/assessment_instance_durations.sql', 'utf8');
+var userAssessmentDurations = fs.readFileSync('./sprocs/user_assessment_durations.sql', 'utf8');
+var assessmentDurationStats = fs.readFileSync('./sprocs/assessment_duration_stats.sql', 'utf8');
+var userAssessmentScores = fs.readFileSync('./sprocs/user_assessment_scores.sql', 'utf8');
+var studentAssessmentScores = fs.readFileSync('./sprocs/student_assessment_scores.sql', 'utf8');
+var assessmentStats = fs.readFileSync('./sprocs/assessment_stats.sql', 'utf8');
+var assessmentsForQuestion = fs.readFileSync('./sprocs/assessments_for_question.sql', 'utf8');
 var tagsForQuestion = fs.readFileSync('./sprocs/tags_for_question.sql', 'utf8');
-var testPointsHomework = fs.readFileSync('./sprocs/test_points_homework.sql', 'utf8');
+var assessmentPointsHomework = fs.readFileSync('./sprocs/assessment_points_homework.sql', 'utf8');
 
 module.exports = {
     pool: null,
@@ -83,7 +83,7 @@ module.exports = {
             enumQuestionType,
             enumRole,
             enumSubmissionType,
-            enumTestType,
+            enumAssessmentType,
             courses,
             courseInstances,
             courseInstanceAccessRules,
@@ -91,19 +91,19 @@ module.exports = {
             questions,
             tags,
             questionTags,
-            testSets,
-            tests,
+            assessmentSets,
+            assessments,
             zones,
-            testAccessRules,
-            testQuestions,
+            assessmentAccessRules,
+            assessmentQuestions,
             users,
             enrollments,
-            testInstances,
+            assessmentInstances,
             instanceQuestions,
             variants,
             submissions,
-            testStateLogs,
-            testScoreLogs,
+            assessmentStateLogs,
+            assessmentScoreLogs,
             accesseLogs,
             variantViewLogs,
             gradingLogs,
@@ -117,17 +117,17 @@ module.exports = {
             intervalHistThresholds,
             checkCourseInstanceAccessRule,
             checkCourseInstanceAccess,
-            checkTestAccessRule,
-            checkTestAccess,
-            testInstanceDurations,
-            userTestDurations,
-            testDurationStats,
-            userTestScores,
-            studentTestScores,
-            testStats,
-            testsForQuestion,
+            checkAssessmentAccessRule,
+            checkAssessmentAccess,
+            assessmentInstanceDurations,
+            userAssessmentDurations,
+            assessmentDurationStats,
+            userAssessmentScores,
+            studentAssessmentScores,
+            assessmentStats,
+            assessmentsForQuestion,
             tagsForQuestion,
-            testPointsHomework,
+            assessmentPointsHomework,
         ], function(sql, callback) {
             that.query(sql, [], callback);
         }, function(err) {

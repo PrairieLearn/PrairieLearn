@@ -2,7 +2,7 @@
     "name": "TPL 101",
     "title": "Example Course",
     "currentCourseInstance": "Sp15",
-    "testSets": [
+    "assessmentSets": [
         {"shortName": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
         {"shortName": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1"},
         {"shortName": "PQ", "name": "Practice Quiz", "heading": "Practice Quizzes", "color": "pink1"},

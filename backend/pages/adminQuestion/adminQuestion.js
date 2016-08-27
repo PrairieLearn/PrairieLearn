@@ -72,8 +72,8 @@ var render = function(req, res, next, variant, submission, scoreHtml, submission
                         courseInstance: res.locals.courseInstance,
                         variant: variant,
                         submittedAnswer: submission ? submission.submitted_answer : null,
+                        feedback: submission ? submission.feedback : null,
                         trueAnswer: variant.true_answer,
-                        feedback: submission.feedback,
                     });
                     res.render(path.join(__dirname, 'adminQuestion'), res.locals);
                 });

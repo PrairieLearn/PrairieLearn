@@ -25,7 +25,7 @@
               <th>QID</th>
               <th class="filter-select filter-exact" data-placeholder="Choose topic">Topic</th>
               <th data-placeholder="Choose tag">Tags</th>
-              <th data-placeholder="Choose test">Tests</th>
+              <th data-placeholder="Choose assessment">Assessments</th>
             </tr>
           </thead>
           <tbody>
@@ -35,7 +35,7 @@
               <td><%= question.qid %></td>
               <td><%- include('../partials/topic', {topic: question.topic}); %></td>
               <td><%- include('../partials/tags', {tags: question.tags}); %></td>
-              <td><%- include('../partials/tests', {tests: question.tests}); %></td>
+              <td><%- include('../partials/assessments', {assessments: question.assessments}); %></td>
             </tr>
             <% }); %>
           </tbody>
@@ -58,8 +58,8 @@
                               <% }); %>
                           },
                           4: {
-                              <% allTests.forEach(function(test) { %>
-                                  <%= test.label %>: function(e, n, f, i, $r, c, data) { return /\b<%= test.label %>\b/.test(e); },
+                              <% allAssessments.forEach(function(assessment) { %>
+                                  <%= assessment.label %>: function(e, n, f, i, $r, c, data) { return /\b<%= assessment.label %>\b/.test(e); },
                               <% }); %>
                           },
                       },

@@ -84,7 +84,7 @@ function processSubmission(req, res, callback) {
                 auth_user_id: res.locals.user.id,
                 submitted_answer: req.postData.submittedAnswer,
                 type: req.postData.type,
-                credit: res.locals.test.credit,
+                credit: res.locals.assessment.credit,
                 mode: req.mode,
                 graded_at: grading.graded_at,
                 score: grading.score,
@@ -121,8 +121,8 @@ function processSubmission(req, res, callback) {
             var current_value = res.locals.instanceQuestion.current_value;
             var number_attempts = res.locals.instanceQuestion.number_attempts;
             if (res.locals.submission.correct) {
-                points = Math.max(points + current_value, res.testQuestion.max_points);
-                current_value = Math.max(current_value + res.testQuestion.init_points, res.testQuestion.max_points);
+                points = Math.max(points + current_value, res.assessmentQuestion.max_points);
+                current_value = Math.max(current_value + res.assessmentQuestion.init_points, res.assessmentQuestion.max_points);
             }
 
             var params = {
@@ -139,12 +139,12 @@ function processSubmission(req, res, callback) {
         },
         function(callback) {
             var params = {
-                test_instance_id: res.locals.testInstance.id,
-                credit: res.locals.testInstance.credit,
+                assessment_instance_id: res.locals.assessmentInstance.id,
+                credit: res.locals.assessmentInstance.credit,
             };
-            sqldb.queryOneRow(sql.update_test_instance, params, function(err, result) {
+            sqldb.queryOneRow(sql.update_assessment_instance, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                res.locals.test_instance = result.rows[0];
+                res.locals.assessment_instance = result.rows[0];
                 callback(null);
             });
         },
@@ -161,7 +161,7 @@ function processPost(req, res, callback) {
 }
 
 function handle(req, res, next) {
-    if (res.locals.test.type !== 'Homework' && res.locals.test.type !== 'Game') next(); // FIXME: hack to handle 'Game'
+    if (res.locals.assessment.type !== 'Homework' && res.locals.assessment.type !== 'Game') next(); // FIXME: hack to handle 'Game'
 
     var questionModule;
     res.locals.showSubmitButton = true;

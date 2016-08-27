@@ -67,13 +67,13 @@ WHERE
     iq.id = $instance_question_id
 RETURNING iq.*;
 
--- BLOCK update_test_instance
-UPDATE test_instances AS ti
+-- BLOCK update_assessment_instance
+UPDATE assessment_instances AS ai
 SET
     points = new_values.points,
     score_perc = new_values.score_perc
 FROM
-    test_points_homework($test_instance_id, $credit) AS new_values
+    assessment_points_homework($assessment_instance_id, $credit) AS new_values
 WHERE
-    ti.id = $test_instance_id
-RETURNING ti.*;
+    ai.id = $assessment_instance_id
+RETURNING ai.*;

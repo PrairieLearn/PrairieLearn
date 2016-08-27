@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
+    <script type="text/javascript" src="/javascripts/d3.min.js"></script>
+    <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
+    <script type="text/javascript" src="/javascripts/jquery.tablesorter.min.js"></script>
+    <script type="text/javascript" src="/javascripts/jquery.tablesorter.widgets.js"></script>
+    <script type="text/javascript" src="/localscripts/histogram.js"></script>
+    <script type="text/javascript" src="/localscripts/scatter.js"></script>
+  </head>
+  <body>
+    <%- include('../partials/adminNavbar', {navPage: 'assessments'}); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title"><%= assessmentSet.abbrev %><%= assessment.number %>: <%= assessment.title %></h3>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <thead>
+            <tr>
+              <td></td>
+              <th>QID</th>
+              <th>Topic</th>
+              <th>Points</th>
+              <th>Other Assessments</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% questions.forEach(function(question) { %>
+            <% if (question.start_new_zone) { %>
+            <tr>
+              <th colspan="5">Zone <%= question.zone_number %>. <%= question.zone_title %></th>
+            </tr>
+            <% } %>
+            <tr>
+              <td><a href="<%= urlPrefix %>/question/<%= question.question_id %>/"><%= question.number %>. <%= question.title %></a></td>
+              <td><%= question.qid %></td>
+              <td><%- include('../partials/topic', {topic: question.topic}); %></td>
+              <td>
+                <% if (assessment.type == "RetryExam") { %><%= question.points_list %><% } %>
+                <% if (assessment.type == "Exam")      { %><%= question.max_points %><% } %>
+                <% if (assessment.type == "Basic")     { %><%= question.max_points %><% } %>
+                <% if (assessment.type == "Game")      { %><%= question.init_points %>/<%= question.max_points %><% } %>
+              </td>
+              <td>
+                <% if (question.assessments) { %>
+                <% question.assessments.forEach(function(assessment) { %>
+                <%- include('../partials/assessment', {assessment: assessment}); %>
+                <% }); %>
+                <% } %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+      
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title"><%= assessmentSet.abbrev %><%= assessment.number %> Score statistics</h3>
+        </div>
+
+        <% if (assessmentStat.number > 0) { %>
+        <div class="panel-body">
+          <div id="scoreHist" class="scoreHistogram"></div>
+          <script>
+            $(function() {
+                var data = [<%= assessmentStat.score_hist %>];
+                var xgrid = _.range(0, 110, 10);
+                var options = {
+                    ymin: 0,
+                    xlabel: 'score / %',
+                    ylabel: 'number of students',
+                };
+                histogram("#scoreHist", data, xgrid, options);
+            });
+          </script>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <tbody>
+            <tr><td>Number of students</td><td><%= assessmentStat.number %></td></tr>
+            <tr><td>Median score</td><td><%= assessmentStat.median %>%</td></tr>
+            <tr><td>Minimum score</td><td><%= assessmentStat.min %>%</td></tr>
+            <tr><td>Maximum score</td><td><%= assessmentStat.max %>%</td></tr>
+            <tr><td>Number of 0%</td><td><%= assessmentStat.n_zero %> (<%= assessmentStat.n_zero_perc %>% of class)</td></tr>
+            <tr><td>Number of 100%</td><td><%= assessmentStat.n_hundred %> (<%= assessmentStat.n_hundred_perc %>% of class)</td></tr>
+            <tr><td>Mean score</td><td><%= assessmentStat.mean %>%</td></tr>
+            <tr><td>Standard deviation</td><td><%= assessmentStat.std %>%</td></tr>
+          </tbody>
+        </table>
+        <div class="panel-footer">
+          <small>
+            Download <a href="<%= urlPrefix %>/assessment/<%= assessmentId %>/<%= scoreStatsCsvFilename %>"><%= scoreStatsCsvFilename %></a>. Data outside of the plotted range is included in the last bin.
+          </small>
+        </div>
+
+        <% } else { %>
+
+        <div class="panel-body">
+          <p>No student data.</p>
+        </div>
+        
+        <% }%>
+      </div>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+      
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title"><%= assessmentSet.abbrev %><%= assessment.number %> Duration statistics</h3>
+        </div>
+
+        <% if (assessmentStat.number > 0) { %>
+        <div class="panel-body">
+          <div id="durationHist" class="histogram"></div>
+          <script>
+            $(function() {
+                var data = [<%= durationStat.hist %>];
+                var xgrid = [<%= durationStat.threshold_seconds %>];
+                var options = {
+                    ymin: 0,
+                    xlabel: 'duration',
+                    ylabel: 'number of students',
+                    xTickLabels: [<% durationStat.threshold_labels.forEach(function(label) { %>'<%= label %>',<% }); %>],
+                };
+                histogram("#durationHist", data, xgrid, options);
+            });
+          </script>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <tbody>
+            <tr><td>Median duration</td><td><%= durationStat.median %></td></tr>
+            <tr><td>Minimum duration</td><td><%= durationStat.min %></td></tr>
+            <tr><td>Maximum duration</td><td><%= durationStat.max %></td></tr>
+            <tr><td>Mean duration</td><td><%= durationStat.mean %></td></tr>
+          </tbody>
+        </table>
+        <div class="panel-footer">
+          <small>
+            Download <a href="<%= urlPrefix %>/assessment/<%= assessmentId %>/<%= durationStatsCsvFilename %>"><%= durationStatsCsvFilename %></a>. Data outside of the plotted range is included in the last bin.
+          </small>
+        </div>
+
+        <% } else { %>
+
+        <div class="panel-body">
+          <p>No student data.</p>
+        </div>
+        
+        <% }%>
+      </div>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+      
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title"><%= assessmentSet.abbrev %><%= assessment.number %> Duration versus score</h3>
+        </div>
+
+        <% if (assessmentStat.number > 0) { %>
+        <div class="panel-body">
+          <div id="durationScoreScatter" class="scatter"></div>
+          <script>
+            $(function() {
+                var xdata = [<% userScores.forEach(function(user) { %><%= user.duration_secs %>,<% }); %>];
+                var ydata = [<% userScores.forEach(function(user) { %><%= user.score_perc %>,<% }); %>];
+                var options = {
+                    xgrid: [<%= durationStat.threshold_seconds %>],
+                    ygrid: _.range(0, 110, 10),
+                    xlabel: 'duration',
+                    ylabel: 'score / %',
+                    xTickLabels: [<% durationStat.threshold_labels.forEach(function(label) { %>'<%= label %>',<% }); %>],
+                };
+                scatter("#durationScoreScatter", xdata, ydata, options);
+            });
+          </script>
+        </div>
+
+        <div class="panel-footer">
+          <small>
+            Each point is one student. Data is available below for all users. Points beyond the plot range are plotted on the edge.
+          </small>
+        </div>
+
+        <% } else { %>
+
+        <div class="panel-body">
+          <p>No student data.</p>
+        </div>
+        
+        <% }%>
+      </div>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+      
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title"><%= assessmentSet.abbrev %><%= assessment.number %> Scores</h3>
+        </div>
+        <div class="panel-body">
+          <small>
+            Download <a href="<%= urlPrefix %>/assessment/<%= assessmentId %>/<%= scoresCsvFilename %>"><%= scoresCsvFilename %></a>.
+            Click on a column header to sort. Shift-click on a second header to sub-sort.
+          </small>
+        </div>
+
+        <table id="usersTable" class="table table-condensed table-hover tablesorter">
+          <thead>
+            <tr>
+              <th>UID</th>
+              <th>Name</th>
+              <th class="cell-center">Role</th>
+              <th class="cell-center">Score</th>
+              <th class="cell-center">Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% userScores.forEach(function(row) { %>
+            <tr>
+              <td><%= row.uid %></td>
+              <td><%= row.name %></td>
+              <td class="cell-center"><%= row.role %></td>
+              <td class="cell-center"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
+              <td class="cell-center" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+        <script>
+          $(function(){
+              $("#usersTable").tablesorter({
+                  theme: "bootstrap",
+                  widthFixed: true,
+                  headerTemplate: '{content} {icon}',
+                  widgets: ["uitheme"],
+              });
+          });
+        </script>
+        <div class="panel-footer">
+          <small>
+            Download <a href="<%= urlPrefix %>/assessment/<%= assessmentId %>/<%= scoresCsvFilename %>"><%= scoresCsvFilename %></a>
+          </small>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

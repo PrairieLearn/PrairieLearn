@@ -22,8 +22,8 @@
                 <th>UID</th>
                 <th>Name</th>
                 <th>Role</th>
-                <% course_tests.forEach(function(test) { %>
-                <th><%- include('../partials/test', {test: test}); %></th>
+                <% course_assessments.forEach(function(assessment) { %>
+                <th><%- include('../partials/assessment', {assessment: assessment}); %></th>
                 <% }); %>
               </tr>
             </thead>

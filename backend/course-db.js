@@ -54,7 +54,7 @@ module.exports.loadCourseInfo = function(courseInfo, courseDir, callback) {
         courseInfo.questionsDir = path.join(courseDir, "questions");
         courseInfo.courseInstancesDir = path.join(courseDir, "courseInstances");
         courseInfo.testsDir = path.join(courseDir, "tests");
-        courseInfo.testSets = info.testSets;
+        courseInfo.assessmentSets = info.assessmentSets;
         courseInfo.topics = info.topics;
         courseInfo.tags = info.tags;
         that.getCourseOriginURL(function(err, originURL) {
@@ -128,14 +128,14 @@ module.exports.checkInfoValid = function(idName, info, infoFile, courseInfo) {
         });
     }
 
-    var validTestSets = _(courseInfo.testSets).pluck('name');
+    var validAssessmentSets = _(courseInfo.assessmentSets).pluck('name');
     var validTopics = _(courseInfo.topics).pluck('name');
     var validTags = _(courseInfo.tags).pluck('name');
     
-    // check tests all have a valid testSet
+    // check assessments all have a valid assessmentSet
     if (idName == "tid") {
-        if (courseInfo.testSets && !_(validTestSets).contains(info.set)) {
-            logger.error(infoFile + ': invalid "set": "' + info.set + '" (must be a "name" of the "testSets" listed in courseInfo.json)');
+        if (courseInfo.assessmentSets && !_(validAssessmentSets).contains(info.set)) {
+            logger.error(infoFile + ': invalid "set": "' + info.set + '" (must be a "name" of the "assessmentSets" listed in courseInfo.json)');
             retVal = false;
         }
     }
@@ -254,7 +254,7 @@ module.exports.loadFullCourse = function(courseDir, callback) {
         "clientFiles": ["client.js", "question.html", "answer.html"],
     };
     var defaultCourseInstanceInfo = {};
-    var defaultTestInfo = {};
+    var defaultAssessmentInfo = {};
     async.series([
         that.loadCourseInfo.bind(that, course.courseInfo, courseDir),
         function(callback) {
@@ -270,10 +270,11 @@ module.exports.loadFullCourse = function(courseDir, callback) {
     ], function(err) {
         if (err) return callback(err);
         async.forEachOf(course.courseInstanceDB, function(courseInstance, courseInstanceDir, callback) {
-            var testsDir = path.join(course.courseInfo.courseInstancesDir, courseInstanceDir, "tests");
-            courseInstance.testDB = {};
-            that.loadInfoDB(courseInstance.testDB, "tid", testsDir, "info.json", defaultTestInfo,
+            var assessmentsDir = path.join(course.courseInfo.courseInstancesDir, courseInstanceDir, "assessments");
+            courseInstance.assessmentDB = {};
+            that.loadInfoDB(courseInstance.assessmentDB, "tid", assessmentsDir, "info.json", defaultAssessmentInfo,
                             "schemas/testInfo.json", "schemas/testOptions", ".json", course.courseInfo, callback);
+            // FIXME: rename 'test' -> 'assessment" on the line above once the mongo server is gone
         }, function(err) {
             if (err) return callback(err);
             callback(null, course);

@@ -50,7 +50,7 @@ app.use(require('./middlewares/parsePostData'));
 /*
   For each route we do several things:
   1. Check authorization.
-  2. Check that the implied nesting is true (e.g., that the test is inside the course).
+  2. Check that the implied nesting is true (e.g., that the assessment is inside the course).
   3. Load data from the DB and store it in the res.locals object.
   4. Execute the actual route handler that will read more DB data and render the page.
 */
@@ -63,15 +63,15 @@ app.use('/admin/:courseInstanceId', require('./middlewares/currentCourse'));
 app.use('/admin/:courseInstanceId', require('./middlewares/adminUrlPrefix'));
 app.use('/admin/:courseInstanceId', require('./middlewares/courseList'));
 app.use('/admin/:courseInstanceId', require('./middlewares/courseInstanceList'));
-app.use('/admin/:courseInstanceId/test/:testId', require('./middlewares/currentTest'));
+app.use('/admin/:courseInstanceId/assessment/:assessmentId', require('./middlewares/currentAssessment'));
 app.use('/admin/:courseInstanceId/question/:questionId', require('./middlewares/currentQuestion'));
 
 // Route handlers for admin pages.
 app.use('/admin', require('./pages/adminHome/adminHome'));
-// redirect class page to tests page
-app.use(function(req, res, next) {if (/\/admin\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/tests');} next();});
-app.use('/admin/:courseInstanceId/tests', require('./pages/adminTests/adminTests'));
-app.use('/admin/:courseInstanceId/test/:testId', require('./pages/adminTest/adminTest'));
+// redirect class page to assessments page
+app.use(function(req, res, next) {if (/\/admin\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/assessments');} next();});
+app.use('/admin/:courseInstanceId/assessments', require('./pages/adminAssessments/adminAssessments'));
+app.use('/admin/:courseInstanceId/assessment/:assessmentId', require('./pages/adminAssessment/adminAssessment'));
 app.use('/admin/:courseInstanceId/users', require('./pages/adminUsers/adminUsers'));
 app.use('/admin/:courseInstanceId/questions', require('./pages/adminQuestions/adminQuestions'));
 app.use('/admin/:courseInstanceId/question/:questionId', require('./pages/adminQuestion/adminQuestion'));
@@ -85,27 +85,27 @@ app.use('/pl/:courseInstanceId', require('./middlewares/ensureEnrollment'));
 app.use('/pl/:courseInstanceId', require('./middlewares/currentCourseInstance'));
 app.use('/pl/:courseInstanceId', require('./middlewares/currentCourse'));
 app.use('/pl/:courseInstanceId', require('./middlewares/userUrlPrefix'));
-app.use('/pl/:courseInstanceId/test/:testId', require('./middlewares/currentTest'));
-app.use('/pl/:courseInstanceId/testInstance/:testInstanceId', require('./middlewares/currentTestInstance'));
-app.use('/pl/:courseInstanceId/testInstance/:testInstanceId', require('./middlewares/currentTest'));
+app.use('/pl/:courseInstanceId/assessment/:assessmentId', require('./middlewares/currentAssessment'));
+app.use('/pl/:courseInstanceId/assessmentInstance/:assessmentInstanceId', require('./middlewares/currentAssessmentInstance'));
+app.use('/pl/:courseInstanceId/assessmentInstance/:assessmentInstanceId', require('./middlewares/currentAssessment'));
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentInstanceQuestion'));
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentTestInstance'));
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentTest'));
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentTestQuestion'));
+app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentAssessmentInstance'));
+app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentAssessment'));
+app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentAssessmentQuestion'));
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentQuestion'));
 
 // Route handlers for user pages
 app.use('/pl', require('./pages/userHome/userHome'));
-// redirect class page to tests page
-app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/tests');} next();});
-app.use('/pl/:courseInstanceId/tests', require('./pages/userTests/userTests'));
-app.use('/pl/:courseInstanceId/test/:testId', require('./pages/userTest/userTest'));
-app.use('/pl/:courseInstanceId/testInstance/:testInstanceId', [
-    // following handlers will call next() if they don't match the correct test type
-    require('./pages/userTestInstanceHomework/userTestInstanceHomework'),
+// redirect class page to assessments page
+app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/assessments');} next();});
+app.use('/pl/:courseInstanceId/assessments', require('./pages/userAssessments/userAssessments'));
+app.use('/pl/:courseInstanceId/assessment/:assessmentId', require('./pages/userAssessment/userAssessment'));
+app.use('/pl/:courseInstanceId/assessmentInstance/:assessmentInstanceId', [
+    // following handlers will call next() if they don't match the correct assessment type
+    require('./pages/userAssessmentInstanceHomework/userAssessmentInstanceHomework'),
 ]);
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', [
-    // following handlers will call next() if they don't match the correct test type
+    // following handlers will call next() if they don't match the correct assessment type
     require('./pages/userInstanceQuestionHomework/userInstanceQuestionHomework'),
 ]);
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId/file', require('./pages/questionFile/questionFile'));

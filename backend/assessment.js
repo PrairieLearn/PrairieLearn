@@ -21,24 +21,24 @@ module.exports = {
         }
     },
 
-    newTestInstance: function(testInstance, test, course, callback) {
-        this.getModule(test.type, function(err, assessmentModule) {
+    newAssessmentInstance: function(assessmentInstance, assessment, course, callback) {
+        this.getModule(assessment.type, function(err, assessmentModule) {
             if (ERR(err, callback)) return;
-            assessmentModule.newTestInstance(testInstance, test, course, callback);
+            assessmentModule.newAssessmentInstance(assessmentInstance, assessment, course, callback);
         });
      },
 
-    updateTestInstance: function(testInstance, test, course, locals, callback) {
-        this.getModule(test.type, function(err, assessmentModule) {
+    updateAssessmentInstance: function(assessmentInstance, assessment, course, locals, callback) {
+        this.getModule(assessment.type, function(err, assessmentModule) {
             if (ERR(err, callback)) return;
-            assessmentModule.updateTestInstance(testInstance, test, course, locals, callback);
+            assessmentModule.updateAssessmentInstance(assessmentInstance, assessment, course, locals, callback);
         });
      },
 
-    renderTestInstance: function(testInstance, locals, callback) {
-        this.getModule(locals.test.type, function(err, assessmentModule) {
+    renderAssessmentInstance: function(assessmentInstance, locals, callback) {
+        this.getModule(locals.assessment.type, function(err, assessmentModule) {
             if (ERR(err, callback)) return;
-            assessmentModule.renderTestInstance(testInstance, locals, callback);
+            assessmentModule.renderAssessmentInstance(assessmentInstance, locals, callback);
         });
     },
 };
