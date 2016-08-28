@@ -1,0 +1,9 @@
+<% if (points == 0) { %>
+<span class="label label-danger">
+<% } else if (points < max_points) { %>
+<span class="label label-warning">
+<% } else { %>
+<span class="label label-success">
+<% } %>
+<%= points %>/<%= max_points %>
+</span>

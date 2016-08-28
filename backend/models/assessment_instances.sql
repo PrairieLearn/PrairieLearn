@@ -3,15 +3,15 @@ CREATE TABLE IF NOT EXISTS assessment_instances (
     tiid varchar(255) UNIQUE, -- temporary, delete after Mongo import
     qids JSONB, -- temporary, delete after Mongo import
     obj JSONB, -- temporary, delete after Mongo import
-    date TIMESTAMP WITH TIME ZONE,
+    date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     number INTEGER,
     open BOOLEAN,
     assessment_id INTEGER NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
     auth_user_id INTEGER REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
-    points DOUBLE PRECISION,
+    points DOUBLE PRECISION DEFAULT 0,
     max_points DOUBLE PRECISION,
-    score_perc INTEGER,
+    score_perc INTEGER DEFAULT 0,
     UNIQUE (number, assessment_id, user_id)
 );
 

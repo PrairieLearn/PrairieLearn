@@ -26,7 +26,7 @@ router.get('/', function(req, res, next) {
         };
         sqldb.query(sql.get_questions, params, function(err, result) {
             if (ERR(err, next)) return;
-            res.locals.instanceQuestions = result.rows;
+            res.locals.questions = result.rows;
 
             res.render(path.join(__dirname, 'userAssessmentInstanceHomework'), res.locals);
         });

@@ -22,7 +22,8 @@ SELECT
     iq.*,
     (lag(z.id) OVER (PARTITION BY z.id ORDER BY iq.order_by, iq.id) IS NULL) AS start_new_zone,
     z.title AS zone_title,
-    q.title AS question_title
+    q.title AS question_title,
+    aq.max_points
 FROM
     instance_questions AS iq
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)

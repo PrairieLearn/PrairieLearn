@@ -76,8 +76,8 @@
             <table class="table table-condensed">
               <tbody>
                 <tr>
-                  <td>Points:</td>
-                  <td><%= assessmentInstance.points %>/<%= assessmentInstance.max_points %></td>
+                  <td>Total points:</td>
+                  <td><%= assessmentInstance.points %>/<%= assessmentInstance.max_points || assessment.max_points %></td>
                 </tr>
                 <tr>
                   <td>Score:</td>
@@ -91,12 +91,12 @@
             <table class="table table-condensed">
               <tbody>
                 <tr>
-                  <td>Current value:</td>
-                  <td><%= instanceQuestion.current_value %></td>
+                  <td>Value:</td>
+                  <td><%- include('../partials/questionValue', {value: instanceQuestion.current_value});  %></td>
                 </tr>
                 <tr>
-                  <td>Awarded points:</td>
-                  <td><%= instanceQuestion.points %></td>
+                  <td>Points:</td>
+                  <td><%- include('../partials/questionPointsOfMax', {points: instanceQuestion.points, max_points: assessmentQuestion.max_points}); %></td>
                 </tr>
               </tbody>
             </table>

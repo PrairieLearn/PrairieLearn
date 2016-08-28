@@ -13,7 +13,8 @@ WITH
             cta.available,
             cta.credit,
             NULL::integer AS assessment_instance_id,
-            NULL::integer AS assessment_instance_number
+            NULL::integer AS assessment_instance_number,
+            NULL::integer AS assessment_instance_score_perc
         FROM
             assessments AS a
             JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
@@ -26,22 +27,23 @@ WITH
 
     multiple_instance_assessment_instances AS (
         SELECT
-            mit.assessment_id,
-            mit.assessment_number,
-            mit.assessment_title,
-            mit.assessment_set_id,
-            mit.assessment_set_abbrev,
-            mit.assessment_set_name,
-            mit.assessment_set_heading,
-            mit.assessment_set_color,
-            mit.assessment_set_number,
-            mit.available,
-            mit.credit,
+            mia.assessment_id,
+            mia.assessment_number,
+            mia.assessment_title,
+            mia.assessment_set_id,
+            mia.assessment_set_abbrev,
+            mia.assessment_set_name,
+            mia.assessment_set_heading,
+            mia.assessment_set_color,
+            mia.assessment_set_number,
+            mia.available,
+            mia.credit,
             ai.id AS assessment_instance_id,
-            ai.number AS assessment_instance_number
+            ai.number AS assessment_instance_number,
+            ai.score_perc AS assessment_instance_score_perc
         FROM
             assessment_instances AS ai
-            JOIN multiple_instance_assessments AS mit ON (mit.assessment_id = ai.assessment_id)
+            JOIN multiple_instance_assessments AS mia ON (mia.assessment_id = ai.assessment_id)
         WHERE
             ai.user_id = $userId
     ),
@@ -60,7 +62,8 @@ WITH
             cta.available,
             cta.credit,
             ai.id AS assessment_instance_id,
-            ai.number AS assessment_instance_number
+            ai.number AS assessment_instance_number,
+            ai.score_perc AS assessment_instance_score_perc
         FROM
             assessments AS a
             JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)

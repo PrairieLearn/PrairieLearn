@@ -121,8 +121,10 @@ function processSubmission(req, res, callback) {
             var current_value = res.locals.instanceQuestion.current_value;
             var number_attempts = res.locals.instanceQuestion.number_attempts;
             if (res.locals.submission.correct) {
-                points = Math.max(points + current_value, res.assessmentQuestion.max_points);
-                current_value = Math.max(current_value + res.assessmentQuestion.init_points, res.assessmentQuestion.max_points);
+                points = Math.min(points + current_value, res.locals.assessmentQuestion.max_points);
+                current_value = Math.min(current_value + res.locals.assessmentQuestion.init_points, res.locals.assessmentQuestion.max_points);
+            } else {
+                current_value = res.locals.assessmentQuestion.init_points;
             }
 
             var params = {
@@ -133,7 +135,7 @@ function processSubmission(req, res, callback) {
             };
             sqldb.queryOneRow(sql.update_instance_question, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                res.locals.instance_question = result.rows[0];
+                res.locals.instanceQuestion = result.rows[0];
                 callback(null);
             });
         },
@@ -144,7 +146,7 @@ function processSubmission(req, res, callback) {
             };
             sqldb.queryOneRow(sql.update_assessment_instance, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                res.locals.assessment_instance = result.rows[0];
+                res.locals.assessmentInstance = result.rows[0];
                 callback(null);
             });
         },
