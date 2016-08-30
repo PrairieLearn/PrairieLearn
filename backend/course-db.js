@@ -48,29 +48,6 @@ module.exports.loadCourseInfo = function(courseInfo, courseDir, callback) {
         courseInfo.path = courseDir;
         courseInfo.name = info.name;
         courseInfo.title = info.title;
-        courseInfo.gitCourseBranch = config.gitCourseBranch;
-        courseInfo.timezone = config.timezone;
-        courseInfo.currentCourseInstance = info.currentCourseInstance;
-        courseInfo.questionsDir = path.join(courseDir, "questions");
-        courseInfo.courseInstancesDir = path.join(courseDir, "courseInstances");
-        courseInfo.testsDir = path.join(courseDir, "tests");
-        courseInfo.testSets = info.testSets;
-        courseInfo.topics = info.topics;
-        courseInfo.tags = info.tags;
-        that.getCourseOriginURL(function(err, originURL) {
-            courseInfo.remoteFetchURL = originURL;
-            return callback(null);
-        });
-    });
-};
-
-module.exports.loadCourseInstanceInfo = function(courseInfo, courseDir, courseInstance, callback) {
-    var that = this;
-    var courseInfoFilename = path.join(courseDir, "courseInstances", courseInstance, "courseInstanceInfo.json");
-    jsonLoad.readInfoJSON(courseInfoFilename, "schemas/courseInstanceInfo.json", undefined, undefined, function(err, info) {
-        if (err) return callback(err);
-        courseInfo.courseInstanceShortName = info.shortName;
-        courseInfo.courseInstanceLongName = info.longName;
         if (info.userRoles) {
             _(info.userRoles).forEach(function(value, key) {
                 if (!PrairieRole.isRoleValid(value)) {
@@ -85,7 +62,19 @@ module.exports.loadCourseInstanceInfo = function(courseInfo, courseDir, courseIn
             });
         }
         courseInfo.userRoles = info.userRoles;
-        return callback(null);
+        courseInfo.gitCourseBranch = config.gitCourseBranch;
+        courseInfo.timezone = config.timezone;
+        courseInfo.currentCourseInstance = info.currentCourseInstance;
+        courseInfo.questionsDir = path.join(courseDir, "questions");
+        courseInfo.courseInstancesDir = path.join(courseDir, "courseInstances");
+        courseInfo.testsDir = path.join(courseDir, "tests");
+        courseInfo.testSets = info.testSets;
+        courseInfo.topics = info.topics;
+        courseInfo.tags = info.tags;
+        that.getCourseOriginURL(function(err, originURL) {
+            courseInfo.remoteFetchURL = originURL;
+            return callback(null);
+        });
     });
 };
 
