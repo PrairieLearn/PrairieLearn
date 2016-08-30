@@ -1528,7 +1528,7 @@ app.post("/submissions", function(req, res) {
     ensureObjAuth(req, submission, "write", function(err) {
         if (err) return sendError(res, 403, err);
         readQInstance(submission.qiid, function(err, qInstance) {
-            if (err) return sendError(res, 500, "Error reading qInstance", {qiid: qiid, err: err});
+            if (err) return sendError(res, 500, "Error reading qInstance", {qiid: submission.qiid, err: err});
             ensureObjAuth(req, qInstance, "read", function(err) {
                 if (err) return sendError(res, 403, err);
                 submission.qid = qInstance.qid;
