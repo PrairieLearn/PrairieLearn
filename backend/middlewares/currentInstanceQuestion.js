@@ -14,7 +14,8 @@ module.exports = function(req, res, next) {
     sqldb.queryOneRow(sql.all, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.instanceQuestion = result.rows[0];
-        res.locals.testInstanceId = res.locals.instanceQuestion.test_instance_id;
+        res.locals.assessmentInstanceId = res.locals.instanceQuestion.assessment_instance_id;
+        res.locals.assessmentQuestionId = res.locals.instanceQuestion.assessment_question_id;
         res.locals.questionId = res.locals.instanceQuestion.question_id;
         next();
     });

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/userNavbar', {navPage: 'assessments'}); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Assessments</h3>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <thead>
+            <tr>
+              <th></th>
+              <th class="cell-center">Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% rows.forEach(function(row) { %>
+            <% if (row.start_new_set) { %>
+            <tr class="<%= row.assessment_set_color %>">
+              <th colspan="7"><%= row.assessment_set_heading %></th>
+            </tr>
+            <% } %>
+            <tr>
+              <td>
+                <a
+                   <% if (row.assessment_instance_id) { %>
+                   href="<%= urlPrefix %>/assessmentInstance/<%= row.assessment_instance_id %>/"
+                   <% } else { %>
+                   href="<%= urlPrefix %>/assessment/<%= row.assessment_id %>/"
+                   <% } %>
+                   class="btn btn-<%= row.assessment_set_color %> btn-xs" role="button"
+                   ><%= row.assessment_set_abbrev %><%= row.assessment_number %></a>
+                <a
+                   <% if (row.assessment_instance_id) { %>
+                   href="<%= urlPrefix %>/assessmentInstance/<%= row.assessment_instance_id %>/"
+                   <% } else { %>
+                   href="<%= urlPrefix %>/assessment/<%= row.assessment_id %>/"
+                   <% } %>
+                   ><%= row.assessment_title %></a>
+              </td>
+              <td class="cell-center">
+                <% if (row.assessment_instance_id) { %>
+                <%- include('../partials/scorebar', {score: row.assessment_instance_score_perc}) %>
+                <% } else { %>
+                Not started
+                <% } %>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>

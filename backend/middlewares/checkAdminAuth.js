@@ -1,7 +1,9 @@
 var ERR = require('async-stacktrace');
 var path = require('path');
+
 var logger = require('../logger');
 var sqldb = require('../sqldb');
+var error = require('../error');
 var sqlLoader = require('../sql-loader');
 
 var sql = sqlLoader.load(path.join(__dirname, 'checkAdminAuth.sql'));

@@ -3,7 +3,7 @@ SELECT
     q.*,
     row_to_json(top) AS topic,
     tags_for_question(q.id) AS tags,
-    tests_for_question(q.id, $course_instance_id) AS tests
+    assessments_for_question(q.id, $course_instance_id) AS assessments
 FROM
     questions AS q
     JOIN topics AS top ON (top.id = q.topic_id)
@@ -23,10 +23,10 @@ FROM tags AS tag
 WHERE tag.course_id = $course_id
 ORDER BY tag.number;
 
--- BLOCK tests
-SELECT ts.abbrev || t.number AS label
-FROM tests AS t
-JOIN test_sets AS ts ON (ts.id = t.test_set_id)
-WHERE t.course_instance_id = $course_instance_id
-AND t.deleted_at IS NULL
-ORDER BY ts.number,t.number;
+-- BLOCK assessments
+SELECT aset.abbrev || a.number AS label
+FROM assessments AS a
+JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+WHERE a.course_instance_id = $course_instance_id
+AND a.deleted_at IS NULL
+ORDER BY aset.number,a.number;

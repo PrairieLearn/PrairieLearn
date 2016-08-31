@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var async = require('async');
 
@@ -18,12 +19,12 @@ module.exports = {
                 + ' RETURNING id;';
             var params = [topic.name, i + 1, topic.color, courseInfo.courseId];
             sqldb.queryOneRow(sql, params, function(err, result) {
-                if (err) return callback(err);
+                if (ERR(err, callback)) return;
                 ids.push(result.rows[0].id);
                 callback(null);
             });
         }, function(err) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
 
             // delete topics from the DB that aren't on disk
             var paramIndexes = ids.map(function(item, idx) {return "$" + (idx + 2);});
@@ -33,7 +34,10 @@ module.exports = {
                 + ' AND ' + (ids.length === 0 ? 'TRUE' : 'id NOT IN (' + paramIndexes.join(',') + ')')
                 + ' ;';
             var params = [courseInfo.courseId].concat(ids);
-            sqldb.query(sql, params, callback);
+            sqldb.query(sql, params, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         });
     },
 };

@@ -14,14 +14,14 @@ var sqlLoader = require('../sql-loader');
 var sql = sqlLoader.load(path.join(__dirname, 'homework.sql'));
 
 module.exports = {
-    newTestInstance: function(testInstance, test, course, callback) {
+    newAssessmentInstance: function(assessmentInstance, assessment, course, callback) {
         callback(null);
     },
     
-    updateTestInstance: function(testInstance, test, course, locals, callback) {
+    updateAssessmentInstance: function(assessmentInstance, assessment, course, locals, callback) {
         var params = {
-            test_instance_id: testInstance.id,
-            test_id: test.id,
+            assessment_instance_id: assessmentInstance.id,
+            assessment_id: assessment.id,
         };
         sqldb.query(sql.update, params, function(err, result) {
             if (ERR(err, callback)) return;
@@ -29,17 +29,17 @@ module.exports = {
         });
     },
     
-    renderTestInstance: function(testInstance, locals, callback) {
+    renderAssessmentInstance: function(assessmentInstance, locals, callback) {
         var extraHeader = null;
         var params = {
-            test_instance_id: testInstance.id,
+            assessment_instance_id: assessmentInstance.id,
         };
         sqldb.query(sql.get_questions, params, function(err, result) {
             if (ERR(err, callback)) return;
             var loc = _.extend({
                 instanceQuestions: result.rows,
             }, locals);
-            ejs.renderFile(path.join(__dirname, 'homeworkTestInstance.ejs'), loc, function(err, html) {
+            ejs.renderFile(path.join(__dirname, 'homeworkAssessmentInstance.ejs'), loc, function(err, html) {
                 if (ERR(err, callback)) return;
                 callback(null, extraHeader, html);
             });

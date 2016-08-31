@@ -22,15 +22,16 @@ var handle = function(req, res, next) {
             };
             question.gradeSubmission(submission, variant, res.locals.question, res.locals.course, {}, function(err, grading) {
                 if (ERR(err, next)) return;
+                _.assign(submission, grading);
                 question.getModule(res.locals.question.type, function(err, questionModule) {
                     if (ERR(err, next)) return;
-                    question.renderScore(grading.score, function(err, scoreHtml) {
+                    question.renderScore(submission.score, function(err, scoreHtml) {
                         if (ERR(err, next)) return;
-                        questionModule.renderSubmission(variant, res.locals.question, submission, grading, res.locals.course, res.locals, function(err, submissionHtml) {
+                        questionModule.renderSubmission(variant, res.locals.question, submission, res.locals.course, res.locals, function(err, submissionHtml) {
                             if (ERR(err, next)) return;
                             questionModule.renderTrueAnswer(variant, res.locals.question, res.locals.course, res.locals, function(err, answerHtml) {
                                 if (ERR(err, next)) return;
-                                render(req, res, next, variant, submission, grading, scoreHtml, submissionHtml, answerHtml);
+                                render(req, res, next, variant, submission, scoreHtml, submissionHtml, answerHtml);
                             });
                         });
                     });
@@ -45,7 +46,7 @@ var handle = function(req, res, next) {
     }
 };
 
-var render = function(req, res, next, variant, submission, grading, scoreHtml, submissionHtml, answerHtml) {
+var render = function(req, res, next, variant, submission, scoreHtml, submissionHtml, answerHtml) {
     var params = [res.locals.questionId, res.locals.courseInstanceId];
     sqldb.queryOneRow(sql.all, params, function(err, result) {
         if (ERR(err, next)) return;
@@ -58,7 +59,6 @@ var render = function(req, res, next, variant, submission, grading, scoreHtml, s
                     
                     res.locals.result = result.rows[0];
                     res.locals.submission = submission;
-                    res.locals.grading = grading;
                     res.locals.extraHeaders = extraHeaders;
                     res.locals.questionHtml = questionHtml;
                     res.locals.scoreHtml = scoreHtml;
@@ -72,8 +72,8 @@ var render = function(req, res, next, variant, submission, grading, scoreHtml, s
                         courseInstance: res.locals.courseInstance,
                         variant: variant,
                         submittedAnswer: submission ? submission.submitted_answer : null,
+                        feedback: submission ? submission.feedback : null,
                         trueAnswer: variant.true_answer,
-                        feedback: grading ? grading.feedback : null,
                     });
                     res.render(path.join(__dirname, 'adminQuestion'), res.locals);
                 });

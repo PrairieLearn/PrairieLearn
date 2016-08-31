@@ -18,7 +18,7 @@ module.exports = {
         callback(null, "");
     },
 
-    renderSubmission: function(variant, question, submission, grading, course, locals, callback) {
+    renderSubmission: function(variant, question, submission, course, locals, callback) {
         callback(null, "");
     },
 

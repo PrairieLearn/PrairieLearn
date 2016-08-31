@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var async = require('async');
 
@@ -21,13 +22,13 @@ module.exports = {
                         + ' RETURNING id;';
                     var params = [tag.name, i + 1, tag.color, courseInfo.courseId];
                     sqldb.query(sql, params, function(err, result) {
-                        if (err) return callback(err);
+                        if (ERR(err, callback)) return;
                         tag.id = result.rows[0].id;
                         ids.push(tag.id);
                         callback(null);
                     });
                 }, function(err) {
-                    if (err) return callback(err);
+                    if (ERR(err, callback)) return;
 
                     // delete topics from the DB that aren't on disk
                     var paramIndexes = ids.map(function(item, idx) {return "$" + (idx + 2);});
@@ -37,7 +38,10 @@ module.exports = {
                         + ' AND ' + (ids.length === 0 ? 'TRUE' : 'id NOT IN (' + paramIndexes.join(',') + ')')
                         + ' ;';
                     var params = [courseInfo.courseId].concat(ids);
-                    sqldb.query(sql, params, callback);
+                    sqldb.query(sql, params, function(err) {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
                 });
             },
             function(callback) {
@@ -57,12 +61,12 @@ module.exports = {
                         }
                         var params = [q.id, tagsByName[tagName].id, i + 1];
                         sqldb.query(sql, params, function(err, result) {
-                            if (err) return callback(err);
+                            if (ERR(err, callback)) return;
                             ids.push(result.rows[0].id);
                             callback(null);
                         });
                     }, function(err) {
-                        if (err) return callback(err);
+                        if (ERR(err, callback)) return;
 
                         // delete topics from the DB that aren't on disk
                         var paramIndexes = ids.map(function(item, idx) {return "$" + (idx + 2);});
@@ -72,10 +76,19 @@ module.exports = {
                             + ' AND ' + (ids.length === 0 ? 'TRUE' : 'id NOT IN (' + paramIndexes.join(',') + ')')
                             + ' ;';
                         var params = [q.id].concat(ids);
-                        sqldb.query(sql, params, callback);
+                        sqldb.query(sql, params, function(err) {
+                            if (ERR(err, callback)) return;
+                            callback(null);
+                        });
                     });
-                }, callback);
+                }, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
             },
-        ], callback);
+        ], function(err) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
     },
 };

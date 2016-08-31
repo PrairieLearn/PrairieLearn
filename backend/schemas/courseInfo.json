@@ -29,11 +29,11 @@
             "description": "The current active course instance. Must be a subdirectory of courseInstances/",
             "type": "string"
         },
-        "testSets": {
-            "description": "Test sets.",
+        "assessmentSets": {
+            "description": "Assessment sets.",
             "type": "array",
             "items": {
-                "description": "A single test set description.",
+                "description": "A single assessment set description.",
                 "type": "object",
                 "properties": {
                     "shortName": {
@@ -47,12 +47,12 @@
                         "required": true
                     },
                     "heading": {
-                        "description": "Plural heading for a group of tests (preferably 1 to 3 words), e.g., 'Homeworks', 'Quizzes'.",
+                        "description": "Plural heading for a group of assessments (preferably 1 to 3 words), e.g., 'Homeworks', 'Quizzes'.",
                         "type": "string",
                         "required": true
                     },
                     "color": {
-                        "$ref": "#/definitions/questionQID",
+                        "$ref": "#/definitions/color",
                         "required": true
                     }
                 }
@@ -62,7 +62,7 @@
             "description": "Question topics (visible to students).",
             "type": "array",
             "items": {
-                "description": "A single test set description.",
+                "description": "A single assessment set description.",
                 "type": "object",
                 "properties": {
                     "shortName": {
@@ -75,7 +75,7 @@
                         "required": true
                     },
                     "color": {
-                        "$ref": "#/definitions/questionQID",
+                        "$ref": "#/definitions/color",
                         "required": true
                     }
                 }
@@ -85,7 +85,7 @@
             "description": "Question tags (not visible to students).",
             "type": "array",
             "items": {
-                "description": "A single test set description.",
+                "description": "A single tag description.",
                 "type": "object",
                 "properties": {
                     "shortName": {
@@ -98,7 +98,7 @@
                         "required": true
                     },
                     "color": {
-                        "$ref": "#/definitions/questionQID",
+                        "$ref": "#/definitions/color",
                         "required": true
                     }
                 }

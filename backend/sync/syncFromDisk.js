@@ -9,8 +9,8 @@ var syncCourseStaff = require('./fromDisk/courseStaff');
 var syncTopics = require('./fromDisk/topics');
 var syncQuestions = require('./fromDisk/questions');
 var syncTags = require('./fromDisk/tags');
-var syncTestSets = require('./fromDisk/testSets');
-var syncTests = require('./fromDisk/tests');
+var syncAssessmentSets = require('./fromDisk/assessmentSets');
+var syncAssessments = require('./fromDisk/assessments');
 
 module.exports = {};
 
@@ -30,8 +30,8 @@ module.exports.syncDiskToSql = function(courseDir, callback) {
             syncQuestions.sync.bind(null, course.courseInfo, course.questionDB),
             function(callback) {logger.infoOverride("Syncing tags from disk to SQL DB"); callback(null);},
             syncTags.sync.bind(null, course.courseInfo, course.questionDB),
-            function(callback) {logger.infoOverride("Syncing test sets from disk to SQL DB"); callback(null);},
-            syncTestSets.sync.bind(null, course.courseInfo),
+            function(callback) {logger.infoOverride("Syncing assessment sets from disk to SQL DB"); callback(null);},
+            syncAssessmentSets.sync.bind(null, course.courseInfo),
         ], function(err) {
             if (err) return callback(err);
             async.forEachOfSeries(course.courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
@@ -40,8 +40,8 @@ module.exports.syncDiskToSql = function(courseDir, callback) {
                                                             + " from disk to SQL DB"); callback(null);},
                     function(callback) {logger.infoOverride("Syncing courseStaff from disk to SQL DB"); callback(null);},
                     syncCourseStaff.sync.bind(null, course.courseInfo, courseInstance),
-                    function(callback) {logger.infoOverride("Syncing tests from disk to SQL DB"); callback(null);},
-                    syncTests.sync.bind(null, course.courseInfo, courseInstance),
+                    function(callback) {logger.infoOverride("Syncing assessments from disk to SQL DB"); callback(null);},
+                    syncAssessments.sync.bind(null, course.courseInfo, courseInstance),
                 ], callback);
             }, function(err) {
                 if (err) return callback(err);

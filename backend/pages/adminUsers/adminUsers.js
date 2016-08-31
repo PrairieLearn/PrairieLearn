@@ -22,9 +22,9 @@ var csv_filename = function(locals) {
 router.get('/', function(req, res, next) {
     res.locals.csv_filename = csv_filename(res.locals);
     var params = {course_instance_id: res.locals.courseInstanceId};
-    sqldb.query(sql.course_tests, params, function(err, result) {
+    sqldb.query(sql.course_assessments, params, function(err, result) {
         if (ERR(err, next)) return;
-        res.locals.course_tests = result.rows;
+        res.locals.course_assessments = result.rows;
 
         var params = {course_instance_id: res.locals.courseInstanceId};
         sqldb.query(sql.user_scores, params, function(err, result) {
@@ -38,14 +38,14 @@ router.get('/', function(req, res, next) {
 
 router.get('/:filename', function(req, res, next) {
     var params = {course_instance_id: res.locals.courseInstanceId};
-    sqldb.query(sql.course_tests, params, function(err, result) {
+    sqldb.query(sql.course_assessments, params, function(err, result) {
         if (ERR(err, next)) return;
-        var course_tests = result.rows;
+        var course_assessments = result.rows;
         sqldb.query(sql.user_scores, params, function(err, result) {
             if (ERR(err, next)) return;
             var user_scores = result.rows;
 
-            var csvHeaders = ['UID', 'Name', 'Role'].concat(_(course_tests).pluck('label'));
+            var csvHeaders = ['UID', 'Name', 'Role'].concat(_(course_assessments).pluck('label'));
             var csvData = _(user_scores).map(function(row) {
                 return [row.uid, row.user_name, row.role].concat(row.scores);
             });

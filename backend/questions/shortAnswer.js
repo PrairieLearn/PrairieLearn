@@ -21,12 +21,12 @@ module.exports = {
         questionHelper.renderRivetsTemplate("question.html", context, question, course, locals, callback);
     },
 
-    renderSubmission: function(variant, question, submission, grading, course, locals, callback) {
+    renderSubmission: function(variant, question, submission, course, locals, callback) {
         var context = {
             params: variant.params,
             submittedAnswer: submission.submitted_answer,
-            score: grading.score,
-            feedback: grading.feedback,
+            score: submission.score,
+            feedback: submission.feedback,
         };
         questionHelper.renderRivetsTemplate("submission.html", context, question, course, locals, callback);
     },

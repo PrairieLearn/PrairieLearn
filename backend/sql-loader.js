@@ -1,5 +1,6 @@
 var _ = require('underscore');
 var fs = require('fs');
+var path = require('path');
 
 module.exports = {};
 
@@ -19,4 +20,18 @@ module.exports.load = function(filename) {
         }
     });
     return sql;
+};
+
+/* Replace the extension of the given filename with ".sql" and load it.
+
+   @param filename A filename of a non-SQL file (e.g., __filename in NodeJS).
+   @return The SQL data structure.
+*/
+module.exports.loadSqlEquiv = function(filename) {
+    var components = path.parse(filename);
+    components.ext = '.sql';
+    delete components.base;
+    // var sqlFilename = path.format(components); // FIXME: this doesn't work in node 0.12? It should work.
+    var sqlFilename = path.join(components.dir, components.name) + components.ext;
+    return this.load(sqlFilename);
 };

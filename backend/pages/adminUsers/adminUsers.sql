@@ -1,13 +1,13 @@
--- BLOCK course_tests
+-- BLOCK course_assessments
 SELECT
-    t.id,t.number AS test_number,
-    ts.number AS test_set_number,ts.color,
-    (ts.abbrev || t.number) AS label
-FROM tests AS t
-JOIN test_sets AS ts ON (ts.id = t.test_set_id)
-WHERE t.deleted_at IS NULL
-AND t.course_instance_id = $course_instance_id
-ORDER BY (ts.number, t.number);
+    a.id,a.number AS assessment_number,
+    aset.number AS assessment_set_number,aset.color,
+    (aset.abbrev || a.number) AS label
+FROM assessments AS a
+JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+WHERE a.deleted_at IS NULL
+AND a.course_instance_id = $course_instance_id
+ORDER BY (aset.number, a.number);
 
 -- BLOCK user_scores
 WITH
@@ -17,29 +17,25 @@ course_users AS (
     JOIN enrollments AS e ON (e.user_id = u.id)
     WHERE e.course_instance_id = $course_instance_id
 ),
-course_tests AS (
-    SELECT t.id,t.number AS test_number,ts.number AS test_set_number
-    FROM tests AS t
-    JOIN test_sets AS ts ON (ts.id = t.test_set_id)
-    WHERE t.deleted_at IS NULL
-    AND t.course_instance_id = $course_instance_id
+course_assessments AS (
+    SELECT a.id,a.number AS assessment_number,aset.number AS assessment_set_number
+    FROM assessments AS a
+    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+    WHERE a.deleted_at IS NULL
+    AND a.course_instance_id = $course_instance_id
 ),
-user_test_scores AS (
+scores AS (
     SELECT u.id AS user_id,u.uid,u.user_name,u.role,
-        t.id AS test_id,t.test_number,t.test_set_number,
-        MAX(tsc.score_perc) AS score_perc
+        a.id AS assessment_id,a.assessment_number,a.assessment_set_number,
+        uas.score_perc
     FROM course_users AS u
-    CROSS JOIN course_tests AS t
-    LEFT JOIN (
-        test_instances AS ti
-        JOIN test_scores AS tsc ON (tsc.test_instance_id = ti.id)
-    ) ON (ti.test_id = t.id AND ti.user_id = u.id)
-    GROUP BY u.id,u.uid,u.user_name,u.role,t.id,t.test_number,t.test_set_number
+    CROSS JOIN course_assessments AS a
+    LEFT JOIN user_assessment_scores AS uas ON (uas.assessment_id = a.id AND uas.user_id = u.id)
 )
 SELECT user_id,uid,user_name,role,
     ARRAY_AGG(score_perc
-          ORDER BY (test_set_number, test_number)
+          ORDER BY (assessment_set_number, assessment_number)
     ) AS scores
-FROM user_test_scores
+FROM scores
 GROUP BY user_id,uid,user_name,role
 ORDER BY role DESC, uid;
