@@ -13,5 +13,5 @@ SELECT
 FROM
     course_instance_access_rules AS ciar
 WHERE
-    ciar.course_instance_id = course_instance_id;
+    ciar.course_instance_id = check_course_instance_access.course_instance_id;
 $$ LANGUAGE SQL;
