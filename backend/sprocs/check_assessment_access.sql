@@ -15,4 +15,6 @@ FROM
     assessment_access_rules AS aar
     JOIN LATERAL (SELECT * FROM check_assessment_access_rule(aar, check_assessment_access.mode, check_assessment_access.role,
         check_assessment_access.uid, check_assessment_access.date)) AS ctar ON TRUE
+WHERE
+    aar.assessment_id = check_assessment_access.assessment_id
 $$ LANGUAGE SQL;
