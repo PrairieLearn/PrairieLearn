@@ -386,6 +386,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                         });
                         tInstance.set("questions", shuffledQuestions);
                         tInstance.set("qids", shuffledQids);
+                        tInstance.set("uniqueIds", shuffledUniqueIds);
                     }
                     else {
                         var qids = new Array();
@@ -393,9 +394,9 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                             qids.push(question["qid"]);
                         });
                         tInstance.set("qids", qids);
+                        tInstance.set("uniqueIds", uniqueIds);
                     }
 
-                    tInstance.set("uniqueIds", uniqueIds);
                     tInstance.set("shuffled", true);
                 }
 
@@ -436,6 +437,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                         });
                         tInstance.set("questions", shuffledQuestions);
                         tInstance.set("qids", shuffledQids);
+                        tInstance.set("uniqueIds", shuffledUniqueIds);
                     }
                     else {
                         var qids = new Array();
@@ -443,9 +445,9 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                             qids.push(question["qid"]);
                         });
                         tInstance.set("qids", qids);
+                        tInstance.set("uniqueIds", uniqueIds);
                     }
 
-                    tInstance.set("uniqueIds", uniqueIds);
                     tInstance.set("shuffled", true);
                 }
 
