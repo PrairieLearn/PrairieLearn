@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var path = require('path');
 var async = require('async');
@@ -20,13 +21,16 @@ module.exports = {
                     var params = [courseInfo.courseId, courseInstanceShortName, courseInstance.longName,
                                   courseInstance.number, courseInstance.startDate, courseInstance.endDate];
                     sqldb.query(sql.all, params, function(err, result) {
-                        if (err) return callback(err);
+                        if (ERR(err, callback)) return;
                         var courseInstanceId = result.rows[0].id;
                         ids.push(courseInstanceId);
                         courseInstance.courseInstanceId = courseInstanceId;
                         that.syncAccessRules(courseInstance, callback);
                     });
-                }, callback);
+                }, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
             },
             function(callback) {
                 // soft-delete courseInstances from the DB that aren't on disk
@@ -43,7 +47,10 @@ module.exports = {
                     + ' AND ' + (ids.length === 0 ? 'TRUE' : 'id NOT IN (' + paramIndexes.join(',') + ')')
                     + ' ;';
                 var params = [courseInfo.courseId].concat(ids);
-                sqldb.query(sql, params, callback);
+                sqldb.query(sql, params, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
             },
             function(callback) {
                 // delete access rules from DB that don't correspond to assessments
@@ -55,9 +62,15 @@ module.exports = {
                     + '     WHERE ci.id = ciar.course_instance_id'
                     + '     AND ci.deleted_at IS NULL'
                     + ' );';
-                sqldb.query(sql, [], callback);
+                sqldb.query(sql, [], function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
             },
-        ], callback);
+        ], function(err) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
     },
 
     syncAccessRules: function(courseInstance, callback) {
@@ -83,15 +96,21 @@ module.exports = {
                 _(dbRule).has('endDate') ? moment.tz(dbRule.endDate, config.timezone).format() : null,
             ];
             logger.info('Syncing course instance access rule number ' + (i + 1));
-            sqldb.query(sql, params, callback);
+            sqldb.query(sql, params, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         }, function(err) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
 
             // delete access rules from the DB that aren't on disk
             logger.info('Deleting unused course instance access rules for current assessment');
             var sql = 'DELETE FROM course_instance_access_rules WHERE course_instance_id = $1 AND number > $2;';
             var params = [courseInstance.courseInstanceId, allowAccess.length];
-            sqldb.query(sql, params, callback);
+            sqldb.query(sql, params, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         });
     },
 };

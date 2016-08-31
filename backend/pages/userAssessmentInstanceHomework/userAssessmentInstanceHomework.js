@@ -21,9 +21,7 @@ router.get('/', function(req, res, next) {
     sqldb.query(sql.update, params, function(err, result) {
         if (ERR(err, next)) return;
 
-        var params = {
-            assessment_instance_id: res.locals.assessmentInstance.id,
-        };
+        var params = {assessment_instance_id: res.locals.assessmentInstance.id};
         sqldb.query(sql.get_questions, params, function(err, result) {
             if (ERR(err, next)) return;
             res.locals.questions = result.rows;

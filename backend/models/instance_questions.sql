@@ -1,7 +1,8 @@
 CREATE TABLE IF NOT EXISTS instance_questions (
     id SERIAL PRIMARY KEY,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     number INTEGER,
-    order_by INTEGER,
+    order_by INTEGER DEFAULT floor(random() * 1000000),
     points DOUBLE PRECISION DEFAULT 0,
     current_value DOUBLE PRECISION,
     number_attempts INTEGER DEFAULT 0,

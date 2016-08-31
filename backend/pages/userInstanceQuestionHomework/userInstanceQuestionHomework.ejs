@@ -20,7 +20,7 @@
             
             <div class="panel panel-primary question-block">
               <div class="panel-heading">
-                <h3 class="panel-title"><%= question.title %></h3>
+                <h3 class="panel-title"><%= instanceQuestion.question_number %>. <%= question.title %></h3>
               </div>
               <div class="panel-body question-body">
                 <%- questionHtml %>
@@ -87,7 +87,7 @@
             </table>
           </div>
           <div class="panel panel-default">
-            <div class="panel-heading"><h3 class="panel-title">Question <%= instanceQuestion.number %></h3></div>
+            <div class="panel-heading"><h3 class="panel-title">Question <%= instanceQuestion.question_number %></h3></div>
             <table class="table table-condensed">
               <tbody>
                 <tr>

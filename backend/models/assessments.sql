@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS assessments (
     title varchar(255),
     config JSONB,
     multiple_instance boolean,
+    shuffle_questions boolean DEFAULT false,
     max_points DOUBLE PRECISION,
     assessment_set_id INTEGER REFERENCES assessment_sets ON DELETE SET NULL ON UPDATE CASCADE,
     deleted_at TIMESTAMP WITH TIME ZONE,
@@ -27,6 +28,14 @@ $$;
 DO $$ 
     BEGIN
         ALTER TABLE assessments ADD COLUMN max_points DOUBLE PRECISION;
+    EXCEPTION
+        WHEN duplicate_column THEN -- do nothing
+    END;
+$$;
+
+DO $$ 
+    BEGIN
+        ALTER TABLE assessments ADD COLUMN shuffle_questions boolean DEFAULT false;
     EXCEPTION
         WHEN duplicate_column THEN -- do nothing
     END;

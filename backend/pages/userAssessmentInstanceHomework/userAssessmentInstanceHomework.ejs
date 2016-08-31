@@ -52,7 +52,7 @@
             </tr>
           </thead>
           <tbody>
-            <% questions.forEach(function(question, iQuestion) { %>
+            <% questions.forEach(function(question) { %>
             <% if (question.start_new_zone && question.zone_title) { %>
             <tr>
               <th colspan="2"><%= question.zone_title %></th>
@@ -61,8 +61,7 @@
             <tr>
               <td>
                 <a href="<%= urlPrefix %>/instanceQuestion/<%= question.id %>/">
-                  <%= assessmentSet.abbrev %><%= assessment.number %>.<%= iQuestion + 1 %>.
-                  <%= question.question_title %>
+                  <%= question.question_number %>. <%= question.question_title %>
                 </a>
               </td>
               <td class="cell-center"><%- include('../partials/questionValue', {value: question.current_value});  %></td>

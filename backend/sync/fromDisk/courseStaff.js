@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var async = require('async');
 var requireFrontend = require("../../require-frontend");
@@ -19,7 +20,7 @@ module.exports = {
                 + ' ;';
             var params = [uid];
             sqldb.query(sql, params, function(err, result) {
-                if (err) return callback(err);
+                if (ERR(err, callback)) return;
                 var userId = result.rows[0].id;
                 superuserIds.push(userId);
 
@@ -39,10 +40,13 @@ module.exports = {
                     + ' WHERE EXCLUDED.role != enrollments.role'
                     + ' ;';
                 var params = [userId, 'Superuser', courseInfo.courseId];
-                sqldb.query(sql, params, callback);
+                sqldb.query(sql, params, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
             });
         }, function(err) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
             // load Instructors and TAs
             async.forEachOfSeries(courseInstance.userRoles || {}, function(role, uid, callback) {
                 if (_(config.roles).has(uid) && config.roles[uid] == 'Superuser') return callback(null);
@@ -54,7 +58,7 @@ module.exports = {
                     + ' ;';
                 var params = [uid];
                 sqldb.query(sql, params, function(err, result) {
-                    if (err) return callback(err);
+                    if (ERR(err, callback)) return;
                     var userId = result.rows[0].id;
                     staffIds.push(userId);
 
@@ -67,10 +71,13 @@ module.exports = {
                         + ' DO UPDATE SET role = EXCLUDED.role'
                         + ' ;';
                     var params = [userId, role, courseInstance.courseInstanceId];
-                    sqldb.query(sql, params, callback);
+                    sqldb.query(sql, params, function(err) {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
                 });
             }, function(err) {
-                if (err) return callback(err);
+                if (ERR(err, callback)) return;
                 // reduce role to Student in the current course instance if they are not in the above list
                 var allIds = _.union(superuserIds, staffIds);
                 var paramIndexes = allIds.map(function(item, idx) {return "$" + (idx + 2);});
@@ -86,7 +93,10 @@ module.exports = {
                     + ' )'
                     + ' ;';
                 var params = [courseInstance.courseInstanceId].concat(allIds);
-                sqldb.query(sql, params, callback);
+                sqldb.query(sql, params, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
             });
         });
     },

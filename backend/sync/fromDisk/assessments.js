@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var async = require('async');
 var moment = require('moment-timezone');
@@ -5,6 +6,9 @@ var moment = require('moment-timezone');
 var logger = require('../../logger');
 var sqldb = require('../../sqldb');
 var config = require('../../config');
+var sqlLoader = require('../../sql-loader');
+
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = {
     sync: function(courseInfo, courseInstance, callback) {
@@ -14,34 +18,26 @@ module.exports = {
             function(callback) {
                 async.forEachOfSeries(courseInstance.assessmentDB, function(dbAssessment, tid, callback) {
                     logger.info('Syncing ' + tid);
-                    var sql
-                        = ' INSERT INTO assessments (tid, type, number, title, config, multiple_instance, max_points, deleted_at, course_instance_id, assessment_set_id)'
-                        + '     (SELECT * FROM'
-                        + '         (VALUES ($1, $2::enum_assessment_type, $3, $4, $5::JSONB, $6::BOOLEAN, $7::DOUBLE PRECISION, NULL::timestamp with time zone, $8::INTEGER)) AS vals,'
-                        + '         (SELECT COALESCE((SELECT id FROM assessment_sets WHERE name = $10 AND course_id = $9), NULL)) AS assessment_sets'
-                        + '     )'
-                        + ' ON CONFLICT (tid, course_instance_id) DO UPDATE'
-                        + ' SET'
-                        + '     type = EXCLUDED.type,'
-                        + '     number = EXCLUDED.number,'
-                        + '     title = EXCLUDED.title,'
-                        + '     config = EXCLUDED.config,'
-                        + '     multiple_instance = EXCLUDED.multiple_instance,'
-                        + '     max_points = EXCLUDED.max_points,'
-                        + '     deleted_at = EXCLUDED.deleted_at,'
-                        + '     assessment_set_id = EXCLUDED.assessment_set_id'
-                        + ' RETURNING id;';
-                    var params = [tid, dbAssessment.type, dbAssessment.number, dbAssessment.title, dbAssessment.options,
-                                  dbAssessment.options && dbAssessment.options.multipleInstance ? true : false,
-                                  dbAssessment.options ? dbAssessment.options.maxScore : null,
-                                  courseInstance.courseInstanceId, courseInfo.courseId, dbAssessment.set];
-                    sqldb.query(sql, params, function(err, result) {
-                        if (err) return callback(err);
+                    var params = {
+                        tid: tid,
+                        type: dbAssessment.type,
+                        number: dbAssessment.number,
+                        title: dbAssessment.title,
+                        config: dbAssessment.options,
+                        multiple_instance: dbAssessment.options && dbAssessment.options.multipleInstance ? true : false,
+                        shuffle_questions: dbAssessment.shuffleQuestions ? true : false,
+                        max_score: dbAssessment.options ? dbAssessment.options.maxScore : null,
+                        course_instance_id: courseInstance.courseInstanceId,
+                        course_id: courseInfo.courseId,
+                        set_name: dbAssessment.set,
+                    };
+                    sqldb.query(sql.insert, params, function(err, result) {
+                        if (ERR(err, callback)) return;
                         var assessmentId = result.rows[0].id;
                         ids.push(assessmentId);
                         logger.info('Synced ' + tid + ' as assessment_id ' + assessmentId);
                         that.syncAccessRules(assessmentId, dbAssessment, function(err) {
-                            if (err) return callback(err);
+                            if (ERR(err, callback)) return;
                             if (_(dbAssessment).has('options') && _(dbAssessment.options).has('zones')) {
                                 // RetryExam, new format
                                 zoneList = dbAssessment.options.zones;
@@ -59,12 +55,18 @@ module.exports = {
                                 zoneList = [{questions: dbAssessment.options.qids}];
                             }
                             that.syncZones(assessmentId, zoneList, function(err) {
-                                if (err) return callback(err);
-                                that.syncAssessmentQuestions(assessmentId, zoneList, courseInfo, callback);
+                                if (ERR(err, callback)) return;
+                                that.syncAssessmentQuestions(assessmentId, zoneList, courseInfo, function(err) {
+                                    if (ERR(err, callback)) return;
+                                    callback(null);
+                                });
                             });
                         });
                     });
-                }, callback);
+                }, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
             },
             function(callback) {
                 // soft-delete assessments from the DB that aren't on disk and are in the current course instance
@@ -82,7 +84,10 @@ module.exports = {
                     + (ids.length === 0 ? '' : ' AND id NOT IN (' + paramIndexes.join(',') + ')')
                     + ' ;';
                 var params = [courseInstance.courseInstanceId].concat(ids);
-                sqldb.query(sql, params, callback);
+                sqldb.query(sql, params, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
             },
             function(callback) {
                 // soft-delete assessment_questions from DB that don't correspond to current assessments
@@ -101,7 +106,10 @@ module.exports = {
                     + (ids.length === 0 ? '' : ' AND assessment_id NOT IN (' + paramIndexes.join(',') + ')')
                     + ' ;';
                 var params = [courseInstance.courseInstanceId].concat(ids);
-                sqldb.query(sql, params, callback);
+                sqldb.query(sql, params, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
             },
             function(callback) {
                 // delete access rules from DB that don't correspond to assessments
@@ -112,7 +120,10 @@ module.exports = {
                     + '     WHERE a.id = tar.assessment_id'
                     + '     AND a.deleted_at IS NULL'
                     + ' );';
-                sqldb.query(sql, [], callback);
+                sqldb.query(sql, [], function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
             },
             function(callback) {
                 // delete zones from DB that don't correspond to assessments
@@ -123,9 +134,15 @@ module.exports = {
                     + '     WHERE a.id = z.assessment_id'
                     + '     AND a.deleted_at IS NULL'
                     + ' );';
-                sqldb.query(sql, [], callback);
+                sqldb.query(sql, [], function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
             },
-        ], callback);
+        ], function(err) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
     },
 
     syncAccessRules: function(assessmentId, dbAssessment, callback) {
@@ -155,15 +172,21 @@ module.exports = {
                 _(dbRule).has('credit') ? dbRule.credit : null,
             ];
             logger.info('Syncing assessment access rule number ' + (i + 1));
-            sqldb.query(sql, params, callback);
+            sqldb.query(sql, params, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         }, function(err) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
 
             // delete access rules from the DB that aren't on disk
             logger.info('Deleting unused assessment access rules for current assessment');
             var sql = 'DELETE FROM assessment_access_rules WHERE assessment_id = $1 AND number > $2;';
             var params = [assessmentId, allowAccess.length];
-            sqldb.query(sql, params, callback);
+            sqldb.query(sql, params, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         });
     },
 
@@ -178,15 +201,21 @@ module.exports = {
                 + ' ;';
             var params = [assessmentId, i + 1, dbZone.title];
             logger.info('Syncing zone number ' + (i + 1));
-            sqldb.query(sql, params, callback);
+            sqldb.query(sql, params, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         }, function(err) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
 
             // delete zones from the DB that aren't on disk
             logger.info('Deleting unused zones for current assessment');
             var sql = 'DELETE FROM zones WHERE assessment_id = $1 AND number > $2;';
             var params = [assessmentId, zoneList.length];
-            sqldb.query(sql, params, callback);
+            sqldb.query(sql, params, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         });
     },
 
@@ -217,16 +246,25 @@ module.exports = {
                     iAssessmentQuestion++;
                     that.syncAssessmentQuestion(qid, maxPoints, pointsList, initPoints, iAssessmentQuestion,
                                           assessmentId, iZone + 1, courseInfo, callback);
-                }, callback);
-            }, callback);
+                }, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            }, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         }, function(err) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
 
             // soft-delete assessment questions from the DB that aren't on disk
             logger.info('Soft-deleting unused assessment questions for current assessment');
             var sql = 'UPDATE assessment_questions SET deleted_at = CURRENT_TIMESTAMP WHERE assessment_id = $1 AND number > $2;';
             var params = [assessmentId, iAssessmentQuestion];
-            sqldb.query(sql, params, callback);
+            sqldb.query(sql, params, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         });
     },
 
@@ -234,7 +272,7 @@ module.exports = {
         var sql = 'SELECT id FROM questions WHERE qid = $1 AND course_id = $2;';
         var params = [qid, courseInfo.courseId];
         sqldb.query(sql, params, function(err, result) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
             if (result.rowCount < 1) return callback(new Error('invalid QID: "' + qid + '"'));
             var questionId = result.rows[0].id;
             var sql
@@ -262,7 +300,10 @@ module.exports = {
                 + ' ;';
             var params = [iAssessmentQuestion, maxPoints, pointsList, initPoints, assessmentId, questionId, iZone];
             logger.info('Syncing assessment question number ' + iAssessmentQuestion + ' with QID ' + qid);
-            sqldb.query(sql, params, callback);
+            sqldb.query(sql, params, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         });
     },
 };

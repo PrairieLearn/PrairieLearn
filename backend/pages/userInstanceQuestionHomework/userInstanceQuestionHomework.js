@@ -135,7 +135,8 @@ function processSubmission(req, res, callback) {
             };
             sqldb.queryOneRow(sql.update_instance_question, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                res.locals.instanceQuestion = result.rows[0];
+                // don't overwrite entire object, because currentInstanceQuestion.sql has added other fields
+                _.assign(res.locals.instanceQuestion, result.rows[0]);
                 callback(null);
             });
         },
@@ -146,7 +147,8 @@ function processSubmission(req, res, callback) {
             };
             sqldb.queryOneRow(sql.update_assessment_instance, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                res.locals.assessmentInstance = result.rows[0];
+                // don't overwrite entire object in case someone added extra fields at some point
+                _.assign(res.locals.assessmentInstance, result.rows[0]);
                 callback(null);
             });
         },

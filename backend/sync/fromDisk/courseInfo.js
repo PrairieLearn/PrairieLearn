@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var path = require('path');
 
@@ -11,7 +12,7 @@ module.exports = {
     sync: function(courseInfo, callback) {
         var params = [courseInfo.name, courseInfo.title, courseInfo.path];
         sqldb.query(sql.all, params, function(err, result) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
             courseInfo.courseId = result.rows[0].course_id;
             callback(null);
         });

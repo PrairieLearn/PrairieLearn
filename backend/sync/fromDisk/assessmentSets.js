@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var async = require('async');
 
@@ -20,11 +21,14 @@ module.exports = {
             var params = [assessmentSet.shortName, assessmentSet.name, assessmentSet.heading, assessmentSet.color, i + 1, courseInfo.courseId];
             sqldb.query(sql, params, callback);
         }, function(err) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
             // delete assessmentSets from the DB that aren't on disk
             var sql = 'DELETE FROM assessment_sets WHERE course_id = $1 AND number > $2;';
             var params = [courseInfo.courseId, courseInfo.assessmentSets.length];
-            sqldb.query(sql, params, callback);
+            sqldb.query(sql, params, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         });
     },
 };
