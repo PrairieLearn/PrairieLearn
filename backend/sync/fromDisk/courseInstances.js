@@ -18,8 +18,12 @@ module.exports = {
         async.series([
             function(callback) {
                 async.forEachOfSeries(courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
-                    var params = [courseInfo.courseId, courseInstanceShortName, courseInstance.longName,
-                                  courseInstance.number, courseInstance.startDate, courseInstance.endDate];
+                    var params = {
+                        course_id: courseInfo.courseId,
+                        short_name: courseInstanceShortName,
+                        long_name: courseInstance.longName,
+                        number: courseInstance.number,
+                    };
                     sqldb.query(sql.all, params, function(err, result) {
                         if (ERR(err, callback)) return;
                         var courseInstanceId = result.rows[0].id;

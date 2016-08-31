@@ -4,8 +4,6 @@ CREATE TABLE IF NOT EXISTS course_instances (
     short_name varchar(255),
     long_name varchar(255),
     number INTEGER,
-    start_date TIMESTAMP WITH TIME ZONE,
-    end_date TIMESTAMP WITH TIME ZONE,
     deleted_at TIMESTAMP WITH TIME ZONE,
     UNIQUE (short_name, course_id)
 );
