@@ -3,7 +3,8 @@ var path = require('path');
 var logger = require('../../logger');
 
 module.exports = function(err, req, res, next) {
-    if (req.app.get('env') === 'development') {
+    if (false) {
+    //if (req.app.get('env') === 'development') {
         // development error handler
         // will print stacktrace
         res.status(err.status || 500);
