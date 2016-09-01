@@ -70,6 +70,8 @@ module.exports = function(req, res, next) {
         req.authUID = authUID;
         req.authName = authName;
         req.userUID = authUID;
+        next();
+        return;
     } else if (config.authType == 'eppn' || config.authType == 'x-auth' || config.authType === 'none') {
         var authUID = null, authName = null, authDate = null, authSignature = null, mode = null, userUID = null, userRole = null;
         if (req.cookies.userData) {
@@ -117,6 +119,9 @@ module.exports = function(req, res, next) {
         req.authSignature = authSignature;
         req.mode = mode;
         req.userUID = userUID;
+
+        next();
+        return;
     } else {
         return next(error.make(500, "Invalid authType: " + config.authType));
     }
