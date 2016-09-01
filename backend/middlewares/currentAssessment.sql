@@ -1,7 +1,8 @@
 -- BLOCK assessment
 SELECT
     a.*,
-    cta.credit
+    cta.credit,
+    cta.credit_date_string
 FROM
     assessments AS a,
     users AS u,

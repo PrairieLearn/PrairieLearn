@@ -1,3 +1,5 @@
+DROP FUNCTION check_assessment_access_rule(assessment_access_rules,enum_mode,enum_role,character varying,timestamp with time zone);
+
 CREATE OR REPLACE FUNCTION
     check_assessment_access_rule (
         IN assessment_access_rule assessment_access_rules,
@@ -5,12 +7,10 @@ CREATE OR REPLACE FUNCTION
         IN role enum_role,
         IN uid varchar(255),
         IN date TIMESTAMP WITH TIME ZONE,
-        OUT available boolean,
-        OUT credit integer
+        OUT available boolean
     ) AS $$
 BEGIN
     available := TRUE;
-    credit := 0;
 
     IF assessment_access_rule.mode IS NOT NULL THEN
         IF mode != assessment_access_rule.mode THEN
@@ -40,10 +40,6 @@ BEGIN
         IF date > assessment_access_rule.end_date THEN
             available := FALSE;
         END IF;
-    END IF;
-
-    IF assessment_access_rule.credit IS NOT NULL THEN
-        credit := assessment_access_rule.credit;
     END IF;
 END;
 $$ LANGUAGE plpgsql;

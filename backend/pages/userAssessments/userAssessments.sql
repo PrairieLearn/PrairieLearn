@@ -12,6 +12,7 @@ WITH
             aset.number AS assessment_set_number,
             cta.available,
             cta.credit,
+            cta.credit_date_string,
             NULL::integer AS assessment_instance_id,
             NULL::integer AS assessment_instance_number,
             NULL::integer AS assessment_instance_score_perc
@@ -38,6 +39,7 @@ WITH
             mia.assessment_set_number,
             mia.available,
             mia.credit,
+            mia.credit_date_string,
             ai.id AS assessment_instance_id,
             ai.number AS assessment_instance_number,
             ai.score_perc AS assessment_instance_score_perc
@@ -61,6 +63,7 @@ WITH
             aset.number AS assessment_set_number,
             cta.available,
             cta.credit,
+            cta.credit_date_string,
             ai.id AS assessment_instance_id,
             ai.number AS assessment_instance_number,
             ai.score_perc AS assessment_instance_score_perc

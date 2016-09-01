@@ -15,6 +15,7 @@
           <thead>
             <tr>
               <th></th>
+              <th class="cell-center">Available credit</th>
               <th class="cell-center">Score</th>
             </tr>
           </thead>
@@ -42,6 +43,9 @@
                    href="<%= urlPrefix %>/assessment/<%= row.assessment_id %>/"
                    <% } %>
                    ><%= row.assessment_title %></a>
+              </td>
+              <td class="cell-center">
+                <%= row.credit_date_string %>
               </td>
               <td class="cell-center">
                 <% if (row.assessment_instance_id) { %>
