@@ -91,6 +91,12 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                 });
             };
 
+            var processPostQInstance = function(qInstance) {
+                that.tInstance.fetch({success: function() {
+                    processQInstance(qInstance);
+                }});
+            };
+
             var qiid = null;
             if (this.tInstance && this.tInstance.has("qiidsByQid")) {
                 var qiidsByQid = this.tInstance.get("qiidsByQid");
@@ -108,7 +114,7 @@ define(['underscore', 'backbone', 'jquery', 'async'], function(_, Backbone, $, a
                     processData: false,
                     data: JSON.stringify(qInstance),
                     contentType: 'application/json; charset=UTF-8',
-                    success: processQInstance,
+                    success: processPostQInstance,
                 });
             }
         },
