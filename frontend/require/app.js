@@ -365,40 +365,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
 
-                if (test.get("shuffleQuestions") && !tInstance.get("shuffled")) {
-                    var questions = tInstance.get("questions");
-                    var uniqueIdKey = tInstance.get("tid");
-                    var uniqueIdRand = new PrairieRandom.RandomGenerator(uniqueIdKey);
-                    var uniqueIds = uniqueIdRand.randArrayUniqueInt(questions.length, 100, 999, 1);
-
-                    if (this.model.get("userRole") === "Student") {
-                        var shuffleKey = this.model.get("userUID") + "_" + tInstance.get("tid");
-                        var shuffleRand = new PrairieRandom.RandomGenerator(shuffleKey);
-
-                        var shuffledIndices = shuffleRand.randPerm(questions.length);
-                        var shuffledQuestions = new Array();
-                        var shuffledQids = new Array();
-                        var shuffledUniqueIds = new Array();
-                        _(questions).each(function(question, index) {
-                            shuffledQuestions.push(questions[shuffledIndices[index]]);
-                            shuffledQids.push(shuffledQuestions[index]["qid"]);
-                            shuffledUniqueIds.push(uniqueIds[shuffledIndices[index]]);
-                        });
-                        tInstance.set("questions", shuffledQuestions);
-                        tInstance.set("qids", shuffledQids);
-                        tInstance.set("uniqueIds", shuffledUniqueIds);
-                    }
-                    else {
-                        var qids = new Array();
-                        _(questions).each(function(question, index) {
-                            qids.push(question["qid"]);
-                        });
-                        tInstance.set("qids", qids);
-                        tInstance.set("uniqueIds", uniqueIds);
-                    }
-
-                    tInstance.set("shuffled", true);
-                }
+                this.shuffle(test, tInstance);
 
                 view = new TestInstanceView({model: tInstance, test: test, appModel: this.model, store: this.store});
                 break;
@@ -416,40 +383,7 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 var tid = tInstance.get("tid");
                 var test = this.tests.get(tid);
 
-                if (test.get("shuffleQuestions") && !tInstance.get("shuffled")) {
-                    var questions = tInstance.get("questions");
-                    var uniqueIdKey = tInstance.get("tid");
-                    var uniqueIdRand = new PrairieRandom.RandomGenerator(uniqueIdKey);
-                    var uniqueIds = uniqueIdRand.randArrayUniqueInt(questions.length, 100, 999, 1);
-
-                    if (this.model.get("userRole") === "Student") {
-                        var shuffleKey = this.model.get("userUID") + "_" + tInstance.get("tid");
-                        var shuffleRand = new PrairieRandom.RandomGenerator(shuffleKey);
-
-                        var shuffledIndices = shuffleRand.randPerm(questions.length);
-                        var shuffledQuestions = new Array();
-                        var shuffledQids = new Array();
-                        var shuffledUniqueIds = new Array();
-                        _(questions).each(function(question, index) {
-                            shuffledQuestions.push(questions[shuffledIndices[index]]);
-                            shuffledQids.push(shuffledQuestions[index]["qid"]);
-                            shuffledUniqueIds.push(uniqueIds[shuffledIndices[index]]);
-                        });
-                        tInstance.set("questions", shuffledQuestions);
-                        tInstance.set("qids", shuffledQids);
-                        tInstance.set("uniqueIds", shuffledUniqueIds);
-                    }
-                    else {
-                        var qids = new Array();
-                        _(questions).each(function(question, index) {
-                            qids.push(question["qid"]);
-                        });
-                        tInstance.set("qids", qids);
-                        tInstance.set("uniqueIds", uniqueIds);
-                    }
-
-                    tInstance.set("shuffled", true);
-                }
+                this.shuffle(test, tInstance);
 
                 var qid;
                 if (tInstance.has("qids"))
@@ -578,6 +512,80 @@ function(   $,        jqueryCookie,    _,            async,   Backbone,   bootst
                 }
                 that.router.checkCurrentTest();
             });
+        },
+
+        shuffle: function(test, tInstance) {
+            if (test.get("shuffleQuestions")) {
+                if (tInstance.get("shuffled")) {
+                    var questions = tInstance.get("questions");
+                    var qids = tInstance.get("qids");
+
+                    var shuffled = true;
+                    _(questions).each(function(question, index) {
+                        if (questions[index]["qid"] !== qids[index]) {
+                            shuffled = false;
+                        }
+                    });
+
+                    if (!shuffled) {
+                        var uniqueIdKey = tInstance.get("tid");
+                        var uniqueIdRand = new PrairieRandom.RandomGenerator(uniqueIdKey);
+                        var uniqueIds = uniqueIdRand.randArrayUniqueInt(questions.length, 100, 999, 1);
+
+                        if (this.model.get("userRole") === "Student") {
+                            var shuffleKey = this.model.get("userUID") + "_" + tInstance.get("tid");
+                            var shuffleRand = new PrairieRandom.RandomGenerator(shuffleKey);
+
+                            var shuffledIndices = shuffleRand.randPerm(questions.length);
+                            var shuffledQuestions = new Array();
+                            var shuffledQids = new Array();
+                            var shuffledUniqueIds = new Array();
+                            _(questions).each(function(question, index) {
+                                shuffledQuestions.push(questions[shuffledIndices[index]]);
+                                shuffledQids.push(shuffledQuestions[index]["qid"]);
+                                shuffledUniqueIds.push(uniqueIds[shuffledIndices[index]]);
+                            });
+                            tInstance.set("questions", shuffledQuestions);
+                            tInstance.set("qids", shuffledQids);
+                            tInstance.set("uniqueIds", shuffledUniqueIds);
+                        }
+                    }
+                }
+                else {
+                    var questions = tInstance.get("questions");
+                    var uniqueIdKey = tInstance.get("tid");
+                    var uniqueIdRand = new PrairieRandom.RandomGenerator(uniqueIdKey);
+                    var uniqueIds = uniqueIdRand.randArrayUniqueInt(questions.length, 100, 999, 1);
+
+                    if (this.model.get("userRole") === "Student") {
+                        var shuffleKey = this.model.get("userUID") + "_" + tInstance.get("tid");
+                        var shuffleRand = new PrairieRandom.RandomGenerator(shuffleKey);
+
+                        var shuffledIndices = shuffleRand.randPerm(questions.length);
+                        var shuffledQuestions = new Array();
+                        var shuffledQids = new Array();
+                        var shuffledUniqueIds = new Array();
+                        _(questions).each(function(question, index) {
+                            shuffledQuestions.push(questions[shuffledIndices[index]]);
+                            shuffledQids.push(shuffledQuestions[index]["qid"]);
+                            shuffledUniqueIds.push(uniqueIds[shuffledIndices[index]]);
+                        });
+                        tInstance.set("questions", shuffledQuestions);
+                        tInstance.set("qids", shuffledQids);
+                        tInstance.set("uniqueIds", shuffledUniqueIds);
+                    }
+                    else {
+                        var qids = new Array();
+                        _(questions).each(function(question, index) {
+                            qids.push(question["qid"]);
+                        });
+                        tInstance.set("qids", qids);
+                        tInstance.set("uniqueIds", uniqueIds);
+                    }
+
+                    tInstance.set("shuffled", true);
+                }
+            }
         },
     });
 
