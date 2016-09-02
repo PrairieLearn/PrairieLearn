@@ -31,7 +31,17 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'naturalSort', 
                     assessList: [],
                 };
                 var theseTests = that.tests.where({set: set});
-                theseTests.sort(function(t1, t2) {var n1 = t1.get("number"), n2 = t2.get("number"); return naturalSort(n1, n2);});
+                theseTests.sort(function(t1, t2) {
+                    var n1 = t1.get("number");
+                    var n2 = t2.get("number");
+                    var s = naturalSort(n1, n2);
+                    if (s == 0) {
+                        var title1 = t1.get("title");
+                        var title2 = t2.get("title");
+                        s = title1.localeCompare(title2);
+                    }
+                    return s;
+                });
                 theseTests = new Backbone.Collection(theseTests);
                 theseTests.each(function(test) {
                     var tid = test.get("tid");
