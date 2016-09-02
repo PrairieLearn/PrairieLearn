@@ -2,7 +2,8 @@
 SELECT
     a.*,
     cta.credit,
-    cta.credit_date_string
+    cta.credit_date_string,
+    cta.access_rules
 FROM
     assessments AS a,
     users AS u,

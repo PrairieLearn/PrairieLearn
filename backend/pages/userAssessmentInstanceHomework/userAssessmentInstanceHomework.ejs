@@ -4,6 +4,11 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover()
+      });
+    </script>
     <%- include('../partials/userNavbar', {navPage: ''}); %>
     <div id="content" class="container">
       <div class="panel panel-primary">
@@ -22,6 +27,11 @@
               </div>
               <div class="col-md-6 col-sm-12 col-xs-12">
                 Available credit: <%= assessment.credit_date_string %>
+                <%- include('../partials/userAccessRulesPopover', {
+                    accessRules: assessment.access_rules,
+                    assessmentSetName: assessmentSet.name,
+                    assessmentNumber: assessment.number,
+                    }) %>
               </div>
             </div> <!-- row -->
           </div> <!-- well -->
