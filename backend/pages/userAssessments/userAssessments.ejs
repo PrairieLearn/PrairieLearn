@@ -4,6 +4,11 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
+    <script>
+      $(function () {
+          $('[data-toggle="popover"]').popover()
+      });
+    </script>
     <%- include('../partials/userNavbar', {navPage: 'assessments'}); %>
     <div id="content" class="container">
       <div class="panel panel-primary">
@@ -15,6 +20,7 @@
           <thead>
             <tr>
               <th></th>
+              <th class="cell-center">Available credit</th>
               <th class="cell-center">Score</th>
             </tr>
           </thead>
@@ -42,6 +48,14 @@
                    href="<%= urlPrefix %>/assessment/<%= row.assessment_id %>/"
                    <% } %>
                    ><%= row.assessment_title %></a>
+              </td>
+              <td class="cell-center">
+                <%= row.credit_date_string %>
+                <%- include('../partials/userAccessRulesPopover', {
+                    accessRules: row.access_rules,
+                    assessmentSetName: row.assessment_set_name,
+                    assessmentNumber: row.assessment_number,
+                    }) %>
               </td>
               <td class="cell-center">
                 <% if (row.assessment_instance_id) { %>
