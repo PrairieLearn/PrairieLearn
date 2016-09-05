@@ -36,10 +36,4 @@ INSERT INTO assessment_instances AS ai (date, number, assessment_id, user_id)
     WHERE
         a.id = $assessment_id
 )
-RETURNING ai.*;
-
--- BLOCK new_question_instance
-INSERT INTO question_instances
-    (date, assessment_instance_id, user_id, assessment_question_id, number, variant_seed, params, true_answer, options)
-VALUES
-    (current_timestamp, $assessment_instance_id, $user_id, $assessment_question_id, $number, $variant_seed, $params, $true_answer, $options);
+RETURNING ai.id;

@@ -5,7 +5,6 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var assessment = require('../../assessment');
 var logger = require('../../logger');
 var sqldb = require('../../sqldb');
 var sqlLoader = require('../../sql-loader');

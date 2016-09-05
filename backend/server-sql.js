@@ -99,13 +99,15 @@ app.use('/pl', require('./pages/userHome/userHome'));
 // redirect class page to assessments page
 app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/assessments');} next();});
 app.use('/pl/:courseInstanceId/assessments', require('./pages/userAssessments/userAssessments'));
-app.use('/pl/:courseInstanceId/assessment/:assessmentId', require('./pages/userAssessment/userAssessment'));
+// User assessments are all handled by type-specific pages.
+// Each handler checks the assessment type and calls next() if it's the wrong type.
+app.use('/pl/:courseInstanceId/assessment/:assessmentId', [
+    require('./pages/userAssessmentHomework/userAssessmentHomework'),
+]);
 app.use('/pl/:courseInstanceId/assessmentInstance/:assessmentInstanceId', [
-    // following handlers will call next() if they don't match the correct assessment type
     require('./pages/userAssessmentInstanceHomework/userAssessmentInstanceHomework'),
 ]);
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', [
-    // following handlers will call next() if they don't match the correct assessment type
     require('./pages/userInstanceQuestionHomework/userInstanceQuestionHomework'),
 ]);
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId/file', require('./pages/questionFile/questionFile'));
