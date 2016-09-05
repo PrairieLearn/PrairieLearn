@@ -7,8 +7,8 @@ var logger = require('./logger');
 var filePaths = require('./file-paths');
 
 var questionModules = {
-    'ShortAnswer': require('./questions/shortAnswer'),
-    'Calculation': require('./questions/calculation'),
+    'ShortAnswer': require('./question-servers/shortAnswer'),
+    'Calculation': require('./question-servers/calculation'),
 };
 
 module.exports = {

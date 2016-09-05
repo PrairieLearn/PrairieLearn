@@ -7,7 +7,7 @@ var router = express.Router();
 
 var error = require('../../error');
 var logger = require('../../logger');
-var question = require('../../question');
+var questionServer = require('../../question-server');
 var sqldb = require('../../sqldb');
 var sqlLoader = require('../../sql-loader');
 
@@ -20,12 +20,12 @@ var handle = function(req, res, next) {
             submission = {
                 submitted_answer: req.postData.submittedAnswer,
             };
-            question.gradeSubmission(submission, variant, res.locals.question, res.locals.course, {}, function(err, grading) {
+            questionServer.gradeSubmission(submission, variant, res.locals.question, res.locals.course, {}, function(err, grading) {
                 if (ERR(err, next)) return;
                 _.assign(submission, grading);
-                question.getModule(res.locals.question.type, function(err, questionModule) {
+                questionServer.getModule(res.locals.question.type, function(err, questionModule) {
                     if (ERR(err, next)) return;
-                    question.renderScore(submission.score, function(err, scoreHtml) {
+                    questionServer.renderScore(submission.score, function(err, scoreHtml) {
                         if (ERR(err, next)) return;
                         questionModule.renderSubmission(variant, res.locals.question, submission, res.locals.course, res.locals, function(err, submissionHtml) {
                             if (ERR(err, next)) return;
@@ -50,7 +50,7 @@ var render = function(req, res, next, variant, submission, scoreHtml, submission
     var params = [res.locals.questionId, res.locals.courseInstanceId];
     sqldb.queryOneRow(sql.all, params, function(err, result) {
         if (ERR(err, next)) return;
-        question.getModule(res.locals.question.type, function(err, questionModule) {
+        questionServer.getModule(res.locals.question.type, function(err, questionModule) {
             if (ERR(err, next)) return;
             questionModule.renderExtraHeaders(res.locals.question, res.locals.course, res.locals, function(err, extraHeaders) {
                 if (ERR(err, next)) return;

@@ -103,12 +103,15 @@ app.use('/pl/:courseInstanceId/assessments', require('./pages/userAssessments/us
 // Each handler checks the assessment type and calls next() if it's the wrong type.
 app.use('/pl/:courseInstanceId/assessment/:assessmentId', [
     require('./pages/userAssessmentHomework/userAssessmentHomework'),
+    require('./pages/userAssessmentExam/userAssessmentExam'),
 ]);
 app.use('/pl/:courseInstanceId/assessmentInstance/:assessmentInstanceId', [
     require('./pages/userAssessmentInstanceHomework/userAssessmentInstanceHomework'),
+    require('./pages/userAssessmentInstanceExam/userAssessmentInstanceExam'),
 ]);
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', [
     require('./pages/userInstanceQuestionHomework/userInstanceQuestionHomework'),
+    require('./pages/userInstanceQuestionExam/userInstanceQuestionExam'),
 ]);
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId/file', require('./pages/questionFile/questionFile'));
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId/text', require('./pages/questionText/questionText'));

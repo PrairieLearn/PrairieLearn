@@ -9,10 +9,10 @@ var logger = require('../../logger');
 var sqldb = require('../../sqldb');
 var sqlLoader = require('../../sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'userAssessmentInstanceHomework.sql'));
+var sql = sqlLoader.load(path.join(__dirname, 'userAssessmentInstanceExam.sql'));
 
 router.get('/', function(req, res, next) {
-    if (res.locals.assessment.type !== 'Homework' && res.locals.assessment.type !== 'Game') return next(); // FIXME: hack to handle 'Game'
+    if (res.locals.assessment.type !== 'Exam' && res.locals.assessment.type !== 'RetryExam') return next(); // FIXME: hack to handle 'RetryExam'
     var params = {
         assessment_instance_id: res.locals.assessmentInstance.id,
         assessment_id: res.locals.assessment.id,
@@ -25,7 +25,7 @@ router.get('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.locals.questions = result.rows;
 
-            res.render(path.join(__dirname, 'userAssessmentInstanceHomework'), res.locals);
+            res.render(path.join(__dirname, 'userAssessmentInstanceExam'), res.locals);
         });
     });
 });

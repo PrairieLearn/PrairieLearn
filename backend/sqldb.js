@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var fs = require('fs');
 var async = require('async');
@@ -168,12 +169,13 @@ module.exports = {
     },
 
     getClient: function(callback) {
-        that.pool.connect(function(err, client, done) {
+        this.pool.connect(function(err, client, done) {
             if (err) {
                 if (client) {
                     done(client);
                 }
-                return callback(err);
+                if (ERR(err, callback)) return;
+                return callback(error.addData(err, {extraInfo: 'Error handling failed'}));
             }
             callback(null, client, done);
         });
@@ -185,15 +187,29 @@ module.exports = {
             if (client) {
                 done(client);
             }
-            callback(error.addData(err, {sql: sql, params: params}));
+            error.addData(err, {sql: sql, params: params});
+            if (ERR(err, callback)) return true;
+            callback(error.addData(err, {extraInfo: 'Error handling failed'}));
             return true;
         };
-        that.paramsToArray(sql, params, function(err, newSql, newParams) {
-            if (err) return callback(error.addData(err, {sql: sql, params: params}));
+        this.paramsToArray(sql, params, function(err, newSql, newParams) {
+            if (err) error.addData(err, {sql: sql, params: params});
+            if (ERR(err, callback)) return;
             client.query(newSql, newParams, function(err, result) {
                 if (handleError(err)) return;
                 callback(null, result);
             });
+        });
+    },
+
+    queryWithClientOneRow: function(client, done, sql, params, callback) {
+        this.queryWithClient(client, done, sql, params, function(err, result) {
+            if (ERR(err, callback)) return;
+            if (result.rowCount !== 1) {
+                var data = {sql: sql, params: params};
+                return callback(error.makeWithData("Incorrect rowCount: " + result.rowCount, data));
+            }
+            callback(null, result);
         });
     },
 
@@ -221,12 +237,15 @@ module.exports = {
                 if (client) {
                     done(client);
                 }
-                callback(error.addData(err, {sql: sql, params: params}));
+                error.addData(err, {sql: sql, params: params});
+                if (ERR(err, callback)) return true;
+                callback(error.addData(err, {extraInfo: 'Error handling failed'}));
                 return true;
             };
             if (handleError(err)) return;
             that.paramsToArray(sql, params, function(err, newSql, newParams) {
-                if (err) return callback(error.addData(err, {sql: sql, params: params}));
+                if (err) error.addData(err, {sql: sql, params: params});
+                if (ERR(err, callback)) return;
                 client.query(newSql, newParams, function(err, result) {
                     if (handleError(err)) return;
                     done();
@@ -238,7 +257,7 @@ module.exports = {
 
     queryOneRow: function(sql, params, callback) {
         this.query(sql, params, function(err, result) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
             if (result.rowCount !== 1) {
                 var data = {sql: sql, params: params};
                 return callback(error.makeWithData("Incorrect rowCount: " + result.rowCount, data));

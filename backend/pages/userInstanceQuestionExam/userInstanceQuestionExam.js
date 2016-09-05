@@ -12,7 +12,7 @@ var logger = require('../../logger');
 var sqldb = require('../../sqldb');
 var sqlLoader = require('../../sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'userInstanceQuestionHomework.sql'));
+var sql = sqlLoader.load(path.join(__dirname, 'userInstanceQuestionExam.sql'));
 
 function ensureVariant(req, res, callback) {
     // if we have an existing variant that is ungraded (may have an ungraded submission)
@@ -165,7 +165,7 @@ function processPost(req, res, callback) {
 }
 
 function handle(req, res, next) {
-    if (res.locals.assessment.type !== 'Homework' && res.locals.assessment.type !== 'Game') return next(); // FIXME: hack to handle 'Game'
+    if (res.locals.assessment.type !== 'Exam' && res.locals.assessment.type !== 'RetryExam') return next(); // FIXME: hack to handle 'RetryExam'
 
     var questionModule;
     res.locals.showSubmitButton = true;
@@ -265,7 +265,7 @@ function handle(req, res, next) {
         },
     ], function(err) {
         if (ERR(err, next)) return;
-        res.render(path.join(__dirname, 'userInstanceQuestionHomework'), res.locals);
+        res.render(path.join(__dirname, 'userInstanceQuestionExam'), res.locals);
     });
 }
 

@@ -12,19 +12,19 @@ var sqlLoader = require('../../sql-loader');
 
 var sql = sqlLoader.load(path.join(__dirname, 'userAssessmentHomework.sql'));
 
-function makeAssessmentInstance(req, res, next) {
+function makeAssessmentInstance(req, res, callback) {
     var params = {
         assessment_id: res.locals.assessment.id,
         user_id: res.locals.user.id,
     };
     sqldb.queryOneRow(sql.new_assessment_instance, params, function(err, result) {
-        if (ERR(err, next)) return;
-        res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + result.rows[0].id);
+        if (ERR(err, callback)) return;
+        callback(null, result.rows[0].id);
     });
 };
 
 router.get('/', function(req, res, next) {
-    if (res.locals.assessment.type !== 'Homework' && res.locals.assessment.type !== 'Game') next(); // FIXME: hack to handle 'Game'
+    if (res.locals.assessment.type !== 'Homework' && res.locals.assessment.type !== 'Game') return next(); // FIXME: hack to handle 'Game'
     if (res.locals.assessment.multiple_instance) {
         return next(error.makeWithData('"Homework" assessments do not support multiple instances',
                                        {assessment: res.locals.assessment}));
@@ -36,7 +36,10 @@ router.get('/', function(req, res, next) {
     sqldb.query(sql.find_single_assessment_instance, params, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) {
-            makeAssessmentInstance(req, res, next);
+            makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
+                if (ERR(err, next)) return;
+                res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + assessmentInstanceId);
+            });
         } else {
             res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + result.rows[0].assessment_instance_id);
         }

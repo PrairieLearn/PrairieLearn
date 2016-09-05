@@ -15,8 +15,6 @@ module.exports = {
     },
 
     addData: function(err, data) {
-        console.log("err", err);
-        console.log("data", data);
         var newErr;
         if (_(err).isError()) {
             console.log("is error");
@@ -27,7 +25,6 @@ module.exports = {
         }
         newErr.data = newErr.data || {};
         _.assign(newErr.data, data);
-        console.log("newErr", newErr);
         return newErr;
     },
 };
