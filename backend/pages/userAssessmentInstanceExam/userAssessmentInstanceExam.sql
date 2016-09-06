@@ -1,19 +1,3 @@
--- BLOCK update
-WITH new_instance_questions AS (
-    SELECT
-        aq.init_points AS current_value,
-        $assessment_instance_id::integer AS assessment_instance_id,
-        aq.id AS assessment_question_id
-    FROM
-        assessment_questions AS aq
-    WHERE
-        aq.assessment_id = $assessment_id
-        AND aq.deleted_at IS NULL
-)
-INSERT INTO instance_questions (current_value, assessment_instance_id, assessment_question_id)
-(SELECT * FROM new_instance_questions)
-ON CONFLICT (assessment_question_id, assessment_instance_id) DO NOTHING;
-
 -- BLOCK get_questions
 SELECT
     iq.*,

@@ -24,7 +24,7 @@ function makeAssessmentInstance(req, res, callback) {
 };
 
 router.get('/', function(req, res, next) {
-    if (res.locals.assessment.type !== 'Homework' && res.locals.assessment.type !== 'Game') return next(); // FIXME: hack to handle 'Game'
+    if (res.locals.assessment.type !== 'Homework') return next();
     if (res.locals.assessment.multiple_instance) {
         return next(error.makeWithData('"Homework" assessments do not support multiple instances',
                                        {assessment: res.locals.assessment}));

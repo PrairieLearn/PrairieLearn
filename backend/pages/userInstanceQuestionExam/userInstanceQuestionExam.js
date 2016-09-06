@@ -165,7 +165,7 @@ function processPost(req, res, callback) {
 }
 
 function handle(req, res, next) {
-    if (res.locals.assessment.type !== 'Exam' && res.locals.assessment.type !== 'RetryExam') return next(); // FIXME: hack to handle 'RetryExam'
+    if (res.locals.assessment.type !== 'Exam') return next();
 
     var questionModule;
     res.locals.showSubmitButton = true;

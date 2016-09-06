@@ -80,7 +80,7 @@ function makeAssessmentInstance(req, res, callback) {
 };
 
 router.get('/', function(req, res, next) {
-    if (res.locals.assessment.type !== 'Exam' && res.locals.assessment.type !== 'RetryExam') return next(); // FIXME: hack to handle 'RetryExam'
+    if (res.locals.assessment.type !== 'Exam') return next();
     if (res.locals.assessment.multiple_instance) {
         makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
             if (ERR(err, next)) return;

@@ -165,7 +165,7 @@ function processPost(req, res, callback) {
 }
 
 function handle(req, res, next) {
-    if (res.locals.assessment.type !== 'Homework' && res.locals.assessment.type !== 'Game') return next(); // FIXME: hack to handle 'Game'
+    if (res.locals.assessment.type !== 'Homework') return next();
 
     var questionModule;
     res.locals.showSubmitButton = true;

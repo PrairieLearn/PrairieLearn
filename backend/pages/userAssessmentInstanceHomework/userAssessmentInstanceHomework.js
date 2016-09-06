@@ -12,7 +12,7 @@ var sqlLoader = require('../../sql-loader');
 var sql = sqlLoader.load(path.join(__dirname, 'userAssessmentInstanceHomework.sql'));
 
 router.get('/', function(req, res, next) {
-    if (res.locals.assessment.type !== 'Homework' && res.locals.assessment.type !== 'Game') return next(); // FIXME: hack to handle 'Game'
+    if (res.locals.assessment.type !== 'Homework') return next();
     var params = {
         assessment_instance_id: res.locals.assessmentInstance.id,
         assessment_id: res.locals.assessment.id,
