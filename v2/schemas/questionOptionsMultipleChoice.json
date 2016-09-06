@@ -1,0 +1,34 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "MultipleChoice question options",
+    "description": "Options for a MultipleChoice question.",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "text": {
+            "description": "The question HTML text that comes before the options.",
+            "type": "string",
+            "required": true
+        },
+        "correctAnswers": {
+            "description": "A list of correct answers to the question. Each is an HTML string.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "required": true
+        },
+        "incorrectAnswers": {
+            "description": "A list of incorrect answers to the question. Each is an HTML string.",
+            "type": "array",
+            "items": {
+                "type": "string"
+            },
+            "required": true
+        },
+        "numberAnswers": {
+            "description": "The total number of answers in the list of possible answers.",
+            "type": "integer"
+        }
+    }
+}

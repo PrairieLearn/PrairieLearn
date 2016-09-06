@@ -1,0 +1,97 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Test Info",
+    "description": "Info files for tests.",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "type": {
+            "description": "Type of the test.",
+            "enum": ["Basic", "Exam", "Game", "RetryExam", "Homework"],
+            "required": true
+        },
+        "title": {
+            "description": "The title of the test (e.g., 'Derivatives and anti-derivatives').",
+            "type": "string",
+            "required": true
+        },
+        "semester": {
+            "description": "Which semester this test is in.",
+            "enum": ["Fa15", "Sp16"]
+        },
+        "set": {
+            "description": "Which set of tests this one belongs to (e.g., 'Homework', 'Practice Quiz').",
+            "type": "string",
+            "required": true
+        },
+        "number": {
+            "description": "The number of this test within the set (e.g., 1, 2, 3).",
+            "oneOf": [
+                {"type": "integer"},
+                {"type": "string"}
+            ],
+            "required": true
+        },
+        "multipleInstance": {
+            "description": "Whether to allow students to create additional instances of the test",
+            "type": "boolean",
+            "default": false
+        },
+        "shuffleQuestions": {
+            "description": "Whether the questions will be shuffled in Student's view",
+            "type": "boolean",
+            "default": false
+        },
+        "allowAccess": {
+            "description": "List of access rules for the test. Access is permitted if any access rule is satisfied.",
+            "type": "array",
+            "items": {
+                "description": "An access rule that permits people to access this test. All restrictions in the rule must be satisfied for the rule to allow access.",
+                "type": "object",
+                "properties": {
+                    "mode" : {
+                        "description": "The server mode required for access.",
+                        "enum": ["Public", "Exam"]
+                    },
+                    "role" : {
+                        "description": "The minimum user role required for access.",
+                        "enum": ["Student", "TA", "Instructor", "Superuser"]
+                    },
+                    "uids" : {
+                        "description": "A list of UIDs, one of which is required for access",
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "credit" : {
+                        "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
+                        "type": "integer",
+                        "minimum": 0
+                    },
+                    "startDate" : {
+                        "description": "The earliest date on which access is permitted.",
+                        "type": "string"
+                    },
+                    "endDate" : {
+                        "description": "The latest date on which access is permitted.",
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "clientFiles": {
+            "description": "The list of test files accessible by the client (defaults to None).",
+            "type": "array",
+            "items": {
+                "description": "A single file accessible by the client.",
+                "type": "string"
+            }
+        },
+        "options": {
+            "description": "Options that define how the test will work, specific to the individual test type.",
+            "required": true,
+            "type": "object"
+        }
+    }
+}

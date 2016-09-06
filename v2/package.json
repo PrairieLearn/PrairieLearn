@@ -1,0 +1,31 @@
+{
+    "name": "PrairieLearn",
+    "description": "PrairieLearn server app",
+    "version": "2.0.0",
+    "private": true,
+    "dependencies": {
+        "adm-zip": "0.4.x",
+        "archiver": "0.21.x",
+        "async": "1.5.x",
+        "async-stacktrace": "0.0.x",
+        "backbone": "1.2.x",
+        "body-parser": "1.15.x",
+        "cookie-parser": "1.4.x",
+        "crypto-js": "3.1.x",
+        "csv": "0.4.x",
+        "ejs": "2.4.x",
+        "express": "4.13.x",
+        "is-my-json-valid": "2.13.x",
+        "jju": "1.3.x",
+        "lodash": "4.13.x",
+        "moment": "2.11.x",
+        "moment-timezone": "0.5.x",
+        "mongodb": "2.1.x",
+        "pg": "6.1.x",
+        "pg-hstore": "2.3.x",
+        "requirejs": "2.1.x",
+        "serve-favicon": "2.3.x",
+        "underscore": "1.8.x",
+        "winston": "2.2.x"
+    }
+}

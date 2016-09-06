@@ -1,8 +1,6 @@
 var ERR = require('async-stacktrace');
 var _ = require('underscore');
 var async = require('async');
-var requireFrontend = require("../../require-frontend");
-var PrairieRole = requireFrontend('PrairieRole');
 
 var sqldb = require('../../sqldb');
 var config = require('../../config');

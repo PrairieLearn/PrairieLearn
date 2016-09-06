@@ -1,11 +1,21 @@
 # JetBrains IDE files
 .idea/
 
+# OS X Finder files
+**/.DS_Store
+
 # Backend dependencies
 backend/node_modules/
+v2/node_modules/
 
 # Server log files
 backend/server.log
+v2/server.log
 
 # Config files
 backend/config.json
+backend/config.json.*
+v2/config.json
+
+# Build files
+frontend-build/

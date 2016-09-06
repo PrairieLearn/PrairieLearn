@@ -1,0 +1,55 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Game test options",
+    "description": "Options for a Game test.",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "questions": {
+            "description": "The list of questions that make up this test.",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                    "qid": {
+                        "description": "The ID of this question (QID).",
+                        "type": "string",
+                        "required": true
+                    },
+                    "initValue": {
+                        "description": "The initial number of points that this question is worth.",
+                        "type": "integer",
+                        "required": true
+                    },
+                    "maxScore": {
+                        "description": "The maximum number of points that this question can be worth.",
+                        "type": "integer",
+                        "required": true
+                    }
+                }
+            },
+            "required": true
+        },
+        "availDate": {
+            "description": "The date after which the test is available for students to view.",
+            "type": "string"
+        },
+        "dueDate": {
+            "description": "The due date for the test (still visible afterwards, but no more points can be gained).",
+            "type": "string"
+        },
+        "allowPractice": {
+            "description": "Whether to allow questions to be tried for practice, with no points earned or lost.",
+            "type": "boolean"
+        },
+        "maxScore": {
+            "description": "The number of points that counts as complete, and so gives 100% on the test.",
+            "type": "integer"
+        },
+        "text": {
+            "description": "HTML text shown on the test overview page.",
+            "type": "string"
+        }
+    }
+}
