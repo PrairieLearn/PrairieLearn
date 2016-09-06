@@ -174,39 +174,30 @@ module.exports = {
                 if (client) {
                     done(client);
                 }
-                if (ERR(err, callback)) return;
-                return callback(error.addData(err, {extraInfo: 'Error handling failed'}));
+                return ERR(err, callback); // unconditionally return
             }
             callback(null, client, done);
         });
     },
 
-    queryWithClient: function(client, done, sql, params, callback) {
-        var handleError = function(err, extraData) {
-            if (!err) return false;
-            if (client) {
-                done(client);
-            }
-            error.addData(err, {sql: sql, params: params});
-            if (ERR(err, callback)) return true;
-            callback(error.addData(err, {extraInfo: 'Error handling failed'}));
-            return true;
-        };
+    queryWithClient: function(client, sql, params, callback) {
         this.paramsToArray(sql, params, function(err, newSql, newParams) {
             if (err) error.addData(err, {sql: sql, params: params});
             if (ERR(err, callback)) return;
             client.query(newSql, newParams, function(err, result) {
-                if (handleError(err)) return;
+                if (err) error.addData(err, {sql: sql, params: params, result: result});
+                if (ERR(err, callback)) return;
                 callback(null, result);
             });
         });
     },
 
-    queryWithClientOneRow: function(client, done, sql, params, callback) {
-        this.queryWithClient(client, done, sql, params, function(err, result) {
+    queryWithClientOneRow: function(client, sql, params, callback) {
+        this.queryWithClient(client, sql, params, function(err, result) {
             if (ERR(err, callback)) return;
+            console.log('queryWithClientOneRow', 'result', result);
             if (result.rowCount !== 1) {
-                var data = {sql: sql, params: params};
+                var data = {sql: sql, params: params, result: result};
                 return callback(error.makeWithData("Incorrect rowCount: " + result.rowCount, data));
             }
             callback(null, result);
@@ -217,15 +208,58 @@ module.exports = {
         done();
     },
 
-    rollbackWithClient: function(client, done) {
+    rollbackWithClient: function(client, done, callback) {
         // from https://github.com/brianc/node-postgres/wiki/Transactions
-        client.query('ROLLBACK', function(err) {
+        client.query('ROLLBACK;', function(err) {
             //if there was a problem rolling back the query
             //something is seriously messed up.  Return the error
             //to the done function to close & remove this client from
             //the pool.  If you leave a client in the pool with an unaborted
             //transaction weird, hard to diagnose problems might happen.
-            return done(err);
+            done(err);
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+
+    // get a client and start a transaction
+    beginTransaction: function(callback) {
+        var that = this;
+        that.getClient(function(err, client, done) {
+            if (ERR(err, callback)) return;
+            that.queryWithClient(client, 'BEGIN;', [], function(err) {
+                if (err) {
+                    that.rollbackWithClient(client, done, function(rollbackErr) {
+                        if (ERR(rollbackErr, callback)) return;
+                        return ERR(err, callback);
+                    });
+                } else {
+                    callback(null, client, done);
+                }
+            });
+        });
+    },
+
+    // rollback (if err) or commit the transaction, and release the client
+    endTransaction: function(client, done, err, callback) {
+        var that = this;
+        if (err) {
+            that.rollbackWithClient(client, done, function(rollbackErr) {
+                if (rollbackErr) {
+                    error.addData(rollbackErr, {prev_err: err, rollback: "fail"});
+                    return ERR(rollbackErr, callback);
+                }
+                error.addData(err, {rollback: "success"});
+                return ERR(err, callback);
+            });
+        }
+        that.queryWithClient(client, 'COMMIT', [], function(err, result) {
+            if (err) {
+                done();
+                return ERR(err, callback); // unconditionally return
+            }
+            done();
+            callback(null);
         });
     },
 
@@ -238,8 +272,7 @@ module.exports = {
                     done(client);
                 }
                 error.addData(err, {sql: sql, params: params});
-                if (ERR(err, callback)) return true;
-                callback(error.addData(err, {extraInfo: 'Error handling failed'}));
+                ERR(err, callback);
                 return true;
             };
             if (handleError(err)) return;

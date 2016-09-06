@@ -41,7 +41,7 @@ router.get('/', function(req, res, next) {
                 res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + assessmentInstanceId);
             });
         } else {
-            res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + result.rows[0].assessment_instance_id);
+            res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + result.rows[0].id);
         }
     });
 });
