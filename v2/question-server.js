@@ -2,6 +2,7 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var fs = require('fs');
 var path = require('path');
+var numeric = require('numeric');
 
 var logger = require('./logger');
 var filePaths = require('./file-paths');

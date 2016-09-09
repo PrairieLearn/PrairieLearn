@@ -146,7 +146,21 @@ module.exports.checkInfoValid = function(idName, info, infoFile, courseInfo) {
             });
         }
     }
-    
+
+    if (idName == 'tid') {
+        if (info.type == 'OldExam') {
+            info.type = 'Exam';
+            info.questionGroups = _(info.qidGroups).map(function(g1) {
+                return _(g1).map(function(g2) {
+                    return _(g2).map(function(q) {
+                        return {qid: q, points: [1]};
+                    });
+                });
+            });
+            delete info.qidGroups;
+        }
+    }
+
     return retVal;
 };
 

@@ -44,11 +44,8 @@ module.exports = {
                             } else if (_(dbAssessment).has('options') && _(dbAssessment.options).has('questionGroups')) {
                                 // RetryExam, old format
                                 zoneList = [{questions: _(dbAssessment.options.questionGroups).flatten()}];
-                            } else if (_(dbAssessment).has('options') && _(dbAssessment.options).has('qidGroups')) {
-                                // Exam
-                                zoneList = [{questions: _(dbAssessment.options.qidGroups).flatten()}];
                             } else if (_(dbAssessment).has('options') && _(dbAssessment.options).has('questions')) {
-                                // Game
+                                // Homework
                                 zoneList = [{questions: dbAssessment.options.questions}];
                             } else if (_(dbAssessment).has('options') && _(dbAssessment.options).has('qids')) {
                                 // Basic

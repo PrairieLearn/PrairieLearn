@@ -39,7 +39,7 @@ var handle = function(req, res, next) {
             });
         } else return next(error.make(400, 'unknown action', {postData: req.postData}));
     } else {
-        question.makeVariant(res.locals.question, res.locals.course, {}, function(err, variant) {
+        questionServer.makeVariant(res.locals.question, res.locals.course, {}, function(err, variant) {
             if (ERR(err, next)) return;
             render(req, res, next, variant);
         });

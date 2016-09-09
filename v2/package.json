@@ -21,6 +21,7 @@
         "moment": "2.11.x",
         "moment-timezone": "0.5.x",
         "mongodb": "2.1.x",
+        "numeric": "1.2.x",
         "pg": "6.1.x",
         "pg-hstore": "2.3.x",
         "requirejs": "2.1.x",
