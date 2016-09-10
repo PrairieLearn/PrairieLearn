@@ -53,7 +53,8 @@ canvas {
 }
 
 #qsubmit {
-    margin-top: 20px;
+    /* margin-top: 20px; */
+    margin: 2em 0em;
 }
 
 #qgrading {
