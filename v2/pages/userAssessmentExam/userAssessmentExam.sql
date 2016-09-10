@@ -9,8 +9,8 @@ WHERE
     AND ai.user_id = $user_id;
 
 -- BLOCK make_assessment_instance
-INSERT INTO assessment_instances AS ai (number, assessment_id, user_id)
-VALUES (1, $assessment_id, $user_id)
+INSERT INTO assessment_instances AS ai (number, assessment_id, user_id, open)
+VALUES (1, $assessment_id, $user_id, TRUE)
 RETURNING ai.id;
 
 -- BLOCK get_work_list
@@ -25,8 +25,18 @@ WHERE
     AND aq.deleted_at IS NULL;
 
 -- BLOCK make_instance_question
-INSERT INTO instance_questions AS iq (assessment_instance_id, assessment_question_id)
-VALUES ($assessment_instance_id, $assessment_question_id)
+INSERT INTO instance_questions AS iq (assessment_instance_id, assessment_question_id, points_list, current_value)
+(
+    SELECT
+        $assessment_instance_id,
+        aq.id,
+        aq.points_list,
+        COALESCE(aq.points_list[1], 0)
+    FROM
+        assessment_questions AS aq
+    WHERE
+        aq.id = $assessment_question_id
+)
 RETURNING iq.id;
 
 -- BLOCK make_variant

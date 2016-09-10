@@ -195,7 +195,6 @@ module.exports = {
     queryWithClientOneRow: function(client, sql, params, callback) {
         this.queryWithClient(client, sql, params, function(err, result) {
             if (ERR(err, callback)) return;
-            console.log('queryWithClientOneRow', 'result', result);
             if (result.rowCount !== 1) {
                 var data = {sql: sql, params: params, result: result};
                 return callback(error.makeWithData("Incorrect rowCount: " + result.rowCount, data));

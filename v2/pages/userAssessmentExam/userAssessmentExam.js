@@ -49,6 +49,7 @@ function makeAssessmentInstance(req, res, callback) {
                     };
                     sqldb.queryWithClientOneRow(client, sql.make_instance_question, params, function(err, result) {
                         if (ERR(err, callback)) return;
+                        // FIXME: returning with error here triggers "Can't set headers" exception
                         var instanceQuestionId = result.rows[0].id;
                         questionServer.makeVariant(workItem.question, res.locals.course, {}, function(err, variant) {
                             if (ERR(err, callback)) return;
