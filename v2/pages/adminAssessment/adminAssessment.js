@@ -16,7 +16,7 @@ var scoreStatsCsvFilename = function(locals) {
         + '_'
         + locals.courseInstance.short_name
         + '_'
-        + locals.assessmentSet.short_name
+        + locals.assessmentSet.abbrev
         + locals.assessment.number
         + '_'
         + 'score_stats.csv';
@@ -27,7 +27,7 @@ var durationStatsCsvFilename = function(locals) {
         + '_'
         + locals.courseInstance.short_name
         + '_'
-        + locals.assessmentSet.short_name
+        + locals.assessmentSet.abbrev
         + locals.assessment.number
         + '_'
         + 'duration_stats.csv';
@@ -38,7 +38,7 @@ var scoresCsvFilename = function(locals) {
         + '_'
         + locals.courseInstance.short_name
         + '_'
-        + locals.assessmentSet.short_name
+        + locals.assessmentSet.abbrev
         + locals.assessment.number
         + '_'
         + 'scores.csv';
