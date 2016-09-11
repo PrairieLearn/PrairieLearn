@@ -46,17 +46,17 @@ function grade(req, res, finishExam, callback) {
                                 correct: grading.correct,
                                 feedback: grading.feedback,
                             };
-                            sqldb.queryOneRow(sql.update_submission, params, function(err, result) {
+                            sqldb.query(sql.update_submission, params, function(err, result) {
                                 if (ERR(err, callback)) return;
                                 callback(null);
                             });
                         },
                         function(callback) {
                             var params = {
-                                instance_question_id: workItem.instance_question_id,
+                                instance_question_id: workItem.instance_question.id,
                                 correct: grading.correct,
                             };
-                            sqldb.queryOneRow(sql.update_instance_question, params, function(err, result) {
+                            sqldb.query(sql.update_instance_question, params, function(err, result) {
                                 if (ERR(err, callback)) return;
                                 callback(null);
                             });
@@ -75,20 +75,16 @@ function grade(req, res, finishExam, callback) {
                     assessment_instance_id: res.locals.assessmentInstance.id,
                     credit: res.locals.assessmentInstance.credit,
                 };
-                sqldb.queryOneRow(sql.update_assessment_instance, params, function(err, result) {
+                sqldb.query(sql.update_assessment_instance, params, function(err, result) {
                     if (ERR(err, callback)) return;
-                    // don't overwrite entire object in case someone added extra fields at some point
-                    _.assign(res.locals.assessmentInstance, result.rows[0]);
                     callback(null);
                 });
             },
             function(callback) {
                 if (!finishExam) return callback(null);
                 var params = {assessment_instance_id: res.locals.assessmentInstance.id};
-                sqldb.queryOneRow(sql.close_assessment_instance, params, function(err, result) {
+                sqldb.query(sql.close_assessment_instance, params, function(err, result) {
                     if (ERR(err, callback)) return;
-                    // don't overwrite entire object in case someone added extra fields at some point
-                    _.assign(res.locals.assessmentInstance, result.rows[0]);
                     callback(null);
                 });
             },
@@ -101,40 +97,36 @@ function grade(req, res, finishExam, callback) {
     });
 };
 
-function processPost(req, res, callback) {
-    if (!res.locals.postAction) return callback(null);
+router.post('/', function(req, res, next) {
+    if (res.locals.assessment.type !== 'Exam') return next();
+
     if (res.locals.postAction == 'grade') {
         return grade(req, res, false, function(err) {
-            if (ERR(err, callback)) return;
-            callback(null);
+            if (ERR(err, next)) return;
+            // FIXME: can this be req.url?
+            res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + res.locals.assessmentInstance.id);
         });
     } else if (res.locals.postAction == 'finish') {
         return grade(req, res, true, function(err) {
-            if (ERR(err, callback)) return;
-            callback(null);
+            if (ERR(err, next)) return;
+            // FIXME: can this be req.url?
+            res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + res.locals.assessmentInstance.id);
         });
     } else {
-        return callback(error.make(400, 'unknown action: ' + res.locals.postAction, {postAction: res.locals.postAction, postData: res.locals.postData}));
+        return next(error.make(400, 'unknown action: ' + res.locals.postAction, {postAction: res.locals.postAction, postData: res.locals.postData}));
     }
-}
+});
 
-function handle(req, res, next) {
+router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
 
-    processPost(req, res, function(err) {
+    var params = {assessment_instance_id: res.locals.assessmentInstance.id};
+    sqldb.query(sql.get_questions, params, function(err, result) {
         if (ERR(err, next)) return;
+        res.locals.questions = result.rows;
         
-        var params = {assessment_instance_id: res.locals.assessmentInstance.id};
-        sqldb.query(sql.get_questions, params, function(err, result) {
-            if (ERR(err, next)) return;
-            res.locals.questions = result.rows;
-            
-            res.render(path.join(__dirname, 'userAssessmentInstanceExam'), res.locals);
-        });
+        res.render(path.join(__dirname, 'userAssessmentInstanceExam'), res.locals);
     });
-}
-
-router.get('/', handle);
-router.post('/', handle);
+});
 
 module.exports = router;

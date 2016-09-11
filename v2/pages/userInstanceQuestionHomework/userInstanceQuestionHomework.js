@@ -219,7 +219,7 @@ function handle(req, res, next) {
             });
         },
         function(callback) {
-            if (!res.locals.submission) return callback(null);
+            if (!res.locals.showSubmission) return callback(null);
             questionServer.renderScore(res.locals.submission.score, function(err, scoreHtml) {
                 if (ERR(err, callback)) return;
                 res.locals.scoreHtml = scoreHtml;
@@ -227,7 +227,7 @@ function handle(req, res, next) {
             });
         },
         function(callback) {
-            if (!res.locals.submission) return callback(null);
+            if (!res.locals.showSubmission) return callback(null);
             questionModule.renderSubmission(res.locals.variant, res.locals.question, res.locals.submission, res.locals.course, res.locals, function(err, submissionHtml) {
                 if (ERR(err, callback)) return;
                 res.locals.submissionHtml = submissionHtml;
@@ -235,7 +235,7 @@ function handle(req, res, next) {
             });
         },
         function(callback) {
-            if (!res.locals.submission || res.locals.submission.score == null) return callback(null);
+            if (!res.locals.showTrueAnswer) return callback(null);
             questionModule.renderTrueAnswer(res.locals.variant, res.locals.question, res.locals.course, res.locals, function(err, answerHtml) {
                 if (ERR(err, callback)) return;
                 res.locals.answerHtml = answerHtml;
@@ -264,8 +264,6 @@ function handle(req, res, next) {
                 feedback: (res.locals.showFeedback && res.locals.submission) ? res.locals.submission.feedback : null,
                 trueAnswer: res.locals.showTrueAnswer ? res.locals.variant.true_answer : null,
             });
-            res.locals.prevInstanceQuestionId = null;
-            res.locals.nextInstanceQuestionId = null;
             res.locals.video = null;
             callback(null);
         },

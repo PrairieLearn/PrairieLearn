@@ -56,12 +56,12 @@ CalculationClient.prototype.initialize = function(questionData, callback) {
             that.qClient.initialize(questionData.variant.params);
             if (questionData.submittedAnswer) {
                 that.qClient.setSubmittedAnswer(questionData.submittedAnswer);
-                if (questionData.trueAnswer) {
-                    that.qClient.setTrueAnswer(questionData.trueAnswer);
-                }
-                if (questionData.feedback) {
-                    that.qClient.feedback(questionData.feedback);
-                }
+            }
+            if (questionData.trueAnswer) {
+                that.qClient.setTrueAnswer(questionData.trueAnswer);
+            }
+            if (questionData.feedback) {
+                that.qClient.feedback(questionData.feedback);
             }
             callback(null);
         });

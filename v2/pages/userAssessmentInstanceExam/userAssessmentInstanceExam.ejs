@@ -27,9 +27,9 @@
           <div class="modal-footer">
             <form name="finish-form" method="POST">
               <input type="hidden" name="postAction" value="finish">
-              <button class="btn btn-danger">Finish assessment</button>
+              <button type="submit" class="btn btn-danger">Finish assessment</button>
+              <button type="button" data-dismiss="modal" class="btn btn-default">Cancel</button>
             </form>
-            <button type="button" data-dismiss="modal" class="btn btn-default">Cancel</button>
           </div>
         </div>
       </div>
@@ -52,16 +52,10 @@
 
           <div class="well well-sm small-bottom-margin">
             <div class="row">
-              <div class="col-md-3 col-sm-6 col-xs-12">
-                Current total points: <%= assessmentInstance.points %>/<%= assessmentInstance.max_points %>
-              </div>
-              <div class="col-md-3 col-sm-6 col-xs-12">
-                <%- include('../partials/scorebar', {score: assessmentInstance.score_perc}) %>
-              </div>
               <div class="col-md-2 col-sm-12 col-xs-12">
                   <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
               </div>
-              <div class="col-md-4 col-sm-12 col-xs-12">
+              <div class="col-md-10 col-sm-12 col-xs-12">
                 <p class="no-bottom-margin">
                   <small>
                     Clicking “Finish assessment” will compute your
@@ -131,10 +125,7 @@
             </tr>
             <% }); %>
             <tr>
-              <td class="cell-center"></td>
-              <td class="cell-center"></td>
-              <td class="cell-center"></td>
-              <td class="cell-center"></td>
+              <td colspan="4"></td>
               <td class="cell-center">
                 <form name="grade-form" method="POST">
                   <input type="hidden" name="postAction" value="grade">
@@ -162,7 +153,7 @@
                 <%- include('../partials/scorebar', {score: assessmentInstance.score_perc}) %>
               </div>
               <div class="col-md-6 col-sm-12 col-xs-12">
-                Time completed: <%= assessmentInstance.finish_date %>
+                Time completed: <%= assessmentInstance.closed_at %>
               </div>
             </div> <!-- row -->
           </div> <!-- well -->

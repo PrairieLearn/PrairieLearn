@@ -42,41 +42,27 @@ function processSubmission(req, res, callback) {
                 callback(null);
             });
         },
-        function(callback) {
-            var params = {instance_question_id: res.locals.instanceQuestion.id};
-            sqldb.queryOneRow(sql.get_instance_question_status, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                res.locals.instanceQuestion.status = result.rows[0].status;
-                callback(null);
-            });
-        },
     ], callback);
 };
 
-
-function processPost(req, res, callback) {
-    if (!req.postData) return callback(null);
+router.post('/', function(req, res, next) {
+    if (res.locals.assessment.type !== 'Exam') return next();
     if (req.postData.action == 'submitQuestionAnswer') {
-        return processSubmission(req, res, callback);
+        return processSubmission(req, res, function(err) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/instanceQuestion/' + res.locals.instanceQuestion.id);
+        });
     } else {
-        return callback(error.make(400, 'unknown action: ' + req.postData.action, {postData: req.postData}));
+        return next(error.make(400, 'unknown action: ' + req.postData.action, {postData: req.postData}));
     }
-}
+});
 
-function handle(req, res, next) {
+router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
 
     var questionModule;
     async.series([
         function(callback) {
-            processPost(req, res, function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
-            // might already have a variant from POST
-            if (res.locals.variant) return callback(null);
             var params = {instance_question_id: res.locals.instanceQuestion.id};
             sqldb.queryOneRow(sql.get_variant, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -85,8 +71,6 @@ function handle(req, res, next) {
             });
         },
         function(callback) {
-            // might already have a submission from POST
-            if (res.locals.submission) return callback(null);
             var params = {variant_id: res.locals.variant.id};
             sqldb.query(sql.get_submission, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -149,12 +133,10 @@ function handle(req, res, next) {
                     id: res.locals.variant.id,
                     params: res.locals.variant.params,
                 },
-                submittedAnswer: (res.locals.showSubmission && res.locals.submission) ? res.locals.submission.submitted_answer : null,
+                submittedAnswer: res.locals.submission ? res.locals.submission.submitted_answer : null,
                 feedback: (res.locals.showFeedback && res.locals.submission) ? res.locals.submission.feedback : null,
                 trueAnswer: res.locals.showTrueAnswer ? res.locals.variant.true_answer : null,
             });
-            res.locals.prevInstanceQuestionId = null;
-            res.locals.nextInstanceQuestionId = null;
             res.locals.video = null;
             callback(null);
         },
@@ -162,9 +144,6 @@ function handle(req, res, next) {
         if (ERR(err, next)) return;
         res.render(path.join(__dirname, 'userInstanceQuestionExam'), res.locals);
     });
-}
-
-router.get('/', handle);
-router.post('/', handle);
+});
 
 module.exports = router;
