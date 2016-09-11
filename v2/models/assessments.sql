@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS assessments (
     number varchar(20),
     title varchar(255),
     config JSONB,
+    text TEXT,
     multiple_instance boolean,
     shuffle_questions boolean DEFAULT false,
     max_points DOUBLE PRECISION,
@@ -36,6 +37,14 @@ $$;
 DO $$ 
     BEGIN
         ALTER TABLE assessments ADD COLUMN shuffle_questions boolean DEFAULT false;
+    EXCEPTION
+        WHEN duplicate_column THEN -- do nothing
+    END;
+$$;
+
+DO $$ 
+    BEGIN
+        ALTER TABLE assessments ADD COLUMN text TEXT;
     EXCEPTION
         WHEN duplicate_column THEN -- do nothing
     END;

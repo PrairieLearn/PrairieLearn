@@ -109,6 +109,7 @@ app.use('/pl/:courseInstanceId/assessmentInstance/:assessmentInstanceId', [
     require('./pages/userAssessmentInstanceHomework/userAssessmentInstanceHomework'),
     require('./pages/userAssessmentInstanceExam/userAssessmentInstanceExam'),
 ]);
+app.use('/pl/:courseInstanceId/assessmentInstance/:assessmentInstanceId/clientFiles', require('./pages/assessmentInstanceClientFiles/assessmentInstanceClientFiles'));
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', [
     require('./pages/userInstanceQuestionHomework/userInstanceQuestionHomework'),
     require('./pages/userInstanceQuestionExam/userInstanceQuestionExam'),
