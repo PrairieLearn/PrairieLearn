@@ -15,17 +15,20 @@
         <div class="modal-content">
           <div class="modal-header">
             <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-            <h4 class="modal-title">Finish exam</h4>
+            <h4 class="modal-title">Finish assessment</h4>
           </div>
           <div class="modal-body">
             <% if (assessmentInstance.all_questions_answered) { %>
             <div class="alert alert-warning">There are still unanswered questions.</div>
             <% } %>
-            <p><strong>Warning</strong>: You will not be able to answer any more questions after finishing the exam.</p>
-            <p>Are you sure you want to finish the exam?</p>
+            <p><strong>Warning</strong>: You will not be able to answer any more questions after finishing the assessment.</p>
+            <p>Are you sure you want to finish the assessment?</p>
           </div>
           <div class="modal-footer">
-            <button type="button" class="btn btn-danger finishExam" id="finishExam">Finish exam</button>
+            <form name="finish-form" method="POST">
+              <input type="hidden" name="postAction" value="finish">
+              <button class="btn btn-danger">Finish assessment</button>
+            </form>
             <button type="button" data-dismiss="modal" class="btn btn-default">Cancel</button>
           </div>
         </div>
@@ -39,9 +42,14 @@
           <h3 class="panel-title"><%= assessmentSet.abbrev %><%= assessment.number %>: <%= assessment.title %></h3>
         </div>
 
+        <!-- ######################################################################################### -->
+        <!-- ######################################################################################### -->
+        <!-- ######################################################################################### -->
+        <!-- ######################################################################################### -->
+        <% if (assessmentInstance.open) { %>
+
         <div class="panel-body">
 
-          <% if (assessmentInstance.open) { %>
           <div class="well well-sm small-bottom-margin">
             <div class="row">
               <div class="col-md-3 col-sm-6 col-xs-12">
@@ -50,8 +58,17 @@
               <div class="col-md-3 col-sm-6 col-xs-12">
                 <%- include('../partials/scorebar', {score: assessmentInstance.score_perc}) %>
               </div>
-              <div class="col-md-6 col-sm-12 col-xs-12">
-                <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish exam</button>
+              <div class="col-md-2 col-sm-12 col-xs-12">
+                  <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
+              </div>
+              <div class="col-md-4 col-sm-12 col-xs-12">
+                <p class="no-bottom-margin">
+                  <small>
+                    Clicking “Finish assessment” will compute your
+                    final score and reveal the true answer for all
+                    questions, if available.
+                  </small>
+                </p>
               </div>
             </div> <!-- row -->
           </div> <!-- well -->
@@ -65,36 +82,22 @@
           <div class="well well-sm no-bottom-margin">
             <div class="row">
               <div class="col-xs-12">
-                <p class="no-bottom-margin"><small>To do this assessment, go
-                    to each question and save an answer for it. At any time you
-                    can use the button above to grade all currently saved
-                    answers. The value is the current number of points that a
-                    question is worth, while the score is the final number of
-                    points awarded for a question. To try an incorrect question
-                    again, save a new answer for it and regrade. Questions with
-                    zero remaining attempts cannot be tried again. The total
-                    score is the sum of all question scores.</small></p>
+                <p class="no-bottom-margin"><small>To do this
+                    assessment, go to each question and save an answer
+                    for it. At any time you can use the blue “Grade
+                    and continue” button below to grade all currently
+                    saved answers. The “Current value” of each
+                    question is the maximum points that could be
+                    earned now for a correct answer, while the
+                    “Awarded points” is how many points you have
+                    actually received for the question. To try an
+                    incorrect question again, save a new answer for it
+                    and regrade. Questions with zero remaining
+                    attempts cannot be tried again. The total points
+                    is the sum of all question points.</small></p>
               </div>
             </div> <!-- row -->
           </div> <!-- well -->
-
-          <% } else { %> <!-- assessmentInstance.open -->
-
-          <div class="well well-sm small-bottom-margin">
-            <div class="row">
-              <div class="col-md-3 col-sm-6 col-xs-12">
-                Total points: <%= assessmentInstance.points %>/<%= assessmentInstance.max_points %>
-              </div>
-              <div class="col-md-3 col-sm-6 col-xs-12">
-                <%- include('../partials/scorebar', {score: assessmentInstance.score_perc}) %>
-              </div>
-              <div class="col-md-6 col-sm-12 col-xs-12">
-                Time completed: <%= assessmentInstance.finish_date %>
-              </div>
-            </div> <!-- row -->
-          </div> <!-- well -->
-
-          <% } %> <!-- assessmentInstance.open -->
 
         </div> <!-- panel-body -->
 
@@ -123,8 +126,8 @@
               </td>
               <td class="cell-center"><%= question.current_value %></td>
               <td class="cell-center"><%= question.remaining_points %></td>
-              <td class="cell-center"><%= question.status %></td>
-              <td class="cell-center"><%= question.points %></td>
+              <td class="cell-center"><%- include('../partials/examQuestionStatus', {status: question.status}); %></td>
+              <td class="cell-center"><%= question.points %>/<%= question.max_points %></td>
             </tr>
             <% }); %>
             <tr>
@@ -133,12 +136,72 @@
               <td class="cell-center"></td>
               <td class="cell-center"></td>
               <td class="cell-center">
-                <button class="btn btn-primary" data-toggle="modal" data-target="#confirmGradeModal">Grade and continue</button>
+                <form name="grade-form" method="POST">
+                  <input type="hidden" name="postAction" value="grade">
+                  <button class="btn btn-primary">Grade and continue</button>
+                </form>
               </td>
             </tr>
           </tbody>
         </table>
 
+        <!-- ######################################################################################### -->
+        <!-- ######################################################################################### -->
+        <!-- ######################################################################################### -->
+        <!-- ######################################################################################### -->
+        <% } else { %> <!-- assessmentInstance.open -->
+
+        <div class="panel-body">
+
+          <div class="well well-sm small-bottom-margin">
+            <div class="row">
+              <div class="col-md-3 col-sm-6 col-xs-12">
+                Total points: <%= assessmentInstance.points %>/<%= assessmentInstance.max_points %>
+              </div>
+              <div class="col-md-3 col-sm-6 col-xs-12">
+                <%- include('../partials/scorebar', {score: assessmentInstance.score_perc}) %>
+              </div>
+              <div class="col-md-6 col-sm-12 col-xs-12">
+                Time completed: <%= assessmentInstance.finish_date %>
+              </div>
+            </div> <!-- row -->
+          </div> <!-- well -->
+
+        </div> <!-- panel-body -->
+
+        <table class="table table-condensed table-hover">
+          <thead>
+            <tr>
+              <th>Question</th>
+              <th class="cell-center">Number of attempts</th>
+              <th class="cell-center">Awarded points</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% questions.forEach(function(question) { %>
+            <% if (question.start_new_zone && question.zone_title) { %>
+            <tr>
+              <th colspan="2"><%= question.zone_title %></th>
+            </tr>
+            <% } %>
+            <tr>
+              <td>
+                <a href="<%= urlPrefix %>/instanceQuestion/<%= question.id %>/">
+                  <%= question.question_number %>. <%= question.question_title %>
+                </a>
+              </td>
+              <td class="cell-center"><%= question.number_attempts %></td>
+              <td class="cell-center"><%= question.points %>/<%= question.max_points %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+
+        <!-- ######################################################################################### -->
+        <!-- ######################################################################################### -->
+        <!-- ######################################################################################### -->
+        <!-- ######################################################################################### -->
+        <% } %> <!-- assessmentInstance.open -->
       </div>
     </div>
   </body>

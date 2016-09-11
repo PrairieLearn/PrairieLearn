@@ -5,7 +5,8 @@ CREATE TABLE IF NOT EXISTS assessment_instances (
     obj JSONB, -- temporary, delete after Mongo import
     date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     number INTEGER,
-    open BOOLEAN,
+    open BOOLEAN DEFAULT TRUE,
+    closed_at TIMESTAMP WITH TIME ZONE,
     assessment_id INTEGER NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
     auth_user_id INTEGER REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
@@ -36,6 +37,16 @@ $$;
 DO $$
     BEGIN
         ALTER TABLE assessment_instances ADD COLUMN score_perc INTEGER;
+    EXCEPTION
+        WHEN duplicate_column THEN -- do nothing
+    END;
+$$;
+
+ALTER TABLE assessment_instances ALTER COLUMN open SET DEFAULT TRUE;
+
+DO $$
+    BEGIN
+        ALTER TABLE assessment_instances ADD COLUMN closed_at TIMESTAMP WITH TIME ZONE;
     EXCEPTION
         WHEN duplicate_column THEN -- do nothing
     END;

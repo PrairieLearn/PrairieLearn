@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS instance_questions (
     id SERIAL PRIMARY KEY,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    open BOOLEAN DEFAULT TRUE,
     number INTEGER,
     order_by INTEGER DEFAULT floor(random() * 1000000),
     points DOUBLE PRECISION DEFAULT 0,
@@ -15,6 +16,14 @@ CREATE TABLE IF NOT EXISTS instance_questions (
 DO $$
     BEGIN
         ALTER TABLE instance_questions ADD COLUMN points_list DOUBLE PRECISION[];
+    EXCEPTION
+        WHEN duplicate_column THEN -- do nothing
+    END;
+$$;
+
+DO $$
+    BEGIN
+        ALTER TABLE instance_questions ADD COLUMN open BOOLEAN DEFAULT TRUE;
     EXCEPTION
         WHEN duplicate_column THEN -- do nothing
     END;

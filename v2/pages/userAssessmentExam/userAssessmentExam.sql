@@ -43,3 +43,17 @@ RETURNING iq.id;
 INSERT INTO variants AS v (instance_question_id, number, variant_seed, params, true_answer, options)
 VALUES ($instance_question_id, 1, $variant_seed, $question_params, $true_answer, $options)
 RETURNING v.id;
+
+-- BLOCK set_max_points
+UPDATE assessment_instances AS ai
+SET
+    max_points = (
+        SELECT
+            sum(iq.points_list[1])
+        FROM
+            instance_questions AS iq
+        WHERE
+            iq.assessment_instance_id = $assessment_instance_id
+    )
+WHERE
+    ai.id = $assessment_instance_id;

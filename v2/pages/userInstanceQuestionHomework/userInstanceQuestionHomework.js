@@ -152,13 +152,19 @@ function processSubmission(req, res, callback) {
                 callback(null);
             });
         },
-    ], callback);
+    ], function(err) {
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
 };
 
 function processPost(req, res, callback) {
     if (!req.postData) return callback(null);
     if (req.postData.action == 'submitQuestionAnswer') {
-        return processSubmission(req, res, callback);
+        return processSubmission(req, res, function(err) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
     } else {
         return callback(error.make(400, 'unknown action: ' + req.postData.action, {postData: req.postData}));
     }

@@ -26,33 +26,14 @@
                 <%- questionHtml %>
               </div>
               <div class="panel-footer">
-                <% if (showSubmitButton) { %>
-                <button class="btn btn-primary question-submit">Submit</button>
+                <% if (showSaveButton) { %>
+                <button class="btn btn-primary question-submit">Save answer</button>
                 <form class="question-form" name="question-form" method="POST" action="<%= postUrl %>">
                   <input type="hidden" name="postData">
                 </form>
                 <% } %>
-                <% if (showNewVariantButton) { %>
-                <a href="." class="btn btn-primary">Try question again</a>
-                <% } %>
               </div>
             </div>
-
-            <% if (showSubmission) { %>
-            <div class="panel panel-info submission-block">
-              <div class="panel-heading">
-                <h3 class="panel-title">Submission</h3>
-              </div>
-              <div class="panel-body">
-                <p>
-                  <%- scoreHtml %>
-                </p>
-                <div class="submission-body">
-                  <%- submissionHtml %>
-                </div>
-              </div>
-            </div>
-            <% } %>
 
             <% if (showTrueAnswer) { %>
             <div class="panel panel-info grading-block">
@@ -68,36 +49,76 @@
           </div> <!-- question-container -->
         </div>
 
-        <!-- SIDEBAR ---------------------------------------------------------------------->
+        <!-- ################################################################################# -->
+        <!-- ################################################################################# -->
+        <!-- ################################################################################# -->
+        <!-- SIDEBAR ######################################################################### -->
         <div class="col-md-3 col-sm-4 col-xs-12">
 
           <div class="panel panel-default">
             <div class="panel-heading"><h3 class="panel-title"><a href="<%= urlPrefix %>/assessmentInstance/<%= assessmentInstance.id %>/"><%= assessmentSet.name %> <%= assessment.number %></a></h3></div>
+
+            <div class="panel-body">
+              <p class="text-center no-bottom-margin">
+                <a class="btn btn-info" href="<%= urlPrefix %>/assessmentInstance/<%= assessmentInstance.id %>/">Assessment overview</a>
+              </p>
+            </div>
+
+            <% if (!assessmentInstance.open) { %>
             <table class="table table-condensed">
               <tbody>
                 <tr>
                   <td>Total points:</td>
-                  <td><%= assessmentInstance.points %>/<%= assessmentInstance.max_points || assessment.max_points %></td>
+                  <td><%= assessmentInstance.points %>/<%= assessmentInstance.max_points %></td>
                 </tr>
                 <tr>
                   <td>Score:</td>
                   <td><%- include('../partials/scorebar', {score: assessmentInstance.score_perc}) %></td>
                 </tr>
+                <tr>
+                  <td>Time completed:</td>
+                  <td><%= assessmentInstance.finish_date %></td>
+                </tr>
               </tbody>
             </table>
+            <% } %> <!-- !assessmentInstance.open -->
+
           </div>
           <div class="panel panel-default">
             <div class="panel-heading"><h3 class="panel-title">Question <%= instanceQuestion.question_number %></h3></div>
             <table class="table table-condensed">
               <tbody>
+                <% if (assessmentInstance.open) { %>
+                
                 <tr>
-                  <td>Value:</td>
-                  <td><%- include('../partials/questionValue', {value: instanceQuestion.current_value});  %></td>
+                  <td>Current value:</td>
+                  <td><%= instanceQuestion.current_value %></td>
                 </tr>
                 <tr>
-                  <td>Points:</td>
-                  <td><%- include('../partials/questionPointsOfMax', {points: instanceQuestion.points, max_points: assessmentQuestion.max_points}); %></td>
+                  <td>Remaining points:</td>
+                  <td><%= instanceQuestion.remaining_points %></td>
                 </tr>
+                <tr>
+                  <td>Status:</td>
+                  <td><%- include('../partials/examQuestionStatus', {status: instanceQuestion.status}); %></td>
+                </tr>
+                <tr>
+                  <td>Awarded points:</td>
+                  <td><%= instanceQuestion.points %>/<%= instanceQuestion.max_points %></td>
+                </tr>
+
+                <% } else { %> <!-- assessmentInstance.open -->
+                
+                <tr>
+                  <td>Number of attempts:</td>
+                  <td><%= instanceQuestion.number_attempts %></td>
+                </tr>
+                <tr>
+                  <td>Awarded points:</td>
+                  <td><%= instanceQuestion.points %>/<%= instanceQuestion.max_points %></td>
+                </tr>
+
+                <% } %> <!-- assessmentInstance.open -->
               </tbody>
             </table>
           </div>

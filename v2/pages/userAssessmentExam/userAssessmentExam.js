@@ -71,6 +71,13 @@ function makeAssessmentInstance(req, res, callback) {
                     callback(null);
                 });
             },
+            function(callback) {
+                var params = {assessment_instance_id: assessmentInstanceId};
+                sqldb.queryWithClient(client, sql.set_max_points, params, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
         ], function(err) {
             sqldb.endTransaction(client, done, err, function(err) {
                 if (ERR(err, callback)) return;

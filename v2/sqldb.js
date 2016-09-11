@@ -59,8 +59,10 @@ var assessmentStats = fs.readFileSync('./sprocs/assessment_stats.sql', 'utf8');
 var assessmentsForQuestion = fs.readFileSync('./sprocs/assessments_for_question.sql', 'utf8');
 var tagsForQuestion = fs.readFileSync('./sprocs/tags_for_question.sql', 'utf8');
 var assessmentPointsHomework = fs.readFileSync('./sprocs/assessment_points_homework.sql', 'utf8');
+var assessmentPointsExam = fs.readFileSync('./sprocs/assessment_points_exam.sql', 'utf8');
 var randomUnique = fs.readFileSync('./sprocs/random_unique.sql', 'utf8');
 var questionOrder = fs.readFileSync('./sprocs/question_order.sql', 'utf8');
+var examQuestionStatus = fs.readFileSync('./sprocs/exam_question_status.sql', 'utf8');
 
 module.exports = {
     pool: null,
@@ -131,8 +133,10 @@ module.exports = {
             assessmentsForQuestion,
             tagsForQuestion,
             assessmentPointsHomework,
+            assessmentPointsExam,
             randomUnique,
             questionOrder,
+            examQuestionStatus,
         ], function(sql, callback) {
             that.query(sql, [], callback);
         }, function(err) {

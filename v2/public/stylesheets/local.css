@@ -88,6 +88,10 @@ canvas {
     text-align: center;
 }
 
+.table .cell-right {
+    text-align: right;
+}
+
 #qscore td {
     border: 0px;
 }

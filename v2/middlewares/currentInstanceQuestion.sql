@@ -7,8 +7,16 @@ WITH augmented_instance_questions AS (
         aq.question_id,
         (lag(iq.id) OVER w) AS prev_instance_question_id,
         (lead(iq.id) OVER w) AS next_instance_question_id,
-        aq.max_points,
-        qo.question_number
+        qo.question_number,
+        CASE
+            WHEN a.type = 'Exam' THEN COALESCE(iq.points_list[1], 0)
+            ELSE aq.max_points
+        END AS max_points,
+        iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)] AS remaining_points,
+        CASE
+            WHEN a.type = 'Exam' THEN exam_question_status(iq)
+            ELSE NULL
+        END AS status
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
