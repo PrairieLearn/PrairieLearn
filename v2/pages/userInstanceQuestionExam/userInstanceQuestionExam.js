@@ -50,7 +50,7 @@ router.post('/', function(req, res, next) {
     if (req.postData.action == 'submitQuestionAnswer') {
         return processSubmission(req, res, function(err) {
             if (ERR(err, next)) return;
-            res.redirect(res.locals.urlPrefix + '/instanceQuestion/' + res.locals.instanceQuestion.id);
+            res.redirect(res.locals.urlPrefix + '/instanceQuestion/' + res.locals.instanceQuestion.id + '/');
         });
     } else {
         return next(error.make(400, 'unknown action: ' + req.postData.action, {postData: req.postData}));
