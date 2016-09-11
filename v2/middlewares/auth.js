@@ -36,6 +36,7 @@ module.exports = function(req, res, next) {
             || /^\/pl/.test(req.path)
             || /^\/images\//.test(req.path)
             || /^\/fonts\//.test(req.path)
+            || /^\/MathJax\//.test(req.path)
             || /^\/javascripts\//.test(req.path)
             || /^\/localscripts\//.test(req.path)
             || /^\/stylesheets\//.test(req.path))) {
