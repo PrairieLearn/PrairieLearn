@@ -32,7 +32,6 @@
     "options": {
         "qids": [
             "addVectors",
-            "centMassPointsRIGraph",
             "fossilFuelsRadio",
             "fossilFuelsCheckbox",
             "fossilFuelsTrueFalse",
