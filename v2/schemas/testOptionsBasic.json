@@ -1,0 +1,34 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Basic test options",
+    "description": "Options for a Basic test.",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "qids": {
+            "description": "An array of question IDs (QIDs) that make up the test.",
+            "type": "array",
+            "items": {
+                "description": "A single question ID (QID).",
+                "type": "string"
+            },
+            "required": true
+        },
+        "availDate": {
+            "description": "The date after which the test is available for students to view.",
+            "type": "string"
+        },
+        "dueDate": {
+            "description": "The due date for the test (still visible afterwards, but no more points can be gained).",
+            "type": "string"
+        },
+        "allowPractice": {
+            "description": "Whether to allow questions to be tried for practice, with no points earned or lost.",
+            "type": "boolean"
+        },
+        "text": {
+            "description": "HTML text shown on the test overview page.",
+            "type": "string"
+        }
+    }
+}

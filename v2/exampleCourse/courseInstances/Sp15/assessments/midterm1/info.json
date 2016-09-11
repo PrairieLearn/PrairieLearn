@@ -1,0 +1,43 @@
+{
+    "type": "Exam",
+    "title": "Template Exam",
+    "set": "Exam",
+    "number": 1,
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "role": "TA",
+            "credit": 100
+        },
+        {
+            "mode": "Exam",
+            "credit": 100,
+            "startDate": "2014-07-07T23:59:59",
+            "endDate": "2014-07-10T23:59:59"
+        }
+    ],
+    "clientFiles": ["formulas.pdf", "formulas.html"],
+    "options": {
+        "zones": [
+            {
+                "title": "Easy questions",
+                "questions": [
+                    {"qid": "fossilFuelsRadio", "points": [10]},
+                    {"qid": "particleMotion", "points": [10, 5, 2]},
+                    {"qid": "fossilFuelsTrueFalse", "points": [10, 5, 2]}
+                ]
+            },
+            {
+                "title": "Hard questions",
+                "questions": [
+                    {
+                        "qids": ["fibonacci", "addVectors"],
+                        "points": [10, 10, 7, 3, 1, 0.5, 0.25]
+                    },
+                    {"qid": "fossilFuelsCheckbox", "points": [10, 5]}
+                ]
+            }
+        ],
+        "text": "For this exam you can use the <a target=\"_blank\" href=\"<% print(testFile(\"formulas.pdf\")) %>\">PDF formula sheet</a>, the <a target=\"_blank\" href=\"<% print(testFile(\"formulas.html\")) %>\">HTML formula sheet</a> or <a target=\"_blank\" href=\"https://en.wikipedia.org/wiki/List_of_moments_of_inertia\">this Wikipedia page</a>."
+    }
+}

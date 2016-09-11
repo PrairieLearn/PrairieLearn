@@ -1,0 +1,42 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Exam test options",
+    "description": "Options for an Exam test.",
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+        "qidGroups": {
+            "description": "Array of QID difficulty groups, one per difficulty level of questions.",
+            "type": "array",
+            "items": {
+                "description": "Array of QID topic groups, one per topic of questions.",
+                "type": "array",
+                "items": {
+                    "description": "Array of question IDs (QIDs) for this topic and difficulty.",
+                    "type": "array",
+                    "uniqueItems": true,
+                    "item": {
+                        "description": "A single question ID (QID).",
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "availDate": {
+            "description": "The date after which the test is available for students to view.",
+            "type": "string"
+        },
+        "nQuestions": {
+            "description": "The number of questions to select for each instance of this test.",
+            "type": "integer"
+        },
+        "timeLimitMin": {
+            "description": "The number of minutes allowed for this test.",
+            "type": "integer"
+        },
+        "text": {
+            "description": "HTML text shown on the test overview page.",
+            "type": "string"
+        }
+    }
+}

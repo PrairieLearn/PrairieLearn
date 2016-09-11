@@ -1,0 +1,24 @@
+{
+    "type": "Exam",
+    "title": "Practice Final",
+    "set": "Practice Exam",
+    "number": 1,
+    "multipleInstance": true,
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 100
+        }
+    ],
+    "options": {
+        "zones": [
+            {
+                "questions": [
+                    {"qid": "fossilFuelsRadio", "points": [10]},
+                    {"qid": "particleMotion", "points": [10, 5, 2]},
+                    {"qid": "addVectors", "points": [10, 5, 2]}
+                ]
+            }
+        ]
+    }
+}

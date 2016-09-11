@@ -1,0 +1,22 @@
+<p>
+    <h4>Download your problem</h4>
+    <a href="data:text/plain;base64,<%= params.fileData %>" download="<%= params.fileName %>" target="_blank">
+        Download <%= params.fileName %>
+    </a>
+</p>
+<p>
+Follow the following directions:  <i>blah, blah, blah</i>
+</p>
+<p>
+<a href="img/reference.pdf" target="_blank">Reference material</a> for reference.
+</p>
+<p>
+    <hr>
+
+    <h4>Upload your completed {{params.uploadFileName}} file</h4>
+    <input type="file" id="fileUpload" name="fileUpload" value="Upload Your Solution">
+
+    <a id="downloadFileLink" download="<%= params.uploadFileName %>" style="display:none" target="_blank">
+        Download your currently buffered file.
+    </a>
+</p>
