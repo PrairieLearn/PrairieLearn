@@ -65,7 +65,7 @@ Path                             | Method | Action                              
 `/qInstances/<qiid>`             | GET    | —                                                        | —                                     | JSON: Single `<qInstance>` object.
 `/qInstances/<qiid>/client.js`   | GET    | —                                                        | —                                     | Text: JavaScript question client code.
 `/qInstances/<qiid>/<filename>`  | GET    | —                                                        | —                                     | Other question files (type determined by filename extension).
-`/submissions`                   | GET    | —                                                        | —                                     | JSON: List of all `<submission>` objects, optionally filtered by `<uid>` or `<qid>` parameters.
+`/submissions`                   | GET    | —                                                        | —                                     | JSON: List of all `<submission>` objects, optionally filtered by `<uid>`, `<qid>`, or `<qiid> parameters.
 `/submissions`                   | POST   | Creates new submission object.                           | JSON: partial `<submission>` object.  | JSON: complete newly created `<submission>` object.
 `/submissions/<sid>`             | GET    | —                                                        | —                                     | JSON: Single `<submission>` object.
 `/tests`                         | GET    | —                                                        | —                                     | JSON: List of all `<test>` objects.

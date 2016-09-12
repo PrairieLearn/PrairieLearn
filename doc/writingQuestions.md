@@ -20,6 +20,7 @@ Questions are all stored inside the main `questions` directory for a course. Eac
         |-- client.js
         |-- question.html
         |-- answer.html
+        |-- submission.html
         |-- fig1.png      # extra files (e.g., images) for the question
         `-- notes.docx    # more files, like notes on how the question works
 
@@ -36,7 +37,7 @@ The `info.json` file for each question defines properties of the question. For e
         "title": "Addition of vectors in Cartesian coordinates",
         "topic": "Vectors",
         "tags": ["Cartesian", "graphical"],
-        "clientFiles": ["client.js", "question.html", "answer.html", "fig1.png"],
+        "clientFiles": ["client.js", "question.html", "answer.html", "submission.html", "fig1.png"],
         "type": "Calculation"
     }
 
@@ -260,6 +261,14 @@ The part in the box shown to the student after the question has been graded.
       $c = {{trueAnswer.c}}\rm\ m$.
     </p>
 
+    
+### `Calculation` question: `submission.html`
+
+Each time a student saves or submits and answer, a copy of this is displayed in a box at the bottom of the page, showing the student information about their submission. For example:
+    
+    <p>
+        $c = {{submittedAnswer.c}}\rm\ m$.
+    </p>
 
 ## Advanced: Generating LaTeX labels on figures
 
