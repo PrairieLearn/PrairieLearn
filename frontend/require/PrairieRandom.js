@@ -6,7 +6,16 @@ define(["mersenne", "underscore", "PrairieGeom"], function(mersenne, _, PrairieG
         @param {String} seed (Optional, default uses current time) Seed value for the generator, must be in base 36.
     */
     function RandomGenerator(seed) {
-        seed = (seed === undefined) ? Date.now() : parseInt(seed, 36);
+        if (seed == null) {
+            if (process && process.hrtime) { // use nanosecond time on NodeJS
+                var time = process.hrtime();
+                seed = time[0] * 1e9 + time[1];
+            } else {
+                seed = Date.now(); // use millisecond time in the browser
+            }
+        } else {
+            seed = parseInt(seed, 36);
+        }
         this._mersenne = new mersenne.MersenneTwister19937();
         /* jshint camelcase: false */
         this._mersenne.init_genrand(seed);
