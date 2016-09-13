@@ -18,6 +18,7 @@ config.authType = 'none';
 config.localFileserver = true;
 config.serverType = 'http';
 config.serverPort = '3000';
+config.cronIntervalMS = 10 * 60 * 1000;
 config.courseDir = "../exampleCourse";
 config.frontendDir = "../frontend";
 config.questionDefaultsDir = "questionDefaults";

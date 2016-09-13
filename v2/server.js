@@ -15,6 +15,7 @@ var config = require('./config');
 var sqldb = require('./sqldb');
 var syncFromDisk = require('./sync/syncFromDisk');
 var syncFromMongo = require('./sync/syncFromMongo');
+var cron = require('./cron');
 
 logger.infoOverride('PrairieLearn server start');
 
@@ -142,6 +143,7 @@ var startServer = function(callback) {
 
 async.series([
     sqldb.init,
+    cron.init,
     startServer,
     // FIXME: we are short-circuiting this for development,
     // for prod these tasks should be back inline
