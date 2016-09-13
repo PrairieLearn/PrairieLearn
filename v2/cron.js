@@ -13,6 +13,7 @@ var user_assessment_durations = fs.readFileSync('./cron.d/user_assessment_durati
 module.exports = {
     init: function(callback) {
         var that = module.exports;
+        logger.info('initializing cron', {cronIntervalMS: config.cronIntervalMS});
         setTimeout(that.runJobs, config.cronIntervalMS);
         callback(null);
     },
