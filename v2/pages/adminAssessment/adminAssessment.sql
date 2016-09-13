@@ -24,27 +24,32 @@ SELECT * FROM assessment_stats WHERE id = $assessment_id;
 
 -- BLOCK assessment_duration_stats
 SELECT
-    format_interval(tds.median) AS median,
-    format_interval(tds.min) AS min,
-    format_interval(tds.max) AS max,
-    format_interval(tds.mean) AS mean,
+    format_interval(ads.median) AS median,
+    format_interval(ads.min) AS min,
+    format_interval(ads.max) AS max,
+    format_interval(ads.mean) AS mean,
+    EXTRACT(EPOCH FROM ads.median) / 60 AS median_mins,
+    EXTRACT(EPOCH FROM ads.min) / 60  AS min_mins,
+    EXTRACT(EPOCH FROM ads.max) / 60  AS max_mins,
+    EXTRACT(EPOCH FROM ads.mean) / 60  AS mean_mins,
     threshold_seconds,
     threshold_labels,
     hist
-FROM assessment_duration_stats AS tds
+FROM assessment_duration_stats AS ads
 WHERE id = $assessment_id;
 
 
 -- BLOCK user_assessment_scores
 SELECT
-    u.id,u.uid,u.name,e.role,uts.score_perc,
-    format_interval(utd.duration) AS duration,
-    EXTRACT(EPOCH FROM utd.duration) AS duration_secs
+    u.id,u.uid,u.name,e.role,uas.score_perc,
+    format_interval(uad.duration) AS duration,
+    EXTRACT(EPOCH FROM uad.duration) AS duration_secs,
+    EXTRACT(EPOCH FROM uad.duration) / 60 AS duration_mins
 FROM assessments AS a
 CROSS JOIN users AS u
 JOIN enrollments AS e ON (e.user_id = u.id)
-JOIN user_assessment_scores AS uts ON (uts.user_id = u.id AND uts.assessment_id = a.id)
-JOIN user_assessment_durations AS utd ON (utd.user_id = u.id AND utd.assessment_id = a.id)
+JOIN user_assessment_scores AS uas ON (uas.user_id = u.id AND uas.assessment_id = a.id)
+JOIN user_assessment_durations AS uad ON (uad.user_id = u.id AND uad.assessment_id = a.id)
 WHERE a.id = $assessment_id
 AND a.course_instance_id = e.course_instance_id
 ORDER BY e.role DESC,u.uid,u.id;

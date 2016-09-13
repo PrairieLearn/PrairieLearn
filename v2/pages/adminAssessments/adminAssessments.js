@@ -20,12 +20,12 @@ var csvFilename = function(locals) {
 };
 
 router.get('/', function(req, res, next) {
+    res.locals.csvFilename = csvFilename(res.locals);
     var params = {course_instance_id: res.locals.courseInstanceId};
     sqldb.query(sql.all, params, function(err, result) {
         if (ERR(err, next)) return;
         
         res.locals.rows = result.rows;
-        res.locals.csvFilename = csvFilename(res.locals);
         res.render(path.join(__dirname, 'adminAssessments'), res.locals);
     });
 });
@@ -35,6 +35,7 @@ router.get('/:filename', function(req, res, next) {
         var params = {course_instance_id: res.locals.courseInstanceId};
         sqldb.query(sql.all, params, function(err, result) {
             if (ERR(err, next)) return;
+            var assessmentStats = result.rows;
             var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Assessment', 'Title', 'TID',
                               'NStudents', 'Mean', 'Std', 'Min', 'Max', 'Median',
                               'NZero', 'NHundred', 'NZeroPerc', 'NHundredPerc',
@@ -72,7 +73,7 @@ router.get('/:filename', function(req, res, next) {
             });
         });
     } else {
-        throw Error("Unknown filename: " + req.params.filename);
+        next(new Error("Unknown filename: " + req.params.filename));
     }
 });
 
