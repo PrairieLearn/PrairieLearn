@@ -186,10 +186,10 @@ module.exports = {
 
     queryWithClient: function(client, sql, params, callback) {
         this.paramsToArray(sql, params, function(err, newSql, newParams) {
-            if (err) error.addData(err, {sql: sql, params: params});
+            if (err) err = error.addData(err, {sql: sql, params: params});
             if (ERR(err, callback)) return;
             client.query(newSql, newParams, function(err, result) {
-                if (err) error.addData(err, {sql: sql, params: params, result: result});
+                if (err) err = error.addData(err, {sql: sql, params: params, result: result});
                 if (ERR(err, callback)) return;
                 callback(null, result);
             });
@@ -249,10 +249,10 @@ module.exports = {
         if (err) {
             that.rollbackWithClient(client, done, function(rollbackErr) {
                 if (rollbackErr) {
-                    error.addData(rollbackErr, {prev_err: err, rollback: "fail"});
+                    rollbackErr = error.addData(rollbackErr, {prev_err: err, rollback: "fail"});
                     return ERR(rollbackErr, callback);
                 }
-                error.addData(err, {rollback: "success"});
+                err = error.addData(err, {rollback: "success"});
                 return ERR(err, callback);
             });
         }
@@ -274,13 +274,13 @@ module.exports = {
                 if (client) {
                     done(client);
                 }
-                error.addData(err, {sql: sql, params: params});
+                err = error.addData(err, {sql: sql, params: params});
                 ERR(err, callback);
                 return true;
             };
             if (handleError(err)) return;
             that.paramsToArray(sql, params, function(err, newSql, newParams) {
-                if (err) error.addData(err, {sql: sql, params: params});
+                if (err) err = error.addData(err, {sql: sql, params: params});
                 if (ERR(err, callback)) return;
                 client.query(newSql, newParams, function(err, result) {
                     if (handleError(err)) return;
