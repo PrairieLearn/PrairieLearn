@@ -1,6 +1,32 @@
 
 # ChangeLog
 
+* __1.21.0__ - 2016-09-14
+
+  * Use hi-res time for random seeds, improving test randomization.
+
+  * Improve margins around `Save answer` buttons (Eric Huber).
+
+  * Improve sorting of tests with identical numbers to sub-sort on titles.
+
+  * Fix handling of question shuffling within tests (Binglin Chen).
+
+  * Fix user role reading from `courseInfo.json`.
+
+  * Fix error-handling code in `POST /submissions`.
+
+  * Remove Siebel 0224 from `Exam` mode (Jeffrey Tolar).
+
+  * (V2) Automatically regenerate assessment statistics every 10 minutes.
+
+  * (V2) Fix CSV statistics downloads.
+
+  * (V2) Switch to local copy of MathJax.
+
+  * (V2) Implement access date display.
+
+  * (V2) Implement `Exam` and `Homework` assessment types.
+
 * __1.20.0__ - 2016-08-24
 
   * Fix `jsPlumb` naming case (Jeffrey Tolar).
