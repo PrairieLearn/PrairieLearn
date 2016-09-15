@@ -146,29 +146,33 @@ module.exports = {
 
     paramsToArray: function(sql, params, callback) {
         if (_.isArray(params)) return callback(null, sql, params);
+        if (!_.isObjectLike(params)) return callback(new Error("params must be array or object"));
         var re = /\$([-_a-zA-Z0-9]+)/;
         var result;
         var processedSql = '';
         var remainingSql = sql;
         var nParams = 0;
         var map = {};
+        var paramsArray = [];
         while ((result = re.exec(remainingSql)) !== null) {
             var v = result[1];
             if (!_(map).has(v)) {
-                nParams++;
-                map[v] = nParams;
+                if (!_(params).has(v)) return callback(new Error("Missing parameter: " + v));
+                if (_.isArray(params[v])) {
+                    map[v] = 'ARRAY[' + _.map(_.range(nParams + 1, nParams + params[v].length + 1), function(n) {return '$' + n;}).join(',') + ']';
+                    nParams += params[v].length;
+                    paramsArray = paramsArray.concat(params[v]);
+                } else {
+                    nParams++;
+                    map[v] = '$' + nParams;
+                    paramsArray.push(params[v]);
+                }
             }
-            processedSql += remainingSql.substring(0, result.index) + '$' + map[v];
+            processedSql += remainingSql.substring(0, result.index) + map[v];
             remainingSql = remainingSql.substring(result.index + result[0].length);
         }
         processedSql += remainingSql;
         remainingSql = '';
-        var paramsArray = [];
-        var invertedMap = _.invert(map);
-        for (var i = 0; i < nParams; i++) {
-            if (!_(params).has(invertedMap[i + 1])) return callback(new Error("Missing parameter: " + invertedMap[i + 1]));
-            paramsArray.push(params[invertedMap[i + 1]]);
-        }
         callback(null, processedSql, paramsArray);
     },
 
