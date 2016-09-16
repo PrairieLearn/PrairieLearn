@@ -82,16 +82,16 @@ app.use('/admin/:courseInstanceId/question/:questionId/text', require('./pages/q
 // Middleware for user pages
 app.use('/pl/', require('./middlewares/ensureUser'));
 app.use('/pl/', require('./middlewares/userCourseInstanceList'));
-app.use('/pl/:courseInstanceId', require('./middlewares/ensureEnrollment'));
+app.use('/pl/:courseInstanceId', require('./middlewares/ensureEnrollmentAndAuth'));
 app.use('/pl/:courseInstanceId', require('./middlewares/currentCourseInstance'));
 app.use('/pl/:courseInstanceId', require('./middlewares/currentCourse'));
 app.use('/pl/:courseInstanceId', require('./middlewares/userUrlPrefix'));
-app.use('/pl/:courseInstanceId/assessment/:assessmentId', require('./middlewares/currentAssessment'));
+app.use('/pl/:courseInstanceId/assessment/:assessmentId', require('./middlewares/currentAssessmentAndAuth'));
 app.use('/pl/:courseInstanceId/assessmentInstance/:assessmentInstanceId', require('./middlewares/currentAssessmentInstance'));
-app.use('/pl/:courseInstanceId/assessmentInstance/:assessmentInstanceId', require('./middlewares/currentAssessment'));
+app.use('/pl/:courseInstanceId/assessmentInstance/:assessmentInstanceId', require('./middlewares/currentAssessmentAndAuth'));
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentInstanceQuestion'));
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentAssessmentInstance'));
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentAssessment'));
+app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentAssessmentAndAuth'));
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentAssessmentQuestion'));
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentQuestion'));
 

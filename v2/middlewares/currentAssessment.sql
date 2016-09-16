@@ -1,19 +1,12 @@
 -- BLOCK assessment
 SELECT
-    a.*,
-    cta.credit,
-    cta.credit_date_string,
-    cta.access_rules
+    a.*
 FROM
-    assessments AS a,
-    users AS u,
-    LATERAL check_assessment_access(a.id, $mode::enum_mode, $role::enum_role, u.uid, current_timestamp) AS cta
+    assessments AS a
 WHERE
     a.id = $assessment_id
-    AND u.id = $user_id
     AND a.deleted_at IS NULL
-    AND a.course_instance_id = $course_instance_id
-    AND cta.available;
+    AND a.course_instance_id = $course_instance_id;
 
 -- BLOCK assessment_set
 SELECT aset.*

@@ -5,7 +5,7 @@ var error = require('../error');
 var sqldb = require('../sqldb');
 var sqlLoader = require('../sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'ensureEnrollment.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(req, res, next) {
     var params = {
