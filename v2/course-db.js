@@ -1,5 +1,5 @@
 var path = require('path');
-var _ = require('underscore');
+var _ = require('lodash');
 var fs = require('fs');
 var async = require('async');
 var moment = require("moment-timezone");
@@ -25,7 +25,7 @@ module.exports.getCourseOriginURL = function(callback) {
     child_process.execFile(cmd, options, env, function(err, stdout, stderr) {
         if (err) return callback(err);
         var originURL = null;
-        _(stdout.split('\n')).each(function(line) {
+        _(stdout.split('\n')).forEach(function(line) {
             match = /^ *Fetch URL: (.*)$/.exec(line);
             if (!match) return;
             originURL = match[1];
@@ -87,7 +87,7 @@ module.exports.checkInfoValid = function(idName, info, infoFile, courseInfo) {
 
     // look for exams without credit assigned and warn about it
     if (idName == "tid" && (info.type == "Exam" || info.type == "RetryExam")) {
-        if (_(info).has('allowAccess') && !_(info.allowAccess).any(function(a) {return _(a).has('credit');})) {
+        if (_(info).has('allowAccess') && !_(info.allowAccess).some(function(a) {return _(a).has('credit');})) {
             logger.warn(infoFile + ': No credit assigned in any allowAccess rules.')
         }
     }
@@ -99,7 +99,7 @@ module.exports.checkInfoValid = function(idName, info, infoFile, courseInfo) {
 
     // check dates in allowAccess
     if (idName == "tid" && _(info).has('allowAccess')) {
-        _(info.allowAccess).each(function(r) {
+        _(info.allowAccess).forEach(function(r) {
             if (r.startDate && !isValidDate(r.startDate)) {
                 logger.error(infoFile + ': invalid "startDate": "' + r.startDate + '" (must be formatted as "YYYY-MM-DDTHH:mm:ss")');
                 revVal = false;
@@ -111,13 +111,13 @@ module.exports.checkInfoValid = function(idName, info, infoFile, courseInfo) {
         });
     }
 
-    var validAssessmentSets = _(courseInfo.assessmentSets).pluck('name');
-    var validTopics = _(courseInfo.topics).pluck('name');
-    var validTags = _(courseInfo.tags).pluck('name');
+    var validAssessmentSets = _(courseInfo.assessmentSets).map('name');
+    var validTopics = _(courseInfo.topics).map('name');
+    var validTags = _(courseInfo.tags).map('name');
     
     // check assessments all have a valid assessmentSet
     if (idName == "tid") {
-        if (courseInfo.assessmentSets && !_(validAssessmentSets).contains(info.set)) {
+        if (courseInfo.assessmentSets && !_(validAssessmentSets).includes(info.set)) {
             logger.error(infoFile + ': invalid "set": "' + info.set + '" (must be a "name" of the "assessmentSets" listed in courseInfo.json)');
             retVal = false;
         }
@@ -125,21 +125,21 @@ module.exports.checkInfoValid = function(idName, info, infoFile, courseInfo) {
 
     // check all questions have valid topics and tags
     if (idName == "qid") {
-        if (courseInfo.topics && !_(validTopics).contains(info.topic)) {
+        if (courseInfo.topics && !_(validTopics).includes(info.topic)) {
             logger.error(infoFile + ': invalid "topic": "' + info.topic + '" (must be a "name" of the "topics" listed in courseInfo.json)');
             retVal = false;
         }
         if (_(info).has('secondaryTopics')) {
-            _(info.secondaryTopics).each(function(topic) {
-                if (!_(validTopics).contains(topic)) {
+            _(info.secondaryTopics).forEach(function(topic) {
+                if (!_(validTopics).includes(topic)) {
                     logger.error(infoFile + ': invalid "secondaryTopics": "' + topic + '" (must be a "name" of the "topics" listed in courseInfo.json)');
                     retVal = false;
                 }
             });
         }
         if (_(info).has('tags')) {
-            _(info.tags).each(function(tag) {
-                if (courseInfo.tags && !_(validTags).contains(tag)) {
+            _(info.tags).forEach(function(tag) {
+                if (courseInfo.tags && !_(validTags).includes(tag)) {
                     logger.error(infoFile + ': invalid "tags": "' + tag + '" (must be a "name" of the "tags" listed in courseInfo.json)');
                     retVal = false;
                 }
@@ -150,9 +150,9 @@ module.exports.checkInfoValid = function(idName, info, infoFile, courseInfo) {
     if (idName == 'tid') {
         if (info.type == 'OldExam') {
             info.type = 'Exam';
-            info.questionGroups = _(info.qidGroups).map(function(g1) {
-                return _(g1).map(function(g2) {
-                    return _(g2).map(function(q) {
+            info.questionGroups = _.map(info.qidGroups, function(g1) {
+                return _.map(g1, function(g2) {
+                    return _.map(g2, function(q) {
                         return {qid: q, points: [1]};
                     });
                 });
@@ -221,7 +221,7 @@ module.exports.load = function(callback) {
             that.loadCourseInfo(that.courseInfo, config.courseDir, callback);
         },
         function(callback) {
-            _(that.questionDB).mapObject(function(val, key) {delete that.questionDB[key];});
+            _(that.questionDB).forOwn(function(val, key) {delete that.questionDB[key];});
             var defaultQuestionInfo = {
                 "type": "Calculation",
                 "clientFiles": ["client.js", "question.html", "answer.html"],
@@ -230,7 +230,7 @@ module.exports.load = function(callback) {
                             "schemas/questionInfo.json", "schemas/questionOptions", ".json", that.courseInfo, callback);
         },
         function(callback) {
-            _(that.testDB).mapObject(function(val, key) {delete that.testDB[key];});
+            _(that.testDB).forOwn(function(val, key) {delete that.testDB[key];});
             var defaultTestInfo = {
             };
             that.loadInfoDB(that.testDB, "tid", that.courseInfo.testsDir, "info.json", defaultTestInfo,

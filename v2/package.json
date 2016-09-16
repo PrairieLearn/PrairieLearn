@@ -23,10 +23,8 @@
         "mongodb": "2.1.x",
         "numeric": "1.2.x",
         "pg": "6.1.x",
-        "pg-hstore": "2.3.x",
         "requirejs": "2.1.x",
         "serve-favicon": "2.3.x",
-        "underscore": "1.8.x",
         "winston": "2.2.x"
     }
 }

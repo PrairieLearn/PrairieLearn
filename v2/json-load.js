@@ -1,5 +1,5 @@
 var fs = require("fs");
-var _ = require("underscore");
+var _ = require("lodash");
 var jju = require('jju');
 var validator = require('is-my-json-valid')
 

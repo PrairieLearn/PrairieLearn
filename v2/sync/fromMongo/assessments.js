@@ -1,5 +1,5 @@
 var fs = require('fs');
-var _ = require('underscore');
+var _ = require('lodash');
 var async = require('async');
 var moment = require('moment-timezone');
 var csvStringify = require('csv').stringify;
@@ -26,7 +26,7 @@ module.exports = {
         sqldb.query(sql, [], function(err, result) {
             if (err) return callback(err);
             var existingIds = {};
-            _(result.rows).each(function(row) {
+            _(result.rows).forEach(function(row) {
                 existingIds[row.tid] = true;
             });
             callback(null, existingIds);

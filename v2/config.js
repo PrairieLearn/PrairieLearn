@@ -1,4 +1,4 @@
-var _ = require('underscore');
+var _ = require('lodash');
 var fs = require('fs');
 var path = require('path');
 var moment = require('moment-timezone');
@@ -66,7 +66,7 @@ config.computeRelativePaths();
 config.loadConfig = function(file) {
     if (fs.existsSync(file)) {
         fileConfig = jsonLoad.readJSONSyncOrDie(file, 'schemas/backendConfig.json');
-        _.extend(config, fileConfig);
+        _.assign(config, fileConfig);
     } else {
         logger.warn(file + " not found, using default configuration");
     }

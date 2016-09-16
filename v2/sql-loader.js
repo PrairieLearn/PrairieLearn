@@ -1,4 +1,4 @@
-var _ = require('underscore');
+var _ = require('lodash');
 var fs = require('fs');
 var path = require('path');
 
@@ -10,7 +10,7 @@ module.exports.load = function(filename) {
     var lines = sql.all.split('\n');
     var blockRE = /^ *-- *BLOCK +([^ ]+) *$/;
     var blockName = null;
-    _(lines).each(function(line) {
+    _(lines).forEach(function(line) {
         result = blockRE.exec(line);
         if (result) {
             blockName = result[1];

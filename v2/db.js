@@ -1,4 +1,4 @@
-var _ = require('underscore');
+var _ = require('lodash');
 var async = require("async");
 
 var config = require('./config');
@@ -15,7 +15,7 @@ var processCollection = function(name, err, collection, options, callback) {
     logger.info("successfully fetched '" + name + "' collection");
     var tasks = [];
     if (options.indexes) {
-        _(options.indexes).each(function(index) {
+        _(options.indexes).forEach(function(index) {
             tasks.push(function(cb) {
                 collection.ensureIndex(index.keys, index.options, function(err, indexName) {
                     if (err) {
