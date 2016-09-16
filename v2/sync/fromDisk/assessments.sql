@@ -95,13 +95,14 @@ WHERE
     assessment_id = $assessment_id
     AND number > $last_number;
 
--- BLOCK soft_delete_excess_assessment_questions
-UPDATE assessment_questions
+-- BLOCK soft_delete_unused_assessment_questions_in_assessment
+UPDATE assessment_questions AS aq
 SET
     deleted_at = CURRENT_TIMESTAMP
 WHERE
-    assessment_id = $assessment_id
-    AND number > $last_number;
+    aq.assessment_id = $assessment_id
+    AND aq.deleted_at IS NULL
+    AND aq.id NOT IN (SELECT unnest($keep_assessment_question_ids::integer[]));
 
 -- BLOCK select_question_by_qid
 SELECT id FROM questions
@@ -110,7 +111,7 @@ WHERE
     AND course_id = $course_id;
 
 -- BLOCK insert_assessment_question
-INSERT INTO assessment_questions
+INSERT INTO assessment_questions AS aq
         (number,  max_points,  init_points,  points_list,
         deleted_at,  assessment_id,  question_id, zone_id)
 (
@@ -132,4 +133,5 @@ SET
     init_points = EXCLUDED.init_points,
     deleted_at = EXCLUDED.deleted_at,
     zone_id = EXCLUDED.zone_id,
-    question_id = EXCLUDED.question_id;
+    question_id = EXCLUDED.question_id
+RETURNING aq.id;

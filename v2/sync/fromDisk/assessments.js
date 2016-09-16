@@ -177,6 +177,7 @@ module.exports = {
     syncAssessmentQuestions: function(assessmentId, zoneList, courseInfo, callback) {
         var that = module.exports;
         var iAssessmentQuestion = 0;
+        var assessmentQuestionIds = [];
         async.forEachOfSeries(zoneList, function(dbZone, iZone, callback) {
             async.forEachOfSeries(dbZone.questions, function(dbQuestion, iQuestion, callback) {
                 var qids = null, maxPoints = null, pointsList = null, initPoints = null;
@@ -199,8 +200,11 @@ module.exports = {
                 }
                 async.eachSeries(qids, function(qid, callback) {
                     iAssessmentQuestion++;
-                    that.syncAssessmentQuestion(qid, maxPoints, pointsList, initPoints, iAssessmentQuestion,
-                                          assessmentId, iZone, courseInfo, callback);
+                    that.syncAssessmentQuestion(qid, maxPoints, pointsList, initPoints, iAssessmentQuestion, assessmentId, iZone, courseInfo, function(err, assessmentQuestionId) {
+                        if (ERR(err, callback)) return;
+                        assessmentQuestionIds.push(assessmentQuestionId);
+                        callback(null);
+                    });
                 }, function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
@@ -216,9 +220,9 @@ module.exports = {
             logger.info('Soft-deleting unused assessment questions for current assessment');
             var params = {
                 assessment_id: assessmentId,
-                last_number: iAssessmentQuestion,
+                keep_assessment_question_ids: assessmentQuestionIds,
             };
-            sqldb.query(sql.soft_delete_excess_assessment_questions, params, function(err) {
+            sqldb.query(sql.soft_delete_unused_assessment_questions_in_assessment, params, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -245,9 +249,9 @@ module.exports = {
                 question_id: questionId,
                 zone_number: iZone + 1,
             };
-            sqldb.query(sql.insert_assessment_question, params, function(err) {
+            sqldb.queryOneRow(sql.insert_assessment_question, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                callback(null);
+                callback(null, result.rows[0].id);
             });
         });
     },
