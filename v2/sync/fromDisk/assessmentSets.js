@@ -1,31 +1,37 @@
 var ERR = require('async-stacktrace');
-var _ = require('underscore');
+var _ = require('lodash');
 var async = require('async');
 
+var logger = require('../../logger');
 var sqldb = require('../../sqldb');
 var config = require('../../config');
+var sqlLoader = require('../../sql-loader');
+
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = {
     sync: function(courseInfo, callback) {
         async.forEachOfSeries(courseInfo.assessmentSets, function(assessmentSet, i, callback) {
-            var sql
-                = ' INSERT INTO assessment_sets (abbrev, name, heading, color, number, course_id)'
-                + ' VALUES ($1, $2, $3, $4, $5, $6)'
-                + ' ON CONFLICT (name, course_id) DO UPDATE'
-                + ' SET'
-                + '     abbrev = EXCLUDED.abbrev,'
-                + '     heading = EXCLUDED.heading,'
-                + '     color = EXCLUDED.color,'
-                + '     number = EXCLUDED.number'
-                + ' ;';
-            var params = [assessmentSet.shortName, assessmentSet.name, assessmentSet.heading, assessmentSet.color, i + 1, courseInfo.courseId];
-            sqldb.query(sql, params, callback);
+            logger.info('Syncing assessment_set ' + assessmentSet.name);
+            var params = {
+                abbrev: assessmentSet.shortName,
+                name: assessmentSet.name,
+                heading: assessmentSet.heading,
+                color: assessmentSet.color,
+                number: i + 1,
+                course_id: courseInfo.courseId,
+            };
+            sqldb.query(sql.insert_assessment_set, params, callback);
         }, function(err) {
             if (ERR(err, callback)) return;
+
             // delete assessmentSets from the DB that aren't on disk
-            var sql = 'DELETE FROM assessment_sets WHERE course_id = $1 AND number > $2;';
-            var params = [courseInfo.courseId, courseInfo.assessmentSets.length];
-            sqldb.query(sql, params, function(err) {
+            logger.info('Deleting excess assessment_sets');
+            var params = {
+                course_id: courseInfo.courseId,
+                last_number: courseInfo.assessmentSets.length,
+            };
+            sqldb.query(sql.delete_excess_assessment_sets, params, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

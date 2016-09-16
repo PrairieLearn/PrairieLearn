@@ -1,5 +1,5 @@
 var ERR = require('async-stacktrace');
-var _ = require('underscore');
+var _ = require('lodash');
 var path = require('path');
 
 var config = require('../../config');
@@ -10,8 +10,12 @@ var sql = sqlLoader.load(path.join(__dirname, 'courseInfo.sql'));
 
 module.exports = {
     sync: function(courseInfo, callback) {
-        var params = [courseInfo.name, courseInfo.title, courseInfo.path];
-        sqldb.query(sql.all, params, function(err, result) {
+        var params = {
+            short_name: courseInfo.name,
+            title: courseInfo.title,
+            path: courseInfo.path,
+        };
+        sqldb.query(sql.insert_course, params, function(err, result) {
             if (ERR(err, callback)) return;
             courseInfo.courseId = result.rows[0].course_id;
             callback(null);

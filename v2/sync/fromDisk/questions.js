@@ -1,7 +1,8 @@
 var ERR = require('async-stacktrace');
-var _ = require('underscore');
+var _ = require('lodash');
 var async = require('async');
 
+var logger = require('../../logger');
 var sqldb = require('../../sqldb');
 var config = require('../../config');
 var sqlLoader = require('../../sql-loader');
@@ -11,7 +12,9 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 module.exports = {
     sync: function(courseInfo, questionDB, callback) {
         var questionIds = [];
+        logger.info('Syncing questions');
         async.forEachOfSeries(questionDB, function(q, qid, callback) {
+            logger.info('Syncing question ' + qid);
             var params = {
                 qid: qid,
                 type: q.type,
@@ -20,7 +23,7 @@ module.exports = {
                 course_id: courseInfo.courseId,
                 topic: q.topic,
             };
-            sqldb.queryOneRow(sql.insert, params, function(err, result) {
+            sqldb.queryOneRow(sql.insert_question, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 q.id = result.rows[0].id;
                 questionIds.push(result.rows[0].id);
@@ -30,20 +33,12 @@ module.exports = {
             if (ERR(err, callback)) return;
 
             // soft-delete questions from the DB that aren't on disk
-            var paramIndexes = questionIds.map(function(item, idx) {return "$" + (idx + 2);});
-            var localSql = 'WITH'
-                + ' course_question_ids AS ('
-                + '     SELECT id'
-                + '     FROM questions'
-                + '     WHERE course_id = $1'
-                + '     AND deleted_at IS NULL'
-                + ' )'
-                + ' UPDATE questions SET deleted_at = CURRENT_TIMESTAMP'
-                + ' WHERE id IN (SELECT * FROM course_question_ids)'
-                + ' AND ' + (questionIds.length === 0 ? 'TRUE' : 'id NOT IN (' + paramIndexes.join(',') + ')')
-                + ' ;';
-            var params = [courseInfo.courseId].concat(questionIds);
-            sqldb.query(localSql, params, function(err) {
+            logger.info('Soft-deleting unused questions');
+            var params = {
+                course_id: courseInfo.courseId,
+                keep_question_ids: questionIds,
+            };
+            sqldb.query(sql.soft_delete_unused_questions, params, function(err) {
                 if (ERR(err, callback)) return;
 
                 var params = {course_id: courseInfo.courseId};

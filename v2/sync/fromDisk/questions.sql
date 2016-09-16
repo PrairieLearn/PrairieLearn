@@ -1,4 +1,4 @@
--- BLOCK insert
+-- BLOCK insert_question
 INSERT INTO questions
     (qid, directory, type, title, config, course_id, deleted_at, topic_id)
 (SELECT * FROM
@@ -14,6 +14,14 @@ SET
     topic_id = EXCLUDED.topic_id,
     deleted_at = EXCLUDED.deleted_at
 RETURNING id;
+
+-- BLOCK soft_delete_unused_questions
+UPDATE questions AS q
+SET deleted_at = CURRENT_TIMESTAMP
+WHERE
+    q.course_id = $course_id
+    AND q.deleted_at IS NULL
+    AND q.id NOT IN (SELECT unnest($keep_question_ids::integer[]));
 
 -- BLOCK ensure_numbers
 WITH
