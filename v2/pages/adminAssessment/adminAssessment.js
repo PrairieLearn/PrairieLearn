@@ -66,7 +66,7 @@ router.get('/', function(req, res, next) {
 
                 // FIXME: change to assessment_instance_scores and show all instances
                 var params = {assessment_id: res.locals.assessmentId};
-                sqldb.query(sql.user_assessment_scores, params, function(err, result) {
+                sqldb.query(sql.assessment_instance_scores, params, function(err, result) {
                     if (ERR(err, next)) return;
                     res.locals.userScores = result.rows;
                     
@@ -152,16 +152,17 @@ router.get('/:filename', function(req, res, next) {
         });
     } else if (req.params.filename == scoresCsvFilename(res.locals)) {
         var params = {assessment_id: res.locals.assessmentId};
-        sqldb.query(sql.user_assessment_scores, params, function(err, result) {
+        sqldb.query(sql.assessment_instance_scores, params, function(err, result) {
             if (ERR(err, next)) return;
             var userScores = result.rows;
-            var csvHeaders = ['UID', 'Name', 'Role', 'Score (%)', 'Duration (min)'];
+            var csvHeaders = ['UID', 'Name', 'Role', 'Instance', 'Score (%)', 'Duration (min)'];
             var csvData = [];
             _(userScores).each(function(row) {
                 csvData.push([
                     row.uid,
                     row.name,
                     row.role,
+                    row.number,
                     row.score_perc,
                     row.duration_mins,
                 ]);

@@ -221,6 +221,7 @@
               <th>UID</th>
               <th>Name</th>
               <th class="cell-center">Role</th>
+              <th class="cell-center">Instance</th>
               <th class="cell-center">Score</th>
               <th class="cell-center">Duration</th>
             </tr>
@@ -231,6 +232,7 @@
               <td><%= row.uid %></td>
               <td><%= row.name %></td>
               <td class="cell-center"><%= row.role %></td>
+              <td class="cell-center"><%= row.number %></td>
               <td class="cell-center"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
               <td class="cell-center" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
             </tr>
