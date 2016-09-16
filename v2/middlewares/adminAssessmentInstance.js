@@ -8,10 +8,13 @@ var sqlLoader = require('../sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(req, res, next) {
-    var params = {course_instance_id: req.params.courseInstanceId};
-    sqldb.query(sql.all, params, function(err, result) {
+    var params = {
+        assessment_instance_id: res.locals.assessmentInstanceId ? res.locals.assessmentInstanceId : req.params.assessmentInstanceId,
+    };
+    sqldb.queryOneRow(sql.all, params, function(err, result) {
         if (ERR(err, next)) return;
-        res.locals.courseInstanceList = result.rows;
+        res.locals.assessmentInstance = result.rows[0];
+        res.locals.assessmentId = res.locals.assessmentInstance.assessment_id;
         next();
     });
 };

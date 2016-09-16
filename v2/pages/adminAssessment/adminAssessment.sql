@@ -42,7 +42,7 @@ WHERE id = $assessment_id;
 -- BLOCK assessment_instance_scores
 SELECT
     u.id AS user_id, u.uid, u.name, e.role, ai.score_perc,
-    ai.number,
+    ai.number,ai.id AS assessment_instance_id,
     format_interval(aid.duration) AS duration,
     EXTRACT(EPOCH FROM aid.duration) AS duration_secs,
     EXTRACT(EPOCH FROM aid.duration) / 60 AS duration_mins

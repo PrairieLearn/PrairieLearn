@@ -224,6 +224,7 @@
               <th class="cell-center">Instance</th>
               <th class="cell-center">Score</th>
               <th class="cell-center">Duration</th>
+              <th class="cell-center"></th>
             </tr>
           </thead>
           <tbody>
@@ -235,6 +236,7 @@
               <td class="cell-center"><%= row.number %></td>
               <td class="cell-center"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
               <td class="cell-center" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
+              <td class="cell-center"><a href="<%= urlPrefix %>/assessmentInstance/<%= row.assessment_instance_id %>" class="btn btn-xs btn-info">Details</a></td>
             </tr>
             <% }); %>
           </tbody>
