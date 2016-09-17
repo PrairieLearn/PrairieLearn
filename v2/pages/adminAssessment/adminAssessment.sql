@@ -51,7 +51,7 @@ FROM
     JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
     JOIN users AS u ON (u.id = ai.user_id)
     JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = a.course_instance_id)
-    JOIN assessment_instance_durations AS aid ON (aid.id = ai.id)
+    LEFT JOIN assessment_instance_durations AS aid ON (aid.id = ai.id)
 WHERE
     a.id = $assessment_id
 ORDER BY

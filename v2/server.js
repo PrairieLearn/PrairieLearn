@@ -65,8 +65,6 @@ app.use('/admin/:courseInstanceId', require('./middlewares/adminUrlPrefix'));
 app.use('/admin/:courseInstanceId', require('./middlewares/courseList'));
 app.use('/admin/:courseInstanceId', require('./middlewares/courseInstanceList'));
 app.use('/admin/:courseInstanceId/assessment/:assessmentId', require('./middlewares/currentAssessment'));
-app.use('/admin/:courseInstanceId/assessmentInstance/:assessmentInstanceId', require('./middlewares/adminAssessmentInstance'));
-app.use('/admin/:courseInstanceId/assessmentInstance/:assessmentInstanceId', require('./middlewares/currentAssessment'));
 app.use('/admin/:courseInstanceId/question/:questionId', require('./middlewares/currentQuestion'));
 
 // Route handlers for admin pages.
@@ -75,7 +73,7 @@ app.use('/admin', require('./pages/adminHome/adminHome'));
 app.use(function(req, res, next) {if (/\/admin\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/assessments');} next();});
 app.use('/admin/:courseInstanceId/assessments', require('./pages/adminAssessments/adminAssessments'));
 app.use('/admin/:courseInstanceId/assessment/:assessmentId', require('./pages/adminAssessment/adminAssessment'));
-app.use('/admin/:courseInstanceId/assessmentInstance/:assessmentInstanceId', require('./pages/adminAssessmentInstance/adminAssessmentInstance'));
+app.use('/admin/:courseInstanceId/assessmentInstance', require('./pages/adminAssessmentInstance/adminAssessmentInstance'));
 app.use('/admin/:courseInstanceId/users', require('./pages/adminUsers/adminUsers'));
 app.use('/admin/:courseInstanceId/questions', require('./pages/adminQuestions/adminQuestions'));
 app.use('/admin/:courseInstanceId/question/:questionId', require('./pages/adminQuestion/adminQuestion'));

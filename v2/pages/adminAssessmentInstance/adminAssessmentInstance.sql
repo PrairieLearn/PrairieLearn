@@ -1,4 +1,27 @@
--- BLOCK log
+-- BLOCK select_and_auth
+SELECT
+    to_jsonb(c) AS course,
+    to_jsonb(ci) AS course_instance,
+    to_jsonb(a) AS assessment,
+    to_jsonb(aset) AS assessment_set,
+    to_jsonb(ai) AS assessment_instance,
+    to_jsonb(u) AS instance_user,
+    to_jsonb(e) AS enrollment,
+    format_interval(aid.duration) AS assessment_instance_duration
+FROM
+    assessment_instances AS ai
+    JOIN assessments AS a ON (a.id = ai.assessment_id)
+    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    JOIN courses AS c ON (c.id = ci.course_id)
+    LEFT JOIN assessment_instance_durations AS aid ON (aid.id = ai.id)
+    JOIN users AS u ON (u.id = ai.user_id)
+    JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = ci.id)
+WHERE
+    ai.id = $assessment_instance_id
+    AND auth_admin_course_instance(ci.id, $auth);
+
+-- BLOCK select_log
 WITH
 answer_submissions_log AS (
     SELECT

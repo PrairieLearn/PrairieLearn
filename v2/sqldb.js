@@ -64,6 +64,7 @@ var assessmentPointsExam = fs.readFileSync('./sprocs/assessment_points_exam.sql'
 var randomUnique = fs.readFileSync('./sprocs/random_unique.sql', 'utf8');
 var questionOrder = fs.readFileSync('./sprocs/question_order.sql', 'utf8');
 var examQuestionStatus = fs.readFileSync('./sprocs/exam_question_status.sql', 'utf8');
+var auth_admin_course_instance = fs.readFileSync('./sprocs/auth_admin_course_instance.sql', 'utf8');
 
 module.exports = {
     pool: null,
@@ -139,6 +140,7 @@ module.exports = {
             randomUnique,
             questionOrder,
             examQuestionStatus,
+            auth_admin_course_instance,
         ], function(sql, callback) {
             that.query(sql, [], callback);
         }, function(err) {
