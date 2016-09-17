@@ -46,6 +46,16 @@ module.exports = function(req, res, next) {
         req.mode = 'Public';
         req.userUID = 'user1@illinois.edu';
         req.userRole = 'Superuser';
+
+        res.locals.auth_data = {
+            auth_uid: req.authUID,
+            auth_name: req.authName,
+            auth_date: req.authDate,
+            auth_signature: req.authSignature,
+            mode: req.mode,
+            user_uid: req.userUID,
+            user_role: req.userRole
+        };
         next();
         return;
     }
@@ -71,6 +81,16 @@ module.exports = function(req, res, next) {
         req.authUID = authUID;
         req.authName = authName;
         req.userUID = authUID;
+
+        res.locals.auth_data = {
+            auth_uid: req.authUID,
+            auth_name: req.authName,
+            auth_date: req.authDate,
+            auth_signature: req.authSignature,
+            mode: req.mode,
+            user_uid: req.userUID,
+            user_role: req.userRole
+        };
         next();
         return;
     } else if (config.authType == 'eppn' || config.authType == 'x-auth' || config.authType === 'none') {
@@ -121,6 +141,15 @@ module.exports = function(req, res, next) {
         req.mode = mode;
         req.userUID = userUID;
 
+        res.locals.auth_data = {
+            auth_uid: req.authUID,
+            auth_name: req.authName,
+            auth_date: req.authDate,
+            auth_signature: req.authSignature,
+            mode: req.mode,
+            user_uid: req.userUID,
+            user_role: req.userRole
+        };
         next();
         return;
     } else {

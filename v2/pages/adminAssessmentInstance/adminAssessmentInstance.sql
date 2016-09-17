@@ -19,7 +19,7 @@ FROM
     JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = ci.id)
 WHERE
     ai.id = $assessment_instance_id
-    AND auth_admin_course_instance(ci.id, $auth);
+    AND auth_admin_course_instance(ci.id, $auth_data);
 
 -- BLOCK select_log
 WITH
