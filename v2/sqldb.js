@@ -45,6 +45,7 @@ var histogram = fs.readFileSync('./sprocs/histogram.sql', 'utf8');
 var arrayHistogram = fs.readFileSync('./sprocs/array_histogram.sql', 'utf8');
 var formatInterval = fs.readFileSync('./sprocs/format_interval.sql', 'utf8');
 var formatIntervalShort = fs.readFileSync('./sprocs/format_interval_short.sql', 'utf8');
+var formatDateFullCompact = fs.readFileSync('./sprocs/format_date_full_compact.sql', 'utf8');
 var intervalHistThresholds = fs.readFileSync('./sprocs/interval_hist_thresholds.sql', 'utf8');
 var checkCourseInstanceAccessRule = fs.readFileSync('./sprocs/check_course_instance_access_rule.sql', 'utf8');
 var checkCourseInstanceAccess = fs.readFileSync('./sprocs/check_course_instance_access.sql', 'utf8');
@@ -119,6 +120,7 @@ module.exports = {
             arrayHistogram,
             formatInterval,
             formatIntervalShort,
+            formatDateFullCompact,
             intervalHistThresholds,
             checkCourseInstanceAccessRule,
             checkCourseInstanceAccess,

@@ -47,7 +47,7 @@
             <% log.forEach(function(row) { %>
             <tr>
               <td><%= row.date %></td>
-              <td><%= row.event %></td>
+              <td><button class="btn btn-xs btn-<%= row.event_color %>"><%= row.event_name %></button></td>
               <td><% if (row.qid) { %><a href="<%= urlPrefix %>/question/<%= row.question_id %>"><%= row.qid %></a><% } %></td>
               <td><%= (row.data != null) ? JSON.stringify(row.data) : null %></td>
             </tr>

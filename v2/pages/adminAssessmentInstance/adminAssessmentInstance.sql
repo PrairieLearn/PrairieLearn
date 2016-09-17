@@ -2,8 +2,9 @@
 WITH
 answer_submissions_log AS (
     SELECT
-        'Submission'::TEXT AS event,
-        s.date,
+        'Submission'::TEXT AS event_name,
+        'blue3'::TEXT AS event_color,
+        format_date_full_compact(s.date) AS date,
         q.qid,
         q.id AS question_id,
         jsonb_build_object('submitted_answer', s.submitted_answer) AS data
@@ -18,11 +19,17 @@ answer_submissions_log AS (
 ),
 submission_graded_log AS (
     SELECT
-        'Grade question'::TEXT AS event,
-        s.graded_at AS date,
+        'Grade question'::TEXT AS event_name,
+        'orange3'::TEXT AS event_color,
+        format_date_full_compact(s.graded_at) AS date,
         q.qid,
         q.id AS question_id,
-        jsonb_build_object('correct', s.correct, 'feedback', s.feedback) AS data
+        jsonb_build_object(
+            'correct', s.correct,
+            'feedback', s.feedback,
+            'submitted_answer', s.submitted_answer,
+            'true_answer', v.true_answer
+        ) AS data
     FROM
         submissions AS s
         JOIN variants AS v ON (v.id = s.variant_id)
@@ -35,8 +42,9 @@ submission_graded_log AS (
 ),
 begin_log AS (
     SELECT
-        'Begin'::TEXT AS event,
-        ai.date,
+        'Begin'::TEXT AS event_name,
+        'gray3'::TEXT AS event_color,
+        format_date_full_compact(ai.date) AS date,
         NULL::TEXT as qid,
         NULL::INTEGER as question_id,
         NULL::JSONB as data
@@ -47,8 +55,9 @@ begin_log AS (
 ),
 finish_log AS (
     SELECT
-        'Finish'::TEXT AS event,
-        ai.closed_at AS date,
+        'Finish'::TEXT AS event_name,
+        'gray3'::TEXT AS event_color,
+        format_date_full_compact(ai.closed_at) AS date,
         NULL::TEXT as qid,
         NULL::INTEGER as question_id,
         NULL::JSONB as data
@@ -65,4 +74,4 @@ UNION
 SELECT * FROM begin_log
 UNION
 SELECT * FROM finish_log
-ORDER BY date, event, question_id;
+ORDER BY date, event_name, question_id;
