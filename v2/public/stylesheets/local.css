@@ -210,3 +210,10 @@ body table.no-border th {
     stroke: #d43f3a;
     fill: #d9534f;
 }
+
+table.two-column-description tr th {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 5%;
+}

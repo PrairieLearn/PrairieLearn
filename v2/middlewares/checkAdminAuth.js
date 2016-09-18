@@ -6,7 +6,7 @@ var sqldb = require('../sqldb');
 var error = require('../error');
 var sqlLoader = require('../sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'checkAdminAuth.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(req, res, next) {
     var params = {

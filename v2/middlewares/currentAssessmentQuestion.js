@@ -5,7 +5,7 @@ var logger = require('../logger');
 var sqldb = require('../sqldb');
 var sqlLoader = require('../sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'currentAssessmentQuestion.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(req, res, next) {
     var params = {

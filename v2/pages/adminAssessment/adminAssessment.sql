@@ -42,7 +42,7 @@ WHERE id = $assessment_id;
 -- BLOCK assessment_instance_scores
 SELECT
     u.id AS user_id, u.uid, u.name, e.role, ai.score_perc,
-    ai.number,
+    ai.number,ai.id AS assessment_instance_id,
     format_interval(aid.duration) AS duration,
     EXTRACT(EPOCH FROM aid.duration) AS duration_secs,
     EXTRACT(EPOCH FROM aid.duration) / 60 AS duration_mins
@@ -51,7 +51,7 @@ FROM
     JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
     JOIN users AS u ON (u.id = ai.user_id)
     JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = a.course_instance_id)
-    JOIN assessment_instance_durations AS aid ON (aid.id = ai.id)
+    LEFT JOIN assessment_instance_durations AS aid ON (aid.id = ai.id)
 WHERE
     a.id = $assessment_id
 ORDER BY

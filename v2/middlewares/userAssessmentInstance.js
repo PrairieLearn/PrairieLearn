@@ -5,12 +5,12 @@ var logger = require('../logger');
 var sqldb = require('../sqldb');
 var sqlLoader = require('../sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'currentAssessmentInstance.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(req, res, next) {
     var params = {
-        assessmentInstanceId: res.locals.assessmentInstanceId ? res.locals.assessmentInstanceId : req.params.assessmentInstanceId,
-        userId: res.locals.user.id,
+        assessment_instance_id: res.locals.assessmentInstanceId ? res.locals.assessmentInstanceId : req.params.assessmentInstanceId,
+        user_id: res.locals.user.id,
     };
     sqldb.queryOneRow(sql.all, params, function(err, result) {
         if (ERR(err, next)) return;

@@ -45,6 +45,7 @@ var histogram = fs.readFileSync('./sprocs/histogram.sql', 'utf8');
 var arrayHistogram = fs.readFileSync('./sprocs/array_histogram.sql', 'utf8');
 var formatInterval = fs.readFileSync('./sprocs/format_interval.sql', 'utf8');
 var formatIntervalShort = fs.readFileSync('./sprocs/format_interval_short.sql', 'utf8');
+var formatDateFullCompact = fs.readFileSync('./sprocs/format_date_full_compact.sql', 'utf8');
 var intervalHistThresholds = fs.readFileSync('./sprocs/interval_hist_thresholds.sql', 'utf8');
 var checkCourseInstanceAccessRule = fs.readFileSync('./sprocs/check_course_instance_access_rule.sql', 'utf8');
 var checkCourseInstanceAccess = fs.readFileSync('./sprocs/check_course_instance_access.sql', 'utf8');
@@ -63,6 +64,7 @@ var assessmentPointsExam = fs.readFileSync('./sprocs/assessment_points_exam.sql'
 var randomUnique = fs.readFileSync('./sprocs/random_unique.sql', 'utf8');
 var questionOrder = fs.readFileSync('./sprocs/question_order.sql', 'utf8');
 var examQuestionStatus = fs.readFileSync('./sprocs/exam_question_status.sql', 'utf8');
+var auth_admin_course_instance = fs.readFileSync('./sprocs/auth_admin_course_instance.sql', 'utf8');
 
 module.exports = {
     pool: null,
@@ -119,6 +121,7 @@ module.exports = {
             arrayHistogram,
             formatInterval,
             formatIntervalShort,
+            formatDateFullCompact,
             intervalHistThresholds,
             checkCourseInstanceAccessRule,
             checkCourseInstanceAccess,
@@ -137,6 +140,7 @@ module.exports = {
             randomUnique,
             questionOrder,
             examQuestionStatus,
+            auth_admin_course_instance,
         ], function(sql, callback) {
             that.query(sql, [], callback);
         }, function(err) {
