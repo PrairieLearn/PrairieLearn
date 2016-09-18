@@ -90,10 +90,14 @@ function makeAssessmentInstance(req, res, callback) {
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     if (res.locals.assessment.multiple_instance) {
-        makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
-            if (ERR(err, next)) return;
-            res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + assessmentInstanceId);
-        });
+        if (_(req.query).has('confirm') && req.query.confirm == 'yes') {
+            makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
+                if (ERR(err, next)) return;
+                res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + assessmentInstanceId);
+            });
+        } else {
+            res.render(path.join(__dirname, 'userAssessmentExam'), res.locals);
+        }
     } else {
         var params = {
             assessment_id: res.locals.assessment.id,
@@ -102,10 +106,14 @@ router.get('/', function(req, res, next) {
         sqldb.query(sql.get_single_assessment_instance, params, function(err, result) {
             if (ERR(err, next)) return;
             if (result.rowCount == 0) {
-                makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
-                    if (ERR(err, next)) return;
-                    res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + assessmentInstanceId);
-                });
+                if (_(req.query).has('confirm') && req.query.confirm == 'yes') {
+                    makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
+                        if (ERR(err, next)) return;
+                        res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + assessmentInstanceId);
+                    });
+                } else {
+                    res.render(path.join(__dirname, 'userAssessmentExam'), res.locals);
+                }
             } else {
                 res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + result.rows[0].id);
             }
