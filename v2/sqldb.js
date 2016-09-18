@@ -13,6 +13,7 @@ var enumQuestionType = fs.readFileSync('./models/enum_question_type.sql', 'utf8'
 var enumRole = fs.readFileSync('./models/enum_role.sql', 'utf8');
 var enumSubmissionType = fs.readFileSync('./models/enum_submission_type.sql', 'utf8');
 var enumAssessmentType = fs.readFileSync('./models/enum_assessment_type.sql', 'utf8');
+var enum_auth_action = fs.readFileSync('./models/enum_auth_action.sql', 'utf8');
 
 var courses = fs.readFileSync('./models/courses.sql', 'utf8');
 var courseInstances = fs.readFileSync('./models/course_instances.sql', 'utf8');
@@ -65,6 +66,7 @@ var randomUnique = fs.readFileSync('./sprocs/random_unique.sql', 'utf8');
 var questionOrder = fs.readFileSync('./sprocs/question_order.sql', 'utf8');
 var examQuestionStatus = fs.readFileSync('./sprocs/exam_question_status.sql', 'utf8');
 var auth_admin_course_instance = fs.readFileSync('./sprocs/auth_admin_course_instance.sql', 'utf8');
+var auth_admin_assessment_instance = fs.readFileSync('./sprocs/auth_admin_assessment_instance.sql', 'utf8');
 
 module.exports = {
     pool: null,
@@ -91,6 +93,7 @@ module.exports = {
             enumRole,
             enumSubmissionType,
             enumAssessmentType,
+            enum_auth_action,
             courses,
             courseInstances,
             courseInstanceAccessRules,
@@ -141,6 +144,7 @@ module.exports = {
             questionOrder,
             examQuestionStatus,
             auth_admin_course_instance,
+            auth_admin_assessment_instance,
         ], function(sql, callback) {
             that.query(sql, [], callback);
         }, function(err) {

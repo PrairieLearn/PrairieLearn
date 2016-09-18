@@ -57,6 +57,7 @@
           <thead>
             <tr>
               <th>Time</th>
+              <th>Auth user</th>
               <th>Event</th>
               <th>Question</th>
               <th>Data</th>
@@ -66,6 +67,7 @@
             <% log.forEach(function(row) { %>
             <tr>
               <td><%= row.date %></td>
+              <td><a href="<%= urlPrefix %>/user/<%= row.auth_user_id %>"><%= row.auth_user_uid %></a></td>
               <td><button class="btn btn-xs btn-<%= row.event_color %>"><%= row.event_name %></button></td>
               <td><% if (row.qid) { %><a href="<%= urlPrefix %>/question/<%= row.question_id %>"><%= row.qid %></a><% } %></td>
               <td><%= (row.data != null) ? JSON.stringify(row.data) : null %></td>

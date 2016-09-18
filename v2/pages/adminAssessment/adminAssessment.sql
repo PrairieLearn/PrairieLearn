@@ -42,7 +42,7 @@ WHERE id = $assessment_id;
 -- BLOCK assessment_instance_scores
 SELECT
     u.id AS user_id, u.uid, u.name, e.role, ai.score_perc,
-    ai.number,ai.id AS assessment_instance_id,
+    ai.number,ai.id AS assessment_instance_id,ai.open,
     format_interval(aid.duration) AS duration,
     EXTRACT(EPOCH FROM aid.duration) AS duration_secs,
     EXTRACT(EPOCH FROM aid.duration) / 60 AS duration_mins
@@ -56,3 +56,35 @@ WHERE
     a.id = $assessment_id
 ORDER BY
     e.role DESC, u.uid, u.id, ai.number;
+
+
+-- BLOCK auth_and_set_state
+WITH
+aaai AS (
+    SELECT
+        *
+    FROM
+        auth_admin_assessment_instance($assessment_instance_id, 'Edit', $auth_data)
+),
+result AS (
+    UPDATE assessment_instances AS ai
+    SET
+        open = $open
+    FROM
+        aaai
+    WHERE
+        ai.id = $assessment_instance_id
+        AND aaai.authorized
+    RETURNING
+        ai.open,
+        ai.id AS assessment_instance_id
+)
+INSERT INTO assessment_state_logs AS asl
+        (open, assessment_instance_id, auth_user_id)
+(
+    SELECT
+        result.open, result.assessment_instance_id, aaai.auth_user_id
+    FROM
+        aaai,
+        result
+);

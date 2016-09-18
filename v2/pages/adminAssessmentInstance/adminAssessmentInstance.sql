@@ -17,17 +17,19 @@ FROM
     LEFT JOIN assessment_instance_durations AS aid ON (aid.id = ai.id)
     JOIN users AS u ON (u.id = ai.user_id)
     JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = ci.id)
+    JOIN LATERAL auth_admin_course_instance(ci.id, 'View', $auth_data) AS aaci ON TRUE
 WHERE
     ai.id = $assessment_instance_id
-    AND auth_admin_course_instance(ci.id, $auth_data);
+    AND aaci.authorized;
 
 -- BLOCK select_log
-WITH
-answer_submissions_log AS (
+(
     SELECT
         'Submission'::TEXT AS event_name,
         'blue3'::TEXT AS event_color,
         format_date_full_compact(s.date) AS date,
+        NULL::integer AS auth_user_id,
+        NULL::TEXT AS auth_user_uid,
         q.qid,
         q.id AS question_id,
         jsonb_build_object('submitted_answer', s.submitted_answer) AS data
@@ -39,12 +41,15 @@ answer_submissions_log AS (
         JOIN questions AS q ON (q.id = aq.question_id)
     WHERE
         iq.assessment_instance_id = $assessment_instance_id
-),
-submission_graded_log AS (
+)
+UNION
+(
     SELECT
         'Grade question'::TEXT AS event_name,
         'orange3'::TEXT AS event_color,
         format_date_full_compact(s.graded_at) AS date,
+        NULL::integer AS auth_user_id,
+        NULL::TEXT AS auth_user_uid,
         q.qid,
         q.id AS question_id,
         jsonb_build_object(
@@ -62,12 +67,15 @@ submission_graded_log AS (
     WHERE
         iq.assessment_instance_id = $assessment_instance_id
         AND s.graded_at IS NOT NULL
-),
-begin_log AS (
+)
+UNION
+(
     SELECT
         'Begin'::TEXT AS event_name,
         'gray3'::TEXT AS event_color,
         format_date_full_compact(ai.date) AS date,
+        NULL::integer AS auth_user_id,
+        NULL::TEXT AS auth_user_uid,
         NULL::TEXT as qid,
         NULL::INTEGER as question_id,
         NULL::JSONB as data
@@ -75,12 +83,15 @@ begin_log AS (
         assessment_instances AS ai
     WHERE
         ai.id = $assessment_instance_id
-),
-finish_log AS (
+)
+UNION
+(
     SELECT
         'Finish'::TEXT AS event_name,
         'gray3'::TEXT AS event_color,
         format_date_full_compact(ai.closed_at) AS date,
+        NULL::integer AS auth_user_id,
+        NULL::TEXT AS auth_user_uid,
         NULL::TEXT as qid,
         NULL::INTEGER as question_id,
         NULL::JSONB as data
@@ -90,11 +101,21 @@ finish_log AS (
         ai.id = $assessment_instance_id
         AND ai.closed_at IS NOT NULL
 )
-SELECT * FROM answer_submissions_log
 UNION
-SELECT * FROM submission_graded_log
-UNION
-SELECT * FROM begin_log
-UNION
-SELECT * FROM finish_log
+(
+    SELECT
+        CASE WHEN asl.open THEN 'Open'::TEXT ELSE 'Close'::TEXT END AS event_name,
+        'gray3'::TEXT AS event_color,
+        format_date_full_compact(asl.date) AS date,
+        u.id AS auth_user_id,
+        u.uid AS auth_user_uid,
+        NULL::TEXT as qid,
+        NULL::INTEGER as question_id,
+        NULL::JSONB as data
+    FROM
+        assessment_state_logs AS asl
+        JOIN users AS u ON (u.id = asl.auth_user_id)
+    WHERE
+        asl.assessment_instance_id = $assessment_instance_id
+)
 ORDER BY date, event_name, question_id;
