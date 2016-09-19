@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS instance_questions (
     number INTEGER,
     order_by INTEGER DEFAULT floor(random() * 1000000),
     points DOUBLE PRECISION DEFAULT 0,
+    score_perc INTEGER DEFAULT 0,
     current_value DOUBLE PRECISION,
     number_attempts INTEGER DEFAULT 0,
     points_list DOUBLE PRECISION[],
@@ -24,6 +25,14 @@ $$;
 DO $$
     BEGIN
         ALTER TABLE instance_questions ADD COLUMN open BOOLEAN DEFAULT TRUE;
+    EXCEPTION
+        WHEN duplicate_column THEN -- do nothing
+    END;
+$$;
+
+DO $$
+    BEGIN
+        ALTER TABLE instance_questions ADD COLUMN score_perc INTEGER DEFAULT 0;
     EXCEPTION
         WHEN duplicate_column THEN -- do nothing
     END;

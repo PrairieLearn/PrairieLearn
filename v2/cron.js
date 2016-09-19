@@ -8,7 +8,8 @@ var error = require('./error');
 var config = require('./config');
 var sqldb = require('./sqldb');
 
-var user_assessment_durations = fs.readFileSync('./cron.d/user_assessment_durations.sql', 'utf8');
+var userAssessmentDurations = require('./cron.d/userAssessmentDurations');
+var autoFinishExams = require('./cron.d/autoFinishExams');
 
 module.exports = {
     init: function(callback) {
@@ -22,12 +23,13 @@ module.exports = {
         var that = module.exports;
         logger.info('cron jobs starting');
         async.eachSeries([
-            ['user_assessment_durations', user_assessment_durations],
+            ['userAssessmentDurations', userAssessmentDurations],
+            ['autoFinishExams', autoFinishExams],
         ], function(item, callback) {
             var title = item[0];
-            var sql = item[1];
+            var cronModule = item[1];
             var startTime = new Date();
-            sqldb.query(sql, [], function(err) {
+            cronModule.run(function(err) {
                 var endTime = new Date();
                 var elapsedTimeMS = endTime - startTime;
                 if (ERR(err)) {
@@ -35,7 +37,7 @@ module.exports = {
                 } else {
                     logger.info('cron: ' + title + ' success, duration: ' + elapsedTimeMS + ' ms');
                 }
-                callback(null);
+                callback(null); // don't return error as we want to do all cron jobs even if one fails
             });
         }, function() {
             logger.info('cron jobs finished');

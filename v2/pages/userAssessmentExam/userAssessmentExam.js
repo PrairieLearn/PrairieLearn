@@ -24,6 +24,7 @@ function makeAssessmentInstance(req, res, callback) {
                 var params = {
                     assessment_id: res.locals.assessment.id,
                     user_id: res.locals.user.id,
+                    mode: req.mode,
                 };
                 sqldb.queryWithClientOneRow(client, sql.make_assessment_instance, params, function(err, result) {
                     if (ERR(err, callback)) return;

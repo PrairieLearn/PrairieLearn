@@ -6,6 +6,7 @@ var express = require('express');
 var router = express.Router();
 
 var logger = require('../../logger');
+var assessmentExam = require('../../lib/assessment-exam');
 var sqldb = require('../../sqldb');
 var sqlLoader = require('../../sql-loader');
 
@@ -182,23 +183,27 @@ router.get('/:filename', function(req, res, next) {
 router.post('/', function(req, res, next) {
     if (req.body.postAction == 'open') {
         var params = {
-            open: true,
             assessment_instance_id: req.body.assessment_instance_id,
             auth_data: res.locals.auth_data,
         };
-        sqldb.queryOneRow(sql.auth_and_set_state, params, function(err, result) {
+        sqldb.queryOneRow(sql.auth_and_open, params, function(err, result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
     } else if (res.locals.postAction == 'close') {
         var params = {
-            open: false,
             assessment_instance_id: req.body.assessment_instance_id,
             auth_data: res.locals.auth_data,
         };
-        sqldb.queryOneRow(sql.auth_and_set_state, params, function(err, result) {
+        sqldb.queryOneRow(sql.auth_for_finish, params, function(err, result) {
             if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
+            var authResult = result.rows[0];
+
+            var finishExam = true;
+            assessmentExam.gradeExam(req.body.assessment_instance_id, authResult.auth_user_id, authResult.credit, finishExam, function(err) {
+                if (ERR(err, next)) return;
+                res.redirect(req.originalUrl);
+            });
         });
     } else {
         return next(error.make(400, 'unknown action: ' + res.locals.postAction, {postAction: req.body.postAction, body: req.body}));

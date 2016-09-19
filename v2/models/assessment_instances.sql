@@ -4,9 +4,11 @@ CREATE TABLE IF NOT EXISTS assessment_instances (
     qids JSONB, -- temporary, delete after Mongo import
     obj JSONB, -- temporary, delete after Mongo import
     date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    mode enum_mode, -- mode at creation
     number INTEGER,
     open BOOLEAN DEFAULT TRUE,
     closed_at TIMESTAMP WITH TIME ZONE,
+    duration INTERVAL DEFAULT INTERVAL '0 seconds',
     assessment_id INTEGER NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
     auth_user_id INTEGER REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
@@ -47,6 +49,27 @@ ALTER TABLE assessment_instances ALTER COLUMN open SET DEFAULT TRUE;
 DO $$
     BEGIN
         ALTER TABLE assessment_instances ADD COLUMN closed_at TIMESTAMP WITH TIME ZONE;
+    EXCEPTION
+        WHEN duplicate_column THEN -- do nothing
+    END;
+$$;
+
+DO $$
+    BEGIN
+        ALTER TABLE assessment_instances ADD COLUMN mode enum_mode;
+
+        UPDATE assessment_instances AS ai
+        SET mode = CASE WHEN a.type = 'Exam' THEN 'Exam'::enum_mode ELSE 'Public'::enum_mode END
+        FROM assessments AS a
+        WHERE ai.assessment_id = a.id AND ai.mode IS NULL;
+    EXCEPTION
+        WHEN duplicate_column THEN -- do nothing
+    END;
+$$;
+
+DO $$
+    BEGIN
+        ALTER TABLE assessment_instances ADD COLUMN duration INTERVAL DEFAULT INTERVAL '0 seconds';
     EXCEPTION
         WHEN duplicate_column THEN -- do nothing
     END;
