@@ -1556,9 +1556,10 @@ app.post("/submissions", function(req, res) {
                     if (submission.overrideScore !== undefined) {
                         submission.score = submission.overrideScore;
                     } else {
+                        var questionDir = path.join(config.questionsDir, info.qid);
                         var grading;
                         try {
-                            grading = server.gradeAnswer(qInstance.vid, qInstance.params, qInstance.trueAnswer, submission.submittedAnswer, options);
+                            grading = server.gradeAnswer(qInstance.vid, qInstance.params, qInstance.trueAnswer, submission.submittedAnswer, options, questionDir);
                         } catch (e) {
                             return sendError(res, 500, "Error in " + submission.qid + " gradeAnswer(): " + e.toString(), {stack: e.stack});
                         }

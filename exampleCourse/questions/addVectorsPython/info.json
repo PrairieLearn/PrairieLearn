@@ -1,5 +1,5 @@
 {
-    "title": "Addition of vectors in Cartesian coordinates",
+    "title": "Addition of vectors in Cartesian coordinates (Python backend)",
     "topic": "Vectors",
     "tags": ["Numeric"],
     "clientFiles": ["client.js", "question.html", "answer.html", "fig1.png"],
