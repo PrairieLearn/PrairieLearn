@@ -109,6 +109,24 @@ def process_file(filename):
                                            pdf_filename, "-trim", "+repage",
                                            img_filename], cwd=outdir)
                 img_filenames.append(img_filename)
+                img_hi_filename = hash + "_hi.png"
+                img_hi_full_filename = os.path.join(outdir, img_hi_filename)
+                if not os.path.exists(img_hi_full_filename):
+                    print("Writing tex file " + tex_full_filename)
+                    with open(tex_full_filename, "w") as texfile:
+                        texfile.write("\\documentclass[12pt]{article}\n")
+                        texfile.write("\\usepackage{amsmath,amsthm,amssymb}\n")
+                        texfile.write("\\begin{document}\n")
+                        texfile.write("\\thispagestyle{empty}\n")
+                        texfile.write(text + "\n")
+                        texfile.write("\\end{document}\n")
+                    print("Running pdflatex on " + tex_filename)
+                    subprocess.check_call(["pdflatex", tex_filename], cwd=outdir)
+                    print("Running convert on " + pdf_filename)
+                    subprocess.check_call([CONVERT_CMD, "-density", "600",
+                                           pdf_filename, "-trim", "+repage",
+                                           img_hi_filename], cwd=outdir)
+                img_filenames.append(img_hi_filename)
     return img_filenames
 
 def delete_non_matching(basedir, nondelete_filenames):
