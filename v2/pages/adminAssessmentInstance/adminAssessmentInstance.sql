@@ -72,33 +72,6 @@ UNION
 (
     SELECT
         3 AS event_order,
-        'Score question'::TEXT AS event_name,
-        'brown1'::TEXT AS event_color,
-        format_date_full_compact(qsl.date) AS date,
-        u.id AS auth_user_id,
-        u.uid AS auth_user_uid,
-        q.qid,
-        q.id AS question_id,
-        NULL::INTEGER as variant_id,
-        NULL::INTEGER as variant_number,
-        jsonb_build_object(
-            'points', qsl.points,
-            'max_points', qsl.max_points,
-            'score_perc', qsl.score_perc
-        ) AS data
-    FROM
-        question_score_logs AS qsl
-        JOIN instance_questions AS iq ON (iq.id = qsl.instance_question_id)
-        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-        JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN users AS u ON (u.id = qsl.auth_user_id)
-    WHERE
-        iq.assessment_instance_id = $assessment_instance_id
-)
-UNION
-(
-    SELECT
-        4 AS event_order,
         'Submission'::TEXT AS event_name,
         'blue3'::TEXT AS event_color,
         format_date_full_compact(s.date) AS date,
@@ -121,8 +94,8 @@ UNION
 UNION
 (
     SELECT
-        5 AS event_order,
-        'Grade'::TEXT AS event_name,
+        4 AS event_order,
+        'Grade submission'::TEXT AS event_name,
         'orange3'::TEXT AS event_color,
         format_date_full_compact(s.graded_at) AS date,
         u.id AS auth_user_id,
@@ -149,6 +122,33 @@ UNION
     WHERE
         iq.assessment_instance_id = $assessment_instance_id
         AND s.graded_at IS NOT NULL
+)
+UNION
+(
+    SELECT
+        5 AS event_order,
+        'Score question'::TEXT AS event_name,
+        'brown1'::TEXT AS event_color,
+        format_date_full_compact(qsl.date) AS date,
+        u.id AS auth_user_id,
+        u.uid AS auth_user_uid,
+        q.qid,
+        q.id AS question_id,
+        NULL::INTEGER as variant_id,
+        NULL::INTEGER as variant_number,
+        jsonb_build_object(
+            'points', qsl.points,
+            'max_points', qsl.max_points,
+            'score_perc', qsl.score_perc
+        ) AS data
+    FROM
+        question_score_logs AS qsl
+        JOIN instance_questions AS iq ON (iq.id = qsl.instance_question_id)
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        JOIN questions AS q ON (q.id = aq.question_id)
+        LEFT JOIN users AS u ON (u.id = qsl.auth_user_id)
+    WHERE
+        iq.assessment_instance_id = $assessment_instance_id
 )
 UNION
 (
