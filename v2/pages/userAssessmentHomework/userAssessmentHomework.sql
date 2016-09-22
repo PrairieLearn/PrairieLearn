@@ -19,19 +19,19 @@ WITH
             ai.assessment_id = $assessment_id
             AND ai.user_id = $user_id
     )
-INSERT INTO assessment_instances AS ai (number, assessment_id, user_id)
+INSERT INTO assessment_instances AS ai (number, assessment_id, user_id, mode)
 (
     SELECT
         CASE
             WHEN a.multiple_instance THEN max_existing_number.val + 1
             ELSE 1
         END,
-        val.assessment_id,
-        val.user_id
+        $assessment_id,
+        $user_id,
+        $mode
     FROM
         assessments AS a,
-        max_existing_number,
-        (VALUES ($assessment_id, $user_id)) AS val (assessment_id, user_id)
+        max_existing_number
     WHERE
         a.id = $assessment_id
 )

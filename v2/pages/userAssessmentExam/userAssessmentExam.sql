@@ -9,8 +9,8 @@ WHERE
     AND ai.user_id = $user_id;
 
 -- BLOCK make_assessment_instance
-INSERT INTO assessment_instances AS ai (number, assessment_id, user_id, open)
-VALUES (1, $assessment_id, $user_id, TRUE)
+INSERT INTO assessment_instances AS ai (number, assessment_id, user_id, mode, open)
+VALUES (1, $assessment_id, $user_id, $mode, TRUE)
 RETURNING ai.id;
 
 -- BLOCK get_work_list

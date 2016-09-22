@@ -60,6 +60,7 @@
               <th>Auth user</th>
               <th>Event</th>
               <th>Question</th>
+              <th>Variant</th>
               <th>Data</th>
             </tr>
           </thead>
@@ -70,6 +71,7 @@
               <td><a href="<%= urlPrefix %>/user/<%= row.auth_user_id %>"><%= row.auth_user_uid %></a></td>
               <td><button class="btn btn-xs btn-<%= row.event_color %>"><%= row.event_name %></button></td>
               <td><% if (row.qid) { %><a href="<%= urlPrefix %>/question/<%= row.question_id %>"><%= row.qid %></a><% } %></td>
+              <td><% if (row.question_id && row.variant_id) { %><a href="<%= urlPrefix %>/question/<%= row.question_id %>?variant_id=<%= row.variant_id %>"><%= row.variant_number %></a><% } %></td>
               <td><%= (row.data != null) ? JSON.stringify(row.data) : null %></td>
             </tr>
             <% }); %>
