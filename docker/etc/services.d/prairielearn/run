@@ -1,6 +1,5 @@
 #!/usr/bin/execlineb -P
 
-with-contenv
 cd /pl
 foreground {
     loopwhilex -x 0 foreground { psql -U postgres -c "select 1" -d postgres } sleep 1
