@@ -1,0 +1,15 @@
+#!/usr/bin/execlineb -P
+
+with-contenv
+
+import -D /var/lib/postgresql PGDATA
+export PGDATA ${PGDATA}
+
+import -D postgres POSTGRES_USER
+
+ifthenelse { test -f ${PGDATA}/postgresql.conf }
+{ echo "Database directory already exists" }
+{ 
+    s6-setuidgid ${POSTGRES_USER} 
+    initdb
+}
