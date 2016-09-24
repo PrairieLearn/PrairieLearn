@@ -29,4 +29,4 @@ the server.
 
 PrairieLearn v2 is still in development. It is currently being beta tested in a small number of live courses.
 
-* [Installing and running PrairieLearn v2](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/api.md)
+* [Installing and running PrairieLearn v2](https://github.com/PrairieLearn/PrairieLearn/blob/master/v2/doc/installing.md)
