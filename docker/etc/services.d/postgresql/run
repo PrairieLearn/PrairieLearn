@@ -1,10 +1,8 @@
 #!/usr/bin/execlineb -P
 
-with-contenv
-
-import -D /var/lib/postgresql PGDATA
+define PGDATA /var/lib/postgresql
 export PGDATA ${PGDATA}
 
-import -D postgres POSTGRES_USER
+define POSTGRES_USER postgres
 
 s6-setuidgid ${POSTGRES_USER} postgres

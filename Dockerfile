@@ -12,8 +12,10 @@ RUN tar xzf /tmp/s6-overlay-amd64.tar.gz -C / && rm -f /tmp/s6-overlay-amd64.tar
     && chown -R pl /pl \
     && mv /pl/exampleCourse /course
 
-EXPOSE 3000
-
 COPY docker /
+
+RUN etc/cont-init.d/01-postgres-init
+
+EXPOSE 3000
 
 CMD ["/init"]
