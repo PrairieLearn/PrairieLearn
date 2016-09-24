@@ -19,7 +19,6 @@ module.exports.load = function(filename) {
             sql[blockName] += '\n' + line;
         }
     });
-    
     return sql;
 };
 
