@@ -7,7 +7,7 @@ module.exports = {};
 module.exports.load = function(filename) {
     var sql = {};
     sql.all = fs.readFileSync(filename, 'utf8');
-    var lines = sql.all.split('\n');
+    var lines = sql.all.split(/\r?\n/);
     var blockRE = /^ *-- *BLOCK +([^ ]+) *$/;
     var blockName = null;
     _(lines).forEach(function(line) {
