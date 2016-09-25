@@ -33,7 +33,7 @@ var processCollection = function(name, err, collection, options, callback) {
             var idName = options.idPrefix + "id";
             module.exports.countersCollect.update({_id: idName}, {$setOnInsert: {seq: 0}}, {w: 1, upsert: true}, function(err, result) {
                 if (err) {
-                    logger.error("unable to create counter for " + idName, index, err);
+                    logger.error("unable to create counter for " + idName, err);
                     return cb(err);
                 }
                 logger.info("have counter for " + idName);
