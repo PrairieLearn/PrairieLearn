@@ -67,6 +67,8 @@ var questionOrder = fs.readFileSync('./sprocs/question_order.sql', 'utf8');
 var examQuestionStatus = fs.readFileSync('./sprocs/exam_question_status.sql', 'utf8');
 var auth_admin_course_instance = fs.readFileSync('./sprocs/auth_admin_course_instance.sql', 'utf8');
 var auth_admin_assessment_instance = fs.readFileSync('./sprocs/auth_admin_assessment_instance.sql', 'utf8');
+var all_courses = fs.readFileSync('./sprocs/all_courses.sql', 'utf8');
+var all_course_instances = fs.readFileSync('./sprocs/all_course_instances.sql', 'utf8');
 
 module.exports = {
     pool: null,
@@ -145,6 +147,8 @@ module.exports = {
             examQuestionStatus,
             auth_admin_course_instance,
             auth_admin_assessment_instance,
+            all_courses,
+            all_course_instances,
         ], function(sql, callback) {
             that.query(sql, [], callback);
         }, function(err) {

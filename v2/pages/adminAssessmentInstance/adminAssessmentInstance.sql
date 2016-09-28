@@ -5,9 +5,14 @@ SELECT
     to_jsonb(a) AS assessment,
     to_jsonb(aset) AS assessment_set,
     to_jsonb(ai) AS assessment_instance,
-    to_jsonb(u) AS instance_user,
+    to_jsonb(u) AS user,
     to_jsonb(e) AS enrollment,
-    format_interval(aid.duration) AS assessment_instance_duration
+    format_interval(aid.duration) AS assessment_instance_duration,
+    to_jsonb(aaci) AS auth,
+    to_jsonb(auth_u) AS auth_user,
+    to_jsonb(auth_e) AS auth_enrollment,
+    all_courses(auth_u.id) AS all_courses,
+    all_course_instances(c.id, auth_u.id) AS all_course_instances
 FROM
     assessment_instances AS ai
     JOIN assessments AS a ON (a.id = ai.assessment_id)
@@ -18,6 +23,8 @@ FROM
     JOIN users AS u ON (u.id = ai.user_id)
     JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = ci.id)
     JOIN LATERAL auth_admin_course_instance(ci.id, 'View', $auth_data) AS aaci ON TRUE
+    JOIN users AS auth_u ON (auth_u.id = aaci.auth_user_id)
+    JOIN enrollments AS auth_e ON (auth_e.user_id = auth_u.id AND auth_e.course_instance_id = ci.id)
 WHERE
     ai.id = $assessment_instance_id
     AND aaci.authorized;

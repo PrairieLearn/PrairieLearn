@@ -140,10 +140,10 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. SQL code should not be inline in JavaScript files. Instead it should be in a separate `.sql` file, following the [Yesql concept](https://github.com/krisajenkins/yesql). Each `filename.js` file will normally have a corresponding `filename.sql` file in the same directory. The `.sql` file should look like:
 
-        -- BLOCK: select_question
+        -- BLOCK select_question
         SELECT * FROM questions WHERE id = $question_id;
 
-        -- BLOCK: insert_submission
+        -- BLOCK insert_submission
         INSERT INTO submissions (submitted_answer) VALUES ($submitted_answer) RETURNING *;
 
     From JavaScript you can then do:
@@ -195,7 +195,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
     Where the corresponding `filename.sql` file contains:
 
-        -- BLOCK: select_questions_by_course
+        -- BLOCK select_questions_by_course
         SELECT * FROM questions WHERE course_id = $course_id;
 
 1. For queries where it would be an error to not return exactly one result row:
@@ -235,7 +235,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
         sqldb.query(sql.insert_assessment_question, params, ...);
 
 
-        -- BLOCK: insert_assessment_question
+        -- BLOCK insert_assessment_question
         INSERT INTO assessment_questions (points_list) VALUES ($points_list::INTEGER[]);
 
 1. To use a JavaScript array for membership testing in SQL use [`unnest()`](https://www.postgresql.org/docs/9.5/static/functions-array.html) like:
@@ -246,7 +246,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
         sqldb.query(sql.select_questions, params, ...);
 
 
-        -- BLOCK: select_questions
+        -- BLOCK select_questions
         SELECT * FROM questions WHERE id IN (SELECT unnest($id_list::INTEGER[]));
 
 ## Error handling and control flow in JavaScript

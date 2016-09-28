@@ -31,7 +31,7 @@
           <tbody>
             <% questions.forEach(function(question) { %>
             <tr>
-              <td><a href="<%= urlPrefix %>/question/<%= question.id %>/"><%= question.title %></a></td>
+              <td><a href="<%= urlPrefix %>/question/<%= course_instance.id %>/<%= question.id %>/"><%= question.title %></a></td>
               <td><%= question.qid %></td>
               <td><%- include('../partials/topic', {topic: question.topic}); %></td>
               <td><%- include('../partials/tags', {tags: question.tags}); %></td>
@@ -53,12 +53,12 @@
                       filter_cssFilter: "form-control",
                       filter_functions: {
                           3: {
-                              <% allTags.forEach(function(tag) { %>
+                              <% all_tags.forEach(function(tag) { %>
                                   <%= tag.name %>: function(e, n, f, i, $r, c, data) { return /\b<%= tag.name %>\b/.test(e); },
                               <% }); %>
                           },
                           4: {
-                              <% allAssessments.forEach(function(assessment) { %>
+                              <% all_assessments.forEach(function(assessment) { %>
                                   <%= assessment.label %>: function(e, n, f, i, $r, c, data) { return /\b<%= assessment.label %>\b/.test(e); },
                               <% }); %>
                           },

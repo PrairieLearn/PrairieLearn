@@ -48,37 +48,16 @@ app.use(require('./middlewares/mode'));
 app.use(require('./middlewares/logRequest'));
 app.use(require('./middlewares/parsePostData'));
 
-/*
-  For each route we do several things:
-  1. Check authorization.
-  2. Check that the implied nesting is true (e.g., that the assessment is inside the course).
-  3. Load data from the DB and store it in the res.locals object.
-  4. Execute the actual route handler that will read more DB data and render the page.
-*/
-
-// Middleware for admin pages
-app.use('/admin/:courseInstanceId', require('./middlewares/checkAdminAuth'));
-app.use('/admin/:courseInstanceId', require('./middlewares/currentCourseInstance'));
-app.use('/admin/:courseInstanceId', require('./middlewares/currentEnrollment'));
-app.use('/admin/:courseInstanceId', require('./middlewares/currentCourse'));
-app.use('/admin/:courseInstanceId', require('./middlewares/adminUrlPrefix'));
-app.use('/admin/:courseInstanceId', require('./middlewares/courseList'));
-app.use('/admin/:courseInstanceId', require('./middlewares/courseInstanceList'));
-app.use('/admin/:courseInstanceId/assessment/:assessmentId', require('./middlewares/currentAssessment'));
-app.use('/admin/:courseInstanceId/question/:questionId', require('./middlewares/currentQuestion'));
-
-// Route handlers for admin pages.
+app.use('/admin', function(req, res, next) {res.locals.urlPrefix = '/admin'; next();});
 app.use('/admin', require('./pages/adminHome/adminHome'));
 // redirect class page to assessments page
-app.use(function(req, res, next) {if (/\/admin\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/assessments');} next();});
-app.use('/admin/:courseInstanceId/assessments', require('./pages/adminAssessments/adminAssessments'));
-app.use('/admin/:courseInstanceId/assessment/:assessmentId', require('./pages/adminAssessment/adminAssessment'));
-app.use('/admin/:courseInstanceId/assessmentInstance', require('./pages/adminAssessmentInstance/adminAssessmentInstance'));
-app.use('/admin/:courseInstanceId/users', require('./pages/adminUsers/adminUsers'));
-app.use('/admin/:courseInstanceId/questions', require('./pages/adminQuestions/adminQuestions'));
-app.use('/admin/:courseInstanceId/question/:questionId', require('./pages/adminQuestion/adminQuestion'));
-app.use('/admin/:courseInstanceId/question/:questionId/file', require('./pages/questionFile/questionFile'));
-app.use('/admin/:courseInstanceId/question/:questionId/text', require('./pages/questionText/questionText'));
+app.use(function(req, res, next) {if (/\/admin\/course_instance\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/admin\/course_instance/, '/admin/assessments');} next();});
+app.use('/admin/assessments', require('./pages/adminAssessments/adminAssessments'));
+app.use('/admin/assessment', require('./pages/adminAssessment/adminAssessment'));
+app.use('/admin/assessment_instance', require('./pages/adminAssessmentInstance/adminAssessmentInstance'));
+app.use('/admin/users', require('./pages/adminUsers/adminUsers'));
+app.use('/admin/questions', require('./pages/adminQuestions/adminQuestions'));
+app.use('/admin/question', require('./pages/adminQuestion/adminQuestion'));
 
 // Middleware for user pages
 app.use('/pl/', require('./middlewares/ensureUser'));
@@ -106,15 +85,18 @@ app.use('/pl/:courseInstanceId/assessments', require('./pages/userAssessments/us
 app.use('/pl/:courseInstanceId/assessment/:assessmentId', [
     require('./pages/userAssessmentHomework/userAssessmentHomework'),
     require('./pages/userAssessmentExam/userAssessmentExam'),
+    function(req, res, next) {return next(error.make(500, 'No handler for assessment type', {url: req.originalUrl}));}
 ]);
 app.use('/pl/:courseInstanceId/assessmentInstance/:assessmentInstanceId', [
     require('./pages/userAssessmentInstanceHomework/userAssessmentInstanceHomework'),
     require('./pages/userAssessmentInstanceExam/userAssessmentInstanceExam'),
+    function(req, res, next) {return next(error.make(500, 'No handler for assessment type', {url: req.originalUrl}));}
 ]);
 app.use('/pl/:courseInstanceId/assessmentInstance/:assessmentInstanceId/clientFiles', require('./pages/assessmentInstanceClientFiles/assessmentInstanceClientFiles'));
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', [
     require('./pages/userInstanceQuestionHomework/userInstanceQuestionHomework'),
     require('./pages/userInstanceQuestionExam/userInstanceQuestionExam'),
+    function(req, res, next) {return next(error.make(500, 'No handler for assessment type', {url: req.originalUrl}));}
 ]);
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId/file', require('./pages/questionFile/questionFile'));
 app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId/text', require('./pages/questionText/questionText'));

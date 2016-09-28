@@ -18,7 +18,7 @@ function ensureVariant(req, res, callback) {
     // if we have an existing variant that is ungraded (may have an ungraded submission)
     // then use that one, otherwise make a new one
     var params = {
-        instance_question_id: res.locals.instanceQuestion.id,
+        instance_question_id: res.locals.instance_question.id,
     };
     sqldb.query(sql.get_available_variant, params, function(err, result) {
         if (ERR(err, callback)) return;
@@ -28,7 +28,7 @@ function ensureVariant(req, res, callback) {
         questionServer.makeVariant(res.locals.question, res.locals.course, {}, function(err, variant) {
             if (ERR(err, callback)) return;
             var params = {
-                instance_question_id: res.locals.instanceQuestion.id,
+                instance_question_id: res.locals.instance_question.id,
                 variant_seed: variant.vid,
                 question_params: variant.params,
                 true_answer: variant.true_answer,
@@ -117,18 +117,18 @@ function processSubmission(req, res, callback) {
             });
         },
         function(callback) {
-            var points = res.locals.instanceQuestion.points;
-            var current_value = res.locals.instanceQuestion.current_value;
-            var number_attempts = res.locals.instanceQuestion.number_attempts;
+            var points = res.locals.instance_question.points;
+            var current_value = res.locals.instance_question.current_value;
+            var number_attempts = res.locals.instance_question.number_attempts;
             if (res.locals.submission.correct) {
-                points = Math.min(points + current_value, res.locals.assessmentQuestion.max_points);
-                current_value = Math.min(current_value + res.locals.assessmentQuestion.init_points, res.locals.assessmentQuestion.max_points);
+                points = Math.min(points + current_value, res.locals.assessment_question.max_points);
+                current_value = Math.min(current_value + res.locals.assessment_question.init_points, res.locals.assessment_question.max_points);
             } else {
-                current_value = res.locals.assessmentQuestion.init_points;
+                current_value = res.locals.assessment_question.init_points;
             }
 
             var params = {
-                instance_question_id: res.locals.instanceQuestion.id,
+                instance_question_id: res.locals.instance_question.id,
                 points: points,
                 current_value: current_value,
                 number_attempts: number_attempts + 1,
@@ -136,19 +136,19 @@ function processSubmission(req, res, callback) {
             sqldb.queryOneRow(sql.update_instance_question, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 // don't overwrite entire object, because currentInstanceQuestion.sql has added other fields
-                _.assign(res.locals.instanceQuestion, result.rows[0]);
+                _.assign(res.locals.instance_question, result.rows[0]);
                 callback(null);
             });
         },
         function(callback) {
             var params = {
-                assessment_instance_id: res.locals.assessmentInstance.id,
-                credit: res.locals.assessmentInstance.credit,
+                assessment_instance_id: res.locals.assessment_instance.id,
+                credit: res.locals.assessment_instance.credit,
             };
             sqldb.queryOneRow(sql.update_assessment_instance, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 // don't overwrite entire object in case someone added extra fields at some point
-                _.assign(res.locals.assessmentInstance, result.rows[0]);
+                _.assign(res.locals.assessment_instance, result.rows[0]);
                 callback(null);
             });
         },
@@ -250,12 +250,12 @@ function handle(req, res, next) {
             });
         },
         function(callback) {
-            res.locals.postUrl = res.locals.urlPrefix + "/instanceQuestion/" + res.locals.instanceQuestion.id + "/";
+            res.locals.postUrl = res.locals.urlPrefix + "/instanceQuestion/" + res.locals.instance_question.id + "/";
             res.locals.questionJson = JSON.stringify({
-                questionFilePath: res.locals.urlPrefix + "/instanceQuestion/" + res.locals.instanceQuestion.id + "/file",
+                questionFilePath: res.locals.urlPrefix + "/instanceQuestion/" + res.locals.instance_question.id + "/file",
                 question: res.locals.question,
                 course: res.locals.course,
-                courseInstance: res.locals.courseInstance,
+                courseInstance: res.locals.course_instance,
                 variant: {
                     id: res.locals.variant.id,
                     params: res.locals.variant.params,

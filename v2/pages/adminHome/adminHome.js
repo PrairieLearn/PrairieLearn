@@ -11,8 +11,8 @@ var sqlLoader = require('../../sql-loader');
 var sql = sqlLoader.load(path.join(__dirname, 'adminHome.sql'));
 
 router.get('/', function(req, res, next) {
-    var params = [req.authUID];
-    sqldb.query(sql.all, params, function(err, result) {
+    var params = {uid: res.locals.auth_data.auth_uid};
+    sqldb.query(sql.courses, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.rows = result.rows;
         res.render(path.join(__dirname, 'adminHome'), res.locals);

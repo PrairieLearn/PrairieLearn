@@ -20,7 +20,7 @@ var logCsvFilename = function(locals) {
         + locals.assessment_set.abbrev
         + locals.assessment.number
         + '_'
-        + locals.instance_user.uid.replace(/[^a-z0-9]/g, '_')
+        + locals.user.uid.replace(/[^a-z0-9]/g, '_')
         + '_'
         + locals.assessment_instance.number
         + '_'
@@ -72,12 +72,14 @@ router.get('/:assessmentInstanceId/:filename', function(req, res, next) {
             sqldb.query(sql.select_log, params, function(err, result) {
                 if (ERR(err, next)) return;
                 var log = result.rows;
-                var csvHeaders = ['Time', 'Event', 'Question', 'Data'];
+                var csvHeaders = ['Time', 'Auth user', 'Event', 'Question', 'Variant', 'Data'];
                 var csvData = _.map(log, function(row) {
                     return [
                         row.date,
+                        row.auth_user_uid,
                         row.event_name,
                         row.qid,
+                        row.variant_number,
                         ((row.data != null) ? JSON.stringify(row.data) : null),
                     ];
                 });

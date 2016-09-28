@@ -15,12 +15,12 @@ var sqlLoader = require('../../sql-loader');
 var sql = sqlLoader.load(path.join(__dirname, 'userInstanceQuestionExam.sql'));
 
 function processSubmission(req, res, callback) {
-    if (!res.locals.assessmentInstance.open) return callback(error.make(400, 'assessmentInstance is closed'));
-    if (!res.locals.instanceQuestion.open) return callback(error.make(400, 'instanceQuestion is closed'));
+    if (!res.locals.assessment_instance.open) return callback(error.make(400, 'assessmentInstance is closed'));
+    if (!res.locals.instance_question.open) return callback(error.make(400, 'instanceQuestion is closed'));
     var grading;
     async.series([
         function(callback) {
-            var params = {instance_question_id: res.locals.instanceQuestion.id};
+            var params = {instance_question_id: res.locals.instance_question.id};
             sqldb.queryOneRow(sql.get_variant, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.variant = result.rows[0];
@@ -50,7 +50,7 @@ router.post('/', function(req, res, next) {
     if (req.postData.action == 'submitQuestionAnswer') {
         return processSubmission(req, res, function(err) {
             if (ERR(err, next)) return;
-            res.redirect(res.locals.urlPrefix + '/instanceQuestion/' + res.locals.instanceQuestion.id + '/');
+            res.redirect(res.locals.urlPrefix + '/instanceQuestion/' + res.locals.instance_question.id + '/');
         });
     } else {
         return next(error.make(400, 'unknown action: ' + req.postData.action, {postData: req.postData}));
@@ -63,7 +63,7 @@ router.get('/', function(req, res, next) {
     var questionModule;
     async.series([
         function(callback) {
-            var params = {instance_question_id: res.locals.instanceQuestion.id};
+            var params = {instance_question_id: res.locals.instance_question.id};
             sqldb.queryOneRow(sql.get_variant, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.variant = result.rows[0];
@@ -99,8 +99,8 @@ router.get('/', function(req, res, next) {
             res.locals.showSaveButton = false;
             res.locals.showFeedback = false;
             res.locals.showTrueAnswer = false;
-            if (res.locals.assessmentInstance.open) {
-                if (res.locals.instanceQuestion.open) {
+            if (res.locals.assessment_instance.open) {
+                if (res.locals.instance_question.open) {
                     res.locals.showSaveButton = true;
                 }
                 callback(null);
@@ -123,12 +123,12 @@ router.get('/', function(req, res, next) {
             });
         },
         function(callback) {
-            res.locals.postUrl = res.locals.urlPrefix + "/instanceQuestion/" + res.locals.instanceQuestion.id + "/";
+            res.locals.postUrl = res.locals.urlPrefix + "/instanceQuestion/" + res.locals.instance_question.id + "/";
             res.locals.questionJson = JSON.stringify({
-                questionFilePath: res.locals.urlPrefix + "/instanceQuestion/" + res.locals.instanceQuestion.id + "/file",
+                questionFilePath: res.locals.urlPrefix + "/instanceQuestion/" + res.locals.instance_question.id + "/file",
                 question: res.locals.question,
                 course: res.locals.course,
-                courseInstance: res.locals.courseInstance,
+                courseInstance: res.locals.course_instance,
                 variant: {
                     id: res.locals.variant.id,
                     params: res.locals.variant.params,

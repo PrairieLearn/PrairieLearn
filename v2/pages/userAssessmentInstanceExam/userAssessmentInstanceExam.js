@@ -26,7 +26,7 @@ router.post('/', function(req, res, next) {
     } else {
         return next(error.make(400, 'unknown action: ' + res.locals.postAction, {postAction: res.locals.postAction, postData: res.locals.postData}));
     }
-    assessmentExam.gradeExam(res.locals.assessmentInstance.id, res.locals.user.id, res.locals.assessmentInstance.credit, finishExam, function(err) {
+    assessmentExam.gradeExam(res.locals.assessment_instance.id, res.locals.user.id, res.locals.assessment_instance.credit, finishExam, function(err) {
         if (ERR(err, next)) return;
         res.redirect(req.originalUrl);
     });
@@ -35,7 +35,7 @@ router.post('/', function(req, res, next) {
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
 
-    var params = {assessment_instance_id: res.locals.assessmentInstance.id};
+    var params = {assessment_instance_id: res.locals.assessment_instance.id};
     sqldb.query(sql.get_questions, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.questions = result.rows;

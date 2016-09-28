@@ -26,7 +26,7 @@
               </td>
               <td>
                 <% row.course_instances.forEach(function(course_instance, i) { %><% if (i > 0) { %>,<% } %>
-                <a href="/admin/<%= course_instance.id %>"><%= course_instance.long_name %><% }); %>
+                <a href="<%= urlPrefix %>/course_instance/<%= course_instance.id %>"><%= course_instance.long_name %><% }); %>
               </td>
             </tr>
             <% }); %>

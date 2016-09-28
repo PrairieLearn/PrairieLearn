@@ -1,3 +1,26 @@
+-- BLOCK select_and_auth
+SELECT
+    to_jsonb(c) AS course,
+    to_jsonb(ci) AS course_instance,
+    to_jsonb(a) AS assessment,
+    to_jsonb(aset) AS assessment_set,
+    to_jsonb(aaci) AS auth,
+    to_jsonb(auth_u) AS auth_user,
+    to_jsonb(auth_e) AS auth_enrollment,
+    all_courses(auth_u.id) AS all_courses,
+    all_course_instances(c.id, auth_u.id) AS all_course_instances
+FROM
+    assessments AS a
+    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    JOIN courses AS c ON (c.id = ci.course_id)
+    JOIN LATERAL auth_admin_course_instance(ci.id, 'View', $auth_data) AS aaci ON TRUE
+    JOIN users AS auth_u ON (auth_u.id = aaci.auth_user_id)
+    JOIN enrollments AS auth_e ON (auth_e.user_id = auth_u.id AND auth_e.course_instance_id = ci.id)
+WHERE
+    a.id = $assessment_id
+    AND aaci.authorized;
+
 -- BLOCK questions
 SELECT
     aq.*,q.qid,q.title,row_to_json(top) AS topic,

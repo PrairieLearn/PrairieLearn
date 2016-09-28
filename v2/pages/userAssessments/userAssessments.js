@@ -13,7 +13,7 @@ var sql = sqlLoader.load(path.join(__dirname, 'userAssessments.sql'));
 
 router.get('/', function(req, res, next) {
     var params = {
-        courseInstanceId: res.locals.courseInstanceId,
+        courseInstanceId: res.locals.course_instance.id,
         userId: res.locals.user.id,
         uid: res.locals.user.uid,
         mode: req.mode,
