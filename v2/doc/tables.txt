@@ -1,0 +1,481 @@
+                                     Table "public.access_logs"
+    Column    |           Type           |                        Modifiers                         
+--------------+--------------------------+----------------------------------------------------------
+ id           | integer                  | not null default nextval('access_logs_id_seq'::regclass)
+ mongo_id     | character varying(255)   | 
+ date         | timestamp with time zone | 
+ mode         | enum_mode                | 
+ ip           | inet                     | 
+ forwarded_ip | inet                     | 
+ auth_uid     | character varying(255)   | 
+ auth_role    | enum_role                | 
+ user_uid     | character varying(255)   | 
+ user_role    | enum_role                | 
+ method       | character varying(20)    | 
+ path         | character varying(255)   | 
+ params       | jsonb                    | 
+ body         | jsonb                    | 
+Indexes:
+    "access_logs_pkey" PRIMARY KEY, btree (id)
+    "access_logs_mongo_id_key" UNIQUE CONSTRAINT, btree (mongo_id)
+Referenced by:
+    TABLE "variant_view_logs" CONSTRAINT "variant_view_logs_access_log_id_fkey" FOREIGN KEY (access_log_id) REFERENCES access_logs(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                          Table "public.alternative_groups"
+ Column  |  Type   |                            Modifiers                            
+---------+---------+-----------------------------------------------------------------
+ id      | integer | not null default nextval('alternative_groups_id_seq'::regclass)
+ number  | integer | 
+ zone_id | integer | not null
+Indexes:
+    "alternative_groups_pkey" PRIMARY KEY, btree (id)
+    "alternative_groups_number_zone_id_key" UNIQUE CONSTRAINT, btree (number, zone_id)
+Foreign-key constraints:
+    "alternative_groups_zone_id_fkey" FOREIGN KEY (zone_id) REFERENCES zones(id) ON UPDATE CASCADE ON DELETE CASCADE
+Referenced by:
+    TABLE "assessment_questions" CONSTRAINT "assessment_questions_alternative_group_id_fkey" FOREIGN KEY (alternative_group_id) REFERENCES alternative_groups(id) ON UPDATE CASCADE ON DELETE SET NULL
+
+                                     Table "public.assessment_access_rules"
+    Column     |           Type           |                              Modifiers                               
+---------------+--------------------------+----------------------------------------------------------------------
+ id            | integer                  | not null default nextval('assessment_access_rules_id_seq'::regclass)
+ assessment_id | integer                  | not null
+ number        | integer                  | 
+ mode          | enum_mode                | 
+ role          | enum_role                | 
+ uids          | character varying(255)[] | 
+ start_date    | timestamp with time zone | 
+ end_date      | timestamp with time zone | 
+ credit        | integer                  | 
+Indexes:
+    "assessment_access_rules_pkey" PRIMARY KEY, btree (id)
+    "assessment_access_rules_number_assessment_id_key" UNIQUE CONSTRAINT, btree (number, assessment_id)
+Foreign-key constraints:
+    "assessment_access_rules_assessment_id_fkey" FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                     Table "public.assessment_instances"
+    Column     |           Type           |                             Modifiers                             
+---------------+--------------------------+-------------------------------------------------------------------
+ id            | integer                  | not null default nextval('assessment_instances_id_seq'::regclass)
+ tiid          | character varying(255)   | 
+ qids          | jsonb                    | 
+ obj           | jsonb                    | 
+ date          | timestamp with time zone | default now()
+ number        | integer                  | 
+ open          | boolean                  | default true
+ assessment_id | integer                  | not null
+ user_id       | integer                  | not null
+ auth_user_id  | integer                  | 
+ points        | double precision         | default 0
+ max_points    | double precision         | 
+ score_perc    | integer                  | default 0
+ closed_at     | timestamp with time zone | 
+ mode          | enum_mode                | 
+ opened_at     | timestamp with time zone | default now()
+ duration      | interval                 | default '00:00:00'::interval
+Indexes:
+    "assessment_instances_pkey" PRIMARY KEY, btree (id)
+    "assessment_instances_number_assessment_id_user_id_key" UNIQUE CONSTRAINT, btree (number, assessment_id, user_id)
+    "assessment_instances_tiid_key" UNIQUE CONSTRAINT, btree (tiid)
+Foreign-key constraints:
+    "assessment_instances_assessment_id_fkey" FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "assessment_instances_auth_user_id_fkey" FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "assessment_instances_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+Referenced by:
+    TABLE "assessment_score_logs" CONSTRAINT "assessment_score_logs_assessment_instance_id_fkey" FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "assessment_state_logs" CONSTRAINT "assessment_state_logs_assessment_instance_id_fkey" FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "instance_questions" CONSTRAINT "instance_questions_assessment_instance_id_fkey" FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                         Table "public.assessment_questions"
+        Column        |           Type           |                             Modifiers                             
+----------------------+--------------------------+-------------------------------------------------------------------
+ id                   | integer                  | not null default nextval('assessment_questions_id_seq'::regclass)
+ number               | integer                  | 
+ max_points           | double precision         | 
+ points_list          | double precision[]       | 
+ init_points          | double precision         | 
+ assessment_id        | integer                  | not null
+ zone_id              | integer                  | 
+ question_id          | integer                  | not null
+ deleted_at           | timestamp with time zone | 
+ alternative_group_id | integer                  | 
+Indexes:
+    "assessment_questions_pkey" PRIMARY KEY, btree (id)
+    "assessment_questions_question_id_assessment_id_key" UNIQUE CONSTRAINT, btree (question_id, assessment_id)
+Foreign-key constraints:
+    "assessment_questions_alternative_group_id_fkey" FOREIGN KEY (alternative_group_id) REFERENCES alternative_groups(id) ON UPDATE CASCADE ON DELETE SET NULL
+    "assessment_questions_assessment_id_fkey" FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "assessment_questions_question_id_fkey" FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "assessment_questions_zone_id_fkey" FOREIGN KEY (zone_id) REFERENCES zones(id) ON UPDATE CASCADE ON DELETE SET NULL
+Referenced by:
+    TABLE "instance_questions" CONSTRAINT "instance_questions_assessment_question_id_fkey" FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                          Table "public.assessment_score_logs"
+         Column         |           Type           |                             Modifiers                              
+------------------------+--------------------------+--------------------------------------------------------------------
+ id                     | integer                  | not null default nextval('assessment_score_logs_id_seq'::regclass)
+ date                   | timestamp with time zone | default now()
+ points                 | double precision         | 
+ max_points             | double precision         | 
+ score_perc             | integer                  | 
+ assessment_instance_id | integer                  | not null
+ auth_user_id           | integer                  | 
+Indexes:
+    "assessment_score_logs_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "assessment_score_logs_assessment_instance_id_fkey" FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "assessment_score_logs_auth_user_id_fkey" FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                  Table "public.assessment_sets"
+  Column   |          Type          |                          Modifiers                           
+-----------+------------------------+--------------------------------------------------------------
+ id        | integer                | not null default nextval('assessment_sets_id_seq'::regclass)
+ abbrev    | character varying(255) | 
+ name      | character varying(255) | 
+ heading   | character varying(255) | 
+ color     | character varying(255) | 
+ number    | integer                | 
+ course_id | integer                | not null
+Indexes:
+    "assessment_sets_pkey" PRIMARY KEY, btree (id)
+    "assessment_sets_name_course_id_key" UNIQUE CONSTRAINT, btree (name, course_id)
+Foreign-key constraints:
+    "assessment_sets_course_id_fkey" FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+Referenced by:
+    TABLE "assessments" CONSTRAINT "assessments_assessment_set_id_fkey" FOREIGN KEY (assessment_set_id) REFERENCES assessment_sets(id) ON UPDATE CASCADE ON DELETE SET NULL
+
+                                          Table "public.assessment_state_logs"
+         Column         |           Type           |                             Modifiers                              
+------------------------+--------------------------+--------------------------------------------------------------------
+ id                     | integer                  | not null default nextval('assessment_state_logs_id_seq'::regclass)
+ date                   | timestamp with time zone | default now()
+ open                   | boolean                  | 
+ assessment_instance_id | integer                  | not null
+ auth_user_id           | integer                  | 
+Indexes:
+    "assessment_state_logs_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "assessment_state_logs_assessment_instance_id_fkey" FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "assessment_state_logs_auth_user_id_fkey" FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                        Table "public.assessments"
+       Column       |           Type           |                        Modifiers                         
+--------------------+--------------------------+----------------------------------------------------------
+ id                 | integer                  | not null default nextval('assessments_id_seq'::regclass)
+ tid                | character varying(255)   | 
+ course_instance_id | integer                  | not null
+ type               | enum_assessment_type     | 
+ number             | character varying(20)    | 
+ title              | character varying(255)   | 
+ config             | jsonb                    | 
+ multiple_instance  | boolean                  | 
+ shuffle_questions  | boolean                  | default false
+ max_points         | double precision         | 
+ assessment_set_id  | integer                  | 
+ deleted_at         | timestamp with time zone | 
+ obj                | jsonb                    | 
+ text               | text                     | 
+Indexes:
+    "assessments_pkey" PRIMARY KEY, btree (id)
+    "assessments_tid_course_instance_id_key" UNIQUE CONSTRAINT, btree (tid, course_instance_id)
+Foreign-key constraints:
+    "assessments_assessment_set_id_fkey" FOREIGN KEY (assessment_set_id) REFERENCES assessment_sets(id) ON UPDATE CASCADE ON DELETE SET NULL
+    "assessments_course_instance_id_fkey" FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+Referenced by:
+    TABLE "assessment_access_rules" CONSTRAINT "assessment_access_rules_assessment_id_fkey" FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "assessment_instances" CONSTRAINT "assessment_instances_assessment_id_fkey" FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "assessment_questions" CONSTRAINT "assessment_questions_assessment_id_fkey" FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "zones" CONSTRAINT "zones_assessment_id_fkey" FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                        Table "public.course_instance_access_rules"
+       Column       |           Type           |                                 Modifiers                                 
+--------------------+--------------------------+---------------------------------------------------------------------------
+ id                 | integer                  | not null default nextval('course_instance_access_rules_id_seq'::regclass)
+ course_instance_id | integer                  | not null
+ number             | integer                  | 
+ role               | enum_role                | 
+ uids               | character varying(255)[] | 
+ start_date         | timestamp with time zone | 
+ end_date           | timestamp with time zone | 
+Indexes:
+    "course_instance_access_rules_pkey" PRIMARY KEY, btree (id)
+    "course_instance_access_rules_number_course_instance_id_key" UNIQUE CONSTRAINT, btree (number, course_instance_id)
+Foreign-key constraints:
+    "course_instance_access_rules_course_instance_id_fkey" FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                    Table "public.course_instances"
+   Column   |           Type           |                           Modifiers                           
+------------+--------------------------+---------------------------------------------------------------
+ id         | integer                  | not null default nextval('course_instances_id_seq'::regclass)
+ course_id  | integer                  | not null
+ short_name | character varying(255)   | 
+ long_name  | character varying(255)   | 
+ number     | integer                  | 
+ deleted_at | timestamp with time zone | 
+Indexes:
+    "course_instances_pkey" PRIMARY KEY, btree (id)
+    "course_instances_short_name_course_id_key" UNIQUE CONSTRAINT, btree (short_name, course_id)
+Foreign-key constraints:
+    "course_instances_course_id_fkey" FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+Referenced by:
+    TABLE "assessments" CONSTRAINT "assessments_course_instance_id_fkey" FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "course_instance_access_rules" CONSTRAINT "course_instance_access_rules_course_instance_id_fkey" FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "enrollments" CONSTRAINT "enrollments_course_instance_id_fkey" FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                   Table "public.courses"
+   Column   |          Type          |                      Modifiers                       
+------------+------------------------+------------------------------------------------------
+ id         | integer                | not null default nextval('courses_id_seq'::regclass)
+ short_name | character varying(255) | 
+ title      | character varying(255) | 
+ path       | character varying(255) | 
+Indexes:
+    "courses_pkey" PRIMARY KEY, btree (id)
+    "courses_short_name_key" UNIQUE CONSTRAINT, btree (short_name)
+Referenced by:
+    TABLE "assessment_sets" CONSTRAINT "assessment_sets_course_id_fkey" FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "course_instances" CONSTRAINT "course_instances_course_id_fkey" FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "questions" CONSTRAINT "questions_course_id_fkey" FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "tags" CONSTRAINT "tags_course_id_fkey" FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "topics" CONSTRAINT "topics_course_id_fkey" FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                Table "public.enrollments"
+       Column       |   Type    |                        Modifiers                         
+--------------------+-----------+----------------------------------------------------------
+ id                 | integer   | not null default nextval('enrollments_id_seq'::regclass)
+ user_id            | integer   | not null
+ course_instance_id | integer   | not null
+ role               | enum_role | 
+Indexes:
+    "enrollments_pkey" PRIMARY KEY, btree (id)
+    "enrollments_user_id_course_instance_id_key" UNIQUE CONSTRAINT, btree (user_id, course_instance_id)
+Foreign-key constraints:
+    "enrollments_course_instance_id_fkey" FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "enrollments_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                     Table "public.grading_logs"
+    Column     |           Type           |                         Modifiers                         
+---------------+--------------------------+-----------------------------------------------------------
+ id            | integer                  | not null default nextval('grading_logs_id_seq'::regclass)
+ date          | timestamp with time zone | default now()
+ submission_id | integer                  | not null
+ score         | double precision         | 
+ feedback      | jsonb                    | 
+ auth_user_id  | integer                  | 
+ correct       | boolean                  | 
+Indexes:
+    "grading_logs_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "grading_logs_auth_user_id_fkey" FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "grading_logs_submission_id_fkey" FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                          Table "public.instance_questions"
+         Column         |           Type           |                            Modifiers                            
+------------------------+--------------------------+-----------------------------------------------------------------
+ id                     | integer                  | not null default nextval('instance_questions_id_seq'::regclass)
+ created_at             | timestamp with time zone | default now()
+ number                 | integer                  | 
+ order_by               | integer                  | default floor((random() * (1000000)::double precision))
+ points                 | double precision         | default 0
+ current_value          | double precision         | 
+ number_attempts        | integer                  | default 0
+ assessment_instance_id | integer                  | not null
+ assessment_question_id | integer                  | not null
+ points_list            | double precision[]       | 
+ open                   | boolean                  | default true
+ score_perc             | integer                  | default 0
+Indexes:
+    "instance_questions_pkey" PRIMARY KEY, btree (id)
+    "instance_questions_assessment_question_id_assessment_instan_key" UNIQUE CONSTRAINT, btree (assessment_question_id, assessment_instance_id)
+Foreign-key constraints:
+    "instance_questions_assessment_instance_id_fkey" FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "instance_questions_assessment_question_id_fkey" FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+Referenced by:
+    TABLE "question_score_logs" CONSTRAINT "question_score_logs_instance_question_id_fkey" FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "variants" CONSTRAINT "variants_instance_question_id_fkey" FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                         Table "public.question_score_logs"
+        Column        |           Type           |                            Modifiers                             
+----------------------+--------------------------+------------------------------------------------------------------
+ id                   | integer                  | not null default nextval('question_score_logs_id_seq'::regclass)
+ date                 | timestamp with time zone | default now()
+ instance_question_id | integer                  | not null
+ auth_user_id         | integer                  | 
+ points               | double precision         | 
+ max_points           | double precision         | 
+ score_perc           | integer                  | 
+Indexes:
+    "question_score_logs_pkey" PRIMARY KEY, btree (id)
+Foreign-key constraints:
+    "question_score_logs_auth_user_id_fkey" FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "question_score_logs_instance_question_id_fkey" FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                            Table "public.question_tags"
+   Column    |  Type   |                         Modifiers                          
+-------------+---------+------------------------------------------------------------
+ id          | integer | not null default nextval('question_tags_id_seq'::regclass)
+ question_id | integer | not null
+ tag_id      | integer | not null
+ number      | integer | 
+Indexes:
+    "question_tags_pkey" PRIMARY KEY, btree (id)
+    "question_tags_question_id_tag_id_key" UNIQUE CONSTRAINT, btree (question_id, tag_id)
+Foreign-key constraints:
+    "question_tags_question_id_fkey" FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "question_tags_tag_id_fkey" FOREIGN KEY (tag_id) REFERENCES tags(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                    Table "public.questions"
+   Column   |           Type           |                       Modifiers                        
+------------+--------------------------+--------------------------------------------------------
+ id         | integer                  | not null default nextval('questions_id_seq'::regclass)
+ qid        | character varying(255)   | 
+ directory  | character varying(255)   | 
+ type       | enum_question_type       | 
+ title      | character varying(255)   | 
+ config     | jsonb                    | 
+ number     | integer                  | 
+ course_id  | integer                  | not null
+ topic_id   | integer                  | 
+ deleted_at | timestamp with time zone | 
+Indexes:
+    "questions_pkey" PRIMARY KEY, btree (id)
+    "questions_number_course_id_key" UNIQUE CONSTRAINT, btree (number, course_id)
+    "questions_qid_course_id_key" UNIQUE CONSTRAINT, btree (qid, course_id)
+Foreign-key constraints:
+    "questions_course_id_fkey" FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "questions_topic_id_fkey" FOREIGN KEY (topic_id) REFERENCES topics(id) ON UPDATE CASCADE ON DELETE SET NULL
+Referenced by:
+    TABLE "assessment_questions" CONSTRAINT "assessment_questions_question_id_fkey" FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "question_tags" CONSTRAINT "question_tags_question_id_fkey" FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                       Table "public.submissions"
+      Column      |           Type           |                        Modifiers                         
+------------------+--------------------------+----------------------------------------------------------
+ id               | integer                  | not null default nextval('submissions_id_seq'::regclass)
+ sid              | character varying(255)   | 
+ date             | timestamp with time zone | default now()
+ variant_id       | integer                  | not null
+ auth_user_id     | integer                  | 
+ submitted_answer | jsonb                    | 
+ type             | enum_submission_type     | 
+ override_score   | double precision         | 
+ credit           | integer                  | 
+ mode             | enum_mode                | 
+ graded_at        | timestamp with time zone | 
+ score            | double precision         | 
+ correct          | boolean                  | 
+ feedback         | jsonb                    | 
+Indexes:
+    "submissions_pkey" PRIMARY KEY, btree (id)
+    "submissions_sid_key" UNIQUE CONSTRAINT, btree (sid)
+Foreign-key constraints:
+    "submissions_auth_user_id_fkey" FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "submissions_variant_id_fkey" FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
+Referenced by:
+    TABLE "grading_logs" CONSTRAINT "grading_logs_submission_id_fkey" FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                  Table "public.tags"
+  Column   |          Type          |                     Modifiers                     
+-----------+------------------------+---------------------------------------------------
+ id        | integer                | not null default nextval('tags_id_seq'::regclass)
+ name      | character varying(255) | 
+ number    | integer                | 
+ color     | character varying(255) | 
+ course_id | integer                | not null
+Indexes:
+    "tags_pkey" PRIMARY KEY, btree (id)
+    "tags_name_course_id_key" UNIQUE CONSTRAINT, btree (name, course_id)
+Foreign-key constraints:
+    "tags_course_id_fkey" FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+Referenced by:
+    TABLE "question_tags" CONSTRAINT "question_tags_tag_id_fkey" FOREIGN KEY (tag_id) REFERENCES tags(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                  Table "public.topics"
+  Column   |          Type          |                      Modifiers                      
+-----------+------------------------+-----------------------------------------------------
+ id        | integer                | not null default nextval('topics_id_seq'::regclass)
+ name      | character varying(255) | 
+ number    | integer                | 
+ color     | character varying(255) | 
+ course_id | integer                | not null
+Indexes:
+    "topics_pkey" PRIMARY KEY, btree (id)
+    "topics_name_course_id_key" UNIQUE CONSTRAINT, btree (name, course_id)
+Foreign-key constraints:
+    "topics_course_id_fkey" FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+Referenced by:
+    TABLE "questions" CONSTRAINT "questions_topic_id_fkey" FOREIGN KEY (topic_id) REFERENCES topics(id) ON UPDATE CASCADE ON DELETE SET NULL
+
+                                 Table "public.users"
+ Column |          Type          |                     Modifiers                      
+--------+------------------------+----------------------------------------------------
+ id     | integer                | not null default nextval('users_id_seq'::regclass)
+ uid    | character varying(255) | 
+ name   | character varying(255) | 
+Indexes:
+    "users_pkey" PRIMARY KEY, btree (id)
+    "users_uid_key" UNIQUE CONSTRAINT, btree (uid)
+Referenced by:
+    TABLE "assessment_instances" CONSTRAINT "assessment_instances_auth_user_id_fkey" FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "assessment_instances" CONSTRAINT "assessment_instances_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "assessment_score_logs" CONSTRAINT "assessment_score_logs_auth_user_id_fkey" FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "assessment_state_logs" CONSTRAINT "assessment_state_logs_auth_user_id_fkey" FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "enrollments" CONSTRAINT "enrollments_user_id_fkey" FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "grading_logs" CONSTRAINT "grading_logs_auth_user_id_fkey" FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "question_score_logs" CONSTRAINT "question_score_logs_auth_user_id_fkey" FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "submissions" CONSTRAINT "submissions_auth_user_id_fkey" FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                             Table "public.variant_view_logs"
+    Column     |  Type   |                           Modifiers                            
+---------------+---------+----------------------------------------------------------------
+ id            | integer | not null default nextval('variant_view_logs_id_seq'::regclass)
+ variant_id    | integer | not null
+ access_log_id | integer | not null
+ open          | boolean | 
+ credit        | integer | 
+Indexes:
+    "variant_view_logs_pkey" PRIMARY KEY, btree (id)
+    "variant_view_logs_access_log_id_key" UNIQUE CONSTRAINT, btree (access_log_id)
+Foreign-key constraints:
+    "variant_view_logs_access_log_id_fkey" FOREIGN KEY (access_log_id) REFERENCES access_logs(id) ON UPDATE CASCADE ON DELETE CASCADE
+    "variant_view_logs_variant_id_fkey" FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                         Table "public.variants"
+        Column        |           Type           |                       Modifiers                       
+----------------------+--------------------------+-------------------------------------------------------
+ id                   | integer                  | not null default nextval('variants_id_seq'::regclass)
+ qiid                 | character varying(255)   | 
+ date                 | timestamp with time zone | default now()
+ instance_question_id | integer                  | not null
+ available            | boolean                  | default true
+ number               | integer                  | 
+ variant_seed         | character varying(255)   | 
+ params               | jsonb                    | 
+ true_answer          | jsonb                    | 
+ options              | jsonb                    | 
+Indexes:
+    "variants_pkey" PRIMARY KEY, btree (id)
+    "variants_number_instance_question_id_key" UNIQUE CONSTRAINT, btree (number, instance_question_id)
+    "variants_qiid_key" UNIQUE CONSTRAINT, btree (qiid)
+Foreign-key constraints:
+    "variants_instance_question_id_fkey" FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+Referenced by:
+    TABLE "submissions" CONSTRAINT "submissions_variant_id_fkey" FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "variant_view_logs" CONSTRAINT "variant_view_logs_variant_id_fkey" FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+                                    Table "public.zones"
+    Column     |          Type          |                     Modifiers                      
+---------------+------------------------+----------------------------------------------------
+ id            | integer                | not null default nextval('zones_id_seq'::regclass)
+ title         | character varying(255) | 
+ number        | integer                | 
+ assessment_id | integer                | not null
+Indexes:
+    "zones_pkey" PRIMARY KEY, btree (id)
+    "zones_number_assessment_id_key" UNIQUE CONSTRAINT, btree (number, assessment_id)
+Foreign-key constraints:
+    "zones_assessment_id_fkey" FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+Referenced by:
+    TABLE "alternative_groups" CONSTRAINT "alternative_groups_zone_id_fkey" FOREIGN KEY (zone_id) REFERENCES zones(id) ON UPDATE CASCADE ON DELETE CASCADE
+    TABLE "assessment_questions" CONSTRAINT "assessment_questions_zone_id_fkey" FOREIGN KEY (zone_id) REFERENCES zones(id) ON UPDATE CASCADE ON DELETE SET NULL
+
