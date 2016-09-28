@@ -1,0 +1,295 @@
+
+# Developer Guide
+
+In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL (PostgreSQL) as the languages of implementation and try to minimize the number of complex libraries or frameworks being used. The website is server-side generated pages with minimal client-side JavaScript.
+
+## High level view
+
+<img style="width: 20em" src="high-level.png" />
+
+1. The questions and assessments for a course are stored in a git repository. This is synced into the database by the course instructor, which updates or generates DB data to represent the course. Students then interact with the course website by doing questions, with the results being stored in the DB. The instructor can view the student results on the website and download CSV files with the data.
+
+1. All course configuration is done via plain text files in the git repository, which is the master source for this data. There is no extra course configuration stored in the DB. The instructor does not directly edit course data via the website.
+
+1. All student data is all stored in the DB and is not pushed back into the git repository or disk at any point.
+
+## Directory layout
+
+1. Broadly follow the [Express generator](http://expressjs.com/en/starter/generator.html) layout.
+
+1. Top-level directories are:
+
+        PrairieLearn/v2
+        |-- cron.d            # jobs to be periodically executed, one file per job
+        |-- config.json       # server configuration file
+        |-- doc               # documentation
+        |-- exampleCourse     # example content for a course
+        |-- lib               # miscellaneous helper code
+        |-- middlewares       # Express.js middleware
+        |-- models            # DB table creation, one file per table
+        |-- pages             # one sub-dir per web page
+        |   |-- partials      # EJS helper sub-templates
+        |   |-- adminHome     # all the code for the adminHome page
+        |   |-- userHome      # all the code for the userHome page
+        |   `-- ...           # other "admin" and "user" pages
+        |-- public            # all accessible without access control
+        |   |-- javascripts   # external packages only, no modificiations
+        |   |-- localscripts  # all local site-wide JS
+        |   `-- stylesheets   # all CSS, both external and local
+        |-- question-servers  # one file per question type
+        |-- schemas           # JSON schemas for input file formats
+        |-- server.js         # top-level program
+        |-- sprocs            # DB stored procedures, one per file
+        |-- sync              # code to load on-disk course config into DB
+        `-- tests             # unit tests, currently unused
+
+
+## Page generation
+
+1. Use [Express](http://expressjs.com) as the web framework. As of 2016-09-27 we are using v4.
+
+1. All pages are server-side rendered and we try and minimize the amount of client-side JavaScript. Client-side JS should use [jQuery](https://jquery.com) and related libraries. We prefer to use off-the-shelf jQuery plugins where possible.
+
+1. Each web page typically has all its files in a single directory, with the directory, the files, and the URL all named the same. Not all pages need all files. For example:
+
+        pages/adminUsers
+        |-- adminUsers.js         # main entry point, calls the SQL and renders the template
+        |-- adminUsers.sql        # all SQL code specific to this page
+        |-- adminUsers.ejs        # the EJS template for the page
+        `-- adminUsersClient.js   # any client-side JS needed
+
+1. The above `adminUsers` page is loaded from the top-level `server.js` with:
+
+        app.use('/admin/:courseInstanceId/users', require('./pages/adminUsers/adminUsers'));
+
+1. The `adminUsers.js` main JS file is an Express `router` and has the basic structure:
+
+        var ERR = require('async-stacktrace');
+        var _ = require('lodash');
+        var express = require('express');
+        var router = express.Router();
+        var sqldb = require('../../sqldb');
+        var sqlLoader = require('../../sql-loader');
+        var sql = sqlLoader.loadSqlEquiv(__filename);
+        
+        router.get('/', function(req, res, next) {
+            var params = {
+                course_instance_id: res.params.courseInstanceId,  // the URL parameter
+                auth_data: res.locals.auth_data,      // filled in by an earlier middleware
+            };
+            sqldb.query(sql.select_and_auth, params, function(err, result) {
+                if (ERR(err, next)) return;
+                _.assign(res.locals, result.rows[0]); // add all the basic objects to res.locals
+        
+                var params = {course_instance_id: res.params.courseInstanceId};
+                sqldb.query(sql.user_scores, params, function(err, result) { // further SQL queries
+                    if (ERR(err, next)) return;
+                    res.locals.user_scores = result.rows;  // store the date in res.locals
+        
+                    res.render('pages/adminUsers/adminUsers', res.locals);  // render the page
+                    // inside the EJS template, "res.locals.var" can be accessed with just "var"
+                });
+            });
+        });
+        
+        module.exports = router;
+
+1. Use the `res.locals` variable to build up data for the page rendering. Each page should start with `select_and_auth` which will load the basic data objects (`user`, `course`, etc). Further SQL queries can load more page-specific data. The `select_and_auth` query should return variables as JSONB that are added to `res.locals` with [`_.assign`](https://lodash.com/docs/#assign).
+
+1. The `select_and_auth` SQL code should start from the object that describes the page (e.g., a `course_instance` or `assessment_instance`) and work up the chain to find all the objects (ending with `course`). It must call the `auth_admin_course_instance()` function and only succeed if `authorized` is true.
+
+        -- BLOCK select_and_auth
+        SELECT
+            to_jsonb(c) AS course,
+            to_jsonb(ci) AS course_instance,
+            to_jsonb(u) AS auth_user,
+            to_jsonb(e) AS auth_enrollment
+        FROM
+            course_instances AS ci
+            JOIN courses AS c ON (c.id = ci.course_id)
+            JOIN LATERAL auth_admin_course_instance(ci.id, 'View', $auth_data) AS aaci ON TRUE
+            JOIN LATERAL users AS u ON (u.id = aaci.auth_user_id)
+            JOIN LATERAL enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = ci.id)
+        WHERE
+            ci.id = $course_instance_id
+            AND aaci.authorized;
+
+1. Use [EJS templates](http://ejs.co) (Embedded JavaScript) templates for all pages. Using JS as the templating language removes the need for another ad hoc language, but does require some discipline to not get in a mess. Try and minimize the amount of JS code in the template files. Inside a template the JS code can directly access the contents of the `res.locals` object.
+
+1. Sub-templates are stored in `pages/partials` and can be loaded as below. The sub-template can also access `res.locals` as its base scope, and can also accept extra arguments with an arguments object:
+
+        <%- include('../partials/assessment', {assessment: assessment}); %>
+
+## Page style
+
+1. Use [Bootstrap](http://getbootstrap.com) as the style. As of 2016-09-27 we are using v3.
+
+1. Local CSS rules go in `public/stylesheets/local.css`. Try to minimize use of this and use plain Bootstrap styling.
+
+## SQL usage
+
+1. Use [PostgreSQL](https://www.postgresql.org) and feel free to use the latest features. As of 2016-09-26 we run version 9.5.
+
+1. The [PostgreSQL manual](https://www.postgresql.org/docs/manuals/) is an excellent reference.
+
+1. Write raw SQL rather than using a [ORM library](https://en.wikipedia.org/wiki/Object-relational_mapping). This reduces the number of frameworks/languages needed.
+
+1. Try and write as much code in SQL and [PL/pgSQL](https://www.postgresql.org/docs/9.5/static/plpgsql.html) as possible, rather than in JavaScript. Use PostgreSQL-specific SQL and don't worry about SQL dialect portability. Functions should be written as stored procedures in the `sprocs/` directory.
+
+1. Use the SQL convention of [`snake_case`](https://en.wikipedia.org/wiki/Snake_case) for names. Also use the same convention in JavaScript for names that are the same as in SQL, so the `question_id` variable in SQL is also called `question_id` in JavaScript code.
+
+1. SQL code should not be inline in JavaScript files. Instead it should be in a separate `.sql` file, following the [Yesql concept](https://github.com/krisajenkins/yesql). Each `filename.js` file will normally have a corresponding `filename.sql` file in the same directory. The `.sql` file should look like:
+
+        -- BLOCK: select_question
+        SELECT * FROM questions WHERE id = $question_id;
+
+        -- BLOCK: insert_submission
+        INSERT INTO submissions (submitted_answer) VALUES ($submitted_answer) RETURNING *;
+
+    From JavaScript you can then do:
+
+        var sqlLoader = require('./sql-loader'); # adjust path as needed
+        var sql = sqlLoader.loadSqlEquiv(__filename); # from filename.js will load filename.sql
+
+        # run the entire contents of the SQL file
+        sqldb.query(sql.all, params, ...);
+
+        # run just one query block from the SQL file
+        sqldb.query(sql.select_question, params, ...);
+
+
+## DB Schema
+
+1. See the [list of DB tables](tables.txt), with the ER (entity relationship) diagram below ([PDF ER diagram](models.pdf)).
+
+<img style="width: 80em" src="models.png" />
+
+1. Tables have plural names (e.g. `assessments`) and always have a primary key called `id`. The foreign keys pointing to this table are non-plural, like `assessment_id`. When referring to this use an abbreviation of the first letters of each word, like `ai` in this case. The only exceptions are `aset` for `assessment_sets` (to avoid conflicting with the SQL `AS` keyword), `top` for `topics`, and `tag` for `tags` (to avoid conflicts). This gives code like:
+
+        -- select all active assessment_instances for a given assessment
+        SELECT
+            ai.*
+        FROM
+            assessments AS a
+            JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
+        WHERE
+            a.id = 45
+            AND ai.deleted_at IS NULL;
+
+1. We (almost) never delete student data from the DB. To avoid having rows with broken or missing foreign keys, course configuration tables (e.g. `assessments`) can't be actually deleted. Instead they are "soft-deleted" by setting the `deleted_at` column to non-NULL. This means that when using any soft-deletable table we need to have a `WHERE deleted_at IS NULL` to get only the active rows.
+
+
+## Database access
+
+1. DB access is via the `sqldb.js` module. This wraps the [node-postgres](https://github.com/brianc/node-postgres) library.
+
+1. For single queries we normally use the following pattern, which automatically uses connection pooling from node-postgres and safe variable interpolation with named parameters and [prepared statements](https://github.com/brianc/node-postgres/wiki/Parameterized-queries-and-Prepared-Statements):
+
+        var params = {
+            course_id: 45,
+        };
+        sqldb.query(sql.select_questions_by_course, params, function(err, result) {
+            if (ERR(err, callback)) return;
+            var questions = result.rows;
+        });
+
+    Where the corresponding `filename.sql` file contains:
+
+        -- BLOCK: select_questions_by_course
+        SELECT * FROM questions WHERE course_id = $course_id;
+
+1. For queries where it would be an error to not return exactly one result row:
+
+        sqldb.queryOneRow(sql.block_name, params, function(err, result) {
+            if (ERR(err, callback)) return;
+            var obj = result.rows[0]; // guaranteed to exist and no more
+        });
+
+1. For transactions with correct error handling use this pattern:
+
+        sqldb.beginTransaction(function(err, client, done) {
+            if (ERR(err, callback)) return;
+            async.series([
+                function(callback) {
+                    sqldb.queryWithClient(client, sql.block_name, params, function(err, result) {
+                        if (ERR(err, callback)) return;
+                        // do things
+                        callback(null);
+                    });
+                },
+                // more series functions inside the transaction
+            ], function(err) {
+                sqldb.endTransaction(client, done, err, function(err) {
+                    if (ERR(err, callback)) return;
+                    // transaction successfully committed at this point
+                    callback(null);
+                });
+            });
+        });
+
+1. To pass an array of parameters to SQL code, use the following pattern, which allows zero or more elements in the array. This replaces `$points_list` with `ARRAY[10, 5, 1]` in the SQL. It's required to specify the type of array in case it is empty:
+
+        var params = {
+            points_list: [10, 5, 1],
+        };
+        sqldb.query(sql.insert_assessment_question, params, ...);
+
+
+        -- BLOCK: insert_assessment_question
+        INSERT INTO assessment_questions (points_list) VALUES ($points_list::INTEGER[]);
+
+1. To use a JavaScript array for membership testing in SQL use [`unnest()`](https://www.postgresql.org/docs/9.5/static/functions-array.html) like:
+
+        var params = {
+            id_list: [7, 12, 45],
+        };
+        sqldb.query(sql.select_questions, params, ...);
+
+
+        -- BLOCK: select_questions
+        SELECT * FROM questions WHERE id IN (SELECT unnest($id_list::INTEGER[]));
+
+## Error handling and control flow in JavaScript
+
+1. Use tradtional [Node.js error handling conventions](https://docs.nodejitsu.com/articles/errors/what-are-the-error-conventions/) with the `callback(err, result)` pattern.
+
+1. Use the [async library](http://caolan.github.io/async/) for control flow.
+
+1. Use the [async-stacktrace library](https://github.com/Pita/async-stacktrace) for every error handler. That is, the top of every file should have `ERR = require('async-stacktrace');` and wherever you would normally write `if (err) return callback(err);` you instead write `if (ERR(err, callback)) return;`. This does exactly the same thing, except that it modfies the `err` object's stack trace to include the current filename/linenumber, which greatly aids debugging. For example:
+
+        # Don't do this:
+        function foo(p, callback) {
+            bar(q, function(err, result) {
+                if (err) return callback(err);
+                callback(null, result);
+            });
+        }
+
+        # Instead do this:
+        ERR = require('async-stacktrace'); # at top of file
+        function foo(p, callback) {
+            bar(q, function(err, result) {
+                if (ERR(err, callback)) return; # this is the change
+                callback(null, result);
+            });
+        }
+1. Don't pass `callback` functions directly through to children, but instead capture the error with [async-stacktrace library](https://github.com/Pita/async-stacktrace) and pass it up the stack explicitly. This allows a complete stack trace to be printed on error. That is:
+
+        # Don't do this:
+        function foo(p, callback) {
+            bar(q, callback);
+        }
+
+        # Instead do this:
+        function foo(p, callback) {
+            bar(q, function(err, result) {
+                if (ERR(err, callback)) return;
+                callback(null, result);
+            });
+        }
+
+1. Don't use promises.
+
+1. We will switch to [async/await](https://github.com/tc39/ecmascript-asyncawait) when it becomes available in Node.js. The async/await proposal made it to [stage 4](https://github.com/tc39/proposals/blob/master/finished-proposals.md) in July 2016 and was thus included in the [latest draft Ecmascript spec](https://tc39.github.io/ecma262/). This will appear as ES2017/ES7. V8 [merged support](https://bugs.chromium.org/p/v8/issues/detail?id=4483) for async/await. Node.js is [tracking its implementation](https://github.com/nodejs/promises/issues/4) but as of 2016-09-26 it looks like there is still work needed.
+
+
