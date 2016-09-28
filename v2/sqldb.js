@@ -267,15 +267,16 @@ module.exports = {
                 err = error.addData(err, {rollback: "success"});
                 return ERR(err, callback);
             });
-        }
-        that.queryWithClient(client, 'COMMIT', [], function(err, result) {
-            if (err) {
+        } else {
+            that.queryWithClient(client, 'COMMIT', [], function(err, result) {
+                if (err) {
+                    done();
+                    return ERR(err, callback); // unconditionally return
+                }
                 done();
-                return ERR(err, callback); // unconditionally return
-            }
-            done();
-            callback(null);
-        });
+                callback(null);
+            });
+        }
     },
 
     query: function(sql, params, callback) {
