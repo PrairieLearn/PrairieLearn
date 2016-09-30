@@ -3,10 +3,10 @@ var _ = require('lodash');
 var fs = require('fs');
 var async = require('async');
 
-var logger = require('./lib/logger');
-var error = require('./lib/error');
-var config = require('./lib/config');
-var sqldb = require('./lib/sqldb');
+var logger = require('../lib/logger');
+var error = require('../lib/error');
+var config = require('../lib/config');
+var sqldb = require('../lib/sqldb');
 
 var userAssessmentDurations = require('./userAssessmentDurations');
 var autoFinishExams = require('./autoFinishExams');

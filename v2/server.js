@@ -38,24 +38,25 @@ app.set('views', __dirname);
 app.set('view engine', 'ejs');
 
 app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Middleware for all requests
 app.use(require('./middlewares/cors'));
-app.use(require('./middlewares/authn'));
+app.use(require('./middlewares/authn')); // sets res.locals.auth_user
 app.use(require('./middlewares/logRequest'));
 app.use(require('./middlewares/parsePostData'));
 
-// homepage doesn't need authorization
-app.use('/pl', require('./pages/home'));
+// course selection pages don't need authorization
+app.use('/pl', require('./pages/home/home'));
+app.use('/pl/enroll', require('./pages/enroll/enroll'));
 
 // all other pages need authorization
-app.use('/pl/:course_instance_id', require('./middlewares/authzCourseInstance'));
-app.use('/pl/:course_instance_id', require('./middlewares/navData'));
-app.use('/pl/:course_instance_id', require('./middlewares/urlPrefix'));
+//app.use('/pl/:course_instance_id', require('./middlewares/authzCourseInstance'));
+//app.use('/pl/:course_instance_id', require('./middlewares/navData'));
+//app.use('/pl/:course_instance_id', require('./middlewares/urlPrefix'));
 
 // redirect plain class page to assessments page
 app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/assessments');} next();});
@@ -145,7 +146,7 @@ async.series([
         });
     },
     function(callback) {
-        startServer.init(function(err) {
+        startServer(function(err) {
             if (ERR(err, callback)) return;
             callback(null);
         });

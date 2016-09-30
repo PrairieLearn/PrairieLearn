@@ -8,7 +8,7 @@ var router = express.Router();
 
 var logger = require('../../lib/logger');
 var error = require('../../lib/error');
-var questionServers = require('../../lib/question-servers');
+var questionServers = require('../../question-servers');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 

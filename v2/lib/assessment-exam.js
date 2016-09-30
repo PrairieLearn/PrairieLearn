@@ -4,11 +4,11 @@ var async = require('async');
 var fs = require('fs');
 var path = require('path');
 
-var error = require('../error');
-var logger = require('../logger');
+var error = require('../lib/error');
+var logger = require('../lib/logger');
 var questionServers = require('../question-servers');
-var sqldb = require('../sqldb');
-var sqlLoader = require('../sql-loader');
+var sqldb = require('../lib/sqldb');
+var sqlLoader = require('../lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
