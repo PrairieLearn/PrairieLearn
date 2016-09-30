@@ -2,11 +2,11 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var async = require('async');
 
-var logger = require('../logger');
-var error = require('../error');
+var logger = require('../lib/logger');
+var error = require('../lib/error');
 var assessmentExam = require('../lib/assessment-exam');
-var sqldb = require('../sqldb');
-var sqlLoader = require('../sql-loader');
+var sqldb = require('../lib/sqldb');
+var sqlLoader = require('../lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 

@@ -5,9 +5,8 @@ var path = require('path');
 var express = require('express');
 var router = express.Router();
 
-var logger = require('../../logger');
-var filePaths = require('../../file-paths');
-var courseDB = require("../../course-db");
+var logger = require('../../lib/logger');
+var filePaths = require('../../lib/file-paths');
 
 router.get('/:filename', function(req, res, next) {
     var question = res.locals.question;

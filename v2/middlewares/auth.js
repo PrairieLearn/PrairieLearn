@@ -1,7 +1,7 @@
 var hmacSha256 = require('crypto-js/hmac-sha256');
 
-var config = require('../config');
-var error = require('../error');
+var config = require('../lib/config');
+var error = require('../lib/error');
 
 module.exports = function(req, res, next) {
 

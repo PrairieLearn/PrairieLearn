@@ -6,7 +6,7 @@ var path = require('path');
 
 var error = require('../error');
 var logger = require('../logger');
-var questionServer = require('../question-server');
+var questionServers = require('../question-servers');
 var sqldb = require('../sqldb');
 var sqlLoader = require('../sql-loader');
 
@@ -33,7 +33,7 @@ module.exports.gradeExam = function(assessment_instance_id, auth_user_id, credit
                     var grading;
                     async.series([
                         function(callback) {
-                            questionServer.gradeSubmission(workItem.submission, workItem.variant, workItem.question, workItem.course, {}, function(err, g) {
+                            questionServers.gradeSubmission(workItem.submission, workItem.variant, workItem.question, workItem.course, {}, function(err, g) {
                                 if (ERR(err, callback)) return;
                                 grading = g;
                                 callback(null);

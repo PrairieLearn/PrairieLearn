@@ -9,10 +9,10 @@ var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var https = require('https');
 
-var logger = require('./logger');
-var error = require('./error');
-var config = require('./config');
-var sqldb = require('./sqldb');
+var logger = require('./lib/logger');
+var error = require('./lib/error');
+var config = require('./lib/config');
+var sqldb = require('./lib/sqldb');
 var models = require('./models');
 var sprocs = require('./sprocs');
 var cron = require('./cron');

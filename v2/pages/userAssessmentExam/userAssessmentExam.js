@@ -6,11 +6,11 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var logger = require('../../logger');
-var error = require('../../error');
-var questionServer = require('../../question-server');
-var sqldb = require('../../sqldb');
-var sqlLoader = require('../../sql-loader');
+var logger = require('../../lib/logger');
+var error = require('../../lib/error');
+var questionServers = require('../../lib/question-servers');
+var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.load(path.join(__dirname, 'userAssessmentExam.sql'));
 
@@ -52,7 +52,7 @@ function makeAssessmentInstance(req, res, callback) {
                         if (ERR(err, callback)) return;
                         // FIXME: returning with error here triggers "Can't set headers" exception
                         var instanceQuestionId = result.rows[0].id;
-                        questionServer.makeVariant(workItem.question, res.locals.course, {}, function(err, variant) {
+                        questionServers.makeVariant(workItem.question, res.locals.course, {}, function(err, variant) {
                             if (ERR(err, callback)) return;
                             var params = {
                                 instance_question_id: instanceQuestionId,

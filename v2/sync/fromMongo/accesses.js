@@ -4,9 +4,9 @@ var async = require('async');
 var moment = require('moment-timezone');
 var csvStringify = require('csv').stringify;
 
-var sqldb = require('../../sqldb');
-var config = require('../../config');
-var db = require('../../db');
+var sqldb = require('../../lib/sqldb');
+var config = require('../../lib/config');
+var db = require('../../lib/db');
 
 module.exports = {
     sync: function(courseInfo, callback) {

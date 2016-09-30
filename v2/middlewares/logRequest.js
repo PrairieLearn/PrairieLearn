@@ -1,6 +1,6 @@
-var config = require('../config');
-var error = require('../error');
-var logger = require('../logger');
+var config = require('../lib/config');
+var error = require('../lib/error');
+var logger = require('../lib/logger');
 
 module.exports = function(req, res, next) {
     if (req.method !== 'OPTIONS') {

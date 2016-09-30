@@ -6,11 +6,11 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var error = require('../../error');
-var questionServer = require('../../question-server');
-var logger = require('../../logger');
-var sqldb = require('../../sqldb');
-var sqlLoader = require('../../sql-loader');
+var error = require('../../lib/error');
+var questionServers = require('../../lib/question-servers');
+var logger = require('../../lib/logger');
+var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.load(path.join(__dirname, 'userInstanceQuestionHomework.sql'));
 
@@ -25,7 +25,7 @@ function ensureVariant(req, res, callback) {
         if (result.rowCount == 1) {
             return callback(null, result.rows[0]);
         }
-        questionServer.makeVariant(res.locals.question, res.locals.course, {}, function(err, variant) {
+        questionServers.makeVariant(res.locals.question, res.locals.course, {}, function(err, variant) {
             if (ERR(err, callback)) return;
             var params = {
                 instance_question_id: res.locals.instance_question.id,
@@ -72,7 +72,7 @@ function processSubmission(req, res, callback) {
                 submitted_answer: req.postData.submittedAnswer,
                 type: req.postData.type,
             };
-            questionServer.gradeSubmission(submission, res.locals.variant, res.locals.question, res.locals.course, {}, function(err, g) {
+            questionServers.gradeSubmission(submission, res.locals.variant, res.locals.question, res.locals.course, {}, function(err, g) {
                 if (ERR(err, callback)) return;
                 grading = g;
                 callback(null);
@@ -205,7 +205,7 @@ function handle(req, res, next) {
             });
         },
         function(callback) {
-            questionServer.getModule(res.locals.question.type, function(err, qm) {
+            questionServers.getModule(res.locals.question.type, function(err, qm) {
                 if (ERR(err, callback)) return;
                 questionModule = qm;
                 callback(null);
@@ -220,7 +220,7 @@ function handle(req, res, next) {
         },
         function(callback) {
             if (!res.locals.showSubmission) return callback(null);
-            questionServer.renderScore(res.locals.submission.score, function(err, scoreHtml) {
+            questionServers.renderScore(res.locals.submission.score, function(err, scoreHtml) {
                 if (ERR(err, callback)) return;
                 res.locals.scoreHtml = scoreHtml;
                 callback(null);

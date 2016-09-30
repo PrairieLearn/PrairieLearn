@@ -4,9 +4,9 @@ var path = require('path');
 var express = require('express');
 var router = express.Router();
 
-var logger = require('../../logger');
-var sqldb = require('../../sqldb');
-var sqlLoader = require('../../sql-loader');
+var logger = require('../../lib/logger');
+var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.load(path.join(__dirname, 'adminHome.sql'));
 

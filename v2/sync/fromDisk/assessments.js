@@ -3,10 +3,10 @@ var _ = require('lodash');
 var async = require('async');
 var moment = require('moment-timezone');
 
-var logger = require('../../logger');
-var sqldb = require('../../sqldb');
-var config = require('../../config');
-var sqlLoader = require('../../sql-loader');
+var logger = require('../../lib/logger');
+var sqldb = require('../../lib/sqldb');
+var config = require('../../lib/config');
+var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 

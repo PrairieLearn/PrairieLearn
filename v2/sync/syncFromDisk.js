@@ -1,7 +1,7 @@
 var async = require('async');
 
-var logger = require('../logger');
-var courseDB = require('../course-db');
+var logger = require('../lib/logger');
+var courseDB = require('../lib/course-db');
 
 var syncCourseInfo = require('./fromDisk/courseInfo');
 var syncCourseInstances = require('./fromDisk/courseInstances');

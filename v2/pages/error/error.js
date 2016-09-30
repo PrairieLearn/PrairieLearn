@@ -1,6 +1,6 @@
 var path = require('path');
 
-var logger = require('../../logger');
+var logger = require('../../lib/logger');
 
 module.exports = function(err, req, res, next) {
     if (false) {

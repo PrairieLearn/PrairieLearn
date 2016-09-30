@@ -6,12 +6,12 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var error = require('../../error');
-var questionServer = require('../../question-server');
-var logger = require('../../logger');
-var assessmentExam = require('../../lib/assessment-exam');
-var sqldb = require('../../sqldb');
-var sqlLoader = require('../../sql-loader');
+var error = require('../../lib/error');
+var questionServer = require('../../lib/question-server');
+var logger = require('../../lib/logger');
+var assessmentExam = require('../../lib/lib/assessment-exam');
+var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 

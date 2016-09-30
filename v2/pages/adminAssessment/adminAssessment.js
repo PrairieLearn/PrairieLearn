@@ -5,10 +5,10 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var logger = require('../../logger');
-var assessmentExam = require('../../lib/assessment-exam');
-var sqldb = require('../../sqldb');
-var sqlLoader = require('../../sql-loader');
+var logger = require('../../lib/logger');
+var assessmentExam = require('../../lib/lib/assessment-exam');
+var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.load(path.join(__dirname, 'adminAssessment.sql'));
 

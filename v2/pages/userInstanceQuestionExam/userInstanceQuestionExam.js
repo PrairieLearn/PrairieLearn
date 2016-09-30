@@ -6,11 +6,11 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var error = require('../../error');
-var questionServer = require('../../question-server');
-var logger = require('../../logger');
-var sqldb = require('../../sqldb');
-var sqlLoader = require('../../sql-loader');
+var error = require('../../lib/error');
+var questionServers = require('../../lib/question-servers');
+var logger = require('../../lib/logger');
+var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.load(path.join(__dirname, 'userInstanceQuestionExam.sql'));
 
@@ -81,7 +81,7 @@ router.get('/', function(req, res, next) {
             });
         },
         function(callback) {
-            questionServer.getModule(res.locals.question.type, function(err, qm) {
+            questionServers.getModule(res.locals.question.type, function(err, qm) {
                 if (ERR(err, callback)) return;
                 questionModule = qm;
                 callback(null);

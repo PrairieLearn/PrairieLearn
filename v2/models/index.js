@@ -5,9 +5,9 @@ var path = require('path');
 var async = require('async');
 var pg = require('pg');
 
-var error = require('../error');
-var logger = require('../logger');
-var sqldb = require('../sqldb');
+var error = require('../lib/error');
+var logger = require('../lib/logger');
+var sqldb = require('../lib/sqldb');
 
 module.exports = {
     init: function(callback) {

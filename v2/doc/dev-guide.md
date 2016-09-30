@@ -20,17 +20,18 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 1. Top-level files and directories are:
 
         PrairieLearn/v2
+        |-- config.json       # server configuration file (optional)
         |-- cron              # jobs to be periodically executed, one file per job
         |   |-- index.js      # entry point for all cron jobs
         |   `-- ...           # one JS file per cron job, executed by index.js
-        |-- config.json       # server configuration file
         |-- doc               # documentation
         |-- exampleCourse     # example content for a course
         |-- lib               # miscellaneous helper code
-        |-- middlewares       # Express.js middleware
+        |-- middlewares       # Express.js middleware, one per file
         |-- models            # DB table creation, one file per table
         |   |-- index.js      # entry point for all model initialization
         |   `-- ...           # one JS file per table, executed by index.js
+        |-- package.json      # npm configuration file
         |-- pages             # one sub-dir per web page
         |   |-- partials      # EJS helper sub-templates
         |   |-- adminHome     # all the code for the adminHome page

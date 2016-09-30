@@ -5,12 +5,12 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var error = require('../../error');
-var logger = require('../../logger');
-var filePaths = require('../../file-paths');
-var questionServer = require('../../question-server');
-var sqldb = require('../../sqldb');
-var sqlLoader = require('../../sql-loader');
+var error = require('../../lib/error');
+var logger = require('../../lib/logger');
+var filePaths = require('../../lib/file-paths');
+var questionServers = require('../../lib/question-servers');
+var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.load(path.join(__dirname, 'adminQuestion.sql'));
 
@@ -30,12 +30,12 @@ var handle = function(req, res, next) {
                 submission = {
                     submitted_answer: req.postData.submittedAnswer,
                 };
-                questionServer.gradeSubmission(submission, variant, res.locals.question, res.locals.course, {}, function(err, grading) {
+                questionServers.gradeSubmission(submission, variant, res.locals.question, res.locals.course, {}, function(err, grading) {
                     if (ERR(err, next)) return;
                     _.assign(submission, grading);
-                    questionServer.getModule(res.locals.question.type, function(err, questionModule) {
+                    questionServers.getModule(res.locals.question.type, function(err, questionModule) {
                         if (ERR(err, next)) return;
-                        questionServer.renderScore(submission.score, function(err, scoreHtml) {
+                        questionServers.renderScore(submission.score, function(err, scoreHtml) {
                             if (ERR(err, next)) return;
                             questionModule.renderSubmission(variant, res.locals.question, submission, res.locals.course, res.locals, function(err, submissionHtml) {
                                 if (ERR(err, next)) return;
@@ -49,7 +49,7 @@ var handle = function(req, res, next) {
                 });
             } else return next(error.make(400, 'unknown action', {postData: req.postData}));
         } else {
-            questionServer.makeVariant(res.locals.question, res.locals.course, {}, function(err, variant) {
+            questionServers.makeVariant(res.locals.question, res.locals.course, {}, function(err, variant) {
                 if (ERR(err, next)) return;
                 render(req, res, next, variant);
             });
@@ -61,7 +61,7 @@ var render = function(req, res, next, variant, submission, scoreHtml, submission
     var params = [res.locals.question.id, res.locals.course_instance.id];
     sqldb.queryOneRow(sql.select_question, params, function(err, result) {
         if (ERR(err, next)) return;
-        questionServer.getModule(res.locals.question.type, function(err, questionModule) {
+        questionServers.getModule(res.locals.question.type, function(err, questionModule) {
             if (ERR(err, next)) return;
             questionModule.renderExtraHeaders(res.locals.question, res.locals.course, res.locals, function(err, extraHeaders) {
                 if (ERR(err, next)) return;
