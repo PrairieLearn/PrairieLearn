@@ -17,16 +17,20 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. Broadly follow the [Express generator](http://expressjs.com/en/starter/generator.html) layout.
 
-1. Top-level directories are:
+1. Top-level files and directories are:
 
         PrairieLearn/v2
-        |-- cron.d            # jobs to be periodically executed, one file per job
+        |-- cron              # jobs to be periodically executed, one file per job
+        |   |-- index.js      # entry point for all cron jobs
+        |   `-- ...           # one JS file per cron job, executed by index.js
         |-- config.json       # server configuration file
         |-- doc               # documentation
         |-- exampleCourse     # example content for a course
         |-- lib               # miscellaneous helper code
         |-- middlewares       # Express.js middleware
         |-- models            # DB table creation, one file per table
+        |   |-- index.js      # entry point for all model initialization
+        |   `-- ...           # one JS file per table, executed by index.js
         |-- pages             # one sub-dir per web page
         |   |-- partials      # EJS helper sub-templates
         |   |-- adminHome     # all the code for the adminHome page
@@ -40,6 +44,8 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
         |-- schemas           # JSON schemas for input file formats
         |-- server.js         # top-level program
         |-- sprocs            # DB stored procedures, one per file
+        |   |-- index.js      # entry point for all sproc initialization
+        |   `-- ...           # one JS file per sproc, executed by index.js
         |-- sync              # code to load on-disk course config into DB
         `-- tests             # unit tests, currently unused
 

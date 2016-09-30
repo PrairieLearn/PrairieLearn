@@ -13,9 +13,11 @@ var logger = require('./logger');
 var error = require('./error');
 var config = require('./config');
 var sqldb = require('./sqldb');
+var models = require('./models');
+var sprocs = require('./sprocs');
+var cron = require('./cron');
 var syncFromDisk = require('./sync/syncFromDisk');
 var syncFromMongo = require('./sync/syncFromMongo');
-var cron = require('./cron');
 
 logger.infoOverride('PrairieLearn server start');
 
@@ -43,63 +45,45 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Middleware for all requests
 app.use(require('./middlewares/cors'));
-app.use(require('./middlewares/auth'));
-app.use(require('./middlewares/mode'));
+app.use(require('./middlewares/authn'));
 app.use(require('./middlewares/logRequest'));
 app.use(require('./middlewares/parsePostData'));
 
-app.use('/admin', function(req, res, next) {res.locals.urlPrefix = '/admin'; next();});
-app.use('/admin', require('./pages/adminHome/adminHome'));
-// redirect class page to assessments page
-app.use(function(req, res, next) {if (/\/admin\/course_instance\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/admin\/course_instance/, '/admin/assessments');} next();});
-app.use('/admin/assessments', require('./pages/adminAssessments/adminAssessments'));
-app.use('/admin/assessment', require('./pages/adminAssessment/adminAssessment'));
-app.use('/admin/assessment_instance', require('./pages/adminAssessmentInstance/adminAssessmentInstance'));
-app.use('/admin/users', require('./pages/adminUsers/adminUsers'));
-app.use('/admin/questions', require('./pages/adminQuestions/adminQuestions'));
-app.use('/admin/question', require('./pages/adminQuestion/adminQuestion'));
+// homepage doesn't need authorization
+app.use('/pl', require('./pages/home'));
 
-// Middleware for user pages
-app.use('/pl/', require('./middlewares/ensureUser'));
-app.use('/pl/', require('./middlewares/userCourseInstanceList'));
-app.use('/pl/:courseInstanceId', require('./middlewares/ensureEnrollmentAndAuth'));
-app.use('/pl/:courseInstanceId', require('./middlewares/currentCourseInstance'));
-app.use('/pl/:courseInstanceId', require('./middlewares/currentCourse'));
-app.use('/pl/:courseInstanceId', require('./middlewares/userUrlPrefix'));
-app.use('/pl/:courseInstanceId/assessment/:assessmentId', require('./middlewares/currentAssessmentAndAuth'));
-app.use('/pl/:courseInstanceId/assessmentInstance/:assessmentInstanceId', require('./middlewares/userAssessmentInstance'));
-app.use('/pl/:courseInstanceId/assessmentInstance/:assessmentInstanceId', require('./middlewares/currentAssessmentAndAuth'));
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentInstanceQuestion'));
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/userAssessmentInstance'));
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentAssessmentAndAuth'));
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentAssessmentQuestion'));
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', require('./middlewares/currentQuestion'));
+// all other pages need authorization
+app.use('/pl/:course_instance_id', require('./middlewares/authzCourseInstance'));
+app.use('/pl/:course_instance_id', require('./middlewares/navData'));
+app.use('/pl/:course_instance_id', require('./middlewares/urlPrefix'));
 
-// Route handlers for user pages
-app.use('/pl', require('./pages/userHome/userHome'));
-// redirect class page to assessments page
+// redirect plain class page to assessments page
 app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/assessments');} next();});
-app.use('/pl/:courseInstanceId/assessments', require('./pages/userAssessments/userAssessments'));
-// User assessments are all handled by type-specific pages.
-// Each handler checks the assessment type and calls next() if it's the wrong type.
-app.use('/pl/:courseInstanceId/assessment/:assessmentId', [
+
+// polymorphic pages check role/type/etc and call next() if they aren't the right page
+app.use('/pl/:course_instance_id/assessments', [
+    require('./pages/adminAssessments/adminAssessments'),
+    require('./pages/userAssessments/userAssessments'),
+]);
+app.use('/pl/:course_instance_id/assessment', [
+    require('./pages/adminAssessment/adminAssessment'),
     require('./pages/userAssessmentHomework/userAssessmentHomework'),
     require('./pages/userAssessmentExam/userAssessmentExam'),
-    function(req, res, next) {return next(error.make(500, 'No handler for assessment type', {url: req.originalUrl}));}
 ]);
-app.use('/pl/:courseInstanceId/assessmentInstance/:assessmentInstanceId', [
+app.use('/pl/:course_instance_id/assessment_instance', [
+    require('./pages/adminAssessmentInstance/adminAssessmentInstance'),
     require('./pages/userAssessmentInstanceHomework/userAssessmentInstanceHomework'),
     require('./pages/userAssessmentInstanceExam/userAssessmentInstanceExam'),
-    function(req, res, next) {return next(error.make(500, 'No handler for assessment type', {url: req.originalUrl}));}
 ]);
-app.use('/pl/:courseInstanceId/assessmentInstance/:assessmentInstanceId/clientFiles', require('./pages/assessmentInstanceClientFiles/assessmentInstanceClientFiles'));
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId', [
-    require('./pages/userInstanceQuestionHomework/userInstanceQuestionHomework'),
-    require('./pages/userInstanceQuestionExam/userInstanceQuestionExam'),
-    function(req, res, next) {return next(error.make(500, 'No handler for assessment type', {url: req.originalUrl}));}
+app.use('/pl/:course_instance_id/users', [
+    require('./pages/adminUsers/adminUsers'),
 ]);
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId/file', require('./pages/questionFile/questionFile'));
-app.use('/pl/:courseInstanceId/instanceQuestion/:instanceQuestionId/text', require('./pages/questionText/questionText'));
+app.use('/pl/:course_instance_id/questions', [
+    require('./pages/adminQuestions/adminQuestions'),
+]);
+app.use('/pl/:course_instance_id/question', [
+    require('./pages/adminQuestion/adminQuestion'),
+]);
 
 // error handling
 app.use(require('./middlewares/notFound'));
@@ -125,9 +109,47 @@ var startServer = function(callback) {
 };
 
 async.series([
-    sqldb.init,
-    cron.init,
-    startServer,
+    function(callback) {
+        var pgConfig = {
+            user: config.postgresqlUser,
+            database: config.postgresqlDatabase,
+            host: config.postgresqlHost,
+            max: 10,
+            idleTimeoutMillis: 30000,
+        };
+
+        var idleErrorHandler = function(err) {
+            logger.error(error.makeWithData('idle client error', {err: err}));
+        };
+        sqldb.init(pgConfig, idleErrorHandler, function(err) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+    function(callback) {
+        models.init(function(err) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+    function(callback) {
+        sprocs.init(function(err) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+    function(callback) {
+        cron.init(function(err) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+    function(callback) {
+        startServer.init(function(err) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
     // FIXME: we are short-circuiting this for development,
     // for prod these tasks should be back inline
     function(callback) {

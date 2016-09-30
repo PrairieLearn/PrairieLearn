@@ -8,8 +8,8 @@ var error = require('./error');
 var config = require('./config');
 var sqldb = require('./sqldb');
 
-var userAssessmentDurations = require('./cron.d/userAssessmentDurations');
-var autoFinishExams = require('./cron.d/autoFinishExams');
+var userAssessmentDurations = require('./userAssessmentDurations');
+var autoFinishExams = require('./autoFinishExams');
 
 module.exports = {
     init: function(callback) {
