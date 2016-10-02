@@ -17,7 +17,7 @@
         </div>
 
         <div class="panel-body">
-          <a href="/pl" class="btn btn-primary">
+          <a href="<%= plainUrlPrefix %>" class="btn btn-primary">
             Back to course list
           </a>
         </div>
@@ -35,7 +35,7 @@
                    data-toggle="popover" data-trigger="focus" data-container="body"
                    data-html="true" data-placement="auto" title="Confirm add"
                    data-content="
-                                 <form name=&quot;unenroll-form&quot; method=&quot;POST&quot;>
+                                 <form name=&quot;enroll-form&quot; method=&quot;POST&quot;>
                                    <input type=&quot;hidden&quot; name=&quot;postAction&quot; value=&quot;enroll&quot;>
                                    <input type=&quot;hidden&quot; name=&quot;course_instance_id&quot;
                                           value=&quot;<%= course_instance.course_instance_id %>&quot;>

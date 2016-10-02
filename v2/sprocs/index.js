@@ -40,9 +40,11 @@ module.exports = {
             'auth_admin_assessment_instance.sql',
             'all_courses.sql',
             'all_course_instances.sql',
+            'authz_assessment.sql',
         ], function(filename, callback) {
             logger.info('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
+                if (ERR(err, callback)) return;
                 sqldb.query(sql, [], function(err) {
                     if (err) error.addData(err, {sqlFile: filename});
                     if (ERR(err, callback)) return;

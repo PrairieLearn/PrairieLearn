@@ -12,22 +12,26 @@ var sqlLoader = require('../../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
+    if (!res.locals.authn_authz_admin) return next();
     var params = {
-        user_id: res.locals.authn_user.id,
+        authn_user_id: res.locals.authn_user.id,
+        course_instance_id: res.locals.course_instance.id,
+        authn_role: res.locals.authn_enrollment.role,
     };
-    sqldb.query(sql.select_course_instances, params, function(err, result) {
+    sqldb.query(sql.select, params, function(err, result) {
         if (ERR(err, next)) return;
-        res.locals.course_instances = result.rows;
+        _.assign(res.locals, result.rows[0]);
 
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
 
 router.post('/', function(req, res, next) {
+    if (!res.locals.authn_authz_admin) return next();
     if (req.body.postAction == 'enroll') {
         var params = {
             course_instance_id: req.body.course_instance_id,
-            user_id: res.locals.authn_user.id,
+            authn_user_id: res.locals.authn_user.id,
         };
         sqldb.queryOneRow(sql.enroll, params, function(err, result) {
             if (ERR(err, next)) return;

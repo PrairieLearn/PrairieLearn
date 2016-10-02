@@ -23,7 +23,7 @@
             <% course_instances.forEach(function(course_instance) { %>
             <tr>
               <td>
-                <a href="/pl/<%= course_instance.course_instance_id %>">
+                <a href="<%= plainUrlPrefix %>/<%= course_instance.course_instance_id %>">
                   <%= course_instance.label %>
                 </a>
               </td>
@@ -36,7 +36,7 @@
 
         <div class="panel-footer">
           <p class="text-right no-bottom-margin">
-            <a href="/pl/enroll" class="btn btn-primary">
+            <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-primary">
               Edit course list
             </a>
           </p>

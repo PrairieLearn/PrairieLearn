@@ -12,7 +12,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
     var params = {
-        user_id: res.locals.auth_user.id,
+        user_id: res.locals.authn_user.id,
     };
     sqldb.query(sql.select_course_instances, params, function(err, result) {
         if (ERR(err, next)) return;

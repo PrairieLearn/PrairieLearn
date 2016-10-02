@@ -45,27 +45,40 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Middleware for all requests
 app.use(require('./middlewares/cors'));
-app.use(require('./middlewares/authn')); // sets res.locals.auth_user
+app.use(require('./middlewares/authn')); // authentication, set res.locals.auth_user
 app.use(require('./middlewares/logRequest'));
-app.use(require('./middlewares/parsePostData'));
+app.use(function(req, res, next) {res.locals.plainUrlPrefix = '/pl'; next();});
 
 // course selection pages don't need authorization
 app.use('/pl', require('./pages/home/home'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
 
 // all other pages need authorization
-//app.use('/pl/:course_instance_id', require('./middlewares/authzCourseInstance'));
-//app.use('/pl/:course_instance_id', require('./middlewares/navData'));
-//app.use('/pl/:course_instance_id', require('./middlewares/urlPrefix'));
+app.use('/pl/:course_instance_id', require('./middlewares/authzCourseInstance')); // authorization for the course instance
+app.use('/pl/:course_instance_id', require('./middlewares/navData')); // set res.locals.navData, res.locals.course, res.locals.course_instance
+app.use('/pl/:course_instance_id', require('./middlewares/urlPrefix')); // set res.locals.urlPrefix
 
-// redirect plain class page to assessments page
+// redirect plain course page to assessments page
 app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/assessments');} next();});
+
+// effective user selection page
+app.use('/pl/:course_instance_id/effective', require('./pages/effective/effective'));
 
 // polymorphic pages check role/type/etc and call next() if they aren't the right page
 app.use('/pl/:course_instance_id/assessments', [
     require('./pages/adminAssessments/adminAssessments'),
     require('./pages/userAssessments/userAssessments'),
 ]);
+
+
+
+
+
+
+
+
+
+
 app.use('/pl/:course_instance_id/assessment', [
     require('./pages/adminAssessment/adminAssessment'),
     require('./pages/userAssessmentHomework/userAssessmentHomework'),
@@ -118,12 +131,13 @@ async.series([
             max: 10,
             idleTimeoutMillis: 30000,
         };
-
+        logger.info('Connecting to database ' + pgConfig.postgresqlUser + '@' + pgConfig.host + ':' + pgConfig.database);
         var idleErrorHandler = function(err) {
             logger.error(error.makeWithData('idle client error', {err: err}));
         };
         sqldb.init(pgConfig, idleErrorHandler, function(err) {
             if (ERR(err, callback)) return;
+            logger.info('Successfully connected to database');
             callback(null);
         });
     },
@@ -146,6 +160,7 @@ async.series([
         });
     },
     function(callback) {
+        logger.info('Starting server...');
         startServer(function(err) {
             if (ERR(err, callback)) return;
             callback(null);

@@ -9,38 +9,38 @@ CREATE OR REPLACE FUNCTION
         IN uid varchar(255),
         IN date TIMESTAMP WITH TIME ZONE,
         IN use_date_check BOOLEAN, -- use a separate flag for safety, rather than having 'date = NULL' indicate this
-        OUT available boolean
+        OUT authorized boolean
     ) AS $$
 BEGIN
-    available := TRUE;
+    authorized := TRUE;
 
     IF assessment_access_rule.mode IS NOT NULL THEN
         IF mode IS NULL OR mode != assessment_access_rule.mode THEN
-            available := FALSE;
+            authorized := FALSE;
         END IF;
     END IF;
 
     IF assessment_access_rule.role IS NOT NULL THEN
         IF role IS NULL OR role < assessment_access_rule.role THEN
-            available := FALSE;
+            authorized := FALSE;
         END IF;
     END IF;
 
     IF assessment_access_rule.uids IS NOT NULL THEN
         IF uid IS NULL OR uid != ALL (assessment_access_rule.uids) THEN
-            available := FALSE;
+            authorized := FALSE;
         END IF;
     END IF;
 
     IF use_date_check AND assessment_access_rule.start_date IS NOT NULL THEN
         IF date IS NULL OR date < assessment_access_rule.start_date THEN
-            available := FALSE;
+            authorized := FALSE;
         END IF;
     END IF;
 
     IF use_date_check AND assessment_access_rule.end_date IS NOT NULL THEN
         IF date IS NULL OR date > assessment_access_rule.end_date THEN
-            available := FALSE;
+            authorized := FALSE;
         END IF;
     END IF;
 END;

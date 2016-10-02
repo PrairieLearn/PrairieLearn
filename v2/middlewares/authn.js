@@ -41,25 +41,6 @@ module.exports = function(req, res, next) {
             }
         }
 
-        // next try for cookie data
-        if (!authUid && req.cookies.userData) {
-            var cookieUserData;
-            try {
-                cookieUserData = JSON.parse(req.cookies.userData);
-            } catch (e) {
-                return next(error.make(403, "Error parsing cookies.userData as JSON", {userData: req.cookies.userData}));
-            }
-            if (cookieUserData.authUid) authUid = cookieUserData.authUid;
-            if (cookieUserData.authName) authName = cookieUserData.authName;
-            if (cookieUserData.authDate) authDate = cookieUserData.authDate;
-            if (cookieUserData.authSignature) authSignature = cookieUserData.authSignature;
-            if (authUid) {
-                var checkData = authUid + "/" + authName + "/" + authDate;
-                var checkSignature = hmacSha256(checkData, config.secretKey).toString();
-                if (authSignature !== checkSignature) return next(error.make(403, "Invalid X-Auth-Signature for " + authUid));
-            }
-        }
-        
         if (!authUid) return next(error.make(403, "Unable to determine authUid", {path: req.path}));
     } else {
         return next(error.make(500, "Invalid authType: " + config.authType));
@@ -77,11 +58,11 @@ module.exports = function(req, res, next) {
                 return next(error.make(400, 'Name not specified for new user', {authUid: authUid}));
             }
         } else {
-            res.locals.auth_user = result.rows[0];
+            res.locals.authn_user = result.rows[0];
             // if we don't have a name then there is nothing left to do
             if (!authName) return next();
             // if the name is correct then we are done
-            if (res.locals.auth_user.name == authName) return next();
+            if (res.locals.authn_user.name == authName) return next();
         }
 
         // we either don't have the user or the name is incorrect
@@ -91,7 +72,7 @@ module.exports = function(req, res, next) {
         };
         sqldb.queryOneRow(sql.set, params, function(err, result) {
             if (ERR(err, next)) return;
-            res.locals.auth_user = result.rows[0];
+            res.locals.authn_user = result.rows[0];
             next();
         });
     });

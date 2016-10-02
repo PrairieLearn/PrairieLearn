@@ -7,7 +7,7 @@
         <span class="icon-bar"></span>
         <span class="icon-bar"></span>
       </button>
-      <a class="navbar-brand" href="<%= urlPrefix %>">PL Admin</a>
+      <a class="navbar-brand" href="<%= plainUrlPrefix %>">PrairieLearn</a>
     </div>
     <div class="collapse navbar-collapse">
       <% if (typeof course_instance !== "undefined") { %>
@@ -15,25 +15,33 @@
         <li class="dropdown">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><%= course.short_name %><span class="caret"></span></a>
           <ul class="dropdown-menu">
-            <% all_courses.forEach(function(course) { %>
-            <li><a href="<%= urlPrefix %>/ci/<%= course.course_instance_id %>/<%= navPage %>"><%= course.short_name %></a></li>
+            <% nav_data.courses.forEach(function(course) { %>
+            <li><a href="<%= plainUrlPrefix %>/<%= course.course_instance_id %>/<%= navPage %>"><%= course.short_name %></a></li>
             <% }); %>
           </ul>
         </li>
         <li class="dropdown">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><%= course_instance.short_name %><span class="caret"></span></a>
           <ul class="dropdown-menu">
-            <% all_course_instances.forEach(function(course_instance) { %>
-            <li><a href="<%= urlPrefix %>/ci/<%= course_instance.id %>/<%= navPage %>"><%= course_instance.short_name %></a></li>
+            <% nav_data.course_instances.forEach(function(course_instance) { %>
+            <li><a href="<%= plainUrlPrefix %>/<%= course_instance.id %>/<%= navPage %>"><%= course_instance.short_name %></a></li>
             <% }); %>
           </ul>
         </li>
-        <li <% if (navPage == "assessments") { %>class="active"<% } %>><a href="<%= urlPrefix %>/assessments/<%= course_instance.id %>">Assessments</a></li>
-        <li <% if (navPage == "questions")   { %>class="active"<% } %>><a href="<%= urlPrefix %>/questions/<%= course_instance.id %>">Questions</a></li>
-        <li <% if (navPage == "users")       { %>class="active"<% } %>><a href="<%= urlPrefix %>/users/<%= course_instance.id %>">Users</a></li>
+        <li <% if (navPage == "assessments") { %>class="active"<% } %>><a href="<%= urlPrefix %>/assessments">Assessments</a></li>
+        <li <% if (navPage == "questions")   { %>class="active"<% } %>><a href="<%= urlPrefix %>/questions">Questions</a></li>
+        <li <% if (navPage == "users")       { %>class="active"<% } %>><a href="<%= urlPrefix %>/users">Users</a></li>
       </ul>
       <% } %>
       <div class="navbar-right">
+        <ul class="nav navbar-nav" id="main-nav">
+          <li <% if (navPage == "effective") { %>class="active"<% } %>>
+            <a href="<%= urlPrefix %>/effective">
+              <%= authz_data.user.name %> (<%= authz_data.role %>), <%= authz_data.mode %>
+              <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
+            </a>
+          </li>
+        </ul>
         <a class="btn btn-default navbar-btn" href="https://prairielearn.engr.illinois.edu/Shibboleth.sso/Logout">Log out</a>
       </div>
     </div>

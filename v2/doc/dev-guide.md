@@ -109,13 +109,13 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
         SELECT
             to_jsonb(c) AS course,
             to_jsonb(ci) AS course_instance,
-            to_jsonb(u) AS auth_user,
-            to_jsonb(e) AS auth_enrollment
+            to_jsonb(u) AS authn_user,
+            to_jsonb(e) AS authn_enrollment
         FROM
             course_instances AS ci
             JOIN courses AS c ON (c.id = ci.course_id)
             JOIN LATERAL auth_admin_course_instance(ci.id, 'View', $auth_data) AS aaci ON TRUE
-            JOIN LATERAL users AS u ON (u.id = aaci.auth_user_id)
+            JOIN LATERAL users AS u ON (u.id = aaci.authn_user_id)
             JOIN LATERAL enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = ci.id)
         WHERE
             ci.id = $course_instance_id
@@ -300,3 +300,55 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 1. We will switch to [async/await](https://github.com/tc39/ecmascript-asyncawait) when it becomes available in Node.js. The async/await proposal made it to [stage 4](https://github.com/tc39/proposals/blob/master/finished-proposals.md) in July 2016 and was thus included in the [latest draft Ecmascript spec](https://tc39.github.io/ecma262/). This will appear as ES2017/ES7. V8 [merged support](https://bugs.chromium.org/p/v8/issues/detail?id=4483) for async/await. Node.js is [tracking its implementation](https://github.com/nodejs/promises/issues/4) but as of 2016-09-26 it looks like there is still work needed.
 
 
+## Security model
+
+1. We distinguish between [authentication and authorization](https://en.wikipedia.org/wiki/Authentication#Authorization). Authentication occurs as the first stage in server response and the authenicated user data is stored as `res.locals.authn_user`.
+
+1. Similar to unix, we distinguish between the real and effective user. The real user is stored as `authn_user` and is the user that authenticated. The effective user is stored as `user`. Only users with `role = TA` or higher can set an effective user that is different from their real user. Moreover, users with `role = TA` or higher can also set an effective `role` and `mode` that is different to the real values.
+
+1. Authorization occurs at multiple levels:
+
+    1. The `course_instance` checks authorization based on the `authn_user`.
+
+    1. The `course_instance` authorization is checked against the effective `user`.
+
+    1. The `assessment` checks authorization based on the effective `user`, `role`, `mode`, and `date`.
+
+    1. Specific pages check authorization for POST requests using the [Encrypted Token Pattern](https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)_Prevention_Cheat_Sheet).
+
+1. All state-modifying requests must be POST and all associated data must be in the body. GET requests may use query parameters for viewing options only.
+
+
+## State-modifying POST requests
+
+1. Use the [Post/Redirect/Get](https://en.wikipedia.org/wiki/Post/Redirect/Get) pattern with POST requests for all state modification.
+
+1. To defeat [CSRF (Cross-Site Request Forgery)](https://en.wikipedia.org/wiki/Cross-site_request_forgery) we use the [Encrypted Token Pattern](https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)_Prevention_Cheat_Sheet). This means that all data modifying requests should come from `form` elements like:
+
+        <form name="enroll-form" method="POST">
+            <input type="hidden" name="postAction" value="enroll">
+            <input type="hidden" name="postAuthzData" value="<%= authzData %>">
+            <input type="hidden" name="course_instance_id" value="56">
+            <button type="submit" class="btn btn-info">
+                Enroll in course instance 56
+            </button>
+        </form>
+
+1. The generation and checking of `authzData` is handled by early-stage middleware, which uses [HMAC](https://en.wikipedia.org/wiki/Hash-based_message_authentication_code) to ensure validity.
+
+1. The server should handle POST requests by checking the `postAction` and authorizing the specific action:
+
+        router.post('/', function(req, res, next) {
+            if (req.body.postAction == 'enroll') {
+                var params = {
+                    course_instance_id: req.body.course_instance_id,
+                    user_id: res.locals.authn_user.id,
+                };
+                sqldb.queryOneRow(sql.enroll, params, function(err, result) {
+                    if (ERR(err, next)) return;
+                    res.redirect(req.originalUrl);
+                });
+            } else {
+                return next(error.make(400, 'unknown postAction', {body: req.body}));
+            }
+        });
