@@ -1,12 +1,13 @@
 -- BLOCK select_authn_data
 SELECT
-    to_jsonb(e) AS enrollment,
-    (e.role >= 'TA') AS authz_admin
+    e.role AS authn_role,
+    (e.role >= 'TA') AS authn_has_admin_view,
+    (e.role >= 'Instructor') AS authn_has_admin_edit
 FROM
     enrollments AS e
     JOIN users AS u ON (u.id = e.user_id)
 WHERE
-    u.id = $user_id
+    u.id = $authn_user_id
     AND e.course_instance_id = $course_instance_id
     AND check_course_instance_access($course_instance_id, e.role, u.uid, current_timestamp);
 
@@ -37,7 +38,8 @@ WITH effective_data AS (
 )
 SELECT
     ed.*,
-    (ed.role >= 'TA') AS authz_admin
+    (ed.role >= 'TA') AS has_admin_view,
+    (ed.role >= 'Instructor') AS has_admin_edit
 FROM
     effective_data AS ed
 WHERE

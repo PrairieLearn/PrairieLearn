@@ -53,20 +53,28 @@ function serverMode(req) {
 module.exports = function(req, res, next) {
 
     var params = {
-        user_id: res.locals.authn_user.id,
+        authn_user_id: res.locals.authn_user.id,
         course_instance_id: req.params.course_instance_id,
     };
     sqldb.queryOneRow(sql.select_authn_data, params, function(err, result) {
         if (ERR(err, next)) return;
-        res.locals.authn_enrollment = result.rows[0].enrollment;
-        res.locals.authn_authz_admin = result.rows[0].authz_admin;
+        var authn_role = result.rows[0].authn_role;
+        var authn_has_admin_view = result.rows[0].authn_has_admin_view;
+        var authn_has_admin_edit = result.rows[0].authn_has_admin_edit;
 
         // effective user data defaults to auth user data
+        var authn_mode = serverMode(req);
         res.locals.authz_data = {
-            role: res.locals.authn_enrollment.role,
-            mode: serverMode(req),
+            authn_user: _.cloneDeep(res.locals.authn_user),
+            authn_role: authn_role,
+            authn_mode: authn_mode,
+            authn_has_admin_view: authn_has_admin_view,
+            authn_has_admin_edit: authn_has_admin_edit,
             user: _.cloneDeep(res.locals.authn_user),
-            authz_admin: res.locals.authn_authz_admin,
+            role: authn_role,
+            mode: authn_mode,
+            has_admin_view: authn_has_admin_view,
+            has_admin_edit: authn_has_admin_edit,
         };
         res.locals.user = res.locals.authz_data.user;
 
@@ -81,15 +89,8 @@ module.exports = function(req, res, next) {
                 requested_mode: (req.cookies.requestedMode ? req.cookies.requestedMode : res.locals.authz_data.mode),
             };
             sqldb.queryOneRow(sql.select_effective_authz_data, params, function(err, result) {
-                if (err) {
-                    // something didn't work here, delete all the cookies
-                    res.clearCookie('requestedUid');
-                    res.clearCookie('requestedRole');
-                    res.clearCookie('requestedMode');
-                    ERR(err, next);
-                    return;
-                }
-                res.locals.authz_data = result.rows[0];
+                if (ERR(err, next)) return;
+                _.assign(res.locals.authz_data, result.rows[0]);
                 res.locals.user = res.locals.authz_data.user;
                 next();
             });

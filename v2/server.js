@@ -53,18 +53,18 @@ app.use(function(req, res, next) {res.locals.plainUrlPrefix = '/pl'; next();});
 app.use('/pl', require('./pages/home/home'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
 
+// redirect plain course page to assessments page
+app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/courseInstance');} next();});
+// course instance entry page just clears cookies and redirects, so no authorization needed
+app.use('/pl/:course_instance_id/courseInstance', require('./pages/courseInstance/courseInstance'));
+
 // all other pages need authorization
 app.use('/pl/:course_instance_id', require('./middlewares/authzCourseInstance')); // authorization for the course instance
 app.use('/pl/:course_instance_id', require('./middlewares/navData')); // set res.locals.navData, res.locals.course, res.locals.course_instance
 app.use('/pl/:course_instance_id', require('./middlewares/urlPrefix')); // set res.locals.urlPrefix
 
-// redirect plain course page to assessments page
-app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/assessments');} next();});
-
-// effective user selection page
-app.use('/pl/:course_instance_id/effective', require('./pages/effective/effective'));
-
 // polymorphic pages check role/type/etc and call next() if they aren't the right page
+app.use('/pl/:course_instance_id/effective', require('./pages/effective/effective'));
 app.use('/pl/:course_instance_id/assessments', [
     require('./pages/adminAssessments/adminAssessments'),
     require('./pages/userAssessments/userAssessments'),

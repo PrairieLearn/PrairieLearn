@@ -48,7 +48,7 @@ var scoresCsvFilename = function(locals) {
 router.get('/:assessment_id', function(req, res, next) {
     var params = {
         assessment_id: req.params.assessment_id,
-        auth_data: res.locals.auth_data,
+        authz_data: res.locals.authz_data,
     };
     sqldb.queryOneRow(sql.select_and_auth, params, function(err, result) {
         if (ERR(err, next)) return;
@@ -90,7 +90,7 @@ router.get('/:assessment_id', function(req, res, next) {
 router.get('/:assessment_id/:filename', function(req, res, next) {
     var params = {
         assessment_id: req.params.assessment_id,
-        auth_data: res.locals.auth_data,
+        authz_data: res.locals.authz_data,
     };
     sqldb.queryOneRow(sql.select_and_auth, params, function(err, result) {
         if (ERR(err, next)) return;
@@ -202,7 +202,7 @@ router.post('/:assessment_id', function(req, res, next) {
     if (req.body.postAction == 'open') {
         var params = {
             assessment_instance_id: req.body.assessment_instance_id,
-            auth_data: res.locals.auth_data,
+            authz_data: res.locals.authz_data,
         };
         sqldb.queryOneRow(sql.auth_and_open, params, function(err, result) {
             if (ERR(err, next)) return;
@@ -211,14 +211,14 @@ router.post('/:assessment_id', function(req, res, next) {
     } else if (res.locals.postAction == 'close') {
         var params = {
             assessment_instance_id: req.body.assessment_instance_id,
-            auth_data: res.locals.auth_data,
+            authz_data: res.locals.authz_data,
         };
         sqldb.queryOneRow(sql.auth_for_finish, params, function(err, result) {
             if (ERR(err, next)) return;
-            var authResult = result.rows[0];
+            var credit = result.rows[0].credit;
 
             var finishExam = true;
-            assessmentExam.gradeExam(req.body.assessment_instance_id, authResult.auth_user_id, authResult.credit, finishExam, function(err) {
+            assessmentExam.gradeExam(req.body.assessment_instance_id, res.locals.authn_user.id, authResult.credit, finishExam, function(err) {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });

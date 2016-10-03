@@ -20,7 +20,7 @@ var csvFilename = function(locals) {
 };
 
 router.get('/', function(req, res, next) {
-    if (!res.locals.authz_data.authz_admin) return next();
+    if (!res.locals.authz_data.has_admin_view) return next();
     res.locals.csvFilename = csvFilename(res.locals);
     var params = {
         course_instance_id: res.locals.course_instance.id,
@@ -35,7 +35,7 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/:filename', function(req, res, next) {
-    if (!res.locals.authz_data.authz_admin) return next();
+    if (!res.locals.authz_data.has_admin_view) return next();
     if (req.params.filename == csvFilename(res.locals)) {
         var params = {
             course_instance_id: res.locals.course_instance.id,

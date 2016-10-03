@@ -2,15 +2,16 @@ DROP FUNCTION IF EXISTS check_assessment_access(integer,enum_mode,enum_role,char
 
 CREATE OR REPLACE FUNCTION
     check_assessment_access (
-        IN assessment_id integer,
-        IN mode enum_mode,
-        IN role enum_role,
-        IN uid varchar(255),
-        IN date TIMESTAMP WITH TIME ZONE,
-        OUT authorized boolean,      -- Is this assessment available for the given user?
-        OUT credit integer,          -- How much credit will they receive?
-        OUT credit_date_string TEXT, -- For display to the user.
-        OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
+        assessment_id integer,
+        mode enum_mode,
+        role enum_role,
+        uid varchar(255),
+        date TIMESTAMP WITH TIME ZONE
+    ) RETURNS TABLE (
+        authorized boolean,      -- Is this assessment available for the given user?
+        credit integer,          -- How much credit will they receive?
+        credit_date_string TEXT, -- For display to the user.
+        access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     ) AS $$
 WITH
 chosen_access_rule AS (

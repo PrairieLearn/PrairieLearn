@@ -2,7 +2,8 @@
 SELECT
     jsonb_build_object(
         'courses', all_courses($user_id),
-        'course_instances', all_course_instances(c.id, $user_id)
+        'course_instances', all_course_instances($user_id),
+        'instances_for_course', all_instances_for_course(c.id, $user_id)
     ) AS nav_data,
     to_json(c) AS course,
     to_json(ci) AS course_instance

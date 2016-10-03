@@ -40,6 +40,7 @@ module.exports = {
             'auth_admin_assessment_instance.sql',
             'all_courses.sql',
             'all_course_instances.sql',
+            'all_instances_for_course.sql',
             'authz_assessment.sql',
         ], function(filename, callback) {
             logger.info('Loading ' + filename);

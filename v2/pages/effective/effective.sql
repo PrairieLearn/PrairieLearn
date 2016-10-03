@@ -15,7 +15,7 @@ SELECT
     )) AS available_roles,
     (
         SELECT
-            jsonb_agg(u.uid)
+            jsonb_agg(u.uid ORDER BY u.uid)
         FROM
             users AS u
             JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = $course_instance_id)

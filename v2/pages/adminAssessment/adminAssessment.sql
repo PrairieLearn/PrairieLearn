@@ -1,25 +1,14 @@
 -- BLOCK select_and_auth
 SELECT
-    to_jsonb(c) AS course,
-    to_jsonb(ci) AS course_instance,
     to_jsonb(a) AS assessment,
-    to_jsonb(aset) AS assessment_set,
-    to_jsonb(aaci) AS auth,
-    to_jsonb(auth_u) AS auth_user,
-    to_jsonb(auth_e) AS auth_enrollment,
-    all_courses(auth_u.id) AS all_courses,
-    all_course_instances(c.id, auth_u.id) AS all_course_instances
+    to_jsonb(aset) AS assessment_set
 FROM
     assessments AS a
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-    JOIN courses AS c ON (c.id = ci.course_id)
-    JOIN LATERAL auth_admin_course_instance(ci.id, 'View', $auth_data) AS aaci ON TRUE
-    JOIN users AS auth_u ON (auth_u.id = aaci.auth_user_id)
-    JOIN enrollments AS auth_e ON (auth_e.user_id = auth_u.id AND auth_e.course_instance_id = ci.id)
+    JOIN LATERAL authz_assessment(a.id, $authz_data) AS aa ON TRUE
 WHERE
     a.id = $assessment_id
-    AND aaci.authorized;
+    AND aa.authorized;
 
 -- BLOCK questions
 SELECT
@@ -134,8 +123,7 @@ WITH auth_and_last_dates AS (
 )
 -- determine credit as of the last submission time
 SELECT
-    caa.credit,
-    aald.auth_user_id
+    caa.credit
 FROM
     auth_and_last_dates AS aald
     JOIN assessment_instances AS ai ON (ai.id = aald.id)
