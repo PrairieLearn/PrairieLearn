@@ -28,24 +28,20 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (!res.locals.authn_authz_admin) return next();
-    if (req.body.postAction == 'enroll') {
-        var params = {
-            course_instance_id: req.body.course_instance_id,
-            authn_user_id: res.locals.authn_user.id,
-        };
-        sqldb.queryOneRow(sql.enroll, params, function(err, result) {
-            if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
-        });
-    } else if (req.body.postAction == 'unenroll') {
-        var params = {
-            course_instance_id: req.body.course_instance_id,
-            user_id: res.locals.authn_user.id,
-        };
-        sqldb.queryOneRow(sql.unenroll, params, function(err, result) {
-            if (ERR(err, next)) return;
-            res.redirect(req.originalUrl);
-        });
+    if (req.body.postAction == 'reset') {
+        res.clearCookie('requestedUid');
+        res.clearCookie('requestedRole');
+        res.clearCookie('requestedMode');
+        res.redirect(req.originalUrl);
+    } else if (req.body.postAction == 'changeUid') {
+        res.cookie('requestedUid', req.body.requestedUid, {maxAge: 60 * 60 * 1000});
+        res.redirect(req.originalUrl);
+    } else if (req.body.postAction == 'changeRole') {
+        res.cookie('requestedRole', req.body.requestedRole, {maxAge: 60 * 60 * 1000});
+        res.redirect(req.originalUrl);
+    } else if (req.body.postAction == 'changeMode') {
+        res.cookie('requestedMode', req.body.requestedMode, {maxAge: 60 * 60 * 1000});
+        res.redirect(req.originalUrl);
     } else {
         return next(error.make(400, 'unknown action: ' + res.locals.postAction, {postAction: req.body.postAction, body: req.body}));
     }

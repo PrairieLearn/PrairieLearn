@@ -71,29 +71,24 @@ module.exports = function(req, res, next) {
         res.locals.user = res.locals.authz_data.user;
 
         // handle user data override
-        if (req.cookies.userData) {
-            var cookieUserData;
-            try {
-                cookieUserData = JSON.parse(req.cookies.userData);
-            } catch (e) {
-                return next(error.make(403, "Error parsing cookies.userData as JSON", {userData: req.cookies.userData}));
-            }
-            var requested_uid = res.locals.authz_data.user.uid;
-            var requested_mode = res.locals.authz_data.mode;
-            var requested_role = res.locals.authz_data.role;
-            if (cookieUserData.uid) requested_uid = cookieUserData.uid;
-            if (cookieUserData.mode) requested_mode = cookieUserData.mode;
-            if (cookieUserData.role) requested_role = cookieUserData.role;
+        if (req.cookies.requestedUid || req.cookies.requestedRole || req.cookies.requestedMode) {
             var params = {
                 authn_user_id: res.locals.authn_user.id,
                 server_mode: res.locals.authz_data.mode,
                 course_instance_id: req.params.course_instance_id,
-                requested_uid: requested_uid,
-                requested_mode: requested_mode,
-                requested_role: requested_role,
+                requested_uid: (req.cookies.requestedUid ? req.cookies.requestedUid : res.locals.authz_data.user.uid),
+                requested_role: (req.cookies.requestedRole ? req.cookies.requestedRole : res.locals.authz_data.role),
+                requested_mode: (req.cookies.requestedMode ? req.cookies.requestedMode : res.locals.authz_data.mode),
             };
             sqldb.queryOneRow(sql.select_effective_authz_data, params, function(err, result) {
-                if (ERR(err, next)) return;
+                if (err) {
+                    // something didn't work here, delete all the cookies
+                    res.clearCookie('requestedUid');
+                    res.clearCookie('requestedRole');
+                    res.clearCookie('requestedMode');
+                    ERR(err, next);
+                    return;
+                }
                 res.locals.authz_data = result.rows[0];
                 res.locals.user = res.locals.authz_data.user;
                 next();

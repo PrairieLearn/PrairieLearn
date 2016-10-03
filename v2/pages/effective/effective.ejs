@@ -7,7 +7,7 @@
     <%- include('../partials/adminNavbar', {navPage: 'effective'}); %>
     <div id="content" class="container">
 
-      <div class="panel panel-primary">
+      <div class="panel panel-info">
         <div class="panel-heading">
           <h3 class="panel-title">Authenticated user</h3>
         </div>
@@ -17,19 +17,66 @@
           <p><strong>Name:</strong> <%= authn_user.name %></p>
           <p><strong>Role:</strong> <%= authn_enrollment.role %></p>
 
-          <form id="revertForm">
-            <button type="submit" class="btn btn-primary">Reset all values</button>
+          <form id="resetForm" method="POST">
+            <input type="hidden" name="postAction" value="reset">
+            <button type="submit" class="btn btn-info">Reset all values</button>
           </form>
         </div>
 
         <div class="panel-footer">
-          <p>
+          <p class="no-bottom-margin">
             <small>
-              The values above are the ones that you logged in with and the “Reset all values” button will reset everything below to your logged-in values. Your <em>role</em> determines the permissions that you have to view and edit data in PrairieLearn. It is specific to this course instance, so you can be a Student in one course but a TA in a different course. 
+              The <em>authenticated</em> values above are the ones that you logged in with and the “Reset all values” button will reset all <em>effective</em> values below to your authenticated values.
+            </small>
+          </p>
+          <p class="no-bottom-margin">
+            <small>
+              The <em>effective</em> values below allow you to view PrairieLearn as if you had a different <em>role</em>, as if you were a specific other person, or as if PrairieLearn was running in a different <em>mode</em>. This can be used to test out how PrairieLearn will look from different points of view.
             </small>
           </p>
         </div>
       </div>
+
+      <!-- #################################################################################### -->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Effective role</h3>
+        </div>
+
+        <div class="panel-body">
+          <p><strong>Effective role:</strong> <%= authz_data.role %></p>
+
+          <div class="well well-sm no-bottom-margin">
+            <form class="form-inline" id="changeRoleForm" method="POST">
+              <div class="form-group">
+                <label for="changeEffectiveRole">Change effective role to:</label>
+                <select class="form-control" id="changeEffectiveRole" name="requestedRole">
+                  <% available_roles.reverse().forEach(function(available_role) { %>
+                  <% if (available_role == authz_data.role) { %>
+                  <option value="<%= available_role %>" selected><%= available_role %> (current)</option>
+                  <% } else { %>
+                  <option value="<%= available_role %>"><%= available_role %></option>
+                  <% } %>
+                  <% }); %>
+                </select>
+              </div>
+              <input type="hidden" name="postAction" value="changeRole">
+              <button type="submit" class="btn btn-default">Change role</button>
+            </form>
+          </div>
+        </div>
+
+        <div class="panel-footer">
+          <p class="no-bottom-margin">
+            <small>
+              Your <em>role</em> determines the permissions that you have to view and edit data in PrairieLearn. It is specific to this course instance, so you can be a Student in one course but a TA in a different course. If you are emulating a different effective user (see below) then your effective role cannot be higher than that of the effective user.
+            </small>
+          </p>
+        </div>
+      </div>
+
+      <!-- #################################################################################### -->
 
       <div class="panel panel-primary">
         <div class="panel-heading">
@@ -39,82 +86,78 @@
         <div class="panel-body">
           <p><strong>Effective UID:</strong> <%= user.uid %></p>
           <p><strong>Effective name:</strong> <%= user.name %></p>
-          <p><strong>Effective role:</strong> <%= authz_data.role %></p>
 
-          <div class="well well-sm">
-            <form id="changeUidForm">
+          <div class="well well-sm no-bottom-margin">
+            <form id="changeUidForm" class="form-inline" method="POST">
               <div class="form-group">
                 <label for="changeEffectiveUid">Change effective UID to:</label>
-                <input list="userList" type="text" class="form-control" id="changeEffectiveUid" placeholder="username@domain.org">
+                <input list="userList" type="text" class="form-control"
+                       style="width: 20em;" name="requestedUid"
+                       id="changeEffectiveUid" placeholder="username@domain.org">
                 <datalist id="userList">
                   <% available_uids.forEach(function(available_uid) { %>
                   <option value="<%= available_uid %>"><%= available_uid %></option>
                   <% }); %>
                 </datalist>
               </div>
+              <input type="hidden" name="postAction" value="changeUid">
               <button type="submit" class="btn btn-default">Change UID</button>
-              <button id="changeUidToAuth" type="button" class="btn btn-default">Change back to <%= authn_user.uid %></button>
-            </form>
-          </div>
-
-          <div class="well well-sm no-bottom-margin">
-            <form class="form-inline" id="changeRoleForm">
-              <div class="form-group">
-                <label for="changeEffectiveRole">Change effective role to:</label>
-                <select class="form-control" id="changeEffectiveRole">
-                  <% available_roles.reverse().forEach(function(available_role) { %>
-                  <% if (available_role == authz_data.role) { %>
-                  <option value="<%= available_role %>" selected><%= available_role %> (currently active)</option>
-                  <% } else { %>
-                  <option value="<%= available_role %>"><%= available_role %></option>
-                  <% } %>
-                  <% }); %>
-                </select>
-              </div>
-              <button type="submit" class="btn btn-default">Change role</button>
             </form>
           </div>
         </div>
 
         <div class="panel-footer">
-          <p>
+          <p class="no-bottom-margin">
             <small>
-              The <em>effective</em> values above allow you to view PrairieLearn as if you had a different <em>role</em> (e.g., as a Student or TA), or as if you were a specific other person. This can be used to test out how PrairieLearn will look from different points of view. If you are emulating a different effective user then your effective role is limited to that of the effective user. You also cannot emulate an effective user with a higher access level than your own.
+              Changing your effective user identity to another person allows you to see PrairieLearn exactly as they would see it. You cannot emulate an effective user with a higher access level than your own.              
             </small>
           </p>
         </div>
       </div>
 
+      <!-- #################################################################################### -->
+
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title">PrairieLearn Mode</h3>
+          <h3 class="panel-title">Effective mode</h3>
         </div>
 
         <div class="panel-body">
 
-          <p><strong>Active mode:</strong> <%= authz_data.mode %></p>
+          <p><strong>Effective mode:</strong> <%= authz_data.mode %></p>
 
-          <div class="well well-sm">
-            <form class="form-inline" id="changeModeForm">
+          <div class="well well-sm no-bottom-margin">
+            <form class="form-inline" id="changeModeForm" method="POST">
               <div class="form-group">
-                <label for="changeMode">Change mode to:</label>
-                <select class="form-control" id="changeMode">
-                  {{#modeList}}
-                  <option value="{{value}}" {{selected}}>{{name}}</option>
-                  {{/modeList}}
+                <label for="changeMode">Change effective mode to:</label>
+                <select class="form-control" id="changeMode" name="requestedMode">
+                  <% if (authz_data.mode == 'Public') { %>
+                  <option value="Public" selected>Public (current)</option>
+                  <% } else { %>
+                  <option value="Public">Public</option>
+                  <% } %>
+
+                  <% if (authz_data.mode == 'Exam') { %>
+                  <option value="Exam" selected>Exam (current)</option>
+                  <% } else { %>
+                  <option value="Exam">Exam</option>
+                  <% } %>
                 </select>
               </div>
+              <input type="hidden" name="postAction" value="changeMode">
               <button type="submit" class="btn btn-default">Change mode</button>
             </form>
           </div>
+        </div>
 
-          <p class="no-bottom-margin"><small>
-              The <em>mode</em> of the server determines which tests and questions are available to a student. The <em>Public</em> mode is used when students are accessing PrairieLearn from the general internet (on campus, at home, etc). The <em>Exam</em> mode is used when the student is physically sitting at a computer in the CBTF (Computer-Based Testing Facility). The options above allow you to test out the different modes to see which assessments a student will see in either Public or Exam mode. Setting the mode to <em>Default</em> means that the server will use whichever mode a student would use if they were sitting at your computer right now (i.e., Exam mode if you are sitting in the CBTF right now, otherwise Public mode).
-          </small></p>
-
+        <div class="panel-footer">
+          <p class="no-bottom-margin">
+            <small>
+              The <em>mode</em> of the server determines which tests and questions are available. The <em>Public</em> mode is used when PrairieLearn is accessed from the general internet (on campus, at home, etc). The <em>Exam</em> mode is used when the user is physically sitting at a computer in the CBTF (Computer-Based Testing Facility). The options above allow you to test out the different modes to see which assessments will be seen in either Public or Exam mode.
+            </small>
+          </p>
         </div>
       </div>
-
     </div>
   </body>
 </html>

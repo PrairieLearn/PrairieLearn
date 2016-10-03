@@ -27,14 +27,12 @@ WITH effective_data AS (
             ELSE $server_mode
         END AS mode
     FROM
-        course_instances AS ci,
         users AS authn_u
-        JOIN enrollments AS authn_e ON (authn_e.user_id = authn_u.id AND authn_e.course_instance_id = ci.id),
+        JOIN enrollments AS authn_e ON (authn_e.user_id = authn_u.id AND authn_e.course_instance_id = $course_instance_id),
         users AS u
-        JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = ci.id)
+        JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = $course_instance_id)
     WHERE
-        ci.id = $course_instance_id
-        AND authn_u.id = $authn_user_id
+        authn_u.id = $authn_user_id
         AND u.uid = $requested_uid
 )
 SELECT
@@ -44,4 +42,4 @@ FROM
     effective_data AS ed
 WHERE
     ed.role IS NOT NULL
-    AND check_course_instance_access($course_instance_id, ed.role, ed.user.uid, current_timestamp);
+    AND check_course_instance_access($course_instance_id, ed.role, ed.user->>'uid', current_timestamp);
