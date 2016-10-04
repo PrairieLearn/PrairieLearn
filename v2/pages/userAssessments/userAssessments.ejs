@@ -35,7 +35,7 @@
               <td>
                 <a
                    <% if (row.assessment_instance_id) { %>
-                   href="<%= urlPrefix %>/assessmentInstance/<%= row.assessment_instance_id %>/"
+                   href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>/"
                    <% } else { %>
                    href="<%= urlPrefix %>/assessment/<%= row.assessment_id %>/"
                    <% } %>
@@ -43,7 +43,7 @@
                    ><%= row.assessment_set_abbrev %><%= row.assessment_number %></a>
                 <a
                    <% if (row.assessment_instance_id) { %>
-                   href="<%= urlPrefix %>/assessmentInstance/<%= row.assessment_instance_id %>/"
+                   href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>/"
                    <% } else { %>
                    href="<%= urlPrefix %>/assessment/<%= row.assessment_id %>/"
                    <% } %>

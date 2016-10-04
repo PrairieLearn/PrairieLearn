@@ -70,24 +70,18 @@ ORDER BY
     e.role DESC, u.uid, u.id, ai.number;
 
 
--- BLOCK auth_and_open
-WITH
-aaai AS (
-    SELECT
-        *
-    FROM
-        auth_admin_assessment_instance($assessment_instance_id, 'Edit', $auth_data)
-),
-results AS (
+-- BLOCK open
+WITH results AS (
     UPDATE assessment_instances AS ai
     SET
         open = true,
         opened_at = CURRENT_TIMESTAMP
     FROM
-        aaai
+        assessments AS a
     WHERE
         ai.id = $assessment_instance_id
-        AND aaai.authorized
+        AND a.id = ai.assessment_id
+        AND a.id = $assessment_id
     RETURNING
         ai.open,
         ai.id AS assessment_instance_id
@@ -102,22 +96,21 @@ INSERT INTO assessment_state_logs AS asl
         results
 );
 
--- BLOCK auth_for_finish
-WITH auth_and_last_dates AS (
+-- BLOCK select_finish_data
+WITH last_dates AS (
     SELECT DISTINCT ON (id)
         ai.id,
         coalesce(s.date, ai.date) AS date, -- if no submissions then use the assessment start date
-        coalesce(s.mode, ai.mode) AS mode,
-        aaai.auth_user_id
+        coalesce(s.mode, ai.mode) AS mode
     FROM
         assessment_instances AS ai
+        JOIN assessments AS a ON (a.id = ai.assessment_id)
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         LEFT JOIN submissions AS s ON (s.variant_id = v.id) -- left join in case we have no submissions
-        JOIN LATERAL auth_admin_assessment_instance(ai.id, 'Edit', $auth_data) AS aaai ON TRUE
     WHERE
         ai.id = $assessment_instance_id
-        AND aaai.authorized
+        AND a.id = $assessment_id
     ORDER BY
         id, date DESC
 )
@@ -125,10 +118,10 @@ WITH auth_and_last_dates AS (
 SELECT
     caa.credit
 FROM
-    auth_and_last_dates AS aald
-    JOIN assessment_instances AS ai ON (ai.id = aald.id)
+    last_dates AS ld
+    JOIN assessment_instances AS ai ON (ai.id = ld.id)
     JOIN assessments AS a ON (a.id = ai.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN users AS u ON (u.id = ai.user_id)
     JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = ci.id)
-    JOIN LATERAL check_assessment_access(a.id, aald.mode, e.role, u.uid, aald.date) AS caa ON TRUE;
+    JOIN LATERAL check_assessment_access(a.id, ld.mode, e.role, u.uid, ld.date) AS caa ON TRUE;

@@ -20,80 +20,55 @@ var logCsvFilename = function(locals) {
         + locals.assessment_set.abbrev
         + locals.assessment.number
         + '_'
-        + locals.user.uid.replace(/[^a-z0-9]/g, '_')
+        + locals.instance_user.uid.replace(/[^a-z0-9]/g, '_')
         + '_'
         + locals.assessment_instance.number
         + '_'
         + 'log.csv';
 };
 
-router.get('/:assessmentInstanceId', function(req, res, next) {
-    async.series([
-        function(callback) {
-            var params = {
-                assessment_instance_id: req.params.assessmentInstanceId,
-                auth_data: res.locals.auth_data,
-            };
-            sqldb.queryOneRow(sql.select_and_auth, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                _.assign(res.locals, result.rows[0]);
-                callback(null);
-            });
-        },
-        function(callback) {
-            res.locals.logCsvFilename = logCsvFilename(res.locals);
-            callback(null);
-        },
-        function(callback) {
-            var params = {assessment_instance_id: res.locals.assessment_instance.id};
-            sqldb.query(sql.select_log, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                res.locals.log = result.rows;
-                callback(null);
-            });
-        },
-    ], function(err) {
+router.get('/', function(req, res, next) {
+    if (!res.locals.authz_data.has_admin_view) return next();
+
+    res.locals.logCsvFilename = logCsvFilename(res.locals);
+    var params = {assessment_instance_id: res.locals.assessment_instance.id};
+    sqldb.query(sql.select_log, params, function(err, result) {
         if (ERR(err, next)) return;
+        res.locals.log = result.rows;
+
         res.render(path.join(__dirname, 'adminAssessmentInstance'), res.locals);
     });
 });
 
-router.get('/:assessmentInstanceId/:filename', function(req, res, next) {
-    var params = {
-        assessment_instance_id: req.params.assessmentInstanceId,
-        auth_data: res.locals.auth_data,
-    };
-    sqldb.queryOneRow(sql.select_and_auth, params, function(err, result) {
-        if (ERR(err, next)) return;
-        _.assign(res.locals, result.rows[0]);
+router.get('/:filename', function(req, res, next) {
+    if (!res.locals.authz_data.has_admin_view) return next();
 
-        if (req.params.filename == logCsvFilename(res.locals)) {
-            var params = {assessment_instance_id: res.locals.assessment_instance.id};
-            sqldb.query(sql.select_log, params, function(err, result) {
-                if (ERR(err, next)) return;
-                var log = result.rows;
-                var csvHeaders = ['Time', 'Auth user', 'Event', 'Question', 'Variant', 'Data'];
-                var csvData = _.map(log, function(row) {
-                    return [
-                        row.date,
-                        row.auth_user_uid,
-                        row.event_name,
-                        row.qid,
-                        row.variant_number,
-                        ((row.data != null) ? JSON.stringify(row.data) : null),
-                    ];
-                });
-                csvData.splice(0, 0, csvHeaders);
-                csvStringify(csvData, function(err, csv) {
-                    if (err) throw Error("Error formatting CSV", err);
-                    res.attachment(req.params.filename);
-                    res.send(csv);
-                });
+    if (req.params.filename == logCsvFilename(res.locals)) {
+        var params = {assessment_instance_id: res.locals.assessment_instance.id};
+        sqldb.query(sql.select_log, params, function(err, result) {
+            if (ERR(err, next)) return;
+            var log = result.rows;
+            var csvHeaders = ['Time', 'Auth user', 'Event', 'Question', 'Variant', 'Data'];
+            var csvData = _.map(log, function(row) {
+                return [
+                    row.date,
+                    row.auth_user_uid,
+                    row.event_name,
+                    row.qid,
+                    row.variant_number,
+                    ((row.data != null) ? JSON.stringify(row.data) : null),
+                ];
             });
-        } else {
-            next(new Error("Unknown filename: " + req.params.filename));
-        }
-    });
+            csvData.splice(0, 0, csvHeaders);
+            csvStringify(csvData, function(err, csv) {
+                if (err) throw Error("Error formatting CSV", err);
+                res.attachment(req.params.filename);
+                res.send(csv);
+            });
+        });
+    } else {
+        next(new Error("Unknown filename: " + req.params.filename));
+    }
 });
 
 module.exports = router;

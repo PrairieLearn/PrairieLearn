@@ -42,6 +42,7 @@ module.exports = {
             'all_course_instances.sql',
             'all_instances_for_course.sql',
             'authz_assessment.sql',
+            'authz_assessment_instance.sql',
         ], function(filename, callback) {
             logger.info('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

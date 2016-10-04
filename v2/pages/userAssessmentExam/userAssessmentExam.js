@@ -12,7 +12,7 @@ var questionServers = require('../../question-servers');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'userAssessmentExam.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 function makeAssessmentInstance(req, res, callback) {
     sqldb.beginTransaction(function(err, client, done) {
@@ -92,6 +92,7 @@ router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     if (res.locals.assessment.multiple_instance) {
         if (_(req.query).has('confirm') && req.query.confirm == 'yes') {
+            if (!res.locals.authz_assessment.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
             makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
                 if (ERR(err, next)) return;
                 res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + assessmentInstanceId);
@@ -108,6 +109,7 @@ router.get('/', function(req, res, next) {
             if (ERR(err, next)) return;
             if (result.rowCount == 0) {
                 if (_(req.query).has('confirm') && req.query.confirm == 'yes') {
+                    if (!res.locals.authz_assessment.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
                     makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
                         if (ERR(err, next)) return;
                         res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + assessmentInstanceId);

@@ -16,6 +16,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
+    if (!res.locals.authz_assessment_instance.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
 
     var finishExam;
     if (res.locals.postAction == 'grade') {

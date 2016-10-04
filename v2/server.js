@@ -69,26 +69,25 @@ app.use('/pl/:course_instance_id/assessments', [
     require('./pages/adminAssessments/adminAssessments'),
     require('./pages/userAssessments/userAssessments'),
 ]);
-
-
-
-
-
-
-
-
-
-
-app.use('/pl/:course_instance_id/assessment', [
+app.use('/pl/:course_instance_id/assessment/:assessment_id', [
+    require('./middlewares/selectAuthAssessment'),
     require('./pages/adminAssessment/adminAssessment'),
     require('./pages/userAssessmentHomework/userAssessmentHomework'),
     require('./pages/userAssessmentExam/userAssessmentExam'),
 ]);
-app.use('/pl/:course_instance_id/assessment_instance', [
+app.use('/pl/:course_instance_id/assessment_instance/:assessment_instance_id', [
+    require('./middlewares/selectAuthAssessmentInstance'),
     require('./pages/adminAssessmentInstance/adminAssessmentInstance'),
     require('./pages/userAssessmentInstanceHomework/userAssessmentInstanceHomework'),
     require('./pages/userAssessmentInstanceExam/userAssessmentInstanceExam'),
 ]);
+
+
+
+
+
+
+
 app.use('/pl/:course_instance_id/users', [
     require('./pages/adminUsers/adminUsers'),
 ]);
