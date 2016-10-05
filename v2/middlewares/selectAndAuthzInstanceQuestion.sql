@@ -37,7 +37,7 @@ SELECT
     to_jsonb(q) AS question,
     to_jsonb(a) AS assessment,
     to_jsonb(aset) AS assessment_set,
-    to_jsonb(aai) AS authz_assessment_instance
+    to_jsonb(aai) AS authz_result
 FROM
     instance_questions AS iq
     JOIN instance_questions_info AS iqi ON (iqi.id = iq.id)

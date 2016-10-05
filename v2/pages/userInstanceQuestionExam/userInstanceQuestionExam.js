@@ -15,10 +15,19 @@ var sqlLoader = require('../../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 function processSubmission(req, res, callback) {
-    if (!res.locals.assessment_instance.open) return callback(error.make(400, 'assessmentInstance is closed'));
-    if (!res.locals.instance_question.open) return callback(error.make(400, 'instanceQuestion is closed'));
-    var grading;
+    if (!res.locals.assessment_instance.open) return callback(error.make(400, 'assessment_instance is closed'));
+    if (!res.locals.instance_question.open) return callback(error.make(400, 'instance_question is closed'));
+    var postData, grading;
     async.series([
+        function(callback) {
+            if (!req.body.postData) return callback(error.make(400, 'No postData', {locals: res.locals, body: req.body}));
+            try {
+                postData = JSON.parse(req.body.postData);
+            } catch (e) {
+                return callback(error.make(400, 'JSON parse failed on body.postData', {locals: res.locals, body: req.body}));
+            }
+            callback(null);
+        },
         function(callback) {
             var params = {instance_question_id: res.locals.instance_question.id};
             sqldb.queryOneRow(sql.get_variant, params, function(err, result) {
@@ -31,8 +40,8 @@ function processSubmission(req, res, callback) {
             var params = {
                 variant_id: res.locals.variant.id,
                 auth_user_id: res.locals.user.id,
-                submitted_answer: req.postData.submittedAnswer,
-                type: req.postData.type,
+                submitted_answer: postData.submittedAnswer,
+                type: postData.type,
                 credit: res.locals.assessment.credit,
                 mode: req.mode,
             };
@@ -47,13 +56,14 @@ function processSubmission(req, res, callback) {
 
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
-    if (req.postData.action == 'submitQuestionAnswer') {
+    if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
+    if (req.body.postAction == 'submitQuestionAnswer') {
         return processSubmission(req, res, function(err) {
             if (ERR(err, next)) return;
-            res.redirect(res.locals.urlPrefix + '/instanceQuestion/' + res.locals.instance_question.id + '/');
+            res.redirect(req.originalUrl);
         });
     } else {
-        return next(error.make(400, 'unknown action: ' + req.postData.action, {postData: req.postData}));
+        return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
     }
 });
 
@@ -105,7 +115,7 @@ router.get('/', function(req, res, next) {
                 }
                 callback(null);
             } else {
-                // assessmentInstance is closed, show true answer
+                // assessment_instance is closed, show true answer
                 res.locals.showFeedback = true;
                 res.locals.showTrueAnswer = true;
                 questionModule.renderTrueAnswer(res.locals.variant, res.locals.question, res.locals.course, res.locals, function(err, answerHtml) {

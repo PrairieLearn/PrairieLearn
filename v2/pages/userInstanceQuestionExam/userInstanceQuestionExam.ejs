@@ -28,8 +28,9 @@
               <div class="panel-footer">
                 <% if (showSaveButton) { %>
                 <button class="btn btn-primary question-submit">Save answer</button>
-                <form class="question-form" name="question-form" method="POST" action="<%= postUrl %>">
-                  <input type="hidden" name="postData">
+                <form class="question-form" name="question-form" method="POST">
+                  <input type="hidden" name="postAction" value="submitQuestionAnswer">
+                  <input type="hidden" name="postData" class="postData">
                 </form>
                 <% } %>
               </div>

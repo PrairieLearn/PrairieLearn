@@ -1,15 +1,3 @@
--- BLOCK select_and_auth
-SELECT
-    to_jsonb(a) AS assessment,
-    to_jsonb(aset) AS assessment_set
-FROM
-    assessments AS a
-    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-    JOIN LATERAL authz_assessment(a.id, $authz_data) AS aa ON TRUE
-WHERE
-    a.id = $assessment_id
-    AND aa.authorized;
-
 -- BLOCK questions
 SELECT
     aq.*,q.qid,q.title,row_to_json(top) AS topic,
@@ -90,9 +78,8 @@ INSERT INTO assessment_state_logs AS asl
         (open, assessment_instance_id, auth_user_id)
 (
     SELECT
-        true, results.assessment_instance_id, aaai.auth_user_id
+        true, results.assessment_instance_id, $authn_user_id
     FROM
-        aaai,
         results
 );
 

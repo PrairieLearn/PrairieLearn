@@ -187,13 +187,13 @@ router.post('/', function(req, res, next) {
         var params = {
             assessment_id: res.locals.assessment.id,
             assessment_instance_id: req.body.assessment_instance_id,
-            authz_data: res.locals.authz_data,
+            authn_user_id: res.locals.authz_data.authn_user.id,
         };
         sqldb.queryOneRow(sql.open, params, function(err, result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (res.locals.postAction == 'close') {
+    } else if (req.body.postAction == 'close') {
         var params = {
             assessment_id: res.locals.assessment.id,
             assessment_instance_id: req.body.assessment_instance_id,
@@ -204,13 +204,13 @@ router.post('/', function(req, res, next) {
             var credit = result.rows[0].credit;
 
             var finishExam = true;
-            assessmentExam.gradeExam(req.body.assessment_instance_id, res.locals.authn_user.id, authResult.credit, finishExam, function(err) {
+            assessmentExam.gradeExam(req.body.assessment_instance_id, res.locals.authn_user.id, credit, finishExam, function(err) {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });
         });
     } else {
-        return next(error.make(400, 'unknown action: ' + res.locals.postAction, {postAction: req.body.postAction, body: req.body}));
+        return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
     }
 });
 

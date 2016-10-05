@@ -57,10 +57,21 @@ function getSubmission(variantId, callback) {
 }
 
 function processSubmission(req, res, callback) {
-    var grading;
+    var postData, grading;
     async.series([
         function(callback) {
-            var params = {variant_id: req.postData.variant.id};
+            if (!req.body.postData) return callback(error.make(400, 'No postData', {locals: res.locals, body: req.body}));
+            try {
+                postData = JSON.parse(req.body.postData);
+            } catch (e) {
+                return callback(error.make(400, 'JSON parse failed on body.postData', {locals: res.locals, body: req.body}));
+            }
+            callback(null);
+        },
+        function(callback) {
+            var params = {
+                variant_id: postData.variant ? postData.variant.id : null,
+            };
             sqldb.queryOneRow(sql.get_variant, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.variant = result.rows[0];
@@ -69,8 +80,8 @@ function processSubmission(req, res, callback) {
         },
         function(callback) {
             var submission = {
-                submitted_answer: req.postData.submittedAnswer,
-                type: req.postData.type,
+                submitted_answer: postData.submittedAnswer,
+                type: postData.type,
             };
             questionServers.gradeSubmission(submission, res.locals.variant, res.locals.question, res.locals.course, {}, function(err, g) {
                 if (ERR(err, callback)) return;
@@ -82,8 +93,8 @@ function processSubmission(req, res, callback) {
             var params = {
                 variant_id: res.locals.variant.id,
                 auth_user_id: res.locals.user.id,
-                submitted_answer: req.postData.submittedAnswer,
-                type: req.postData.type,
+                submitted_answer: postData.submittedAnswer,
+                type: postData.type,
                 credit: res.locals.assessment.credit,
                 mode: req.mode,
                 graded_at: grading.graded_at,
@@ -135,7 +146,7 @@ function processSubmission(req, res, callback) {
             };
             sqldb.queryOneRow(sql.update_instance_question, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                // don't overwrite entire object, because currentInstanceQuestion.sql has added other fields
+                // don't overwrite entire object in case someone added extra fields at some point
                 _.assign(res.locals.instance_question, result.rows[0]);
                 callback(null);
             });
@@ -159,14 +170,15 @@ function processSubmission(req, res, callback) {
 };
 
 function processPost(req, res, callback) {
-    if (!req.postData) return callback(null);
-    if (req.postData.action == 'submitQuestionAnswer') {
+    if (!req.body.postAction) return callback(null);
+    if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
+    if (req.body.postAction == 'submitQuestionAnswer') {
         return processSubmission(req, res, function(err) {
             if (ERR(err, callback)) return;
             callback(null);
         });
     } else {
-        return callback(error.make(400, 'unknown action: ' + req.postData.action, {postData: req.postData}));
+        return callback(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
     }
 }
 
@@ -250,7 +262,6 @@ function handle(req, res, next) {
             });
         },
         function(callback) {
-            res.locals.postUrl = res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id + "/";
             res.locals.questionJson = JSON.stringify({
                 questionFilePath: res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id + "/file",
                 question: res.locals.question,

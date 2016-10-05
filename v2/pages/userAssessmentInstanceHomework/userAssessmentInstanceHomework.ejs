@@ -26,9 +26,9 @@
                 <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
               </div>
               <div class="col-md-6 col-sm-12 col-xs-12">
-                Available credit: <%= authz_assessment_instance.credit_date_string %>
+                Available credit: <%= authz_result.credit_date_string %>
                 <%- include('../partials/userAccessRulesPopover', {
-                    accessRules: authz_assessment_instance.access_rules,
+                    accessRules: authz_result.access_rules,
                     assessmentSetName: assessment_set.name,
                     assessmentNumber: assessment.number,
                     }) %>

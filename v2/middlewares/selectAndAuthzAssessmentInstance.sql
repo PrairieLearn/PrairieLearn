@@ -6,7 +6,7 @@ SELECT
     to_jsonb(e) AS instance_enrollment,
     to_jsonb(a) AS assessment,
     to_jsonb(aset) AS assessment_set,
-    to_jsonb(aai) AS authz_assessment_instance
+    to_jsonb(aai) AS authz_result
 FROM
     assessment_instances AS ai
     LEFT JOIN assessment_instance_durations AS aid ON (aid.id = ai.id)

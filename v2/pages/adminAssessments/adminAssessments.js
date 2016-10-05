@@ -14,7 +14,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 var csvFilename = function(locals) {
     return locals.course.short_name.replace(/\s+/g, '')
         + '_'
-        + locals.course_instance.short_name
+        + locals.course_instance.short_name.replace(/\s+/g, '')
         + '_'
         + 'assessment_stats.csv';
 };

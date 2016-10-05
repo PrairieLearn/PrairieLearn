@@ -15,11 +15,19 @@ var sqlLoader = require('../../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var handle = function(req, res, next) {
-    if (req.postData) {
-        if (req.postData.action == 'submitQuestionAnswer') {
-            var variant = req.postData.variant;
+    if (req.body.postAction) {
+        if (req.body.postAction == 'submitQuestionAnswer') {
+            if (!req.body.postData) return callback(error.make(400, 'No postData', {locals: res.locals, body: req.body}));
+            var postData;
+            try {
+                postData = JSON.parse(req.body.postData);
+            } catch (e) {
+                return callback(error.make(400, 'JSON parse failed on body.postData', {locals: res.locals, body: req.body}));
+            }
+
+            var variant = postData.variant;
             submission = {
-                submitted_answer: req.postData.submittedAnswer,
+                submitted_answer: postData.submittedAnswer,
             };
             questionServers.gradeSubmission(submission, variant, res.locals.question, res.locals.course, {}, function(err, grading) {
                 if (ERR(err, next)) return;
@@ -38,7 +46,7 @@ var handle = function(req, res, next) {
                     });
                 });
             });
-        } else return next(error.make(400, 'unknown action', {postData: req.postData}));
+        } else return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
     } else {
         questionServers.makeVariant(res.locals.question, res.locals.course, {}, function(err, variant) {
             if (ERR(err, next)) return;
