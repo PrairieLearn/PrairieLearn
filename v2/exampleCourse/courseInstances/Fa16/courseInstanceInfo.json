@@ -1,0 +1,15 @@
+{
+    "shortName": "Fa16",
+    "longName": "Fall 2016",
+    "userRoles": {
+        "mwest@illinois.edu": "Instructor",
+        "zilles@illinois.edu": "TA",
+        "mussulma@illinois.edu": "TA"
+    },
+    "allowAccess": [
+        {
+            "startDate": "2015-01-19T00:00:01",
+            "endDate": "2017-05-13T23:59:59"
+        }
+    ]
+}

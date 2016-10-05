@@ -1,0 +1,7 @@
+{
+    "title": "Addition of vectors in Cartesian coordinates",
+    "topic": "Vectors",
+    "tags": ["Numeric"],
+    "clientFiles": ["client.js", "question.html", "answer.html", "fig1.png"],
+    "type": "ShortAnswer"
+}
