@@ -1217,6 +1217,26 @@ var makeQInstance = function(req, res, qInstance, callback) {
     });
 };
 
+var checkForExistingSubmission = function(qiid, tid, callback) {
+    if (!qiid) return callback(null, null);
+    var info = courseDB.testDB[tid];
+    var testType = info.type;
+    if (!(testType == "Game" || testType == "Basic")) return callback(null, null);
+    db.sCollect.findOne({qiid: qiid}, function(err, existingSubmission) {
+        if (err) return callback(err);
+        if (existingSubmission) return callback(null, null);
+        callback(null, qiid);
+    });
+};
+
+var getExistingQInstance = function(qiid, callback) {
+    if (!qiid) return callback(null, null);
+    db.qiCollect.findOne({qiid: qiid}, function(err, obj) {
+        if (err) return callback(err);
+        callback(null, obj);
+    });
+};
+
 app.post("/qInstances", function(req, res) {
     var uid = req.body.uid;
     var qid = req.body.qid;
@@ -1293,52 +1313,50 @@ app.post("/qInstances", function(req, res) {
                 qiid = tInstance.qiidsByQid[qid];
             }
         }
-        if (qiid) {
-            db.qiCollect.findOne({qiid: qiid}, function(err, obj) {
-                if (err) {
-                    return sendError(res, 500, "Error accessing qInstances database for qiid " + req.params.qiid, err);
-                }
-                if (!obj) {
-                    return sendError(res, 404, "No qInstance with qiid " + req.params.qiid);
-                }
-                ensureObjAuth(req, obj, "read", function(err) {
-                    if (err) return sendError(res, 403, err);
-                    addQuestionToQInstance(qInstance, req, function(err, qInstance) {
-                        if (err) return sendError(res, 500, "Error adding question to qInstance", err);
-                        res.json(stripPrivateFields(obj));
-                    });
-                });
-            });
-        } else {
-            var tid = tInstance.tid;
-            qInstance.tid = tid;
-            readTest(tid, function(err, test) {
-                if (err) return sendError(res, 500, "Error reading test", err);
-                if (test.options.autoCreateQuestions) {
-                    return sendError(res, 403, "QIID creation disallowed for tiid: ", tInstance.tiid);
-                } else {
-                    ensureObjAuth(req, tInstance, "read", function(err) {
+        checkForExistingSubmission(qiid, tInstance.tid, function(err, qiid) {
+            if (err) return sendError(res, 500, "Error checking submission", err);
+            getExistingQInstance(qiid, function(err, obj) {
+                if (err) return sendError(res, 500, "Error getting existing qInstance", err);
+                if (obj) {
+                    ensureObjAuth(req, obj, "read", function(err) {
                         if (err) return sendError(res, 403, err);
-                        ensureQuestionInTest(qid, tInstance, test, function(err) {
-                            if (err) return sendError(res, 403, err);
-                            if (tInstance.vidsByQID) {
-                                qInstance.vid = tInstance.vidsByQID[qid];
-                            }
-                            makeQInstance(req, res, qInstance, function(qInstance) {
-                                tInstance.qiidsByQid = tInstance.qiidsByQid || {};
-                                tInstance.qiidsByQid[qid] = qInstance.qiid;
-                                writeTInstance(req, res, tInstance, function() {
-                                    addQuestionToQInstance(qInstance, req, function(err, qInstance) {
-                                        if (err) return sendError(res, 500, "Error adding question to qInstance", err);
-                                        res.json(stripPrivateFields(qInstance));
+                        addQuestionToQInstance(qInstance, req, function(err, qInstance) {
+                            if (err) return sendError(res, 500, "Error adding question to qInstance", err);
+                            res.json(stripPrivateFields(obj));
+                        });
+                    });
+                } else {
+                    var tid = tInstance.tid;
+                    qInstance.tid = tid;
+                    readTest(tid, function(err, test) {
+                        if (err) return sendError(res, 500, "Error reading test", err);
+                        if (test.options.autoCreateQuestions) {
+                            return sendError(res, 403, "QIID creation disallowed for tiid: ", tInstance.tiid);
+                        } else {
+                            ensureObjAuth(req, tInstance, "read", function(err) {
+                                if (err) return sendError(res, 403, err);
+                                ensureQuestionInTest(qid, tInstance, test, function(err) {
+                                    if (err) return sendError(res, 403, err);
+                                    if (tInstance.vidsByQID) {
+                                        qInstance.vid = tInstance.vidsByQID[qid];
+                                    }
+                                    makeQInstance(req, res, qInstance, function(qInstance) {
+                                        tInstance.qiidsByQid = tInstance.qiidsByQid || {};
+                                        tInstance.qiidsByQid[qid] = qInstance.qiid;
+                                        writeTInstance(req, res, tInstance, function() {
+                                            addQuestionToQInstance(qInstance, req, function(err, qInstance) {
+                                                if (err) return sendError(res, 500, "Error adding question to qInstance", err);
+                                                res.json(stripPrivateFields(qInstance));
+                                            });
+                                        });
                                     });
                                 });
                             });
-                        });
+                        }
                     });
                 }
             });
-        }
+        });
     });
 });
 
