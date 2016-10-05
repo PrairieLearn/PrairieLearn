@@ -6,7 +6,7 @@ var config = require('../../lib/config');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'courseInfo.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = {
     sync: function(courseInfo, callback) {

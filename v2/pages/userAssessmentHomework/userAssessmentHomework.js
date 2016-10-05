@@ -38,12 +38,12 @@ router.get('/', function(req, res, next) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) {
             if (!res.locals.authz_assessment.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
-            makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
+            makeAssessmentInstance(req, res, function(err, assessment_instance_id) {
                 if (ERR(err, next)) return;
-                res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + assessmentInstanceId);
+                res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
             });
         } else {
-            res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + result.rows[0].id);
+            res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
         }
     });
 });

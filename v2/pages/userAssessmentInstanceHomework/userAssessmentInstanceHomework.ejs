@@ -9,7 +9,7 @@
           $('[data-toggle="popover"]').popover()
       });
     </script>
-    <%- include('../partials/navbar', {navPage: ''}); %>
+    <%- include('../partials/navbarUser', {navPage: ''}); %>
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
@@ -70,7 +70,7 @@
             <% } %>
             <tr>
               <td>
-                <a href="<%= urlPrefix %>/instanceQuestion/<%= question.id %>/">
+                <a href="<%= urlPrefix %>/instance_question/<%= question.id %>/">
                   <%= question.question_number %>. <%= question.question_title %>
                 </a>
               </td>

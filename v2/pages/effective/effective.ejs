@@ -4,7 +4,11 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
-    <%- include('../partials/navbar', {navPage: 'effective'}); %>
+    <% if (authz_data.has_admin_view) { %>
+    <%- include('../partials/navbarAdmin', {navPage: 'effective'}); %>
+    <% } else { %>
+    <%- include('../partials/navbarUser', {navPage: 'effective'}); %>
+    <% } %>
     <div id="content" class="container">
 
       <div class="panel panel-info">
@@ -27,7 +31,7 @@
         <div class="panel-footer">
           <p class="no-bottom-margin">
             <small>
-              The <em>authenticated</em> values above are the ones that you logged in. The <em>effective</em> values below allow you to view PrairieLearn as if you had a different <em>role</em>, as if you were a specific other person with a different <em>UID</em>, or as if PrairieLearn was running in a different <em>mode</em>. This can be used to test out how PrairieLearn will look from different points of view. The “Reset to these values” button above will reset all effective values below to your authenticated values. Effective values are also reset when you switch to a different course instance.
+              The <em>authenticated</em> values above are the ones that you logged in with. The <em>effective</em> values below allow you to view PrairieLearn as if you had a different <em>role</em>, as if you were a specific other person with a different <em>UID</em>, or as if PrairieLearn was running in a different <em>mode</em>. This can be used to test out how PrairieLearn will look from different points of view. The “Reset to these values” button above will reset all effective values below to your authenticated values. Effective values are also reset when you switch to a different course instance.
             </small>
             </small>
           </p>

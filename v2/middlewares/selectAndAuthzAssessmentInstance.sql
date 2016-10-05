@@ -18,4 +18,5 @@ FROM
     JOIN LATERAL authz_assessment_instance(ai.id, $authz_data) AS aai ON TRUE
 WHERE
     ai.id = $assessment_instance_id
+    AND ci.id = $course_instance_id
     AND aai.authorized;

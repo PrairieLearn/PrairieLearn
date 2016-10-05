@@ -9,7 +9,7 @@ var logger = require('../../lib/logger');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'adminUsers.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var csvFilename = function(locals) {
     return locals.course.short_name.replace(/\s+/g, '')
@@ -19,66 +19,48 @@ var csvFilename = function(locals) {
         + 'user_scores.csv';
 };
 
-router.get('/:course_instance_id', function(req, res, next) {
-    var params = {
-        course_instance_id: req.params.course_instance_id,
-        auth_data: res.locals.auth_data,
-    };
-    sqldb.queryOneRow(sql.select_and_auth, params, function(err, result) {
+router.get('/', function(req, res, next) {
+    res.locals.csvFilename = csvFilename(res.locals);
+    var params = {course_instance_id: res.locals.course_instance.id};
+    sqldb.query(sql.course_assessments, params, function(err, result) {
         if (ERR(err, next)) return;
-        _.assign(res.locals, result.rows[0]);
+        res.locals.course_assessments = result.rows;
 
-        res.locals.csvFilename = csvFilename(res.locals);
         var params = {course_instance_id: res.locals.course_instance.id};
-        sqldb.query(sql.course_assessments, params, function(err, result) {
+        sqldb.query(sql.user_scores, params, function(err, result) {
             if (ERR(err, next)) return;
-            res.locals.course_assessments = result.rows;
 
-            var params = {course_instance_id: res.locals.course_instance.id};
-            sqldb.query(sql.user_scores, params, function(err, result) {
-                if (ERR(err, next)) return;
-
-                res.locals.user_scores = result.rows;
-                res.render('pages/adminUsers/adminUsers', res.locals);
-            });
+            res.locals.user_scores = result.rows;
+            res.render('pages/adminUsers/adminUsers', res.locals);
         });
     });
 });
 
-router.get('/:course_instance_id/:filename', function(req, res, next) {
-    var params = {
-        course_instance_id: req.params.course_instance_id,
-        auth_data: res.locals.auth_data,
-    };
-    sqldb.queryOneRow(sql.select_and_auth, params, function(err, result) {
-        if (ERR(err, next)) return;
-        _.assign(res.locals, result.rows[0]);
-
-        if (req.params.filename == csvFilename(res.locals)) {
-            var params = {course_instance_id: res.locals.course_instance.id};
-            sqldb.query(sql.course_assessments, params, function(err, result) {
+router.get('/:filename', function(req, res, next) {
+    if (req.params.filename == csvFilename(res.locals)) {
+        var params = {course_instance_id: res.locals.course_instance.id};
+        sqldb.query(sql.course_assessments, params, function(err, result) {
+            if (ERR(err, next)) return;
+            var courseAssessments = result.rows;
+            sqldb.query(sql.user_scores, params, function(err, result) {
                 if (ERR(err, next)) return;
-                var courseAssessments = result.rows;
-                sqldb.query(sql.user_scores, params, function(err, result) {
-                    if (ERR(err, next)) return;
-                    var userScores = result.rows;
+                var userScores = result.rows;
 
-                    var csvHeaders = ['UID', 'Name', 'Role'].concat(_.map(courseAssessments, 'label'));
-                    var csvData = _.map(userScores, function(row) {
-                        return [row.uid, row.user_name, row.role].concat(row.scores);
-                    });
-                    csvData.splice(0, 0, csvHeaders);
-                    csvStringify(csvData, function(err, csv) {
-                        if (ERR(err, next)) return;
-                        res.attachment(req.params.filename);
-                        res.send(csv);
-                    });
+                var csvHeaders = ['UID', 'Name', 'Role'].concat(_.map(courseAssessments, 'label'));
+                var csvData = _.map(userScores, function(row) {
+                    return [row.uid, row.user_name, row.role].concat(row.scores);
+                });
+                csvData.splice(0, 0, csvHeaders);
+                csvStringify(csvData, function(err, csv) {
+                    if (ERR(err, next)) return;
+                    res.attachment(req.params.filename);
+                    res.send(csv);
                 });
             });
-        } else {
-            next(new Error("Unknown filename: " + req.params.filename));
-        }
-    });
+        });
+    } else {
+        next(new Error("Unknown filename: " + req.params.filename));
+    }
 });
 
 module.exports = router;

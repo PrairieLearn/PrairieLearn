@@ -7,7 +7,7 @@
     <script type="text/javascript" src="/javascripts/jquery.tablesorter.widgets.js"></script>
   </head>
   <body>
-    <%- include('../partials/adminNavbar', {navPage: 'questions'}); %>
+    <%- include('../partials/navbarAdmin', {navPage: 'questions'}); %>
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
@@ -31,7 +31,7 @@
           <tbody>
             <% questions.forEach(function(question) { %>
             <tr>
-              <td><a href="<%= urlPrefix %>/question/<%= course_instance.id %>/<%= question.id %>/"><%= question.title %></a></td>
+              <td><a href="<%= urlPrefix %>/admin/question/<%= question.id %>/"><%= question.title %></a></td>
               <td><%= question.qid %></td>
               <td><%- include('../partials/topic', {topic: question.topic}); %></td>
               <td><%- include('../partials/tags', {tags: question.tags}); %></td>

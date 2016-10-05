@@ -9,40 +9,31 @@ var logger = require('../../lib/logger');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'adminQuestions.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
-router.get('/:course_instance_id', function(req, res, next) {
+router.get('/', function(req, res, next) {
     var params = {
-        course_instance_id: req.params.course_instance_id,
-        auth_data: res.locals.auth_data,
+        course_instance_id: res.locals.course_instance.id,
     };
-    sqldb.queryOneRow(sql.select_and_auth, params, function(err, result) {
+    sqldb.query(sql.questions, params, function(err, result) {
         if (ERR(err, next)) return;
-        _.assign(res.locals, result.rows[0]);
+        res.locals.questions = result.rows;
 
         var params = {
-            course_instance_id: res.locals.course_instance.id,
+            course_id: res.locals.course.id,
         };
-        sqldb.query(sql.questions, params, function(err, result) {
+        sqldb.query(sql.tags, params, function(err, result) {
             if (ERR(err, next)) return;
-            res.locals.questions = result.rows;
-
+            res.locals.all_tags = result.rows;
+            
             var params = {
-                course_id: res.locals.course.id,
+                course_instance_id: res.locals.course_instance.id,
             };
-            sqldb.query(sql.tags, params, function(err, result) {
+            sqldb.query(sql.assessments, params, function(err, result) {
                 if (ERR(err, next)) return;
-                res.locals.all_tags = result.rows;
+                res.locals.all_assessments = result.rows;
                 
-                var params = {
-                    course_instance_id: res.locals.course_instance.id,
-                };
-                sqldb.query(sql.assessments, params, function(err, result) {
-                    if (ERR(err, next)) return;
-                    res.locals.all_assessments = result.rows;
-                    
-                    res.render('pages/adminQuestions/adminQuestions', res.locals);
-                });
+                res.render('pages/adminQuestions/adminQuestions', res.locals);
             });
         });
     });

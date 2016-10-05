@@ -12,49 +12,39 @@ var questionServers = require('../../question-servers');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'adminQuestion.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var handle = function(req, res, next) {
-    var params = {
-        course_instance_id: req.params.course_instance_id,
-        question_id: req.params.question_id,
-        auth_data: res.locals.auth_data,
-    };
-    sqldb.queryOneRow(sql.select_and_auth, params, function(err, result) {
-        if (ERR(err, next)) return;
-        _.assign(res.locals, result.rows[0]);
-
-        if (req.postData) {
-            if (req.postData.action == 'submitQuestionAnswer') {
-                var variant = req.postData.variant;
-                submission = {
-                    submitted_answer: req.postData.submittedAnswer,
-                };
-                questionServers.gradeSubmission(submission, variant, res.locals.question, res.locals.course, {}, function(err, grading) {
+    if (req.postData) {
+        if (req.postData.action == 'submitQuestionAnswer') {
+            var variant = req.postData.variant;
+            submission = {
+                submitted_answer: req.postData.submittedAnswer,
+            };
+            questionServers.gradeSubmission(submission, variant, res.locals.question, res.locals.course, {}, function(err, grading) {
+                if (ERR(err, next)) return;
+                _.assign(submission, grading);
+                questionServers.getModule(res.locals.question.type, function(err, questionModule) {
                     if (ERR(err, next)) return;
-                    _.assign(submission, grading);
-                    questionServers.getModule(res.locals.question.type, function(err, questionModule) {
+                    questionServers.renderScore(submission.score, function(err, scoreHtml) {
                         if (ERR(err, next)) return;
-                        questionServers.renderScore(submission.score, function(err, scoreHtml) {
+                        questionModule.renderSubmission(variant, res.locals.question, submission, res.locals.course, res.locals, function(err, submissionHtml) {
                             if (ERR(err, next)) return;
-                            questionModule.renderSubmission(variant, res.locals.question, submission, res.locals.course, res.locals, function(err, submissionHtml) {
+                            questionModule.renderTrueAnswer(variant, res.locals.question, res.locals.course, res.locals, function(err, answerHtml) {
                                 if (ERR(err, next)) return;
-                                questionModule.renderTrueAnswer(variant, res.locals.question, res.locals.course, res.locals, function(err, answerHtml) {
-                                    if (ERR(err, next)) return;
-                                    render(req, res, next, variant, submission, scoreHtml, submissionHtml, answerHtml);
-                                });
+                                render(req, res, next, variant, submission, scoreHtml, submissionHtml, answerHtml);
                             });
                         });
                     });
                 });
-            } else return next(error.make(400, 'unknown action', {postData: req.postData}));
-        } else {
-            questionServers.makeVariant(res.locals.question, res.locals.course, {}, function(err, variant) {
-                if (ERR(err, next)) return;
-                render(req, res, next, variant);
             });
-        }
-    });
+        } else return next(error.make(400, 'unknown action', {postData: req.postData}));
+    } else {
+        questionServers.makeVariant(res.locals.question, res.locals.course, {}, function(err, variant) {
+            if (ERR(err, next)) return;
+            render(req, res, next, variant);
+        });
+    }
 };
 
 var render = function(req, res, next, variant, submission, scoreHtml, submissionHtml, answerHtml) {
@@ -75,9 +65,9 @@ var render = function(req, res, next, variant, submission, scoreHtml, submission
                     res.locals.scoreHtml = scoreHtml;
                     res.locals.submissionHtml = submissionHtml;
                     res.locals.answerHtml = answerHtml;
-                    res.locals.postUrl = res.locals.urlPrefix + "/question/" + res.locals.course_instance.id + "/" + res.locals.question.id + "/";
+                    res.locals.postUrl = res.locals.urlPrefix + "/admin/question/" + res.locals.question.id + "/";
                     res.locals.questionJson = JSON.stringify({
-                        questionFilePath: res.locals.urlPrefix + "/question/" + res.locals.course_instance.id + "/" + res.locals.question.id + "/file",
+                        questionFilePath: res.locals.urlPrefix + "/admin/question/" + res.locals.question.id + "/file",
                         question: res.locals.question,
                         course: res.locals.course,
                         courseInstance: res.locals.course_instance,
@@ -93,47 +83,27 @@ var render = function(req, res, next, variant, submission, scoreHtml, submission
     });
 };
 
-router.get('/:course_instance_id/:question_id', handle);
-router.post('/:course_instance_id/:question_id', handle);
+router.get('/', handle);
+router.post('/', handle);
 
-router.get('/:course_instance_id/:question_id/file/:filename', function(req, res, next) {
-    var params = {
-        course_instance_id: req.params.course_instance_id,
-        question_id: req.params.question_id,
-        auth_data: res.locals.auth_data,
-    };
-    sqldb.queryOneRow(sql.select_and_auth, params, function(err, result) {
+router.get('/file/:filename', function(req, res, next) {
+    var question = res.locals.question;
+    var course = res.locals.course;
+    var filename = req.params.filename;
+    filePaths.questionPath(question.directory, course.path, function(err, questionPath) {
         if (ERR(err, next)) return;
-        _.assign(res.locals, result.rows[0]);
-
-        var question = res.locals.question;
-        var course = res.locals.course;
-        var filename = req.params.filename;
-        filePaths.questionPath(question.directory, course.path, function(err, questionPath) {
-            if (ERR(err, next)) return;
-            res.sendFile(filename, {root: questionPath});
-        });
+        res.sendFile(filename, {root: questionPath});
     });
 });
 
-router.get('/:course_instance_id/:question_id/text/:filename', function(req, res, next) {
-    var params = {
-        course_instance_id: req.params.course_instance_id,
-        question_id: req.params.question_id,
-        auth_data: res.locals.auth_data,
-    };
-    sqldb.queryOneRow(sql.select_and_auth, params, function(err, result) {
+router.get('/text/:filename', function(req, res, next) {
+    var question = res.locals.question;
+    var course = res.locals.course;
+    var filename = req.params.filename;
+    filePaths.questionPath(question.directory, course.path, function(err, questionPath) {
         if (ERR(err, next)) return;
-        _.assign(res.locals, result.rows[0]);
-
-        var question = res.locals.question;
-        var course = res.locals.course;
-        var filename = req.params.filename;
-        filePaths.questionPath(question.directory, course.path, function(err, questionPath) {
-            if (ERR(err, next)) return;
-            var rootPath = path.join(questionPath, "text");
-            res.sendFile(filename, {root: rootPath});
-        });
+        var rootPath = path.join(questionPath, "text");
+        res.sendFile(filename, {root: rootPath});
     });
 });
 

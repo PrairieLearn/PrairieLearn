@@ -47,8 +47,6 @@ var scoresCsvFilename = function(locals) {
 };
 
 router.get('/', function(req, res, next) {
-    if (!res.locals.authz_data.has_admin_view) return next();
-
     res.locals.scoreStatsCsvFilename = scoreStatsCsvFilename(res.locals);
     res.locals.durationStatsCsvFilename = durationStatsCsvFilename(res.locals);
     res.locals.scoresCsvFilename = scoresCsvFilename(res.locals);
@@ -82,8 +80,6 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/:filename', function(req, res, next) {
-    if (!res.locals.authz_data.has_admin_view) return next();
-
     if (req.params.filename == scoreStatsCsvFilename(res.locals)) {
         var params = {assessment_id: res.locals.assessment.id};
         sqldb.queryOneRow(sql.assessment_stats, params, function(err, result) {

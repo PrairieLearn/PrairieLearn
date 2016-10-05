@@ -7,12 +7,12 @@ var express = require('express');
 var router = express.Router();
 
 var error = require('../../lib/error');
-var questionServers = require('../../lib/question-servers');
+var questionServers = require('../../question-servers');
 var logger = require('../../lib/logger');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'userInstanceQuestionHomework.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 function ensureVariant(req, res, callback) {
     // if we have an existing variant that is ungraded (may have an ungraded submission)
@@ -250,9 +250,9 @@ function handle(req, res, next) {
             });
         },
         function(callback) {
-            res.locals.postUrl = res.locals.urlPrefix + "/instanceQuestion/" + res.locals.instance_question.id + "/";
+            res.locals.postUrl = res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id + "/";
             res.locals.questionJson = JSON.stringify({
-                questionFilePath: res.locals.urlPrefix + "/instanceQuestion/" + res.locals.instance_question.id + "/file",
+                questionFilePath: res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id + "/file",
                 question: res.locals.question,
                 course: res.locals.course,
                 courseInstance: res.locals.course_instance,

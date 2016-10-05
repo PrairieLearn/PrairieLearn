@@ -11,7 +11,7 @@
     <script type="text/javascript" src="/localscripts/scatter.js"></script>
   </head>
   <body>
-    <%- include('../partials/navbar', {navPage: ''}); %>
+    <%- include('../partials/navbarAdmin', {navPage: ''}); %>
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
@@ -47,7 +47,7 @@
         </div>
         <div class="panel-body">
           <small>
-            Download <a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
+            Download <a href="<%= urlPrefix %>/admin/assessment_instance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
 
             Click on a column header to sort. Shift-click on a second header to sub-sort.
           </small>
@@ -68,10 +68,10 @@
             <% log.forEach(function(row) { %>
             <tr>
               <td><%= row.date %></td>
-              <td><a href="<%= urlPrefix %>/user/<%= row.auth_user_id %>"><%= row.auth_user_uid %></a></td>
+              <td><a href="<%= urlPrefix %>/admin/user/<%= row.auth_user_id %>"><%= row.auth_user_uid %></a></td>
               <td><button class="btn btn-xs btn-<%= row.event_color %>"><%= row.event_name %></button></td>
-              <td><% if (row.qid) { %><a href="<%= urlPrefix %>/question/<%= course_instance.id %>/<%= row.question_id %>"><%= row.qid %></a><% } %></td>
-              <td><% if (row.question_id && row.variant_id) { %><a href="<%= urlPrefix %>/question/<%= course_instance.id %>/<%= row.question_id %>?variant_id=<%= row.variant_id %>"><%= row.variant_number %></a><% } %></td>
+              <td><% if (row.qid) { %><a href="<%= urlPrefix %>/admin/question/<%= course_instance.id %>/<%= row.question_id %>"><%= row.qid %></a><% } %></td>
+              <td><% if (row.question_id && row.variant_id) { %><a href="<%= urlPrefix %>/admin/question/<%= course_instance.id %>/<%= row.question_id %>?variant_id=<%= row.variant_id %>"><%= row.variant_number %></a><% } %></td>
               <td style="word-break: break-all;"><%= (row.data != null) ? JSON.stringify(row.data) : null %></td>
             </tr>
             <% }); %>
@@ -89,7 +89,7 @@
         </script>
         <div class="panel-footer">
           <small>
-            Download <a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
+            Download <a href="<%= urlPrefix %>/admin/assessment_instance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
           </small>
         </div>
       </div>

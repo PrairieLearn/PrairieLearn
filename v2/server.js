@@ -56,47 +56,57 @@ app.use('/pl/enroll', require('./pages/enroll/enroll'));
 // redirect plain course page to assessments page
 app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/courseInstance');} next();});
 // course instance entry page just clears cookies and redirects, so no authorization needed
-app.use('/pl/:course_instance_id/courseInstance', require('./pages/courseInstance/courseInstance'));
+app.use('/pl/:course_instance_id/courseInstance', require('./middlewares/freshStart'));
 
 // all other pages need authorization
 app.use('/pl/:course_instance_id', require('./middlewares/authzCourseInstance')); // authorization for the course instance
+app.use('/pl/:course_instance_id/admin', require('./middlewares/authzCourseInstanceAdmin'));
 app.use('/pl/:course_instance_id', require('./middlewares/navData')); // set res.locals.navData, res.locals.course, res.locals.course_instance
 app.use('/pl/:course_instance_id', require('./middlewares/urlPrefix')); // set res.locals.urlPrefix
 
-// polymorphic pages check role/type/etc and call next() if they aren't the right page
+app.use('/pl/:course_instance_id/redirect', require('./middlewares/redirectToCourseInstanceLanding'));
+
 app.use('/pl/:course_instance_id/effective', require('./pages/effective/effective'));
-app.use('/pl/:course_instance_id/assessments', [
-    require('./pages/adminAssessments/adminAssessments'),
-    require('./pages/userAssessments/userAssessments'),
+
+app.use('/pl/:course_instance_id/assessments', require('./pages/userAssessments/userAssessments'));
+app.use('/pl/:course_instance_id/admin/assessments', require('./pages/adminAssessments/adminAssessments'));
+
+// polymorphic pages check type and call next() if they aren't the right page
+app.use('/pl/:course_instance_id/admin/assessment/:assessment_id', [
+    require('./middlewares/selectAndAuthzAssessment'),
+    require('./pages/adminAssessment/adminAssessment'),
 ]);
 app.use('/pl/:course_instance_id/assessment/:assessment_id', [
-    require('./middlewares/selectAuthAssessment'),
-    require('./pages/adminAssessment/adminAssessment'),
+    require('./middlewares/selectAndAuthzAssessment'),
     require('./pages/userAssessmentHomework/userAssessmentHomework'),
     require('./pages/userAssessmentExam/userAssessmentExam'),
 ]);
-app.use('/pl/:course_instance_id/assessment_instance/:assessment_instance_id', [
-    require('./middlewares/selectAuthAssessmentInstance'),
+app.use('/pl/:course_instance_id/admin/assessment_instance/:assessment_instance_id', [
+    require('./middlewares/selectAndAuthzAssessmentInstance'),
     require('./pages/adminAssessmentInstance/adminAssessmentInstance'),
+]);
+app.use('/pl/:course_instance_id/assessment_instance/:assessment_instance_id', [
+    require('./middlewares/selectAndAuthzAssessmentInstance'),
     require('./pages/userAssessmentInstanceHomework/userAssessmentInstanceHomework'),
     require('./pages/userAssessmentInstanceExam/userAssessmentInstanceExam'),
 ]);
+app.use('/pl/:course_instance_id/assessment_instance/:assessment_instance_id/clientFiles', require('./pages/assessmentInstanceClientFiles/assessmentInstanceClientFiles'));
 
+app.use('/pl/:course_instance_id/admin/users', require('./pages/adminUsers/adminUsers'));
+app.use('/pl/:course_instance_id/admin/questions', require('./pages/adminQuestions/adminQuestions'));
 
-
-
-
-
-
-app.use('/pl/:course_instance_id/users', [
-    require('./pages/adminUsers/adminUsers'),
-]);
-app.use('/pl/:course_instance_id/questions', [
-    require('./pages/adminQuestions/adminQuestions'),
-]);
-app.use('/pl/:course_instance_id/question', [
+app.use('/pl/:course_instance_id/admin/question/:question_id', [
+    require('./middlewares/selectAndAuthzAdminQuestion'),
     require('./pages/adminQuestion/adminQuestion'),
 ]);
+
+app.use('/pl/:course_instance_id/instance_question/:instance_question_id', [
+    require('./middlewares/selectAndAuthzInstanceQuestion'),
+    require('./pages/userInstanceQuestionHomework/userInstanceQuestionHomework'),
+    require('./pages/userInstanceQuestionExam/userInstanceQuestionExam'),
+]);
+app.use('/pl/:course_instance_id/instance_question/:instance_question_id/file', require('./pages/questionFile/questionFile'));
+app.use('/pl/:course_instance_id/instance_question/:instance_question_id/text', require('./pages/questionText/questionText'));
 
 // error handling
 app.use(require('./middlewares/notFound'));

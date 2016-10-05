@@ -10,7 +10,6 @@
       <a class="navbar-brand" href="<%= plainUrlPrefix %>">PrairieLearn</a>
     </div>
     <div class="collapse navbar-collapse">
-      <% if (typeof course_instance !== 'undefined') { %>
       <ul class="nav navbar-nav" id="main-nav">
         
         <!-------------------------------------------------------------------------------->
@@ -18,12 +17,11 @@
         <!-------------------------------------------------------------------------------->
         <!-- Course switcher ------------------------------------------------------------->
 
-        <% if (authz_data.has_admin_view) { // ################################################### %>
         <li class="dropdown">
           <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><%= course.short_name %><span class="caret"></span></a>
           <ul class="dropdown-menu">
             <% nav_data.courses.forEach(function(course) { %>
-            <li><a href="<%= plainUrlPrefix %>/<%= course.course_instance_id %>/<%= navPage %>"><%= course.short_name %></a></li>
+            <li><a href="<%= plainUrlPrefix %>/<%= course.course_instance_id %>"><%= course.short_name %></a></li>
             <% }); %>
           </ul>
         </li>
@@ -31,34 +29,20 @@
           <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><%= course_instance.short_name %><span class="caret"></span></a>
           <ul class="dropdown-menu">
             <% nav_data.instances_for_course.forEach(function(course_instance) { %>
-            <li><a href="<%= plainUrlPrefix %>/<%= course_instance.id %>/<%= navPage %>"><%= course_instance.short_name %></a></li>
+            <li><a href="<%= plainUrlPrefix %>/<%= course_instance.id %>"><%= course_instance.short_name %></a></li>
             <% }); %>
           </ul>
         </li>
-        <% } else { // has_admin_view ################################################### %>
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><%= course.short_name %>, <%= course_instance.short_name %><span class="caret"></span></a>
-          <ul class="dropdown-menu">
-            <% nav_data.course_instances.forEach(function(course_instance) { %>
-            <li><a href="<%= plainUrlPrefix %>/<%= course_instance.id %>/<%= navPage %>"><%= course_instance.course_short_name %>, <%= course_instance.short_name %></a></li>
-            <% }); %>
-          </ul>
-        </li>
-        <% } // has_admin_view ####################################################### %>
 
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->
         <!-- Main pages ------------------------------------------------------------------>
 
-        <li <% if (navPage == "assessments") { %>class="active"<% } %>><a href="<%= urlPrefix %>/assessments">Assessments</a></li>
-
-        <% if (authz_data.has_admin_view) { %>
-        <li <% if (navPage == "questions")   { %>class="active"<% } %>><a href="<%= urlPrefix %>/questions">Questions</a></li>
-        <li <% if (navPage == "users")       { %>class="active"<% } %>><a href="<%= urlPrefix %>/users">Users</a></li>
-        <% } // has_admin_view %>
+        <li <% if (navPage == "assessments") { %>class="active"<% } %>><a href="<%= urlPrefix %>/admin/assessments">Assessments</a></li>
+        <li <% if (navPage == "questions")   { %>class="active"<% } %>><a href="<%= urlPrefix %>/admin/questions">Questions</a></li>
+        <li <% if (navPage == "users")       { %>class="active"<% } %>><a href="<%= urlPrefix %>/admin/users">Users</a></li>
       </ul>
-      <% } // course_instance != undefined %>
 
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
@@ -67,8 +51,17 @@
 
       <div class="navbar-right">
 
-        <% if (typeof course_instance !== 'undefined' && authz_data.authn_has_admin_view) { %>
-        <ul class="nav navbar-nav" id="main-nav">
+        <div class="btn-group">
+          <button type="button" class="btn btn-danger navbar-btn dropdown-toggle" data-toggle="dropdown"
+                  aria-haspopup="true" aria-expanded="false">
+            Admin <span class="caret"></span>
+          </button>
+          <ul class="dropdown-menu">
+            <li><a href="<%= urlPrefix %>/assessments">Switch to student view</a></li>
+          </ul>
+        </div>
+
+        <ul class="nav navbar-nav" id="username-nav">
           <li <% if (navPage == "effective") { %>class="active"<% } %>>
             <a href="<%= urlPrefix %>/effective">
               <%= authz_data.user.name %> (<%= authz_data.role %>), <%= authz_data.mode %>
@@ -76,9 +69,6 @@
             </a>
           </li>
         </ul>
-        <% } else { // authn_has_admin_view %>
-        <p class="navbar-text"><%= authn_user.name %></p>
-        <% } // authn_has_admin_view %>
 
         <a class="btn btn-default navbar-btn" href="https://prairielearn.engr.illinois.edu/Shibboleth.sso/Logout">Log out</a>
       </div>

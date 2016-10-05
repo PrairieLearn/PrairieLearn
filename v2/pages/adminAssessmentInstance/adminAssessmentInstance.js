@@ -28,8 +28,6 @@ var logCsvFilename = function(locals) {
 };
 
 router.get('/', function(req, res, next) {
-    if (!res.locals.authz_data.has_admin_view) return next();
-
     res.locals.logCsvFilename = logCsvFilename(res.locals);
     var params = {assessment_instance_id: res.locals.assessment_instance.id};
     sqldb.query(sql.select_log, params, function(err, result) {
@@ -41,8 +39,6 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/:filename', function(req, res, next) {
-    if (!res.locals.authz_data.has_admin_view) return next();
-
     if (req.params.filename == logCsvFilename(res.locals)) {
         var params = {assessment_instance_id: res.locals.assessment_instance.id};
         sqldb.query(sql.select_log, params, function(err, result) {

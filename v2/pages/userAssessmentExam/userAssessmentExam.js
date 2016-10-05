@@ -95,7 +95,7 @@ router.get('/', function(req, res, next) {
             if (!res.locals.authz_assessment.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
             makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
                 if (ERR(err, next)) return;
-                res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + assessmentInstanceId);
+                res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessmentInstanceId);
             });
         } else {
             res.render(path.join(__dirname, 'userAssessmentExam'), res.locals);
@@ -112,13 +112,13 @@ router.get('/', function(req, res, next) {
                     if (!res.locals.authz_assessment.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
                     makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
                         if (ERR(err, next)) return;
-                        res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + assessmentInstanceId);
+                        res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessmentInstanceId);
                     });
                 } else {
                     res.render(path.join(__dirname, 'userAssessmentExam'), res.locals);
                 }
             } else {
-                res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + result.rows[0].id);
+                res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
             }
         });
     }

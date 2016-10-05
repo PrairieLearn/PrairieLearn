@@ -10,8 +10,8 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(req, res, next) {
     var params = {
-        assessment_id: req.params.assessment_id,
-        authz_data: res.locals.authz_data,
+        question_id: req.params.question_id,
+        course_instance_id: res.locals.course_instance.id,
     };
     sqldb.queryOneRow(sql.select_and_auth, params, function(err, result) {
         if (ERR(err, next)) return;

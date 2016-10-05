@@ -24,7 +24,7 @@ WHERE
 -- BLOCK select_question
 SELECT
     q.*,
-    row_to_json(top) AS topic,
+    to_json(top) AS topic,
     tags_for_question(q.id) AS tags,
     assessments_for_question(q.id, $2) AS assessments
 FROM questions as q

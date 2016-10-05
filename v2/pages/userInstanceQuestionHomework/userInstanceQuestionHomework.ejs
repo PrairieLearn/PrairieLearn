@@ -10,7 +10,7 @@
     <script type="text/javascript" src="/localscripts/question<%= question.type %>.js"></script>
   </head>
   <body>
-    <%- include('../partials/userNavbar', {navPage: ''}); %>
+    <%- include('../partials/navbarUser', {navPage: ''}); %>
     <div id="content" class="container">
       <div class="row">
         <div class="col-md-9 col-sm-12">
@@ -20,7 +20,7 @@
             
             <div class="panel panel-primary question-block">
               <div class="panel-heading">
-                <h3 class="panel-title"><%= instanceQuestion.question_number %>. <%= question.title %></h3>
+                <h3 class="panel-title"><%= instance_question_info.question_number %>. <%= question.title %></h3>
               </div>
               <div class="panel-body question-body">
                 <%- questionHtml %>
@@ -72,45 +72,45 @@
         <div class="col-md-3 col-sm-4 col-xs-12">
 
           <div class="panel panel-default">
-            <div class="panel-heading"><h3 class="panel-title"><a href="<%= urlPrefix %>/assessmentInstance/<%= assessmentInstance.id %>/"><%= assessmentSet.name %> <%= assessment.number %></a></h3></div>
+            <div class="panel-heading"><h3 class="panel-title"><a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/"><%= assessment_set.name %> <%= assessment.number %></a></h3></div>
             <table class="table table-condensed">
               <tbody>
                 <tr>
                   <td>Total points:</td>
-                  <td><%= assessmentInstance.points %>/<%= assessmentInstance.max_points || assessment.max_points %></td>
+                  <td><%= assessment_instance.points %>/<%= assessment_instance.max_points || assessment.max_points %></td>
                 </tr>
                 <tr>
                   <td>Score:</td>
-                  <td><%- include('../partials/scorebar', {score: assessmentInstance.score_perc}) %></td>
+                  <td><%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %></td>
                 </tr>
               </tbody>
             </table>
           </div>
           <div class="panel panel-default">
-            <div class="panel-heading"><h3 class="panel-title">Question <%= instanceQuestion.question_number %></h3></div>
+            <div class="panel-heading"><h3 class="panel-title">Question <%= instance_question.question_number %></h3></div>
             <table class="table table-condensed">
               <tbody>
                 <tr>
                   <td>Value:</td>
-                  <td><%- include('../partials/questionValue', {value: instanceQuestion.current_value});  %></td>
+                  <td><%- include('../partials/questionValue', {value: instance_question.current_value});  %></td>
                 </tr>
                 <tr>
                   <td>Points:</td>
-                  <td><%- include('../partials/questionPointsOfMax', {points: instanceQuestion.points, max_points: assessmentQuestion.max_points}); %></td>
+                  <td><%- include('../partials/questionPointsOfMax', {points: instance_question.points, max_points: assessment_question.max_points}); %></td>
                 </tr>
               </tbody>
             </table>
           </div>
           <p class="text-center">
-            <% if (instanceQuestion.prev_instance_question_id) { %>
-            <a class="btn btn-primary" href="<%= urlPrefix %>/instanceQuestion/<%= instanceQuestion.prev_instance_question_id %>/">Previous question</a>
+            <% if (instance_question_info.prev_instance_question_id) { %>
+            <a class="btn btn-primary" href="<%= urlPrefix %>/instance_question/<%= instance_question_info.prev_instance_question_id %>/">Previous question</a>
             <% } else { %>
             <a class="btn btn-primary disabled">Previous question</a>
             <% } %>
           </p>
           <p class="text-center">
-            <% if (instanceQuestion.next_instance_question_id) { %>
-            <a class="btn btn-primary" href="<%= urlPrefix %>/instanceQuestion/<%= instanceQuestion.next_instance_question_id %>/">Next question</a>
+            <% if (instance_question_info.next_instance_question_id) { %>
+            <a class="btn btn-primary" href="<%= urlPrefix %>/instance_question/<%= instance_question_info.next_instance_question_id %>/">Next question</a>
             <% } else { %>
             <a class="btn btn-primary disabled">Next question</a>
             <% } %>

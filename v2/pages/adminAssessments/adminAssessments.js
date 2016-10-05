@@ -9,7 +9,7 @@ var logger = require('../../lib/logger');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'adminAssessments.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var csvFilename = function(locals) {
     return locals.course.short_name.replace(/\s+/g, '')
@@ -20,7 +20,6 @@ var csvFilename = function(locals) {
 };
 
 router.get('/', function(req, res, next) {
-    if (!res.locals.authz_data.has_admin_view) return next();
     res.locals.csvFilename = csvFilename(res.locals);
     var params = {
         course_instance_id: res.locals.course_instance.id,
@@ -35,7 +34,6 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/:filename', function(req, res, next) {
-    if (!res.locals.authz_data.has_admin_view) return next();
     if (req.params.filename == csvFilename(res.locals)) {
         var params = {
             course_instance_id: res.locals.course_instance.id,

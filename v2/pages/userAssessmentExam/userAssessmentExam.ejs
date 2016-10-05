@@ -4,7 +4,7 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
-    <%- include('../partials/navbar', {navPage: ''}); %>
+    <%- include('../partials/navbarUser', {navPage: ''}); %>
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
@@ -20,7 +20,7 @@
             This is <strong><%= assessment_set.name %> <%= assessment.number %></strong> for <strong><%= course.short_name %></strong>
           </p>
           <p class="text-center">
-            <a href="./?confirm=yes" class="btn btn-primary">Start assessment</a>
+            <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>?confirm=yes" class="btn btn-primary">Start assessment</a>
           </p>
           
         </div> <!-- panel-body -->
