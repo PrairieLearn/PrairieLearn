@@ -30,6 +30,7 @@
                 <button class="btn btn-primary question-submit">Submit</button>
                 <form class="question-form" name="question-form" method="POST">
                   <input type="hidden" name="postAction" value="submitQuestionAnswer">
+                  <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
                   <input type="hidden" name="postData" class="postData">
                 </form>
                 <% } %>

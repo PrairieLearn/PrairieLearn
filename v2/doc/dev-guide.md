@@ -321,22 +321,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 ## State-modifying POST requests
 
-1. Use the [Post/Redirect/Get](https://en.wikipedia.org/wiki/Post/Redirect/Get) pattern with POST requests for all state modification.
-
-1. To defeat [CSRF (Cross-Site Request Forgery)](https://en.wikipedia.org/wiki/Cross-site_request_forgery) we use the [Encrypted Token Pattern](https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)_Prevention_Cheat_Sheet). This means that all data modifying requests should come from `form` elements like:
-
-        <form name="enroll-form" method="POST">
-            <input type="hidden" name="postAction" value="enroll">
-            <input type="hidden" name="postAuthzData" value="<%= authzData %>">
-            <input type="hidden" name="course_instance_id" value="56">
-            <button type="submit" class="btn btn-info">
-                Enroll in course instance 56
-            </button>
-        </form>
-
-1. The generation and checking of `authzData` is handled by early-stage middleware, which uses [HMAC](https://en.wikipedia.org/wiki/Hash-based_message_authentication_code) to ensure validity.
-
-1. The server should handle POST requests by checking the `postAction` and authorizing the specific action:
+1. Use the [Post/Redirect/Get](https://en.wikipedia.org/wiki/Post/Redirect/Get) pattern for all state modification. This means that the initial GET should render the page with a `<form>` that has no `action` set, so it will submit back to the current page. This should be handled by a POST handler that performs the state modification and then issues a redirect back to the same page as a GET:
 
         router.post('/', function(req, res, next) {
             if (req.body.postAction == 'enroll') {
@@ -349,6 +334,21 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
                     res.redirect(req.originalUrl);
                 });
             } else {
-                return next(error.make(400, 'unknown postAction', {body: req.body}));
+                return next(error.make(400, 'unknown postAction', {body: req.body, locals: res.locals}));
             }
         });
+
+1. To defeat [CSRF (Cross-Site Request Forgery)](https://en.wikipedia.org/wiki/Cross-site_request_forgery) we use the [Encrypted Token Pattern](https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29_Prevention_Cheat_Sheet). This stores an [HMAC-authenticated token](https://en.wikipedia.org/wiki/Hash-based_message_authentication_code) token inside the POST data.
+
+1. All data modifying requests should come from `form` elements like:
+
+        <form name="enroll-form" method="POST">
+            <input type="hidden" name="postAction" value="enroll">
+            <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+            <input type="hidden" name="course_instance_id" value="56">
+            <button type="submit" class="btn btn-info">
+                Enroll in course instance 56
+            </button>
+        </form>
+
+1. The `res.locals.csrfToken` variable is set and checked by early-stage middleware, so no explicit action is needed on each page.

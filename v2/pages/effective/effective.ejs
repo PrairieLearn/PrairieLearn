@@ -25,6 +25,7 @@
           <form id="resetForm" method="POST">
             <input type="hidden" name="postAction" value="reset">
             <button type="submit" class="btn btn-info">Reset to these values</button>
+            <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
           </form>
         </div>
 
@@ -63,6 +64,7 @@
                 </select>
               </div>
               <input type="hidden" name="postAction" value="changeRole">
+              <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
               <button type="submit" class="btn btn-default">Change role</button>
             </form>
           </div>
@@ -104,6 +106,7 @@
                 </datalist>
               </div>
               <input type="hidden" name="postAction" value="changeUid">
+              <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
               <button type="submit" class="btn btn-default">Change UID</button>
             </form>
           </div>
@@ -148,6 +151,7 @@
                 </select>
               </div>
               <input type="hidden" name="postAction" value="changeMode">
+              <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
               <button type="submit" class="btn btn-default">Change mode</button>
             </form>
           </div>

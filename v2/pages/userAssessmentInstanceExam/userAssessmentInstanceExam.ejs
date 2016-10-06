@@ -27,6 +27,7 @@
           <div class="modal-footer">
             <form name="finish-form" method="POST">
               <input type="hidden" name="postAction" value="finish">
+              <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
               <button type="submit" class="btn btn-danger">Finish assessment</button>
               <button type="button" data-dismiss="modal" class="btn btn-default">Cancel</button>
             </form>
@@ -131,6 +132,7 @@
               <td class="cell-center">
                 <form name="grade-form" method="POST">
                   <input type="hidden" name="postAction" value="grade">
+                  <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
                   <button type="submit" class="btn btn-primary">Grade and continue</button>
                 </form>
               </td>

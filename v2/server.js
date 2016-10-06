@@ -63,6 +63,7 @@ app.use('/pl/:course_instance_id', require('./middlewares/authzCourseInstance'))
 app.use('/pl/:course_instance_id/admin', require('./middlewares/authzCourseInstanceAdmin'));
 app.use('/pl/:course_instance_id', require('./middlewares/navData')); // set res.locals.navData, res.locals.course, res.locals.course_instance
 app.use('/pl/:course_instance_id', require('./middlewares/urlPrefix')); // set res.locals.urlPrefix
+app.use('/pl/:course_instance_id', require('./middlewares/csrfToken')); // sets and checks res.locals.csrfToken
 
 app.use('/pl/:course_instance_id/redirect', require('./middlewares/redirectToCourseInstanceLanding'));
 

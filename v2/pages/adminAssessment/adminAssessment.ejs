@@ -254,6 +254,7 @@
                    data-content="
                                  <form name=&quot;open-form&quot; method=&quot;POST&quot;>
                                    <input type=&quot;hidden&quot; name=&quot;postAction&quot; value=&quot;close&quot;>
+                                   <input type=&quot;hidden&quot; name=&quot;csrfToken&quot; value=&quot;<%= csrfToken %>&quot;>
                                    <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
                                    <button type=&quot;submit&quot; class=&quot;btn btn-danger&quot;>Grade and close</button>
                                  </form>
@@ -268,6 +269,7 @@
                    data-content="
                                  <form name=&quot;open-form&quot; method=&quot;POST&quot;>
                                    <input type=&quot;hidden&quot; name=&quot;postAction&quot; value=&quot;open&quot;>
+                                   <input type=&quot;hidden&quot; name=&quot;csrfToken&quot; value=&quot;<%= csrfToken %>&quot;>
                                    <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
                                    <button type=&quot;submit&quot; class=&quot;btn btn-success&quot;>Open assessment</button>
                                  </form>

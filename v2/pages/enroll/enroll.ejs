@@ -37,6 +37,7 @@
                    data-content="
                                  <form name=&quot;enroll-form&quot; method=&quot;POST&quot;>
                                    <input type=&quot;hidden&quot; name=&quot;postAction&quot; value=&quot;enroll&quot;>
+                                   <input type=&quot;hidden&quot; name=&quot;csrfToken&quot; value=&quot;<%= csrfToken %>&quot;>
                                    <input type=&quot;hidden&quot; name=&quot;course_instance_id&quot;
                                           value=&quot;<%= course_instance.course_instance_id %>&quot;>
                                    <button type=&quot;submit&quot; class=&quot;btn btn-info&quot;>
@@ -56,6 +57,7 @@
                    data-content="
                                  <form name=&quot;unenroll-form&quot; method=&quot;POST&quot;>
                                    <input type=&quot;hidden&quot; name=&quot;postAction&quot; value=&quot;unenroll&quot;>
+                                   <input type=&quot;hidden&quot; name=&quot;csrfToken&quot; value=&quot;<%= csrfToken %>&quot;>
                                    <input type=&quot;hidden&quot; name=&quot;course_instance_id&quot;
                                           value=&quot;<%= course_instance.course_instance_id %>&quot;>
                                    <button type=&quot;submit&quot; class=&quot;btn btn-danger&quot;>

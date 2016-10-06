@@ -91,15 +91,7 @@ function makeAssessmentInstance(req, res, callback) {
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     if (res.locals.assessment.multiple_instance) {
-        if (_(req.query).has('confirm') && req.query.confirm == 'yes') {
-            if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
-            makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
-                if (ERR(err, next)) return;
-                res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessmentInstanceId);
-            });
-        } else {
-            res.render(path.join(__dirname, 'userAssessmentExam'), res.locals);
-        }
+        res.render(path.join(__dirname, 'userAssessmentExam'), res.locals);
     } else {
         var params = {
             assessment_id: res.locals.assessment.id,
@@ -108,19 +100,23 @@ router.get('/', function(req, res, next) {
         sqldb.query(sql.get_single_assessment_instance, params, function(err, result) {
             if (ERR(err, next)) return;
             if (result.rowCount == 0) {
-                if (_(req.query).has('confirm') && req.query.confirm == 'yes') {
-                    if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
-                    makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
-                        if (ERR(err, next)) return;
-                        res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessmentInstanceId);
-                    });
-                } else {
-                    res.render(path.join(__dirname, 'userAssessmentExam'), res.locals);
-                }
+                res.render(path.join(__dirname, 'userAssessmentExam'), res.locals);
             } else {
                 res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
             }
         });
+    }
+});
+
+router.post('/', function(req, res, next) {
+    if (req.body.postAction == 'newInstance') {
+        if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
+        makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessmentInstanceId);
+        });
+    } else {
+        return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
     }
 });
 
