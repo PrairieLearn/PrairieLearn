@@ -2231,10 +2231,13 @@ app.get("/testScores/:filename", function(req, res) {
     getScoresForTest(tid, function(err, scores) {
         if (err) return sendError(500, "Error getting scores for tid: " + tid, err);
         var headers;
-        if (format == "compass")
+        if (format == "compass") {
             headers = ['Username', tid];
-        else
+        } else if (format == "points") {
+            headers = ['uid', tid + " points"];
+        } else {
             headers = ['uid', tid];
+        }
         var csvData =  _(scores).map(function(score, uid) {
             var username = uid;
             if (format == "compass") {
@@ -2243,7 +2246,11 @@ app.get("/testScores/:filename", function(req, res) {
                     username = uid.slice(0, i);
                 }
             }
-            var row = [username, score.scorePerc];
+            var row;
+            if (format == "points")
+                row = [username, score.score];
+            else
+                row = [username, score.scorePerc];
             return row;
         });
         csvData = _(csvData).sortBy(function(row) {return row[0];});
