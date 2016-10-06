@@ -2233,8 +2233,8 @@ app.get("/testScores/:filename", function(req, res) {
         var headers;
         if (format == "compass") {
             headers = ['Username', tid];
-        } else if (format == "points") {
-            headers = ['uid', tid + " points"];
+        } else if (format == "raw") {
+            headers = ['uid', tid + " raw"];
         } else {
             headers = ['uid', tid];
         }
@@ -2247,7 +2247,7 @@ app.get("/testScores/:filename", function(req, res) {
                 }
             }
             var row;
-            if (format == "points")
+            if (format == "raw")
                 row = [username, score.score];
             else
                 row = [username, score.scorePerc];
