@@ -314,25 +314,18 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
     };
 
     SimpleClient.prototype.setSubmittedAnswer = function(submittedAnswer) {
-        var that = this;
-        _(submittedAnswer).each(function(value, key) {
-            that.submittedAnswer.set(key, value);
-        });
+        this.submittedAnswer.set(submittedAnswer);
+        this.trigger("submittedAnswerReset");
     };
 
     SimpleClient.prototype.setTrueAnswer = function(trueAnswer) {
-        var that = this;
-        _(trueAnswer).each(function(value, key) {
-            that.trueAnswer.set(key, value);
-        });
+        this.trueAnswer.set(trueAnswer);
         this.model.set("showTrueAnswer", true);
+        this.trigger("trueAnswerReset");
     };
 
     SimpleClient.prototype.setFeedback = function(feedback) {
-        var that = this;
-        _(feedback).each(function(value, key) {
-            that.feedback.set(key, value);
-        });
+        this.feedback.set(feedback);
         this.model.set("showTrueAnswer", true);
     };
 
