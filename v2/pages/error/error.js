@@ -1,8 +1,13 @@
 var path = require('path');
 
-var logger = require('../../logger');
+var logger = require('../../lib/logger');
 
 module.exports = function(err, req, res, next) {
+    // clear all cookies in case something was misconfigured
+    _(req.cookies).each(function(value, key) {
+        res.clearCookie(key);
+    });
+
     if (false) {
     //if (req.app.get('env') === 'development') {
         // development error handler

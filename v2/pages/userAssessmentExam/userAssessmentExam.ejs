@@ -4,11 +4,11 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
-    <%- include('../partials/userNavbar', {navPage: ''}); %>
+    <%- include('../partials/navbarUser', {navPage: ''}); %>
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title"><%= assessmentSet.abbrev %><%= assessment.number %>: <%= assessment.title %></h3>
+          <h3 class="panel-title"><%= assessment_set.abbrev %><%= assessment.number %>: <%= assessment.title %></h3>
         </div>
 
         <div class="panel-body">
@@ -17,11 +17,15 @@
             Please wait until instructed to start by a proctor
           </p>
           <p class="lead text-center">
-            This is <strong><%= assessmentSet.name %> <%= assessment.number %></strong> for <strong><%= course.short_name %></strong>
+            This is <strong><%= assessment_set.name %> <%= assessment.number %></strong> for <strong><%= course.short_name %></strong>
           </p>
-          <p class="text-center">
-            <a href="./?confirm=yes" class="btn btn-primary">Start assessment</a>
-          </p>
+          <form name="confirm-form" method="POST">
+            <input type="hidden" name="postAction" value="newInstance">
+            <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+            <p class="text-center">
+              <button type="submit" class="btn btn-primary">Start assessment</button>
+            </p>
+          </form>
           
         </div> <!-- panel-body -->
 

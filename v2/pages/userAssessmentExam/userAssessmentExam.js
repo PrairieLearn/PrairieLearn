@@ -6,13 +6,13 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var logger = require('../../logger');
-var error = require('../../error');
-var questionServer = require('../../question-server');
-var sqldb = require('../../sqldb');
-var sqlLoader = require('../../sql-loader');
+var logger = require('../../lib/logger');
+var error = require('../../lib/error');
+var questionServers = require('../../question-servers');
+var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'userAssessmentExam.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 function makeAssessmentInstance(req, res, callback) {
     sqldb.beginTransaction(function(err, client, done) {
@@ -52,7 +52,7 @@ function makeAssessmentInstance(req, res, callback) {
                         if (ERR(err, callback)) return;
                         // FIXME: returning with error here triggers "Can't set headers" exception
                         var instanceQuestionId = result.rows[0].id;
-                        questionServer.makeVariant(workItem.question, res.locals.course, {}, function(err, variant) {
+                        questionServers.makeVariant(workItem.question, res.locals.course, {}, function(err, variant) {
                             if (ERR(err, callback)) return;
                             var params = {
                                 instance_question_id: instanceQuestionId,
@@ -91,14 +91,7 @@ function makeAssessmentInstance(req, res, callback) {
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     if (res.locals.assessment.multiple_instance) {
-        if (_(req.query).has('confirm') && req.query.confirm == 'yes') {
-            makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
-                if (ERR(err, next)) return;
-                res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + assessmentInstanceId);
-            });
-        } else {
-            res.render(path.join(__dirname, 'userAssessmentExam'), res.locals);
-        }
+        res.render(path.join(__dirname, 'userAssessmentExam'), res.locals);
     } else {
         var params = {
             assessment_id: res.locals.assessment.id,
@@ -107,18 +100,23 @@ router.get('/', function(req, res, next) {
         sqldb.query(sql.get_single_assessment_instance, params, function(err, result) {
             if (ERR(err, next)) return;
             if (result.rowCount == 0) {
-                if (_(req.query).has('confirm') && req.query.confirm == 'yes') {
-                    makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
-                        if (ERR(err, next)) return;
-                        res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + assessmentInstanceId);
-                    });
-                } else {
-                    res.render(path.join(__dirname, 'userAssessmentExam'), res.locals);
-                }
+                res.render(path.join(__dirname, 'userAssessmentExam'), res.locals);
             } else {
-                res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + result.rows[0].id);
+                res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
             }
         });
+    }
+});
+
+router.post('/', function(req, res, next) {
+    if (req.body.postAction == 'newInstance') {
+        if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
+        makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessmentInstanceId);
+        });
+    } else {
+        return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
     }
 });
 

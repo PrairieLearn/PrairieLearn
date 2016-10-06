@@ -5,35 +5,41 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var logger = require('../../logger');
-var sqldb = require('../../sqldb');
-var sqlLoader = require('../../sql-loader');
+var logger = require('../../lib/logger');
+var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'adminAssessments.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var csvFilename = function(locals) {
     return locals.course.short_name.replace(/\s+/g, '')
         + '_'
-        + locals.courseInstance.short_name
+        + locals.course_instance.short_name.replace(/\s+/g, '')
         + '_'
         + 'assessment_stats.csv';
 };
 
 router.get('/', function(req, res, next) {
     res.locals.csvFilename = csvFilename(res.locals);
-    var params = {course_instance_id: res.locals.courseInstanceId};
-    sqldb.query(sql.all, params, function(err, result) {
+    var params = {
+        course_instance_id: res.locals.course_instance.id,
+        authz_data: res.locals.authz_data,
+    };
+    sqldb.query(sql.select_assessments, params, function(err, result) {
         if (ERR(err, next)) return;
         
         res.locals.rows = result.rows;
-        res.render(path.join(__dirname, 'adminAssessments'), res.locals);
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
 
 router.get('/:filename', function(req, res, next) {
     if (req.params.filename == csvFilename(res.locals)) {
-        var params = {course_instance_id: res.locals.courseInstanceId};
-        sqldb.query(sql.all, params, function(err, result) {
+        var params = {
+            course_instance_id: res.locals.course_instance.id,
+            authz_data: res.locals.authz_data,
+        };
+        sqldb.query(sql.select_assessments, params, function(err, result) {
             if (ERR(err, next)) return;
             var assessmentStats = result.rows;
             var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Assessment', 'Title', 'TID',
@@ -45,8 +51,8 @@ router.get('/:filename', function(req, res, next) {
             _(assessmentStats).each(function(assessmentStat) {
                 var csvRow = [
                     res.locals.course.short_name,
-                    res.locals.courseInstance.short_name,
-                    assessmentStat.long_name,
+                    res.locals.course_instance.short_name,
+                    assessmentStat.name,
                     assessmentStat.assessment_number,
                     assessmentStat.label,
                     assessmentStat.title,

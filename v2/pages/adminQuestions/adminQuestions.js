@@ -5,15 +5,15 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var logger = require('../../logger');
-var sqldb = require('../../sqldb');
-var sqlLoader = require('../../sql-loader');
+var logger = require('../../lib/logger');
+var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'adminQuestions.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
     var params = {
-        course_instance_id: res.locals.courseInstanceId,
+        course_instance_id: res.locals.course_instance.id,
     };
     sqldb.query(sql.questions, params, function(err, result) {
         if (ERR(err, next)) return;
@@ -24,14 +24,14 @@ router.get('/', function(req, res, next) {
         };
         sqldb.query(sql.tags, params, function(err, result) {
             if (ERR(err, next)) return;
-            res.locals.allTags = result.rows;
-        
+            res.locals.all_tags = result.rows;
+            
             var params = {
-                course_instance_id: res.locals.courseInstanceId,
+                course_instance_id: res.locals.course_instance.id,
             };
             sqldb.query(sql.assessments, params, function(err, result) {
                 if (ERR(err, next)) return;
-                res.locals.allAssessments = result.rows;
+                res.locals.all_assessments = result.rows;
                 
                 res.render('pages/adminQuestions/adminQuestions', res.locals);
             });

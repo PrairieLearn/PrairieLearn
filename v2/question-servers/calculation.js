@@ -3,10 +3,10 @@ var _ = require('lodash');
 var fs = require('fs');
 var path = require('path');
 
-var error = require('../error');
-var logger = require('../logger');
-var filePaths = require('../file-paths');
-var questionHelper = require('../questionHelper.js');
+var error = require('../lib/error');
+var logger = require('../lib/logger');
+var filePaths = require('../lib/file-paths');
+var questionHelper = require('../lib/questionHelper.js');
 
 module.exports = {
     renderExtraHeaders: function(question, course, locals, callback) {

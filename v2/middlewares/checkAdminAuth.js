@@ -1,10 +1,10 @@
 var ERR = require('async-stacktrace');
 var path = require('path');
 
-var logger = require('../logger');
-var sqldb = require('../sqldb');
-var error = require('../error');
-var sqlLoader = require('../sql-loader');
+var logger = require('../lib/logger');
+var sqldb = require('../lib/sqldb');
+var error = require('../lib/error');
+var sqlLoader = require('../lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 

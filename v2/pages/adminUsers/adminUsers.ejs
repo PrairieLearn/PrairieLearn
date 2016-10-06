@@ -4,7 +4,7 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
-    <%- include('../partials/adminNavbar', {navPage: 'users'}); %>
+    <%- include('../partials/navbarAdmin', {navPage: 'users'}); %>
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
@@ -12,7 +12,7 @@
         </div>
 
         <div class="panel-body">
-          Download <a href="<%= urlPrefix %>/users/<%= csvFilename %>"><%= csvFilename %></a>
+          Download <a href="<%= urlPrefix %>/admin/users/<%= csvFilename %>"><%= csvFilename %></a>
         </div>
 
         <div class="table-responsive">
@@ -49,7 +49,7 @@
         </div>
 
         <div class="panel-footer">
-          Download <a href="<%= urlPrefix %>/users/<%= csvFilename %>"><%= csvFilename %></a>
+          Download <a href="<%= urlPrefix %>/admin/users/<%= csvFilename %>"><%= csvFilename %></a>
         </div>
 
       </div>

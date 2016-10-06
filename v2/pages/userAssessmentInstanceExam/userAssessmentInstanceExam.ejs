@@ -18,7 +18,7 @@
             <h4 class="modal-title">Finish assessment</h4>
           </div>
           <div class="modal-body">
-            <% if (assessmentInstance.all_questions_answered) { %>
+            <% if (assessment_instance.all_questions_answered) { %>
             <div class="alert alert-warning">There are still unanswered questions.</div>
             <% } %>
             <p><strong>Warning</strong>: You will not be able to answer any more questions after finishing the assessment.</p>
@@ -27,6 +27,7 @@
           <div class="modal-footer">
             <form name="finish-form" method="POST">
               <input type="hidden" name="postAction" value="finish">
+              <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
               <button type="submit" class="btn btn-danger">Finish assessment</button>
               <button type="button" data-dismiss="modal" class="btn btn-default">Cancel</button>
             </form>
@@ -35,18 +36,18 @@
       </div>
     </div>
 
-    <%- include('../partials/userNavbar', {navPage: ''}); %>
+    <%- include('../partials/navbarUser', {navPage: ''}); %>
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title"><%= assessmentSet.abbrev %><%= assessment.number %>: <%= assessment.title %></h3>
+          <h3 class="panel-title"><%= assessment_set.abbrev %><%= assessment.number %>: <%= assessment.title %></h3>
         </div>
 
         <!-- ######################################################################################### -->
         <!-- ######################################################################################### -->
         <!-- ######################################################################################### -->
         <!-- ######################################################################################### -->
-        <% if (assessmentInstance.open) { %>
+        <% if (assessment_instance.open) { %>
 
         <div class="panel-body">
 
@@ -116,7 +117,7 @@
             <% } %>
             <tr>
               <td>
-                <a href="<%= urlPrefix %>/instanceQuestion/<%= question.id %>/">
+                <a href="<%= urlPrefix %>/instance_question/<%= question.id %>/">
                   <%= question.question_number %>. <%= question.question_title %>
                 </a>
               </td>
@@ -131,7 +132,8 @@
               <td class="cell-center">
                 <form name="grade-form" method="POST">
                   <input type="hidden" name="postAction" value="grade">
-                  <button class="btn btn-primary">Grade and continue</button>
+                  <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+                  <button type="submit" class="btn btn-primary">Grade and continue</button>
                 </form>
               </td>
             </tr>
@@ -142,20 +144,20 @@
         <!-- ######################################################################################### -->
         <!-- ######################################################################################### -->
         <!-- ######################################################################################### -->
-        <% } else { %> <!-- assessmentInstance.open -->
+        <% } else { %> <!-- assessment_instance.open -->
 
         <div class="panel-body">
 
           <div class="well well-sm small-bottom-margin">
             <div class="row">
               <div class="col-md-3 col-sm-6 col-xs-12">
-                Total points: <%= assessmentInstance.points %>/<%= assessmentInstance.max_points %>
+                Total points: <%= assessment_instance.points %>/<%= assessment_instance.max_points %>
               </div>
               <div class="col-md-3 col-sm-6 col-xs-12">
-                <%- include('../partials/scorebar', {score: assessmentInstance.score_perc}) %>
+                <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
               </div>
               <div class="col-md-6 col-sm-12 col-xs-12">
-                Time completed: <%= assessmentInstance.closed_at %>
+                Time completed: <%= assessment_instance.closed_at %>
               </div>
             </div> <!-- row -->
           </div> <!-- well -->
@@ -179,7 +181,7 @@
             <% } %>
             <tr>
               <td>
-                <a href="<%= urlPrefix %>/instanceQuestion/<%= question.id %>/">
+                <a href="<%= urlPrefix %>/instance_question/<%= question.id %>/">
                   <%= question.question_number %>. <%= question.question_title %>
                 </a>
               </td>
@@ -194,7 +196,7 @@
         <!-- ######################################################################################### -->
         <!-- ######################################################################################### -->
         <!-- ######################################################################################### -->
-        <% } %> <!-- assessmentInstance.open -->
+        <% } %> <!-- assessment_instance.open -->
       </div>
     </div>
   </body>

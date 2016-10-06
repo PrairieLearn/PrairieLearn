@@ -4,7 +4,7 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
-    <%- include('../partials/adminNavbar', {navPage: ''}); %>
+    <%- include('../partials/navbarAdmin', {navPage: ''}); %>
     <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
     <script type="text/javascript" src="/MathJax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
     <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
@@ -14,34 +14,34 @@
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title">Question <%= result.qid %></h3>
+          <h3 class="panel-title">Question <%= question.qid %></h3>
         </div>
 
         <table class="table table-condensed table-hover two-column-description">
           <tbody>
             <tr>
               <th>Title</th>
-              <td><%= result.title %></td>
+              <td><%= question.title %></td>
             </tr>
             <tr>
               <th>QID</th>
-              <td><%= result.qid %></td>
+              <td><%= question.qid %></td>
             </tr>
             <tr>
               <th>Type</th>
-              <td><%= result.type %></td>
+              <td><%= question.type %></td>
             </tr>
             <tr>
               <th>Topic</th>
-              <td><%- include('../partials/topic', {topic: result.topic}); %></td>
+              <td><%- include('../partials/topic', {topic: topic}); %></td>
             </tr>
             <tr>
               <th>Tags</th>
-              <td><%- include('../partials/tags', {tags: result.tags}); %></td>
+              <td><%- include('../partials/tags', {tags: tags}); %></td>
             </tr>
             <tr>
               <th>Assessments</th>
-              <td><%- include('../partials/assessments', {assessments: result.assessments}); %></td>
+              <td><%- include('../partials/assessments', {assessments: assessments}); %></td>
               <td>
               </td>
             </tr>
@@ -54,7 +54,7 @@
         
         <div class="panel panel-primary question-block">
           <div class="panel-heading">
-            <h3 class="panel-title"><%= result.title %></h3>
+            <h3 class="panel-title"><%= question.title %></h3>
           </div>
           <div class="panel-body question-body">
             <%- questionHtml %>
@@ -62,8 +62,10 @@
           <div class="panel-footer">
             <button class="btn btn-primary question-submit">Submit</button>
             <a class="btn btn-info" href=".">New variant</a>
-            <form class="question-form" name="question-form" method="POST" action="<%= postUrl %>">
-              <input type="hidden" name="postData">
+            <form class="question-form" name="question-form" method="POST">
+              <input type="hidden" name="postAction" value="submitQuestionAnswer">
+              <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+              <input type="hidden" name="postData" class="postData">
             </form>
           </div>
         </div>

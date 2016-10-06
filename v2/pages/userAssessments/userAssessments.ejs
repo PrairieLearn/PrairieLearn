@@ -9,7 +9,7 @@
           $('[data-toggle="popover"]').popover()
       });
     </script>
-    <%- include('../partials/userNavbar', {navPage: 'assessments'}); %>
+    <%- include('../partials/navbarUser', {navPage: 'assessments'}); %>
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
@@ -19,6 +19,7 @@
         <table class="table table-condensed table-hover">
           <thead>
             <tr>
+              <th style="width: 1%"></th>
               <th></th>
               <th class="cell-center">Available credit</th>
               <th class="cell-center">Score</th>
@@ -28,22 +29,24 @@
             <% rows.forEach(function(row) { %>
             <% if (row.start_new_set) { %>
             <tr class="<%= row.assessment_set_color %>">
-              <th colspan="7"><%= row.assessment_set_heading %></th>
+              <th colspan="4"><%= row.assessment_set_heading %></th>
             </tr>
             <% } %>
             <tr>
-              <td>
+              <td style="width: 1%">
                 <a
                    <% if (row.assessment_instance_id) { %>
-                   href="<%= urlPrefix %>/assessmentInstance/<%= row.assessment_instance_id %>/"
+                   href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>/"
                    <% } else { %>
                    href="<%= urlPrefix %>/assessment/<%= row.assessment_id %>/"
                    <% } %>
                    class="btn btn-<%= row.assessment_set_color %> btn-xs" role="button"
                    ><%= row.assessment_set_abbrev %><%= row.assessment_number %></a>
+              </td>
+              <td>
                 <a
                    <% if (row.assessment_instance_id) { %>
-                   href="<%= urlPrefix %>/assessmentInstance/<%= row.assessment_instance_id %>/"
+                   href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>/"
                    <% } else { %>
                    href="<%= urlPrefix %>/assessment/<%= row.assessment_id %>/"
                    <% } %>

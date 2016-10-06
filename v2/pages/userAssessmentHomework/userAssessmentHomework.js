@@ -5,12 +5,12 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var logger = require('../../logger');
-var error = require('../../error');
-var sqldb = require('../../sqldb');
-var sqlLoader = require('../../sql-loader');
+var logger = require('../../lib/logger');
+var error = require('../../lib/error');
+var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'userAssessmentHomework.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 function makeAssessmentInstance(req, res, callback) {
     var params = {
@@ -37,12 +37,13 @@ router.get('/', function(req, res, next) {
     sqldb.query(sql.find_single_assessment_instance, params, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) {
-            makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
+            if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
+            makeAssessmentInstance(req, res, function(err, assessment_instance_id) {
                 if (ERR(err, next)) return;
-                res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + assessmentInstanceId);
+                res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
             });
         } else {
-            res.redirect(res.locals.urlPrefix + '/assessmentInstance/' + result.rows[0].id);
+            res.redirect(res.locals.urlPrefix + '/assessment_instance/' + result.rows[0].id);
         }
     });
 });

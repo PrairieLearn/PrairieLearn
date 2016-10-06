@@ -5,19 +5,20 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var logger = require('../../logger');
+var error = require('../../lib/error');
+var logger = require('../../lib/logger');
 var assessmentExam = require('../../lib/assessment-exam');
-var sqldb = require('../../sqldb');
-var sqlLoader = require('../../sql-loader');
+var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'adminAssessment.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var scoreStatsCsvFilename = function(locals) {
     return locals.course.short_name.replace(/\s+/g, '')
         + '_'
-        + locals.courseInstance.short_name
+        + locals.course_instance.short_name
         + '_'
-        + locals.assessmentSet.abbrev
+        + locals.assessment_set.abbrev
         + locals.assessment.number
         + '_'
         + 'score_stats.csv';
@@ -26,9 +27,9 @@ var scoreStatsCsvFilename = function(locals) {
 var durationStatsCsvFilename = function(locals) {
     return locals.course.short_name.replace(/\s+/g, '')
         + '_'
-        + locals.courseInstance.short_name
+        + locals.course_instance.short_name
         + '_'
-        + locals.assessmentSet.abbrev
+        + locals.assessment_set.abbrev
         + locals.assessment.number
         + '_'
         + 'duration_stats.csv';
@@ -37,9 +38,9 @@ var durationStatsCsvFilename = function(locals) {
 var scoresCsvFilename = function(locals) {
     return locals.course.short_name.replace(/\s+/g, '')
         + '_'
-        + locals.courseInstance.short_name
+        + locals.course_instance.short_name
         + '_'
-        + locals.assessmentSet.abbrev
+        + locals.assessment_set.abbrev
         + locals.assessment.number
         + '_'
         + 'scores.csv';
@@ -49,27 +50,27 @@ router.get('/', function(req, res, next) {
     res.locals.scoreStatsCsvFilename = scoreStatsCsvFilename(res.locals);
     res.locals.durationStatsCsvFilename = durationStatsCsvFilename(res.locals);
     res.locals.scoresCsvFilename = scoresCsvFilename(res.locals);
-    var params = {assessment_id: res.locals.assessmentId};
+
+    var params = {assessment_id: res.locals.assessment.id};
     sqldb.query(sql.questions, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.questions = result.rows;
 
-        var params = {assessment_id: res.locals.assessmentId};
+        var params = {assessment_id: res.locals.assessment.id};
         sqldb.queryOneRow(sql.assessment_stats, params, function(err, result) {
             if (ERR(err, next)) return;
-            res.locals.assessmentStat = result.rows[0];
+            res.locals.assessment_stat = result.rows[0];
 
             // FIXME: change to assessment_instance_duration_stats and show all instances
-            var params = {assessment_id: res.locals.assessmentId};
+            var params = {assessment_id: res.locals.assessment.id};
             sqldb.queryOneRow(sql.assessment_duration_stats, params, function(err, result) {
                 if (ERR(err, next)) return;
-                res.locals.durationStat = result.rows[0];
+                res.locals.duration_stat = result.rows[0];
 
-                // FIXME: change to assessment_instance_scores and show all instances
-                var params = {assessment_id: res.locals.assessmentId};
+                var params = {assessment_id: res.locals.assessment.id};
                 sqldb.query(sql.assessment_instance_scores, params, function(err, result) {
                     if (ERR(err, next)) return;
-                    res.locals.userScores = result.rows;
+                    res.locals.user_scores = result.rows;
                     
                     res.render(path.join(__dirname, 'adminAssessment'), res.locals);
                 });
@@ -80,7 +81,7 @@ router.get('/', function(req, res, next) {
 
 router.get('/:filename', function(req, res, next) {
     if (req.params.filename == scoreStatsCsvFilename(res.locals)) {
-        var params = {assessment_id: res.locals.assessmentId};
+        var params = {assessment_id: res.locals.assessment.id};
         sqldb.queryOneRow(sql.assessment_stats, params, function(err, result) {
             if (ERR(err, next)) return;
             var assessmentStat = result.rows[0];
@@ -88,10 +89,10 @@ router.get('/:filename', function(req, res, next) {
                               'Std', 'Min', 'Max', 'Median', 'NZero', 'NHundred', 'NZeroPerc', 'NHundredPerc'];
             var csvData = [
                 res.locals.course.short_name,
-                res.locals.courseInstance.short_name,
-                res.locals.assessmentSet.name,
+                res.locals.course_instance.short_name,
+                res.locals.assessment_set.name,
                 res.locals.assessment.number,
-                res.locals.assessmentSet.abbrev + res.locals.assessment.number,
+                res.locals.assessment_set.abbrev + res.locals.assessment.number,
                 res.locals.assessment.title,
                 res.locals.assessment.tid,
                 assessmentStat.number,
@@ -117,7 +118,7 @@ router.get('/:filename', function(req, res, next) {
             });
         });
     } else if (req.params.filename == durationStatsCsvFilename(res.locals)) {
-        var params = {assessment_id: res.locals.assessmentId};
+        var params = {assessment_id: res.locals.assessment.id};
         sqldb.queryOneRow(sql.assessment_duration_stats, params, function(err, result) {
             if (ERR(err, next)) return;
             var durationStat = result.rows[0];
@@ -125,10 +126,10 @@ router.get('/:filename', function(req, res, next) {
                               'Median duration (min)', 'Min duration (min)', 'Max duration (min)', 'Mean duration (min)'];
             var csvData = [
                 res.locals.course.short_name,
-                res.locals.courseInstance.short_name,
-                res.locals.assessmentSet.name,
+                res.locals.course_instance.short_name,
+                res.locals.assessment_set.name,
                 res.locals.assessment.number,
-                res.locals.assessmentSet.abbrev + res.locals.assessment.number,
+                res.locals.assessment_set.abbrev + res.locals.assessment.number,
                 res.locals.assessment.title,
                 res.locals.assessment.tid,
                 durationStat.median_mins,
@@ -152,7 +153,7 @@ router.get('/:filename', function(req, res, next) {
             });
         });
     } else if (req.params.filename == scoresCsvFilename(res.locals)) {
-        var params = {assessment_id: res.locals.assessmentId};
+        var params = {assessment_id: res.locals.assessment.id};
         sqldb.query(sql.assessment_instance_scores, params, function(err, result) {
             if (ERR(err, next)) return;
             var userScores = result.rows;
@@ -181,32 +182,35 @@ router.get('/:filename', function(req, res, next) {
 });
 
 router.post('/', function(req, res, next) {
+    if (!res.locals.authz_data.has_admin_edit) return next();
     if (req.body.postAction == 'open') {
         var params = {
+            assessment_id: res.locals.assessment.id,
             assessment_instance_id: req.body.assessment_instance_id,
-            auth_data: res.locals.auth_data,
+            authn_user_id: res.locals.authz_data.authn_user.id,
         };
-        sqldb.queryOneRow(sql.auth_and_open, params, function(err, result) {
+        sqldb.queryOneRow(sql.open, params, function(err, result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (res.locals.postAction == 'close') {
+    } else if (req.body.postAction == 'close') {
         var params = {
+            assessment_id: res.locals.assessment.id,
             assessment_instance_id: req.body.assessment_instance_id,
-            auth_data: res.locals.auth_data,
+            authz_data: res.locals.authz_data,
         };
-        sqldb.queryOneRow(sql.auth_for_finish, params, function(err, result) {
+        sqldb.queryOneRow(sql.select_finish_data, params, function(err, result) {
             if (ERR(err, next)) return;
-            var authResult = result.rows[0];
+            var credit = result.rows[0].credit;
 
             var finishExam = true;
-            assessmentExam.gradeExam(req.body.assessment_instance_id, authResult.auth_user_id, authResult.credit, finishExam, function(err) {
+            assessmentExam.gradeExam(req.body.assessment_instance_id, res.locals.authn_user.id, credit, finishExam, function(err) {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });
         });
     } else {
-        return next(error.make(400, 'unknown action: ' + res.locals.postAction, {postAction: req.body.postAction, body: req.body}));
+        return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
     }
 });
 

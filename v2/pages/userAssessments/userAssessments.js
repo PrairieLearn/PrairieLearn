@@ -5,21 +5,19 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var logger = require('../../logger');
-var sqldb = require('../../sqldb');
-var sqlLoader = require('../../sql-loader');
+var logger = require('../../lib/logger');
+var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'userAssessments.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
     var params = {
-        courseInstanceId: res.locals.courseInstanceId,
-        userId: res.locals.user.id,
-        uid: res.locals.user.uid,
-        mode: req.mode,
-        role: res.locals.enrollment.role,
+        course_instance_id: res.locals.course_instance.id,
+        authz_data: res.locals.authz_data,
+        user_id: res.locals.user.id,
     };
-    sqldb.query(sql.all, params, function(err, result) {
+    sqldb.query(sql.select_assessments, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.rows = result.rows;
         res.render(path.join(__dirname, 'userAssessments'), res.locals);

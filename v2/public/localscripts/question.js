@@ -32,11 +32,10 @@ $(function() {
         var submittedAnswer = client.getSubmittedAnswer(clientContainer, questionData);
 
         var postData = {
-            action: "submitQuestionAnswer",
             submittedAnswer: submittedAnswer,
             variant: questionData.variant,
         };
-        questionContainer.find('form.question-form input').val(JSON.stringify(postData));
+        questionContainer.find('form.question-form input.postData').val(JSON.stringify(postData));
         questionContainer.find('form.question-form').submit();
     };
 

@@ -1,4 +1,4 @@
-var sqldb = require('../../sqldb');
+var sqldb = require('../../lib/sqldb');
 
 module.exports = {
     sync: function(courseInfo, callback) {

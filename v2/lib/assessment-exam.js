@@ -4,11 +4,11 @@ var async = require('async');
 var fs = require('fs');
 var path = require('path');
 
-var error = require('../error');
-var logger = require('../logger');
-var questionServer = require('../question-server');
-var sqldb = require('../sqldb');
-var sqlLoader = require('../sql-loader');
+var error = require('../lib/error');
+var logger = require('../lib/logger');
+var questionServers = require('../question-servers');
+var sqldb = require('../lib/sqldb');
+var sqlLoader = require('../lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -33,7 +33,7 @@ module.exports.gradeExam = function(assessment_instance_id, auth_user_id, credit
                     var grading;
                     async.series([
                         function(callback) {
-                            questionServer.gradeSubmission(workItem.submission, workItem.variant, workItem.question, workItem.course, {}, function(err, g) {
+                            questionServers.gradeSubmission(workItem.submission, workItem.variant, workItem.question, workItem.course, {}, function(err, g) {
                                 if (ERR(err, callback)) return;
                                 grading = g;
                                 callback(null);

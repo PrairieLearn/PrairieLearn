@@ -4,12 +4,12 @@ var fs = require('fs');
 var path = require('path');
 var numeric = require('numeric');
 
-var logger = require('./logger');
-var filePaths = require('./file-paths');
+var logger = require('../lib/logger');
+var filePaths = require('../lib/file-paths');
 
 var questionModules = {
-    'ShortAnswer': require('./question-servers/shortAnswer'),
-    'Calculation': require('./question-servers/calculation'),
+    'ShortAnswer': require('./shortAnswer'),
+    'Calculation': require('./calculation'),
 };
 
 module.exports = {

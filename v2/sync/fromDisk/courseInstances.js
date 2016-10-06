@@ -4,12 +4,12 @@ var path = require('path');
 var async = require('async');
 var moment = require('moment-timezone');
 
-var logger = require('../../logger');
-var config = require('../../config');
-var sqldb = require('../../sqldb');
-var sqlLoader = require('../../sql-loader');
+var logger = require('../../lib/logger');
+var config = require('../../lib/config');
+var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'courseInstances.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = {
     sync: function(courseInfo, courseInstanceDB, callback) {

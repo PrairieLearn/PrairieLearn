@@ -5,28 +5,28 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var logger = require('../../logger');
-var sqldb = require('../../sqldb');
-var sqlLoader = require('../../sql-loader');
+var logger = require('../../lib/logger');
+var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'adminUsers.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var csvFilename = function(locals) {
     return locals.course.short_name.replace(/\s+/g, '')
         + '_'
-        + locals.courseInstance.short_name
+        + locals.course_instance.short_name
         + '_'
         + 'user_scores.csv';
 };
 
 router.get('/', function(req, res, next) {
     res.locals.csvFilename = csvFilename(res.locals);
-    var params = {course_instance_id: res.locals.courseInstanceId};
+    var params = {course_instance_id: res.locals.course_instance.id};
     sqldb.query(sql.course_assessments, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.course_assessments = result.rows;
 
-        var params = {course_instance_id: res.locals.courseInstanceId};
+        var params = {course_instance_id: res.locals.course_instance.id};
         sqldb.query(sql.user_scores, params, function(err, result) {
             if (ERR(err, next)) return;
 
@@ -38,7 +38,7 @@ router.get('/', function(req, res, next) {
 
 router.get('/:filename', function(req, res, next) {
     if (req.params.filename == csvFilename(res.locals)) {
-        var params = {course_instance_id: res.locals.courseInstanceId};
+        var params = {course_instance_id: res.locals.course_instance.id};
         sqldb.query(sql.course_assessments, params, function(err, result) {
             if (ERR(err, next)) return;
             var courseAssessments = result.rows;

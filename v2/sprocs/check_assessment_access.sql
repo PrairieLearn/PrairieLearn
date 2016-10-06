@@ -2,21 +2,22 @@ DROP FUNCTION IF EXISTS check_assessment_access(integer,enum_mode,enum_role,char
 
 CREATE OR REPLACE FUNCTION
     check_assessment_access (
-        IN assessment_id integer,
-        IN mode enum_mode,
-        IN role enum_role,
-        IN uid varchar(255),
-        IN date TIMESTAMP WITH TIME ZONE,
-        OUT available boolean,       -- Is this assessment available for the given user?
-        OUT credit integer,          -- How much credit will they receive?
-        OUT credit_date_string TEXT, -- For display to the user.
-        OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
+        assessment_id integer,
+        mode enum_mode,
+        role enum_role,
+        uid varchar(255),
+        date TIMESTAMP WITH TIME ZONE
+    ) RETURNS TABLE (
+        authorized boolean,      -- Is this assessment available for the given user?
+        credit integer,          -- How much credit will they receive?
+        credit_date_string TEXT, -- For display to the user.
+        access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     ) AS $$
 WITH
 chosen_access_rule AS (
-    -- Choose the access rule which grants access ('available' is TRUE), if any, and has the highest 'credit'.
+    -- Choose the access rule which grants access ('authorized' is TRUE), if any, and has the highest 'credit'.
     SELECT
-        caar.available,
+        caar.authorized,
         aar.credit,
         CASE
             WHEN aar.credit > 0 THEN
@@ -33,13 +34,13 @@ chosen_access_rule AS (
             check_assessment_access.uid, check_assessment_access.date, TRUE) AS caar ON TRUE
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
-        AND caar.available
+        AND caar.authorized
     ORDER BY
         aar.credit DESC NULLS LAST,
         aar.number
     LIMIT 1
 ),
-rules_available_on_some_date AS (
+rules_authorized_on_some_date AS (
     -- List of all access rules that will grant access to this user/mode/role at some date (past or future),
     -- computed by ignoring the date argument.
     SELECT
@@ -50,10 +51,10 @@ rules_available_on_some_date AS (
             check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
-        AND caar.available
+        AND caar.authorized
 )
 SELECT
-    car.available,
+    car.authorized,
     car.credit,
     car.credit_date_string,
     raosd_agg.access_rules
@@ -68,6 +69,6 @@ FROM
                 'active', car.id = raosd.id
             ) ORDER BY raosd.number)
         FROM
-            rules_available_on_some_date AS raosd
+            rules_authorized_on_some_date AS raosd
     ) AS raosd_agg (access_rules)
 $$ LANGUAGE SQL;

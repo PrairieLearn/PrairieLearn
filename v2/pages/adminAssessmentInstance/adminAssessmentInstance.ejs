@@ -11,7 +11,7 @@
     <script type="text/javascript" src="/localscripts/scatter.js"></script>
   </head>
   <body>
-    <%- include('../partials/adminNavbar', {navPage: ''}); %>
+    <%- include('../partials/navbarAdmin', {navPage: ''}); %>
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
@@ -26,7 +26,7 @@
           <tbody>
             <tr><th>UID</th><td><%= instance_user.uid %></td></tr>
             <tr><th>Name</th><td><%= instance_user.name %></td></tr>
-            <tr><th>Role</th><td><%= enrollment.role %></td></tr>
+            <tr><th>Role</th><td><%= instance_enrollment.role %></td></tr>
             <tr><th>Assessment instance</th><td><%= assessment_instance.number %></td></tr>
             <tr><th>Score</th><td><%- include('../partials/scorebar', {score: assessment_instance.score_perc}); %></td></tr>
             <tr><th>Duration</th><td><%= assessment_instance_duration %></td></tr>
@@ -47,7 +47,7 @@
         </div>
         <div class="panel-body">
           <small>
-            Download <a href="<%= urlPrefix %>/assessmentInstance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
+            Download <a href="<%= urlPrefix %>/admin/assessment_instance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
 
             Click on a column header to sort. Shift-click on a second header to sub-sort.
           </small>
@@ -68,11 +68,11 @@
             <% log.forEach(function(row) { %>
             <tr>
               <td><%= row.date %></td>
-              <td><a href="<%= urlPrefix %>/user/<%= row.auth_user_id %>"><%= row.auth_user_uid %></a></td>
+              <td><a href="<%= urlPrefix %>/admin/user/<%= row.auth_user_id %>"><%= row.auth_user_uid %></a></td>
               <td><button class="btn btn-xs btn-<%= row.event_color %>"><%= row.event_name %></button></td>
-              <td><% if (row.qid) { %><a href="<%= urlPrefix %>/question/<%= row.question_id %>"><%= row.qid %></a><% } %></td>
-              <td><% if (row.question_id && row.variant_id) { %><a href="<%= urlPrefix %>/question/<%= row.question_id %>?variant_id=<%= row.variant_id %>"><%= row.variant_number %></a><% } %></td>
-              <td><%= (row.data != null) ? JSON.stringify(row.data) : null %></td>
+              <td><% if (row.qid) { %><a href="<%= urlPrefix %>/admin/question/<%= course_instance.id %>/<%= row.question_id %>"><%= row.qid %></a><% } %></td>
+              <td><% if (row.question_id && row.variant_id) { %><a href="<%= urlPrefix %>/admin/question/<%= course_instance.id %>/<%= row.question_id %>?variant_id=<%= row.variant_id %>"><%= row.variant_number %></a><% } %></td>
+              <td style="word-break: break-all;"><%= (row.data != null) ? JSON.stringify(row.data) : null %></td>
             </tr>
             <% }); %>
           </tbody>
@@ -89,7 +89,7 @@
         </script>
         <div class="panel-footer">
           <small>
-            Download <a href="<%= urlPrefix %>/assessmentInstance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
+            Download <a href="<%= urlPrefix %>/admin/assessment_instance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
           </small>
         </div>
       </div>

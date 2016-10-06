@@ -5,27 +5,36 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var error = require('../../error');
-var logger = require('../../logger');
-var questionServer = require('../../question-server');
-var sqldb = require('../../sqldb');
-var sqlLoader = require('../../sql-loader');
+var error = require('../../lib/error');
+var logger = require('../../lib/logger');
+var filePaths = require('../../lib/file-paths');
+var questionServers = require('../../question-servers');
+var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.load(path.join(__dirname, 'adminQuestion.sql'));
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var handle = function(req, res, next) {
-    if (req.postData) {
-        if (req.postData.action == 'submitQuestionAnswer') {
-            var variant = req.postData.variant;
+    if (req.body.postAction) {
+        if (req.body.postAction == 'submitQuestionAnswer') {
+            if (!req.body.postData) return callback(error.make(400, 'No postData', {locals: res.locals, body: req.body}));
+            var postData;
+            try {
+                postData = JSON.parse(req.body.postData);
+            } catch (e) {
+                return callback(error.make(400, 'JSON parse failed on body.postData', {locals: res.locals, body: req.body}));
+            }
+
+            var variant = postData.variant;
             submission = {
-                submitted_answer: req.postData.submittedAnswer,
+                submitted_answer: postData.submittedAnswer,
             };
-            questionServer.gradeSubmission(submission, variant, res.locals.question, res.locals.course, {}, function(err, grading) {
+            questionServers.gradeSubmission(submission, variant, res.locals.question, res.locals.course, {}, function(err, grading) {
                 if (ERR(err, next)) return;
                 _.assign(submission, grading);
-                questionServer.getModule(res.locals.question.type, function(err, questionModule) {
+                questionServers.getModule(res.locals.question.type, function(err, questionModule) {
                     if (ERR(err, next)) return;
-                    questionServer.renderScore(submission.score, function(err, scoreHtml) {
+                    questionServers.renderScore(submission.score, function(err, scoreHtml) {
                         if (ERR(err, next)) return;
                         questionModule.renderSubmission(variant, res.locals.question, submission, res.locals.course, res.locals, function(err, submissionHtml) {
                             if (ERR(err, next)) return;
@@ -37,9 +46,9 @@ var handle = function(req, res, next) {
                     });
                 });
             });
-        } else return next(error.make(400, 'unknown action', {postData: req.postData}));
+        } else return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
     } else {
-        questionServer.makeVariant(res.locals.question, res.locals.course, {}, function(err, variant) {
+        questionServers.makeVariant(res.locals.question, res.locals.course, {}, function(err, variant) {
             if (ERR(err, next)) return;
             render(req, res, next, variant);
         });
@@ -47,10 +56,10 @@ var handle = function(req, res, next) {
 };
 
 var render = function(req, res, next, variant, submission, scoreHtml, submissionHtml, answerHtml) {
-    var params = [res.locals.questionId, res.locals.courseInstanceId];
-    sqldb.queryOneRow(sql.all, params, function(err, result) {
+    var params = [res.locals.question.id, res.locals.course_instance.id];
+    sqldb.queryOneRow(sql.select_question, params, function(err, result) {
         if (ERR(err, next)) return;
-        questionServer.getModule(res.locals.question.type, function(err, questionModule) {
+        questionServers.getModule(res.locals.question.type, function(err, questionModule) {
             if (ERR(err, next)) return;
             questionModule.renderExtraHeaders(res.locals.question, res.locals.course, res.locals, function(err, extraHeaders) {
                 if (ERR(err, next)) return;
@@ -64,12 +73,12 @@ var render = function(req, res, next, variant, submission, scoreHtml, submission
                     res.locals.scoreHtml = scoreHtml;
                     res.locals.submissionHtml = submissionHtml;
                     res.locals.answerHtml = answerHtml;
-                    res.locals.postUrl = res.locals.urlPrefix + "/question/" + res.locals.question.id + "/";
+                    res.locals.postUrl = res.locals.urlPrefix + "/admin/question/" + res.locals.question.id + "/";
                     res.locals.questionJson = JSON.stringify({
-                        questionFilePath: res.locals.urlPrefix + "/question/" + res.locals.question.id + "/file",
+                        questionFilePath: res.locals.urlPrefix + "/admin/question/" + res.locals.question.id + "/file",
                         question: res.locals.question,
                         course: res.locals.course,
-                        courseInstance: res.locals.courseInstance,
+                        courseInstance: res.locals.course_instance,
                         variant: variant,
                         submittedAnswer: submission ? submission.submitted_answer : null,
                         feedback: submission ? submission.feedback : null,
@@ -84,5 +93,26 @@ var render = function(req, res, next, variant, submission, scoreHtml, submission
 
 router.get('/', handle);
 router.post('/', handle);
+
+router.get('/file/:filename', function(req, res, next) {
+    var question = res.locals.question;
+    var course = res.locals.course;
+    var filename = req.params.filename;
+    filePaths.questionPath(question.directory, course.path, function(err, questionPath) {
+        if (ERR(err, next)) return;
+        res.sendFile(filename, {root: questionPath});
+    });
+});
+
+router.get('/text/:filename', function(req, res, next) {
+    var question = res.locals.question;
+    var course = res.locals.course;
+    var filename = req.params.filename;
+    filePaths.questionPath(question.directory, course.path, function(err, questionPath) {
+        if (ERR(err, next)) return;
+        var rootPath = path.join(questionPath, "text");
+        res.sendFile(filename, {root: rootPath});
+    });
+});
 
 module.exports = router;

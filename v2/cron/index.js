@@ -3,13 +3,13 @@ var _ = require('lodash');
 var fs = require('fs');
 var async = require('async');
 
-var logger = require('./logger');
-var error = require('./error');
-var config = require('./config');
-var sqldb = require('./sqldb');
+var logger = require('../lib/logger');
+var error = require('../lib/error');
+var config = require('../lib/config');
+var sqldb = require('../lib/sqldb');
 
-var userAssessmentDurations = require('./cron.d/userAssessmentDurations');
-var autoFinishExams = require('./cron.d/autoFinishExams');
+var userAssessmentDurations = require('./userAssessmentDurations');
+var autoFinishExams = require('./autoFinishExams');
 
 module.exports = {
     init: function(callback) {

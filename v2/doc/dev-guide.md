@@ -17,16 +17,21 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. Broadly follow the [Express generator](http://expressjs.com/en/starter/generator.html) layout.
 
-1. Top-level directories are:
+1. Top-level files and directories are:
 
         PrairieLearn/v2
-        |-- cron.d            # jobs to be periodically executed, one file per job
-        |-- config.json       # server configuration file
+        |-- config.json       # server configuration file (optional)
+        |-- cron              # jobs to be periodically executed, one file per job
+        |   |-- index.js      # entry point for all cron jobs
+        |   `-- ...           # one JS file per cron job, executed by index.js
         |-- doc               # documentation
         |-- exampleCourse     # example content for a course
         |-- lib               # miscellaneous helper code
-        |-- middlewares       # Express.js middleware
+        |-- middlewares       # Express.js middleware, one per file
         |-- models            # DB table creation, one file per table
+        |   |-- index.js      # entry point for all model initialization
+        |   `-- ...           # one JS file per table, executed by index.js
+        |-- package.json      # npm configuration file
         |-- pages             # one sub-dir per web page
         |   |-- partials      # EJS helper sub-templates
         |   |-- adminHome     # all the code for the adminHome page
@@ -40,6 +45,8 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
         |-- schemas           # JSON schemas for input file formats
         |-- server.js         # top-level program
         |-- sprocs            # DB stored procedures, one per file
+        |   |-- index.js      # entry point for all sproc initialization
+        |   `-- ...           # one JS file per sproc, executed by index.js
         |-- sync              # code to load on-disk course config into DB
         `-- tests             # unit tests, currently unused
 
@@ -102,13 +109,13 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
         SELECT
             to_jsonb(c) AS course,
             to_jsonb(ci) AS course_instance,
-            to_jsonb(u) AS auth_user,
-            to_jsonb(e) AS auth_enrollment
+            to_jsonb(u) AS authn_user,
+            to_jsonb(e) AS authn_enrollment
         FROM
             course_instances AS ci
             JOIN courses AS c ON (c.id = ci.course_id)
             JOIN LATERAL auth_admin_course_instance(ci.id, 'View', $auth_data) AS aaci ON TRUE
-            JOIN LATERAL users AS u ON (u.id = aaci.auth_user_id)
+            JOIN LATERAL users AS u ON (u.id = aaci.authn_user_id)
             JOIN LATERAL enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = ci.id)
         WHERE
             ci.id = $course_instance_id
@@ -140,10 +147,10 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. SQL code should not be inline in JavaScript files. Instead it should be in a separate `.sql` file, following the [Yesql concept](https://github.com/krisajenkins/yesql). Each `filename.js` file will normally have a corresponding `filename.sql` file in the same directory. The `.sql` file should look like:
 
-        -- BLOCK: select_question
+        -- BLOCK select_question
         SELECT * FROM questions WHERE id = $question_id;
 
-        -- BLOCK: insert_submission
+        -- BLOCK insert_submission
         INSERT INTO submissions (submitted_answer) VALUES ($submitted_answer) RETURNING *;
 
     From JavaScript you can then do:
@@ -195,7 +202,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
     Where the corresponding `filename.sql` file contains:
 
-        -- BLOCK: select_questions_by_course
+        -- BLOCK select_questions_by_course
         SELECT * FROM questions WHERE course_id = $course_id;
 
 1. For queries where it would be an error to not return exactly one result row:
@@ -235,7 +242,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
         sqldb.query(sql.insert_assessment_question, params, ...);
 
 
-        -- BLOCK: insert_assessment_question
+        -- BLOCK insert_assessment_question
         INSERT INTO assessment_questions (points_list) VALUES ($points_list::INTEGER[]);
 
 1. To use a JavaScript array for membership testing in SQL use [`unnest()`](https://www.postgresql.org/docs/9.5/static/functions-array.html) like:
@@ -246,7 +253,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
         sqldb.query(sql.select_questions, params, ...);
 
 
-        -- BLOCK: select_questions
+        -- BLOCK select_questions
         SELECT * FROM questions WHERE id IN (SELECT unnest($id_list::INTEGER[]));
 
 ## Error handling and control flow in JavaScript
@@ -293,3 +300,55 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 1. We will switch to [async/await](https://github.com/tc39/ecmascript-asyncawait) when it becomes available in Node.js. The async/await proposal made it to [stage 4](https://github.com/tc39/proposals/blob/master/finished-proposals.md) in July 2016 and was thus included in the [latest draft Ecmascript spec](https://tc39.github.io/ecma262/). This will appear as ES2017/ES7. V8 [merged support](https://bugs.chromium.org/p/v8/issues/detail?id=4483) for async/await. Node.js is [tracking its implementation](https://github.com/nodejs/promises/issues/4) but as of 2016-09-26 it looks like there is still work needed.
 
 
+## Security model
+
+1. We distinguish between [authentication and authorization](https://en.wikipedia.org/wiki/Authentication#Authorization). Authentication occurs as the first stage in server response and the authenicated user data is stored as `res.locals.authn_user`.
+
+1. Similar to unix, we distinguish between the real and effective user. The real user is stored as `authn_user` and is the user that authenticated. The effective user is stored as `user`. Only users with `role = TA` or higher can set an effective user that is different from their real user. Moreover, users with `role = TA` or higher can also set an effective `role` and `mode` that is different to the real values.
+
+1. Authorization occurs at multiple levels:
+
+    1. The `course_instance` checks authorization based on the `authn_user`.
+
+    1. The `course_instance` authorization is checked against the effective `user`.
+
+    1. The `assessment` checks authorization based on the effective `user`, `role`, `mode`, and `date`.
+
+    1. Specific pages check authorization for POST requests using the [Encrypted Token Pattern](https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)_Prevention_Cheat_Sheet).
+
+1. All state-modifying requests must be POST and all associated data must be in the body. GET requests may use query parameters for viewing options only.
+
+
+## State-modifying POST requests
+
+1. Use the [Post/Redirect/Get](https://en.wikipedia.org/wiki/Post/Redirect/Get) pattern for all state modification. This means that the initial GET should render the page with a `<form>` that has no `action` set, so it will submit back to the current page. This should be handled by a POST handler that performs the state modification and then issues a redirect back to the same page as a GET:
+
+        router.post('/', function(req, res, next) {
+            if (req.body.postAction == 'enroll') {
+                var params = {
+                    course_instance_id: req.body.course_instance_id,
+                    user_id: res.locals.authn_user.id,
+                };
+                sqldb.queryOneRow(sql.enroll, params, function(err, result) {
+                    if (ERR(err, next)) return;
+                    res.redirect(req.originalUrl);
+                });
+            } else {
+                return next(error.make(400, 'unknown postAction', {body: req.body, locals: res.locals}));
+            }
+        });
+
+1. To defeat [CSRF (Cross-Site Request Forgery)](https://en.wikipedia.org/wiki/Cross-site_request_forgery) we use the [Encrypted Token Pattern](https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29_Prevention_Cheat_Sheet). This stores an [HMAC-authenticated token](https://en.wikipedia.org/wiki/Hash-based_message_authentication_code) token inside the POST data.
+
+1. All data modifying requests should come from `form` elements like:
+
+        <form name="enroll-form" method="POST">
+            <input type="hidden" name="postAction" value="enroll">
+            <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+            <input type="hidden" name="course_instance_id" value="56">
+            <button type="submit" class="btn btn-info">
+                Enroll in course instance 56
+            </button>
+        </form>
+
+1. The `res.locals.csrfToken` variable is set and checked by early-stage middleware, so no explicit action is needed on each page.
