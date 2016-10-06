@@ -7,7 +7,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 <img style="width: 20em" src="high-level.png" />
 
-1. The questions and assessments for a course are stored in a git repository. This is synced into the database by the course instructor, which updates or generates DB data to represent the course. Students then interact with the course website by doing questions, with the results being stored in the DB. The instructor can view the student results on the website and download CSV files with the data.
+1. The questions and assessments for a course are stored in a git repository. This is synced into the database by the course instructor and DB data is updated or added to represent the course. Students then interact with the course website by doing questions, with the results being stored in the DB. The instructor can view the student results on the website and download CSV files with the data.
 
 1. All course configuration is done via plain text files in the git repository, which is the master source for this data. There is no extra course configuration stored in the DB. The instructor does not directly edit course data via the website.
 
@@ -80,46 +80,19 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
         var sql = sqlLoader.loadSqlEquiv(__filename);
         
         router.get('/', function(req, res, next) {
-            var params = {
-                course_instance_id: res.params.courseInstanceId,  // the URL parameter
-                auth_data: res.locals.auth_data,      // filled in by an earlier middleware
-            };
-            sqldb.query(sql.select_and_auth, params, function(err, result) {
+            var params = {course_instance_id: res.params.courseInstanceId};
+            sqldb.query(sql.user_scores, params, function(err, result) { // SQL queries for page data
                 if (ERR(err, next)) return;
-                _.assign(res.locals, result.rows[0]); // add all the basic objects to res.locals
-        
-                var params = {course_instance_id: res.params.courseInstanceId};
-                sqldb.query(sql.user_scores, params, function(err, result) { // further SQL queries
-                    if (ERR(err, next)) return;
-                    res.locals.user_scores = result.rows;  // store the date in res.locals
-        
-                    res.render('pages/adminUsers/adminUsers', res.locals);  // render the page
-                    // inside the EJS template, "res.locals.var" can be accessed with just "var"
-                });
+                res.locals.user_scores = result.rows; // store the data in res.locals
+    
+                res.render('pages/adminUsers/adminUsers', res.locals); // render the page
+                // inside the EJS template, "res.locals.var" can be accessed with just "var"
             });
         });
         
         module.exports = router;
 
-1. Use the `res.locals` variable to build up data for the page rendering. Each page should start with `select_and_auth` which will load the basic data objects (`user`, `course`, etc). Further SQL queries can load more page-specific data. The `select_and_auth` query should return variables as JSONB that are added to `res.locals` with [`_.assign`](https://lodash.com/docs/#assign).
-
-1. The `select_and_auth` SQL code should start from the object that describes the page (e.g., a `course_instance` or `assessment_instance`) and work up the chain to find all the objects (ending with `course`). It must call the `auth_admin_course_instance()` function and only succeed if `authorized` is true.
-
-        -- BLOCK select_and_auth
-        SELECT
-            to_jsonb(c) AS course,
-            to_jsonb(ci) AS course_instance,
-            to_jsonb(u) AS authn_user,
-            to_jsonb(e) AS authn_enrollment
-        FROM
-            course_instances AS ci
-            JOIN courses AS c ON (c.id = ci.course_id)
-            JOIN LATERAL auth_admin_course_instance(ci.id, 'View', $auth_data) AS aaci ON TRUE
-            JOIN LATERAL users AS u ON (u.id = aaci.authn_user_id)
-            JOIN LATERAL enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = ci.id)
-        WHERE
-            ci.id = $course_instance_id
-            AND aaci.authorized;
+1. Use the `res.locals` variable to build up data for the page rendering. Many basic objects are already included from the `selectAndAuthz*.js` middleware that runs before most page loads.
 
 1. Use [EJS templates](http://ejs.co) (Embedded JavaScript) templates for all pages. Using JS as the templating language removes the need for another ad hoc language, but does require some discipline to not get in a mess. Try and minimize the amount of JS code in the template files. Inside a template the JS code can directly access the contents of the `res.locals` object.
 
@@ -314,9 +287,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
     1. The `assessment` checks authorization based on the effective `user`, `role`, `mode`, and `date`.
 
-    1. Specific pages check authorization for POST requests using the [Encrypted Token Pattern](https://www.owasp.org/index.php/Cross-Site_Request_Forgery_(CSRF)_Prevention_Cheat_Sheet).
-
-1. All state-modifying requests must be POST and all associated data must be in the body. GET requests may use query parameters for viewing options only.
+1. All state-modifying requests must (normally) be POST and all associated data must be in the body. GET requests may use query parameters for viewing options only.
 
 
 ## State-modifying POST requests
