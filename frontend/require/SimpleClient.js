@@ -52,6 +52,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
     };
 
     rivets.formatters.floatFixed = PrairieTemplate.floatFixedString;
+    rivets.formatters.floatExponential = PrairieTemplate.floatExponentialString;
     rivets.formatters.rational = PrairieTemplate.rationalString;
     rivets.formatters.rationalCoeff = PrairieTemplate.rationalCoeffString;
     rivets.formatters.rationalCoeffZero = PrairieTemplate.rationalCoeffZeroString;

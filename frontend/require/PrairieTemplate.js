@@ -13,6 +13,18 @@ define(["underscore"], function(_) {
         return "";
     };
 
+    /** Format a floating point number with exponential notation.
+
+        @param {Number} x The floating point number.
+        @param {Number} n The number of digits after the decimal point (0 or more, integer).
+        @return {String} The formatted string.
+    */
+    var floatExponentialString = function(x, n) {
+        if (_.isNumber(x))
+            return x.toExponential(n);
+        return "";
+    };
+
     /** Make a LaTeX math array from the given entries, dropping rows with only empty strings.
 
         @param {Array} entries An array of row arrays that contain element strings.
@@ -444,6 +456,7 @@ define(["underscore"], function(_) {
         var localData = _.clone(data);
 
         localData.floatFixedString = floatFixedString;
+        localData.floatExponentialString = floatExponentialString;
         localData.rationalString = rationalString;
         localData.rationalCoeffString = rationalCoeffString;
         localData.rationalCoeffZeroString = rationalCoeffZeroString;
@@ -479,6 +492,7 @@ define(["underscore"], function(_) {
 
     return {
         floatFixedString: floatFixedString,
+        floatExponentialString: floatExponentialString,
         makeTeXArray: makeTeXArray,
         textList: textList,
         rationalString: rationalString,
