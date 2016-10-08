@@ -154,6 +154,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         },
 
         addAnswer: function(answerName) {
+            if (_.chain(this.answerAttributes).pluck("name").contains(answerName).value()) return;
             this.answerAttributes.push({name: answerName, required: true});
             this.listenTo(this.submittedAnswer, "change:" + answerName, this.checkSubmittable);
             this.listenTo(this.submittedAnswer, "change:" + answerName, this.answerChanged);
@@ -161,6 +162,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         },
 
         addOptionalAnswer: function(answerName) {
+            if (_.chain(this.answerAttributes).pluck("name").contains(answerName).value()) return;
             this.answerAttributes.push({name: answerName, required: false});
             this.listenTo(this.submittedAnswer, "change:" + answerName, this.answerChanged);
         },
