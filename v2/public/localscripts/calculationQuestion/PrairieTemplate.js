@@ -463,7 +463,7 @@ define(["underscore"], function(_) {
         localData.vectorFcnString = vectorFcnString;
         localData.cartesianVectorFcnString = cartesianVectorFcnString;
         localData.questionFile = function(name) {
-            return appModel.apiURL("qInstances/" + questionDataModel.get("qiid") + "/" + name);
+            return questionDataModel.get('questionFilePath') + '/' + name;
         };
         localData.testFile = function(name) {
             return appModel.apiURL("tests/" + tInstance.get("tid") + "/" + name);
