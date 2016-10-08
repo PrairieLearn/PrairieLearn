@@ -63,7 +63,8 @@ WITH results AS (
     UPDATE assessment_instances AS ai
     SET
         open = true,
-        opened_at = CURRENT_TIMESTAMP
+        opened_at = CURRENT_TIMESTAMP,
+        admin_opened = TRUE
     FROM
         assessments AS a
     WHERE

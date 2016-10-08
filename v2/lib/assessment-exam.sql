@@ -99,7 +99,7 @@ WITH
 last_activity AS (
     SELECT DISTINCT ON (id)
         ai.id,
-        coalesce(s.date, ai.opened_at) AS date
+        coalesce(s.date, ai.date) AS date
     FROM
         assessment_instances AS ai
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)

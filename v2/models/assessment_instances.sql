@@ -8,6 +8,7 @@ CREATE TABLE IF NOT EXISTS assessment_instances (
     number INTEGER,
     open BOOLEAN DEFAULT TRUE,
     closed_at TIMESTAMP WITH TIME ZONE,
+    admin_opened BOOLEAN DEFAULT FALSE,
     duration INTERVAL DEFAULT INTERVAL '0 seconds',
     assessment_id INTEGER NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,
     user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
@@ -70,6 +71,14 @@ $$;
 DO $$
     BEGIN
         ALTER TABLE assessment_instances ADD COLUMN duration INTERVAL DEFAULT INTERVAL '0 seconds';
+    EXCEPTION
+        WHEN duplicate_column THEN -- do nothing
+    END;
+$$;
+
+DO $$
+    BEGIN
+        ALTER TABLE assessment_instances ADD COLUMN admin_opened BOOLEAN DEFAULT FALSE;
     EXCEPTION
         WHEN duplicate_column THEN -- do nothing
     END;
