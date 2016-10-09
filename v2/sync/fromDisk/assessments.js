@@ -67,7 +67,6 @@ module.exports = {
                 });
             },
             function(callback) {
-                // soft-delete assessments from the DB that aren't on disk and are in the current course instance
                 logger.info('Soft-deleting unused assessments');
                 var params = {
                     course_instance_id: courseInstance.courseInstanceId,
@@ -79,7 +78,6 @@ module.exports = {
                 });
             },
             function(callback) {
-                // soft-delete assessment_questions from DB that don't correspond to current assessments
                 logger.info('Soft-deleting unused assessment questions');
                 var params = {
                     course_instance_id: courseInstance.courseInstanceId,
@@ -91,7 +89,6 @@ module.exports = {
                 });
             },
             function(callback) {
-                // delete access rules from DB that don't correspond to assessments
                 logger.info('Deleting unused assessment access rules');
                 sqldb.query(sql.delete_unused_assessment_access_rules, [], function(err) {
                     if (ERR(err, callback)) return;
@@ -99,7 +96,6 @@ module.exports = {
                 });
             },
             function(callback) {
-                // delete zones from DB that don't correspond to assessments
                 logger.info('Deleting unused zones');
                 sqldb.query(sql.delete_unused_zones, [], function(err) {
                     if (ERR(err, callback)) return;
@@ -133,8 +129,7 @@ module.exports = {
         }, function(err) {
             if (ERR(err, callback)) return;
 
-            // delete access rules from the DB that aren't on disk
-            logger.info('Deleting unused assessment access rules for current assessment');
+            logger.info('Deleting excess assessment access rules for current assessment');
             var params = {
                 assessment_id: assessmentId,
                 last_number: allowAccess.length,
@@ -154,15 +149,15 @@ module.exports = {
                 number: i + 1,
                 title: dbZone.title,
             };
-            sqldb.query(sql.insert_zone, params, function(err) {
+            sqldb.queryOneRow(sql.insert_zone, params, function(err, result) {
                 if (ERR(err, callback)) return;
+                dbZone.id = result.rows[0].id;
                 callback(null);
             });
         }, function(err) {
             if (ERR(err, callback)) return;
 
-            // delete zones from the DB that aren't on disk
-            logger.info('Deleting unused zones for current assessment');
+            logger.info('Deleting excess zones for current assessment');
             var params = {
                 assessment_id: assessmentId,
                 last_number: zoneList.length,
@@ -177,6 +172,8 @@ module.exports = {
     syncAssessmentQuestions: function(assessmentId, zoneList, courseInfo, callback) {
         var that = module.exports;
         var iAssessmentQuestion = 0;
+        var iInAlternativeGroup;
+        var iAlternativeGroup = 0;
         var assessmentQuestionIds = [];
         async.forEachOfSeries(zoneList, function(dbZone, iZone, callback) {
             async.forEachOfSeries(dbZone.questions, function(dbQuestion, iQuestion, callback) {
@@ -198,16 +195,29 @@ module.exports = {
                         initPoints = dbQuestion.initValue;
                     }
                 }
-                async.eachSeries(qids, function(qid, callback) {
-                    iAssessmentQuestion++;
-                    that.syncAssessmentQuestion(qid, maxPoints, pointsList, initPoints, iAssessmentQuestion, assessmentId, iZone, courseInfo, function(err, assessmentQuestionId) {
-                        if (ERR(err, callback)) return;
-                        assessmentQuestionIds.push(assessmentQuestionId);
-                        callback(null);
-                    });
-                }, function(err) {
+                iAlternativeGroup++;
+                var params = {
+                    number: iAlternativeGroup,
+                    number_choose: 1,
+                    assessment_id: assessmentId,
+                    zone_id: dbZone.id,
+                };
+                sqldb.queryOneRow(sql.insert_alternative_group, params, function(err, result) {
                     if (ERR(err, callback)) return;
-                    callback(null);
+                    var alternative_group_id = result.rows[0].id;
+                    iInAlternativeGroup = 0;
+                    async.eachSeries(qids, function(qid, callback) {
+                        iAssessmentQuestion++;
+                        iInAlternativeGroup++;
+                        that.syncAssessmentQuestion(qid, maxPoints, pointsList, initPoints, iInAlternativeGroup, iAssessmentQuestion, assessmentId, alternative_group_id, courseInfo, function(err, assessmentQuestionId) {
+                            if (ERR(err, callback)) return;
+                            assessmentQuestionIds.push(assessmentQuestionId);
+                            callback(null);
+                        });
+                    }, function(err) {
+                        if (ERR(err, callback)) return;
+                            callback(null);
+                    });
                 });
             }, function(err) {
                 if (ERR(err, callback)) return;
@@ -216,20 +226,28 @@ module.exports = {
         }, function(err) {
             if (ERR(err, callback)) return;
 
-            // soft-delete assessment questions from the DB that aren't on disk
-            logger.info('Soft-deleting unused assessment questions for current assessment');
+            logger.info('Deleting excess alternative groups for current assessment');
             var params = {
                 assessment_id: assessmentId,
-                keep_assessment_question_ids: assessmentQuestionIds,
+                last_number: iAlternativeGroup,
             };
-            sqldb.query(sql.soft_delete_unused_assessment_questions_in_assessment, params, function(err) {
+            sqldb.query(sql.delete_excess_alternative_groups, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                callback(null);
+
+                logger.info('Soft-deleting unused assessment questions for current assessment');
+                var params = {
+                    assessment_id: assessmentId,
+                    keep_assessment_question_ids: assessmentQuestionIds,
+                };
+                sqldb.query(sql.soft_delete_unused_assessment_questions_in_assessment, params, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
             });
         });
     },
 
-    syncAssessmentQuestion: function(qid, maxPoints, pointsList, initPoints, iAssessmentQuestion, assessmentId, iZone, courseInfo, callback) {
+    syncAssessmentQuestion: function(qid, maxPoints, pointsList, initPoints, iInAlternativeGroup, iAssessmentQuestion, assessmentId, alternative_group_id, courseInfo, callback) {
         var params = {
             qid: qid,
             course_id: courseInfo.courseId,
@@ -247,7 +265,8 @@ module.exports = {
                 init_points: initPoints,
                 assessment_id: assessmentId,
                 question_id: questionId,
-                zone_number: iZone + 1,
+                alternative_group_id: alternative_group_id,
+                number_in_alternative_group: iInAlternativeGroup,
             };
             sqldb.queryOneRow(sql.insert_assessment_question, params, function(err, result) {
                 if (ERR(err, callback)) return;

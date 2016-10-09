@@ -20,7 +20,6 @@ WITH instance_questions_info AS (
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN question_order(ai.id) AS qo ON (qo.instance_question_id = iq.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-        JOIN zones AS z ON (z.id = aq.zone_id)
     WHERE
         ai.id IN (SELECT assessment_instance_id FROM instance_questions WHERE id = $instance_question_id)
     WINDOW

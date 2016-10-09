@@ -26,7 +26,7 @@
         <table class="table table-condensed table-hover">
           <thead>
             <tr>
-              <td></td>
+              <th></th>
               <th>QID</th>
               <th>Topic</th>
               <th>Points</th>
@@ -41,7 +41,11 @@
             </tr>
             <% } %>
             <tr>
-              <td><a href="<%= urlPrefix %>/admin/question/<%= question.question_id %>/"><%= question.number %>. <%= question.title %></a></td>
+              <td>
+                <a href="<%= urlPrefix %>/admin/question/<%= question.question_id %>/">
+                  <%= question.alternative_group_number %><% if (question.alternative_group_size > 1) { %>.<%= question.number_in_alternative_group %><% } %>. <%= question.title %>
+                </a>
+              </td>
               <td><%= question.qid %></td>
               <td><%- include('../partials/topic', {topic: question.topic}); %></td>
               <td>

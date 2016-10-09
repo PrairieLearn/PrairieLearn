@@ -17,7 +17,8 @@ SELECT
 FROM
     instance_questions AS iq
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-    JOIN zones AS z ON (z.id = aq.zone_id)
+    JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+    JOIN zones AS z ON (z.id = ag.zone_id)
     JOIN questions AS q ON (q.id = aq.question_id)
     JOIN question_order($assessment_instance_id) AS qo ON (iq.id = qo.instance_question_id)
 WHERE
