@@ -148,6 +148,7 @@ module.exports = {
                 assessment_id: assessmentId,
                 number: i + 1,
                 title: dbZone.title,
+                number_choose: dbZone.numberChoose,
             };
             sqldb.queryOneRow(sql.insert_zone, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -177,28 +178,52 @@ module.exports = {
         var assessmentQuestionIds = [];
         async.forEachOfSeries(zoneList, function(dbZone, iZone, callback) {
             async.forEachOfSeries(dbZone.questions, function(dbQuestion, iQuestion, callback) {
-                var qids = null, maxPoints = null, pointsList = null, initPoints = null;
+                var alternatives = null, maxPoints = null, pointsList = null, initPoints = null;
                 if (_(dbQuestion).isString()) {
-                    qids = [dbQuestion];
-                    maxPoints = 1;
+                    alternatives = [{qid: dbQuestion, maxPoints: 1}];
                 } else {
-                    if (_(dbQuestion).has('qids')) {
+                    var qids = null;
+                    if (_(dbQuestion).has('alternatives')) {
+                        alternatives = _.map(dbQuestion.alternatives, function(question) {
+                            return {
+                                qid: question.qid,
+                                maxPoints: _(question.points).max(),
+                                pointsList: question.points,
+                            };
+                        });
+                    } else if (_(dbQuestion).has('qids')) {
                         qids = dbQuestion.qids;
-                    } else {
+                    } else if (_(dbQuestion).has('qid')) {
                         qids = [dbQuestion.qid];
+                    } else {
+                        return callback(error.make(500, 'Unable to determine question qids', {dbQuestion: dbQuestion}));
                     }
-                    if (_(dbQuestion).has('points')) {
-                        maxPoints = _(dbQuestion.points).max();
-                        pointsList = dbQuestion.points;
-                    } else if (_(dbQuestion).has('initValue')) {
-                        maxPoints = dbQuestion.maxScore;
-                        initPoints = dbQuestion.initValue;
+                    if (qids) {
+                        if (_(dbQuestion).has('points')) {
+                            alternatives = _.map(qids, function(qid) {
+                                return {
+                                    qid: qid,
+                                    maxPoints: _(dbQuestion.points).max(),
+                                    pointsList: dbQuestion.points,
+                                };
+                            });
+                        } else if (_(dbQuestion).has('initValue')) {
+                            alternatives = _.map(qids, function(qid) {
+                                return {
+                                    qid: qid,
+                                    maxPoints: dbQuestion.maxScore,
+                                    initPoints: dbQuestion.initValue,
+                                };
+                            });
+                        } else {
+                            return callback(error.make(500, 'Unable to determine question points', {dbQuestion: dbQuestion}));
+                        }
                     }
                 }
                 iAlternativeGroup++;
                 var params = {
                     number: iAlternativeGroup,
-                    number_choose: 1,
+                    number_choose: dbQuestion.numberChoose,
                     assessment_id: assessmentId,
                     zone_id: dbZone.id,
                 };
@@ -206,10 +231,10 @@ module.exports = {
                     if (ERR(err, callback)) return;
                     var alternative_group_id = result.rows[0].id;
                     iInAlternativeGroup = 0;
-                    async.eachSeries(qids, function(qid, callback) {
+                    async.eachSeries(alternatives, function(alternative, callback) {
                         iAssessmentQuestion++;
                         iInAlternativeGroup++;
-                        that.syncAssessmentQuestion(qid, maxPoints, pointsList, initPoints, iInAlternativeGroup, iAssessmentQuestion, assessmentId, alternative_group_id, courseInfo, function(err, assessmentQuestionId) {
+                        that.syncAssessmentQuestion(alternative.qid, alternative.maxPoints, alternative.pointsList, alternative.initPoints, iInAlternativeGroup, iAssessmentQuestion, assessmentId, alternative_group_id, courseInfo, function(err, assessmentQuestionId) {
                             if (ERR(err, callback)) return;
                             assessmentQuestionIds.push(assessmentQuestionId);
                             callback(null);

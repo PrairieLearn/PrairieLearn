@@ -1,4 +1,4 @@
--- BLOCK get_single_assessment_instance
+-- BLOCK select_single_assessment_instance
 SELECT
     ai.*
 FROM
@@ -8,21 +8,13 @@ WHERE
     AND ai.number = 1
     AND ai.user_id = $user_id;
 
--- BLOCK make_assessment_instance
+-- BLOCK insert_assessment_instance
 INSERT INTO assessment_instances AS ai (number, assessment_id, user_id, mode, open)
 VALUES (1, $assessment_id, $user_id, $mode, TRUE)
 RETURNING ai.id;
 
--- BLOCK get_work_list
-SELECT
-    aq.id AS assessment_question_id,
-    to_jsonb(q) AS question
-FROM
-    assessment_questions AS aq
-    JOIN questions AS q ON (q.id = aq.question_id)
-WHERE
-    aq.assessment_id = $assessment_id
-    AND aq.deleted_at IS NULL;
+-- BLOCK select_new_questions
+SELECT * FROM select_assessment_questions($assessment_id);
 
 -- BLOCK make_instance_question
 INSERT INTO instance_questions AS iq (assessment_instance_id, assessment_question_id, points_list, current_value)

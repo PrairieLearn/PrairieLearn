@@ -83,11 +83,12 @@ WHERE
     AND number > $last_number;
 
 -- BLOCK insert_zone
-INSERT INTO zones ( assessment_id,  number,  title)
-VALUES            ($assessment_id, $number, $title)
+INSERT INTO zones ( assessment_id,  number,  title,  number_choose)
+VALUES            ($assessment_id, $number, $title, $number_choose)
 ON CONFLICT (number, assessment_id) DO UPDATE
 SET
-    title = EXCLUDED.title
+    title = EXCLUDED.title,
+    number_choose = EXCLUDED.number_choose
 RETURNING id;
 
 -- BLOCK delete_excess_zones

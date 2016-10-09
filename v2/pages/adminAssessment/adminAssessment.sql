@@ -2,10 +2,13 @@
 SELECT
     aq.*,q.qid,q.title,row_to_json(top) AS topic,
     ag.number AS alternative_group_number,
+    ag.number_choose AS alternative_group_number_choose,
     (count(*) OVER (PARTITION BY ag.number)) AS alternative_group_size,
     z.title AS zone_title,z.number AS zone_number,
+    z.number_choose as zone_number_choose,
     (lag(z.id) OVER (PARTITION BY z.id ORDER BY aq.number) IS NULL) AS start_new_zone,
-    assessments_for_question(q.id,ci.id,a.id) AS assessments
+    (lag(ag.id) OVER (PARTITION BY ag.id ORDER BY aq.number) IS NULL) AS start_new_alternative_group,
+    assessments_for_question(q.id,ci.id,a.id) AS other_assessments
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
