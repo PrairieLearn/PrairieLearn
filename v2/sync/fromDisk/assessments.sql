@@ -83,17 +83,36 @@ WHERE
     AND number > $last_number;
 
 -- BLOCK insert_zone
-INSERT INTO zones ( assessment_id,  number,  title)
-VALUES            ($assessment_id, $number, $title)
+INSERT INTO zones ( assessment_id,  number,  title,  number_choose)
+VALUES            ($assessment_id, $number, $title, $number_choose)
 ON CONFLICT (number, assessment_id) DO UPDATE
 SET
-    title = EXCLUDED.title;
+    title = EXCLUDED.title,
+    number_choose = EXCLUDED.number_choose
+RETURNING id;
 
 -- BLOCK delete_excess_zones
 DELETE FROM zones
 WHERE
     assessment_id = $assessment_id
     AND number > $last_number;
+
+-- BLOCK insert_alternative_group
+INSERT INTO alternative_groups
+    (number, number_choose, assessment_id, zone_id)
+VALUES
+    ($number, $number_choose, $assessment_id, $zone_id)
+ON CONFLICT (number, assessment_id) DO UPDATE
+SET
+    number_choose = EXCLUDED.number_choose,
+    zone_id = EXCLUDED.zone_id
+RETURNING id;
+
+-- BLOCK delete_excess_alternative_groups
+DELETE FROM alternative_groups
+WHERE
+    assessment_id = $assessment_id
+    AND ((number < 1) OR (number > $last_number));
 
 -- BLOCK soft_delete_unused_assessment_questions_in_assessment
 UPDATE assessment_questions AS aq
@@ -112,19 +131,13 @@ WHERE
 
 -- BLOCK insert_assessment_question
 INSERT INTO assessment_questions AS aq
-        (number,  max_points,  init_points,  points_list,
-        deleted_at,  assessment_id,  question_id, zone_id)
-(
-    SELECT
-        $number, $max_points, $init_points, $points_list::double precision[],
-        NULL,       $assessment_id, $question_id, z.id
-    FROM
-        zones AS z
-        JOIN assessments AS a ON (a.id = z.assessment_id)
-    WHERE
-        a.id = $assessment_id
-        AND z.number = $zone_number
-)
+    (number,  max_points,  init_points,  points_list,
+    deleted_at,  assessment_id,  question_id, alternative_group_id,
+    number_in_alternative_group)
+VALUES
+    ($number, $max_points, $init_points, $points_list::double precision[],
+    NULL,       $assessment_id, $question_id, $alternative_group_id,
+    $number_in_alternative_group)
 ON CONFLICT (question_id, assessment_id) DO UPDATE
 SET
     number = EXCLUDED.number,
@@ -132,6 +145,7 @@ SET
     points_list = EXCLUDED.points_list,
     init_points = EXCLUDED.init_points,
     deleted_at = EXCLUDED.deleted_at,
-    zone_id = EXCLUDED.zone_id,
+    alternative_group_id = EXCLUDED.alternative_group_id,
+    number_in_alternative_group = EXCLUDED.number_in_alternative_group,
     question_id = EXCLUDED.question_id
 RETURNING aq.id;

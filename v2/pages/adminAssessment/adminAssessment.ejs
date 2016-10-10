@@ -26,7 +26,7 @@
         <table class="table table-condensed table-hover">
           <thead>
             <tr>
-              <td></td>
+              <th></th>
               <th>QID</th>
               <th>Topic</th>
               <th>Points</th>
@@ -37,11 +37,45 @@
             <% questions.forEach(function(question) { %>
             <% if (question.start_new_zone) { %>
             <tr>
-              <th colspan="5">Zone <%= question.zone_number %>. <%= question.zone_title %></th>
+              <th colspan="5">
+                Zone <%= question.zone_number %>. <%= question.zone_title %>
+                <% if (question.zone_number_choose == null) { %>
+                (Choose all questions)
+                <% } else if (question.zone_number_choose == 1) { %>
+                (Choose 1 question)
+                <% } else { %>
+                (Choose <%= question.zone_number_choose %> questions)
+                <% } %>
+              </th>
+            </tr>
+            <% } %>
+            <% if (question.start_new_alternative_group && question.alternative_group_size > 1) { %>
+            <tr>
+              <td colspan="5">
+                <%= question.alternative_group_number %>.
+                <% if (question.alternative_group_number_choose == null) { %>
+                Choose all questions from:
+                <% } else if (question.alternative_group_number_choose == 1) { %>
+                Choose 1 question from:
+                <% } else { %>
+                Choose <%= question.alternative_group_number_choose %> questions from:
+                <% } %>
+              </td>
             </tr>
             <% } %>
             <tr>
-              <td><a href="<%= urlPrefix %>/admin/question/<%= question.question_id %>/"><%= question.number %>. <%= question.title %></a></td>
+              <td>
+                <a href="<%= urlPrefix %>/admin/question/<%= question.question_id %>/">
+                  <% if (question.alternative_group_size == 1) { %>
+                  <%= question.alternative_group_number %>.
+                  <%= question.title %>
+                  <% } else { %>
+                  &nbsp;&nbsp;&nbsp;&nbsp;
+                  <%= question.alternative_group_number %>.<%= question.number_in_alternative_group %>.
+                  <%= question.title %>
+                  <% } %>
+                </a>
+              </td>
               <td><%= question.qid %></td>
               <td><%- include('../partials/topic', {topic: question.topic}); %></td>
               <td>
@@ -51,8 +85,8 @@
                 <% if (assessment.type == "Game")      { %><%= question.init_points %>/<%= question.max_points %><% } %>
               </td>
               <td>
-                <% if (question.assessments) { %>
-                <% question.assessments.forEach(function(assessment) { %>
+                <% if (question.other_assessments) { %>
+                <% question.other_assessments.forEach(function(assessment) { %>
                 <%- include('../partials/assessment', {assessment: assessment}); %>
                 <% }); %>
                 <% } %>

@@ -32,6 +32,7 @@ module.exports = {
             'assessment_sets.sql',
             'assessments.sql',
             'zones.sql',
+            'alternative_groups.sql',
             'assessment_access_rules.sql',
             'assessment_questions.sql',
 

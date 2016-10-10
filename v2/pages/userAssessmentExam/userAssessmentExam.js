@@ -18,7 +18,7 @@ function makeAssessmentInstance(req, res, callback) {
     sqldb.beginTransaction(function(err, client, done) {
         if (ERR(err, callback)) return;
     
-        var assessmentInstanceId, workList;
+        var assessment_instance_id, new_questions;
         async.series([
             function(callback) {
                 var params = {
@@ -26,9 +26,9 @@ function makeAssessmentInstance(req, res, callback) {
                     user_id: res.locals.user.id,
                     mode: req.mode,
                 };
-                sqldb.queryWithClientOneRow(client, sql.make_assessment_instance, params, function(err, result) {
+                sqldb.queryWithClientOneRow(client, sql.insert_assessment_instance, params, function(err, result) {
                     if (ERR(err, callback)) return;
-                    assessmentInstanceId = result.rows[0].id;
+                    assessment_instance_id = result.rows[0].id;
                     callback(null);
                 });
             },
@@ -36,23 +36,23 @@ function makeAssessmentInstance(req, res, callback) {
                 var params = {
                     assessment_id: res.locals.assessment.id,
                 };
-                sqldb.queryWithClient(client, sql.get_work_list, params, function(err, result) {
+                sqldb.queryWithClient(client, sql.select_new_questions, params, function(err, result) {
                     if (ERR(err, callback)) return;
-                    workList = result.rows;
+                    new_questions = result.rows;
                     callback(null);
                 });
             },
             function(callback) {
-                async.each(workList, function(workItem, callback) {
+                async.each(new_questions, function(new_question, callback) {
                     var params = {
-                        assessment_question_id: workItem.assessment_question_id,
-                        assessment_instance_id: assessmentInstanceId,
+                        assessment_question_id: new_question.assessment_question_id,
+                        assessment_instance_id: assessment_instance_id,
                     };
                     sqldb.queryWithClientOneRow(client, sql.make_instance_question, params, function(err, result) {
                         if (ERR(err, callback)) return;
                         // FIXME: returning with error here triggers "Can't set headers" exception
                         var instanceQuestionId = result.rows[0].id;
-                        questionServers.makeVariant(workItem.question, res.locals.course, {}, function(err, variant) {
+                        questionServers.makeVariant(new_question.question, res.locals.course, {}, function(err, variant) {
                             if (ERR(err, callback)) return;
                             var params = {
                                 instance_question_id: instanceQuestionId,
@@ -73,7 +73,7 @@ function makeAssessmentInstance(req, res, callback) {
                 });
             },
             function(callback) {
-                var params = {assessment_instance_id: assessmentInstanceId};
+                var params = {assessment_instance_id: assessment_instance_id};
                 sqldb.queryWithClient(client, sql.set_max_points, params, function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
@@ -82,7 +82,7 @@ function makeAssessmentInstance(req, res, callback) {
         ], function(err) {
             sqldb.endTransaction(client, done, err, function(err) {
                 if (ERR(err, callback)) return;
-                callback(null, assessmentInstanceId);
+                callback(null, assessment_instance_id);
             });
         });
     });
@@ -97,7 +97,7 @@ router.get('/', function(req, res, next) {
             assessment_id: res.locals.assessment.id,
             user_id: res.locals.user.id,
         };
-        sqldb.query(sql.get_single_assessment_instance, params, function(err, result) {
+        sqldb.query(sql.select_single_assessment_instance, params, function(err, result) {
             if (ERR(err, next)) return;
             if (result.rowCount == 0) {
                 res.render(path.join(__dirname, 'userAssessmentExam'), res.locals);
@@ -111,9 +111,9 @@ router.get('/', function(req, res, next) {
 router.post('/', function(req, res, next) {
     if (req.body.postAction == 'newInstance') {
         if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
-        makeAssessmentInstance(req, res, function(err, assessmentInstanceId) {
+        makeAssessmentInstance(req, res, function(err, assessment_instance_id) {
             if (ERR(err, next)) return;
-            res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessmentInstanceId);
+            res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
         });
     } else {
         return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));

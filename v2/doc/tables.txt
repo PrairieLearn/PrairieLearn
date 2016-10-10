@@ -73,6 +73,7 @@ Foreign-key constraints:
  mode          | enum_mode                | 
  opened_at     | timestamp with time zone | default now()
  duration      | interval                 | default '00:00:00'::interval
+ admin_opened  | boolean                  | default false
 Indexes:
     "assessment_instances_pkey" PRIMARY KEY, btree (id)
     "assessment_instances_number_assessment_id_user_id_key" UNIQUE CONSTRAINT, btree (number, assessment_id, user_id)

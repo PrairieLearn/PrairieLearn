@@ -17,6 +17,7 @@ digraph partmc_modules {
     assessment_question [label="assessment_question*", style=filled, fillcolor=honeydew1]
     assessment_set [style=filled, fillcolor=honeydew1]
     topic [style=filled, fillcolor=honeydew1]
+    alternative_group [style=filled, fillcolor=honeydew1]
     zone [style=filled, fillcolor=honeydew1]
 
     enrollment [style=filled, fillcolor=lavender]
@@ -40,10 +41,11 @@ digraph partmc_modules {
     question_tag -> { question; tag }
     tag -> { course }
     assessment -> { course_instance; assessment_set }
-    assessment_question -> { assessment; zone; question }
+    assessment_question -> { assessment; alternative_group; question }
     assessment_set -> { course }
     topic -> { course }
     zone -> { assessment }
+    alternative_group -> { zone }
 
     enrollment -> { user; course_instance }
     assessment_instance -> { assessment; user }
