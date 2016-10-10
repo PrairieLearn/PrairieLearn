@@ -2,6 +2,7 @@ var fs = require("fs");
 var _ = require("lodash");
 var jju = require('jju');
 var validator = require('is-my-json-valid')
+var path = require('path');
 
 var logger = require('./logger');
 
@@ -26,7 +27,7 @@ module.exports.validateJSON = function(json, schema, callback) {
     try {
         configValidate = validator(schema, {verbose: true, greedy: true});
     } catch (e) {
-        return callback("Error loading JSON schema file: " + schemaFilename + ": " + e);
+        return callback(e);
     }
     configValidate(json);
     if (configValidate.errors) {
@@ -54,7 +55,8 @@ module.exports.readJSONSyncOrDie = function(jsonFilename, schemaFilename) {
         process.exit(1);
     }
     if (schemaFilename) {
-        configValidate = validator(fs.readFileSync(schemaFilename, {encoding: 'utf8'}),
+        var absSchemaFilename = path.join(__dirname, '..', schemaFilename);
+        configValidate = validator(fs.readFileSync(absSchemaFilename, {encoding: 'utf8'}),
                                    {verbose: true, greedy: true});
         configValidate(json);
         if (configValidate.errors) {
@@ -74,13 +76,15 @@ module.exports.readInfoJSON = function(jsonFilename, schemaFilename, optionsSche
     that.readJSON(jsonFilename, function(err, json) {
         if (err) return callback(err);
         if (schemaFilename) {
-            that.readJSON(schemaFilename, function(err, schema) {
+            var absSchemaFilename = path.join(__dirname, '..', schemaFilename);
+            that.readJSON(absSchemaFilename, function(err, schema) {
                 if (err) return callback(err);
                 that.validateJSON(json, schema, function(err, json) {
                     if (err) return callback("Error validating file '" + jsonFilename + "' against '" + schemaFilename + "': " + err);
                     if (optionsSchemaPrefix && optionsSchemaSuffix && _(json).has('type') && _(json).has('options')) {
                         var optionsSchemaFilename = optionsSchemaPrefix + json.type + optionsSchemaSuffix;
-                        that.readJSON(optionsSchemaFilename, function(err, optionsSchema) {
+                        var absOptionsSchemaFilename = path.join(__dirname, '..', optionsSchemaFilename);
+                        that.readJSON(absOptionsSchemaFilename, function(err, optionsSchema) {
                             if (err) return callback(err);
                             that.validateJSON(json.options, optionsSchema, function(err, optionsJSON) {
                                 if (err) return callback("Error validating 'options' field from '" + jsonFilename + "' against '" + optionsSchemaFilename + "': " + err);

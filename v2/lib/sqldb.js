@@ -23,6 +23,13 @@ module.exports = {
         callback(null);
     },
 
+    close: function(callback) {
+        this.pool.end(function(err) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+
     paramsToArray: function(sql, params, callback) {
         if (_.isArray(params)) return callback(null, sql, params);
         if (!_.isObjectLike(params)) return callback(new Error("params must be array or object"));

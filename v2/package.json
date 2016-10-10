@@ -26,5 +26,8 @@
         "requirejs": "2.1.x",
         "serve-favicon": "2.3.x",
         "winston": "2.2.x"
+    },
+    "devDependencies": {
+        "mocha": "3.1.x"
     }
 }
