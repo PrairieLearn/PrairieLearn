@@ -27,7 +27,7 @@ logger.infoOverride = function(msg) {
 };
 
 logger.addFileLogging = function(filename) {
-    logger.add(winston.transports.File, {filename: filename, level: 'info'});
+    logger.add(winston.transports.File, {filename: filename, level: 'debug'});
 };
 
 logger.transports.console.level = 'warn';
