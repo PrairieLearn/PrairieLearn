@@ -1,0 +1,28 @@
+{
+    "type": "Exam",
+    "title": "Past Submission Testing",
+    "set": "Exam",
+    "number": 1,
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "role": "TA",
+            "credit": 100
+        },
+        {
+            "mode": "Exam",
+            "credit": 100,
+            "startDate": "2014-07-07T23:59:59",
+            "endDate": "2014-07-10T23:59:59"
+        }
+    ],
+    "options": {
+        "zones": [
+            {
+                "questions": [
+                    {"qid": "addVectors", "points": [10,9,7,5,3,1]}
+                ]
+            }
+        ]
+    }
+}
