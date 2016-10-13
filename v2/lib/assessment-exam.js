@@ -47,7 +47,7 @@ module.exports.gradeExam = function(assessment_instance_id, auth_user_id, credit
                                 feedback: grading.feedback,
                                 auth_user_id: auth_user_id,
                             };
-                            sqldb.query(sql.update_submission, params, function(err, result) {
+                            sqldb.queryWithClient(client, sql.update_submission, params, function(err, result) {
                                 if (ERR(err, callback)) return;
                                 callback(null);
                             });
@@ -58,7 +58,7 @@ module.exports.gradeExam = function(assessment_instance_id, auth_user_id, credit
                                 correct: grading.correct,
                                 auth_user_id: auth_user_id,
                             };
-                            sqldb.query(sql.update_instance_question, params, function(err, result) {
+                            sqldb.queryWithClient(client, sql.update_instance_question, params, function(err, result) {
                                 if (ERR(err, callback)) return;
                                 callback(null);
                             });
@@ -78,7 +78,7 @@ module.exports.gradeExam = function(assessment_instance_id, auth_user_id, credit
                     credit: credit,
                     auth_user_id: auth_user_id,
                 };
-                sqldb.query(sql.update_assessment_instance, params, function(err, result) {
+                sqldb.queryWithClient(client, sql.update_assessment_instance, params, function(err, result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -89,7 +89,7 @@ module.exports.gradeExam = function(assessment_instance_id, auth_user_id, credit
                     assessment_instance_id: assessment_instance_id,
                     auth_user_id: auth_user_id,
                 };
-                sqldb.query(sql.close_assessment_instance, params, function(err, result) {
+                sqldb.queryWithClient(client, sql.close_assessment_instance, params, function(err, result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
