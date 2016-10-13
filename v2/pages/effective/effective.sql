@@ -11,7 +11,7 @@ WITH user_enrollment AS (
 SELECT
     to_jsonb(enum_range(
         enum_first(null::enum_role),
-        least($authn_role, user_enrollment.role)
+        $authn_role
     )) AS available_roles,
     (
         SELECT

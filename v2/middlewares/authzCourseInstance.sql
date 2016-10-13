@@ -19,7 +19,7 @@ WITH effective_data AS (
             ELSE to_jsonb(authn_u)
         END AS user,
         CASE
-            WHEN authn_e.role >= 'TA' THEN least(authn_e.role, e.role, $requested_role)
+            WHEN authn_e.role >= 'TA' THEN least(authn_e.role, $requested_role)
             ELSE authn_e.role
         END AS role,
         CASE
