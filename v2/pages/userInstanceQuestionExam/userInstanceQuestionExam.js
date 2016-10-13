@@ -90,6 +90,26 @@ router.get('/', function(req, res, next) {
                 callback(null);
             });
         },
+        // We can probably combine the previous function with the following one, and eliminate sql.get_submission
+        function(callback) {
+            res.locals.showAllSubmissions = false;
+            hasSubmissionTemplate = true; // How to test the existence of questionFilePath/submission.html?
+            if (hasSubmissionTemplate) {
+                var params = {variant_id: res.locals.variant.id};
+                sqldb.query(sql.get_all_submissions, params, function(err, result) {
+                    if (ERR(err, callback)) return;
+                    if (result.rowCount >= 1) {
+                        res.locals.showAllSubmissions = true;
+                        res.locals.allSubmissions = [];
+                        for (sNum = 0; sNum < result.rowCount; sNum++) {
+                            res.locals.allSubmissions[sNum] = result.rows[sNum];
+                        }
+                    }
+                    callback(null);
+                });
+            } 
+            else callback(null);
+        },
         function(callback) {
             questionServers.getModule(res.locals.question.type, function(err, qm) {
                 if (ERR(err, callback)) return;

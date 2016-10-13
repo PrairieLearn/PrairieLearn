@@ -18,6 +18,15 @@ WHERE
 ORDER BY s.date DESC
 LIMIT 1;
 
+-- BLOCK get_all_submissions
+SELECT
+    s.*
+FROM
+    submissions AS s
+WHERE
+    s.variant_id = $variant_id
+ORDER BY s.date DESC;
+
 -- BLOCK new_submission
 INSERT INTO submissions AS s
     ( variant_id,  auth_user_id,  submitted_answer,  type,  credit,  mode)
