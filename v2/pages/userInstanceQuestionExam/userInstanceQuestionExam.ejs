@@ -47,6 +47,14 @@
               </div>
             </div>
             <% } %>
+            
+            <% allSubmissionsHtml = "Showing all submissions!"; showAllSubmissions = true; %> <!--- DELETE ME --->
+            
+            <% if (showAllSubmissions) { %>
+            <div class="panel-group">
+               <%- allSubmissionsHtml %>
+            </div>
+            <% } %>
 
           </div> <!-- question-container -->
         </div>
