@@ -120,7 +120,7 @@ module.exports = {
         var that = this;
         that.getClient(function(err, client, done) {
             if (ERR(err, callback)) return;
-            that.queryWithClient(client, 'BEGIN;', [], function(err) {
+            that.queryWithClient(client, 'START TRANSACTION ISOLATION LEVEL SERIALIZABLE;', [], function(err) {
                 if (err) {
                     that.rollbackWithClient(client, done, function(rollbackErr) {
                         if (ERR(rollbackErr, callback)) return;
