@@ -280,8 +280,8 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
     SimpleClient.prototype.renderAnswer = function(answerDivID, questionDataModel, appModel) {
         var that = this;
         this.answerView = new AnswerView({el: answerDivID, template: this.options.answerTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback, templateTwice: this.options.templateTwice});
-        this.answerView.render();
         this.listenTo(this.answerView, "renderFinished", function() {that.trigger("renderAnswerFinished");});
+        this.answerView.render();
     };
 
     SimpleClient.prototype.close = function() {
