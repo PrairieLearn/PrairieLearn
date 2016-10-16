@@ -280,8 +280,8 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
     SimpleClient.prototype.renderAnswer = function(answerDivID, questionDataModel, appModel) {
         var that = this;
         this.answerView = new AnswerView({el: answerDivID, template: this.options.answerTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback, templateTwice: this.options.templateTwice});
-        this.answerView.render();
         this.listenTo(this.answerView, "renderFinished", function() {that.trigger("renderAnswerFinished");});
+        this.answerView.render();
     };
 
     SimpleClient.prototype.close = function() {
@@ -314,25 +314,18 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
     };
 
     SimpleClient.prototype.setSubmittedAnswer = function(submittedAnswer) {
-        var that = this;
-        _(submittedAnswer).each(function(value, key) {
-            that.submittedAnswer.set(key, value);
-        });
+        this.submittedAnswer.set(JSON.parse(JSON.stringify(submittedAnswer)));
+        this.trigger("submittedAnswerReset");
     };
 
     SimpleClient.prototype.setTrueAnswer = function(trueAnswer) {
-        var that = this;
-        _(trueAnswer).each(function(value, key) {
-            that.trueAnswer.set(key, value);
-        });
+        this.trueAnswer.set(JSON.parse(JSON.stringify(trueAnswer)));
         this.model.set("showTrueAnswer", true);
+        this.trigger("trueAnswerReset");
     };
 
     SimpleClient.prototype.setFeedback = function(feedback) {
-        var that = this;
-        _(feedback).each(function(value, key) {
-            that.feedback.set(key, value);
-        });
+        this.feedback.set(JSON.parse(JSON.stringify(feedback)));
         this.model.set("showTrueAnswer", true);
     };
 

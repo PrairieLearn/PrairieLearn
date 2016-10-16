@@ -1,5 +1,5 @@
 
-define(["underscore"], function(_) {
+define(["underscore", "sha1"], function(_, Sha1) {
 
     /** Format a floating point number with a fixed precision after the decimal point.
 
@@ -483,6 +483,10 @@ define(["underscore"], function(_) {
         };
         localData.clientFile = function(name) {
             return appModel.apiURL("clientFiles/" + name);
+        };
+        localData.latexFile = function(latex) {
+            var name = Sha1.hash(latex.slice(4)) + '_hi.png';
+            return appModel.apiURL("text/" + name);
         };
 
         var compiled = _.template(text);
