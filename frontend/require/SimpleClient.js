@@ -314,18 +314,18 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
     };
 
     SimpleClient.prototype.setSubmittedAnswer = function(submittedAnswer) {
-        this.submittedAnswer.set(submittedAnswer);
+        this.submittedAnswer.set(JSON.parse(JSON.stringify(submittedAnswer)));
         this.trigger("submittedAnswerReset");
     };
 
     SimpleClient.prototype.setTrueAnswer = function(trueAnswer) {
-        this.trueAnswer.set(trueAnswer);
+        this.trueAnswer.set(JSON.parse(JSON.stringify(trueAnswer)));
         this.model.set("showTrueAnswer", true);
         this.trigger("trueAnswerReset");
     };
 
     SimpleClient.prototype.setFeedback = function(feedback) {
-        this.feedback.set(feedback);
+        this.feedback.set(JSON.parse(JSON.stringify(feedback)));
         this.model.set("showTrueAnswer", true);
     };
 
