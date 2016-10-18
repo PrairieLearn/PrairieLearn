@@ -108,6 +108,7 @@ define(['underscore', 'backbone', 'mustache', 'moment-timezone', 'renderer', 'Te
                 _(byQID).each(function(stat, qid) {
                     var meanScoreByQuintile = _(stat.meanScoreByQuintile).map(function(s) {return s * 100;});
                     var meanScoreByQuintileStrings = _(meanScoreByQuintile).map(function(s) {return s.toFixed(1);});
+                    if (!that.store.questions.get(qid)) return;
                     data.qStats.push({
                         qid: qid,
                         title: that.store.questions.get(qid).get("title"),
