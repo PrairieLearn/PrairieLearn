@@ -48,8 +48,6 @@
             </div>
             <% } %>
             
-            <% allSubmissionsHtml = "A submission goes here."; // DELETE ME %>
-            
             <% if (showAllSubmissions) { %>
             <div class="panel-group">
                 <% for (sNum = 0; sNum < allSubmissions.length; sNum++) { 
@@ -71,7 +69,7 @@
                         <h3 class="panel-title">Submission <%= allSubmissions.length - sNum %> <%- submissionLabel %></h3>
                     </div>
                     <div class="panel-body submission-body" id="submission<%= sNum %>-body">
-                        <%- allSubmissionsHtml %>
+                    
                     </div>
                </div>
                <% } %>

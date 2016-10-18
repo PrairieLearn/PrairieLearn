@@ -168,6 +168,7 @@ router.get('/', function(req, res, next) {
                 submittedAnswer: res.locals.submission ? res.locals.submission.submitted_answer : null,
                 feedback: (res.locals.showFeedback && res.locals.submission) ? res.locals.submission.feedback : null,
                 trueAnswer: res.locals.showTrueAnswer ? res.locals.variant.true_answer : null,
+                allSubmissions : res.locals.showAllSubmissions ? res.locals.allSubmissions : null,
             });
             res.locals.video = null;
             callback(null);

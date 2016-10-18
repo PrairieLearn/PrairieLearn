@@ -73,8 +73,8 @@ CalculationClient.prototype.renderQuestion = function(container, questionData) {
     this.qClient.renderQuestion(container, function() {}, this.questionDataModel, this.appModel);
 };
 
-CalculationClient.prototype.renderSubmission = function(container, questionData) {
-    //this.qClient.renderSubmission(container, function() {}, this.questionDataModel, this.appModel);
+CalculationClient.prototype.renderSubmission = function(container, questionData, submissionIndex) {
+    this.qClient.renderSubmission(container, this.questionDataModel, this.appModel, questionData.allSubmissions[submissionIndex], submissionIndex);
 };
 
 CalculationClient.prototype.renderAnswer = function(container, questionData) {

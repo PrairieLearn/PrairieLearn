@@ -248,11 +248,56 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
             this.remove();
         },
     });
+    
+    var SubmissionView = Backbone.View.extend({
+        
+        initialize: function() {
+            this.questionDataModel = this.options.questionDataModel,
+            this.appModel = this.options.appModel,
+            this.template = this.options.template,
+            this.params = this.options.params,
+            this.thisSubmission = this.options.thisSubmission,
+            this.rivetsBindingsActive = false;
+            this.render();
+        },
+        
+        render: function() {
+            if (this.rivetsBindingsActive)
+                this.rivetsView.unbind();
+            var templateData = {
+                params: this.params.toJSON(),
+                thisSubmission: this.thisSubmission,
+            };
+            var templatedHTML = PrairieTemplate.template(this.template, templateData, this.questionDataModel, this.appModel);
+            if (this.options.templateTwice) {
+                templatedHTML = PrairieTemplate.template(templatedHTML, {}, this.questionDataModel, this.appModel);
+            }
+            this.$el.html(templatedHTML);
+            this.thisSubmissionObject = new Backbone.Model(this.thisSubmission);
+            this.rivetsView = rivets.bind(this.$el, {
+                model: this.model,
+                params: this.params,
+                submittedAnswer: this.thisSubmissionObject,
+            });
+            //this.rivetsBindingsActive = true;
+            if (window.MathJax)
+                MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
+            //this.trigger("renderFinished"); 
+            return this;
+        },
+        
+        close: function() {
+            if (this.rivetsBindingsActive)
+                this.rivetsView.unbind();
+            this.remove();
+        },
+    }); 
 
     function SimpleClient(options) {
         this.options = _.defaults(options || {}, {
             questionTemplate: "",
             answerTemplate: "",
+            submissionTemplate: "",
             templateTwice: false,
         });
     }
@@ -264,6 +309,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         this.submittedAnswer = new Backbone.Model();
         this.trueAnswer = new Backbone.Model();
         this.feedback = new Backbone.Model();
+        this.submissionViews = [];
     };
 
     SimpleClient.prototype.renderQuestion = function(questionDivID, changeCallback, questionDataModel, appModel) {
@@ -280,6 +326,12 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         this.answerView.render();
         this.listenTo(this.answerView, "renderFinished", function() {that.trigger("renderAnswerFinished");});
     };
+    
+    SimpleClient.prototype.renderSubmission = function(submissionDivID, questionDataModel, appModel, submission, submissionIndex) {
+        var that = this;
+        this.submissionViews[submissionIndex] = new SubmissionView({el: submissionDivID, template: this.options.submissionTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, thisSubmission: submission.submitted_answer, templateTwice: this.options.templateTwice});
+        this.submissionViews[submissionIndex].render();
+    }
 
     SimpleClient.prototype.close = function() {
         this.stopListening();
@@ -289,6 +341,13 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         if (this.answerView) {
             this.answerView.close();
         }
+        if (this.submissionsViews) {
+            for (i = 0; i < this.submissionsViews.length; i++) {
+                if (this.submissionsViews[i]) {
+                    this.submissionsViews[i].close();
+                }
+            }
+        }
         this.model = undefined;
         this.params = undefined;
         this.submittedAnswer = undefined;
@@ -296,6 +355,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         this.feedback = undefined;
         this.questionView = undefined;
         this.answerView = undefined;
+        this.submissionsViews = undefined;
     };
 
     SimpleClient.prototype.isComplete = function() {
