@@ -5,6 +5,7 @@ var async = require('async');
 var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
+var fs = require('fs');
 
 var error = require('../../lib/error');
 var questionServers = require('../../question-servers');
@@ -93,7 +94,8 @@ router.get('/', function(req, res, next) {
         // We can probably combine the previous function with the following one, and eliminate sql.get_submission
         function(callback) {
             res.locals.showAllSubmissions = false;
-            hasSubmissionTemplate = true; // How to test the existence of questionFilePath/submission.html?
+            submissionFilePath = path.join(res.locals.course.path, "questions", res.locals.question.directory, "submission.html");
+            hasSubmissionTemplate = fs.existsSync(submissionFilePath);
             if (hasSubmissionTemplate) {
                 var params = {variant_id: res.locals.variant.id};
                 sqldb.query(sql.get_all_submissions, params, function(err, result) {
