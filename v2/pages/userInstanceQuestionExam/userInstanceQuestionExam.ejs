@@ -50,21 +50,15 @@
             
             <% if (showAllSubmissions) { %>
             <div class="panel-group">
-                <% for (sNum = 0; sNum < allSubmissions.length; sNum++) { 
-                thisSubmission = allSubmissions[sNum]; 
-                if (thisSubmission.correct === null) {
-                    panelType = "panel-info"; 
-                    submissionLabel = "<span class='label label-primary'>saved, not graded</span>"; 
-                }
-                else if (thisSubmission.correct) {
-                    panelType = "panel-success";
-                    submissionLabel = "<span class='label label-success'>correct</span>";
-                }
-                else {
-                    panelType = "panel-danger";
-                    submissionLabel = "<span class='label label-danger'>incorrect</span>";
-                } %>
-                <div class="panel <%= panelType %> submission-block">
+                <% allSubmissions.forEach(function (thisSubmission, sNum, allSubmissions) {
+                    if (thisSubmission.correct === null) {
+                        submissionLabel = "<span class='label label-primary'>saved, not graded</span>";
+                    } else if (thisSubmission.correct) {
+                        submissionLabel = "<span class='label label-success'>correct</span>";
+                    } else {
+                        submissionLabel = "<span class='label label-danger'>incorrect</span>";
+                    } %>
+                <div class="panel panel-info submission-block">
                     <div class="panel-heading">
                         <h3 class="panel-title">Submission <%= allSubmissions.length - sNum %> <%- submissionLabel %></h3>
                     </div>
@@ -72,7 +66,7 @@
                     
                     </div>
                </div>
-               <% } %>
+               <% }); %>
             </div>
             <% } %>
 
