@@ -99,10 +99,7 @@ router.get('/', function(req, res, next) {
                 if (ERR(err, callback)) return;
                 if (result.rowCount >= 1) {
                     res.locals.showAllSubmissions = true;
-                    res.locals.allSubmissions = [];
-                    for (sNum = 0; sNum < result.rowCount; sNum++) {
-                        res.locals.allSubmissions[sNum] = result.rows[sNum];
-                    }
+                    res.locals.allSubmissions = result.rows;
                 }
                 callback(null);
             });
