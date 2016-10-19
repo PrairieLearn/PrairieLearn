@@ -50,7 +50,7 @@
             
             <% if (showAllSubmissions) { %>
             <div class="panel-group">
-                <% allSubmissions.forEach(function (thisSubmission, sNum, allSubmissions) {
+                <% allSubmissions.forEach(function(thisSubmission, sNum) {
                     if (thisSubmission.correct === null) {
                         submissionLabel = "<span class='label label-primary'>saved, not graded</span>";
                     } else if (thisSubmission.correct) {
@@ -60,7 +60,7 @@
                     } %>
                 <div class="panel panel-info submission-block">
                     <div class="panel-heading">
-                        <h3 class="panel-title">Submission <%= allSubmissions.length - sNum %> <%- submissionLabel %></h3>
+                        <h3 class="panel-title">Submission <%= allSubmissions.length - sNum %> <%- submissionLabel %> (submitted at <%- thisSubmission.formatted_date %>)</h3>
                     </div>
                     <div class="panel-body submission-body" id="submission<%= sNum %>-body">
                     

@@ -20,7 +20,8 @@ LIMIT 1;
 
 -- BLOCK get_all_submissions
 SELECT
-    s.*
+    s.*,
+    format_date_full_compact(s.date) AS formatted_date
 FROM
     submissions AS s
 WHERE
