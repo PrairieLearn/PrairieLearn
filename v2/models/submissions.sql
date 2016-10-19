@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS submissions (
     override_score DOUBLE PRECISION,
     credit INTEGER,
     mode enum_mode,
+    external_grading_started_at TIMESTAMP WITH TIME ZONE,
     graded_at TIMESTAMP WITH TIME ZONE,
     score DOUBLE PRECISION,
     correct BOOLEAN,
@@ -50,6 +51,14 @@ $$;
 DO $$
     BEGIN
         ALTER TABLE submissions ADD COLUMN feedback JSONB;
+    EXCEPTION
+        WHEN duplicate_column THEN -- do nothing
+    END;
+$$;
+
+DO $$
+    BEGIN
+        ALTER TABLE submissions ADD COLUMN external_grading_started_at TIMESTAMP WITH TIME ZONE;
     EXCEPTION
         WHEN duplicate_column THEN -- do nothing
     END;
