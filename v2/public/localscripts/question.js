@@ -9,7 +9,7 @@ $(function() {
         clients[questionContainer.attr('id')] = client;
         client.initialize(questionData, callback);
     };
-    
+
     var render = function(questionContainer) {
         var client = clients[questionContainer.attr('id')];
 

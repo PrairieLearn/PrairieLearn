@@ -17,7 +17,7 @@
 
           <div id="question-0" class="question-container">
             <script type="application/json" class="question-data"><%- questionJson  %></script>
-            
+
             <div class="panel panel-primary question-block">
               <div class="panel-heading">
                 <h3 class="panel-title"><%= instance_question_info.question_number %>. <%= question.title %></h3>
@@ -47,7 +47,7 @@
               </div>
             </div>
             <% } %>
-            
+
             <% if (showAllSubmissions) { %>
             <div class="panel-group">
                 <% allSubmissions.forEach(function(thisSubmission, sNum) {
@@ -63,7 +63,7 @@
                         <h3 class="panel-title">Saved Answer <%= allSubmissions.length - sNum %> <%- submissionLabel %> (saved at <%- thisSubmission.formatted_date %>)</h3>
                     </div>
                     <div class="panel-body submission-body" id="submission<%= sNum %>-body">
-                    
+
                     </div>
                </div>
                <% }); %>
@@ -113,7 +113,7 @@
             <table class="table table-condensed">
               <tbody>
                 <% if (assessment_instance.open) { %>
-                
+
                 <tr>
                   <td>Current value:</td>
                   <td><%= instance_question.current_value %></td>
@@ -132,7 +132,7 @@
                 </tr>
 
                 <% } else { %> <!-- assessment_instance.open -->
-                
+
                 <tr>
                   <td>Number of attempts:</td>
                   <td><%= instance_question.number_attempts %></td>
@@ -175,7 +175,7 @@
             <a class="btn btn-warning" href="#youtubemodal" data-toggle="modal">Help video</a>
           </p>
           <% } %>
-          
+
         </div>
       </div>
     </div>

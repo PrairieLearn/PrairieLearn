@@ -29,7 +29,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         },
         routine: function(el, value) {
             var _ref;
-            
+
             el = $(el);
             if ((value != null ? value.toString() : void 0) !== ((_ref = el.val()) != null ? _ref.toString() : void 0)) {
                 return el.val(value != null ? value : '');
@@ -248,9 +248,9 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
             this.remove();
         },
     });
-    
+
     var SubmissionView = Backbone.View.extend({
-        
+
         initialize: function() {
             this.questionDataModel = this.options.questionDataModel,
             this.appModel = this.options.appModel,
@@ -260,7 +260,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
             this.rivetsBindingsActive = false;
             this.render();
         },
-        
+
         render: function() {
             if (this.rivetsBindingsActive)
                 this.rivetsView.unbind();
@@ -282,16 +282,16 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
             //this.rivetsBindingsActive = true;
             if (window.MathJax)
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
-            //this.trigger("renderFinished"); 
+            //this.trigger("renderFinished");
             return this;
         },
-        
+
         close: function() {
             if (this.rivetsBindingsActive)
                 this.rivetsView.unbind();
             this.remove();
         },
-    }); 
+    });
 
     function SimpleClient(options) {
         this.options = _.defaults(options || {}, {
@@ -326,7 +326,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         this.answerView.render();
         this.listenTo(this.answerView, "renderFinished", function() {that.trigger("renderAnswerFinished");});
     };
-    
+
     SimpleClient.prototype.renderSubmission = function(submissionDivID, questionDataModel, appModel, submission, submissionIndex) {
         var that = this;
         this.submissionViews[submissionIndex] = new SubmissionView({el: submissionDivID, template: this.options.submissionTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, thisSubmission: submission.submitted_answer, templateTwice: this.options.templateTwice});
