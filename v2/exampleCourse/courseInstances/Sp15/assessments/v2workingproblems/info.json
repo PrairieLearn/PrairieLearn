@@ -1,6 +1,6 @@
 {
     "type": "Exam",
-    "title": "Past Submission Testing",
+    "title": "PrairieLearn v2 Working Problem Types",
     "set": "Exam",
     "number": 1,
     "allowAccess": [
@@ -19,6 +19,7 @@
     "options": {
         "zones": [
             {
+                "title" : "'Calculation'-type problem",
                 "questions": [
                     {"qid": "addVectors", "points": [10,9,7,5,3,1]}
                 ]

@@ -62,7 +62,7 @@ CalculationClient.prototype.initialize = function(questionData, callback) {
                 that.qClient.setTrueAnswer(questionData.trueAnswer);
             }
             if (questionData.feedback) {
-                that.qClient.feedback(questionData.feedback);
+                that.qClient.setFeedback(questionData.feedback);
             }
             callback(null);
         });
