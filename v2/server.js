@@ -170,6 +170,12 @@ async.series([
         });
     },
     function(callback) {
+        messageQueue.init(function(err) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+    function(callback) {
         logger.info('Starting server...');
         startServer(function(err) {
             if (ERR(err, callback)) return;
