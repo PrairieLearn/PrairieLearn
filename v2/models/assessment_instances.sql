@@ -14,8 +14,10 @@ CREATE TABLE IF NOT EXISTS assessment_instances (
     user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
     auth_user_id INTEGER REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
     points DOUBLE PRECISION DEFAULT 0,
+    in_grading_points DOUBLE_PRECISION DEFAULT 0,
     max_points DOUBLE PRECISION,
     score_perc INTEGER DEFAULT 0,
+    in_grading_score_perc INTEGER DEFAULT 0,
     UNIQUE (number, assessment_id, user_id)
 );
 
