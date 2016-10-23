@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS questions (
     title varchar(255),
     config JSONB,
     number INTEGER,
-    grading_type enum_grading_type NOT NULL DEFAULT 'Internal',
+    grading_method enum_grading_method NOT NULL DEFAULT 'Internal',
     course_id INTEGER NOT NULL REFERENCES courses ON DELETE CASCADE ON UPDATE CASCADE,
     topic_id INTEGER REFERENCES topics ON DELETE SET NULL ON UPDATE CASCADE,
     deleted_at TIMESTAMP WITH TIME ZONE,
@@ -32,7 +32,7 @@ $$;
 
 DO $$ 
     BEGIN
-        ALTER TABLE questions ADD COLUMN grading_type enum_grading_type NOT NULL DEFAULT 'Internal';
+        ALTER TABLE questions ADD COLUMN grading_method enum_grading_method NOT NULL DEFAULT 'Internal';
     EXCEPTION
         WHEN duplicate_column THEN -- do nothing
     END;

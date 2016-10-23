@@ -20,7 +20,7 @@ module.exports = {
             'enum_submission_type.sql',
             'enum_assessment_type.sql',
             'enum_auth_action.sql',
-            'enum_grading_type.sql',
+            'enum_grading_method.sql',
 
             // tables synced from git repo
             'courses.sql',
