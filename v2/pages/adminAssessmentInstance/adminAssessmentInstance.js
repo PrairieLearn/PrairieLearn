@@ -30,11 +30,17 @@ var logCsvFilename = function(locals) {
 router.get('/', function(req, res, next) {
     res.locals.logCsvFilename = logCsvFilename(res.locals);
     var params = {assessment_instance_id: res.locals.assessment_instance.id};
-    sqldb.query(sql.select_log, params, function(err, result) {
+    sqldb.queryOneRow(sql.select_data, params, function(err, result) {
         if (ERR(err, next)) return;
-        res.locals.log = result.rows;
+        res.locals.assessment_instance_duration = result.rows[0].assessment_instance_duration;
 
-        res.render(path.join(__dirname, 'adminAssessmentInstance'), res.locals);
+        var params = {assessment_instance_id: res.locals.assessment_instance.id};
+        sqldb.query(sql.select_log, params, function(err, result) {
+            if (ERR(err, next)) return;
+            res.locals.log = result.rows;
+
+            res.render(path.join(__dirname, 'adminAssessmentInstance'), res.locals);
+        });
     });
 });
 

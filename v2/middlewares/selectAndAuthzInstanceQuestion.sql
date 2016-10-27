@@ -27,7 +27,6 @@ WITH instance_questions_info AS (
 )
 SELECT
     to_jsonb(ai) AS assessment_instance,
-    format_interval(aid.duration) AS assessment_instance_duration,
     to_jsonb(u) AS instance_user,
     to_jsonb(e) AS instance_enrollment,
     to_jsonb(iq) AS instance_question,
@@ -43,7 +42,6 @@ FROM
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     JOIN questions AS q ON (q.id = aq.question_id)
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-    LEFT JOIN assessment_instance_durations AS aid ON (aid.id = ai.id)
     JOIN assessments AS a ON (a.id = ai.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
