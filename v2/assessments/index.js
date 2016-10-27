@@ -25,10 +25,20 @@ module.exports = {
         });
     },
 
-    scoreAssessmentInstance: function(assessment_type, assessment_instance_id, auth_user_id, callback) {
+    updateAssessmentInstanceScore: function(assessment_type, assessment_instance_id, auth_user_id, credit, callback) {
         this.getModule(assessment_type, function(err, assessmentModule) {
             if (ERR(err, callback)) return;
-            assessmentModule.scoreAssessmentInstance(assessment_instance_id, auth_user_id, function(err) {
+            assessmentModule.updateAssessmentInstanceScore(assessment_instance_id, auth_user_id, credit, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        });
+    },
+
+    gradeAssessmentInstance: function(assessment_type, assessment_instance_id, auth_user_id, credit, finish, callback) {
+        this.getModule(assessment_type, function(err, assessmentModule) {
+            if (ERR(err, callback)) return;
+            assessmentModule.gradeAssessmentInstance(assessment_instance_id, auth_user_id, credit, finish, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

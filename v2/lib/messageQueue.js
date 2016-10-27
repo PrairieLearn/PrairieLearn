@@ -75,7 +75,7 @@ module.exports.sendToGradingQueue = function(submission_id, auth_user_id, gradin
 };
 
 module.exports.processGradingResult = function(msg) {
-    var content, assessment_type, assessment_instance_id, grading_log;
+    var content, assessment_type, assessment_instance_id, grading_log, credit;
     async.series([
         function(callback) {
             try {
@@ -118,7 +118,17 @@ module.exports.processGradingResult = function(msg) {
             });
         },
         function(callback) {
-            assessments.scoreAssessmentInstance(assessment_type, assessment_instance_id, grading_log.auth_user_id, function(err) {
+            var params = {
+                grading_log_id: grading_log.id;
+            };
+            sqldb.queryOneRow(sql.select_submission_credit, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                credit = result.rows[0].credit;
+                callback(null);
+            });
+        },
+        function(callback) {
+            assessments.updateAssessmentInstanceScore(assessment_type, assessment_instance_id, grading_log.auth_user_id, credit, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

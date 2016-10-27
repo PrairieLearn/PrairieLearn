@@ -46,6 +46,47 @@ INSERT INTO grading_logs
         results
 );
 
+
+-- BLOCK update_grading_log_and_submission
+WITH
+updated_grading_log AS (
+    UPDATE grading_logs AS gl
+    SET
+        date = CURRENT_TIMESTAMP,
+        score = $score,
+        correct = $correct,
+        feedback = $feedback
+    WHERE
+        gl.id = $grading_log_id
+    RETURNING
+        gl.*
+),
+updated_submission AS (
+    UPDATE submissions AS s
+    SET
+        graded_at = gl.date,
+        score = gl.score,
+        correct = gl.correct,
+        feedback = gl.feedback
+    FROM
+        updated_grading_log AS gl
+    WHERE
+        s.id = gl.submission_id
+    RETURNING
+        s.*
+)
+SELECT
+    to_jsonb(gl) AS updated_grading_log,
+    iq.id AS instance_question_id
+FROM
+    updated_grading_log AS gl,
+    updated_submission AS s,
+    variants AS v
+    JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+WHERE
+    v.id = s.variant_id;
+
+
 -- BLOCK update_instance_question
 WITH results AS (
     UPDATE instance_questions AS iq
@@ -73,7 +114,7 @@ INSERT INTO question_score_logs
     FROM results
 );
 
--- BLOCK update_assessment_instance
+-- BLOCK update_assessment_instance_score
 WITH results AS (
     UPDATE assessment_instances AS ai
     SET

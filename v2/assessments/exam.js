@@ -14,8 +14,44 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = {};
 
-module.exports.gradeExam = function(assessment_instance_id, auth_user_id, credit, finishExam, callback) {
-    logger.debug('gradeExam()', {assessment_instance_id: assessment_instance_id, auth_user_id: auth_user_id, credit: credit, finishExam: finishExam});
+assessmentModule.updateGradingLog(grading_log, callback) {
+    var params = {
+        grading_log_id: grading_log.id,
+        score: grading_log.score,
+        correct: grading_log.correct,
+        feedback: grading_log.feedback,
+    };
+    sqldb.queryOneRow(sql.update_grading_log_and_submission, params, function(err, result) {
+        if (ERR(err, callback)) return;
+        var updated_grading_log = result.rows[0].grading_log;
+        var instance_question_id = result.rows[0].instance_question_id;
+
+        var params = {
+            instance_question_id: instance_question.id,
+            correct: grading_log.correct,
+            auth_user_id: grading_log.auth_user_id,
+        };
+        sqldb.queryWithClient(client, sql.update_instance_question, params, function(err, result) {
+            if (ERR(err, callback)) return;
+            callback(null, updated_grading_log);
+        });
+    });
+};
+
+module.exports.updateAssessmentInstanceScore = function(assessment_instance_id, auth_user_id, credit, callback) {
+    var params = {
+        assessment_instance_id: assessment_instance_id,
+        auth_user_id: auth_user_id,
+        credit: credit,
+    };
+    sqldb.queryOneRow(sql.update_assessment_instance_score, params, function(err, result) {
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
+};
+
+module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_user_id, credit, finish, callback) {
+    logger.debug('gradeExam()', {assessment_instance_id: assessment_instance_id, auth_user_id: auth_user_id, credit: credit, finish: finish});
     sqldb.beginTransaction(function(err, client, done) {
         if (ERR(err, callback)) return;
         logger.debug('gradeExam(): inside beginTransaction()', {assessment_instance_id: assessment_instance_id});
@@ -92,14 +128,14 @@ module.exports.gradeExam = function(assessment_instance_id, auth_user_id, credit
                     auth_user_id: auth_user_id,
                 };
                 logger.debug('gradeExam(): calling update_assessment_instance', {assessment_instance_id: assessment_instance_id, params: params});
-                sqldb.queryWithClient(client, sql.update_assessment_instance, params, function(err, result) {
+                sqldb.queryWithClient(client, sql.update_assessment_instance_score, params, function(err, result) {
                     if (ERR(err, callback)) return;
                     logger.debug('gradeExam(): finished update_assessment_instance', {assessment_instance_id: assessment_instance_id, rows: result.rows});
                     callback(null);
                 });
             },
             function(callback) {
-                if (!finishExam) return callback(null);
+                if (!finish) return callback(null);
                 var params = {
                     assessment_instance_id: assessment_instance_id,
                     auth_user_id: auth_user_id,
