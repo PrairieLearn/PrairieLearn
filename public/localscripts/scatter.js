@@ -18,6 +18,7 @@ function scatter(selector, xdata, ydata, options) {
         bottomMargin: 55,
         leftMargin: 70,
         radius: 2,
+        labels: {},
     });
 
     var width = options.width - options.leftMargin - options.rightMargin;
@@ -42,6 +43,7 @@ function scatter(selector, xdata, ydata, options) {
 
     var xTickFormat = (options.xTickLabels == "auto" ? null
                        : function(d, i) {return options.xTickLabels[i];});
+
     var xAxis = d3.svg.axis()
         .scale(x)
         .tickValues(options.xgrid)
@@ -114,23 +116,26 @@ function scatter(selector, xdata, ydata, options) {
     svg.append("line")
         .attr({x1: width, y1: 0, x2: width, y2: height, "class": "y axis"});
 
-    var pData = d3.zip(xdata, ydata);
-    svg.selectAll(".point")
-        .data(pData)
-        .enter().append("circle")
+    // zips the data used to create the scatter plot
+    // each data point has value [x, y, label]
+    // if options.labels is not specified, then each data point will have an undefined label, and no labels will appear in the plot
+    var pData = d3.zip(xdata, ydata, options.labels);
+ 
+    var nodes = svg.selectAll(".point")
+                .data(pData)
+                .enter()
+                .append("g");
+
+    nodes.append("circle")
         .attr("class", "point")
         .attr("cx", function(p) {return x(p[0]);})
         .attr("cy", function(p) {return y(p[1]);})
         .attr("r", function(p) {return options.radius;});
 
-    /*
-    svg.selectAll(".pointLabel")
-        .data(qStats)
-        .enter().append("text")
-        .attr("class", "pointLabel")
-        .style("text-anchor", "middle")
-        .attr("x", function(stat) {return x(stat.meanScore);})
-        .attr("y", function(stat) {return y(stat.discrimination) - 6;})
-        .text(function(stat) {return stat.number;});
-    */
+    nodes.append("text")
+      .attr("text-anchor", "middle")
+      .attr("class", "pointLabel")
+      .attr("x", function(p) { return x(p[0]);})
+      .attr("y", function(p) { return y(p[1]) - 6; })
+      .text(function(p) { return p[2]; });
 };

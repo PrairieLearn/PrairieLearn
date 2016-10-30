@@ -24,6 +24,46 @@ WHERE
     AND q.deleted_at IS NULL
 ORDER BY z.number, z.id, aq.number;
 
+-- BLOCK question_stats
+WITH mean_question_scores AS (
+    SELECT
+        ai.user_id,
+        aq.question_id,
+        admin_assessment_question_number(aq.id) as number,
+        avg(iq.score_perc) as user_score_perc
+    FROM
+        instance_questions AS iq
+        JOIN assessment_instances AS ai ON (iq.assessment_instance_id = ai.id)
+        JOIN assessment_questions AS aq ON (iq.assessment_question_id = aq.id)
+    WHERE
+        aq.assessment_id = $assessment_id AND
+        aq.deleted_at IS NULL
+    GROUP BY
+        user_id,
+        question_id,
+        aq.id
+),
+mean_assessment_scores AS (
+    SELECT
+        ai.user_id,
+        avg(ai.score_perc) AS user_score_perc
+    FROM
+        assessment_instances AS ai
+    WHERE
+        ai.assessment_id = $assessment_id
+    GROUP BY
+        user_id
+)
+SELECT
+    mean_question_scores.question_id,
+    greatest(0, least(100, avg(mean_question_scores.user_score_perc))) AS mean_score_per_question,
+    mean_question_scores.number,
+    greatest(0, least(100, corr(mean_question_scores.user_score_perc, mean_assessment_scores.user_score_perc) * 100.0)) AS discrimination
+FROM mean_question_scores
+    JOIN mean_assessment_scores ON (mean_assessment_scores.user_id = mean_question_scores.user_id)
+GROUP BY
+    mean_question_scores.question_id,
+    mean_question_scores.number;
 
 -- BLOCK assessment_stats
 SELECT * FROM assessment_stats WHERE id = $assessment_id;

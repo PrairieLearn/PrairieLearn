@@ -57,22 +57,26 @@ router.get('/', function(req, res, next) {
         res.locals.questions = result.rows;
 
         var params = {assessment_id: res.locals.assessment.id};
-        sqldb.queryOneRow(sql.assessment_stats, params, function(err, result) {
+        sqldb.query(sql.question_stats, params, function(err, result) {
             if (ERR(err, next)) return;
-            res.locals.assessment_stat = result.rows[0];
+            res.locals.question_stats = result.rows;
 
-            // FIXME: change to assessment_instance_duration_stats and show all instances
-            var params = {assessment_id: res.locals.assessment.id};
-            sqldb.queryOneRow(sql.assessment_duration_stats, params, function(err, result) {
+            sqldb.queryOneRow(sql.assessment_stats, params, function(err, result) {
                 if (ERR(err, next)) return;
-                res.locals.duration_stat = result.rows[0];
-
+                res.locals.assessment_stat = result.rows[0];
+                // FIXME: change to assessment_instance_duration_stats and show all instances
                 var params = {assessment_id: res.locals.assessment.id};
-                sqldb.query(sql.assessment_instance_scores, params, function(err, result) {
+                sqldb.queryOneRow(sql.assessment_duration_stats, params, function(err, result) {
                     if (ERR(err, next)) return;
-                    res.locals.user_scores = result.rows;
+                    res.locals.duration_stat = result.rows[0];
+    
+                    var params = {assessment_id: res.locals.assessment.id};
+                    sqldb.query(sql.assessment_instance_scores, params, function(err, result) {
+                        if (ERR(err, next)) return;
+                        res.locals.user_scores = result.rows;
                     
-                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                    });
                 });
             });
         });

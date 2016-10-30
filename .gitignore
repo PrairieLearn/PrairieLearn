@@ -19,3 +19,6 @@ v1/backend/config.json.*
 
 # Build files
 frontend-build/
+
+# Swap files
+**/*.swp
