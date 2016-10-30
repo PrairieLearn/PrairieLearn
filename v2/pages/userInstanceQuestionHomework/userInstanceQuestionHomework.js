@@ -14,21 +14,21 @@ var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-function ensureVariant(req, res, callback) {
+function ensureVariant(locals, callback) {
     // if we have an existing variant that is ungraded (may have an ungraded submission)
     // then use that one, otherwise make a new one
     var params = {
-        instance_question_id: res.locals.instance_question.id,
+        instance_question_id: locals.instance_question.id,
     };
     sqldb.query(sql.get_available_variant, params, function(err, result) {
         if (ERR(err, callback)) return;
         if (result.rowCount == 1) {
             return callback(null, result.rows[0]);
         }
-        questionServers.makeVariant(res.locals.question, res.locals.course, {}, function(err, variant) {
+        questionServers.makeVariant(locals.question, locals.course, {}, function(err, variant) {
             if (ERR(err, callback)) return;
             var params = {
-                instance_question_id: res.locals.instance_question.id,
+                instance_question_id: locals.instance_question.id,
                 variant_seed: variant.vid,
                 question_params: variant.params,
                 true_answer: variant.true_answer,
@@ -42,10 +42,8 @@ function ensureVariant(req, res, callback) {
     });
 }
 
-function getSubmission(variantId, callback) {
-    var params = {
-        variant_id: variantId,
-    };
+function getSubmission(variant_id, callback) {
+    var params = {variant_id: variant_id};
     sqldb.query(sql.get_submission, params, function(err, result) {
         if (ERR(err, callback)) return;
         if (result.rowCount == 1) {
@@ -57,134 +55,28 @@ function getSubmission(variantId, callback) {
 }
 
 function processSubmission(req, res, callback) {
-    var postData, grading;
-    async.series([
-        function(callback) {
-            if (!req.body.postData) return callback(error.make(400, 'No postData', {locals: res.locals, body: req.body}));
-            try {
-                postData = JSON.parse(req.body.postData);
-            } catch (e) {
-                return callback(error.make(400, 'JSON parse failed on body.postData', {locals: res.locals, body: req.body}));
-            }
-            callback(null);
-        },
-        function(callback) {
-            var params = {
-                variant_id: postData.variant ? postData.variant.id : null,
-            };
-            sqldb.queryOneRow(sql.get_variant, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                res.locals.variant = result.rows[0];
-                callback(null);
-            });
-        },
-        function(callback) {
-            var submission = {
-                submitted_answer: postData.submittedAnswer,
-                type: postData.type,
-            };
-            questionServers.gradeSubmission(submission, res.locals.variant, res.locals.question, res.locals.course, {}, function(err, g) {
-                if (ERR(err, callback)) return;
-                grading = g;
-                callback(null);
-            });
-        },
-        function(callback) {
-            var params = {
-                variant_id: res.locals.variant.id,
-                auth_user_id: res.locals.user.id,
-                submitted_answer: postData.submittedAnswer,
-                type: postData.type,
-                credit: res.locals.assessment.credit,
-                mode: req.mode,
-                graded_at: grading.graded_at,
-                score: grading.score,
-                correct: grading.correct,
-                feedback: grading.feedback,
-            };
-            sqldb.queryOneRow(sql.new_submission, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                res.locals.submission = result.rows[0];
-                callback(null);
-            });
-        },
-        function(callback) {
-            res.locals.showSubmitButton = false;
-            res.locals.showNewVariantButton = true;
-            res.locals.showSubmission = true;
-            res.locals.showFeedback = true;
-            res.locals.showTrueAnswer = true;
-            callback(null);
-        },
-        function(callback) {
-            var params = {
-                variant_id: res.locals.variant.id,
-                available: false,
-            };
-            sqldb.queryOneRow(sql.update_variant, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                res.locals.variant = result.rows[0];
-                callback(null);
-            });
-        },
-        function(callback) {
-            var points = res.locals.instance_question.points;
-            var current_value = res.locals.instance_question.current_value;
-            var number_attempts = res.locals.instance_question.number_attempts;
-            if (res.locals.submission.correct) {
-                points = Math.min(points + current_value, res.locals.assessment_question.max_points);
-                current_value = Math.min(current_value + res.locals.assessment_question.init_points, res.locals.assessment_question.max_points);
-            } else {
-                current_value = res.locals.assessment_question.init_points;
-            }
-
-            var params = {
-                instance_question_id: res.locals.instance_question.id,
-                points: points,
-                current_value: current_value,
-                number_attempts: number_attempts + 1,
-            };
-            sqldb.queryOneRow(sql.update_instance_question, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                // don't overwrite entire object in case someone added extra fields at some point
-                _.assign(res.locals.instance_question, result.rows[0]);
-                callback(null);
-            });
-        },
-        function(callback) {
-            var params = {
-                assessment_instance_id: res.locals.assessment_instance.id,
-                credit: res.locals.assessment_instance.credit,
-            };
-            sqldb.queryOneRow(sql.update_assessment_instance, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                // don't overwrite entire object in case someone added extra fields at some point
-                _.assign(res.locals.assessment_instance, result.rows[0]);
-                callback(null);
-            });
-        },
-    ], function(err) {
+    if (!req.body.postData) return callback(error.make(400, 'No postData', {locals: res.locals, body: req.body}));
+    var postData;
+    try {
+        postData = JSON.parse(req.body.postData);
+    } catch (e) {
+        return callback(error.make(400, 'JSON parse failed on body.postData', {locals: res.locals, body: req.body}));
+    }
+    var submission = {
+        variant_id: postData.variant ? postData.variant.id : null,
+        auth_user_id: res.locals.authz_data.authn_user.id,
+        submitted_answer: postData.submittedAnswer,
+        type: postData.type,
+        credit: res.locals.assessment.credit,
+        mode: res.locals.authz_data.mode,
+    };
+    assessmentsHomework.submitAndGrade(submission, res.locals.instance_question.id, res.locals.question, res.locals.course, function(err) {
         if (ERR(err, callback)) return;
         callback(null);
     });
 };
 
-function processPost(req, res, callback) {
-    if (!req.body.postAction) return callback(null);
-    if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
-    if (req.body.postAction == 'submitQuestionAnswer') {
-        return processSubmission(req, res, function(err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-        });
-    } else {
-        return callback(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
-    }
-}
-
-function handle(req, res, next) {
-    if (res.locals.assessment.type !== 'Homework') return next();
-
+function processGet(req, res, variant_id, callback) {
     var questionModule;
     res.locals.showSubmitButton = true;
     res.locals.showNewVariantButton = false;
@@ -193,19 +85,19 @@ function handle(req, res, next) {
     res.locals.showTrueAnswer = false;
     async.series([
         function(callback) {
-            processPost(req, res, function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
-            // might already have a variant from POST
-            if (res.locals.variant) return callback(null);
-            ensureVariant(req, res, function(err, variant) {
-                if (ERR(err, callback)) return;
-                res.locals.variant = variant;
-                callback(null);
-            });
+            if (variant_id) {
+                var params = {
+                    variant_id: variant_id,
+                    question_instance_id: question_instance_id,
+                };
+                sqldb.query(sql.select_variant
+            } else {
+                ensureVariant(res.locals, function(err, variant) {
+                    if (ERR(err, callback)) return;
+                    res.locals.variant = variant;
+                    callback(null);
+                });
+            }
         },
         function(callback) {
             // might already have a submission from POST
@@ -279,12 +171,48 @@ function handle(req, res, next) {
             callback(null);
         },
     ], function(err) {
-        if (ERR(err, next)) return;
-        res.render(path.join(__dirname, 'userInstanceQuestionHomework'), res.locals);
+        if (ERR(err, callback)) return;
+        callback(null);
     });
 }
 
-router.get('/', handle);
-router.post('/', handle);
+router.post('/', function(req, res, next) {
+    if (res.locals.assessment.type !== 'Homework') return next();
+    if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
+    if (req.body.postAction == 'submitQuestionAnswer') {
+        processSubmission(req, res, function(err) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id
+                         + '/variant/' + res.locals.variant.id);
+        });
+    } else {
+        return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
+    }
+};
+
+router.get('/', function(req, res, next) {
+    if (res.locals.assessment.type !== 'Homework') return next();
+    processGet(req, res, null, function(err) {
+        if (ERR(err, next)) return;
+        res.render(path.join(__dirname, 'userInstanceQuestionHomework'), res.locals);
+    });
+};
+
+router.get('/variant/:variant_id', function(req, res, next) {
+    if (res.locals.assessment.type !== 'Homework') return next();
+    processGet(req, res, req.params.variant_id, function(err) {
+        if (ERR(err, next)) return;
+        res.render(path.join(__dirname, 'userInstanceQuestionHomework'), res.locals);
+    });
+};
+
+                   function(callback) {
+            res.locals.showSubmitButton = false;
+            res.locals.showNewVariantButton = true;
+            res.locals.showSubmission = true;
+            res.locals.showFeedback = true;
+            res.locals.showTrueAnswer = true;
+            callback(null);
+        },
 
 module.exports = router;

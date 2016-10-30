@@ -43,7 +43,7 @@ function processSubmission(req, res, callback) {
                 submitted_answer: postData.submittedAnswer,
                 type: postData.type,
                 credit: res.locals.assessment.credit,
-                mode: req.mode,
+                mode: res.locals.authz_data.mode,
             };
             sqldb.queryOneRow(sql.new_submission, params, function(err, result) {
                 if (ERR(err, callback)) return;

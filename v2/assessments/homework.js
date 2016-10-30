@@ -124,9 +124,10 @@ module.exports.updateExternalGrading(grading_log_id, grading, callback) {
     });
 };
 
-module.exports.submitAndGrade = function(submission, instance_question_id, callback) {
+module.exports.submitAndGrade = function(submission, instance_question_id, question, course, callback) {
     logger.debug('homework.submitAndGrade()',
-                 {submission: submission, instance_question_id: instance_question_id});
+                 {submission: submission, instance_question_id: instance_question_id,
+                  question: question, course: course});
     sqldb.beginTransaction(function(err, client, done) {
         if (ERR(err, callback)) return;
         logger.debug('homework.submitAndGrade(): finished beginTransaction()',
