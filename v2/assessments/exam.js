@@ -14,110 +14,187 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = {};
 
-assessmentModule.updateGradingLog(grading_log, callback) {
-    var params = {
-        grading_log_id: grading_log.id,
-        score: grading_log.score,
-        correct: grading_log.correct,
-        feedback: grading_log.feedback,
-    };
-    sqldb.queryOneRow(sql.update_grading_log_and_submission, params, function(err, result) {
+module.exports.updateExternalGrading(grading_log_id, grading, callback) {
+    logger.debug('exam.updateExternalGrading()',
+                 {grading_log_id: grading_log_id, grading: grading});
+    sqldb.beginTransaction(function(err, client, done) {
         if (ERR(err, callback)) return;
-        var updated_grading_log = result.rows[0].grading_log;
-        var instance_question_id = result.rows[0].instance_question_id;
+        logger.debug('exam.updateExternalGrading(): finished beginTransaction()',
+                     {grading_log_id: grading_log_id});
 
-        var params = {
-            instance_question_id: instance_question.id,
-            correct: grading_log.correct,
-            auth_user_id: grading_log.auth_user_id,
-        };
-        sqldb.queryWithClient(client, sql.update_instance_question, params, function(err, result) {
-            if (ERR(err, callback)) return;
-            callback(null, updated_grading_log);
+        var auth_user_id, grading_not_needed, instance_question_id, assessment_instance_id, credit;
+        async.series([
+            function(callback) {
+                var params = {grading_log_id: grading_log_id};
+                logger.debug('exam.updateExternalGrading(): calling lock_with_grading_log_id',
+                             {grading_log_id: grading_log_id, params: params});
+                sqldb.queryWithClientOneRow(client, sql.lock_with_grading_log_id, params, function(err, result) {
+                    if (ERR(err, callback)) return;
+                    auth_user_id = result.rows[0].auth_user_id;
+                    grading_not_needed = result.rows[0].grading_not_needed;
+                    instance_question_id = result.rows[0].instance_question_id;
+                    assessment_instance_id = result.rows[0].assessment_instance_id;
+                    credit = result.rows[0].credit;
+                    logger.debug('exam.updateExternalGrading(): finished lock_with_grading_log_id',
+                                 {grading_log_id: grading_log_id, auth_user_id: auth_user_id,
+                                  grading_not_needed: grading_not_needed,
+                                  instance_question_id: instance_question_id,
+                                  assessment_instance_id: assessment_instance_id, credit: credit});
+                    callback(null);
+                });
+            },
+            function(callback) {
+                if (grading_not_needed) return callback(null);
+                async.series([
+                    function(callback) {
+                        var params = {
+                            grading_log_id: grading_log_id,
+                            score: grading.score,
+                            correct: grading.correct,
+                            feedback: grading.feedback,
+                        };
+                        logger.debug('exam.updateExternalGrading(): calling update_grading_log_and_submission',
+                                     {grading_log_id: grading_log_id, params: params});
+                        sqldb.queryWithClient(client, sql.update_grading_log_and_submission, params, function(err) {
+                            if (ERR(err, callback)) return;
+                            logger.debug('exam.updateExternalGrading(): finished update_grading_log_and_submission',
+                                         {grading_log_id: grading_log_id});
+                            callback(null);
+                        });
+                    },
+                    function(callback) {
+                        var params = {
+                            instance_question_id: instance_question.id,
+                            correct: grading.correct,
+                            auth_user_id: auth_user_id,
+                        };
+                        logger.debug('exam.updateExternalGrading(): calling update_instance_question',
+                                     {grading_log_id: grading_log_id, params: params});
+                        sqldb.queryWithClient(client, sql.update_instance_question, params, function(err, result) {
+                            if (ERR(err, callback)) return;
+                            logger.debug('exam.updateExternalGrading(): finished update_instance_question',
+                                         {grading_log_id: grading_log_id});
+                            callback(null);
+                        });
+                    },
+                    function(callback) {
+                        var params = {
+                            assessment_instance_id: assessment_instance_id,
+                            auth_user_id: auth_user_id,
+                            credit: credit,
+                        };
+                        logger.debug('exam.updateExternalGrading(): calling update_assessment_instance_score',
+                                     {grading_log_id: grading_log_id, params: params});
+                        sqldb.queryWithClientOneRow(client, sql.update_assessment_instance_score, params, function(err, result) {
+                            if (ERR(err, callback)) return;
+                            logger.debug('exam.updateExternalGrading(): finished update_assessment_instance_score',
+                                         {grading_log_id: grading_log_id});
+                            callback(null);
+                        });
+                    },
+                ], function(err) {
+                    if (ERR(err, callback)) return;
+                    logger.debug('exam.updateExternalGrading(): finished inner async.series()',
+                                 {grading_log_id: grading_log_id});
+                    callback(null);
+                });
+            },
+        ], function(err) {
+            logger.debug('exam.updateExternalGrading(): calling endTransaction()',
+                         {grading_log_id: grading_log_id, err: err});
+            sqldb.endTransaction(client, done, err, function(err) {
+                if (ERR(err, callback)) return;
+                logger.debug('exam.updateExternalGrading(): finished endTransaction()',
+                             {grading_log_id: grading_log_id});
+                callback(null);
+            });
         });
     });
 };
 
-module.exports.updateAssessmentInstanceScore = function(assessment_instance_id, auth_user_id, credit, callback) {
-    var params = {
-        assessment_instance_id: assessment_instance_id,
-        auth_user_id: auth_user_id,
-        credit: credit,
-    };
-    sqldb.queryOneRow(sql.update_assessment_instance_score, params, function(err, result) {
-        if (ERR(err, callback)) return;
-        callback(null);
-    });
-};
-
 module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_user_id, credit, finish, callback) {
-    logger.debug('gradeExam()', {assessment_instance_id: assessment_instance_id, auth_user_id: auth_user_id, credit: credit, finish: finish});
+    logger.debug('exam.gradeAssessmentInstance()',
+                 {assessment_instance_id: assessment_instance_id, auth_user_id: auth_user_id,
+                  credit: credit, finish: finish});
     sqldb.beginTransaction(function(err, client, done) {
         if (ERR(err, callback)) return;
-        logger.debug('gradeExam(): inside beginTransaction()', {assessment_instance_id: assessment_instance_id});
+        logger.debug('exam.gradeAssessmentInstance(): finished beginTransaction()',
+                     {assessment_instance_id: assessment_instance_id});
     
         var workList;
         async.series([
             function(callback) {
                 var params = {assessment_instance_id: assessment_instance_id};
-                logger.debug('gradeExam(): calling select_work_list', {assessment_instance_id: assessment_instance_id, params: params});
+                logger.debug('exam.gradeAssessmentInstance(): calling lock_with_assessment_instance_id',
+                             {assessment_instance_id: assessment_instance_id, params: params});
+                sqldb.queryWithClientOneRow(client, sql.lock_with_assessment_instance_id, params, function(err) {
+                    if (ERR(err, callback)) return;
+                    logger.debug('exam.gradeAssessmentInstance(): finished lock_with_assessment_instance_id',
+                                 {assessment_instance_id: assessment_instance_id});
+                    callback(null);
+                });
+            },
+            function(callback) {
+                var params = {assessment_instance_id: assessment_instance_id};
+                logger.debug('exam.gradeAssessmentInstance(): calling select_work_list',
+                             {assessment_instance_id: assessment_instance_id, params: params});
                 sqldb.queryWithClient(client, sql.select_work_list, params, function(err, result) {
                     if (ERR(err, callback)) return;
                     workList = result.rows;
-                    logger.debug('gradeExam(): finished select_work_list', {assessment_instance_id: assessment_instance_id, workList: workList});
+                    logger.debug('exam.gradeAssessmentInstance(): finished select_work_list',
+                                 {assessment_instance_id: assessment_instance_id, workList: workList});
                     callback(null);
                 });
             },
             function(callback) {
                 async.each(workList, function(workItem, callback) {
-                    logger.debug('gradeExam(): workItem', {assessment_instance_id: assessment_instance_id, workItem: workItem});
-                    var grading;
-                    async.series([
-                        function(callback) {
-                            logger.debug('gradeExam(): calling gradeSubmission()', {assessment_instance_id: assessment_instance_id, submission: workItem.submission, variant: workItem.variant, question: workItem.question, course: workItem.course});
-                            questionServers.gradeSubmission(workItem.submission, workItem.variant, workItem.question, workItem.course, {}, function(err, g) {
-                                if (ERR(err, callback)) return;
-                                grading = g;
-                                logger.debug('gradeExam(): finished gradeSubmission()', {assessment_instance_id: assessment_instance_id, grading: grading});
-                                callback(null);
-                            })
-                        },
-                        function(callback) {
-                            var params = {
-                                submission_id: workItem.submission.id,
-                                score: grading.score,
-                                correct: grading.correct,
-                                feedback: grading.feedback,
-                                auth_user_id: auth_user_id,
-                            };
-                            logger.debug('gradeExam(): calling update_submission', {assessment_instance_id: assessment_instance_id, params: params});
-                            sqldb.queryWithClient(client, sql.update_submission, params, function(err, result) {
-                                if (ERR(err, callback)) return;
-                                logger.debug('gradeExam(): finished update_submission', {assessment_instance_id: assessment_instance_id, rows: result.rows});
-                                callback(null);
-                            });
-                        },
-                        function(callback) {
-                            var params = {
-                                instance_question_id: workItem.instance_question.id,
-                                correct: grading.correct,
-                                auth_user_id: auth_user_id,
-                            };
-                            logger.debug('gradeExam(): calling update_instance_question', {assessment_instance_id: assessment_instance_id, params: params});
-                            sqldb.queryWithClient(client, sql.update_instance_question, params, function(err, result) {
-                                if (ERR(err, callback)) return;
-                                logger.debug('gradeExam(): finished update_instance_question', {assessment_instance_id: assessment_instance_id, rows: result.rows});
-                                callback(null);
-                            });
-                        },
-                    ], function(err) {
+                    logger.debug('exam.gradeAssessmentInstance(): workItem',
+                                 {assessment_instance_id: assessment_instance_id,
+                                  submission_id: workItem.submission_id, workItem: workItem});
+                    questionServers.gradeSavedSubmission(client, workItem.submission_id, workItem.variant, workItem.question, workItem.course, function(err, grading_log) {
                         if (ERR(err, callback)) return;
-                        logger.debug('gradeExam(): finished workItem', {assessment_instance_id: assessment_instance_id});
-                        callback(null);
+                        logger.debug('exam.gradeAssessmentInstance(): finished gradeSavedSubmission()',
+                                     {assessment_instance_id: assessment_instance_id,
+                                      submission_id: workItem.submission_id, grading_log: grading_log});
+                        if (grading_log.correct != null) {
+                            var params = {
+                                instance_question_id: workItem.instance_question_id,
+                                correct: grading_log.correct,
+                                auth_user_id: workItem.auth_user_id,
+                            };
+                            logger.debug('exam.gradeAssessmentInstance(): calling update_instance_question',
+                                         {assessment_instance_id: assessment_instance_id,
+                                          submission_id: workItem.submission_id, params: params});
+                            sqldb.queryWithClient(client, sql.update_instance_question, params, function(err) {
+                                if (ERR(err, callback)) return;
+                                logger.debug('exam.gradeAssessmentInstance(): finished update_instance_question',
+                                             {assessment_instance_id: assessment_instance_id,
+                                              submission_id: workItem.submission_id});
+                                callback(null);
+                            });
+                        } else if (grading_log.external_grading_started_at != null) {
+                            var params = {
+                                instance_question_id: workItem.instance_question_id,
+                                auth_user_id: workItem.auth_user_id,
+                            };
+                            logger.debug('exam.gradeAssessmentInstance(): calling update_instance_question_in_grading',
+                                         {assessment_instance_id: assessment_instance_id,
+                                          submission_id: workItem.submission_id, params: params});
+                            sqldb.queryWithClient(client, sql.update_instance_question_in_grading, params, function(err) {
+                                if (ERR(err, callback)) return;
+                                logger.debug('exam.gradeAssessmentInstance(): finished update_instance_question_in_grading',
+                                             {assessment_instance_id: assessment_instance_id,
+                                              submission_id: workItem.submission_id});
+                                callback(null);
+                            });
+                        } else {
+                            callback(new Error('Invalid grading_log state'));
+                        }
                     });
                 }, function(err) {
                     if (ERR(err, callback)) return;
-                    logger.debug('gradeExam(): finished workList', {assessment_instance_id: assessment_instance_id});
+                    logger.debug('exam.gradeAssessmentInstance(): finished workList',
+                                 {assessment_instance_id: assessment_instance_id});
                     callback(null);
                 });
             },
@@ -127,10 +204,12 @@ module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_u
                     credit: credit,
                     auth_user_id: auth_user_id,
                 };
-                logger.debug('gradeExam(): calling update_assessment_instance', {assessment_instance_id: assessment_instance_id, params: params});
+                logger.debug('exam.gradeAssessmentInstance(): calling update_assessment_instance',
+                             {assessment_instance_id: assessment_instance_id, params: params});
                 sqldb.queryWithClient(client, sql.update_assessment_instance_score, params, function(err, result) {
                     if (ERR(err, callback)) return;
-                    logger.debug('gradeExam(): finished update_assessment_instance', {assessment_instance_id: assessment_instance_id, rows: result.rows});
+                    logger.debug('exam.gradeAssessmentInstance(): finished update_assessment_instance',
+                                 {assessment_instance_id: assessment_instance_id, rows: result.rows});
                     callback(null);
                 });
             },
@@ -140,18 +219,22 @@ module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_u
                     assessment_instance_id: assessment_instance_id,
                     auth_user_id: auth_user_id,
                 };
-                logger.debug('gradeExam(): calling close_assessment_instance', {assessment_instance_id: assessment_instance_id, params: params});
+                logger.debug('exam.gradeAssessmentInstance(): calling close_assessment_instance',
+                             {assessment_instance_id: assessment_instance_id, params: params});
                 sqldb.queryWithClient(client, sql.close_assessment_instance, params, function(err, result) {
                     if (ERR(err, callback)) return;
-                    logger.debug('gradeExam(): finished close_assessment_instance', {assessment_instance_id: assessment_instance_id, rows: result.rows});
+                    logger.debug('exam.gradeAssessmentInstance(): finished close_assessment_instance',
+                                 {assessment_instance_id: assessment_instance_id, rows: result.rows});
                     callback(null);
                 });
             },
         ], function(err) {
-            logger.debug('gradeExam(): calling endTransaction()', {assessment_instance_id: assessment_instance_id, err: err});
+            logger.debug('exam.gradeAssessmentInstance(): calling endTransaction()',
+                         {assessment_instance_id: assessment_instance_id, err: err});
             sqldb.endTransaction(client, done, err, function(err) {
                 if (ERR(err, callback)) return;
-                logger.debug('gradeExam(): finished endTransaction()', {assessment_instance_id: assessment_instance_id});
+                logger.debug('exam.gradeAssessmentInstance(): finished endTransaction()',
+                             {assessment_instance_id: assessment_instance_id});
                 callback(null);
             });
         });

@@ -24,7 +24,7 @@ module.exports.init = function(callback, config) {
                 ch.assertQueue(config.amqpResultQueue, {durable: true}, function(err, ok) {
                     if (ERR(err, callback)) return;;
 
-                    ch.prefetch(5); // process up to five messages simultaneously
+                    ch.prefetch(10); // process up to this many messages simultaneously
                     ch.consume(config.amqpResultQueue, module.exports.processGradingResult);
 
                     module.exports.mqChannel = ch;
@@ -35,47 +35,42 @@ module.exports.init = function(callback, config) {
     });
 };
 
-module.exports.sendToGradingQueue = function(submission_id, auth_user_id, grading_type, callback) {
-    var params = {
-        submission_id: submission_id,
-        grading_type: grading_type,
-        auth_user_id: auth_user_id,
-    };
-    sqldb.queryOneRow(sql.insert_grading_log, params, function(err, result) {
-        if (ERR(err, callback)) return;
-        var grading_log = result.rows[0].grading_log;
-        var question = result.rows[0].question;
-        var variant = result.rows[0].variant;
-        var submission = result.rows[0].submission;
+module.exports.cancelGrading = function(grading_id, callback) {
+    // FIXME: implement this
+    callback(null);
+};
 
-        var msgData = {
-            gradingId: grading_log.id,
-            gradingType: grading_type,
-            course: {
-                short_name: course.short_name,
-                path: course.path,
-            },
-            question: {
-                directory: directory,
-                config: config,
-            },
-            variant: {
-                variantSeed: variant.variant_seed,
-                params: variant.params,
-                trueAnswer: variant.true_answer,
-                options: variant.options,
-            },
-            submission: {
-                submittedAnswer: submission.submitted_answer,
-            },
-        };
-        mqChannel.sendToQueue(config.amqpGradingQueue, new Buffer(JSON.stringify(msgData)), {persistent: true});
-        callback(null);
-    });
+module.exports.sendToGradingQueue = function(grading_log, submission, variant, question, course, callback) {
+    var msgData = {
+        gradingId: grading_log.id,
+        submissionType: submission.type,
+        course: {
+            short_name: course.short_name,
+            path: course.path,
+        },
+        question: {
+            directory: directory,
+            config: config,
+        },
+        variant: {
+            variantSeed: variant.variant_seed,
+            params: variant.params,
+            trueAnswer: variant.true_answer,
+            options: variant.options,
+        },
+        submission: {
+            submittedAnswer: submission.submitted_answer,
+        },
+    };
+    mqChannel.sendToQueue(config.amqpGradingQueue, new Buffer(JSON.stringify(msgData)), {persistent: true});
+    // FIXME: how do we make this async?
+    // apparently sendToQueue() returns a writable stream?
+    // should we get the return value and do writer.on('finish', ...) ?
+    callback(null);
 };
 
 module.exports.processGradingResult = function(msg) {
-    var content, assessment_type, assessment_instance_id, grading_log, credit;
+    var content, assessment_type;
     async.series([
         function(callback) {
             try {
@@ -105,30 +100,13 @@ module.exports.processGradingResult = function(msg) {
             if (content.grading.score < 0 || content.grading.score > 1) return callback(new Error('grading.score out of range'));
             if (_(content.grading).has('feedback') && !_(content.grading.feedback).isObject())
                 return callback(new Error('invalid content.grading'));
-            grading_log = {
-                id: content.gradingId,
+            var grading_log_id = content.gradingId;
+            var grading = {
                 score: content.grading.score,
                 correct: (content.grading.score >= 0.5),
                 feedback: content.grading.feedback || null,
             };
-            assessments.updateGradingLog(assessment_type, grading_log, function(err, gl) {
-                if (ERR(err, callback)) return;
-                grading_log = gl;
-                callback(null);
-            });
-        },
-        function(callback) {
-            var params = {
-                grading_log_id: grading_log.id;
-            };
-            sqldb.queryOneRow(sql.select_submission_credit, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                credit = result.rows[0].credit;
-                callback(null);
-            });
-        },
-        function(callback) {
-            assessments.updateAssessmentInstanceScore(assessment_type, assessment_instance_id, grading_log.auth_user_id, credit, function(err) {
+            assessments.updateExternalGrading(assessment_type, grading_log_id, grading, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

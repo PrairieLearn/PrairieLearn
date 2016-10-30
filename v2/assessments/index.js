@@ -15,12 +15,12 @@ module.exports = {
         }
     },
 
-    updateGradingLog: function(assessment_type, grading_log, callback) {
+    updateExternalGrading: function(assessment_type, grading_log_id, grading, callback) {
         this.getModule(assessment_type, function(err, assessmentModule) {
             if (ERR(err, callback)) return;
-            assessmentModule.updateGradingLog(grading_log, function(err, updated_grading_log) {
+            assessmentModule.updateExternalGrading(grading_log_id, grading, function(err) {
                 if (ERR(err, callback)) return;
-                callback(null, updated_grading_log);
+                callback(null);
             });
         });
     },
