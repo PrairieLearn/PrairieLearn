@@ -8,7 +8,7 @@ var router = express.Router();
 
 var error = require('../../lib/error');
 var logger = require('../../lib/logger');
-var assessmentExam = require('../../lib/assessment-exam');
+var assessmentsExam = require('../../assessments/exam');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
@@ -26,7 +26,7 @@ router.post('/', function(req, res, next) {
     } else {
         return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
     }
-    assessmentExam.gradeExam(res.locals.assessment_instance.id, res.locals.user.id, res.locals.assessment_instance.credit, finishExam, function(err) {
+    assessmentsExam.gradeExam(res.locals.assessment_instance.id, res.locals.user.id, res.locals.assessment_instance.credit, finishExam, function(err) {
         if (ERR(err, next)) return;
         res.redirect(req.originalUrl);
     });

@@ -1,9 +1,12 @@
 -- BLOCK insert_question
 INSERT INTO questions
-    (qid, directory, type, title, config, course_id, grading_type, deleted_at, topic_id)
-(SELECT * FROM
-    (VALUES ($qid, $qid, $type::enum_question_type, $title, $config::JSONB, $course_id::integer, $grading_type, NULL::timestamp with time zone)) AS vals,
-    (SELECT COALESCE((SELECT id FROM topics WHERE name = $topic AND course_id = $course_id), NULL)) AS topics
+    (qid, directory, type,                      title,  config,
+    course_id,            grading_method,                      deleted_at,
+    topic_id)
+(SELECT
+    $qid, $qid,     $type::enum_question_type, $title, $config::JSONB,
+    $course_id::integer, $grading_method::enum_grading_method, NULL::timestamp with time zone,
+    COALESCE((SELECT id FROM topics WHERE name = $topic AND course_id = $course_id), NULL)
 )
 ON CONFLICT (qid, course_id) DO UPDATE
 SET
@@ -11,7 +14,7 @@ SET
     type = EXCLUDED.type,
     title = EXCLUDED.title,
     config = EXCLUDED.config,
-    grading_type = EXCLUDED.grading_type,
+    grading_method = EXCLUDED.grading_method,
     topic_id = EXCLUDED.topic_id,
     deleted_at = EXCLUDED.deleted_at
 RETURNING id;

@@ -1,3 +1,4 @@
+DROP FUNCTION IF EXISTS assessment_points_exam(integer,integer);
 
 CREATE OR REPLACE FUNCTION
     assessment_points_exam(
@@ -5,7 +6,7 @@ CREATE OR REPLACE FUNCTION
         IN credit INTEGER,
         OUT points DOUBLE PRECISION,
         OUT points_in_grading DOUBLE PRECISION,
-        OUT score_perc INTEGER
+        OUT score_perc INTEGER,
         OUT score_perc_in_grading INTEGER
     ) AS $$
 DECLARE

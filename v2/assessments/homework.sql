@@ -27,7 +27,7 @@ FROM
 WHERE
     v.id = $variant_id
     AND iq.id = $instance_question_id -- ensure the variant matches the instance_question
-FOR UPDATE OF assessment_instances;
+FOR UPDATE OF ai;
 
 -- BLOCK update_grading_log_and_submission
 WITH updated_grading_log AS (
@@ -126,7 +126,8 @@ INSERT INTO assessment_score_logs
 -- BLOCK new_submission
 INSERT INTO submissions AS s
     (date,               variant_id,  auth_user_id,  submitted_answer,
-     type,  credit,  mode,  graded_at,  score,  correct,  feedback)
+     type,  credit,  mode)
 VALUES
     (current_timestamp, $variant_id, $auth_user_id, $submitted_answer,
-    $type, $credit, $mode, $graded_at, $score, $correct, $feedback);
+    $type, $credit, $mode)
+RETURNING s.id;

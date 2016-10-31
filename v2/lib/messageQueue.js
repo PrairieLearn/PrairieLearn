@@ -3,7 +3,6 @@ var _ = require('lodash');
 var async = require('async');
 var amqp = require('amqplib/callback_api');
 
-var config = require('./config');
 var error = require('./error');
 var sqlLoader = require('../lib/sql-loader');
 
@@ -11,9 +10,10 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = {
     mqChannel: null,
+    amqpGradingQueue: null,
 };
 
-module.exports.init = function(callback, config) {
+module.exports.init = function(config, callback) {
     if (!config.amqpAddress) return callback(null);
     amqp.connect(config.amqpAddress, function(err, conn) {
         if (ERR(err, callback)) return;;
@@ -28,6 +28,7 @@ module.exports.init = function(callback, config) {
                     ch.consume(config.amqpResultQueue, module.exports.processGradingResult);
 
                     module.exports.mqChannel = ch;
+                    module.exports.amqpGradingQueue = config.amqpGradingQueue;
                     callback(null);
                 });
             });
@@ -36,11 +37,13 @@ module.exports.init = function(callback, config) {
 };
 
 module.exports.cancelGrading = function(grading_id, callback) {
+    if (!this.mqChannel) return callback(new Error('Message queue not initialized'));
     // FIXME: implement this
     callback(null);
 };
 
 module.exports.sendToGradingQueue = function(grading_log, submission, variant, question, course, callback) {
+    if (!this.mqChannel) return callback(new Error('Message queue not initialized'));
     var msgData = {
         gradingId: grading_log.id,
         submissionType: submission.type,
@@ -49,8 +52,8 @@ module.exports.sendToGradingQueue = function(grading_log, submission, variant, q
             path: course.path,
         },
         question: {
-            directory: directory,
-            config: config,
+            directory: question.directory,
+            config: question.config,
         },
         variant: {
             variantSeed: variant.variant_seed,
@@ -62,7 +65,7 @@ module.exports.sendToGradingQueue = function(grading_log, submission, variant, q
             submittedAnswer: submission.submitted_answer,
         },
     };
-    mqChannel.sendToQueue(config.amqpGradingQueue, new Buffer(JSON.stringify(msgData)), {persistent: true});
+    this.mqChannel.sendToQueue(this.amqpGradingQueue, new Buffer(JSON.stringify(msgData)), {persistent: true});
     // FIXME: how do we make this async?
     // apparently sendToQueue() returns a writable stream?
     // should we get the return value and do writer.on('finish', ...) ?

@@ -48,10 +48,10 @@ module.exports = {
         });
     },
 
-    gradeSubmission: function(submission, questionInstance, question, course, options, callback) {
+    gradeSubmission: function(submission, variant, question, course, options, callback) {
         this.getModule(question.type, function(err, questionModule) {
             if (ERR(err, callback)) return;
-            questionModule.gradeSubmission(submission, questionInstance, question, course, function(err, grading) {
+            questionModule.gradeSubmission(submission, variant, question, course, function(err, grading) {
                 if (ERR(err, callback)) return;
                 grading.correct = (grading.score >= 0.5);
                 callback(null, grading);
@@ -67,10 +67,16 @@ module.exports = {
                 if (ERR(err, callback)) return;
                 var submission = result.rows[0];
 
-                questionServers.gradeSubmission(submission, variant, question, course, {}, function(err, grading) {
+                module.exports.gradeSubmission(submission, variant, question, course, {}, function(err, grading) {
                     if (ERR(err, callback)) return;
 
-                    var params = {submission_id: submission_id};
+                    var params = {
+                        submission_id: submission_id,
+                        auth_user_id: auth_user_id,
+                        score: grading.score,
+                        correct: grading.correct,
+                        feedback: grading.feedback,
+                    };
                     sqldb.queryWithClientOneRow(client, sql.update_submission, params, function(err, result) {
                         if (ERR(err, callback)) return;
                         var grading_log = result.rows[0];
@@ -103,6 +109,7 @@ module.exports = {
                         });
                     });
                 });
+            });
         } else if (question.grading_method == 'Manual') {
             var params = {submission_id: submission_id};
             sqldb.queryWithClientOneRow(client, sql.update_submission_for_manual_grading, params, function(err, result) {

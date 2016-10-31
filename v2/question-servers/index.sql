@@ -18,14 +18,15 @@ WITH results AS (
         s.id = $submission_id
     RETURNING s.*
 )
-INSERT INTO grading_logs
+INSERT INTO grading_logs AS gl
         (submission_id, score, correct, feedback,  auth_user_id)
 (
     SELECT
          id,            score, correct, feedback, $auth_user_id
     FROM
         results
-);
+)
+RETURNING gl.*;
 
 -- BLOCK cancel_outstanding_grading_requests
 WITH

@@ -14,7 +14,7 @@ CREATE TABLE IF NOT EXISTS assessment_instances (
     user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
     auth_user_id INTEGER REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
     points DOUBLE PRECISION DEFAULT 0,
-    points_in_grading DOUBLE_PRECISION DEFAULT 0,
+    points_in_grading DOUBLE PRECISION DEFAULT 0,
     max_points DOUBLE PRECISION,
     score_perc INTEGER DEFAULT 0,
     score_perc_in_grading INTEGER DEFAULT 0,
@@ -88,7 +88,7 @@ $$;
 
 DO $$
     BEGIN
-        ALTER TABLE assessment_instances ADD COLUMN point_in_grading DOUBLE_PRECISION DEFAULT 0;
+        ALTER TABLE assessment_instances ADD COLUMN points_in_grading DOUBLE PRECISION DEFAULT 0;
     EXCEPTION
         WHEN duplicate_column THEN -- do nothing
     END;

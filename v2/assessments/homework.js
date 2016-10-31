@@ -14,7 +14,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = {};
 
-module.exports.updateExternalGrading(grading_log_id, grading, callback) {
+module.exports.updateExternalGrading = function(grading_log_id, grading, callback) {
     logger.debug('homework.updateExternalGrading()',
                  {grading_log_id: grading_log_id, grading: grading});
     sqldb.beginTransaction(function(err, client, done) {
@@ -154,32 +154,30 @@ module.exports.submitAndGrade = function(submission, instance_question_id, quest
             },
             function(callback) {
                 var params = {
-                    var params = {
-                        variant_id: submission.variant_id,
-                        auth_user_id: submission.auth_user_id,
-                        submitted_answer: submission.submitted_answer,
-                        type: submission.type,
-                        credit: submission.credit,
-                        mode: submission.mode,
-                    };
-                    logger.debug('homework.submitAndGrade(): calling new_submission',
-                                 {instance_question_id: instance_question_id, params: params});
-                    sqldb.queryWithClientOneRow(client, sql.new_submission, params, function(err, result) {
-                        if (ERR(err, callback)) return;
-                        submission_id = result.rows[0].submission_id;
-                        logger.debug('homework.submitAndGrade(): finished new_submission',
-                                     {instance_question_id: instance_question_id,
-                                      submission_id: submission_id});
-                        callback(null);
-                    });
+                    variant_id: submission.variant_id,
+                    auth_user_id: submission.auth_user_id,
+                    submitted_answer: submission.submitted_answer,
+                    type: submission.type,
+                    credit: submission.credit,
+                    mode: submission.mode,
                 };
+                logger.debug('homework.submitAndGrade(): calling new_submission',
+                             {instance_question_id: instance_question_id, params: params});
+                sqldb.queryWithClientOneRow(client, sql.new_submission, params, function(err, result) {
+                    if (ERR(err, callback)) return;
+                    submission_id = result.rows[0].id;
+                    logger.debug('homework.submitAndGrade(): finished new_submission',
+                                 {instance_question_id: instance_question_id,
+                                  submission_id: submission_id});
+                    callback(null);
+                });
             },
             function(callback) {
                 logger.debug('homework.submitAndGrade(): calling gradeSavedSubmission()',
                              {instance_question_id: instance_question_id,
                               submission_id: submission_id, variant: variant,
                               question: question, course: course});
-                questionServers.gradeSavedSubmission(submission_id, variant, question, course, function(err, grading_log) {
+                questionServers.gradeSavedSubmission(client, submission_id, submission.auth_user_id, variant, question, course, function(err, grading_log) {
                     if (ERR(err, callback)) return;
                     logger.debug('homework.submitAndGrade(): finished gradeSavedSubmission()',
                                  {instance_question_id: instance_question_id, grading_log: grading_log});
@@ -216,10 +214,21 @@ module.exports.submitAndGrade = function(submission, instance_question_id, quest
                 });
             },
             function(callback) {
+                var params = {variant_id: submission.variant_id};
+                logger.debug('homework.submitAndGrade(): calling update_variant',
+                             {instance_question_id: instance_question_id, params: params});
+                sqldb.queryWithClient(client, sql.update_variant, params, function(err) {
+                    if (ERR(err, callback)) return;
+                    logger.debug('homework.submitAndGrade(): finished update_variant',
+                                 {instance_question_id: instance_question_id});
+                    callback(null);
+                });
+            },
+            function(callback) {
                 var params = {
                     assessment_instance_id: assessment_instance_id,
-                    auth_user_id: auth_user_id,
-                    credit: credit,
+                    auth_user_id: submission.auth_user_id,
+                    credit: submission.credit,
                 };
                 logger.debug('homework.submitAndGrade(): calling update_assessment_instance_score',
                              {instance_question_id: instance_question_id, params: params});

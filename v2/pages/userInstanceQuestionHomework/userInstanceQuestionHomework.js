@@ -8,6 +8,7 @@ var router = express.Router();
 
 var error = require('../../lib/error');
 var questionServers = require('../../question-servers');
+var assessmentsHomework = require('../../assessments/homework');
 var logger = require('../../lib/logger');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
@@ -72,7 +73,7 @@ function processSubmission(req, res, callback) {
     };
     assessmentsHomework.submitAndGrade(submission, res.locals.instance_question.id, res.locals.question, res.locals.course, function(err) {
         if (ERR(err, callback)) return;
-        callback(null);
+        callback(null, submission.variant_id);
     });
 };
 
@@ -86,11 +87,21 @@ function processGet(req, res, variant_id, callback) {
     async.series([
         function(callback) {
             if (variant_id) {
+                res.locals.showSubmitButton = false;
+                res.locals.showNewVariantButton = true;
+                res.locals.showSubmission = true;
+                res.locals.showFeedback = true;
+                res.locals.showTrueAnswer = true;
+
                 var params = {
                     variant_id: variant_id,
-                    question_instance_id: question_instance_id,
+                    instance_question_id: res.locals.instance_question.id,
                 };
-                sqldb.query(sql.select_variant
+                sqldb.queryOneRow(sql.select_variant_for_question_instance, params, function(err, result) {
+                    if (ERR(err, callback)) return;
+                    res.locals.variant = result.rows[0];
+                    callback(null);
+                });
             } else {
                 ensureVariant(res.locals, function(err, variant) {
                     if (ERR(err, callback)) return;
@@ -100,8 +111,6 @@ function processGet(req, res, variant_id, callback) {
             }
         },
         function(callback) {
-            // might already have a submission from POST
-            if (res.locals.submission) return callback(null);
             getSubmission(res.locals.variant.id, function(err, submission) {
                 if (ERR(err, callback)) return;
                 res.locals.submission = submission;
@@ -180,39 +189,22 @@ router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
     if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
     if (req.body.postAction == 'submitQuestionAnswer') {
-        processSubmission(req, res, function(err) {
+        processSubmission(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id
-                         + '/variant/' + res.locals.variant.id);
+                         + '/?variant_id=' + variant_id);
         });
     } else {
         return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
     }
-};
+});
 
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
-    processGet(req, res, null, function(err) {
+    processGet(req, res, req.query.variant_id, function(err) {
         if (ERR(err, next)) return;
         res.render(path.join(__dirname, 'userInstanceQuestionHomework'), res.locals);
     });
-};
-
-router.get('/variant/:variant_id', function(req, res, next) {
-    if (res.locals.assessment.type !== 'Homework') return next();
-    processGet(req, res, req.params.variant_id, function(err) {
-        if (ERR(err, next)) return;
-        res.render(path.join(__dirname, 'userInstanceQuestionHomework'), res.locals);
-    });
-};
-
-                   function(callback) {
-            res.locals.showSubmitButton = false;
-            res.locals.showNewVariantButton = true;
-            res.locals.showSubmission = true;
-            res.locals.showFeedback = true;
-            res.locals.showTrueAnswer = true;
-            callback(null);
-        },
+});
 
 module.exports = router;

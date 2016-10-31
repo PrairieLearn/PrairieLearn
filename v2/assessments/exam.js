@@ -14,7 +14,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = {};
 
-module.exports.updateExternalGrading(grading_log_id, grading, callback) {
+module.exports.updateExternalGrading = function(grading_log_id, grading, callback) {
     logger.debug('exam.updateExternalGrading()',
                  {grading_log_id: grading_log_id, grading: grading});
     sqldb.beginTransaction(function(err, client, done) {

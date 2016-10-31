@@ -12,6 +12,7 @@ var https = require('https');
 var logger = require('./lib/logger');
 var error = require('./lib/error');
 var config = require('./lib/config');
+var messageQueue = require('./lib/messageQueue');
 var sqldb = require('./lib/sqldb');
 var models = require('./models');
 var sprocs = require('./sprocs');
@@ -170,7 +171,13 @@ async.series([
         });
     },
     function(callback) {
-        messageQueue.init(function(err) {
+        var ampqConfig = {
+            amqpAddress: config.amqpAddress,
+            amqpGradingQueue: config.amqpGradingQueue,
+            amqpResultQueue: config.amqpResultQueue,
+        };
+        messageQueue.init(ampqConfig, function(err) {
+            if (err) err = error.newMessage(err, 'Unable to connect to message queue');
             if (ERR(err, callback)) return;
             callback(null);
         });
