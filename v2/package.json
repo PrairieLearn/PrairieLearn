@@ -29,6 +29,8 @@
         "winston": "2.2.x"
     },
     "devDependencies": {
-        "mocha": "3.1.x"
+        "mocha": "3.1.x",
+        "request": "2.76.x",
+        "cheerio": "0.22.x"
     }
 }

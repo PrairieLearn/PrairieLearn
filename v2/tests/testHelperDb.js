@@ -8,11 +8,14 @@ var sqldb = require('../lib/sqldb');
 var models = require('../models');
 var sprocs = require('../sprocs');
 var cron = require('../cron');
+var courseDB = require('../lib/course-db');
 
 var postgresqlUser = 'postgres';
 var postgresqlDatabase = 'pltest';
 var postgresqlHost = 'localhost';
 var initConString = 'postgres://localhost/postgres';
+
+var courseDir = '../exampleCourse';
 
 module.exports = {
     before: function(callback) {
