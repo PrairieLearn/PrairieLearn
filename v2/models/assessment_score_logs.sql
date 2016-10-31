@@ -14,7 +14,7 @@ ALTER TABLE assessment_score_logs ALTER COLUMN date SET DEFAULT CURRENT_TIMESTAM
 
 DO $$
     BEGIN
-        ALTER TABLE grading_logs ADD COLUMN points_in_grading DOUBLE PRECISION;
+        ALTER TABLE assessment_score_logs ADD COLUMN points_in_grading DOUBLE PRECISION;
     EXCEPTION
         WHEN duplicate_column THEN -- do nothing
     END;
@@ -22,7 +22,7 @@ $$;
 
 DO $$
     BEGIN
-        ALTER TABLE grading_logs ADD COLUMN score_perc_in_grading INTEGER;
+        ALTER TABLE assessment_score_logs ADD COLUMN score_perc_in_grading INTEGER;
     EXCEPTION
         WHEN duplicate_column THEN -- do nothing
     END;

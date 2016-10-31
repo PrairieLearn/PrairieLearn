@@ -151,7 +151,7 @@ module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_u
                     logger.debug('exam.gradeAssessmentInstance(): workItem',
                                  {assessment_instance_id: assessment_instance_id,
                                   submission_id: workItem.submission_id, workItem: workItem});
-                    questionServers.gradeSavedSubmission(client, workItem.submission_id, workItem.variant, workItem.question, workItem.course, function(err, grading_log) {
+                    questionServers.gradeSavedSubmission(client, workItem.submission_id, workItem.auth_user_id, workItem.variant, workItem.question, workItem.course, function(err, grading_log) {
                         if (ERR(err, callback)) return;
                         logger.debug('exam.gradeAssessmentInstance(): finished gradeSavedSubmission()',
                                      {assessment_instance_id: assessment_instance_id,

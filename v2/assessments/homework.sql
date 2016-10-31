@@ -14,7 +14,7 @@ FROM
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
 WHERE
     gl.id = $grading_log_id
-FOR UPDATE OF assessment_instances;
+FOR UPDATE OF ai;;
 
 --BLOCK lock_with_variant_id
 SELECT
@@ -115,10 +115,12 @@ WITH results AS (
     RETURNING ai.*
 )
 INSERT INTO assessment_score_logs
-        (points, max_points, score_perc, assessment_instance_id, auth_user_id)
+        (points, points_in_grading, max_points, score_perc,
+        score_perc_in_grading, assessment_instance_id, auth_user_id)
 (
     SELECT
-         points, max_points, score_perc, id,                    $auth_user_id
+         points, points_in_grading, max_points, score_perc,
+         score_perc_in_grading, id,                    $auth_user_id
     FROM
         results
 );

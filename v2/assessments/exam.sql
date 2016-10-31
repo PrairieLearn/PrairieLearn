@@ -13,7 +13,7 @@ FROM
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
 WHERE
     gl.id = $grading_log_id
-FOR UPDATE OF assessment_instances;
+FOR UPDATE OF assessment_ai;
 
 -- BLOCK lock_with_assessment_instance_id
 SELECT
@@ -22,7 +22,7 @@ FROM
     assessment_instances AS ai
 WHERE
     ai.id = $assessment_instance_id
-FOR UPDATE OF assessment_instances;
+FOR UPDATE OF ai;
 
 -- BLOCK select_work_list
 SELECT
@@ -135,7 +135,7 @@ WITH results AS (
     SET
         points = new_values.points,
         points_in_grading = new_values.points_in_grading,
-        score_perc = new_values.score_perc
+        score_perc = new_values.score_perc,
         score_perc_in_grading = new_values.score_perc_in_grading
     FROM
         assessment_points_exam($assessment_instance_id, $credit) AS new_values

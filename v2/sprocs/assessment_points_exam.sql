@@ -45,7 +45,7 @@ BEGIN
 
     -- repeat calculation for points_in_grading
     max_possible_points := least(points + total_points_in_grading, max_points);
-    total_points_in_grading := max_posible_points - points;
+    total_points_in_grading := max_possible_points - points;
 
     -- compute max achieveable score_perc if all grading points are awarded
     max_possible_score_perc := floor(max_possible_points / max_points * 100);
