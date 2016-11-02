@@ -128,13 +128,13 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
     From JavaScript you can then do:
 
-        var sqlLoader = require('./sql-loader'); # adjust path as needed
-        var sql = sqlLoader.loadSqlEquiv(__filename); # from filename.js will load filename.sql
+        var sqlLoader = require('./sql-loader'); // adjust path as needed
+        var sql = sqlLoader.loadSqlEquiv(__filename); // from filename.js will load filename.sql
 
-        # run the entire contents of the SQL file
+        // run the entire contents of the SQL file
         sqldb.query(sql.all, params, ...);
 
-        # run just one query block from the SQL file
+        // run just one query block from the SQL file
         sqldb.query(sql.select_question, params, ...);
 
 
@@ -185,12 +185,13 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
             var obj = result.rows[0]; // guaranteed to exist and no more
         });
 
-1. For transactions with correct error handling use this pattern:
+1. For transactions with correct error handling use the pattern:
 
         sqldb.beginTransaction(function(err, client, done) {
             if (ERR(err, callback)) return;
             async.series([
                 function(callback) {
+                    // only use queryWithClient() and queryWithClientOneRow() inside the transaction
                     sqldb.queryWithClient(client, sql.block_name, params, function(err, result) {
                         if (ERR(err, callback)) return;
                         // do things
@@ -199,13 +200,23 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
                 },
                 // more series functions inside the transaction
             ], function(err) {
-                sqldb.endTransaction(client, done, err, function(err) {
-                    if (ERR(err, callback)) return;
+                sqldb.endTransaction(client, done, err, function(err) { // will rollback if err is defined
+                    if (ERR(err, callback)) return; 
                     // transaction successfully committed at this point
                     callback(null);
                 });
             });
         });
+
+1. Use explicit row locking on `assessment_instances` within a transaction for any score-modifying updates to any part of an assessment. For example, to grade a question, wrap everything in a transaction as described above and have the first query in the transaction be something like:
+
+        SELECT
+            ai.id
+        FROM
+            assessment_instances AS ai
+        WHERE
+            ai.id = $assessment_instance_id
+        FOR UPDATE OF assessment_instances;
 
 1. To pass an array of parameters to SQL code, use the following pattern, which allows zero or more elements in the array. This replaces `$points_list` with `ARRAY[10, 5, 1]` in the SQL. It's required to specify the type of array in case it is empty:
 
@@ -237,7 +248,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. Use the [async-stacktrace library](https://github.com/Pita/async-stacktrace) for every error handler. That is, the top of every file should have `ERR = require('async-stacktrace');` and wherever you would normally write `if (err) return callback(err);` you instead write `if (ERR(err, callback)) return;`. This does exactly the same thing, except that it modfies the `err` object's stack trace to include the current filename/linenumber, which greatly aids debugging. For example:
 
-        # Don't do this:
+        // Don't do this:
         function foo(p, callback) {
             bar(q, function(err, result) {
                 if (err) return callback(err);
@@ -245,28 +256,31 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
             });
         }
 
-        # Instead do this:
-        ERR = require('async-stacktrace'); # at top of file
+        // Instead do this:
+        ERR = require('async-stacktrace'); // at top of file
         function foo(p, callback) {
             bar(q, function(err, result) {
-                if (ERR(err, callback)) return; # this is the change
+                if (ERR(err, callback)) return; // this is the change
                 callback(null, result);
             });
         }
+
 1. Don't pass `callback` functions directly through to children, but instead capture the error with [async-stacktrace library](https://github.com/Pita/async-stacktrace) and pass it up the stack explicitly. This allows a complete stack trace to be printed on error. That is:
 
-        # Don't do this:
+        // Don't do this:
         function foo(p, callback) {
             bar(q, callback);
         }
 
-        # Instead do this:
+        // Instead do this:
         function foo(p, callback) {
             bar(q, function(err, result) {
                 if (ERR(err, callback)) return;
                 callback(null, result);
             });
         }
+
+1. Note that the [async-stacktrace library](https://github.com/Pita/async-stacktrace) `ERR` function will throw an exception if not provided with a callback, so in cases where there is no callback (e.g., in `cron/index.js`) we should call it with `ERR(err, function() {})`.
 
 1. Don't use promises.
 

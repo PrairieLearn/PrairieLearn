@@ -36,7 +36,7 @@ module.exports = {
         newErr.data = newErr.data || {};
         newErr.prevMessages = newErr.prevMsgs || [];
         newErr.prevMessages.splice(0, 0, newErr.message);
-        newErr.message = newmsg;
+        newErr.message = newMsg;
         return newErr;
     },
 };

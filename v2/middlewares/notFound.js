@@ -5,9 +5,7 @@ module.exports = function(req, res, next) {
     err.data = {
         url: req.url,
         method: req.method,
-        authUID: req.authUID,
-        userUID: req.userUID,
-        mode: req.mode
+        authz_data: res.locals.authz_data,
     };
     next(err);
 };

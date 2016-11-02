@@ -1,0 +1,8 @@
+{
+    "title": "Fibonacci function in editor, external grading",
+    "topic": "Functions",
+    "tags": ["Code"],
+    "clientFiles": ["client.js", "question.html", "answer.html"],
+    "type": "Calculation",
+    "gradingMethod": "External"
+}

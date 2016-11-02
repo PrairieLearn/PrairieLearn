@@ -3,7 +3,6 @@
     "title": "Backend Config",
     "description": "A configuration file for the PrairieLearn server.",
     "type": "object",
-    "additionalProperties": false,
     "properties": {
         "courseDir": {
             "description": "Path to the course directory.",
@@ -45,6 +44,18 @@
         },
         "postgresqlHost": {
             "description": "The host for connecting to the PostgreSQL database.",
+            "type": "string"
+        },
+        "amqpAddress": {
+            "description": "Address of the message queue server, or null to disable",
+            "type": "string"
+        },
+        "amqpGradingQueue": {
+            "description": "Name of the grading message queue",
+            "type": "string"
+        },
+        "amqpResultQueue": {
+            "description": "Name of the grading results message queue",
             "type": "string"
         },
         "logFilename": {

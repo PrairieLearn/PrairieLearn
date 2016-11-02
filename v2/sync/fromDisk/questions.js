@@ -22,6 +22,7 @@ module.exports = {
                 config: q.config,
                 course_id: courseInfo.courseId,
                 topic: q.topic,
+                grading_method: q.gradingMethod || 'Internal',
             };
             sqldb.queryOneRow(sql.insert_question, params, function(err, result) {
                 if (ERR(err, callback)) return;

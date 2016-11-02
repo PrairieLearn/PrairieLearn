@@ -12,6 +12,8 @@ var https = require('https');
 var logger = require('./lib/logger');
 var error = require('./lib/error');
 var config = require('./lib/config');
+var messageQueue = require('./lib/messageQueue');
+var assessments = require('./assessments');
 var sqldb = require('./lib/sqldb');
 var models = require('./models');
 var sprocs = require('./sprocs');
@@ -19,18 +21,20 @@ var cron = require('./cron');
 var syncFromDisk = require('./sync/syncFromDisk');
 var syncFromMongo = require('./sync/syncFromMongo');
 
-logger.infoOverride('PrairieLearn server start');
+if (config.startServer) {
+    logger.infoOverride('PrairieLearn server start');
 
-configFilename = 'config.json';
-if (process.argv.length > 2) {
-    configFilename = process.argv[2];
-}
+    configFilename = 'config.json';
+    if (process.argv.length > 2) {
+        configFilename = process.argv[2];
+    }
 
-config.loadConfig(configFilename);
+    config.loadConfig(configFilename);
 
-if (config.logFilename) {
-    logger.addFileLogging(config.logFilename);
-    logger.info('activated file logging: ' + config.logFilename);
+    if (config.logFilename) {
+        logger.addFileLogging(config.logFilename);
+        logger.info('activated file logging: ' + config.logFilename);
+    }
 }
 
 var app = express();
@@ -113,7 +117,7 @@ app.use('/pl/:course_instance_id/instance_question/:instance_question_id/text', 
 app.use(require('./middlewares/notFound'));
 app.use(require('./pages/error/error'));
 
-var startServer = function(callback) {
+module.exports.startServer = function(callback) {
     if (config.serverType === 'https') {
         var options = {
             key: fs.readFileSync('/etc/pki/tls/private/localhost.key'),
@@ -132,83 +136,98 @@ var startServer = function(callback) {
     }
 };
 
-async.series([
-    function(callback) {
-        var pgConfig = {
-            user: config.postgresqlUser,
-            database: config.postgresqlDatabase,
-            host: config.postgresqlHost,
-            max: 10,
-            idleTimeoutMillis: 30000,
-        };
-        logger.info('Connecting to database ' + pgConfig.postgresqlUser + '@' + pgConfig.host + ':' + pgConfig.database);
-        var idleErrorHandler = function(err) {
-            logger.error(error.makeWithData('idle client error', {err: err}));
-        };
-        sqldb.init(pgConfig, idleErrorHandler, function(err) {
-            if (ERR(err, callback)) return;
-            logger.info('Successfully connected to database');
+if (config.startServer) {
+    async.series([
+        function(callback) {
+            var pgConfig = {
+                user: config.postgresqlUser,
+                database: config.postgresqlDatabase,
+                host: config.postgresqlHost,
+                max: 10,
+                idleTimeoutMillis: 30000,
+            };
+            logger.info('Connecting to database ' + pgConfig.postgresqlUser + '@' + pgConfig.host + ':' + pgConfig.database);
+            var idleErrorHandler = function(err) {
+                logger.error('idle client error', err);
+            };
+            sqldb.init(pgConfig, idleErrorHandler, function(err) {
+                if (ERR(err, callback)) return;
+                logger.info('Successfully connected to database');
+                callback(null);
+            });
+        },
+        function(callback) {
+            models.init(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            sprocs.init(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            cron.init(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            var ampqConfig = {
+                amqpAddress: config.amqpAddress,
+                amqpGradingQueue: config.amqpGradingQueue,
+                amqpResultQueue: config.amqpResultQueue,
+            };
+            messageQueue.init(ampqConfig, assessments.processGradingResult, function(err) {
+                if (err) err = error.newMessage(err, 'Unable to connect to message queue');
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            logger.info('Starting server...');
+            module.exports.startServer(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        // FIXME: we are short-circuiting this for development,
+        // for prod these tasks should be back inline
+        function(callback) {
             callback(null);
-        });
-    },
-    function(callback) {
-        models.init(function(err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-        });
-    },
-    function(callback) {
-        sprocs.init(function(err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-        });
-    },
-    function(callback) {
-        cron.init(function(err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-        });
-    },
-    function(callback) {
-        logger.info('Starting server...');
-        startServer(function(err) {
-            if (ERR(err, callback)) return;
-            callback(null);
-        });
-    },
-    // FIXME: we are short-circuiting this for development,
-    // for prod these tasks should be back inline
-    function(callback) {
-        callback(null);
-        async.eachSeries(config.courseDirs || [], function(courseDir, callback) {
-            syncFromDisk.syncDiskToSql(courseDir, callback);
-        }, function(err, data) {
-            if (err) {
-                logger.error('Error syncing SQL DB:', err, data, err.stack);
-            } else {
-                logger.infoOverride('Completed sync SQL DB');
-            }
-        });
+            async.eachSeries(config.courseDirs || [], function(courseDir, callback) {
+                syncFromDisk.syncDiskToSql(courseDir, callback);
+            }, function(err, data) {
+                if (err) {
+                    logger.error('Error syncing SQL DB:',
+                                 {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
+                } else {
+                    logger.infoOverride('Completed sync SQL DB');
+                }
+            });
 
-        /*        
-        async.series([
-            syncDiskToSQL,
-            syncMongoToSQL,
-        ], function(err, data) {
-            if (err) {
-                logger.error('Error syncing SQL DB:', err, data);
-            }
-        });
-        */
-    },
-], function(err, data) {
-    if (err) {
-        logger.error('Error initializing PrairieLearn server:', err, data);
-        logger.error('Exiting...');
-        process.exit(1);
-    } else {
-        logger.infoOverride('PrairieLearn server ready');
-    }
-});
+            /*        
+                      async.series([
+                      syncDiskToSQL,
+                      syncMongoToSQL,
+                      ], function(err, data) {
+                      if (err) {
+                      logger.error('Error syncing SQL DB:', err, data);
+                      }
+                      });
+            */
+        },
+    ], function(err, data) {
+        if (err) {
+            logger.error('Error initializing PrairieLearn server:', err, data);
+            logger.error('Exiting...');
+            process.exit(1);
+        } else {
+            logger.infoOverride('PrairieLearn server ready');
+        }
+    });
+}
 
 //module.exports = app;

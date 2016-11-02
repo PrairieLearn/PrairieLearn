@@ -3,5 +3,6 @@
     "topic": "Functions",
     "tags": ["Code"],
     "clientFiles": ["client.js", "question.html", "answer.html"],
-    "type": "Calculation"
+    "type": "Calculation",
+    "gradingMethod": "External"
 }

@@ -5,6 +5,7 @@
     "private": true,
     "dependencies": {
         "adm-zip": "0.4.x",
+        "amqplib": "0.4.x",
         "archiver": "0.21.x",
         "async": "1.5.x",
         "async-stacktrace": "0.0.x",
@@ -28,6 +29,8 @@
         "winston": "2.2.x"
     },
     "devDependencies": {
-        "mocha": "3.1.x"
+        "mocha": "3.1.x",
+        "request": "2.76.x",
+        "cheerio": "0.22.x"
     }
 }

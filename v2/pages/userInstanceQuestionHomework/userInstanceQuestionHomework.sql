@@ -1,3 +1,12 @@
+-- BLOCK select_variant_for_question_instance
+SELECT
+    v.*
+FROM
+    variants AS v
+WHERE
+    v.id = $variant_id
+    AND v.instance_question_id = $instance_question_id;
+
 -- BLOCK get_available_variant
 SELECT
     v.*

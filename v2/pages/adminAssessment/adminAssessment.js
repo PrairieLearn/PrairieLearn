@@ -7,7 +7,7 @@ var router = express.Router();
 
 var error = require('../../lib/error');
 var logger = require('../../lib/logger');
-var assessmentExam = require('../../lib/assessment-exam');
+var assessments = require('../../assessments');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
@@ -202,9 +202,8 @@ router.post('/', function(req, res, next) {
         sqldb.queryOneRow(sql.select_finish_data, params, function(err, result) {
             if (ERR(err, next)) return;
             var credit = result.rows[0].credit;
-
-            var finishExam = true;
-            assessmentExam.gradeExam(req.body.assessment_instance_id, res.locals.authn_user.id, credit, finishExam, function(err) {
+            var finish = true;
+            assessments.gradeAssessmentInstance(req.body.assessment_instance_id, res.locals.authn_user.id, credit, finish, function(err) {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });
