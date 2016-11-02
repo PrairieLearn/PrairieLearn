@@ -9,7 +9,7 @@ define(["SimpleClient", "text!./question.html", "text!./answer.html", "ace/ace"]
         ace.config.set("packaged", true)
         ace.config.set("basePath", require.toUrl("ace"))
         var editor = ace.edit('editor');
-        editor.setTheme("ace/theme/monokai");
+        editor.setTheme("ace/theme/chrome");
         editor.getSession().setMode("ace/mode/python");
         editor.getSession().setUseWrapMode(true);
         editor.setShowPrintMargin(false);
