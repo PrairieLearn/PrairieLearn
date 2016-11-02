@@ -13,7 +13,7 @@ module.exports = function(err, req, res, next) {
         // development error handler
         // will print stacktrace
         res.status(err.status || 500);
-        logger.error('Error page', {msg: err.message, data: err.data, stack: err.stack});
+        logger.error('Error page', {msg: err.message, stack: err.stack, data: JSON.stringify(err.data)});
         res.render(path.join(__dirname, 'error'), {
             message: err.message,
             error: err,
@@ -23,7 +23,7 @@ module.exports = function(err, req, res, next) {
         // production error handler
         // no stacktraces leaked to user
         res.status(err.status || 500);
-        logger.error('Error page', {msg: err.message, data: err.data, stack: err.stack});
+        logger.error('Error page', {msg: err.message, stack: err.stack, data: JSON.stringify(err.data)});
         res.render(path.join(__dirname, 'error'), {
             message: err.message,
             error: {}

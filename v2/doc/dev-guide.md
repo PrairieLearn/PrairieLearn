@@ -264,6 +264,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
                 callback(null, result);
             });
         }
+
 1. Don't pass `callback` functions directly through to children, but instead capture the error with [async-stacktrace library](https://github.com/Pita/async-stacktrace) and pass it up the stack explicitly. This allows a complete stack trace to be printed on error. That is:
 
         // Don't do this:
@@ -278,6 +279,8 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
                 callback(null, result);
             });
         }
+
+1. Note that the [async-stacktrace library](https://github.com/Pita/async-stacktrace) `ERR` function will throw an exception if not provided with a callback, so in cases where there is no callback (e.g., in `cron/index.js`) we should call it with `ERR(err, function() {})`.
 
 1. Don't use promises.
 

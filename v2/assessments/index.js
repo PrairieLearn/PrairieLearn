@@ -1,5 +1,14 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
+var async = require('async');
+
+var error = require('../lib/error');
+var logger = require('../lib/logger');
+var messageQueue = require('../lib/messageQueue');
+var sqldb = require('../lib/sqldb');
+var sqlLoader = require('../lib/sql-loader');
+
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var assessmentModules = {
     'Homework': require('./homework'),
@@ -44,4 +53,62 @@ module.exports = {
             });
         });
     },
+};
+
+module.exports.processGradingResult = function(msg) {
+    var content, assessment_type;
+    async.series([
+        function(callback) {
+            try {
+                content = JSON.parse(msg.content.toString());
+            } catch (err) {
+                ERR(err, callback);
+                return;
+            }
+            callback(null);
+        },
+        function(callback) {
+            if (!_(content.gradingId).isInteger()) return callback(new Error('invalid gradingId'));
+            var params = {
+                grading_log_id: content.gradingId,
+            };
+            sqldb.queryOneRow(sql.select_assessment_info, params, function(err, result) {
+                if (ERR(err, callback)) return;
+
+                assessment_type = result.rows[0].assessment_type;
+                assessment_instance_id = result.rows[0].assessment_instance_id;
+                callback(null);
+            });
+        },
+        function(callback) {
+            if (!_(content.grading).isObject()) {
+                return callback(error.makeWithData('invalid grading', {content: content}));
+            }
+            if (!_(content.grading.score).isNumber()) {
+                return callback(error.makeWithData('invalid grading.score', {content: content}));
+            }
+            if (content.grading.score < 0 || content.grading.score > 1) {
+                return callback(error.makeWithData('grading.score out of range', {content: content}));
+            }
+            if (_(content.grading).has('feedback') && !_(content.grading.feedback).isObject()) {
+                return callback(error.makeWithData('invalid grading.feedback', {content: content}));
+            }
+            var grading_log_id = content.gradingId;
+            var grading = {
+                score: content.grading.score,
+                correct: (content.grading.score >= 0.5),
+                feedback: content.grading.feedback || null,
+            };
+            module.exports.updateExternalGrading(assessment_type, grading_log_id, grading, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+    ], function(err) {
+        if (ERR(err, function() {})) {
+            logger.error('processGradingResult: error',
+                         {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
+        }
+        return messageQueue.mqChannel.ack(msg);
+    });
 };

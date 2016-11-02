@@ -4,5 +4,5 @@
     "tags": ["Code"],
     "clientFiles": ["client.js", "question.html", "answer.html"],
     "type": "Calculation",
-    "grading": "External"
+    "gradingMethod": "External"
 }

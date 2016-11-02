@@ -56,7 +56,7 @@
             "description": "The QID of a question that serves at the template for this question.",
             "type": "string"
         },
-        "grading": {
+        "gradingMethod": {
             "description": "The grading method used for this question.",
             "enum": ["Internal", "External", "Manual"]
         },

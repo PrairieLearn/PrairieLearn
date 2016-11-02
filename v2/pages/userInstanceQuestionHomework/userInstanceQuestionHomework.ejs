@@ -46,9 +46,19 @@
                 <h3 class="panel-title">Submission</h3>
               </div>
               <div class="panel-body">
+                <% if (showScore) { %>
                 <p>
                   <%- scoreHtml %>
                 </p>
+                <% } %>
+                <% if (showGradingRequested) { %>
+                <p>
+                  Grading started at: <%= submission.grading_requested_at %>
+                </p>
+                <p>
+                  <a href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/?variant_id=<%= variant.id %>" class="btn btn-primary">Reload page to check grading</a>
+                </p>
+                <% } %>
                 <div class="submission-body">
                   <%- submissionHtml %>
                 </div>

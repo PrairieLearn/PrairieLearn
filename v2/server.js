@@ -13,6 +13,7 @@ var logger = require('./lib/logger');
 var error = require('./lib/error');
 var config = require('./lib/config');
 var messageQueue = require('./lib/messageQueue');
+var assessments = require('./assessments');
 var sqldb = require('./lib/sqldb');
 var models = require('./models');
 var sprocs = require('./sprocs');
@@ -147,7 +148,7 @@ if (config.startServer) {
             };
             logger.info('Connecting to database ' + pgConfig.postgresqlUser + '@' + pgConfig.host + ':' + pgConfig.database);
             var idleErrorHandler = function(err) {
-                logger.error(error.makeWithData('idle client error', {err: err}));
+                logger.error('idle client error', err);
             };
             sqldb.init(pgConfig, idleErrorHandler, function(err) {
                 if (ERR(err, callback)) return;
@@ -179,7 +180,7 @@ if (config.startServer) {
                 amqpGradingQueue: config.amqpGradingQueue,
                 amqpResultQueue: config.amqpResultQueue,
             };
-            messageQueue.init(ampqConfig, function(err) {
+            messageQueue.init(ampqConfig, assessments.processGradingResult, function(err) {
                 if (err) err = error.newMessage(err, 'Unable to connect to message queue');
                 if (ERR(err, callback)) return;
                 callback(null);
@@ -200,7 +201,8 @@ if (config.startServer) {
                 syncFromDisk.syncDiskToSql(courseDir, callback);
             }, function(err, data) {
                 if (err) {
-                    logger.error('Error syncing SQL DB:', err, data, err.stack);
+                    logger.error('Error syncing SQL DB:',
+                                 {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
                 } else {
                     logger.infoOverride('Completed sync SQL DB');
                 }

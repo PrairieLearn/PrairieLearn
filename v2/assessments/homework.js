@@ -76,7 +76,7 @@ module.exports.updateExternalGrading = function(grading_log_id, grading, callbac
                     },
                     function(callback) {
                         var params = {
-                            instance_question_id: instance_question.id,
+                            instance_question_id: instance_question_id,
                             correct: grading.correct,
                             auth_user_id: auth_user_id,
                         };
@@ -133,7 +133,7 @@ module.exports.submitAndGrade = function(submission, instance_question_id, quest
         logger.debug('homework.submitAndGrade(): finished beginTransaction()',
                      {instance_question_id: instance_question_id});
 
-        var variant, assessment_instance_id, submission_id;
+        var variant, assessment_instance_id, submission_id, external_grading_log_ids = [];
         async.series([
             function(callback) {
                 var params = {
@@ -177,7 +177,7 @@ module.exports.submitAndGrade = function(submission, instance_question_id, quest
                              {instance_question_id: instance_question_id,
                               submission_id: submission_id, variant: variant,
                               question: question, course: course});
-                questionServers.gradeSavedSubmission(client, submission_id, submission.auth_user_id, variant, question, course, function(err, grading_log) {
+                questionServers.gradeSavedSubmission(client, submission_id, submission.auth_user_id, variant, question, course, function(err, grading_log, external_grading_log_id) {
                     if (ERR(err, callback)) return;
                     logger.debug('homework.submitAndGrade(): finished gradeSavedSubmission()',
                                  {instance_question_id: instance_question_id, grading_log: grading_log});
@@ -195,7 +195,11 @@ module.exports.submitAndGrade = function(submission, instance_question_id, quest
                                          {instance_question_id: instance_question_id});
                             callback(null);
                         });
-                    } else if (grading_log.external_grading_started_at != null) {
+                    } else if (external_grading_log_id != null) {
+                        external_grading_log_ids.push(external_grading_log_id);
+                            logger.debug('homework.submitAndGrade(): pushed to external_grading_log_ids',
+                                         {instance_question_id: instance_question_id,
+                                          external_grading_log_ids: external_grading_log_ids});
                         var params = {
                             instance_question_id: instance_question_id,
                             auth_user_id: submission.auth_user_id,
@@ -246,7 +250,17 @@ module.exports.submitAndGrade = function(submission, instance_question_id, quest
                 if (ERR(err, callback)) return;
                 logger.debug('homework.submitAndGrade(): finished endTransaction()',
                              {instance_question_id: instance_question_id});
-                callback(null);
+
+                logger.debug('homework.submitAndGrade(): calling submitExternalGradingJobs()',
+                             {instance_question_id: instance_question_id,
+                              external_grading_log_ids: external_grading_log_ids,
+                              auth_user_id: submission.auth_user_id});
+                questionServers.submitExternalGradingJobs(external_grading_log_ids, submission.auth_user_id, function(err) {
+                    if (ERR(err, callback)) return;
+                    logger.debug('homework.submitAndGrade(): finished submitExternalGradingJobs()',
+                                 {instance_question_id: instance_question_id});
+                    callback(null);
+                });
             });
         });
     });

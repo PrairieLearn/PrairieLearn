@@ -34,6 +34,7 @@ $(function() {
         var postData = {
             submittedAnswer: submittedAnswer,
             variant: questionData.variant,
+            type: 'score',
         };
         questionContainer.find('form.question-form input.postData').val(JSON.stringify(postData));
         questionContainer.find('form.question-form').submit();

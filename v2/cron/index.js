@@ -32,8 +32,9 @@ module.exports = {
             cronModule.run(function(err) {
                 var endTime = new Date();
                 var elapsedTimeMS = endTime - startTime;
-                if (ERR(err)) {
-                    logger.error('cron: ' + title + ' failure, duration: ' + elapsedTimeMS + ' ms', err);
+                if (ERR(err, function() {})) {
+                    logger.error('cron: ' + title + ' failure, duration: ' + elapsedTimeMS + ' ms',
+                                 {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
                 } else {
                     logger.info('cron: ' + title + ' success, duration: ' + elapsedTimeMS + ' ms');
                 }

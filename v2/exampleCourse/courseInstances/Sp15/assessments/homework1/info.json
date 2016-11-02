@@ -1,5 +1,5 @@
 {
-    "type": "Basic",
+    "type": "Homework",
     "title": "Miscellaneous question set",
     "set": "Homework",
     "number": 1,
@@ -30,16 +30,16 @@
         }
     ],
     "options": {
-        "qids": [
-            "addVectors",
-            "fossilFuelsRadio",
-            "fossilFuelsCheckbox",
-            "fossilFuelsTrueFalse",
-            "fibonacci",
-            "fibonacciEditor",
-            "particleMotion",
-            "randomZip"
-        ],
-        "allowPractice": true
+        "questions": [
+            {"qid": "addVectors",           "initValue": 1, "maxScore": 5},
+            {"qid": "fossilFuelsRadio",     "initValue": 1, "maxScore": 5},
+            {"qid": "fossilFuelsCheckbox",  "initValue": 1, "maxScore": 5},
+            {"qid": "fossilFuelsTrueFalse", "initValue": 1, "maxScore": 5},
+            {"qid": "fibonacci",            "initValue": 1, "maxScore": 5},
+            {"qid": "fibonacciEditor",      "initValue": 1, "maxScore": 5},
+            {"qid": "fibonacciExternal",    "initValue": 1, "maxScore": 5},
+            {"qid": "particleMotion",       "initValue": 1, "maxScore": 5},
+            {"qid": "randomZip",            "initValue": 1, "maxScore": 5}
+        ]
     }
 }

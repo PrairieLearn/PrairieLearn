@@ -121,7 +121,7 @@ module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_u
         logger.debug('exam.gradeAssessmentInstance(): finished beginTransaction()',
                      {assessment_instance_id: assessment_instance_id});
     
-        var workList;
+        var workList, external_grading_log_ids = [];
         async.series([
             function(callback) {
                 var params = {assessment_instance_id: assessment_instance_id};
@@ -151,7 +151,7 @@ module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_u
                     logger.debug('exam.gradeAssessmentInstance(): workItem',
                                  {assessment_instance_id: assessment_instance_id,
                                   submission_id: workItem.submission_id, workItem: workItem});
-                    questionServers.gradeSavedSubmission(client, workItem.submission_id, workItem.auth_user_id, workItem.variant, workItem.question, workItem.course, function(err, grading_log) {
+                    questionServers.gradeSavedSubmission(client, workItem.submission_id, workItem.auth_user_id, workItem.variant, workItem.question, workItem.course, function(err, grading_log, external_grading_log_id) {
                         if (ERR(err, callback)) return;
                         logger.debug('exam.gradeAssessmentInstance(): finished gradeSavedSubmission()',
                                      {assessment_instance_id: assessment_instance_id,
@@ -172,7 +172,11 @@ module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_u
                                               submission_id: workItem.submission_id});
                                 callback(null);
                             });
-                        } else if (grading_log.external_grading_started_at != null) {
+                        } else if (external_grading_log_id != null) {
+                            external_grading_log_ids.push(external_grading_log_id);
+                            logger.debug('exam.gradeAssessmentInstance(): pushed to external_grading_log_ids',
+                                         {assessment_instance_id: assessment_instance_id,
+                                          external_grading_log_ids: external_grading_log_ids});
                             var params = {
                                 instance_question_id: workItem.instance_question_id,
                                 auth_user_id: workItem.auth_user_id,
@@ -235,7 +239,17 @@ module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_u
                 if (ERR(err, callback)) return;
                 logger.debug('exam.gradeAssessmentInstance(): finished endTransaction()',
                              {assessment_instance_id: assessment_instance_id});
-                callback(null);
+
+                logger.debug('exam.gradeAssessmentInstance(): calling submitExternalGradingJobs()',
+                             {assessment_instance_id: assessment_instance_id,
+                              external_grading_log_ids: external_grading_log_ids,
+                              auth_user_id: auth_user_id});
+                questionServers.submitExternalGradingJobs(external_grading_log_ids, auth_user_id, function(err) {
+                    if (ERR(err, callback)) return;
+                    logger.debug('exam.gradeAssessmentInstance(): finished submitExternalGradingJobs()',
+                                 {assessment_instance_id: assessment_instance_id});
+                    callback(null);
+                });
             });
         });
     });

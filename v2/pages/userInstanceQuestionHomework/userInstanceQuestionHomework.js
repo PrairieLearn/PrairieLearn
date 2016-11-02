@@ -84,15 +84,11 @@ function processGet(req, res, variant_id, callback) {
     res.locals.showSubmission = false;
     res.locals.showFeedback = false;
     res.locals.showTrueAnswer = false;
+    res.locals.showScore = false;
+    res.locals.showGradingRequested = false;
     async.series([
         function(callback) {
             if (variant_id) {
-                res.locals.showSubmitButton = false;
-                res.locals.showNewVariantButton = true;
-                res.locals.showSubmission = true;
-                res.locals.showFeedback = true;
-                res.locals.showTrueAnswer = true;
-
                 var params = {
                     variant_id: variant_id,
                     instance_question_id: res.locals.instance_question.id,
@@ -114,6 +110,18 @@ function processGet(req, res, variant_id, callback) {
             getSubmission(res.locals.variant.id, function(err, submission) {
                 if (ERR(err, callback)) return;
                 res.locals.submission = submission;
+                if (res.locals.submission) {
+                    res.locals.showSubmission = true;
+                    res.locals.showFeedback = true;
+                    if (res.locals.submission.graded_at) {
+                        res.locals.showSubmitButton = false;
+                        res.locals.showNewVariantButton = true;
+                        res.locals.showTrueAnswer = true;
+                        res.locals.showScore = true;
+                    } else if (res.locals.submission.grading_requested_at) {
+                        res.locals.showGradingRequested = true;
+                    }
+                }
                 callback(null);
             });
         },
