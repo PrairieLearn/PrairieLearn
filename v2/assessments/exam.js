@@ -64,7 +64,7 @@ module.exports.updateExternalGrading = function(grading_log_id, grading, callbac
                     },
                     function(callback) {
                         var params = {
-                            instance_question_id: instance_question.id,
+                            instance_question_id: instance_question_id,
                             correct: grading.correct,
                             auth_user_id: auth_user_id,
                         };
@@ -151,7 +151,7 @@ module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_u
                     logger.debug('exam.gradeAssessmentInstance(): workItem',
                                  {assessment_instance_id: assessment_instance_id,
                                   submission_id: workItem.submission_id, workItem: workItem});
-                    questionServers.gradeSavedSubmission(client, workItem.submission_id, workItem.auth_user_id, workItem.variant, workItem.question, workItem.course, function(err, grading_log, external_grading_log_id) {
+                    questionServers.gradeSavedSubmission(client, workItem.submission_id, auth_user_id, workItem.variant, workItem.question, workItem.course, function(err, grading_log, external_grading_log_id) {
                         if (ERR(err, callback)) return;
                         logger.debug('exam.gradeAssessmentInstance(): finished gradeSavedSubmission()',
                                      {assessment_instance_id: assessment_instance_id,
@@ -160,7 +160,7 @@ module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_u
                             var params = {
                                 instance_question_id: workItem.instance_question_id,
                                 correct: grading_log.correct,
-                                auth_user_id: workItem.auth_user_id,
+                                auth_user_id: auth_user_id,
                             };
                             logger.debug('exam.gradeAssessmentInstance(): calling update_instance_question',
                                          {assessment_instance_id: assessment_instance_id,
@@ -179,7 +179,7 @@ module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_u
                                           external_grading_log_ids: external_grading_log_ids});
                             var params = {
                                 instance_question_id: workItem.instance_question_id,
-                                auth_user_id: workItem.auth_user_id,
+                                auth_user_id: auth_user_id,
                             };
                             logger.debug('exam.gradeAssessmentInstance(): calling update_instance_question_in_grading',
                                          {assessment_instance_id: assessment_instance_id,

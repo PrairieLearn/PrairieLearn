@@ -13,7 +13,7 @@ FROM
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
 WHERE
     gl.id = $grading_log_id
-FOR UPDATE OF assessment_ai;
+FOR UPDATE OF ai;
 
 -- BLOCK lock_with_assessment_instance_id
 SELECT
@@ -128,6 +128,14 @@ INSERT INTO question_score_logs
          id,                  $auth_user_id, points, points_list[1], score_perc
     FROM results
 );
+
+-- BLOCK update_instance_question_in_grading
+UPDATE instance_questions AS iq
+SET
+    points_in_grading = iq.current_value,
+    score_perc_in_grading = floor(iq.current_value / iq.points_list[1] * 100)
+WHERE
+    iq.id = $instance_question_id;
 
 -- BLOCK update_assessment_instance_score
 WITH results AS (

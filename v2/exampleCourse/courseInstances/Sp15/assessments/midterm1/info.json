@@ -20,24 +20,10 @@
     "options": {
         "zones": [
             {
-                "title": "Easy questions",
-                "questions": [
-                    {"qid": "fossilFuelsRadio", "points": [10]},
-                    {"qid": "particleMotion", "points": [10, 5, 2]},
-                    {"qid": "fossilFuelsTrueFalse", "points": [10, 5, 2]}
-                ]
-            },
-            {
                 "title": "Hard questions",
                 "questions": [
-                    {
-                        "numberChoose": 1,
-                        "alternatives": [
-                            {"qid": "fibonacci", "points": [10, 10, 7, 3, 1, 0.5, 0.25]},
-                            {"qid": "addVectors", "points": [10, 10, 7, 3, 1, 0.5, 0.25]}
-                        ]
-                    },
-                    {"qid": "fossilFuelsCheckbox", "points": [10, 5]}
+                    {"qid": "fibonacciExternal", "points": [10, 10, 7, 3, 1, 0.5, 0.25]},
+                    {"qid": "addVectors", "points": [10, 10, 7, 3, 1, 0.5, 0.25]}
                 ]
             }
         ],

@@ -31,6 +31,7 @@ module.exports = {
     },
 
     paramsToArray: function(sql, params, callback) {
+        if (!_.isString(sql)) return callback(new Error('SQL must be a string'));
         if (_.isArray(params)) return callback(null, sql, params);
         if (!_.isObjectLike(params)) return callback(new Error("params must be array or object"));
         var re = /\$([-_a-zA-Z0-9]+)/;
