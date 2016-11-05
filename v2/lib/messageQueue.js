@@ -56,7 +56,7 @@ module.exports.sendToGradingQueue = function(grading_log, submission, variant, q
             type: submission.type,
         },
     };
-    var amqpGradingQueue = 'grade-' + course.grading_queue;
+    var amqpGradingQueue = course.grading_queue + '-grade';
     module.exports.mqChannel.assertQueue(amqpGradingQueue, {durable: true}, function(err, ok) {
         if (ERR(err, callback)) return;;
         module.exports.mqChannel.sendToQueue(amqpGradingQueue, new Buffer(JSON.stringify(msgData)), {persistent: true});
