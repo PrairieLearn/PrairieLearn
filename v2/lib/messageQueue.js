@@ -21,13 +21,17 @@ module.exports.init = function(config, processGradingResult, callback) {
         conn.createChannel(function(err, ch) {
             if (ERR(err, callback)) return;
             ch.assertQueue(config.amqpResultQueue, {durable: true}, function(err, ok) {
-                if (ERR(err, callback)) return;;
+                if (ERR(err, callback)) return;
+                ch.assertQueue(config.amqpStartQueue, {durable: true}, function(err, ok) {
+                    if (ERR(err, callback)) return;
+                    module.exports.mqChannel = ch;
 
-                ch.prefetch(5); // process up to this many messages simultaneously
-                ch.consume(config.amqpResultQueue, processGradingResult);
+                    ch.prefetch(5); // process up to this many messages simultaneously
+                    ch.consume(config.amqpResultQueue, processGradingResult);
+                    ch.consume(config.amqpStartQueue, function(msg) {module.exports.mqChannel.ack(msg)});
 
-                module.exports.mqChannel = ch;
-                callback(null);
+                    callback(null);
+                });
             });
         });
     });
