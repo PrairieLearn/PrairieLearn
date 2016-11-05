@@ -12,7 +12,6 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = {
     mqChannel: null,
-    amqpGradingQueue: null,
 };
 
 module.exports.init = function(config, processGradingResult, callback) {
@@ -20,28 +19,18 @@ module.exports.init = function(config, processGradingResult, callback) {
     amqp.connect(config.amqpAddress, function(err, conn) {
         if (ERR(err, callback)) return;;
         conn.createChannel(function(err, ch) {
-            if (ERR(err, callback)) return;;
-            ch.assertQueue(config.amqpGradingQueue, {durable: true}, function(err, ok) {
+            if (ERR(err, callback)) return;
+            ch.assertQueue(config.amqpResultQueue, {durable: true}, function(err, ok) {
                 if (ERR(err, callback)) return;;
-                ch.assertQueue(config.amqpResultQueue, {durable: true}, function(err, ok) {
-                    if (ERR(err, callback)) return;;
 
-                    ch.prefetch(10); // process up to this many messages simultaneously
-                    ch.consume(config.amqpResultQueue, processGradingResult);
+                ch.prefetch(5); // process up to this many messages simultaneously
+                ch.consume(config.amqpResultQueue, processGradingResult);
 
-                    module.exports.mqChannel = ch;
-                    module.exports.amqpGradingQueue = config.amqpGradingQueue;
-                    callback(null);
-                });
+                module.exports.mqChannel = ch;
+                callback(null);
             });
         });
     });
-};
-
-module.exports.cancelGrading = function(grading_id, callback) {
-    if (!this.mqChannel) return callback(new Error('Message queue not initialized'));
-    // FIXME: implement this
-    callback(null);
 };
 
 module.exports.sendToGradingQueue = function(grading_log, submission, variant, question, course, callback) {
@@ -67,9 +56,19 @@ module.exports.sendToGradingQueue = function(grading_log, submission, variant, q
             type: submission.type,
         },
     };
-    this.mqChannel.sendToQueue(this.amqpGradingQueue, new Buffer(JSON.stringify(msgData)), {persistent: true});
-    // FIXME: how do we make this async?
-    // apparently sendToQueue() returns a writable stream?
-    // should we get the return value and do writer.on('finish', ...) ?
+    var amqpGradingQueue = 'grade-' + course.grading_queue;
+    module.exports.mqChannel.assertQueue(amqpGradingQueue, {durable: true}, function(err, ok) {
+        if (ERR(err, callback)) return;;
+        module.exports.mqChannel.sendToQueue(amqpGradingQueue, new Buffer(JSON.stringify(msgData)), {persistent: true});
+        // FIXME: how do we make this async?
+        // apparently sendToQueue() returns a writable stream?
+        // should we get the return value and do writer.on('finish', ...) ?
+        callback(null);
+    });
+};
+
+module.exports.cancelGrading = function(grading_id, callback) {
+    if (!this.mqChannel) return callback(new Error('Message queue not initialized'));
+    // FIXME: implement this
     callback(null);
 };

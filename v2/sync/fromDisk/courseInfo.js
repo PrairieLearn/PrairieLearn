@@ -14,6 +14,7 @@ module.exports = {
             short_name: courseInfo.name,
             title: courseInfo.title,
             path: courseInfo.path,
+            grading_queue: courseInfo.name.toLowerCase().replace(' ', ''),
         };
         sqldb.query(sql.insert_course, params, function(err, result) {
             if (ERR(err, callback)) return;
