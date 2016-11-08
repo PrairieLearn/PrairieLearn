@@ -1113,7 +1113,7 @@ var addQuestionToQInstance = function(qInstance, req, callback) {
 
 var addQuestionToQInstances = function(qInstances, req, callback) {
     async.each(qInstances, function(qInstance, cb) {
-        addQuestionToQinstance(qInstance, req, cb);
+        addQuestionToQInstance(qInstance, req, cb);
     }, function(err) {
         if (err) return callback(err);
         callback(null, qInstances);
