@@ -31,6 +31,7 @@ PrairieLearn v2 is still in development. It is currently being beta tested in a 
 
 * [Installing and running PrairieLearn v2](https://github.com/PrairieLearn/PrairieLearn/blob/master/v2/doc/installing.md)
 * [Contributing to PL development](https://github.com/PrairieLearn/PrairieLearn/blob/master/v2/doc/contributing.md)
+* [Good blog post on how to contribute via GitHub](http://blog.davidecoppola.com/2016/11/howto-contribute-to-open-source-project-on-github/)
 * [Developer guide](https://github.com/PrairieLearn/PrairieLearn/blob/master/v2/doc/dev-guide.md)
 * [DB ER diagram](https://github.com/PrairieLearn/PrairieLearn/blob/master/v2/doc/models.pdf)
 * [DB table list](https://github.com/PrairieLearn/PrairieLearn/blob/master/v2/doc/tables.txt)
