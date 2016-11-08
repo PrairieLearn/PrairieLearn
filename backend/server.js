@@ -1782,6 +1782,7 @@ var updateTInstance = function(req, res, server, tInstance, test, callback) {
 var updateTInstances = function(req, res, tInstances, updateCallback) {
     async.each(tInstances, function(tInstance, callback) {
         var tid = tInstance.tid;
+        if (!courseDB.testDB[tid]) return callback(null);
         readTest(tid, function(err, test) {
             if (err) return sendError(res, 500, "Error reading test", err);
             loadTestServer(tid, function(server) {
