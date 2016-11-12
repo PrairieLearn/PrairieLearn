@@ -20,6 +20,7 @@ module.exports = {
                 type: q.type,
                 title: q.title,
                 config: q.config,
+                client_files: q.clientFiles || [],
                 course_id: courseInfo.courseId,
                 topic: q.topic,
                 grading_method: q.gradingMethod || 'Internal',

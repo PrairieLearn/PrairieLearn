@@ -1,10 +1,10 @@
 -- BLOCK insert_question
 INSERT INTO questions
-    (qid, directory, type,                      title,  config,
+    (qid, directory, type,                      title,  config,         client_files,
     course_id,            grading_method,                      deleted_at,
     topic_id)
 (SELECT
-    $qid, $qid,     $type::enum_question_type, $title, $config::JSONB,
+    $qid, $qid,     $type::enum_question_type, $title, $config::JSONB, $client_files::TEXT[],
     $course_id::integer, $grading_method::enum_grading_method, NULL::timestamp with time zone,
     COALESCE((SELECT id FROM topics WHERE name = $topic AND course_id = $course_id), NULL)
 )
@@ -14,6 +14,7 @@ SET
     type = EXCLUDED.type,
     title = EXCLUDED.title,
     config = EXCLUDED.config,
+    client_files = EXCLUDED.client_files,
     grading_method = EXCLUDED.grading_method,
     topic_id = EXCLUDED.topic_id,
     deleted_at = EXCLUDED.deleted_at
