@@ -20,34 +20,34 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 1. Top-level files and directories are:
 
         PrairieLearn/v2
-        |-- config.json       # server configuration file (optional)
-        |-- cron              # jobs to be periodically executed, one file per job
-        |   |-- index.js      # entry point for all cron jobs
+        +-- config.json       # server configuration file (optional)
+        +-- cron              # jobs to be periodically executed, one file per job
+        |   +-- index.js      # entry point for all cron jobs
         |   `-- ...           # one JS file per cron job, executed by index.js
-        |-- doc               # documentation
-        |-- exampleCourse     # example content for a course
-        |-- lib               # miscellaneous helper code
-        |-- middlewares       # Express.js middleware, one per file
-        |-- models            # DB table creation, one file per table
-        |   |-- index.js      # entry point for all model initialization
+        +-- doc               # documentation
+        +-- exampleCourse     # example content for a course
+        +-- lib               # miscellaneous helper code
+        +-- middlewares       # Express.js middleware, one per file
+        +-- models            # DB table creation, one file per table
+        |   +-- index.js      # entry point for all model initialization
         |   `-- ...           # one JS file per table, executed by index.js
-        |-- package.json      # npm configuration file
-        |-- pages             # one sub-dir per web page
-        |   |-- partials      # EJS helper sub-templates
-        |   |-- adminHome     # all the code for the adminHome page
-        |   |-- userHome      # all the code for the userHome page
+        +-- package.json      # npm configuration file
+        +-- pages             # one sub-dir per web page
+        |   +-- partials      # EJS helper sub-templates
+        |   +-- adminHome     # all the code for the adminHome page
+        |   +-- userHome      # all the code for the userHome page
         |   `-- ...           # other "admin" and "user" pages
-        |-- public            # all accessible without access control
-        |   |-- javascripts   # external packages only, no modificiations
-        |   |-- localscripts  # all local site-wide JS
+        +-- public            # all accessible without access control
+        |   +-- javascripts   # external packages only, no modificiations
+        |   +-- localscripts  # all local site-wide JS
         |   `-- stylesheets   # all CSS, both external and local
-        |-- question-servers  # one file per question type
-        |-- schemas           # JSON schemas for input file formats
-        |-- server.js         # top-level program
-        |-- sprocs            # DB stored procedures, one per file
-        |   |-- index.js      # entry point for all sproc initialization
+        +-- question-servers  # one file per question type
+        +-- schemas           # JSON schemas for input file formats
+        +-- server.js         # top-level program
+        +-- sprocs            # DB stored procedures, one per file
+        |   +-- index.js      # entry point for all sproc initialization
         |   `-- ...           # one JS file per sproc, executed by index.js
-        |-- sync              # code to load on-disk course config into DB
+        +-- sync              # code to load on-disk course config into DB
         `-- tests             # unit tests, currently unused
 
 
@@ -60,9 +60,9 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 1. Each web page typically has all its files in a single directory, with the directory, the files, and the URL all named the same. Not all pages need all files. For example:
 
         pages/adminUsers
-        |-- adminUsers.js         # main entry point, calls the SQL and renders the template
-        |-- adminUsers.sql        # all SQL code specific to this page
-        |-- adminUsers.ejs        # the EJS template for the page
+        +-- adminUsers.js         # main entry point, calls the SQL and renders the template
+        +-- adminUsers.sql        # all SQL code specific to this page
+        +-- adminUsers.ejs        # the EJS template for the page
         `-- adminUsersClient.js   # any client-side JS needed
 
 1. The above `adminUsers` page is loaded from the top-level `server.js` with:
