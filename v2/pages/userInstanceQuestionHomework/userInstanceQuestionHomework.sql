@@ -45,6 +45,16 @@ WHERE
 ORDER BY s.date DESC
 LIMIT 1;
 
+-- BLOCK get_all_submissions
+SELECT
+    s.*,
+    format_date_full_compact(s.date) AS formatted_date
+FROM
+    submissions AS s
+WHERE
+    s.variant_id = $variant_id
+ORDER BY s.date DESC;
+
 -- BLOCK get_variant
 SELECT v.* FROM variants AS v WHERE v.id = $variant_id AND v.available;
 

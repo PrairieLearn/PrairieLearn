@@ -77,6 +77,28 @@
             </div>
             <% } %>
 
+            <% if (showAllSubmissions) { %>
+            <div class="panel-group">
+                <% allSubmissions.forEach(function(thisSubmission, sNum) {
+                    if (thisSubmission.correct === null) {
+                        submissionLabel = "<span class='label label-primary'>saved, not graded</span>";
+                    } else if (thisSubmission.correct) {
+                        submissionLabel = "<span class='label label-success'>correct</span>";
+                    } else {
+                        submissionLabel = "<span class='label label-danger'>incorrect</span>";
+                    } %>
+                <div class="panel panel-info pastsubmission-block">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Saved Answer <%= allSubmissions.length - sNum %> <%- submissionLabel %> (saved at <%- thisSubmission.formatted_date %>)</h3>
+                    </div>
+                    <div class="panel-body pastsubmission-body" id="pastsubmission<%= sNum %>-body">
+
+                    </div>
+               </div>
+               <% }); %>
+            </div>
+            <% } %>
+
           </div> <!-- question-container -->
         </div>
 
