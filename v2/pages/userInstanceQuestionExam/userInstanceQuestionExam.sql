@@ -27,8 +27,7 @@ ORDER BY
 INSERT INTO submissions AS s
     ( variant_id,  auth_user_id,  submitted_answer,  type,  credit,  mode)
 VALUES
-    ($variant_id, $auth_user_id, $submitted_answer, $type, $credit, $mode)
-RETURNING s.*;
+    ($variant_id, $auth_user_id, $submitted_answer, $type, $credit, $mode);
 
 -- BLOCK get_instance_question_status
 SELECT

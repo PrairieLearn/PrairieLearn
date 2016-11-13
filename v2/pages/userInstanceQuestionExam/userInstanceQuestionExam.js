@@ -45,9 +45,8 @@ function processSubmission(req, res, callback) {
                 credit: res.locals.assessment.credit,
                 mode: res.locals.authz_data.mode,
             };
-            sqldb.queryOneRow(sql.new_submission, params, function(err, result) {
+            sqldb.query(sql.new_submission, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                res.locals.submission = result.rows[0];
                 callback(null);
             });
         },
