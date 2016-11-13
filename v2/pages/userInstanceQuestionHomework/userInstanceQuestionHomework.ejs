@@ -17,7 +17,7 @@
 
           <div id="question-0" class="question-container">
             <script type="application/json" class="question-data"><%- questionJson  %></script>
-            
+
             <div class="panel panel-primary question-block">
               <div class="panel-heading">
                 <h3 class="panel-title"><%= instance_question_info.question_number %>. <%= question.title %></h3>
@@ -74,6 +74,28 @@
               <div class="panel-body answer-body">
                 <%- answerHtml %>
               </div>
+            </div>
+            <% } %>
+
+            <% if (showAllSubmissions) { %>
+            <div class="panel-group">
+                <% allSubmissions.forEach(function(thisSubmission, sNum) {
+                    if (thisSubmission.correct === null) {
+                        submissionLabel = "<span class='label label-primary'>saved, not graded</span>";
+                    } else if (thisSubmission.correct) {
+                        submissionLabel = "<span class='label label-success'>correct</span>";
+                    } else {
+                        submissionLabel = "<span class='label label-danger'>incorrect</span>";
+                    } %>
+                <div class="panel panel-info pastsubmission-block">
+                    <div class="panel-heading">
+                        <h3 class="panel-title">Saved Answer <%= allSubmissions.length - sNum %> <%- submissionLabel %> (saved at <%- thisSubmission.formatted_date %>)</h3>
+                    </div>
+                    <div class="panel-body pastsubmission-body" id="pastsubmission<%= sNum %>-body">
+
+                    </div>
+               </div>
+               <% }); %>
             </div>
             <% } %>
 
@@ -142,7 +164,7 @@
             <a class="btn btn-warning" href="#youtubemodal" data-toggle="modal">Help video</a>
           </p>
           <% } %>
-          
+
         </div>
       </div>
     </div>

@@ -9,7 +9,7 @@ $(function() {
         clients[questionContainer.attr('id')] = client;
         client.initialize(questionData, callback);
     };
-    
+
     var render = function(questionContainer) {
         var client = clients[questionContainer.attr('id')];
 
@@ -17,7 +17,7 @@ $(function() {
         questionContainer.find(".question-data").each(function(i, x) {questionData = JSON.parse(x.innerHTML);});
 
         questionContainer.find(".question-body").each(function(i, x) {client.renderQuestion(x, questionData);});
-        questionContainer.find(".submission-body").each(function(i, x) {client.renderSubmission(x, questionData);});
+        questionContainer.find(".pastsubmission-body").each(function(i, x) {client.renderSubmission(x, questionData, i);});
         questionContainer.find(".answer-body").each(function(i, x) {client.renderAnswer(x, questionData);});
     };
 
