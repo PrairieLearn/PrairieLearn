@@ -11,7 +11,7 @@
 <% } else if (submission.score == 1) { %>
 <span class="label label-success">correct: 100%</span>
 <% } else if (submission.score > 0) { %>
-<span class="label label-warning">partially correct: <%= floor(submission.score * 100) %>%</span>
+<span class="label label-warning">partially correct: <%= Math.floor(submission.score * 100) %>%</span>
 <% } else { %>
 <span class="label label-danger">incorrect: 0%</span>
 <% } %>
