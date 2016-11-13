@@ -88,7 +88,7 @@ router.get('/', function(req, res, next) {
                 if (result.rowCount >= 1) {
                     res.locals.showSubmissions = true;
                     res.locals.submissions = result.rows;
-                    res.locals.submisison = res.locals.submissions[0]; // most recent submission
+                    res.locals.submission = res.locals.submissions[0]; // most recent submission
                 }
                 callback(null);
             });
