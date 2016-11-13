@@ -52,7 +52,7 @@ function getSubmission(variant_id, callback) {
         } else {
             return callback(null, null);
         }
-    });    
+    });
 }
 
 function processSubmission(req, res, callback) {
@@ -126,6 +126,18 @@ function processGet(req, res, variant_id, callback) {
             });
         },
         function(callback) {
+            res.locals.showAllSubmissions = false;
+            var params = {variant_id: res.locals.variant.id};
+            sqldb.query(sql.get_all_submissions, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                if (result.rowCount >= 1) {
+                    res.locals.showAllSubmissions = true;
+                    res.locals.allSubmissions = result.rows;
+                }
+                callback(null);
+            });
+        },
+        function(callback) {
             questionServers.getModule(res.locals.question.type, function(err, qm) {
                 if (ERR(err, callback)) return;
                 questionModule = qm;
@@ -183,6 +195,7 @@ function processGet(req, res, variant_id, callback) {
                 submittedAnswer: (res.locals.showSubmission && res.locals.submission) ? res.locals.submission.submitted_answer : null,
                 feedback: (res.locals.showFeedback && res.locals.submission) ? res.locals.submission.feedback : null,
                 trueAnswer: res.locals.showTrueAnswer ? res.locals.variant.true_answer : null,
+                allSubmissions : res.locals.showAllSubmissions ? res.locals.allSubmissions : null,
             });
             res.locals.video = null;
             callback(null);
