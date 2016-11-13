@@ -1,0 +1,17 @@
+<% if (submission.graded_at == null) { %>
+
+<% if (submission.grading_requested_at == null) { %>
+<span class="label label-primary">saved, not graded</span>
+<% } else { %>
+<span class="label label-default">waiting for grading (<%= submission.elapsed_grading_time %>)</span>
+<!-- FIXME: we hack color:white below because bootstrap doesn't correctly override -->
+<a href="<%= reloadUrl %>" class="btn btn-xs btn-primary" style="color: white;">Reload to check</a>
+<% } %>
+
+<% } else if (submission.score == 1) { %>
+<span class="label label-success">correct: 100%</span>
+<% } else if (submission.score > 0) { %>
+<span class="label label-warning">partially correct: <%= floor(submission.score * 100) %>%</span>
+<% } else { %>
+<span class="label label-danger">incorrect: 0%</span>
+<% } %>

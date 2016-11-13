@@ -1,7 +1,7 @@
 
-define(["SimpleClient", "text!./question.html", "text!./answer.html", "ace/ace"], function(SimpleClient, questionTemplate, answerTemplate, ace) {
+define(["SimpleClient", "text!./question.html", "text!./answer.html", "text!./submission.html", "ace/ace"], function(SimpleClient, questionTemplate, answerTemplate, submissionTemplate, ace) {
     
-    var client = new SimpleClient.SimpleClient({questionTemplate: questionTemplate, answerTemplate: answerTemplate});
+    var client = new SimpleClient.SimpleClient({questionTemplate: questionTemplate, answerTemplate: answerTemplate, submissionTemplate: submissionTemplate});
 
     client.on('renderQuestionFinished', function() {
 		client.addAnswer('code');

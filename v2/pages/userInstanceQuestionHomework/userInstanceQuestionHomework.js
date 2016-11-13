@@ -43,18 +43,6 @@ function ensureVariant(locals, callback) {
     });
 }
 
-function getSubmission(variant_id, callback) {
-    var params = {variant_id: variant_id};
-    sqldb.query(sql.get_submission, params, function(err, result) {
-        if (ERR(err, callback)) return;
-        if (result.rowCount == 1) {
-            return callback(null, result.rows[0]);
-        } else {
-            return callback(null, null);
-        }
-    });
-}
-
 function processSubmission(req, res, callback) {
     if (!req.body.postData) return callback(error.make(400, 'No postData', {locals: res.locals, body: req.body}));
     var postData;
@@ -81,10 +69,9 @@ function processGet(req, res, variant_id, callback) {
     var questionModule;
     res.locals.showSubmitButton = true;
     res.locals.showNewVariantButton = false;
-    res.locals.showSubmission = false;
+    res.locals.showSubmissions = false;
     res.locals.showFeedback = false;
     res.locals.showTrueAnswer = false;
-    res.locals.showScore = false;
     res.locals.showGradingRequested = false;
     async.series([
         function(callback) {
@@ -107,32 +94,19 @@ function processGet(req, res, variant_id, callback) {
             }
         },
         function(callback) {
-            getSubmission(res.locals.variant.id, function(err, submission) {
-                if (ERR(err, callback)) return;
-                res.locals.submission = submission;
-                if (res.locals.submission) {
-                    res.locals.showSubmission = true;
-                    res.locals.showFeedback = true;
-                    if (res.locals.submission.graded_at) {
-                        res.locals.showSubmitButton = false;
-                        res.locals.showNewVariantButton = true;
-                        res.locals.showTrueAnswer = true;
-                        res.locals.showScore = true;
-                    } else if (res.locals.submission.grading_requested_at) {
-                        res.locals.showGradingRequested = true;
-                    }
-                }
-                callback(null);
-            });
-        },
-        function(callback) {
-            res.locals.showAllSubmissions = false;
+            res.locals.showSubmissions = false;
             var params = {variant_id: res.locals.variant.id};
-            sqldb.query(sql.get_all_submissions, params, function(err, result) {
+            sqldb.query(sql.select_submissions, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 if (result.rowCount >= 1) {
-                    res.locals.showAllSubmissions = true;
-                    res.locals.allSubmissions = result.rows;
+                    res.locals.submissions = result.rows;
+                    res.locals.submission = res.locals.submissions[0]; // most recent submission
+
+                    res.locals.showSubmissions = true;
+                    res.locals.showFeedback = true;
+                    res.locals.showSubmitButton = false;
+                    res.locals.showNewVariantButton = true;
+                    res.locals.showTrueAnswer = true;
                 }
                 callback(null);
             });
@@ -152,18 +126,16 @@ function processGet(req, res, variant_id, callback) {
             });
         },
         function(callback) {
-            if (!res.locals.showSubmission) return callback(null);
-            questionServers.renderScore(res.locals.submission.score, function(err, scoreHtml) {
+            if (!res.locals.showSubmissions) return callback(null);
+            res.locals.submissionHtmls = [];
+            async.eachSeries(res.locals.submissions, function(submission, callback) {
+                questionModule.renderSubmission(res.locals.variant, res.locals.question, submission, res.locals.course, res.locals, function(err, submissionHtml) {
+                    if (ERR(err, callback)) return;
+                    res.locals.submissionHtmls.push(submissionHtml);
+                    callback(null);
+                });
+            }, function(err) {
                 if (ERR(err, callback)) return;
-                res.locals.scoreHtml = scoreHtml;
-                callback(null);
-            });
-        },
-        function(callback) {
-            if (!res.locals.showSubmission) return callback(null);
-            questionModule.renderSubmission(res.locals.variant, res.locals.question, res.locals.submission, res.locals.course, res.locals, function(err, submissionHtml) {
-                if (ERR(err, callback)) return;
-                res.locals.submissionHtml = submissionHtml;
                 callback(null);
             });
         },
@@ -192,10 +164,10 @@ function processGet(req, res, variant_id, callback) {
                     id: res.locals.variant.id,
                     params: res.locals.variant.params,
                 },
-                submittedAnswer: (res.locals.showSubmission && res.locals.submission) ? res.locals.submission.submitted_answer : null,
+                submittedAnswer: (res.locals.showSubmissions && res.locals.submission) ? res.locals.submission.submitted_answer : null,
                 feedback: (res.locals.showFeedback && res.locals.submission) ? res.locals.submission.feedback : null,
                 trueAnswer: res.locals.showTrueAnswer ? res.locals.variant.true_answer : null,
-                allSubmissions : res.locals.showAllSubmissions ? res.locals.allSubmissions : null,
+                submissions : res.locals.showSubmissions ? res.locals.submissions : null,
             });
             res.locals.video = null;
             callback(null);

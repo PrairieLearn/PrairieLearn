@@ -160,21 +160,4 @@ module.exports = {
             callback(null);
         });
     },
-
-    renderScore: function(score, callback) {
-        var color, text;
-        if (score >= 0.8) {
-            color = "success";
-            text = "Correct!";
-        } else if (score >= 0.5) {
-            color = "warning";
-            text = "Correct!";
-        } else {
-            color = "danger";
-            text = "Incorrect.";
-        }
-        var perc = (score * 100).toFixed(0) + '%';
-        var html = '<span class="label label-' + color + '">' + perc + '</span> ' + text;
-        callback(null, html);
-    },
 };

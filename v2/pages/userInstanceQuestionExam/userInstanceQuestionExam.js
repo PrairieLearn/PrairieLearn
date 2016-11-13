@@ -5,7 +5,6 @@ var async = require('async');
 var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
-var fs = require('fs');
 
 var error = require('../../lib/error');
 var questionServers = require('../../question-servers');
@@ -82,24 +81,14 @@ router.get('/', function(req, res, next) {
             });
         },
         function(callback) {
+            res.locals.showSubmissions = false;
             var params = {variant_id: res.locals.variant.id};
-            sqldb.query(sql.get_submission, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                if (result.rowCount == 1) {
-                    res.locals.submission = result.rows[0];
-                }
-                callback(null);
-            });
-        },
-        // We can probably combine the previous function with the following one, and eliminate sql.get_submission
-        function(callback) {
-            res.locals.showAllSubmissions = false;
-            var params = {variant_id: res.locals.variant.id};
-            sqldb.query(sql.get_all_submissions, params, function(err, result) {
+            sqldb.query(sql.select_submissions, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 if (result.rowCount >= 1) {
-                    res.locals.showAllSubmissions = true;
-                    res.locals.allSubmissions = result.rows;
+                    res.locals.showSubmissions = true;
+                    res.locals.submissions = result.rows;
+                    res.locals.submisison = res.locals.submissions[0]; // most recent submission
                 }
                 callback(null);
             });
@@ -140,6 +129,19 @@ router.get('/', function(req, res, next) {
             }
         },
         function(callback) {
+            res.locals.submissionHtmls = [];
+            async.eachSeries(res.locals.submissions, function(submission, callback) {
+                questionModule.renderSubmission(res.locals.variant, res.locals.question, submission, res.locals.course, res.locals, function(err, submissionHtml) {
+                    if (ERR(err, callback)) return;
+                    res.locals.submissionHtmls.push(submissionHtml);
+                    callback(null);
+                });
+            }, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
             questionModule.renderQuestion(res.locals.variant, res.locals.question, res.locals.submission, res.locals.course, res.locals, function(err, questionHtml) {
                 if (ERR(err, callback)) return;
                 res.locals.questionHtml = questionHtml;
@@ -160,7 +162,7 @@ router.get('/', function(req, res, next) {
                 submittedAnswer: res.locals.submission ? res.locals.submission.submitted_answer : null,
                 feedback: (res.locals.showFeedback && res.locals.submission) ? res.locals.submission.feedback : null,
                 trueAnswer: res.locals.showTrueAnswer ? res.locals.variant.true_answer : null,
-                allSubmissions : res.locals.showAllSubmissions ? res.locals.allSubmissions : null,
+                submissions : res.locals.showSubmissions ? res.locals.submissions : null,
             });
             res.locals.video = null;
             callback(null);

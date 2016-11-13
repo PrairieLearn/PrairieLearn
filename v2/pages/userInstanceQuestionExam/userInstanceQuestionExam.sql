@@ -8,25 +8,20 @@ WHERE
 ORDER BY v.date DESC
 LIMIT 1;
 
--- BLOCK get_submission
-SELECT
-    s.*
-FROM
-    submissions AS s
-WHERE
-    s.variant_id = $variant_id
-ORDER BY s.date DESC
-LIMIT 1;
-
--- BLOCK get_all_submissions
+-- BLOCK select_submissions
 SELECT
     s.*,
-    format_date_full_compact(s.date) AS formatted_date
+    format_date_full_compact(s.date) AS formatted_date,
+    CASE
+        WHEN s.grading_requested_at IS NOT NULL THEN format_interval(now() - s.grading_requested_at)
+        ELSE NULL
+    END AS elapsed_grading_time
 FROM
     submissions AS s
 WHERE
     s.variant_id = $variant_id
-ORDER BY s.date DESC;
+ORDER BY
+    s.date DESC;
 
 -- BLOCK new_submission
 INSERT INTO submissions AS s

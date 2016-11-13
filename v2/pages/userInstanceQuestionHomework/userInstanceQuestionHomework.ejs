@@ -40,32 +40,6 @@
               </div>
             </div>
 
-            <% if (showSubmission) { %>
-            <div class="panel panel-info submission-block">
-              <div class="panel-heading">
-                <h3 class="panel-title">Submission</h3>
-              </div>
-              <div class="panel-body">
-                <% if (showScore) { %>
-                <p>
-                  <%- scoreHtml %>
-                </p>
-                <% } %>
-                <% if (showGradingRequested) { %>
-                <p>
-                  Grading started at: <%= submission.grading_requested_at %>
-                </p>
-                <p>
-                  <a href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/?variant_id=<%= variant.id %>" class="btn btn-primary">Reload page to check grading</a>
-                </p>
-                <% } %>
-                <div class="submission-body">
-                  <%- submissionHtml %>
-                </div>
-              </div>
-            </div>
-            <% } %>
-
             <% if (showTrueAnswer) { %>
             <div class="panel panel-info grading-block">
               <div class="panel-heading">
@@ -77,25 +51,27 @@
             </div>
             <% } %>
 
-            <% if (showAllSubmissions) { %>
+            <% if (showSubmissions) { %>
             <div class="panel-group">
-                <% allSubmissions.forEach(function(thisSubmission, sNum) {
-                    if (thisSubmission.correct === null) {
-                        submissionLabel = "<span class='label label-primary'>saved, not graded</span>";
-                    } else if (thisSubmission.correct) {
-                        submissionLabel = "<span class='label label-success'>correct</span>";
-                    } else {
-                        submissionLabel = "<span class='label label-danger'>incorrect</span>";
-                    } %>
-                <div class="panel panel-info pastsubmission-block">
-                    <div class="panel-heading">
-                        <h3 class="panel-title">Saved Answer <%= allSubmissions.length - sNum %> <%- submissionLabel %> (saved at <%- thisSubmission.formatted_date %>)</h3>
-                    </div>
-                    <div class="panel-body pastsubmission-body" id="pastsubmission<%= sNum %>-body">
-
-                    </div>
-               </div>
-               <% }); %>
+              <% submissions.forEach(function(submission, iSubmission) { %>
+              <div class="panel panel-info pastsubmission-block">
+                <div class="panel-heading">
+                  <h3 class="panel-title">
+                    Submitted answer
+                    <% if (submissions.length > 1) { %>
+                    <%= submissions.length - iSubmission %>
+                    <% } %>
+                    &nbsp;&nbsp;&nbsp;
+                    <%- include('../partials/submissionStatus', {submission: submission, reloadUrl: urlPrefix + '/instance_question/' + instance_question.id + '/?variant_id=' + variant.id}); %>
+                    &nbsp;
+                    <small>Submitted at <%- submission.formatted_date %></small>
+                  </h3>
+                </div>
+                <div class="panel-body submission-body" id="submission-<%= iSubmission %>-body">
+                  <%- submissionHtmls[iSubmission] %>
+                </div>
+              </div>
+              <% }); %>
             </div>
             <% } %>
 

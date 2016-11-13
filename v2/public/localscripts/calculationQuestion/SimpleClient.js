@@ -256,7 +256,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
             this.appModel = this.options.appModel,
             this.template = this.options.template,
             this.params = this.options.params,
-            this.thisSubmission = this.options.thisSubmission,
+            this.submittedAnswer = this.options.submittedAnswer,
             this.rivetsBindingsActive = false;
             this.render();
         },
@@ -266,18 +266,18 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
                 this.rivetsView.unbind();
             var templateData = {
                 params: this.params.toJSON(),
-                thisSubmission: this.thisSubmission,
+                submittedAnswer: this.submittedAnswer,
             };
             var templatedHTML = PrairieTemplate.template(this.template, templateData, this.questionDataModel, this.appModel);
             if (this.options.templateTwice) {
                 templatedHTML = PrairieTemplate.template(templatedHTML, {}, this.questionDataModel, this.appModel);
             }
             this.$el.html(templatedHTML);
-            this.thisSubmissionObject = new Backbone.Model(this.thisSubmission);
+            this.submittedAnswerObject = new Backbone.Model(this.submittedAnswer);
             this.rivetsView = rivets.bind(this.$el, {
                 model: this.model,
                 params: this.params,
-                submittedAnswer: this.thisSubmissionObject,
+                submittedAnswer: this.submittedAnswerObject,
             });
             //this.rivetsBindingsActive = true;
             if (window.MathJax)
@@ -327,9 +327,9 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         this.listenTo(this.answerView, "renderFinished", function() {that.trigger("renderAnswerFinished");});
     };
 
-    SimpleClient.prototype.renderSubmission = function(submissionDivID, questionDataModel, appModel, submission, submissionIndex) {
+    SimpleClient.prototype.renderSubmission = function(submissionDivID, questionDataModel, appModel, submittedAnswer, submissionIndex) {
         var that = this;
-        this.submissionViews[submissionIndex] = new SubmissionView({el: submissionDivID, template: this.options.submissionTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, thisSubmission: submission.submitted_answer, templateTwice: this.options.templateTwice});
+        this.submissionViews[submissionIndex] = new SubmissionView({el: submissionDivID, template: this.options.submissionTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, submittedAnswer: submittedAnswer, templateTwice: this.options.templateTwice});
         this.submissionViews[submissionIndex].render();
     }
 

@@ -35,25 +35,20 @@ INSERT INTO variants AS v (instance_question_id, number, variant_seed, params, t
 )
 RETURNING v.*;
 
--- BLOCK get_submission
-SELECT
-    s.*
-FROM
-    submissions AS s
-WHERE
-    s.variant_id = $variant_id
-ORDER BY s.date DESC
-LIMIT 1;
-
--- BLOCK get_all_submissions
+-- BLOCK select_submissions
 SELECT
     s.*,
-    format_date_full_compact(s.date) AS formatted_date
+    format_date_full_compact(s.date) AS formatted_date,
+    CASE
+        WHEN s.grading_requested_at IS NOT NULL THEN format_interval(now() - s.grading_requested_at)
+        ELSE NULL
+    END AS elapsed_grading_time
 FROM
     submissions AS s
 WHERE
     s.variant_id = $variant_id
-ORDER BY s.date DESC;
+ORDER BY
+    s.date DESC;
 
 -- BLOCK get_variant
 SELECT v.* FROM variants AS v WHERE v.id = $variant_id AND v.available;
