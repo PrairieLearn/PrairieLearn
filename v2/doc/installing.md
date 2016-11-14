@@ -9,15 +9,15 @@ This is the easiest way to get started.
 
 1. Run PrairieLearn with:
 
-        docker run -rm -p 3000:3000 prairielearn/prairielearn
+        docker run --rm -p 3000:3000 prairielearn/prairielearn
 
    This will run the built-in PrairieLearn and access to the Example Course.
 
-1. Open a web browser and connect to http://localhost:3000/pl (student view) or http://localhost:3000/admin (admin view).
+1. Open a web browser and connect to http://localhost:3000/pl
 
 1. To use your own course, point Docker to the correct directory with:
 
-        docker run -rm -p 3000:3000 -v /path/to/course:/course prairielearn/prairielearn
+        docker run --rm -p 3000:3000 -v /path/to/course:/course prairielearn/prairielearn
 
 
 ## Method 2: Docker with local copy of PrairieLearn
@@ -30,7 +30,7 @@ If you want to do development of PrairieLearn itself (not just question writing)
 
 1. Run it with:
 
-        docker run -rm -p 3000:3000 -v /path/to/PrairieLearn/v2:/pl prairielearn/prairielearn
+        docker run --rm -p 3000:3000 -v /path/to/PrairieLearn/v2:/pl prairielearn/prairielearn
 
 
 ## Method 3: Fully local installation
@@ -81,4 +81,4 @@ To install PrairieLearn locally you should:
 
    This should end with `PrairieLearn server ready` and will remain running in the foreground, so this terminal can't be used for anything else. Stopping or restarting the server can be done with `Crtl-C`.
 
-1. In a web-browswer go to http://localhost:3000/pl or http://localhost:3000/admin
+1. In a web-browswer go to http://localhost:3000/pl
