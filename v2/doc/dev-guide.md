@@ -67,30 +67,34 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. The above `adminUsers` page is loaded from the top-level `server.js` with:
 
-        app.use('/admin/:courseInstanceId/users', require('./pages/adminUsers/adminUsers'));
+    ```javascript
+    app.use('/admin/:courseInstanceId/users', require('./pages/adminUsers/adminUsers'));
+    ```
 
 1. The `adminUsers.js` main JS file is an Express `router` and has the basic structure:
 
-        var ERR = require('async-stacktrace');
-        var _ = require('lodash');
-        var express = require('express');
-        var router = express.Router();
-        var sqldb = require('../../sqldb');
-        var sqlLoader = require('../../sql-loader');
-        var sql = sqlLoader.loadSqlEquiv(__filename);
-        
-        router.get('/', function(req, res, next) {
-            var params = {course_instance_id: res.params.courseInstanceId};
-            sqldb.query(sql.user_scores, params, function(err, result) { // SQL queries for page data
-                if (ERR(err, next)) return;
-                res.locals.user_scores = result.rows; // store the data in res.locals
+    ```javascript
+    var ERR = require('async-stacktrace');
+    var _ = require('lodash');
+    var express = require('express');
+    var router = express.Router();
+    var sqldb = require('../../sqldb');
+    var sqlLoader = require('../../sql-loader');
+    var sql = sqlLoader.loadSqlEquiv(__filename);
     
-                res.render('pages/adminUsers/adminUsers', res.locals); // render the page
-                // inside the EJS template, "res.locals.var" can be accessed with just "var"
-            });
+    router.get('/', function(req, res, next) {
+        var params = {course_instance_id: res.params.courseInstanceId};
+        sqldb.query(sql.user_scores, params, function(err, result) { // SQL queries for page data
+            if (ERR(err, next)) return;
+            res.locals.user_scores = result.rows; // store the data in res.locals
+
+            res.render('pages/adminUsers/adminUsers', res.locals); // render the page
+            // inside the EJS template, "res.locals.var" can be accessed with just "var"
         });
-        
-        module.exports = router;
+    });
+
+    module.exports = router;
+    ```
 
 1. Use the `res.locals` variable to build up data for the page rendering. Many basic objects are already included from the `selectAndAuthz*.js` middleware that runs before most page loads.
 
@@ -98,7 +102,9 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. Sub-templates are stored in `pages/partials` and can be loaded as below. The sub-template can also access `res.locals` as its base scope, and can also accept extra arguments with an arguments object:
 
-        <%- include('../partials/assessment', {assessment: assessment}); %>
+    ```javascript
+    <%- include('../partials/assessment', {assessment: assessment}); %>
+    ```
 
 ## Page style
 
@@ -120,23 +126,61 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. SQL code should not be inline in JavaScript files. Instead it should be in a separate `.sql` file, following the [Yesql concept](https://github.com/krisajenkins/yesql). Each `filename.js` file will normally have a corresponding `filename.sql` file in the same directory. The `.sql` file should look like:
 
-        -- BLOCK select_question
-        SELECT * FROM questions WHERE id = $question_id;
+    ```sql
+    -- BLOCK select_question
+    SELECT * FROM questions WHERE id = $question_id;
 
-        -- BLOCK insert_submission
-        INSERT INTO submissions (submitted_answer) VALUES ($submitted_answer) RETURNING *;
+    -- BLOCK insert_submission
+    INSERT INTO submissions (submitted_answer) VALUES ($submitted_answer) RETURNING *;
+    ```
 
     From JavaScript you can then do:
 
-        var sqlLoader = require('./sql-loader'); // adjust path as needed
-        var sql = sqlLoader.loadSqlEquiv(__filename); // from filename.js will load filename.sql
+    ```javascript
+    var sqlLoader = require('./sql-loader'); // adjust path as needed
+    var sql = sqlLoader.loadSqlEquiv(__filename); // from filename.js will load filename.sql
 
-        // run the entire contents of the SQL file
-        sqldb.query(sql.all, params, ...);
+    // run the entire contents of the SQL file
+    sqldb.query(sql.all, params, ...);
 
-        // run just one query block from the SQL file
-        sqldb.query(sql.select_question, params, ...);
+    // run just one query block from the SQL file
+    sqldb.query(sql.select_question, params, ...);
+    ```
 
+1. The layout of the SQL code should generally have each list in separate indented blocks, like:
+
+    ```sql
+    SELECT
+        ft.col1,
+        ft.col2 AS renamed_col,
+        st.col1
+    FROM
+        first_table AS ft
+        JOIN second_table AS st ON (st.first_table_id = ft.id)
+    WHERE
+        ft.col3 = select3
+        AND st.col2 = select2
+    ORDER BY
+        ft.col1;
+    ```
+
+1. To keep SQL code organized it is a good idea to use [CTEs (`WITH` queries)](https://www.postgresql.org/docs/current/static/queries-with.html). These are formatted like:
+
+    ```sql
+    WITH first_preliminary_table AS (
+        SELECT
+            -- first preliminary query
+    ),
+    second_preliminary_table AS (
+        SELECT
+            -- second preliminary query
+    )
+    SELECT
+        -- main query here
+    FROM
+        first_preliminary_table AS fpt,
+        second_preliminary_table AS spt;
+    ```
 
 ## DB Schema
 
@@ -146,15 +190,17 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. Tables have plural names (e.g. `assessments`) and always have a primary key called `id`. The foreign keys pointing to this table are non-plural, like `assessment_id`. When referring to this use an abbreviation of the first letters of each word, like `ai` in this case. The only exceptions are `aset` for `assessment_sets` (to avoid conflicting with the SQL `AS` keyword), `top` for `topics`, and `tag` for `tags` (to avoid conflicts). This gives code like:
 
-        -- select all active assessment_instances for a given assessment
-        SELECT
-            ai.*
-        FROM
-            assessments AS a
-            JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-        WHERE
-            a.id = 45
-            AND ai.deleted_at IS NULL;
+    ```sql
+    -- select all active assessment_instances for a given assessment
+    SELECT
+        ai.*
+    FROM
+        assessments AS a
+        JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
+    WHERE
+        a.id = 45
+        AND ai.deleted_at IS NULL;
+    ```
 
 1. We (almost) never delete student data from the DB. To avoid having rows with broken or missing foreign keys, course configuration tables (e.g. `assessments`) can't be actually deleted. Instead they are "soft-deleted" by setting the `deleted_at` column to non-NULL. This means that when using any soft-deletable table we need to have a `WHERE deleted_at IS NULL` to get only the active rows.
 
@@ -165,80 +211,96 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. For single queries we normally use the following pattern, which automatically uses connection pooling from node-postgres and safe variable interpolation with named parameters and [prepared statements](https://github.com/brianc/node-postgres/wiki/Parameterized-queries-and-Prepared-Statements):
 
-        var params = {
-            course_id: 45,
-        };
-        sqldb.query(sql.select_questions_by_course, params, function(err, result) {
-            if (ERR(err, callback)) return;
-            var questions = result.rows;
-        });
+    ```javascript
+    var params = {
+        course_id: 45,
+    };
+    sqldb.query(sql.select_questions_by_course, params, function(err, result) {
+        if (ERR(err, callback)) return;
+        var questions = result.rows;
+    });
+    ```
 
     Where the corresponding `filename.sql` file contains:
 
-        -- BLOCK select_questions_by_course
-        SELECT * FROM questions WHERE course_id = $course_id;
+    ```sql
+    -- BLOCK select_questions_by_course
+    SELECT * FROM questions WHERE course_id = $course_id;
+    ```
 
 1. For queries where it would be an error to not return exactly one result row:
 
-        sqldb.queryOneRow(sql.block_name, params, function(err, result) {
-            if (ERR(err, callback)) return;
-            var obj = result.rows[0]; // guaranteed to exist and no more
-        });
+    ```javascript
+    sqldb.queryOneRow(sql.block_name, params, function(err, result) {
+        if (ERR(err, callback)) return;
+        var obj = result.rows[0]; // guaranteed to exist and no more
+    });
+    ```
 
 1. For transactions with correct error handling use the pattern:
 
-        sqldb.beginTransaction(function(err, client, done) {
-            if (ERR(err, callback)) return;
-            async.series([
-                function(callback) {
-                    // only use queryWithClient() and queryWithClientOneRow() inside the transaction
-                    sqldb.queryWithClient(client, sql.block_name, params, function(err, result) {
-                        if (ERR(err, callback)) return;
-                        // do things
-                        callback(null);
-                    });
-                },
-                // more series functions inside the transaction
-            ], function(err) {
-                sqldb.endTransaction(client, done, err, function(err) { // will rollback if err is defined
-                    if (ERR(err, callback)) return; 
-                    // transaction successfully committed at this point
+    ```javascript
+    sqldb.beginTransaction(function(err, client, done) {
+        if (ERR(err, callback)) return;
+        async.series([
+            function(callback) {
+                // only use queryWithClient() and queryWithClientOneRow() inside the transaction
+                sqldb.queryWithClient(client, sql.block_name, params, function(err, result) {
+                    if (ERR(err, callback)) return;
+                    // do things
                     callback(null);
                 });
+            },
+            // more series functions inside the transaction
+        ], function(err) {
+            sqldb.endTransaction(client, done, err, function(err) { // will rollback if err is defined
+                if (ERR(err, callback)) return;
+                // transaction successfully committed at this point
+                callback(null);
             });
         });
+    });
+    ```
 
 1. Use explicit row locking on `assessment_instances` within a transaction for any score-modifying updates to any part of an assessment. For example, to grade a question, wrap everything in a transaction as described above and have the first query in the transaction be something like:
 
-        SELECT
-            ai.id
-        FROM
-            assessment_instances AS ai
-        WHERE
-            ai.id = $assessment_instance_id
-        FOR UPDATE OF assessment_instances;
+    ```sql
+    SELECT
+        ai.id
+    FROM
+        assessment_instances AS ai
+    WHERE
+        ai.id = $assessment_instance_id
+    FOR UPDATE OF assessment_instances;
+    ```
 
 1. To pass an array of parameters to SQL code, use the following pattern, which allows zero or more elements in the array. This replaces `$points_list` with `ARRAY[10, 5, 1]` in the SQL. It's required to specify the type of array in case it is empty:
 
-        var params = {
-            points_list: [10, 5, 1],
-        };
-        sqldb.query(sql.insert_assessment_question, params, ...);
+    ```javascript
+    var params = {
+        points_list: [10, 5, 1],
+    };
+    sqldb.query(sql.insert_assessment_question, params, ...);
+    ```
 
-
-        -- BLOCK insert_assessment_question
-        INSERT INTO assessment_questions (points_list) VALUES ($points_list::INTEGER[]);
+    ```sql
+    -- BLOCK insert_assessment_question
+    INSERT INTO assessment_questions (points_list) VALUES ($points_list::INTEGER[]);
+    ```
 
 1. To use a JavaScript array for membership testing in SQL use [`unnest()`](https://www.postgresql.org/docs/9.5/static/functions-array.html) like:
 
-        var params = {
-            id_list: [7, 12, 45],
-        };
-        sqldb.query(sql.select_questions, params, ...);
+    ```javascript
+    var params = {
+        id_list: [7, 12, 45],
+    };
+    sqldb.query(sql.select_questions, params, ...);
+    ```
 
-
-        -- BLOCK select_questions
-        SELECT * FROM questions WHERE id IN (SELECT unnest($id_list::INTEGER[]));
+    ```sql
+    -- BLOCK select_questions
+    SELECT * FROM questions WHERE id IN (SELECT unnest($id_list::INTEGER[]));
+    ```
 
 ## Error handling and control flow in JavaScript
 
@@ -248,37 +310,41 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. Use the [async-stacktrace library](https://github.com/Pita/async-stacktrace) for every error handler. That is, the top of every file should have `ERR = require('async-stacktrace');` and wherever you would normally write `if (err) return callback(err);` you instead write `if (ERR(err, callback)) return;`. This does exactly the same thing, except that it modfies the `err` object's stack trace to include the current filename/linenumber, which greatly aids debugging. For example:
 
-        // Don't do this:
-        function foo(p, callback) {
-            bar(q, function(err, result) {
-                if (err) return callback(err);
-                callback(null, result);
-            });
-        }
+    ```javascript
+    // Don't do this:
+    function foo(p, callback) {
+        bar(q, function(err, result) {
+            if (err) return callback(err);
+            callback(null, result);
+        });
+    }
 
-        // Instead do this:
-        ERR = require('async-stacktrace'); // at top of file
-        function foo(p, callback) {
-            bar(q, function(err, result) {
-                if (ERR(err, callback)) return; // this is the change
-                callback(null, result);
-            });
-        }
+    // Instead do this:
+    ERR = require('async-stacktrace'); // at top of file
+    function foo(p, callback) {
+        bar(q, function(err, result) {
+            if (ERR(err, callback)) return; // this is the change
+            callback(null, result);
+        });
+    }
+    ```
 
 1. Don't pass `callback` functions directly through to children, but instead capture the error with [async-stacktrace library](https://github.com/Pita/async-stacktrace) and pass it up the stack explicitly. This allows a complete stack trace to be printed on error. That is:
 
-        // Don't do this:
-        function foo(p, callback) {
-            bar(q, callback);
-        }
+    ```javascript
+    // Don't do this:
+    function foo(p, callback) {
+        bar(q, callback);
+    }
 
-        // Instead do this:
-        function foo(p, callback) {
-            bar(q, function(err, result) {
-                if (ERR(err, callback)) return;
-                callback(null, result);
-            });
-        }
+    // Instead do this:
+    function foo(p, callback) {
+        bar(q, function(err, result) {
+            if (ERR(err, callback)) return;
+            callback(null, result);
+        });
+    }
+    ```
 
 1. Note that the [async-stacktrace library](https://github.com/Pita/async-stacktrace) `ERR` function will throw an exception if not provided with a callback, so in cases where there is no callback (e.g., in `cron/index.js`) we should call it with `ERR(err, function() {})`.
 
@@ -308,32 +374,36 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. Use the [Post/Redirect/Get](https://en.wikipedia.org/wiki/Post/Redirect/Get) pattern for all state modification. This means that the initial GET should render the page with a `<form>` that has no `action` set, so it will submit back to the current page. This should be handled by a POST handler that performs the state modification and then issues a redirect back to the same page as a GET:
 
-        router.post('/', function(req, res, next) {
-            if (req.body.postAction == 'enroll') {
-                var params = {
-                    course_instance_id: req.body.course_instance_id,
-                    user_id: res.locals.authn_user.id,
-                };
-                sqldb.queryOneRow(sql.enroll, params, function(err, result) {
-                    if (ERR(err, next)) return;
-                    res.redirect(req.originalUrl);
-                });
-            } else {
-                return next(error.make(400, 'unknown postAction', {body: req.body, locals: res.locals}));
-            }
-        });
+    ```javascript
+    router.post('/', function(req, res, next) {
+        if (req.body.postAction == 'enroll') {
+            var params = {
+                course_instance_id: req.body.course_instance_id,
+                user_id: res.locals.authn_user.id,
+            };
+            sqldb.queryOneRow(sql.enroll, params, function(err, result) {
+                if (ERR(err, next)) return;
+                res.redirect(req.originalUrl);
+            });
+        } else {
+            return next(error.make(400, 'unknown postAction', {body: req.body, locals: res.locals}));
+        }
+    });
+    ```
 
 1. To defeat [CSRF (Cross-Site Request Forgery)](https://en.wikipedia.org/wiki/Cross-site_request_forgery) we use the [Encrypted Token Pattern](https://www.owasp.org/index.php/Cross-Site_Request_Forgery_%28CSRF%29_Prevention_Cheat_Sheet). This stores an [HMAC-authenticated token](https://en.wikipedia.org/wiki/Hash-based_message_authentication_code) token inside the POST data.
 
 1. All data modifying requests should come from `form` elements like:
 
-        <form name="enroll-form" method="POST">
-            <input type="hidden" name="postAction" value="enroll">
-            <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
-            <input type="hidden" name="course_instance_id" value="56">
-            <button type="submit" class="btn btn-info">
-                Enroll in course instance 56
-            </button>
-        </form>
+    ```html
+    <form name="enroll-form" method="POST">
+        <input type="hidden" name="postAction" value="enroll">
+        <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+        <input type="hidden" name="course_instance_id" value="56">
+        <button type="submit" class="btn btn-info">
+            Enroll in course instance 56
+        </button>
+    </form>
+    ```
 
 1. The `res.locals.csrfToken` variable is set and checked by early-stage middleware, so no explicit action is needed on each page.
