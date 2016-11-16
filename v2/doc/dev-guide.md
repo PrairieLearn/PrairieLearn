@@ -124,6 +124,8 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. Use the SQL convention of [`snake_case`](https://en.wikipedia.org/wiki/Snake_case) for names. Also use the same convention in JavaScript for names that are the same as in SQL, so the `question_id` variable in SQL is also called `question_id` in JavaScript code.
 
+1. Use uppercase for SQL reserved words like `SELECT`, `FROM`, `AS`, etc.
+
 1. SQL code should not be inline in JavaScript files. Instead it should be in a separate `.sql` file, following the [Yesql concept](https://github.com/krisajenkins/yesql). Each `filename.js` file will normally have a corresponding `filename.sql` file in the same directory. The `.sql` file should look like:
 
     ```sql
