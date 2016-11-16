@@ -32,16 +32,18 @@ var handle = function(req, res, next) {
             questionServers.gradeSubmission(submission, variant, res.locals.question, res.locals.course, {}, function(err, grading) {
                 if (ERR(err, next)) return;
                 _.assign(submission, grading);
+                // This is an ugly hack to make /partials/submissionStatus.js do the right thing
+                submission.graded_at = 'Graded';
+                // /localscripts/question.js expects there to be an array of submission objects
+                res.locals.submissions = [];
+                res.locals.submissions[0] = submission;
                 questionServers.getModule(res.locals.question.type, function(err, questionModule) {
                     if (ERR(err, next)) return;
-                    questionServers.renderScore(submission.score, function(err, scoreHtml) {
+                    questionModule.renderSubmission(variant, res.locals.question, submission, res.locals.course, res.locals, function(err, submissionHtml) {
                         if (ERR(err, next)) return;
-                        questionModule.renderSubmission(variant, res.locals.question, submission, res.locals.course, res.locals, function(err, submissionHtml) {
+                        questionModule.renderTrueAnswer(variant, res.locals.question, res.locals.course, res.locals, function(err, answerHtml) {
                             if (ERR(err, next)) return;
-                            questionModule.renderTrueAnswer(variant, res.locals.question, res.locals.course, res.locals, function(err, answerHtml) {
-                                if (ERR(err, next)) return;
-                                render(req, res, next, variant, submission, scoreHtml, submissionHtml, answerHtml);
-                            });
+                            render(req, res, next, variant, submission, submissionHtml, answerHtml);
                         });
                     });
                 });
@@ -55,7 +57,7 @@ var handle = function(req, res, next) {
     }
 };
 
-var render = function(req, res, next, variant, submission, scoreHtml, submissionHtml, answerHtml) {
+var render = function(req, res, next, variant, submission, submissionHtml, answerHtml) {
     var params = [res.locals.question.id, res.locals.course_instance.id];
     sqldb.queryOneRow(sql.select_question, params, function(err, result) {
         if (ERR(err, next)) return;
@@ -65,12 +67,11 @@ var render = function(req, res, next, variant, submission, scoreHtml, submission
                 if (ERR(err, next)) return;
                 questionModule.renderQuestion(variant, res.locals.question, null, res.locals.course, res.locals, function(err, questionHtml) {
                     if (ERR(err, next)) return;
-                    
+
                     res.locals.result = result.rows[0];
                     res.locals.submission = submission;
                     res.locals.extraHeaders = extraHeaders;
                     res.locals.questionHtml = questionHtml;
-                    res.locals.scoreHtml = scoreHtml;
                     res.locals.submissionHtml = submissionHtml;
                     res.locals.answerHtml = answerHtml;
                     res.locals.postUrl = res.locals.urlPrefix + "/admin/question/" + res.locals.question.id + "/";
@@ -83,6 +84,7 @@ var render = function(req, res, next, variant, submission, scoreHtml, submission
                         submittedAnswer: submission ? submission.submitted_answer : null,
                         feedback: submission ? submission.feedback : null,
                         trueAnswer: variant.true_answer,
+                        submissions: submission ? res.locals.submissions : null,
                     });
                     res.render(path.join(__dirname, 'adminQuestion'), res.locals);
                 });
