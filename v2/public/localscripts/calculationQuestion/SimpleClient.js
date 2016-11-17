@@ -297,7 +297,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         this.options = _.defaults(options || {}, {
             questionTemplate: "",
             answerTemplate: "",
-            submissionTemplate: "Saved answer not shown.",
+            submissionTemplate: "Not shown for this question.",
             templateTwice: false,
         });
     }

@@ -32,11 +32,10 @@ var handle = function(req, res, next) {
             questionServers.gradeSubmission(submission, variant, res.locals.question, res.locals.course, {}, function(err, grading) {
                 if (ERR(err, next)) return;
                 _.assign(submission, grading);
-                // This is an ugly hack to make /partials/submissionStatus.js do the right thing
+                // hack to make partials/submissionStatus.js do the right thing
                 submission.graded_at = 'Graded';
-                // /localscripts/question.js expects there to be an array of submission objects
-                res.locals.submissions = [];
-                res.locals.submissions[0] = submission;
+                // localscripts/question.js expects there to be an array of submission objects
+                res.locals.submissions = [submission];
                 questionServers.getModule(res.locals.question.type, function(err, questionModule) {
                     if (ERR(err, next)) return;
                     questionModule.renderSubmission(variant, res.locals.question, submission, res.locals.course, res.locals, function(err, submissionHtml) {
