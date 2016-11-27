@@ -1,0 +1,9 @@
+<% if (status == 'Running') { %>
+<span class="label label-primary">Running</span>
+<% } else if (status == 'Success') { %>
+<span class="label label-success">Success</span>
+<% } else if (status == 'Error') { %>
+<span class="label label-danger">Error</span>
+<% } else { %>
+<span class="label label-default">Unknown</span>
+<% } %>

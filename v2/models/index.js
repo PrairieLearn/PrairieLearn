@@ -44,6 +44,7 @@ module.exports = {
             'instance_questions.sql',
             'variants.sql',
             'submissions.sql',
+            'jobs.sql',
 
             // tables for logging
             'assessment_state_logs.sql',

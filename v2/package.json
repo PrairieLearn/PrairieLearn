@@ -26,6 +26,7 @@
         "pg": "6.1.x",
         "requirejs": "2.1.x",
         "serve-favicon": "2.3.x",
+        "socket.io": "1.6.x",
         "winston": "2.2.x"
     },
     "devDependencies": {

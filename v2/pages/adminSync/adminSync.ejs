@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <script type="text/javascript" src="/javascripts/bootstrap.min.js"></script>
+    <script src="/javascripts/socket.io.js"></script>
+  </head>
+  <body>
+    <script>
+      var socket = io();
+    </script>
+    <%- include('../partials/navbarAdmin', {navPage: ''}); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Sync job</h3>
+        </div>
+
+        <div class="panel-body">
+          <a href="." class="btn btn-primary">Reload to update data</a>
+        </div>
+
+        <table class="table table-condensed table-hover two-column-description">
+          <tbody>
+            <tr><th>Number</th>      <td>job.number</td></tr>
+            <tr><th>Start date</th>  <td>job.start_date_formatted</td></tr>
+            <tr><th>Finish date</th> <td>job.finish_date_formatted</td></tr>
+            <tr><th>User</th>        <td>job.user_uid</td></tr>
+            <tr><th>Authn user</th>  <td>job.authn_user_uid</td></tr>
+            <tr><th>Status</th>      <td><% include('../partials/jobStatus', {status: job.status}); %></td></tr>
+            <tr><th>Command</th>     <td>job.command</td></tr>
+            <tr><th>Args</th>        <td>job.args</td></tr>
+            <tr><th>CWD</th>         <td>job.cwd</td></tr>
+            <tr><th>Return code</th> <td>job.return_code</td></tr>
+            <tr><th>Stderr</th>      <td>job.stderr</td></tr>
+            <tr><th>Stdout</th>      <td>job.stdout</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <script type="text/javascript" src="/javascripts/bootstrap.min.js"></script>
+    <script src="/javascripts/socket.io.js"></script>
+  </head>
+  <body>
+    <script>
+      var socket = io();
+    </script>
+    <%- include('../partials/navbarAdmin', {navPage: 'sync'}); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Sync</h3>
+        </div>
+
+        <div class="panel-body">
+          <form name="confirm-form" method="POST">
+            <input type="hidden" name="postAction" value="pull">
+            <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+            <button type="submit" class="btn btn-primary">Run <tt>git pull</tt></button>
+          </form>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-condensed table-hover">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Date</th>
+                <th>User</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% jobs.forEach(function(job) { %>
+              <tr>
+                <td><%= job.number %></td>
+                <td><%= job.start_date %></td>
+                <td><%= job.user_uid %></td>
+                <td><% include('../partials/jobStatus', {status: job.status}); %></td>
+                <td><a href="<%= urlPrefix %>/admin/sync/<%= job.id %>" class="btn btn-xs btn-info">Details</a></td>
+              </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </body>
+</html>

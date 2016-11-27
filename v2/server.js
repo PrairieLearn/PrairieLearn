@@ -7,6 +7,7 @@ var async = require('async');
 var express = require('express');
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
+var http = require('http');
 var https = require('https');
 
 var logger = require('./lib/logger');
@@ -18,6 +19,7 @@ var sqldb = require('./lib/sqldb');
 var models = require('./models');
 var sprocs = require('./sprocs');
 var cron = require('./cron');
+var serverJobs = require('./lib/server-jobs');
 var syncFromDisk = require('./sync/syncFromDisk');
 var syncFromMongo = require('./sync/syncFromMongo');
 
@@ -113,9 +115,14 @@ app.use('/pl/:course_instance_id/instance_question/:instance_question_id', [
 app.use('/pl/:course_instance_id/instance_question/:instance_question_id/file', require('./pages/questionFile/questionFile'));
 app.use('/pl/:course_instance_id/instance_question/:instance_question_id/text', require('./pages/questionText/questionText'));
 
+app.use('/pl/:course_instance_id/admin/syncs', require('./pages/adminSyncs/adminSyncs'));
+app.use('/pl/:course_instance_id/admin/sync/', require('./pages/adminSync/adminSync'));
+
 // error handling
 app.use(require('./middlewares/notFound'));
 app.use(require('./pages/error/error'));
+
+var server;
 
 module.exports.startServer = function(callback) {
     if (config.serverType === 'https') {
@@ -124,11 +131,13 @@ module.exports.startServer = function(callback) {
             cert: fs.readFileSync('/etc/pki/tls/certs/localhost.crt'),
             ca: [fs.readFileSync('/etc/pki/tls/certs/server-chain.crt')]
         };
-        https.createServer(options, app).listen(config.serverPort);
+        server = https.createServer(options, app);
+        server.listen(config.serverPort);
         logger.info('server listening to HTTPS on port ' + config.serverPort);
         callback(null);
     } else if (config.serverType === 'http') {
-        app.listen(config.serverPort);
+        server = http.createServer(app);
+        server.listen(config.serverPort);
         logger.info('server listening to HTTP on port ' + config.serverPort);
         callback(null);
     } else {
@@ -189,6 +198,12 @@ if (config.startServer) {
         function(callback) {
             logger.info('Starting server...');
             module.exports.startServer(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            serverJobs.init(server, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
