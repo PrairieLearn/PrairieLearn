@@ -26,12 +26,22 @@ module.exports.connection = function(socket) {
     //console.log('got connection', 'socket', socket);
     //console.log('socket.request', socket.request);
 
-    socket.on('joinJob', function(msg) {
+    socket.on('joinJob', function(msg, callback) {
         if (!_.has(msg, 'job_id')) {
-            logger.error('recieved socket.io "joinJob" message with no job_id');
+            logger.error('socket.io joinJob called without job_id');
+            return;
         }
         // FIXME: check authn/authz
         socket.join('job-' + msg.job_id);
+        var params = {
+            job_id: msg.job_id,
+        }
+        sqldb.queryOneRow(sql.select_job, params, function(err, result) {
+            if (err) return logger.error('socket.io joinJob error selecting job_id ' + msg.job_id, err);
+            var status = result.rows[0].status;
+
+            callback({status: status});
+        });
     });
     
     socket.on('disconnect', function(){
@@ -110,14 +120,15 @@ module.exports.startJob = function(jobOptions, callback) {
                 exit_code: code,
                 exit_signal: signal,
             };
+            delete module.exports.liveJobs[job_id];
             sqldb.query(sql.update_job_on_close, params, function(err) {
+                module.exports.io.to('job-' + job_id).emit('reload');
                 if (err) {
                     logger.error('error updating job on close', err);
                     if (jobOptions.on_error) {
                         jobOptions.on_error(job_id, err);
                     }
                 } else {
-                    module.exports.io.to('job-' + job_id).emit('reload');
                     if (jobOptions.on_success) {
                         jobOptions.on_success(job_id);
                     }
@@ -135,7 +146,9 @@ module.exports.startJob = function(jobOptions, callback) {
                 job_id: job_id,
                 error_message: err.toString(),
             };
+            delete module.exports.liveJobs[job_id];
             sqldb.query(sql.update_job_on_error, params, function(updateErr) {
+                module.exports.io.to('job-' + job_id).emit('reload');
                 if (err) {
                     logger.error('error updating job on error', updateErr);
                     if (jobOptions.on_error) {

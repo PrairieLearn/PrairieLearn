@@ -1,3 +1,11 @@
+-- BLOCK select_job
+SELECT
+    j.*
+FROM
+    jobs AS j
+WHERE
+    j.id = $job_id;
+
 -- BLOCK insert_job
 WITH max_over_jobs_with_same_course AS (
     SELECT

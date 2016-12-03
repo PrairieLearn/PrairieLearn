@@ -19,7 +19,7 @@ router.get('/:job_id', function(req, res, next) {
     sqldb.queryOneRow(sql.select_sync_job, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.job = result.rows[0];
-    
+
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
