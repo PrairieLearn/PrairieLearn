@@ -116,7 +116,7 @@ app.use('/pl/:course_instance_id/instance_question/:instance_question_id/file', 
 app.use('/pl/:course_instance_id/instance_question/:instance_question_id/text', require('./pages/questionText/questionText'));
 
 app.use('/pl/:course_instance_id/admin/syncs', require('./pages/adminSyncs/adminSyncs'));
-app.use('/pl/:course_instance_id/admin/sync/', require('./pages/adminSync/adminSync'));
+app.use('/pl/:course_instance_id/admin/sync', require('./pages/adminSync/adminSync'));
 
 // error handling
 app.use(require('./middlewares/notFound'));

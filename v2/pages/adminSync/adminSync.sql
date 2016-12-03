@@ -1,12 +1,14 @@
--- BLOCK select_sync_jobs
+-- BLOCK select_sync_job
 SELECT
     j.*,
-    u.uid AS user_uid
+    format_date_full_compact(j.start_date) AS start_date_formatted,
+    format_date_full_compact(j.finish_date) AS finish_date_formatted,
+    u.uid AS user_uid,
+    authn_u.uid AS authn_user_uid
 FROM
     jobs AS j
-    JOIN course_instances AS ci ON (ci.id = j.course_instance_id)
-    JOIN users AS u on (u.id = j.user_id)
+    LEFT JOIN users AS u ON (u.id = j.user_id)
+    LEFT JOIN users AS authn_u ON (authn_u.id = j.authn_user_id)
 WHERE
-    ci.course_id = $course_id
-ORDER BY
-    j.start_date DESC, j.id;
+    j.id = $job_id
+    AND j.course_id = $course_id;

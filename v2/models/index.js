@@ -21,6 +21,8 @@ module.exports = {
             'enum_assessment_type.sql',
             'enum_auth_action.sql',
             'enum_grading_method.sql',
+            'enum_job_type.sql',
+            'enum_job_status.sql',
 
             // tables synced from git repo
             'courses.sql',

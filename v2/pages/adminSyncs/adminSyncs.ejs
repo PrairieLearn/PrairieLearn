@@ -41,10 +41,10 @@
                 <td><%= job.number %></td>
                 <td><%= job.start_date %></td>
                 <td><%= job.user_uid %></td>
-                <td><% include('../partials/jobStatus', {status: job.status}); %></td>
+                <td><%- include('../partials/jobStatus', {status: job.status}); %></td>
                 <td><a href="<%= urlPrefix %>/admin/sync/<%= job.id %>" class="btn btn-xs btn-info">Details</a></td>
               </tr>
-              <% } %>
+              <% }); %>
             </tbody>
           </table>
         </div>

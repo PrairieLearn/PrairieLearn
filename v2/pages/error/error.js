@@ -1,4 +1,5 @@
 var path = require('path');
+var util = require('util');
 
 var logger = require('../../lib/logger');
 

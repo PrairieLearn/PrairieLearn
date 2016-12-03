@@ -11,11 +11,14 @@ var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-router.get('/', function(req, res, next) {
-    var params = {course_id: res.locals.course.id};
-    sqldb.query(sql.select_sync_jobs, params, function(err, result) {
+router.get('/:job_id', function(req, res, next) {
+    var params = {
+        job_id: req.params.job_id,
+        course_id: res.locals.course.id,
+    };
+    sqldb.queryOneRow(sql.select_sync_job, params, function(err, result) {
         if (ERR(err, next)) return;
-        res.locals.jobs = result.rows;
+        res.locals.job = result.rows[0];
     
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });

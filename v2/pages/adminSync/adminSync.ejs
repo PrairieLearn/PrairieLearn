@@ -17,23 +17,24 @@
         </div>
 
         <div class="panel-body">
-          <a href="." class="btn btn-primary">Reload to update data</a>
+          <a href="<%= urlPrefix %>/admin/sync/<%= job.id %>" class="btn btn-primary">Reload to update data</a>
         </div>
 
         <table class="table table-condensed table-hover two-column-description">
           <tbody>
-            <tr><th>Number</th>      <td>job.number</td></tr>
-            <tr><th>Start date</th>  <td>job.start_date_formatted</td></tr>
-            <tr><th>Finish date</th> <td>job.finish_date_formatted</td></tr>
-            <tr><th>User</th>        <td>job.user_uid</td></tr>
-            <tr><th>Authn user</th>  <td>job.authn_user_uid</td></tr>
-            <tr><th>Status</th>      <td><% include('../partials/jobStatus', {status: job.status}); %></td></tr>
-            <tr><th>Command</th>     <td>job.command</td></tr>
-            <tr><th>Args</th>        <td>job.args</td></tr>
-            <tr><th>CWD</th>         <td>job.cwd</td></tr>
-            <tr><th>Return code</th> <td>job.return_code</td></tr>
-            <tr><th>Stderr</th>      <td>job.stderr</td></tr>
-            <tr><th>Stdout</th>      <td>job.stdout</td></tr>
+            <tr><th>Job number</th>      <td><%= job.number %></td></tr>
+            <tr><th>Start date</th>  <td><%= job.start_date_formatted %></td></tr>
+            <tr><th>Finish date</th> <td><%= job.finish_date_formatted %></td></tr>
+            <tr><th>User</th>        <td><%= job.user_uid %></td></tr>
+            <tr><th>Authn user</th>  <td><%= job.authn_user_uid %></td></tr>
+            <tr><th>Status</th>      <td><%- include('../partials/jobStatus', {status: job.status}); %></td></tr>
+            <tr><th>Command</th>     <td><%= job.command %></td></tr>
+            <tr><th>Arguments</th>   <td><%= job.arguments %></td></tr>
+            <tr><th>Working dir</th> <td><%= job.working_directory %></td></tr>
+            <tr><th>Exit code</th> <td><%= job.exit_code %></td></tr>
+            <tr><th>Exit signal</th> <td><%= job.exit_signal %></td></tr>
+            <tr><th>Stderr</th>      <td><pre><%= job.stderr %></pre></td></tr>
+            <tr><th>Stdout</th>      <td><pre><%= job.stdout %></pre></td></tr>
           </tbody>
         </table>
       </div>

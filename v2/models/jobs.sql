@@ -1,9 +1,11 @@
 CREATE TABLE IF NOT EXISTS jobs (
     id SERIAL PRIMARY KEY,
-    start_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP;
+    start_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     finish_date TIMESTAMP WITH TIME ZONE,
     course_id INTEGER NOT NULL REFERENCES courses ON DELETE CASCADE ON UPDATE CASCADE,
     number INTEGER,
+    parent_job_id INTEGER REFERENCES jobs ON DELETE CASCADE ON UPDATE CASCADE,
+    child_number INTEGER,
     user_id INTEGER NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
     authn_user_id INTEGER REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
     type enum_job_type,
@@ -15,6 +17,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     command TEXT,
     arguments TEXT[],
     working_directory TEXT,
-    return_code INTEGER,
-    UNIQUE (course_id, number)
+    exit_code INTEGER,
+    exit_signal TEXT,
+    UNIQUE (course_id, number),
+    UNIQUE (parent_job_id, child_number)
 );
