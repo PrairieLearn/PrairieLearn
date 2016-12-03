@@ -2,13 +2,8 @@
 <html>
   <head>
     <%- include('../partials/head'); %>
-    <script type="text/javascript" src="/javascripts/bootstrap.min.js"></script>
-    <script src="/javascripts/socket.io.js"></script>
   </head>
   <body>
-    <script>
-      var socket = io();
-    </script>
     <%- include('../partials/navbarAdmin', {navPage: 'sync'}); %>
     <div id="content" class="container">
       <div class="panel panel-primary">

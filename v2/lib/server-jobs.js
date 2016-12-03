@@ -26,11 +26,12 @@ module.exports.connection = function(socket) {
     //console.log('got connection', 'socket', socket);
     //console.log('socket.request', socket.request);
 
-    socket.on('joinJob', function(from, msg, callback) {
-        if (!_.has(msg, 'job_id')) return callback({'result': 'error', 'error': 'missing job_id'});
+    socket.on('joinJob', function(msg) {
+        if (!_.has(msg, 'job_id')) {
+            logger.error('recieved socket.io "joinJob" message with no job_id');
+        }
         // FIXME: check authn/authz
         socket.join('job-' + msg.job_id);
-        callback({'result': 'success', 'jobOutput': null});
     });
     
     socket.on('disconnect', function(){
@@ -84,10 +85,12 @@ module.exports.startJob = function(jobOptions, callback) {
 
         proc.stderr.on('data', function(chunk) {
             job.stderrText += chunk;
+            module.exports.io.to('job-' + job_id).emit('updateStderr', {text: job.stderrText});
         });
 
         proc.stdout.on('data', function(chunk) {
             job.stdoutText += chunk;
+            module.exports.io.to('job-' + job_id).emit('updateStdout', {text: job.stdoutText});
         });
 
         proc.stderr.on('error', function(err) {
@@ -114,6 +117,7 @@ module.exports.startJob = function(jobOptions, callback) {
                         jobOptions.on_error(job_id, err);
                     }
                 } else {
+                    module.exports.io.to('job-' + job_id).emit('reload');
                     if (jobOptions.on_success) {
                         jobOptions.on_success(job_id);
                     }
