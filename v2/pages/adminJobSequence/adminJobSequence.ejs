@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <script src="/javascripts/socket.io.js"></script>
+    <script src="<%= clientJsUrl %>"></script>
+  </head>
+  <body>
+    <script>
+      $(function() {
+      var socket = io();
+
+      socket.on('update', function() {window.location.reload(true);});
+      socket.on('change:stderr', function(msg) {$("#stderr-" + msg.job_id).text(msg.stderr);});
+      socket.on('change:stdout', function(msg) {$("#stdout-" + msg.job_id).text(msg.stdout);});
+
+      // Join the rooms for the job_sequence and for each individual job.
+      // Check return values for a change that happened since we rendered the page
+      // and reload if anything changed. This avoids the race condition where
+      // jobs change between page render and socket activation.
+
+      socket.emit('joinJobSequence', {job_sequence_id: <%= job_sequence.id %>}, function(msg) {
+      if (msg.job_count != '<%= job_sequence.job_count %>') {window.location.reload(true);}
+      });
+
+      <% job_sequence.forEach(function(job) { %>
+      socket.emit('joinJob', {job_id: <%= job.id %>}, function(msg) {
+      if (msg.status != '<%= job.status %>') {window.location.reload(true);}
+      $("#stderr-" + <%= job.id %>).text(msg.stderr);
+      $("#stdout-" + <%= job.id %>).text(msg.stdout);
+      });
+      <% }); %>
+
+      });
+    </script>
+    <%- include('../partials/navbarAdmin', {navPage: ''}); %>
+    <div id="content" class="container">
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Job sequence #<% job_sequence.number %></h3>
+        </div>
+
+        <table class="table table-condensed table-hover two-column-description">
+          <tbody>
+            <tr><th>Job sequence number</th>  <td><%= job_sequence.number %></td></tr>
+            <tr><th>Start date</th>  <td><%= job_sequence.start_date_formatted %></td></tr>
+            <tr><th>Finish date</th> <td><%= job_sequence.finish_date_formatted %></td></tr>
+            <tr><th>User</th>        <td><%= job_sequence.user_uid %></td></tr>
+            <tr><th>Authn user</th>  <td><%= job_sequence.authn_user_uid %></td></tr>
+            <tr><th>Status</th>      <td><%- include('../partials/jobStatus', {status: job_sequence.status}); %></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <% job_sequence.jobs.forEach(function(job) { %>
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Sync job</h3>
+        </div>
+
+        <table class="table table-condensed table-hover two-column-description">
+          <tbody>
+            <tr><th>Job number</th>  <td><%= job.number %></td></tr>
+            <tr><th>Start date</th>  <td><%= job.start_date_formatted %></td></tr>
+            <tr><th>Finish date</th> <td><%= job.finish_date_formatted %></td></tr>
+            <tr><th>User</th>        <td><%= job.user_uid %></td></tr>
+            <tr><th>Authn user</th>  <td><%= job.authn_user_uid %></td></tr>
+            <tr><th>Status</th>      <td><%- include('../partials/jobStatus', {status: job.status}); %></td></tr>
+            <tr><th>Command</th>     <td><%= job.command %></td></tr>
+            <tr><th>Arguments</th>   <td><%= job.arguments %></td></tr>
+            <tr><th>Working dir</th> <td><%= job.working_directory %></td></tr>
+            <tr><th>Exit code</th>   <td><%= job.exit_code %></td></tr>
+            <tr><th>Exit signal</th> <td><%= job.exit_signal %></td></tr>
+            <tr><th>Error msg</th>   <td><%= job.error_message %></td></tr>
+            <tr>
+              <th>Stderr</th>
+              <td>
+                <% if (job.status == 'Running') { %><i class="fa fa-refresh fa-spin fa-fw"></i><% } %>
+                <pre id="stderr-<%= job.id %>"><%= job.stderr %></pre>
+              </td>
+            </tr>
+            <tr>
+              <th>Stdout</th>
+              <td>
+                <% if (job.status == 'Running') { %><i class="fa fa-refresh fa-spin fa-fw"></i><% } %>
+                <pre id="stdout-<%= job.id %>"><%= job.stdout %></pre>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <% }); %>
+
+    </div>
+  </body>
+</html>

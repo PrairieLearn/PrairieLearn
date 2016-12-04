@@ -38,22 +38,59 @@ FROM
 RETURNING jobs.id;
 
 -- BLOCK update_job_on_close
-UPDATE jobs AS j
+WITH updated_jobs AS (
+    UPDATE jobs AS j
+    SET
+        finish_date = CURRENT_TIMESTAMP,
+        status = CASE WHEN $exit_code = 0 THEN 'Success'::enum_job_status ELSE 'Error'::enum_job_status END,
+        stderr = $stderr,
+        stdout = $stdout,
+        exit_code = $exit_code,
+        exit_signal = $exit_signal
+    WHERE
+        j.id = $job_id
+    RETURNING
+        j.*
+),
+job_sequence_updates AS (
+    SELECT
+        j.*,
+        CASE
+            WHEN j.status = 'Error' THEN TRUE
+            WHEN j.last_in_sequence THEN TRUE
+            ELSE FALSE
+        END AS update_job_sequence
+    FROM
+        updated_jobs AS j
+)
+UPDATE job_sequences AS js
 SET
-    finish_date = CURRENT_TIMESTAMP,
-    status = CASE WHEN $exit_code = 0 THEN 'Success'::enum_job_status ELSE 'Error'::enum_job_status END,
-    stderr = $stderr,
-    stdout = $stdout,
-    exit_code = $exit_code,
-    exit_signal = $exit_signal
+    finish_date = j.finish_date,
+    status = j.status
+FROM
+    job_sequence_updates AS j
 WHERE
-    j.id = $job_id;
+    js.id = j.job_sequence_id
+    AND j.update_job_sequence;
 
 -- BLOCK update_job_on_error
-UPDATE jobs AS j
+FIXME: update job_sequence if we have one, always error the sequence.
+WITH updated_jobs AS (
+    UPDATE jobs AS j
+    SET
+        finish_date = CURRENT_TIMESTAMP,
+        status = 'Error'::enum_job_status,
+        error_message = $error_message
+    WHERE
+        j.id = $job_id
+    RETURNING
+        j.*
+)
+UPDATE job_sequences AS js
 SET
-    finish_date = CURRENT_TIMESTAMP,
-    status = 'Error'::enum_job_status,
-    error_message = $error_message
+    finish_date = j.finish_date,
+    status = j.status
+FROM
+    job_sequence_updates AS j
 WHERE
-    j.id = $job_id;
+    js.id = j.job_sequence_id;

@@ -1,11 +1,13 @@
--- BLOCK select_sync_jobs
+-- BLOCK select_sync_job_sequences
 SELECT
-    j.*,
+    js.*,
+    format_date_full_compact(js.start_date) AS start_date_formatted,
     u.uid AS user_uid
 FROM
-    jobs AS j
-    JOIN users AS u on (u.id = j.user_id)
+    job_sequences AS js
+    JOIN users AS u on (u.id = js.user_id)
 WHERE
-    j.course_id = $course_id
+    js.course_id = $course_id
+    AND js.type = 'Sync'
 ORDER BY
-    j.start_date DESC, j.id;
+    js.start_date DESC, js.id;

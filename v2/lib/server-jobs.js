@@ -1,37 +1,142 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var child_process = require('child_process');
-var socketIo = require('socket.io');
-
 
 var logger = require('./logger');
+var socketServer = require('./socket-server');
 var sqldb = require('./sqldb');
 var sqlLoader = require('./sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
+/*
+  SocketIO configuration
+
+  ##########################################
+  Room 'job-231' for job_id = 231 in DB.
+
+  Receives messages:
+  'joinJob', arguments: job_id, returns: status, stderr, stdout
+
+  Sends messages:
+  'change:stderr', arguments: job_id, stderr
+  'change:stdout', arguments: job_id, stdout
+  'update', arguments: job_id
+
+  ##########################################
+  Room 'jobSequence-593' for job_sequence_id = 593 in DB.
+
+  Receives messages:
+  'joinJobSequence', arguments: job_sequence_id, returns: job_count
+
+  Sends messages:
+  'update', arguments: job_sequence_id
+
+  ##########################################
+
+  'update' events are sent for bulk changes to the object when
+  there is no specific 'change' event available.
+
+  For example, an 'update' will not be sent when stderr changes
+  because the more specific 'change:stderr' event will be sent
+  instead.
+*/
+
 module.exports = {
+    // Store currently active job information in memory. This is used
+    // to accumulate stderr/stdout, which are only written to the DB
+    // once the job is finished.
     liveJobs: {},
 };
 
-module.exports.init = function(server, callback) {
-    this.io = new socketIo(server);
+/********************************************************************/
 
-    this.io.on('connection', this.connection);
+function Job(id, options) {
+    this.id = id;
+    this.options = options;
+    this.stderr = '';
+    this.stdout = '';
+}
 
+Job.prototype.error = function(text) {
+    this.stderrText += text;
+    socketServer.io.to('job-' + this.id).emit('change:stderr', {job_id: this.id, stderr: this.stderrText});
+};
+
+Job.prototype.info = function(text) {
+    job.stdoutText += text;
+    socketServer.io.to('job-' + this.id).emit('change:stdout', {job_id: this.id, stdout: this.stdoutText});
+};
+
+Job.prototype.finish = function(code, signal) {
+    var that = this;
+    delete module.exports.liveJobs[that.id];
+    var params = {
+        job_id: that.id,
+        stderr: that.stderrText,
+        stdout: that.stdoutText,
+        exit_code: code,
+        exit_signal: signal,
+    };
+    sqldb.query(sql.update_job_on_close, params, function(err) {
+        socketServer.io.to('job-' + that.id).emit('update');
+        if (job.options.job_sequence_id != null) {
+            socketServer.io.to('jobSequence-' + job.options.job_sequence_id).emit('update');
+        }
+        if (err) {
+            logger.error('error updating job_id ' + that.id + ' on close', err);
+            if (that.options.on_error) {
+                that.options.on_error(that.id, err);
+            }
+        } else {
+            if (that.options.on_success) {
+                that.options.on_success(that.id);
+            }
+        }
+    });
+};
+
+Job.prototype.fail = function(err, callback) {
+    var that = this;
+    delete module.exports.liveJobs[that.id];
+    var params = {
+        job_id: that.id,
+        error_message: err.toString(),
+    };
+    sqldb.query(sql.update_job_on_error, params, function(updateErr) {
+        socketServer.io.to('job-' + that.id).emit('update');
+        if (job.options.job_sequence_id != null) {
+            socketServer.io.to('jobSequence-' + job.options.job_sequence_id).emit('update');
+        }
+        if (err) {
+            logger.error('error updating job on error', updateErr);
+            if (callback) return ERR(updateErr, callback);
+            if (that.options.on_error) {
+                that.options.on_error(that.id, updateErr);
+            }
+        } else {
+            if (callback) return callback(null);
+            if (that.options.on_error) {
+                that.options.on_error(that.id, err);
+            }
+        }
+    });
+};
+
+/********************************************************************/
+
+module.exports.init = function(callback) {
+    socketServer.io.on('connection', this.connection);
     callback(null);
 };
 
 module.exports.connection = function(socket) {
-    //console.log('got connection', 'socket', socket);
-    //console.log('socket.request', socket.request);
-
     socket.on('joinJob', function(msg, callback) {
         if (!_.has(msg, 'job_id')) {
             logger.error('socket.io joinJob called without job_id');
             return;
         }
-        // FIXME: check authn/authz
+        // FIXME: check authn/authz with socket.request
         socket.join('job-' + msg.job_id);
         var params = {
             job_id: msg.job_id,
@@ -39,144 +144,107 @@ module.exports.connection = function(socket) {
         sqldb.queryOneRow(sql.select_job, params, function(err, result) {
             if (err) return logger.error('socket.io joinJob error selecting job_id ' + msg.job_id, err);
             var status = result.rows[0].status;
+            var stderr = result.rows[0].stderr;
+            var stdout = result.rows[0].stdout;
 
-            callback({status: status});
+            if (module.exports.liveJobs[msg.job_id]) {
+                stderr = module.exports.liveJobs[msg.job_id].stderr;
+                stdout = module.exports.liveJobs[msg.job_id].stdout;
+            }
+            callback({status: status, stderr: stderr, stdout: stdout});
         });
     });
-    
-    socket.on('disconnect', function(){
-        //console.log('got disconnect');
+
+    socket.on('joinJobSequence', function(msg, callback) {
+        if (!_.has(msg, 'job_sequence_id')) {
+            logger.error('socket.io joinJobSequence called without job_sequence_id');
+            return;
+        }
+        // FIXME: check authn/authz with socket.request
+        socket.join('jobSequence-' + msg.job_id);
+        var params = {
+            job_sequence_id: msg.job_sequence_id,
+        }
+        sqldb.queryOneRow(sql.select_job_sequence, params, function(err, result) {
+            if (err) return logger.error('socket.io joinJobSequence error selecting job_sequence_id ' + msg.job_sequence_id, err);
+            var job_count = result.rows[0].job_count;
+
+            callback({job_count: job_count});
+        });
     });
 };
 
-module.exports.startJob = function(jobOptions, callback) {
-    jobOptions = _.assign({
+module.exports.createJob = function(options, callback) {
+    options = _.assign({
         course_id: null,
         user_id: null,
         authn_user_id: null,
-        parent_job_id: null,
+        job_sequence_id: null,
+        last_in_sequence: false,
         type: null,
         command: null,
         arguments: [],
         working_directory: undefined,
         on_error: undefined,
         on_success: undefined,
-    }, jobOptions);
+    }, options);
+
     var params = {
-        course_id: jobOptions.course_id,
-        user_id: jobOptions.user_id,
-        authn_user_id: jobOptions.authn_user_id,
-        parent_job_id: null,
-        type: jobOptions.type,
-        command: jobOptions.command,
-        arguments: jobOptions.arguments,
-        working_directory: jobOptions.working_directory,
-        killable: true,
+        course_id: options.course_id,
+        user_id: options.user_id,
+        authn_user_id: options.authn_user_id,
+        job_sequence_id: options.job_sequence_id,
+        last_in_sequence: options.last_in_sequence,
+        type: options.type,
+        command: options.command,
+        arguments: options.arguments,
+        working_directory: options.working_directory,
     };
     sqldb.queryOneRow(sql.insert_job, params, function(err, result) {
         if (ERR(err, callback)) return;
         var job_id = result.rows[0].id;
+    
+        var job = new Job(job_id, options);
+        module.exports.liveJobs[job_id] = job;
+        if (job.options.job_sequence_id != null) {
+            socketServer.io.to('jobSequence-' + job.options.job_sequence_id).emit('update');
+        }
+        callback(null, job);
+    });
+};
 
-        var proc = child_process.spawn(jobOptions.command, jobOptions.arguments, {
-            cwd: jobOptions.working_directory,
-        });
+module.exports.spawnJob = function(options, callback) {
+    createJob(options, function(err, job) {
+        if (ERR(err, callback)) return;
+        
+        var spawnOptions = {cwd: job.options.working_directory};
+        job.proc = child_process.spawn(job.options.command, job.options.arguments, spawnOptions);
 
-        module.exports.liveJobs[job_id] = {
-            job_id: job_id,
-            proc: proc,
-            jobOptions: jobOptions,
-            stderrText: '',
-            stdoutText: '',
-        };
-        var job = module.exports.liveJobs[job_id];
+        job.proc.stderr.setEncoding('utf8');
+        job.proc.stdout.setEncoding('utf8');
+        job.proc.stderr.on('data', function(text) {job.error(text);});
+        job.proc.stdout.on('data', function(text) {job.info(text);});
+        job.proc.stderr.on('error', function(err) {job.error('ERROR: ' + err.toString());});
+        job.proc.stdout.on('error', function() {job.error('ERROR: ' + err.toString());});
 
-        proc.stderr.setEncoding('utf8');
-        proc.stdout.setEncoding('utf8');
+        // when a process exists, first 'exit' is fired with stdio
+        // streams possibly still open, then 'close' is fired once all
+        // stdio is done
+        job.proc.on('exit', function(code, signal) { /* do nothing */ });
+        job.proc.on('close', function(code, signal) {job.finish(code, signal);});
+        job.proc.on('error', function(err) {job.fail(err);});
 
-        proc.stderr.on('data', function(chunk) {
-            job.stderrText += chunk;
-            module.exports.io.to('job-' + job_id).emit('updateStderr', {text: job.stderrText});
-        });
-
-        proc.stdout.on('data', function(chunk) {
-            job.stdoutText += chunk;
-            module.exports.io.to('job-' + job_id).emit('updateStdout', {text: job.stdoutText});
-        });
-
-        proc.stderr.on('error', function(err) {
-            job.stderrText += 'ERROR: ' + err.toString();
-        });
-
-        proc.stdout.on('error', function() {
-            job.stdoutText += 'ERROR: ' + err.toString();
-        });
-
-        proc.on('close', function(code, signal) {
-            // all stdio streams are now closed
-            var params = {
-                job_id: job_id,
-                stderr: job.stderrText,
-                stdout: job.stdoutText,
-                exit_code: code,
-                exit_signal: signal,
-            };
-            delete module.exports.liveJobs[job_id];
-            sqldb.query(sql.update_job_on_close, params, function(err) {
-                module.exports.io.to('job-' + job_id).emit('reload');
-                if (err) {
-                    logger.error('error updating job on close', err);
-                    if (jobOptions.on_error) {
-                        jobOptions.on_error(job_id, err);
-                    }
-                } else {
-                    if (jobOptions.on_success) {
-                        jobOptions.on_success(job_id);
-                    }
-                }
-            });
-        });
-
-        proc.on('exit', function(code, signal) {
-            // process was killed or exited, stdio may still be open
-            // don't do anything here, because 'close' should handle this
-        });
-
-        proc.on('error', function(err) {
-            var params = {
-                job_id: job_id,
-                error_message: err.toString(),
-            };
-            delete module.exports.liveJobs[job_id];
-            sqldb.query(sql.update_job_on_error, params, function(updateErr) {
-                module.exports.io.to('job-' + job_id).emit('reload');
-                if (err) {
-                    logger.error('error updating job on error', updateErr);
-                    if (jobOptions.on_error) {
-                        jobOptions.on_error(job_id, updateErr);
-                    }
-                } else {
-                    if (jobOptions.on_error) {
-                        jobOptions.on_error(job_id, err);
-                    }
-                }
-            });
-        });
-
-        callback(null, job_id);
+        callback(null, job);
     });
 };
 
 module.exports.killJob = function(job_id, callback) {
     var job = liveJobs[job_id];
     if (!job) return callback(new Error('No such job_id: ' + job_id));
+    if (!job.proc) return callback(new Error('job_id ' + job_id + ' does not have proc to kill'));
     job.proc.kill();
-    // this will fire events on proc that might trigger job callbacks
-    // FIXME: should we disable jobOptions.{on_error,on_success}?
-    var params = {
-        job_id: job_id,
-        error_message: 'Killed by user',
-    };
-    sqldb.query(sql.update_job_on_error, params, function(err) {
+    // this will not fire the usual on_error event on job fail
+    job.fail('Killed by user', function(err) {
         if (ERR(err, callback)) return;
         callback(null);
     });

@@ -11,12 +11,12 @@ var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-router.get('/:job_id', function(req, res, next) {
+router.get('/:job_sequence_id', function(req, res, next) {
     var params = {
-        job_id: req.params.job_id,
+        job_sequence_id: req.params.job_id,
         course_id: res.locals.course.id,
     };
-    sqldb.queryOneRow(sql.select_sync_job, params, function(err, result) {
+    sqldb.queryOneRow(sql.select_job_sequence, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.job = result.rows[0];
 

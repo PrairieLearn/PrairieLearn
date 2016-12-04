@@ -15,7 +15,7 @@
           <form name="confirm-form" method="POST">
             <input type="hidden" name="postAction" value="pull">
             <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
-            <button type="submit" class="btn btn-primary">Run <tt>git pull</tt></button>
+            <button type="submit" class="btn btn-primary">Pull and update course data</button>
           </form>
         </div>
 
@@ -31,13 +31,13 @@
               </tr>
             </thead>
             <tbody>
-              <% jobs.forEach(function(job) { %>
+              <% job_sequences.forEach(function(job_sequence) { %>
               <tr>
-                <td><%= job.number %></td>
-                <td><%= job.start_date %></td>
-                <td><%= job.user_uid %></td>
-                <td><%- include('../partials/jobStatus', {status: job.status}); %></td>
-                <td><a href="<%= urlPrefix %>/admin/sync/<%= job.id %>" class="btn btn-xs btn-info">Details</a></td>
+                <td><%= job_sequence.number %></td>
+                <td><%= job_sequence.start_date_formatted %></td>
+                <td><%= job_sequence.user_uid %></td>
+                <td><%- include('../partials/jobStatus', {status: job_sequence.status}); %></td>
+                <td><a href="<%= urlPrefix %>/admin/jobSequence/<%= job_sequence.id %>" class="btn btn-xs btn-info">Details</a></td>
               </tr>
               <% }); %>
             </tbody>
