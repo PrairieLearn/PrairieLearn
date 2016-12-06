@@ -6,6 +6,14 @@ FROM
 WHERE
     j.id = $job_id;
 
+-- BLOCK select_job_sequence
+SELECT
+    js.*
+FROM
+    job_sequences AS js
+WHERE
+    js.id = $job_sequence_id;
+
 -- BLOCK insert_job
 WITH max_over_jobs_with_same_course AS (
     SELECT
@@ -15,26 +23,25 @@ WITH max_over_jobs_with_same_course AS (
     WHERE
         j.course_id = $course_id
 ),
-max_over_jobs_with_same_parent AS (
+max_over_jobs_with_same_sequence AS (
     SELECT
-        coalesce(max(j.child_number) + 1, 1) AS new_child_number
+        coalesce(max(j.number_in_sequence) + 1, 1) AS new_number_in_sequence
     FROM
         jobs AS j
     WHERE
         j.course_id = $course_id
-        AND j.parent_job_id = $parent_job_id
+        AND j.job_sequence_id = $job_sequence_id
+        AND j.job_sequence_id IS NOT NULL
 )
 INSERT INTO jobs
-    (course_id, number,      parent_job_id, child_number,
-     user_id,  authn_user_id,  type,  status,    command,
-     arguments,          working_directory)
+    (course_id, number,      job_sequence_id, number_in_sequence,      last_in_sequence,
+     user_id,  authn_user_id,  type,  status,    command,  arguments,          working_directory)
 SELECT
-    $course_id, new_number, $parent_job_id, new_child_number,
-    $user_id, $authn_user_id, $type, 'Running', $command,
-    $arguments::TEXT[], $working_directory
+    $course_id, new_number, $job_sequence_id, new_number_in_sequence, $last_in_sequence,
+    $user_id, $authn_user_id, $type, 'Running', $command, $arguments::TEXT[], $working_directory
 FROM
     max_over_jobs_with_same_course,
-    max_over_jobs_with_same_parent
+    max_over_jobs_with_same_sequence
 RETURNING jobs.id;
 
 -- BLOCK update_job_on_close

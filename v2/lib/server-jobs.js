@@ -64,7 +64,7 @@ Job.prototype.error = function(text) {
 };
 
 Job.prototype.info = function(text) {
-    job.stdoutText += text;
+    this.stdoutText += text;
     socketServer.io.to('job-' + this.id).emit('change:stdout', {job_id: this.id, stdout: this.stdoutText});
 };
 
@@ -80,8 +80,8 @@ Job.prototype.finish = function(code, signal) {
     };
     sqldb.query(sql.update_job_on_close, params, function(err) {
         socketServer.io.to('job-' + that.id).emit('update');
-        if (job.options.job_sequence_id != null) {
-            socketServer.io.to('jobSequence-' + job.options.job_sequence_id).emit('update');
+        if (that.options.job_sequence_id != null) {
+            socketServer.io.to('jobSequence-' + that.options.job_sequence_id).emit('update');
         }
         if (err) {
             logger.error('error updating job_id ' + that.id + ' on close', err);
@@ -96,6 +96,10 @@ Job.prototype.finish = function(code, signal) {
     });
 };
 
+Job.prototype.succeed = function() {
+    this.finish(0, null);
+};
+
 Job.prototype.fail = function(err, callback) {
     var that = this;
     delete module.exports.liveJobs[that.id];
@@ -105,8 +109,8 @@ Job.prototype.fail = function(err, callback) {
     };
     sqldb.query(sql.update_job_on_error, params, function(updateErr) {
         socketServer.io.to('job-' + that.id).emit('update');
-        if (job.options.job_sequence_id != null) {
-            socketServer.io.to('jobSequence-' + job.options.job_sequence_id).emit('update');
+        if (that.options.job_sequence_id != null) {
+            socketServer.io.to('jobSequence-' + that.options.job_sequence_id).emit('update');
         }
         if (err) {
             logger.error('error updating job on error', updateErr);
@@ -200,6 +204,8 @@ module.exports.createJob = function(options, callback) {
         arguments: options.arguments,
         working_directory: options.working_directory,
     };
+    var e = new Error();
+    console.log(e.stack);
     sqldb.queryOneRow(sql.insert_job, params, function(err, result) {
         if (ERR(err, callback)) return;
         var job_id = result.rows[0].id;
@@ -214,7 +220,7 @@ module.exports.createJob = function(options, callback) {
 };
 
 module.exports.spawnJob = function(options, callback) {
-    createJob(options, function(err, job) {
+    module.exports.createJob(options, function(err, job) {
         if (ERR(err, callback)) return;
         
         var spawnOptions = {cwd: job.options.working_directory};

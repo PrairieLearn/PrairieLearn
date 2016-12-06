@@ -11,3 +11,20 @@ WHERE
     AND js.type = 'Sync'
 ORDER BY
     js.start_date DESC, js.id;
+
+-- BLOCK insert_job_sequence
+WITH max_over_job_sequences_with_same_course AS (
+    SELECT
+        coalesce(max(js.number) + 1, 1) AS new_number
+    FROM
+        job_sequences AS js
+    WHERE
+        js.course_id = $course_id
+)
+INSERT INTO job_sequences
+    (course_id, number,      user_id,  authn_user_id,  type)
+SELECT
+    $course_id, new_number, $user_id, $authn_user_id, $type
+FROM
+    max_over_job_sequences_with_same_course
+RETURNING id;

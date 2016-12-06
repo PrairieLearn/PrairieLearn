@@ -19,6 +19,7 @@ var sqldb = require('./lib/sqldb');
 var models = require('./models');
 var sprocs = require('./sprocs');
 var cron = require('./cron');
+var socketServer = require('./lib/socket-server');
 var serverJobs = require('./lib/server-jobs');
 var syncFromDisk = require('./sync/syncFromDisk');
 var syncFromMongo = require('./sync/syncFromMongo');
@@ -203,7 +204,13 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            serverJobs.init(server, function(err) {
+            socketServer.init(server, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            serverJobs.init(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

@@ -13,12 +13,12 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/:job_sequence_id', function(req, res, next) {
     var params = {
-        job_sequence_id: req.params.job_id,
+        job_sequence_id: req.params.job_sequence_id,
         course_id: res.locals.course.id,
     };
     sqldb.queryOneRow(sql.select_job_sequence, params, function(err, result) {
         if (ERR(err, next)) return;
-        res.locals.job = result.rows[0];
+        res.locals.job_sequence = result.rows[0];
 
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
