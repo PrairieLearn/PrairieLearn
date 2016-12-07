@@ -24,7 +24,7 @@ module.exports = {
                         number: dbAssessment.number,
                         title: dbAssessment.title,
                         config: dbAssessment.options,
-                        multiple_instance: dbAssessment.options && dbAssessment.options.multipleInstance ? true : false,
+                        multiple_instance: dbAssessment.multipleInstance ? true : false,
                         shuffle_questions: dbAssessment.shuffleQuestions ? true : false,
                         max_score: dbAssessment.options ? dbAssessment.options.maxScore : null,
                         course_instance_id: courseInstance.courseInstanceId,

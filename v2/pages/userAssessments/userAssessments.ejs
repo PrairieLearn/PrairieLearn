@@ -34,23 +34,21 @@
             <% } %>
             <tr>
               <td style="width: 1%">
-                <a
-                   <% if (row.assessment_instance_id) { %>
-                   href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>/"
-                   <% } else { %>
-                   href="<%= urlPrefix %>/assessment/<%= row.assessment_id %>/"
-                   <% } %>
-                   class="btn btn-<%= row.assessment_set_color %> btn-xs" role="button"
-                   ><%= row.assessment_set_abbrev %><%= row.assessment_number %></a>
+                <% if (row.multiple_instance_header) { %>
+                <button class="btn btn-<%= row.assessment_set_color %> btn-xs"><%= row.label %></button>
+                <% } else { %>
+                <a href="<%= urlPrefix %><%= row.link %>"
+                   class="btn btn-<%= row.assessment_set_color %> btn-xs" role="button">
+                  <%= row.label %>
+                </a>
+                <% } %>
               </td>
               <td>
-                <a
-                   <% if (row.assessment_instance_id) { %>
-                   href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>/"
-                   <% } else { %>
-                   href="<%= urlPrefix %>/assessment/<%= row.assessment_id %>/"
-                   <% } %>
-                   ><%= row.assessment_title %></a>
+                <% if (row.multiple_instance_header) { %>
+                <%= row.title %>
+                <% } else { %>
+                <a href="<%= urlPrefix %><%= row.link %>"><%= row.title %></a>
+                <% } %>
               </td>
               <td class="cell-center">
                 <%= row.credit_date_string %>
@@ -61,11 +59,15 @@
                     }) %>
               </td>
               <td class="cell-center">
+                <% if (row.multiple_instance_header) { %>
+                <a href="<%= urlPrefix %><%= row.link %>" class="btn btn-primary btn-xs" role="button">New instance</a>
+                <% } else { // multiple_instance_header %>
                 <% if (row.assessment_instance_id) { %>
                 <%- include('../partials/scorebar', {score: row.assessment_instance_score_perc}) %>
                 <% } else { %>
                 Not started
                 <% } %>
+                <% } // multiple_instance_header %>
               </td>
             </tr>
             <% }); %>

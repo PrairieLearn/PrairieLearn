@@ -9,8 +9,26 @@ WHERE
     AND ai.user_id = $user_id;
 
 -- BLOCK insert_assessment_instance
-INSERT INTO assessment_instances AS ai (number, assessment_id, user_id, mode, open)
-VALUES (1, $assessment_id, $user_id, $mode, TRUE)
+INSERT INTO assessment_instances AS ai
+    (assessment_id, user_id, mode, open, number)
+SELECT
+    $assessment_id, $user_id, $mode, TRUE,
+    CASE
+        WHEN a.multiple_instance THEN (
+            SELECT
+                max(ai.number) + 1
+            FROM
+                assessment_instances AS ai
+            WHERE
+                ai.assessment_id = $assessment_id
+                AND ai.user_id = $user_id
+        )
+        ELSE 1
+    END AS number
+FROM
+    assessments AS a
+WHERE
+    a.id = $assessment_id
 RETURNING ai.id;
 
 -- BLOCK select_new_questions
