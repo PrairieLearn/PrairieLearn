@@ -87,7 +87,7 @@
               <td>
                 <% if (question.other_assessments) { %>
                 <% question.other_assessments.forEach(function(assessment) { %>
-                <%- include('../partials/assessment', {assessment: assessment}); %>
+                <%- include('../partials/assessmentAdmin', {assessment: assessment}); %>
                 <% }); %>
                 <% } %>
               </td>

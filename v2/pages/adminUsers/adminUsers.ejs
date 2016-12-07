@@ -23,7 +23,7 @@
                 <th>Name</th>
                 <th>Role</th>
                 <% course_assessments.forEach(function(assessment) { %>
-                <th><%- include('../partials/assessment', {assessment: assessment}); %></th>
+                <th><%- include('../partials/assessmentAdmin', {assessment: assessment}); %></th>
                 <% }); %>
               </tr>
             </thead>
