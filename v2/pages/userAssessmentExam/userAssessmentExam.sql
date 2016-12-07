@@ -16,7 +16,7 @@ SELECT
     CASE
         WHEN a.multiple_instance THEN (
             SELECT
-                max(ai.number) + 1
+                coalesce(max(ai.number) + 1, 1)
             FROM
                 assessment_instances AS ai
             WHERE
