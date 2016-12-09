@@ -1,6 +1,52 @@
 
 # ChangeLog
 
+* __1.22.0__ - 2016-12-09
+
+  * Add IP ranges for final exams in DCL.
+
+  * Fix docker instructions (Allen Kleiner).
+
+  * Skip update of test instances for non-existent tests.
+
+  * Fix crashing bug due to function call typo (Kevin Wang).
+
+  * Don't attempt to generate statistics for non-existent questions.
+
+  * Improve robustness of `submittedAnswer` restore for Fabric.js questions.
+
+  * Add `fixedExponential` formatter.
+
+  * Add raw score (full precision) to CSV downloads.
+
+  * Fix logging error (Eric Huber).
+
+  * Generate hi-res versions of LaTeX images for Fabric.js support.
+
+  * (V2) Enable assessments with multiple instances per student.
+
+  * (V2) Fix submission rendering for admin question views (Ray Essick).
+
+  * (V2) Add past submissions view on exam question pages (Ray Essick).
+
+  * (V2) Add underlying support for external (RabbitMQ) and manual grading.
+
+  * (V2) Fix grading operations outside the main transaction.
+
+  * (V2) Add question alternatives within assessments.
+
+  * (V2) Implement generic CSRF protection for all pages.
+
+  * (V2) Split site into Admin and User pages.
+
+  * (V2) Add unified homepage with course list and self-enrollment.
+
+  * (V2) Fix SQL import newline handling on Windows.
+
+  * (V2) Add docker build.
+
+  * (V2) Add admin view of individual assessment instances.
+
 * __1.21.0__ - 2016-09-14
 
   * Use hi-res time for random seeds, improving test randomization.
@@ -89,7 +135,7 @@
 
   * Add homework random shuffle mode with global question numbers (Binglin Chen).
 
-  * Add experimental backend using PostgresQL and server-side rendering.
+  * (V2) Add experimental backend using PostgresQL and server-side rendering.
 
 * __1.19.0__ - 2016-02-23
 
