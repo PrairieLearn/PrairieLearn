@@ -11,7 +11,7 @@ var sqldb = require('../lib/sqldb');
 
 module.exports = {
     init: function(callback) {
-        logger.info('Starting DB model initialization');
+        logger.verbose('Starting DB model initialization');
         async.eachSeries([
             // types
             'enum_mode.sql',
@@ -56,7 +56,7 @@ module.exports = {
             'grading_logs.sql',
             'question_score_logs.sql',
         ], function(filename, callback) {
-            logger.info('Loading ' + filename);
+            logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
                 sqldb.query(sql, [], function(err) {
                     if (err) error.addData(err, {sqlFile: filename});
@@ -66,7 +66,7 @@ module.exports = {
             });
         }, function(err) {
             if (ERR(err, callback)) return;
-            logger.info('Successfully completed DB model initialization');
+            logger.verbose('Successfully completed DB model initialization');
             callback(null);
         });
     },

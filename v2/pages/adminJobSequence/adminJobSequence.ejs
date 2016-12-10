@@ -37,18 +37,18 @@
 
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title">Job sequence #<% job_sequence.number %></h3>
+          <h3 class="panel-title">Job sequence #<%= job_sequence.number %></h3>
         </div>
 
         <table class="table table-condensed table-hover two-column-description">
           <tbody>
-            <tr><th>Job sequence number</th>  <td><%= job_sequence.number %></td></tr>
-            <tr><th>Start date</th>  <td><%= job_sequence.start_date_formatted %></td></tr>
-            <tr><th>Finish date</th> <td><%= job_sequence.finish_date_formatted %></td></tr>
-            <tr><th>User</th>        <td><%= job_sequence.user_uid %></td></tr>
-            <tr><th>Authn user</th>  <td><%= job_sequence.authn_user_uid %></td></tr>
-            <tr><th>Status</th>      <td><%- include('../partials/jobStatus', {status: job_sequence.status}); %></td></tr>
-            <tr><th>Job count</th>   <td><%= job_sequence.job_count %></td></tr>
+            <tr><th>Job sequence number</th> <td><%= job_sequence.number %></td></tr>
+            <tr><th>Start date</th>          <td><%= job_sequence.start_date_formatted %></td></tr>
+            <tr><th>Finish date</th>         <td><%= job_sequence.finish_date_formatted %></td></tr>
+            <tr><th>User</th>                <td><%= job_sequence.user_uid %></td></tr>
+            <tr><th>Authn user</th>          <td><%= job_sequence.authn_user_uid %></td></tr>
+            <tr><th>Status</th>              <td><%- include('../partials/jobStatus', {status: job_sequence.status}); %></td></tr>
+            <tr><th>Job count</th>           <td><%= job_sequence.job_count %></td></tr>
           </tbody>
         </table>
       </div>
@@ -56,7 +56,7 @@
       <% job_sequence.jobs.forEach(function(job) { %>
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title">Job #<% job_sequence.number %>.<% job.number_in_sequence %></h3>
+          <h3 class="panel-title">Job #<%= job_sequence.number %>.<%= job.number_in_sequence %></h3>
         </div>
 
         <table class="table table-condensed table-hover two-column-description">

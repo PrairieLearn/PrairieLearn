@@ -207,7 +207,7 @@ module.exports.loadInfoDB = function(db, idName, parentDir, infoFilename, defaul
                     loadCallback(err);
                     return;
                 }
-                logger.info("successfully loaded info from " + parentDir + ", number of items = " + _.size(db));
+                logger.verbose("successfully loaded info from " + parentDir + ", number of items = " + _.size(db));
                 loadCallback();
             });
         });

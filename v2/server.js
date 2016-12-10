@@ -25,7 +25,7 @@ var syncFromDisk = require('./sync/syncFromDisk');
 var syncFromMongo = require('./sync/syncFromMongo');
 
 if (config.startServer) {
-    logger.infoOverride('PrairieLearn server start');
+    logger.info('PrairieLearn server start');
 
     configFilename = 'config.json';
     if (process.argv.length > 2) {
@@ -36,7 +36,7 @@ if (config.startServer) {
 
     if (config.logFilename) {
         logger.addFileLogging(config.logFilename);
-        logger.info('activated file logging: ' + config.logFilename);
+        logger.verbose('activated file logging: ' + config.logFilename);
     }
 }
 
@@ -134,12 +134,12 @@ module.exports.startServer = function(callback) {
         };
         server = https.createServer(options, app);
         server.listen(config.serverPort);
-        logger.info('server listening to HTTPS on port ' + config.serverPort);
+        logger.verbose('server listening to HTTPS on port ' + config.serverPort);
         callback(null);
     } else if (config.serverType === 'http') {
         server = http.createServer(app);
         server.listen(config.serverPort);
-        logger.info('server listening to HTTP on port ' + config.serverPort);
+        logger.verbose('server listening to HTTP on port ' + config.serverPort);
         callback(null);
     } else {
         callback('unknown serverType: ' + config.serverType);
@@ -156,13 +156,13 @@ if (config.startServer) {
                 max: 10,
                 idleTimeoutMillis: 30000,
             };
-            logger.info('Connecting to database ' + pgConfig.postgresqlUser + '@' + pgConfig.host + ':' + pgConfig.database);
+            logger.verbose('Connecting to database ' + pgConfig.postgresqlUser + '@' + pgConfig.host + ':' + pgConfig.database);
             var idleErrorHandler = function(err) {
                 logger.error('idle client error', err);
             };
             sqldb.init(pgConfig, idleErrorHandler, function(err) {
                 if (ERR(err, callback)) return;
-                logger.info('Successfully connected to database');
+                logger.verbose('Successfully connected to database');
                 callback(null);
             });
         },
@@ -197,7 +197,7 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            logger.info('Starting server...');
+            logger.verbose('Starting server...');
             module.exports.startServer(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
@@ -220,13 +220,13 @@ if (config.startServer) {
         function(callback) {
             callback(null);
             async.eachSeries(config.courseDirs || [], function(courseDir, callback) {
-                syncFromDisk.syncDiskToSql(courseDir, callback);
+                syncFromDisk.syncDiskToSql(courseDir, logger, callback);
             }, function(err, data) {
                 if (err) {
                     logger.error('Error syncing SQL DB:',
                                  {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
                 } else {
-                    logger.infoOverride('Completed sync SQL DB');
+                    logger.info('Completed sync SQL DB');
                 }
             });
 
@@ -247,7 +247,7 @@ if (config.startServer) {
             logger.error('Exiting...');
             process.exit(1);
         } else {
-            logger.infoOverride('PrairieLearn server ready');
+            logger.info('PrairieLearn server ready');
         }
     });
 }

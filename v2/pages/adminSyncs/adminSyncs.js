@@ -34,17 +34,17 @@ var pullAndUpdate = function(locals, callback) {
         if (ERR(err, callback)) return;
         var job_sequence_id = result.rows[0].id;
         
-        var syncFromDisk = function() {
-            return;
+        var syncPhase2 = function() {
             var jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.id,
                 authn_user_id: locals.authz_data.authn_user.id,
                 type: 'SyncFromDisk',
                 job_sequence_id: job_sequence_id,
+                last_in_sequence: true,
             };
             serverJobs.createJob(jobOptions, function(err, job) {
-                syncFromDisk(locals.course.path, job, function(err) {
+                syncFromDisk.syncDiskToSql(locals.course.path, job, function(err) {
                     if (err) {
                         job.fail(err);
                     } else {
@@ -58,11 +58,12 @@ var pullAndUpdate = function(locals, callback) {
             course_id: locals.course.id,
             user_id: locals.user.id,
             authn_user_id: locals.authz_data.authn_user.id,
+            job_sequence_id: job_sequence_id,
             type: 'PullFromGit',
             command: 'git',
             arguments: ['pull', '--force', 'origin', 'master'],
             working_directory: locals.course.path,
-            on_success: syncFromDisk,
+            on_success: syncPhase2,
         };
         serverJobs.spawnJob(jobOptions, function(err, job) {
             if (ERR(err, callback)) return;

@@ -8,7 +8,8 @@ WHERE
 
 -- BLOCK select_job_sequence
 SELECT
-    js.*
+    js.*,
+    (SELECT count(*) FROM jobs WHERE job_sequence_id = $job_sequence_id) AS job_count
 FROM
     job_sequences AS js
 WHERE

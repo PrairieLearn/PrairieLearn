@@ -58,14 +58,26 @@ function Job(id, options) {
     this.stdout = '';
 }
 
-Job.prototype.error = function(text) {
-    this.stderrText += text;
-    socketServer.io.to('job-' + this.id).emit('change:stderr', {job_id: this.id, stderr: this.stderrText});
+Job.prototype.addToStderr = function(text) {
+    this.stderr += text;
+    socketServer.io.to('job-' + this.id).emit('change:stderr', {job_id: this.id, stderr: this.stderr});
 };
 
-Job.prototype.info = function(text) {
-    this.stdoutText += text;
-    socketServer.io.to('job-' + this.id).emit('change:stdout', {job_id: this.id, stdout: this.stdoutText});
+Job.prototype.addToStdout = function(text) {
+    this.stdout += text;
+    socketServer.io.to('job-' + this.id).emit('change:stdout', {job_id: this.id, stdout: this.stdout});
+};
+
+Job.prototype.error = function(msg) {
+    this.addToStderr(msg + '\n');
+};
+
+Job.prototype.info = function(msg) {
+    this.addToStdout(msg + '\n');
+};
+
+Job.prototype.debug = function(text) {
+    // do nothing
 };
 
 Job.prototype.finish = function(code, signal) {
@@ -73,8 +85,8 @@ Job.prototype.finish = function(code, signal) {
     delete module.exports.liveJobs[that.id];
     var params = {
         job_id: that.id,
-        stderr: that.stderrText,
-        stdout: that.stdoutText,
+        stderr: that.stderr,
+        stdout: that.stdout,
         exit_code: code,
         exit_signal: signal,
     };
@@ -204,8 +216,6 @@ module.exports.createJob = function(options, callback) {
         arguments: options.arguments,
         working_directory: options.working_directory,
     };
-    var e = new Error();
-    console.log(e.stack);
     sqldb.queryOneRow(sql.insert_job, params, function(err, result) {
         if (ERR(err, callback)) return;
         var job_id = result.rows[0].id;
@@ -228,10 +238,10 @@ module.exports.spawnJob = function(options, callback) {
 
         job.proc.stderr.setEncoding('utf8');
         job.proc.stdout.setEncoding('utf8');
-        job.proc.stderr.on('data', function(text) {job.error(text);});
-        job.proc.stdout.on('data', function(text) {job.info(text);});
-        job.proc.stderr.on('error', function(err) {job.error('ERROR: ' + err.toString());});
-        job.proc.stdout.on('error', function() {job.error('ERROR: ' + err.toString());});
+        job.proc.stderr.on('data', function(text) {job.addToStderr(text);});
+        job.proc.stdout.on('data', function(text) {job.addToStdout(text);});
+        job.proc.stderr.on('error', function(err) {job.addToStderr('ERROR: ' + err.toString() + '\n');});
+        job.proc.stdout.on('error', function() {job.addToStderr('ERROR: ' + err.toString() + '\n');});
 
         // when a process exists, first 'exit' is fired with stdio
         // streams possibly still open, then 'close' is fired once all
