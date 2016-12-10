@@ -1,0 +1,49 @@
+<p>
+  A particle with mass $m = {{params.m}}{\rm\ kg}$ is acted upon by two forces:
+  \[\begin{aligned}
+  \vec{F}_1 &amp;= {{params.F1}}\hat\imath{\rm\ N} \\
+  \vec{F}_2 &amp;= {{params.F2}}\hat\imath{\rm\ N}.
+  \end{aligned}\]
+</p>
+
+<!-- ############################################################ -->
+<hr />
+<p>
+  What is the total force $\vec{F}$ on the particle?
+</p>
+<p>
+  $\vec{F} = $ <input data-instavalue="submittedAnswer.FT" /> $\hat\imath{\rm\ N}$
+</p>
+
+<% if (feedback.FTCorrect !== undefined) { %>
+<p>
+  <small>
+    <% if (feedback.FTCorrect) { %>
+    Your answer was correct. The exact answer is $\vec{F} = {{feedback.FT | scalarProduct \hat\imath}}{\rm\ N}$.
+    <% } else { %>
+    Your answer was incorrect.
+    <% } %>
+  </small>
+</p>
+<% } %>
+
+<!-- ############################################################ -->
+<hr />
+<p>
+  What is the acceleration $\vec{a}$ of the particle?
+</p>
+<p>
+  $\vec{a} = $ <input data-instavalue="submittedAnswer.a" /> $\hat\imath{\rm\ m/s^2}$
+</p>
+
+<% if (feedback.aCorrect !== undefined) { %>
+<p>
+  <small>
+    <% if (feedback.aCorrect) { %>
+    Your answer was correct. The exact answer is $\vec{a} = {{feedback.a | scalarProduct \hat\imath}}{\rm\ m/s^2}$.
+    <% } else { %>
+    Your answer was incorrect.
+    <% } %>
+  </small>
+</p>
+<% } %>

@@ -1,0 +1,43 @@
+{
+    "type": "Homework",
+    "title": "Sample question set",
+    "set": "Homework",
+    "number": 1,
+    "allowAccess": [
+        {
+            "role": "TA"
+        },
+        {
+            "role": "Student",
+            "mode": "Public",
+            "credit": 120,
+            "startDate": "2016-08-19T00:00:01",
+            "endDate": "2016-10-31T23:59:59"
+        },
+        {
+            "role": "Student",
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2016-08-19T00:00:01",
+            "endDate": "2016-11-30T23:59:59"
+        },
+        {
+            "role": "Student",
+            "mode": "Public",
+            "credit": 80,
+            "startDate": "2016-08-19T00:00:01",
+            "endDate": "2016-11-30T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "startDate": "2016-08-19T00:00:01"
+        }
+    ],
+    "options": {
+        "questions": [
+            {"qid": "addVectors", "initValue": 1, "maxScore": 5}
+        ],
+        "allowPractice": false,
+        "maxScore": 5
+    }
+}
