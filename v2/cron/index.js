@@ -10,21 +10,23 @@ var sqldb = require('../lib/sqldb');
 
 var userAssessmentDurations = require('./userAssessmentDurations');
 var autoFinishExams = require('./autoFinishExams');
+var errorAbandonedJobs = require('./errorAbandonedJobs');
 
 module.exports = {
     init: function(callback) {
         var that = module.exports;
-        logger.info('initializing cron', {cronIntervalMS: config.cronIntervalMS});
+        logger.verbose('initializing cron', {cronIntervalMS: config.cronIntervalMS});
         setTimeout(that.runJobs, config.cronIntervalMS);
         callback(null);
     },
 
     runJobs: function() {
         var that = module.exports;
-        logger.info('cron jobs starting');
+        logger.verbose('cron jobs starting');
         async.eachSeries([
             ['userAssessmentDurations', userAssessmentDurations],
             ['autoFinishExams', autoFinishExams],
+            ['errorAbandonedJobs', errorAbandonedJobs],
         ], function(item, callback) {
             var title = item[0];
             var cronModule = item[1];
@@ -36,12 +38,12 @@ module.exports = {
                     logger.error('cron: ' + title + ' failure, duration: ' + elapsedTimeMS + ' ms',
                                  {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
                 } else {
-                    logger.info('cron: ' + title + ' success, duration: ' + elapsedTimeMS + ' ms');
+                    logger.verbose('cron: ' + title + ' success, duration: ' + elapsedTimeMS + ' ms');
                 }
                 callback(null); // don't return error as we want to do all cron jobs even if one fails
             });
         }, function() {
-            logger.info('cron jobs finished');
+            logger.verbose('cron jobs finished');
             setTimeout(that.runJobs, config.cronIntervalMS);
         });
     },

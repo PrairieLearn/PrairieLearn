@@ -12,9 +12,9 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 module.exports = {
     sync: function(courseInfo, questionDB, callback) {
         var questionIds = [];
-        logger.info('Syncing questions');
+        logger.verbose('Syncing questions');
         async.forEachOfSeries(questionDB, function(q, qid, callback) {
-            logger.info('Syncing question ' + qid);
+            logger.verbose('Syncing question ' + qid);
             var params = {
                 qid: qid,
                 type: q.type,
@@ -35,7 +35,7 @@ module.exports = {
             if (ERR(err, callback)) return;
 
             // soft-delete questions from the DB that aren't on disk
-            logger.info('Soft-deleting unused questions');
+            logger.verbose('Soft-deleting unused questions');
             var params = {
                 course_id: courseInfo.courseId,
                 keep_question_ids: questionIds,

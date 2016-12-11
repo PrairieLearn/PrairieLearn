@@ -17,7 +17,7 @@ module.exports = {
         async.series([
             function(callback) {
                 async.forEachOfSeries(courseInstance.assessmentDB, function(dbAssessment, tid, callback) {
-                    logger.info('Syncing ' + tid);
+                    logger.verbose('Syncing ' + tid);
                     var params = {
                         tid: tid,
                         type: dbAssessment.type,
@@ -36,7 +36,7 @@ module.exports = {
                         if (ERR(err, callback)) return;
                         var assessmentId = result.rows[0].id;
                         assessmentIds.push(assessmentId);
-                        logger.info('Synced ' + tid + ' as assessment_id ' + assessmentId);
+                        logger.verbose('Synced ' + tid + ' as assessment_id ' + assessmentId);
                         that.syncAccessRules(assessmentId, dbAssessment, function(err) {
                             if (ERR(err, callback)) return;
                             if (_(dbAssessment).has('options') && _(dbAssessment.options).has('zones')) {
@@ -67,7 +67,7 @@ module.exports = {
                 });
             },
             function(callback) {
-                logger.info('Soft-deleting unused assessments');
+                logger.verbose('Soft-deleting unused assessments');
                 var params = {
                     course_instance_id: courseInstance.courseInstanceId,
                     keep_assessment_ids: assessmentIds,
@@ -78,7 +78,7 @@ module.exports = {
                 });
             },
             function(callback) {
-                logger.info('Soft-deleting unused assessment questions');
+                logger.verbose('Soft-deleting unused assessment questions');
                 var params = {
                     course_instance_id: courseInstance.courseInstanceId,
                     keep_assessment_ids: assessmentIds,
@@ -89,14 +89,14 @@ module.exports = {
                 });
             },
             function(callback) {
-                logger.info('Deleting unused assessment access rules');
+                logger.verbose('Deleting unused assessment access rules');
                 sqldb.query(sql.delete_unused_assessment_access_rules, [], function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
             },
             function(callback) {
-                logger.info('Deleting unused zones');
+                logger.verbose('Deleting unused zones');
                 sqldb.query(sql.delete_unused_zones, [], function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
@@ -111,7 +111,7 @@ module.exports = {
     syncAccessRules: function(assessmentId, dbAssessment, callback) {
         var allowAccess = dbAssessment.allowAccess || [];
         async.forEachOfSeries(allowAccess, function(dbRule, i, callback) {
-            logger.info('Syncing assessment access rule number ' + (i + 1));
+            logger.verbose('Syncing assessment access rule number ' + (i + 1));
             var params = {
                 assessment_id: assessmentId,
                 number: i + 1,
@@ -129,7 +129,7 @@ module.exports = {
         }, function(err) {
             if (ERR(err, callback)) return;
 
-            logger.info('Deleting excess assessment access rules for current assessment');
+            logger.verbose('Deleting excess assessment access rules for current assessment');
             var params = {
                 assessment_id: assessmentId,
                 last_number: allowAccess.length,
@@ -143,7 +143,7 @@ module.exports = {
 
     syncZones: function(assessmentId, zoneList, callback) {
         async.forEachOfSeries(zoneList, function(dbZone, i, callback) {
-            logger.info('Syncing zone number ' + (i + 1));
+            logger.verbose('Syncing zone number ' + (i + 1));
             var params = {
                 assessment_id: assessmentId,
                 number: i + 1,
@@ -158,7 +158,7 @@ module.exports = {
         }, function(err) {
             if (ERR(err, callback)) return;
 
-            logger.info('Deleting excess zones for current assessment');
+            logger.verbose('Deleting excess zones for current assessment');
             var params = {
                 assessment_id: assessmentId,
                 last_number: zoneList.length,
@@ -251,7 +251,7 @@ module.exports = {
         }, function(err) {
             if (ERR(err, callback)) return;
 
-            logger.info('Deleting excess alternative groups for current assessment');
+            logger.verbose('Deleting excess alternative groups for current assessment');
             var params = {
                 assessment_id: assessmentId,
                 last_number: iAlternativeGroup,
@@ -259,7 +259,7 @@ module.exports = {
             sqldb.query(sql.delete_excess_alternative_groups, params, function(err, result) {
                 if (ERR(err, callback)) return;
 
-                logger.info('Soft-deleting unused assessment questions for current assessment');
+                logger.verbose('Soft-deleting unused assessment questions for current assessment');
                 var params = {
                     assessment_id: assessmentId,
                     keep_assessment_question_ids: assessmentQuestionIds,
@@ -282,7 +282,7 @@ module.exports = {
             if (result.rowCount < 1) return callback(new Error('invalid QID: "' + qid + '"'));
             var questionId = result.rows[0].id;
 
-            logger.info('Syncing assessment question number ' + iAssessmentQuestion + ' with QID ' + qid);
+            logger.verbose('Syncing assessment question number ' + iAssessmentQuestion + ' with QID ' + qid);
             var params = {
                 number: iAssessmentQuestion,
                 max_points: maxPoints,

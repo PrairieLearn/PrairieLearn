@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/navbarAdmin', {navPage: 'sync'}); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Sync</h3>
+        </div>
+
+        <div class="panel-body">
+          <div class="row">
+            <div class="col-md-4">
+              <form name="confirm-form" method="POST">
+                <input type="hidden" name="postAction" value="status">
+                <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+                <button type="submit" class="btn btn-info">Show status of server git repository</button>
+              </form>
+            </div> <!-- col -->
+            <div class="col-md-4">
+              <form name="confirm-form" method="POST">
+                <input type="hidden" name="postAction" value="pull">
+                <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+                <button type="submit" class="btn btn-primary">Sync from remote git repository</button>
+              </form>
+            </div> <!-- col -->
+          </div> <!-- row -->
+        </div> <!-- panel-body -->
+
+        <div class="table-responsive">
+          <table class="table table-condensed table-hover">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Date</th>
+                <th>Description</th>
+                <th>User</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% job_sequences.forEach(function(job_sequence) { %>
+              <tr>
+                <td><%= job_sequence.number %></td>
+                <td><%= job_sequence.start_date_formatted %></td>
+                <td><%= job_sequence.description %></td>
+                <td><%= job_sequence.user_uid %></td>
+                <td><%- include('../partials/jobStatus', {status: job_sequence.status}); %></td>
+                <td><a href="<%= urlPrefix %>/admin/jobSequence/<%= job_sequence.id %>" class="btn btn-xs btn-info">Details</a></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+    </div>
+  </body>
+</html>

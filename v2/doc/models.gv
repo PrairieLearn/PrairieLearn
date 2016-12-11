@@ -26,6 +26,8 @@ digraph partmc_modules {
     instance_question [style=filled, fillcolor=lavender]
     variant [style=filled, fillcolor=lavender]
     submission [style=filled, fillcolor=lavender]
+    job_sequence [style=filled, fillcolor=lavender]
+    job [style=filled, fillcolor=lavender]
 
     assessment_state_log [style=filled, fillcolor=white]
     grading_log [style=filled, fillcolor=white]
@@ -52,6 +54,8 @@ digraph partmc_modules {
     instance_question -> { assessment_question; assessment_instance }
     variant -> { instance_question }
     submission -> { variant }
+    job_sequence -> { course }
+    job -> { job_sequence }
 
     assessment_state_log -> { assessment_instance }
     grading_log -> { submission }

@@ -14,7 +14,7 @@
         "cookie-parser": "1.4.x",
         "crypto-js": "3.1.x",
         "csv": "0.4.x",
-        "ejs": "2.4.x",
+        "ejs": "2.5.x",
         "express": "4.13.x",
         "is-my-json-valid": "2.13.x",
         "jju": "1.3.x",
@@ -26,6 +26,7 @@
         "pg": "6.1.x",
         "requirejs": "2.1.x",
         "serve-favicon": "2.3.x",
+        "socket.io": "1.6.x",
         "winston": "2.2.x"
     },
     "devDependencies": {

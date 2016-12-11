@@ -14,7 +14,7 @@ module.exports = function(req, res, next) {
             params: req.params,
             body: req.body,
         };
-        logger.info("request", access);
+        logger.verbose("request", access);
     }
     next();
 };

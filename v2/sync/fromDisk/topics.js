@@ -12,9 +12,9 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 module.exports = {
     sync: function(courseInfo, callback) {
         var topicIds = []
-        logger.info('Syncing topics');
+        logger.verbose('Syncing topics');
         async.forEachOfSeries(courseInfo.topics, function(topic, i, callback) {
-            logger.info('Syncing topic ' + topic.name);
+            logger.verbose('Syncing topic ' + topic.name);
             var params = {
                 name: topic.name,
                 number: i + 1,
@@ -30,7 +30,7 @@ module.exports = {
             if (ERR(err, callback)) return;
 
             // delete topics from the DB that aren't on disk
-            logger.info('Deleting unused topics')
+            logger.verbose('Deleting unused topics')
             var params = {
                 course_id: courseInfo.courseId,
                 keep_topic_ids: topicIds,
