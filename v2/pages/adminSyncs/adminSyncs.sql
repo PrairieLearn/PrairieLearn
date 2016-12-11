@@ -22,9 +22,9 @@ WITH max_over_job_sequences_with_same_course AS (
         js.course_id = $course_id
 )
 INSERT INTO job_sequences
-    (course_id, number,      user_id,  authn_user_id,  type)
+    (course_id, number,      user_id,  authn_user_id,  type,  description)
 SELECT
-    $course_id, new_number, $user_id, $authn_user_id, $type
+    $course_id, new_number, $user_id, $authn_user_id, $type, $description
 FROM
     max_over_job_sequences_with_same_course
 RETURNING id;

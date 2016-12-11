@@ -12,6 +12,7 @@
       socket.on('update', function() {window.location.reload(true);});
       socket.on('change:stderr', function(msg) {$("#stderr-" + msg.job_id).text(msg.stderr);});
       socket.on('change:stdout', function(msg) {$("#stdout-" + msg.job_id).text(msg.stdout);});
+      socket.on('change:output', function(msg) {$("#output-" + msg.job_id).text(msg.output);});
 
       // Join the rooms for the job_sequence and for each individual job.
       // Check return values for a change that happened since we rendered the page
@@ -27,6 +28,7 @@
       if (msg.status != '<%= job.status %>') {window.location.reload(true);}
       $("#stderr-" + <%= job.id %>).text(msg.stderr);
       $("#stdout-" + <%= job.id %>).text(msg.stdout);
+      $("#output-" + <%= job.id %>).text(msg.output);
       });
       <% }); %>
 
@@ -37,60 +39,35 @@
 
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title">Job sequence #<%= job_sequence.number %></h3>
+          <h3 class="panel-title"><%= job_sequence.description %> #<%= job_sequence.number %></h3>
         </div>
 
-        <table class="table table-condensed table-hover two-column-description">
-          <tbody>
-            <tr><th>Job sequence number</th> <td><%= job_sequence.number %></td></tr>
-            <tr><th>Start date</th>          <td><%= job_sequence.start_date_formatted %></td></tr>
-            <tr><th>Finish date</th>         <td><%= job_sequence.finish_date_formatted %></td></tr>
-            <tr><th>User</th>                <td><%= job_sequence.user_uid %></td></tr>
-            <tr><th>Authn user</th>          <td><%= job_sequence.authn_user_uid %></td></tr>
-            <tr><th>Status</th>              <td><%- include('../partials/jobStatus', {status: job_sequence.status}); %></td></tr>
-            <tr><th>Job count</th>           <td><%= job_sequence.job_count %></td></tr>
-          </tbody>
-        </table>
-      </div>
-
-      <% job_sequence.jobs.forEach(function(job) { %>
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Job #<%= job_sequence.number %>.<%= job.number_in_sequence %></h3>
+        <% job_sequence.jobs.forEach(function(job) { %>
+        <div class="list-group">
+          <li class="list-group-item">
+            <h4 class="list-group-item-heading">Stage <%= job.number_in_sequence %>: <%= job.description %></h4>
+            <% if (job.command) { %>
+            <p class="list-group-item-text">
+              Command <code><%= job.command %><% job.arguments.forEach(function(arg) { %> <%= arg %><% }); %></code>
+              <% if (job.working_directory) { %> run in <code><%= job.working_directory %></code><% } %>
+            </p>
+            <% } %>
+            <p class="list-group-item-text">
+              Started at <%= job.start_date_formatted %> by <%= job_sequence.user_uid %><% if (job_sequence.authn_user_uid != job_sequence.user_uid) { %> (really <%= job_sequence.authn_user_uid %>)<% } %><% if (job.finish_date_formatted) { %>, finished at <%= job.finish_date_formatted %><% } %>
+            </p>
+            <p class="list-group-item-text">
+              <%- include('../partials/jobStatus', {status: job.status}); %>
+              <% if (job.status == 'Running') { %><i class="fa fa-refresh fa-spin fa-fw"></i><% } %>
+            </p>
+            <% if (job.status == 'Error' && job.exit_code != null) { %><p class="list-group-item-text">Exit code: <%= job.exit_code %></p><% } %>
+            <% if (job.exit_signal != null) { %><p class="list-group-item-text">Exit signal: <%= job.exit_signal %></p><% } %>
+            <% if (job.error_message != null) { %><p class="list-group-item-text">Error message: <%= job.error_message %></p><% } %>
+            <p></p>
+            <pre id="output-<%= job.id %>"><%= job.output %></pre>
+          </li>
         </div>
-
-        <table class="table table-condensed table-hover two-column-description">
-          <tbody>
-            <tr><th>Job number</th>  <td><%= job.number %></td></tr>
-            <tr><th>Start date</th>  <td><%= job.start_date_formatted %></td></tr>
-            <tr><th>Finish date</th> <td><%= job.finish_date_formatted %></td></tr>
-            <tr><th>User</th>        <td><%= job.user_uid %></td></tr>
-            <tr><th>Authn user</th>  <td><%= job.authn_user_uid %></td></tr>
-            <tr><th>Status</th>      <td><%- include('../partials/jobStatus', {status: job.status}); %></td></tr>
-            <tr><th>Command</th>     <td><%= job.command %></td></tr>
-            <tr><th>Arguments</th>   <td><%= job.arguments %></td></tr>
-            <tr><th>Working dir</th> <td><%= job.working_directory %></td></tr>
-            <tr><th>Exit code</th>   <td><%= job.exit_code %></td></tr>
-            <tr><th>Exit signal</th> <td><%= job.exit_signal %></td></tr>
-            <tr><th>Error msg</th>   <td><%= job.error_message %></td></tr>
-            <tr>
-              <th>Stderr</th>
-              <td>
-                <% if (job.status == 'Running') { %><i class="fa fa-refresh fa-spin fa-fw"></i><% } %>
-                <pre id="stderr-<%= job.id %>"><%= job.stderr %></pre>
-              </td>
-            </tr>
-            <tr>
-              <th>Stdout</th>
-              <td>
-                <% if (job.status == 'Running') { %><i class="fa fa-refresh fa-spin fa-fw"></i><% } %>
-                <pre id="stdout-<%= job.id %>"><%= job.stdout %></pre>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <% }); %>
       </div>
-      <% }); %>
 
     </div>
   </body>

@@ -36,10 +36,10 @@ max_over_jobs_with_same_sequence AS (
 )
 INSERT INTO jobs
     (course_id, number,      job_sequence_id, number_in_sequence,      last_in_sequence,
-     user_id,  authn_user_id,  type,  status,    command,  arguments,          working_directory)
+     user_id,  authn_user_id,  type,  description,  status,    command,  arguments,          working_directory)
 SELECT
     $course_id, new_number, $job_sequence_id, new_number_in_sequence, $last_in_sequence,
-    $user_id, $authn_user_id, $type, 'Running', $command, $arguments::TEXT[], $working_directory
+    $user_id, $authn_user_id, $type, $description, 'Running', $command, $arguments::TEXT[], $working_directory
 FROM
     max_over_jobs_with_same_course,
     max_over_jobs_with_same_sequence
@@ -53,6 +53,7 @@ WITH updated_jobs AS (
         status = CASE WHEN $exit_code = 0 THEN 'Success'::enum_job_status ELSE 'Error'::enum_job_status END,
         stderr = $stderr,
         stdout = $stdout,
+        output = $output,
         exit_code = $exit_code,
         exit_signal = $exit_signal
     WHERE

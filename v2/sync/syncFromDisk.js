@@ -16,32 +16,32 @@ module.exports = {};
 
 module.exports.syncDiskToSql = function(courseDir, logger, callback) {
     logger.info("Starting sync of git repository to database for " + courseDir);
-    logger.info("Loading info.json files from git repository");
+    logger.info("Loading info.json files from git repository...");
     courseDB.loadFullCourse(courseDir, function(err, course) {
         if (err) return callback(err);
         logger.info("Successfully loaded all info.json files");
         async.series([
-            function(callback) {logger.info("Syncing courseInfo from git repository to database"); callback(null);},
+            function(callback) {logger.info("Syncing courseInfo from git repository to database..."); callback(null);},
             syncCourseInfo.sync.bind(null, course.courseInfo),
-            function(callback) {logger.info("Syncing courseInstances from git repository to database"); callback(null);},
+            function(callback) {logger.info("Syncing courseInstances from git repository to database..."); callback(null);},
             syncCourseInstances.sync.bind(null, course.courseInfo, course.courseInstanceDB),
-            function(callback) {logger.info("Syncing topics from git repository to database"); callback(null);},
+            function(callback) {logger.info("Syncing topics from git repository to database..."); callback(null);},
             syncTopics.sync.bind(null, course.courseInfo),
-            function(callback) {logger.info("Syncing questions from git repository to database"); callback(null);},
+            function(callback) {logger.info("Syncing questions from git repository to database..."); callback(null);},
             syncQuestions.sync.bind(null, course.courseInfo, course.questionDB),
-            function(callback) {logger.info("Syncing tags from git repository to database"); callback(null);},
+            function(callback) {logger.info("Syncing tags from git repository to database..."); callback(null);},
             syncTags.sync.bind(null, course.courseInfo, course.questionDB),
-            function(callback) {logger.info("Syncing assessment sets from git repository to database"); callback(null);},
+            function(callback) {logger.info("Syncing assessment sets from git repository to database..."); callback(null);},
             syncAssessmentSets.sync.bind(null, course.courseInfo),
         ], function(err) {
             if (err) return callback(err);
             async.forEachOfSeries(course.courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
                 async.series([
                     function(callback) {logger.info("Syncing " + courseInstanceShortName
-                                                    + " courseInstance from git repository to database"); callback(null);},
+                                                    + " courseInstance from git repository to database..."); callback(null);},
                     syncCourseStaff.sync.bind(null, course.courseInfo, courseInstance),
                     function(callback) {logger.info("Syncing " + courseInstanceShortName
-                                                    + " assessments from git repository to database"); callback(null);},
+                                                    + " assessments from git repository to database..."); callback(null);},
                     syncAssessments.sync.bind(null, course.courseInfo, courseInstance),
                 ], callback);
             }, function(err) {

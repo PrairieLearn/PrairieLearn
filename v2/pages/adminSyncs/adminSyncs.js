@@ -29,6 +29,7 @@ var pullAndUpdate = function(locals, callback) {
         user_id: locals.user.id,
         authn_user_id: locals.authz_data.authn_user.id,
         type: 'Sync',
+        description: 'Sync from remote git repository',
     };
     sqldb.queryOneRow(sql.insert_job_sequence, params, function(err, result) {
         if (ERR(err, callback)) return;
@@ -40,6 +41,7 @@ var pullAndUpdate = function(locals, callback) {
                 user_id: locals.user.id,
                 authn_user_id: locals.authz_data.authn_user.id,
                 type: 'SyncFromDisk',
+                description: 'Sync git repository to database',
                 job_sequence_id: job_sequence_id,
                 last_in_sequence: true,
             };
@@ -60,6 +62,7 @@ var pullAndUpdate = function(locals, callback) {
             authn_user_id: locals.authz_data.authn_user.id,
             job_sequence_id: job_sequence_id,
             type: 'PullFromGit',
+            description: 'Pull from remote git repository',
             command: 'git',
             arguments: ['pull', '--force', 'origin', 'master'],
             working_directory: locals.course.path,

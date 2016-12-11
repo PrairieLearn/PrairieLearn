@@ -16,11 +16,12 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
   Room 'job-231' for job_id = 231 in DB.
 
   Receives messages:
-  'joinJob', arguments: job_id, returns: status, stderr, stdout
+  'joinJob', arguments: job_id, returns: status, stderr, stdout, output
 
   Sends messages:
   'change:stderr', arguments: job_id, stderr
   'change:stdout', arguments: job_id, stdout
+  'change:output', arguments: job_id, output
   'update', arguments: job_id
 
   ##########################################
@@ -56,16 +57,21 @@ function Job(id, options) {
     this.options = options;
     this.stderr = '';
     this.stdout = '';
+    this.output = '';
 }
 
 Job.prototype.addToStderr = function(text) {
     this.stderr += text;
+    this.output += text;
     socketServer.io.to('job-' + this.id).emit('change:stderr', {job_id: this.id, stderr: this.stderr});
+    socketServer.io.to('job-' + this.id).emit('change:output', {job_id: this.id, output: this.output});
 };
 
 Job.prototype.addToStdout = function(text) {
     this.stdout += text;
+    this.output += text;
     socketServer.io.to('job-' + this.id).emit('change:stdout', {job_id: this.id, stdout: this.stdout});
+    socketServer.io.to('job-' + this.id).emit('change:output', {job_id: this.id, output: this.output});
 };
 
 Job.prototype.error = function(msg) {
@@ -87,6 +93,7 @@ Job.prototype.finish = function(code, signal) {
         job_id: that.id,
         stderr: that.stderr,
         stdout: that.stdout,
+        output: that.output,
         exit_code: code,
         exit_signal: signal,
     };
@@ -162,12 +169,14 @@ module.exports.connection = function(socket) {
             var status = result.rows[0].status;
             var stderr = result.rows[0].stderr;
             var stdout = result.rows[0].stdout;
+            var output = result.rows[0].output;
 
             if (module.exports.liveJobs[msg.job_id]) {
                 stderr = module.exports.liveJobs[msg.job_id].stderr;
                 stdout = module.exports.liveJobs[msg.job_id].stdout;
+                output = module.exports.liveJobs[msg.job_id].output;
             }
-            callback({status: status, stderr: stderr, stdout: stdout});
+            callback({status: status, stderr: stderr, stdout: stdout, output: output});
         });
     });
 
@@ -198,6 +207,7 @@ module.exports.createJob = function(options, callback) {
         job_sequence_id: null,
         last_in_sequence: false,
         type: null,
+        description: null,
         command: null,
         arguments: [],
         working_directory: undefined,
@@ -212,6 +222,7 @@ module.exports.createJob = function(options, callback) {
         job_sequence_id: options.job_sequence_id,
         last_in_sequence: options.last_in_sequence,
         type: options.type,
+        description: options.description,
         command: options.command,
         arguments: options.arguments,
         working_directory: options.working_directory,
