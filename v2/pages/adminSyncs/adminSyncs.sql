@@ -8,7 +8,7 @@ FROM
     JOIN users AS u on (u.id = js.user_id)
 WHERE
     js.course_id = $course_id
-    AND js.type = 'Sync'
+    AND (js.type = 'sync' OR js.type = 'git_status')
 ORDER BY
     js.start_date DESC, js.id;
 
