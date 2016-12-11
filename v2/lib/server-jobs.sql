@@ -83,7 +83,6 @@ WHERE
     AND j.update_job_sequence;
 
 -- BLOCK update_job_on_error
-FIXME: update job_sequence if we have one, always error the sequence.
 WITH updated_jobs AS (
     UPDATE jobs AS j
     SET
@@ -100,6 +99,32 @@ SET
     finish_date = j.finish_date,
     status = j.status
 FROM
-    job_sequence_updates AS j
+    updated_jobs AS j
 WHERE
     js.id = j.job_sequence_id;
+
+-- BLOCK select_running_jobs
+SELECT
+    j.*
+FROM
+    jobs AS j
+WHERE
+    j.status = 'Running';
+
+-- BLOCK error_abandoned_job_sequences
+UPDATE job_sequences AS js
+SET
+    status = 'Error',
+    finish_date = CURRENT_TIMESTAMP
+WHERE
+    js.status = 'Running'
+    AND age(js.start_date) > interval '1 hours'
+    AND (
+        (SELECT count(*) FROM jobs AS j WHERE j.job_sequence_id = js.id) = 0 -- no jobs
+        OR (SELECT bool_and(
+                j.status != 'Running' AND age(j.finish_date) > interval '1 hours'
+            ) FROM jobs AS j WHERE j.job_sequence_id = js.id
+        ) -- no running jobs and no recently finished jobs
+    )
+RETURNING
+    js.*;

@@ -10,6 +10,7 @@ var sqldb = require('../lib/sqldb');
 
 var userAssessmentDurations = require('./userAssessmentDurations');
 var autoFinishExams = require('./autoFinishExams');
+var errorAbandonedJobs = require('./errorAbandonedJobs');
 
 module.exports = {
     init: function(callback) {
@@ -25,6 +26,7 @@ module.exports = {
         async.eachSeries([
             ['userAssessmentDurations', userAssessmentDurations],
             ['autoFinishExams', autoFinishExams],
+            ['errorAbandonedJobs', errorAbandonedJobs],
         ], function(item, callback) {
             var title = item[0];
             var cronModule = item[1];

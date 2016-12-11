@@ -1,5 +1,6 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
+var async = require('async');
 var child_process = require('child_process');
 
 var logger = require('./logger');
@@ -88,7 +89,6 @@ Job.prototype.debug = function(text) {
 
 Job.prototype.finish = function(code, signal) {
     var that = this;
-    delete module.exports.liveJobs[that.id];
     var params = {
         job_id: that.id,
         stderr: that.stderr,
@@ -98,11 +98,12 @@ Job.prototype.finish = function(code, signal) {
         exit_signal: signal,
     };
     sqldb.query(sql.update_job_on_close, params, function(err) {
+        delete module.exports.liveJobs[that.id];
         socketServer.io.to('job-' + that.id).emit('update');
         if (that.options.job_sequence_id != null) {
             socketServer.io.to('jobSequence-' + that.options.job_sequence_id).emit('update');
         }
-        if (err) {
+        if (ERR(err, function() {})) {
             logger.error('error updating job_id ' + that.id + ' on close', err);
             if (that.options.on_error) {
                 that.options.on_error(that.id, err);
@@ -121,19 +122,19 @@ Job.prototype.succeed = function() {
 
 Job.prototype.fail = function(err, callback) {
     var that = this;
-    delete module.exports.liveJobs[that.id];
     var params = {
         job_id: that.id,
         error_message: err.toString(),
     };
     sqldb.query(sql.update_job_on_error, params, function(updateErr) {
+        delete module.exports.liveJobs[that.id];
         socketServer.io.to('job-' + that.id).emit('update');
         if (that.options.job_sequence_id != null) {
             socketServer.io.to('jobSequence-' + that.options.job_sequence_id).emit('update');
         }
-        if (err) {
-            logger.error('error updating job on error', updateErr);
-            if (callback) return ERR(updateErr, callback);
+        if (ERR(updateErr, function() {})) {
+            logger.error('error updating job_id ' + that.id + ' on error', updateErr);
+            if (callback) return callback(updateErr);
             if (that.options.on_error) {
                 that.options.on_error(that.id, updateErr);
             }
@@ -274,5 +275,39 @@ module.exports.killJob = function(job_id, callback) {
     job.fail('Killed by user', function(err) {
         if (ERR(err, callback)) return;
         callback(null);
+    });
+};
+
+module.exports.errorAbandonedJobs = function(callback) {
+    sqldb.query(sql.select_running_jobs, [], function(err, result) {
+        if (ERR(err, callback)) return;
+        async.each(result.rows, function(row, callback) {
+            if (!_.has(module.exports.liveJobs, row.id)) {
+                var params = {
+                    job_id: row.id,
+                    error_message: 'Job abandoned by server',
+                };
+                sqldb.query(sql.update_job_on_error, params, function(updateErr) {
+                    socketServer.io.to('job-' + row.id).emit('update');
+                    if (row.job_sequence_id != null) {
+                        socketServer.io.to('jobSequence-' + row.job_sequence_id).emit('update');
+                    }
+                    if (ERR(updateErr, function() {})) {
+                        logger.error('errorAbandonedJobs: error updating job on error', updateErr);
+                    }
+                    callback(null);
+                });
+            }
+        }, function(err) {
+            if (ERR(err, callback)) return;
+
+            sqldb.query(sql.error_abandoned_job_sequences, [], function(err, result) {
+                if (ERR(err, callback)) return;
+                result.rows.forEach(function(row) {
+                    socketServer.io.to('jobSequence-' + row.id).emit('update');
+                });
+                callback(null);
+            });
+        });
     });
 };
