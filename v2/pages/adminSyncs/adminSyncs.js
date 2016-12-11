@@ -8,6 +8,7 @@ var router = express.Router();
 var logger = require('../../lib/logger');
 var serverJobs = require('../../lib/server-jobs');
 var syncFromDisk = require('../../sync/syncFromDisk');
+var requireFrontend = require('../../lib/require-frontend');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
@@ -43,10 +44,32 @@ var pullAndUpdate = function(locals, callback) {
                 type: 'SyncFromDisk',
                 description: 'Sync git repository to database',
                 job_sequence_id: job_sequence_id,
-                last_in_sequence: true,
+                on_success: syncPhase3,
             };
             serverJobs.createJob(jobOptions, function(err, job) {
                 syncFromDisk.syncDiskToSql(locals.course.path, job, function(err) {
+                    if (err) {
+                        job.fail(err);
+                    } else {
+                        job.succeed();
+                    }
+                });
+            });
+        };
+
+        var syncPhase3 = function() {
+            var jobOptions = {
+                course_id: locals.course.id,
+                user_id: locals.user.id,
+                authn_user_id: locals.authz_data.authn_user.id,
+                type: 'ReloadQuestionServers',
+                description: 'Reload question server.js code',
+                job_sequence_id: job_sequence_id,
+                last_in_sequence: true,
+            };
+            serverJobs.createJob(jobOptions, function(err, job) {
+                var coursePath = locals.course.path;
+                requireFrontend.undefQuestionServers(coursePath, job, function(err) {
                     if (err) {
                         job.fail(err);
                     } else {
