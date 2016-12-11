@@ -27,21 +27,29 @@ function serverMode(req) {
                 if (n1 == 192 && n2 == 17 && n3 == 180 && n4 >= 128 && n4 <= 255) {
                     mode = 'Exam';
                 }
-                if (moment.tz("2016-05-06T00:00:01", config.timezone).isBefore()
-                    && moment.tz("2016-05-13T23:59:59", config.timezone).isAfter()) {
+                if (moment.tz("2016-12-10T00:00:01", config.timezone).isBefore()
+                    && moment.tz("2016-12-16T23:59:59", config.timezone).isAfter()) {
+                    // DCL L416
+                    if (n1 == 130 && n2 == 126 && n3 == 246 && n4 >= 150 && n4 <= 190) {
+                        serverMode = 'Exam';
+                    }
+                    // DCL L422
+                    if (n1 == 130 && n2 == 126 && n3 == 246 && n4 >= 191 && n4 <= 194) {
+                        serverMode = 'Exam';
+                    }
                     // DCL L520
-                    if (n1 == 130 && n2 == 126 && n3 == 246 && n4 >= 36 && n4 <= 76) {
-                        mode = 'Exam';
+                    if (n1 == 130 && n2 == 126 && n3 == 246 && n4 >= 36 && n4 <= 65) {
+                        serverMode = 'Exam';
                     }
                 }
-                if (moment.tz("2016-05-09T00:00:01", config.timezone).isBefore()
-                    && moment.tz("2016-05-13T23:59:59", config.timezone).isAfter()) {
+                if (moment.tz("2016-12-13T00:00:01", config.timezone).isBefore()
+                    && moment.tz("2016-12-16T23:59:59", config.timezone).isAfter()) {
                     // DCL L440
                     if (n1 == 130 && n2 == 126 && n3 == 246 && n4 == 144) {
-                        mode = 'Exam';
+                        serverMode = 'Exam';
                     }
                     if (n1 == 130 && n2 == 126 && n3 == 246 && n4 >= 78 && n4 <= 106) {
-                        mode = 'Exam';
+                        serverMode = 'Exam';
                     }
                 }
             } catch (e) {} // do nothing, so stay in 'Public' mode
