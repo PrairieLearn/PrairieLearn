@@ -31,25 +31,25 @@ function serverMode(req) {
                     && moment.tz("2016-12-16T23:59:59", config.timezone).isAfter()) {
                     // DCL L416
                     if (n1 == 130 && n2 == 126 && n3 == 246 && n4 >= 150 && n4 <= 190) {
-                        serverMode = 'Exam';
+                        mode = 'Exam';
                     }
                     // DCL L422
                     if (n1 == 130 && n2 == 126 && n3 == 246 && n4 >= 191 && n4 <= 194) {
-                        serverMode = 'Exam';
+                        mode = 'Exam';
                     }
                     // DCL L520
                     if (n1 == 130 && n2 == 126 && n3 == 246 && n4 >= 36 && n4 <= 65) {
-                        serverMode = 'Exam';
+                        mode = 'Exam';
                     }
                 }
                 if (moment.tz("2016-12-13T00:00:01", config.timezone).isBefore()
                     && moment.tz("2016-12-16T23:59:59", config.timezone).isAfter()) {
                     // DCL L440
                     if (n1 == 130 && n2 == 126 && n3 == 246 && n4 == 144) {
-                        serverMode = 'Exam';
+                        mode = 'Exam';
                     }
                     if (n1 == 130 && n2 == 126 && n3 == 246 && n4 >= 78 && n4 <= 106) {
-                        serverMode = 'Exam';
+                        mode = 'Exam';
                     }
                 }
             } catch (e) {} // do nothing, so stay in 'Public' mode
