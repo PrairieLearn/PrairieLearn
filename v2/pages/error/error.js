@@ -9,8 +9,6 @@ module.exports = function(err, req, res, next) {
     _(req.cookies).each(function(value, key) {
         res.clearCookie(key);
     });
-    console.log('req', req);
-    console.log('referrer', req.get('Referrer'));
 
     var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
     var errorId = _.times(12, function() {return _.sample(chars);}).join('');

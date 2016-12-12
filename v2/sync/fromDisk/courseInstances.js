@@ -18,7 +18,7 @@ module.exports = {
         async.series([
             function(callback) {
                 async.forEachOfSeries(courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
-                    logger.verbose('Syncing ' + courseInstance.longName);
+                    logger.debug('Syncing ' + courseInstance.longName);
                     var params = {
                         course_id: courseInfo.courseId,
                         short_name: courseInstanceShortName,
@@ -39,7 +39,7 @@ module.exports = {
             },
             function(callback) {
                 // soft-delete courseInstances from the DB that aren't on disk
-                logger.verbose('Soft-deleting unused course_instances');
+                logger.debug('Soft-deleting unused course_instances');
                 var params = {
                     course_id: courseInfo.courseId,
                     keep_course_instance_ids: courseInstanceIds,
@@ -51,7 +51,7 @@ module.exports = {
             },
             function(callback) {
                 // delete access rules from DB that don't correspond to assessments
-                logger.verbose('Deleting unused course_instance_access_rules');
+                logger.debug('Deleting unused course_instance_access_rules');
                 sqldb.query(sql.delete_unused_course_instance_access_rules, [], function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
@@ -66,7 +66,7 @@ module.exports = {
     syncAccessRules: function(courseInstance, callback) {
         var allowAccess = courseInstance.allowAccess || [];
         async.forEachOfSeries(allowAccess, function(dbRule, i, callback) {
-            logger.verbose('Syncing course instance access rule number ' + (i + 1));
+            logger.debug('Syncing course instance access rule number ' + (i + 1));
             var params = {
                 course_instance_id: courseInstance.courseInstanceId,
                 number: i + 1,
@@ -83,7 +83,7 @@ module.exports = {
             if (ERR(err, callback)) return;
 
             // delete access rules from the DB that aren't on disk
-            logger.verbose('Deleting excess course instance access rules for current assessment');
+            logger.debug('Deleting excess course instance access rules for current assessment');
             var params = {
                 course_instance_id: courseInstance.courseInstanceId,
                 last_number: allowAccess.length,

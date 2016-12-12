@@ -56,6 +56,9 @@ app.use(require('./middlewares/authn')); // authentication, set res.locals.auth_
 app.use(require('./middlewares/logRequest'));
 app.use(function(req, res, next) {res.locals.plainUrlPrefix = '/pl'; next();});
 
+// clear all cached course code in dev mode (no authorization needed)
+app.use(require('./middlewares/undefCourseCode'));
+
 // course selection pages don't need authorization
 app.use('/pl', require('./pages/home/home'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
@@ -72,6 +75,7 @@ app.use('/pl/:course_instance_id', require('./middlewares/navData')); // set res
 app.use('/pl/:course_instance_id', require('./middlewares/urlPrefix')); // set res.locals.urlPrefix
 app.use('/pl/:course_instance_id', require('./middlewares/csrfToken')); // sets and checks res.locals.csrfToken
 
+// redirect to Admin or User page, as appropriate
 app.use('/pl/:course_instance_id/redirect', require('./middlewares/redirectToCourseInstanceLanding'));
 
 app.use('/pl/:course_instance_id/effective', require('./pages/effective/effective'));
@@ -232,6 +236,9 @@ if (config.startServer) {
             process.exit(1);
         } else {
             logger.info('PrairieLearn server ready');
+            if (app.get('env') == 'development') {
+                logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort + '/pl');
+            }
         }
     });
 }

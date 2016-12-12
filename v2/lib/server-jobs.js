@@ -83,7 +83,11 @@ Job.prototype.info = function(msg) {
     this.addToStdout(msg + '\n');
 };
 
-Job.prototype.debug = function(text) {
+Job.prototype.verbose = function(msg) {
+    this.addToStdout(msg + '\n');
+};
+
+Job.prototype.debug = function(msg) {
     // do nothing
 };
 
