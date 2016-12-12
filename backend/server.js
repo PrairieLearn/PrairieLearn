@@ -494,6 +494,10 @@ app.use(function(req, res, next) {
                     if (n1 == 130 && n2 == 126 && n3 == 246 && n4 >= 36 && n4 <= 65) {
                         serverMode = 'Exam';
                     }
+                    // DCL hot-spares
+                    if (n1 == 130 && n2 == 126 && n3 == 246 && n4 >= 20 && n4 <= 23) {
+                        serverMode = 'Exam';
+                    }
                 }
                 if (moment.tz("2016-12-13T00:00:01", config.timezone).isBefore()
                     && moment.tz("2016-12-16T23:59:59", config.timezone).isAfter()) {
