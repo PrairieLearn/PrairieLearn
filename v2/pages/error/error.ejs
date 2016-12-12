@@ -8,18 +8,18 @@
     <div id="content" class="container">
       <div class="panel panel-danger">
         <div class="panel-heading">
-          <h3 class="panel-title">Error <%= id %></h3>
+          <h3 class="panel-title">Error processing request</h3>
         </div>
 
         <div class="panel-body">
           <h4><%= error.message %></h4>
           <p>
-            Error ID: <strong><%= id %></strong>
+            Error ID: <code><%= id %></code>
           </p>
-          <% if (error.status) { %><h4>Status:</h4><p><%= error.status %></p><% } %>
-          <% if (error.stack) { %><h4>Stack trace:</h4><pre><%= error.stack %></pre><% } %>
-          <% if (error.data) { %><h4>Additional data:</h4><pre><%= JSON.stringify(error.data, null, '    ') %></pre><% } %>
-          <p><a href="" class="btn btn-primary">Back to previous page</a></p>
+          <% if (error.status) { %><p><strong>Status:</strong> <%= error.status %></p><% } %>
+          <% if (error.stack) { %><p><strong>Stack trace:</strong></p><pre><%= error.stack %></pre><% } %>
+          <% if (error.data) { %><p><strong>Additional data:</strong></p><pre><%= JSON.stringify(error.data, null, '    ') %></pre><% } %>
+          <% if (referrer) { %><p><a href="<%= referrer %>" class="btn btn-primary">Back to previous page</a></p><% } %>
         </div>
 
       </div>
