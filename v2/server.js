@@ -197,6 +197,16 @@ if (config.startServer) {
             });
         },
         function(callback) {
+            // only sync from disk in development mode
+            if (app.get('env') != 'development') return callback(null);
+            async.eachSeries(config.courseDirs || [], function(courseDir, callback) {
+                syncFromDisk.syncDiskToSql(courseDir, logger, callback);
+            }, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
             logger.verbose('Starting server...');
             module.exports.startServer(function(err) {
                 if (ERR(err, callback)) return;
@@ -214,32 +224,6 @@ if (config.startServer) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
-        },
-        // FIXME: we are short-circuiting this for development,
-        // for prod these tasks should be back inline
-        function(callback) {
-            callback(null);
-            async.eachSeries(config.courseDirs || [], function(courseDir, callback) {
-                syncFromDisk.syncDiskToSql(courseDir, logger, callback);
-            }, function(err, data) {
-                if (err) {
-                    logger.error('Error syncing SQL DB:',
-                                 {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
-                } else {
-                    logger.info('Completed sync SQL DB');
-                }
-            });
-
-            /*        
-                      async.series([
-                      syncDiskToSQL,
-                      syncMongoToSQL,
-                      ], function(err, data) {
-                      if (err) {
-                      logger.error('Error syncing SQL DB:', err, data);
-                      }
-                      });
-            */
         },
     ], function(err, data) {
         if (err) {
