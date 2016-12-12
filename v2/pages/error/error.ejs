@@ -1,4 +1,28 @@
-<h1><%= message %></h1>
-<h2><%= error.status %></h2>
-<pre><%= error.stack %></pre>
-<pre><%= JSON.stringify(error.data, null, '    ') %></pre>
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/navbarPlain'); %>
+    <div id="content" class="container">
+      <div class="panel panel-danger">
+        <div class="panel-heading">
+          <h3 class="panel-title">Error <%= id %></h3>
+        </div>
+
+        <div class="panel-body">
+          <h4><%= error.message %></h4>
+          <p>
+            Error ID: <strong><%= id %></strong>
+          </p>
+          <% if (error.status) { %><h4>Status:</h4><p><%= error.status %></p><% } %>
+          <% if (error.stack) { %><h4>Stack trace:</h4><pre><%= error.stack %></pre><% } %>
+          <% if (error.data) { %><h4>Additional data:</h4><pre><%= JSON.stringify(error.data, null, '    ') %></pre><% } %>
+          <p><a href="" class="btn btn-primary">Back to previous page</a></p>
+        </div>
+
+      </div>
+    </div>
+  </body>
+</html>
