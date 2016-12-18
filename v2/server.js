@@ -7,6 +7,7 @@ var async = require('async');
 var express = require('express');
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
+var http = require('http');
 var https = require('https');
 
 var logger = require('./lib/logger');
@@ -18,11 +19,13 @@ var sqldb = require('./lib/sqldb');
 var models = require('./models');
 var sprocs = require('./sprocs');
 var cron = require('./cron');
+var socketServer = require('./lib/socket-server');
+var serverJobs = require('./lib/server-jobs');
 var syncFromDisk = require('./sync/syncFromDisk');
 var syncFromMongo = require('./sync/syncFromMongo');
 
 if (config.startServer) {
-    logger.infoOverride('PrairieLearn server start');
+    logger.info('PrairieLearn server start');
 
     configFilename = 'config.json';
     if (process.argv.length > 2) {
@@ -33,7 +36,7 @@ if (config.startServer) {
 
     if (config.logFilename) {
         logger.addFileLogging(config.logFilename);
-        logger.info('activated file logging: ' + config.logFilename);
+        logger.verbose('activated file logging: ' + config.logFilename);
     }
 }
 
@@ -49,13 +52,21 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Middleware for all requests
 app.use(require('./middlewares/cors'));
-app.use(require('./middlewares/authn')); // authentication, set res.locals.auth_user
+app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
 app.use(require('./middlewares/logRequest'));
-app.use(function(req, res, next) {res.locals.plainUrlPrefix = '/pl'; next();});
+app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPrefix = '/pl'; next();});
+app.use(function(req, res, next) {res.locals.devMode = (req.app.get('env') == 'development'); next();});
+
+// clear all cached course code in dev mode (no authorization needed)
+app.use(require('./middlewares/undefCourseCode'));
 
 // course selection pages don't need authorization
 app.use('/pl', require('./pages/home/home'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
+
+// dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
+app.use('/pl/admin/reload', require('./pages/adminReload/adminReload'));
+app.use('/pl/admin/jobSequence', require('./pages/adminJobSequence/adminJobSequence'));
 
 // redirect plain course page to assessments page
 app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/courseInstance');} next();});
@@ -69,6 +80,7 @@ app.use('/pl/:course_instance_id', require('./middlewares/navData')); // set res
 app.use('/pl/:course_instance_id', require('./middlewares/urlPrefix')); // set res.locals.urlPrefix
 app.use('/pl/:course_instance_id', require('./middlewares/csrfToken')); // sets and checks res.locals.csrfToken
 
+// redirect to Admin or User page, as appropriate
 app.use('/pl/:course_instance_id/redirect', require('./middlewares/redirectToCourseInstanceLanding'));
 
 app.use('/pl/:course_instance_id/effective', require('./pages/effective/effective'));
@@ -113,9 +125,15 @@ app.use('/pl/:course_instance_id/instance_question/:instance_question_id', [
 app.use('/pl/:course_instance_id/instance_question/:instance_question_id/file', require('./pages/questionFile/questionFile'));
 app.use('/pl/:course_instance_id/instance_question/:instance_question_id/text', require('./pages/questionText/questionText'));
 
+app.use('/pl/:course_instance_id/admin/syncs', require('./pages/adminSyncs/adminSyncs'));
+app.use('/pl/:course_instance_id/admin/jobSequence', require('./pages/adminJobSequence/adminJobSequence'));
+app.use('/pl/:course_instance_id/admin/reload', require('./pages/adminReload/adminReload'));
+
 // error handling
 app.use(require('./middlewares/notFound'));
 app.use(require('./pages/error/error'));
+
+var server;
 
 module.exports.startServer = function(callback) {
     if (config.serverType === 'https') {
@@ -124,12 +142,14 @@ module.exports.startServer = function(callback) {
             cert: fs.readFileSync('/etc/pki/tls/certs/localhost.crt'),
             ca: [fs.readFileSync('/etc/pki/tls/certs/server-chain.crt')]
         };
-        https.createServer(options, app).listen(config.serverPort);
-        logger.info('server listening to HTTPS on port ' + config.serverPort);
+        server = https.createServer(options, app);
+        server.listen(config.serverPort);
+        logger.verbose('server listening to HTTPS on port ' + config.serverPort);
         callback(null);
     } else if (config.serverType === 'http') {
-        app.listen(config.serverPort);
-        logger.info('server listening to HTTP on port ' + config.serverPort);
+        server = http.createServer(app);
+        server.listen(config.serverPort);
+        logger.verbose('server listening to HTTP on port ' + config.serverPort);
         callback(null);
     } else {
         callback('unknown serverType: ' + config.serverType);
@@ -146,13 +166,13 @@ if (config.startServer) {
                 max: 10,
                 idleTimeoutMillis: 30000,
             };
-            logger.info('Connecting to database ' + pgConfig.postgresqlUser + '@' + pgConfig.host + ':' + pgConfig.database);
+            logger.verbose('Connecting to database ' + pgConfig.postgresqlUser + '@' + pgConfig.host + ':' + pgConfig.database);
             var idleErrorHandler = function(err) {
                 logger.error('idle client error', err);
             };
             sqldb.init(pgConfig, idleErrorHandler, function(err) {
                 if (ERR(err, callback)) return;
-                logger.info('Successfully connected to database');
+                logger.verbose('Successfully connected to database');
                 callback(null);
             });
         },
@@ -187,37 +207,23 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            logger.info('Starting server...');
+            logger.verbose('Starting server...');
             module.exports.startServer(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
         },
-        // FIXME: we are short-circuiting this for development,
-        // for prod these tasks should be back inline
         function(callback) {
-            callback(null);
-            async.eachSeries(config.courseDirs || [], function(courseDir, callback) {
-                syncFromDisk.syncDiskToSql(courseDir, callback);
-            }, function(err, data) {
-                if (err) {
-                    logger.error('Error syncing SQL DB:',
-                                 {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
-                } else {
-                    logger.infoOverride('Completed sync SQL DB');
-                }
+            socketServer.init(server, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
             });
-
-            /*        
-                      async.series([
-                      syncDiskToSQL,
-                      syncMongoToSQL,
-                      ], function(err, data) {
-                      if (err) {
-                      logger.error('Error syncing SQL DB:', err, data);
-                      }
-                      });
-            */
+        },
+        function(callback) {
+            serverJobs.init(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         },
     ], function(err, data) {
         if (err) {
@@ -225,7 +231,10 @@ if (config.startServer) {
             logger.error('Exiting...');
             process.exit(1);
         } else {
-            logger.infoOverride('PrairieLearn server ready');
+            logger.info('PrairieLearn server ready');
+            if (app.get('env') == 'development') {
+                logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort + '/pl');
+            }
         }
     });
 }

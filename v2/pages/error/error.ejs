@@ -1,4 +1,48 @@
-<h1><%= message %></h1>
-<h2><%= error.status %></h2>
-<pre><%= error.stack %></pre>
-<pre><%= JSON.stringify(error.data, null, '    ') %></pre>
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/navbarPlain'); %>
+    <div id="content" class="container">
+      <div class="panel panel-danger">
+        <div class="panel-heading">
+          <h3 class="panel-title">Error processing request</h3>
+        </div>
+
+        <div class="panel-body">
+          <h4><%= error.message %></h4>
+          <p>
+            Error ID: <code><%= id %></code>
+          </p>
+
+          <p>
+            <a href="<%= referrer %>" class="btn btn-primary"
+               <% if (!referrer) { %>disabled<% } %>
+               >
+              <i class="fa fa-arrow-left" aria-hidden="true"></i>
+              Back to previous page
+            </a>
+            <a href="<%= urlPrefix %>" class="btn btn-primary">
+              <i class="fa fa-home" aria-hidden="true"></i>
+              PrairieLearn home
+            </a>
+          </p>
+
+          <% if (error.status) { %><p><strong>Status:</strong> <%= error.status %></p><% } %>
+          <% if (error.stack) { %><p><strong>Stack trace:</strong></p><pre><%= error.stack %></pre><% } %>
+          <% if (error.data && error.data.sql) {%>
+          <p><strong>SQL query:</strong></p><pre><%= error.data.sql %></pre>
+          <% if (error.data && error.data.params) {%>
+          <p><strong>SQL params:</strong></p><pre><%= JSON.stringify(error.data.params, null, '    ') %></pre>
+          <% } %>
+          <% } %>
+          <% if (error.data) { %><p><strong>Additional data:</strong></p><pre><%= JSON.stringify(error.data, null, '    ') %></pre><% } %>
+          
+        </div>
+
+      </div>
+    </div>
+  </body>
+</html>

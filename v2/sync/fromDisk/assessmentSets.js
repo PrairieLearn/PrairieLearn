@@ -12,7 +12,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 module.exports = {
     sync: function(courseInfo, callback) {
         async.forEachOfSeries(courseInfo.assessmentSets, function(assessmentSet, i, callback) {
-            logger.info('Syncing assessment_set ' + assessmentSet.name);
+            logger.debug('Syncing assessment_set ' + assessmentSet.name);
             var params = {
                 abbrev: assessmentSet.shortName,
                 name: assessmentSet.name,
@@ -26,7 +26,7 @@ module.exports = {
             if (ERR(err, callback)) return;
 
             // delete assessmentSets from the DB that aren't on disk
-            logger.info('Deleting excess assessment_sets');
+            logger.debug('Deleting excess assessment_sets');
             var params = {
                 course_id: courseInfo.courseId,
                 last_number: courseInfo.assessmentSets.length,

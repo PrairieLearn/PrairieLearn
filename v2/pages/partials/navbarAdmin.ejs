@@ -42,6 +42,19 @@
         <li <% if (navPage == "assessments") { %>class="active"<% } %>><a href="<%= urlPrefix %>/admin/assessments">Assessments</a></li>
         <li <% if (navPage == "questions")   { %>class="active"<% } %>><a href="<%= urlPrefix %>/admin/questions">Questions</a></li>
         <li <% if (navPage == "users")       { %>class="active"<% } %>><a href="<%= urlPrefix %>/admin/users">Users</a></li>
+        <% if (!devMode) { %>
+        <li <% if (navPage == "sync")        { %>class="active"<% } %>><a href="<%= urlPrefix %>/admin/syncs">Sync</a></li>
+        <% } %>
+
+        <!-------------------------------------------------------------------------------->
+        <!-------------------------------------------------------------------------------->
+        <!-------------------------------------------------------------------------------->
+        <!-- Reload ---------------------------------------------------------------------->
+
+        <% if (devMode) { %>
+        <a class="btn btn-success navbar-btn" href="<%= urlPrefix %>/admin/reload">Reload</a>
+        <% } %>
+
       </ul>
 
       <!-------------------------------------------------------------------------------->

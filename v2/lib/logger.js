@@ -18,19 +18,11 @@ MemLogger.prototype.log = function(level, msg, meta, callback) {
 };
 logger.add(winston.transports.MemLogger, {});
 
-logger.infoOverride = function(msg) {
-    logger.transports.console.level = 'info';
-    logger.transports.memLogger.level = 'info';
-    logger.info(msg);
-    logger.transports.console.level = 'warn';
-    logger.transports.memLogger.level = 'warn';
-};
-
 logger.addFileLogging = function(filename) {
     logger.add(winston.transports.File, {filename: filename, level: 'debug'});
 };
 
-logger.transports.console.level = 'warn';
+logger.transports.console.level = 'info';
 logger.transports.memLogger.level = 'warn';
 
 

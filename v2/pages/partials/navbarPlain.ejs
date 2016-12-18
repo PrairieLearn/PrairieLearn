@@ -10,6 +10,18 @@
       <a class="navbar-brand" href="<%= plainUrlPrefix %>">PrairieLearn</a>
     </div>
     <div class="collapse navbar-collapse">
+      <ul class="nav navbar-nav" id="main-nav">
+
+        <!-------------------------------------------------------------------------------->
+        <!-------------------------------------------------------------------------------->
+        <!-------------------------------------------------------------------------------->
+        <!-- Reload ---------------------------------------------------------------------->
+
+        <% if (devMode) { %>
+        <a class="btn btn-success navbar-btn" href="<%= urlPrefix %>/admin/reload">Reload</a>
+        <% } %>
+
+      </ul>
 
       <div class="navbar-right">
         <a class="btn btn-default navbar-btn" href="https://prairielearn.engr.illinois.edu/Shibboleth.sso/Logout">Log out</a>

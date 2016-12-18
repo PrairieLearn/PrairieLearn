@@ -1,4 +1,6 @@
+var _ = require('lodash');
 var path = require('path');
+var util = require('util');
 
 var logger = require('../../lib/logger');
 
@@ -8,25 +10,35 @@ module.exports = function(err, req, res, next) {
         res.clearCookie(key);
     });
 
-    if (false) {
-    //if (req.app.get('env') === 'development') {
+    var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+    var errorId = _.times(12, function() {return _.sample(chars);}).join('');
+
+    res.status(err.status || 500);
+    var referrer = req.get('Referrer') || null;
+    logger.error('Error page', {
+        msg: err.message,
+        id: errorId,
+        status: err.status,
+        stack: err.stack,
+        data: JSON.stringify(err.data),
+        referrer: referrer,
+    });
+
+    if (req.app.get('env') == 'development') {
         // development error handler
         // will print stacktrace
-        res.status(err.status || 500);
-        logger.error('Error page', {msg: err.message, stack: err.stack, data: JSON.stringify(err.data)});
         res.render(path.join(__dirname, 'error'), {
-            message: err.message,
             error: err,
-            data: err.data,
+            id: errorId,
+            referrer: referrer,
         });
     } else {
         // production error handler
         // no stacktraces leaked to user
-        res.status(err.status || 500);
-        logger.error('Error page', {msg: err.message, stack: err.stack, data: JSON.stringify(err.data)});
         res.render(path.join(__dirname, 'error'), {
-            message: err.message,
-            error: {}
+            error: {message: err.message},
+            id: errorId,
+            referrer: referrer,
         });
     }
 };

@@ -12,7 +12,7 @@ var processCollection = function(name, err, collection, options, callback) {
         callback(true);
         return;
     }
-    logger.info("successfully fetched '" + name + "' collection");
+    logger.verbose("successfully fetched '" + name + "' collection");
     var tasks = [];
     if (options.indexes) {
         _(options.indexes).forEach(function(index) {
@@ -22,7 +22,7 @@ var processCollection = function(name, err, collection, options, callback) {
                         logger.error("unable to create index on '" + name + "' collection", index, err);
                         return cb(err);
                     }
-                    logger.info("have '" + name + "' index: " + indexName);
+                    logger.verbose("have '" + name + "' index: " + indexName);
                     cb(null);
                 });
             });
@@ -36,7 +36,7 @@ var processCollection = function(name, err, collection, options, callback) {
                     logger.error("unable to create counter for " + idName, index, err);
                     return cb(err);
                 }
-                logger.info("have counter for " + idName);
+                logger.verbose("have counter for " + idName);
                 cb(null);
             });
         });
@@ -70,7 +70,7 @@ module.exports = {
                 callback("unable to connect to database at address " + config.dbAddress + ": " + err);
                 return;
             }
-            logger.info("successfully connected to database");
+            logger.verbose("successfully connected to database");
             module.exports.db = db = locDb;
             async.series([
                     function(cb) {
@@ -199,7 +199,7 @@ module.exports = {
                     if (err) {
                         callback("error loading DB collections");
                     } else {
-                        logger.info("Successfully loaded all DB collections");
+                        logger.verbose("Successfully loaded all DB collections");
                         callback(null);
                     }
                 });

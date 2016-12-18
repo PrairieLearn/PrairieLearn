@@ -11,7 +11,7 @@ var sqldb = require('../lib/sqldb');
 
 module.exports = {
     init: function(callback) {
-        logger.info('Starting DB stored procedure initialization');
+        logger.verbose('Starting DB stored procedure initialization');
         async.eachSeries([
             'histogram.sql',
             'array_histogram.sql',
@@ -45,7 +45,7 @@ module.exports = {
             'authz_assessment_instance.sql',
             'select_assessment_questions.sql',
         ], function(filename, callback) {
-            logger.info('Loading ' + filename);
+            logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
                 if (ERR(err, callback)) return;
                 sqldb.query(sql, [], function(err) {
@@ -56,7 +56,7 @@ module.exports = {
             });
         }, function(err) {
             if (ERR(err, callback)) return;
-            logger.info('Successfully completed DB stored procedure initialization');
+            logger.verbose('Successfully completed DB stored procedure initialization');
             callback(null);
         });
     },

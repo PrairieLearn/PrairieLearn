@@ -13,10 +13,10 @@ module.exports = {
     sync: function(courseInfo, courseInstance, callback) {
         var superuserIds = [];
         var staffIds = [];
-        logger.info('Syncing Superusers');
+        logger.debug('Syncing Superusers');
         async.forEachOfSeries(config.roles, function(role, uid, callback) {
             if (role !== "Superuser") return callback(null);
-            logger.info('Syncing ' + uid);
+            logger.debug('Syncing ' + uid);
             var params = {uid: uid};
             sqldb.query(sql.insert_user, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -24,7 +24,7 @@ module.exports = {
                 superuserIds.push(userId);
 
                 // Superusers get enrolled in all courseInstances of the course
-                logger.info('enrolling user into all course_instances of this course');
+                logger.debug('enrolling user into all course_instances of this course');
                 var params = {
                     user_id: userId,
                     role: 'Superuser',
@@ -38,11 +38,11 @@ module.exports = {
         }, function(err) {
             if (ERR(err, callback)) return;
             // load Instructors and TAs
-            logger.info('Syncing Instructors and TAs');
+            logger.debug('Syncing Instructors and TAs');
             async.forEachOfSeries(courseInstance.userRoles || {}, function(role, uid, callback) {
                 if (_(config.roles).has(uid) && config.roles[uid] == 'Superuser') return callback(null);
                 if (role !== "Instructor" && role !== "TA") return callback(null);
-                logger.info('Syncing ' + uid);
+                logger.debug('Syncing ' + uid);
                 var params = {uid: uid};
                 sqldb.query(sql.insert_user, params, function(err, result) {
                     if (ERR(err, callback)) return;
@@ -63,7 +63,7 @@ module.exports = {
             }, function(err) {
                 if (ERR(err, callback)) return;
                 // reduce role to Student in the current course instance if they are not in the above list
-                logger.info('Reduce all other roles to Student');
+                logger.debug('Reduce all other roles to Student');
                 var params = {
                     course_instance_id: courseInstance.courseInstanceId,
                     preserve_user_ids: _.union(superuserIds, staffIds),

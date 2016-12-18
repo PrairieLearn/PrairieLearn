@@ -16,7 +16,7 @@ module.exports = {
                 courseInfo.tags = courseInfo.tags || [];
                 var tagIds = [];
                 async.forEachOfSeries(courseInfo.tags, function(tag, i, callback) {
-                    logger.info('Syncing tag ', tag.name);
+                    logger.debug('Syncing tag ', tag.name);
                     var params = {
                         name: tag.name,
                         number: i + 1,
@@ -44,10 +44,10 @@ module.exports = {
                 });
             },
             function(callback) {
-                logger.info('Syncing question_tags');
+                logger.debug('Syncing question_tags');
                 var tagsByName = _.keyBy(courseInfo.tags, 'name');
                 async.forEachOfSeries(questionDB, function(q, qid, callback) {
-                    logger.info('Syncing tags for question ' + qid);
+                    logger.debug('Syncing tags for question ' + qid);
                     q.tags = q.tags || [];
                     var questionTagIds = [];
                     async.forEachOfSeries(q.tags, function(tagName, i, callback) {
@@ -68,7 +68,7 @@ module.exports = {
                         if (ERR(err, callback)) return;
 
                         // delete topics from the DB that aren't on disk
-                        logger.info('Deleting unused tags');
+                        logger.debug('Deleting unused tags');
                         var params = {
                             question_id: q.id,
                             keep_question_tag_ids: questionTagIds,
