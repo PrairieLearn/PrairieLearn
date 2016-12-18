@@ -83,7 +83,11 @@ Job.prototype.info = function(msg) {
     this.addToStdout(msg + '\n');
 };
 
-Job.prototype.debug = function(text) {
+Job.prototype.verbose = function(msg) {
+    this.addToStdout(msg + '\n');
+};
+
+Job.prototype.debug = function(msg) {
     // do nothing
 };
 
@@ -122,9 +126,14 @@ Job.prototype.succeed = function() {
 
 Job.prototype.fail = function(err, callback) {
     var that = this;
+    var errMsg = err.toString();
+    that.addToStderr(errMsg);
     var params = {
         job_id: that.id,
-        error_message: err.toString(),
+        stderr: that.stderr,
+        stdout: that.stdout,
+        output: that.output,
+        error_message: errMsg,
     };
     sqldb.query(sql.update_job_on_error, params, function(updateErr) {
         delete module.exports.liveJobs[that.id];
@@ -309,5 +318,29 @@ module.exports.errorAbandonedJobs = function(callback) {
                 callback(null);
             });
         });
+    });
+};
+
+module.exports.createJobSequence = function(options, callback) {
+    options = _.assign({
+        course_id: null,
+        user_id: null,
+        authn_user_id: null,
+        type: null,
+        description: null,
+    }, options);
+
+    var params = {
+        course_id: options.course_id,
+        user_id: options.user_id,
+        authn_user_id: options.authn_user_id,
+        type: options.type,
+        description: options.description,
+    };
+    sqldb.queryOneRow(sql.insert_job_sequence, params, function(err, result) {
+        if (ERR(err, callback)) return;
+        var job_sequence_id = result.rows[0].id;
+
+        callback(null, job_sequence_id);
     });
 };

@@ -25,16 +25,15 @@ router.get('/', function(req, res, next) {
 });
 
 var pullAndUpdate = function(locals, callback) {
-    var params = {
+    var options = {
         course_id: locals.course.id,
         user_id: locals.user.id,
         authn_user_id: locals.authz_data.authn_user.id,
         type: 'sync',
         description: 'Sync from remote git repository',
     };
-    sqldb.queryOneRow(sql.insert_job_sequence, params, function(err, result) {
+    serverJobs.createJobSequence(options, function(err, job_sequence_id) {
         if (ERR(err, callback)) return;
-        var job_sequence_id = result.rows[0].id;
         
         var syncStage2 = function() {
             var jobOptions = {
@@ -99,16 +98,15 @@ var pullAndUpdate = function(locals, callback) {
 };
 
 var gitStatus = function(locals, callback) {
-    var params = {
+    var options = {
         course_id: locals.course.id,
         user_id: locals.user.id,
         authn_user_id: locals.authz_data.authn_user.id,
         type: 'git_status',
         description: 'Show status of server git repository',
     };
-    sqldb.queryOneRow(sql.insert_job_sequence, params, function(err, result) {
+    serverJobs.createJobSequence(options, function(err, job_sequence_id) {
         if (ERR(err, callback)) return;
-        var job_sequence_id = result.rows[0].id;
 
         var statusStage2 = function() {
             var jobOptions = {

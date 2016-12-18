@@ -36,7 +36,7 @@ requirejs.undefQuestionServers = function(coursePath, logger, callback) {
     // Only try and undefine modules that are already defined, as listed in:
     //     requireFrontend.s.contexts._.defined
     // This is necessary because of incomplete questions (in particular, those with info.json but no server.js).
-    logger.info('Unloading cached copies of server.js files in ' + coursePath + ' ...');
+    logger.verbose('Unloading cached copies of server.js files in ' + coursePath + ' ...');
     var count = 0;
     async.each(_.keys(requirejs.s.contexts._.defined), function(modPath, callback) {
         if (_.startsWith(modPath, coursePath)) {
@@ -46,7 +46,7 @@ requirejs.undefQuestionServers = function(coursePath, logger, callback) {
         callback(null);
     }, function(err) {
         if (ERR(err, callback)) return;
-        logger.info('Successfully unloaded ' + count + ' cached files');
+        logger.verbose('Successfully unloaded ' + count + ' cached files');
         callback(null);
     });
 };

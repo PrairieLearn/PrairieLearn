@@ -34,7 +34,11 @@
 
       });
     </script>
+    <% if (typeof course_instance !== 'undefined') { %>
     <%- include('../partials/navbarAdmin', {navPage: ''}); %>
+    <% } else { %>
+    <%- include('../partials/navbarPlain', {navPage: ''}); %>
+    <% } %>
     <div id="content" class="container">
 
       <div class="panel panel-primary">
@@ -53,7 +57,7 @@
             </p>
             <% } %>
             <p class="list-group-item-text">
-              Started at <%= job.start_date_formatted %> by <%= job_sequence.user_uid %><% if (job_sequence.authn_user_uid != job_sequence.user_uid) { %> (really <%= job_sequence.authn_user_uid %>)<% } %><% if (job.finish_date_formatted) { %>, finished at <%= job.finish_date_formatted %><% } %>
+              Started at <%= job.start_date_formatted %><% if (job_sequence.user_uid) { %> by <%= job_sequence.user_uid %><% } %><% if (job_sequence.authn_user_uid != job_sequence.user_uid) { %> (really <%= job_sequence.authn_user_uid %>)<% } %><% if (job.finish_date_formatted) { %>, finished at <%= job.finish_date_formatted %><% } %>
             </p>
             <p class="list-group-item-text">
               <%- include('../partials/jobStatus', {status: job.status}); %>

@@ -52,13 +52,21 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Middleware for all requests
 app.use(require('./middlewares/cors'));
-app.use(require('./middlewares/authn')); // authentication, set res.locals.auth_user
+app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
 app.use(require('./middlewares/logRequest'));
-app.use(function(req, res, next) {res.locals.plainUrlPrefix = '/pl'; next();});
+app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPrefix = '/pl'; next();});
+app.use(function(req, res, next) {res.locals.devMode = (req.app.get('env') == 'development'); next();});
+
+// clear all cached course code in dev mode (no authorization needed)
+app.use(require('./middlewares/undefCourseCode'));
 
 // course selection pages don't need authorization
 app.use('/pl', require('./pages/home/home'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
+
+// dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
+app.use('/pl/admin/reload', require('./pages/adminReload/adminReload'));
+app.use('/pl/admin/jobSequence', require('./pages/adminJobSequence/adminJobSequence'));
 
 // redirect plain course page to assessments page
 app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/courseInstance');} next();});
@@ -72,6 +80,7 @@ app.use('/pl/:course_instance_id', require('./middlewares/navData')); // set res
 app.use('/pl/:course_instance_id', require('./middlewares/urlPrefix')); // set res.locals.urlPrefix
 app.use('/pl/:course_instance_id', require('./middlewares/csrfToken')); // sets and checks res.locals.csrfToken
 
+// redirect to Admin or User page, as appropriate
 app.use('/pl/:course_instance_id/redirect', require('./middlewares/redirectToCourseInstanceLanding'));
 
 app.use('/pl/:course_instance_id/effective', require('./pages/effective/effective'));
@@ -118,6 +127,7 @@ app.use('/pl/:course_instance_id/instance_question/:instance_question_id/text', 
 
 app.use('/pl/:course_instance_id/admin/syncs', require('./pages/adminSyncs/adminSyncs'));
 app.use('/pl/:course_instance_id/admin/jobSequence', require('./pages/adminJobSequence/adminJobSequence'));
+app.use('/pl/:course_instance_id/admin/reload', require('./pages/adminReload/adminReload'));
 
 // error handling
 app.use(require('./middlewares/notFound'));
@@ -215,32 +225,6 @@ if (config.startServer) {
                 callback(null);
             });
         },
-        // FIXME: we are short-circuiting this for development,
-        // for prod these tasks should be back inline
-        function(callback) {
-            callback(null);
-            async.eachSeries(config.courseDirs || [], function(courseDir, callback) {
-                syncFromDisk.syncDiskToSql(courseDir, logger, callback);
-            }, function(err, data) {
-                if (err) {
-                    logger.error('Error syncing SQL DB:',
-                                 {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
-                } else {
-                    logger.info('Completed sync SQL DB');
-                }
-            });
-
-            /*        
-                      async.series([
-                      syncDiskToSQL,
-                      syncMongoToSQL,
-                      ], function(err, data) {
-                      if (err) {
-                      logger.error('Error syncing SQL DB:', err, data);
-                      }
-                      });
-            */
-        },
     ], function(err, data) {
         if (err) {
             logger.error('Error initializing PrairieLearn server:', err, data);
@@ -248,6 +232,9 @@ if (config.startServer) {
             process.exit(1);
         } else {
             logger.info('PrairieLearn server ready');
+            if (app.get('env') == 'development') {
+                logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort + '/pl');
+            }
         }
     });
 }
