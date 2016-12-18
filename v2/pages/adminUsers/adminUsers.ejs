@@ -33,12 +33,12 @@
                 <td><%= row.uid %></td>
                 <td><%= row.user_name %></td>
                 <td><%= row.role %></td>
-                <% row.scores.forEach(function(score) { %>
+                <% row.score_percs.forEach(function(score_perc) { %>
                 <td>
-                  <% if (score == null) { %>
+                  <% if (score_perc == null) { %>
                   —
                   <% } else { %>
-                  <%= score %>%
+                  <%= Math.floor(score_perc) %>%
                   <% } %>
                 </td>
                 <% }); %>

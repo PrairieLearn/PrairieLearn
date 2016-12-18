@@ -6,15 +6,15 @@ CREATE OR REPLACE FUNCTION
         IN credit INTEGER,
         OUT points DOUBLE PRECISION,
         OUT points_in_grading DOUBLE PRECISION,
-        OUT score_perc INTEGER,
-        OUT score_perc_in_grading INTEGER
+        OUT score_perc DOUBLE PRECISION,
+        OUT score_perc_in_grading DOUBLE PRECISION
     ) AS $$
 DECLARE
     total_points DOUBLE PRECISION;
     total_points_in_grading DOUBLE PRECISION;
     max_points DOUBLE PRECISION;
     max_possible_points DOUBLE PRECISION;
-    max_possible_score_perc INTEGER;
+    max_possible_score_perc DOUBLE PRECISION;
 BEGIN
     SELECT sum(iq.points), sum(iq.points_in_grading) INTO total_points, total_points_in_grading
     FROM instance_questions AS iq
@@ -31,7 +31,7 @@ BEGIN
     points := least(total_points, max_points);
 
     -- compute the score as a percentage, applying credit bonus/limits
-    score_perc := floor(points / max_points * 100);
+    score_perc := points / max_points * 100;
     IF credit < 100 THEN
         score_perc := least(score_perc, credit);
     ELSIF (credit > 100) AND (points = max_points) THEN
@@ -48,7 +48,7 @@ BEGIN
     total_points_in_grading := max_possible_points - points;
 
     -- compute max achieveable score_perc if all grading points are awarded
-    max_possible_score_perc := floor(max_possible_points / max_points * 100);
+    max_possible_score_perc := max_possible_points / max_points * 100;
     IF credit < 100 THEN
         max_possible_score_perc := least(max_possible_score_perc, credit);
     ELSIF (credit > 100) AND (max_possible_points = max_points) THEN

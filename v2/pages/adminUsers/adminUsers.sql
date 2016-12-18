@@ -35,7 +35,7 @@ scores AS (
 SELECT user_id,uid,user_name,role,
     ARRAY_AGG(score_perc
           ORDER BY (assessment_set_number, assessment_number)
-    ) AS scores
+    ) AS score_percs
 FROM scores
 GROUP BY user_id,uid,user_name,role
 ORDER BY role DESC, uid;

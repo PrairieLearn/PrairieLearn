@@ -16,88 +16,12 @@ CREATE TABLE IF NOT EXISTS assessment_instances (
     points DOUBLE PRECISION DEFAULT 0,
     points_in_grading DOUBLE PRECISION DEFAULT 0,
     max_points DOUBLE PRECISION,
-    score_perc INTEGER DEFAULT 0,
-    score_perc_in_grading INTEGER DEFAULT 0,
+    score_perc DOUBLE PRECISION DEFAULT 0,
+    score_perc_in_grading DOUBLE PRECISION DEFAULT 0,
     UNIQUE (number, assessment_id, user_id)
 );
 
-ALTER TABLE assessment_instances ALTER COLUMN auth_user_id DROP NOT NULL;
-
-DO $$
-    BEGIN
-        ALTER TABLE assessment_instances ADD COLUMN points DOUBLE PRECISION;
-    EXCEPTION
-        WHEN duplicate_column THEN -- do nothing
-    END;
-$$;
-
-DO $$
-    BEGIN
-        ALTER TABLE assessment_instances ADD COLUMN max_points DOUBLE PRECISION;
-    EXCEPTION
-        WHEN duplicate_column THEN -- do nothing
-    END;
-$$;
-
-DO $$
-    BEGIN
-        ALTER TABLE assessment_instances ADD COLUMN score_perc INTEGER;
-    EXCEPTION
-        WHEN duplicate_column THEN -- do nothing
-    END;
-$$;
-
-ALTER TABLE assessment_instances ALTER COLUMN open SET DEFAULT TRUE;
-
-DO $$
-    BEGIN
-        ALTER TABLE assessment_instances ADD COLUMN closed_at TIMESTAMP WITH TIME ZONE;
-    EXCEPTION
-        WHEN duplicate_column THEN -- do nothing
-    END;
-$$;
-
-DO $$
-    BEGIN
-        ALTER TABLE assessment_instances ADD COLUMN mode enum_mode;
-
-        UPDATE assessment_instances AS ai
-        SET mode = CASE WHEN a.type = 'Exam' THEN 'Exam'::enum_mode ELSE 'Public'::enum_mode END
-        FROM assessments AS a
-        WHERE ai.assessment_id = a.id AND ai.mode IS NULL;
-    EXCEPTION
-        WHEN duplicate_column THEN -- do nothing
-    END;
-$$;
-
-DO $$
-    BEGIN
-        ALTER TABLE assessment_instances ADD COLUMN duration INTERVAL DEFAULT INTERVAL '0 seconds';
-    EXCEPTION
-        WHEN duplicate_column THEN -- do nothing
-    END;
-$$;
-
-DO $$
-    BEGIN
-        ALTER TABLE assessment_instances ADD COLUMN admin_opened BOOLEAN DEFAULT FALSE;
-    EXCEPTION
-        WHEN duplicate_column THEN -- do nothing
-    END;
-$$;
-
-DO $$
-    BEGIN
-        ALTER TABLE assessment_instances ADD COLUMN points_in_grading DOUBLE PRECISION DEFAULT 0;
-    EXCEPTION
-        WHEN duplicate_column THEN -- do nothing
-    END;
-$$;
-
-DO $$
-    BEGIN
-        ALTER TABLE assessment_instances ADD COLUMN score_perc_in_grading INTEGER DEFAULT 0;
-    EXCEPTION
-        WHEN duplicate_column THEN -- do nothing
-    END;
-$$;
+DROP VIEW IF EXISTS student_assessment_scores CASCADE;
+DROP VIEW IF EXISTS user_assessment_scores CASCADE;
+ALTER TABLE assessment_instances ALTER COLUMN score_perc SET DATA TYPE DOUBLE PRECISION;
+ALTER TABLE assessment_instances ALTER COLUMN score_perc_in_grading SET DATA TYPE DOUBLE PRECISION;

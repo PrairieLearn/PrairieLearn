@@ -113,7 +113,7 @@ WITH results AS (
                 END,
         points = CASE WHEN $correct THEN iq.current_value ELSE 0 END,
         points_in_grading = 0,
-        score_perc = floor((CASE WHEN $correct THEN iq.current_value ELSE 0 END) / iq.points_list[1] * 100),
+        score_perc = (CASE WHEN $correct THEN iq.current_value ELSE 0 END) / iq.points_list[1] * 100,
         score_perc_in_grading = 0,
         current_value = CASE WHEN $correct THEN NULL ELSE iq.points_list[iq.number_attempts + 2] END,
         number_attempts = iq.number_attempts + 1

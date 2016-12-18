@@ -5,15 +5,7 @@ CREATE TABLE IF NOT EXISTS question_score_logs (
     auth_user_id INTEGER REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
     points DOUBLE PRECISION,
     max_points DOUBLE PRECISION,
-    score_perc INTEGER
+    score_perc DOUBLE PRECISION
 );
 
-DO $$
-    BEGIN
-        ALTER TABLE question_score_logs ADD COLUMN score_perc INTEGER;
-    EXCEPTION
-        WHEN duplicate_column THEN -- do nothing
-    END;
-$$;
-
-ALTER TABLE question_score_logs ALTER COLUMN date SET DEFAULT CURRENT_TIMESTAMP;
+ALTER TABLE question_score_logs ALTER COLUMN score_perc SET DATA TYPE DOUBLE PRECISION;
