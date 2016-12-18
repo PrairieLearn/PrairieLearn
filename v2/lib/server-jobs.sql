@@ -22,7 +22,7 @@ WITH max_over_jobs_with_same_course AS (
     FROM
         jobs AS j
     WHERE
-        j.course_id = $course_id
+        j.course_id IS NOT DISTINCT FROM $course_id
 ),
 max_over_jobs_with_same_sequence AS (
     SELECT
@@ -30,7 +30,7 @@ max_over_jobs_with_same_sequence AS (
     FROM
         jobs AS j
     WHERE
-        j.course_id = $course_id
+        j.course_id IS NOT DISTINCT FROM $course_id
         AND j.job_sequence_id = $job_sequence_id
         AND j.job_sequence_id IS NOT NULL
 )
@@ -44,6 +44,23 @@ FROM
     max_over_jobs_with_same_course,
     max_over_jobs_with_same_sequence
 RETURNING jobs.id;
+
+-- BLOCK insert_job_sequence
+WITH max_over_job_sequences_with_same_course AS (
+    SELECT
+        coalesce(max(js.number) + 1, 1) AS new_number
+    FROM
+        job_sequences AS js
+    WHERE
+        js.course_id IS NOT DISTINCT FROM $course_id
+)
+INSERT INTO job_sequences
+    (course_id, number,      user_id,  authn_user_id,  type,  description)
+SELECT
+    $course_id, new_number, $user_id, $authn_user_id, $type, $description
+FROM
+    max_over_job_sequences_with_same_course
+RETURNING id;
 
 -- BLOCK update_job_on_close
 WITH updated_jobs AS (
@@ -88,6 +105,9 @@ WITH updated_jobs AS (
     SET
         finish_date = CURRENT_TIMESTAMP,
         status = 'Error'::enum_job_status,
+        stderr = $stderr,
+        stdout = $stdout,
+        output = $output,
         error_message = $error_message
     WHERE
         j.id = $job_id

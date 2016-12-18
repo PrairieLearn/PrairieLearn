@@ -12,7 +12,7 @@ WITH member_jobs AS (
         LEFT JOIN users AS authn_u ON (authn_u.id = j.authn_user_id)
     WHERE
         j.job_sequence_id = $job_sequence_id
-        AND j.course_id = $course_id
+        AND j.course_id IS NOT DISTINCT FROM $course_id
 ),
 aggregated_member_jobs AS (
     SELECT
@@ -35,4 +35,4 @@ FROM
     aggregated_member_jobs
 WHERE
     js.id = $job_sequence_id
-    AND js.course_id = $course_id;
+    AND js.course_id IS NOT DISTINCT FROM $course_id;

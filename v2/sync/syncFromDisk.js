@@ -1,3 +1,4 @@
+var ERR = require('async-stacktrace');
 var async = require('async');
 
 var logger = require('../lib/logger');
@@ -17,8 +18,8 @@ module.exports = {};
 module.exports.syncDiskToSql = function(courseDir, logger, callback) {
     logger.info("Starting sync of git repository to database for " + courseDir);
     logger.info("Loading info.json files from git repository...");
-    courseDB.loadFullCourse(courseDir, function(err, course) {
-        if (err) return callback(err);
+    courseDB.loadFullCourse(courseDir, logger, function(err, course) {
+        if (ERR(err, callback)) return;
         logger.info("Successfully loaded all info.json files");
         async.series([
             function(callback) {logger.info("Syncing courseInfo from git repository to database..."); callback(null);},
@@ -34,7 +35,7 @@ module.exports.syncDiskToSql = function(courseDir, logger, callback) {
             function(callback) {logger.info("Syncing assessment sets from git repository to database..."); callback(null);},
             syncAssessmentSets.sync.bind(null, course.courseInfo),
         ], function(err) {
-            if (err) return callback(err);
+            if (ERR(err, callback)) return;
             async.forEachOfSeries(course.courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
                 async.series([
                     function(callback) {logger.info("Syncing " + courseInstanceShortName
@@ -43,9 +44,12 @@ module.exports.syncDiskToSql = function(courseDir, logger, callback) {
                     function(callback) {logger.info("Syncing " + courseInstanceShortName
                                                     + " assessments from git repository to database..."); callback(null);},
                     syncAssessments.sync.bind(null, course.courseInfo, courseInstance),
-                ], callback);
+                ], function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
             }, function(err) {
-                if (err) return callback(err);
+                if (ERR(err, callback)) return;
                 logger.info("Completed sync of git repository to database");
                 callback(null);
             });

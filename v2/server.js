@@ -52,9 +52,10 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Middleware for all requests
 app.use(require('./middlewares/cors'));
-app.use(require('./middlewares/authn')); // authentication, set res.locals.auth_user
+app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
 app.use(require('./middlewares/logRequest'));
-app.use(function(req, res, next) {res.locals.plainUrlPrefix = '/pl'; next();});
+app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPrefix = '/pl'; next();});
+app.use(function(req, res, next) {res.locals.devMode = (req.app.get('env') == 'development'); next();});
 
 // clear all cached course code in dev mode (no authorization needed)
 app.use(require('./middlewares/undefCourseCode'));
@@ -62,6 +63,10 @@ app.use(require('./middlewares/undefCourseCode'));
 // course selection pages don't need authorization
 app.use('/pl', require('./pages/home/home'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
+
+// dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
+app.use('/pl/admin/reload', require('./pages/adminReload/adminReload'));
+app.use('/pl/admin/jobSequence', require('./pages/adminJobSequence/adminJobSequence'));
 
 // redirect plain course page to assessments page
 app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/courseInstance');} next();});
@@ -122,6 +127,7 @@ app.use('/pl/:course_instance_id/instance_question/:instance_question_id/text', 
 
 app.use('/pl/:course_instance_id/admin/syncs', require('./pages/adminSyncs/adminSyncs'));
 app.use('/pl/:course_instance_id/admin/jobSequence', require('./pages/adminJobSequence/adminJobSequence'));
+app.use('/pl/:course_instance_id/admin/reload', require('./pages/adminReload/adminReload'));
 
 // error handling
 app.use(require('./middlewares/notFound'));
@@ -196,16 +202,6 @@ if (config.startServer) {
             };
             messageQueue.init(ampqConfig, assessments.processGradingResult, function(err) {
                 if (err) err = error.newMessage(err, 'Unable to connect to message queue');
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
-            // only sync from disk in development mode
-            if (app.get('env') != 'development') return callback(null);
-            async.eachSeries(config.courseDirs || [], function(courseDir, callback) {
-                syncFromDisk.syncDiskToSql(courseDir, logger, callback);
-            }, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
