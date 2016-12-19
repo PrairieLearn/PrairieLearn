@@ -10,12 +10,12 @@ node_modules/
 
 # Server log files
 v1/backend/server.log
-server.log
+/server.log
 
 # Config files
 v1/backend/config.json
 v1/backend/config.json.*
-config.json
+/config.json
 
 # Build files
 frontend-build/

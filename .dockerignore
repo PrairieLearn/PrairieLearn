@@ -1,4 +1,2 @@
-*
-!v2
-!docker
-v2/node_modules
+v1
+node_modules

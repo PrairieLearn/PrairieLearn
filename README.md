@@ -10,6 +10,19 @@ the server.
 
 ## User Documentation
 
+* [Installing and running PrairieLearn v2](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/installing.md)
+
+## Developer Documentation
+
+* [Contributing to PL development](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/contributing.md)
+* [Good blog post on how to contribute via GitHub](http://blog.davidecoppola.com/2016/11/howto-contribute-to-open-source-project-on-github/)
+* [Developer guide](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/dev-guide.md)
+* [DB ER diagram](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/models.pdf)
+* [DB table list](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/tables.txt)
+* [Docker packaging](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/docker.md)
+
+## Old Version 1 User Documentation
+
 * [Troubleshooting and other questions](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/faq.md)
 * [Overview of PrairieLearn](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/overview.md)
 * [Installing and running PrairieLearn on Linux or OS X](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/installingLinux.md)
@@ -20,18 +33,7 @@ the server.
 * [Writing tests](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/writingTests.md)
 * [Syncing with GitHub](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/sync.md)
 
-## Developer Documentation
+## Old Version 1 Developer Documentation
 
 * [Development notes](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/devNotes.md)
 * [Client/server API](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/api.md)
-
-## Version 2 Documentation
-
-PrairieLearn v2 is still in development. It is currently being beta tested in a small number of live courses.
-
-* [Installing and running PrairieLearn v2](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/installing.md)
-* [Contributing to PL development](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/contributing.md)
-* [Good blog post on how to contribute via GitHub](http://blog.davidecoppola.com/2016/11/howto-contribute-to-open-source-project-on-github/)
-* [Developer guide](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/dev-guide.md)
-* [DB ER diagram](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/models.pdf)
-* [DB table list](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/tables.txt)
