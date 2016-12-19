@@ -6,16 +6,16 @@
 
 # Backend dependencies
 v1/backend/node_modules/
-v2/node_modules/
+node_modules/
 
 # Server log files
 v1/backend/server.log
-v2/server.log
+server.log
 
 # Config files
 v1/backend/config.json
 v1/backend/config.json.*
-v2/config.json
+config.json
 
 # Build files
 frontend-build/
