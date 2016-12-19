@@ -10,20 +10,20 @@ the server.
 
 ## User Documentation
 
-* [Troubleshooting and other questions](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/faq.md)
-* [Overview of PrairieLearn](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/overview.md)
-* [Installing and running PrairieLearn on Linux or OS X](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/installingLinux.md)
-* [Installing and running PrairieLearn on Windows](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/installingWindows.md)
-* [PrairieLearn server configuration](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/serverConfig.md)
-* [Course configuration](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/courseConfig.md)
-* [Writing questions](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/writingQuestions.md)
-* [Writing tests](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/writingTests.md)
-* [Syncing with GitHub](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/sync.md)
+* [Troubleshooting and other questions](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/faq.md)
+* [Overview of PrairieLearn](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/overview.md)
+* [Installing and running PrairieLearn on Linux or OS X](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/installingLinux.md)
+* [Installing and running PrairieLearn on Windows](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/installingWindows.md)
+* [PrairieLearn server configuration](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/serverConfig.md)
+* [Course configuration](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/courseConfig.md)
+* [Writing questions](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/writingQuestions.md)
+* [Writing tests](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/writingTests.md)
+* [Syncing with GitHub](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/sync.md)
 
 ## Developer Documentation
 
-* [Development notes](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/devNotes.md)
-* [Client/server API](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/api.md)
+* [Development notes](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/devNotes.md)
+* [Client/server API](https://github.com/PrairieLearn/PrairieLearn/blob/master/v1/doc/api.md)
 
 ## Version 2 Documentation
 
