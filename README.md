@@ -11,6 +11,8 @@ the server.
 ## User Documentation
 
 * [Installing and running PrairieLearn v2](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/installing.md)
+* [Upgrading to PLv2 from PLv1](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/upgrading1.md)
+* [PrairieDraw graphics](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/PrairieDraw.md)
 
 ## Developer Documentation
 
