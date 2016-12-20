@@ -14,6 +14,10 @@ CREATE OR REPLACE FUNCTION
 BEGIN
     authorized := TRUE;
 
+    IF role > 'Instructor' THEN
+        RETURN;
+    END IF;
+
     IF assessment_access_rule.mode IS NOT NULL THEN
         IF mode IS NULL OR mode != assessment_access_rule.mode THEN
             authorized := FALSE;
