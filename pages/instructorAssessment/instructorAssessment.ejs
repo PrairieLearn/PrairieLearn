@@ -10,6 +10,7 @@
     <script type="text/javascript" src="/localscripts/histogram.js"></script>
     <script type="text/javascript" src="/localscripts/scatter.js"></script>
     <script type="text/javascript" src="/localscripts/histmini.js"></script>
+    <script type="text/javascript" src="/localscripts/parallel_histograms.js"></script>
   </head>
   <body>
     <script>
@@ -388,6 +389,55 @@
 
         </div>
       </div>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Score statistics by date </h3>
+        </div>
+
+        <% if (assessment_stat.number > 0) { %>
+        <div class="panel-body">
+          <div id="scoreHistsByDateDiv"></div>
+          <script>
+            $(function() {
+                var data = [<% assessment_score_histogram_by_date.forEach(function(day) {
+                  %>{label: '<%= day.date_formatted %>',
+                     histogram: "<%= day.histogram %>".split(",")},<% }); %>];
+
+                var options = {
+                    ygrid: _.range(0, 110, 10),
+                    xgrid: [<%= assessment_score_histogram_by_date.length %>],
+                    ylabel: 'score / %',
+                    yTickLabels: _.range(100, -10, -10)
+                };
+                parallel_histograms("#scoreHistsByDateDiv", data, options);
+            });
+          </script>
+        </div>
+
+        <div class="panel-footer">
+          <small>
+            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= statsByDateCsvFilename %>"><%= statsByDateCsvFilename %></a>.
+            <br/>
+            Each day shows a histogram of the scores on this assessment for that day. The widths are scaled relative to the maximum value across all bins and days. 
+          </small>
+        </div>
+
+        <% } else { %>
+
+        <div class="panel-body">
+          <p>No student data.</p>
+        </div>
+        
+        <% }%>
+      </div>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+      
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Downloads</h3>

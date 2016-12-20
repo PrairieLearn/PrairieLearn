@@ -40,6 +40,7 @@ var filenames = function(locals) {
         finalFilesZipFilename:        prefix + 'final_files.zip',
         allFilesZipFilename:          prefix + 'all_files.zip',
         questionStatsCsvFilename:     prefix + 'question_stats.csv',
+        statsByDateCsvFilename:       prefix + 'scores_by_date.csv',
     };
 };
 
@@ -79,8 +80,17 @@ router.get('/', function(req, res, next) {
                 if (ERR(err, callback)) return;
                 res.locals.assessment_stat = result.rows[0];
                 callback(null);
-            });
+           });
         },
+        function(callback) {
+            var params = {assessment_id: res.locals.assessment.id};
+            sqldb.query(sql.assessment_score_histogram_by_date, params, function(err, result) {
+                if (ERR(err, next)) return;
+                console.log(result.rows);
+                res.locals.assessment_score_histogram_by_date = result.rows;
+                callback(null);
+            });
+        }, 
         function(callback) {
             // FIXME: change to assessment_instance_duration_stats and show all instances
             var params = {assessment_id: res.locals.assessment.id};
@@ -333,11 +343,39 @@ router.get('/:filename', function(req, res, next) {
                 res.send(csv);
             });
         });
+    } else if (req.params.filename == res.locals.statsByDateCsvFilename) {
+        var params = {assessment_id: res.locals.assessment.id};
+        sqldb.query(sql.assessment_score_histogram_by_date, params, function(err, result) {
+            if (ERR(err, next)) return;
+            var scoresByDay = result.rows;
+
+            var csvHeaders = ["Date: "];
+            _(scoresByDay).each(function(day) {
+                csvHeaders.push(day.date_formatted);
+            });
+
+            var numDays = scoresByDay.length;
+            var numGroups = scoresByDay[0].histogram.length;
+
+            var csvData = [];
+            for (var group = 0; group < numGroups; group++) {
+                var groupData = [(group * 10) + "% to " + ((group + 1) * 10) + "%"];
+                for (var day = 0; day < numDays; day++) {
+                    groupData.push(scoresByDay[day].histogram[group]);
+                }
+                csvData.push(groupData);
+            }
+            csvData.splice(0, 0, csvHeaders);
+            csvStringify(csvData, function(err, csv) {
+                if (err) throw Error("Error formatting CSV", err);
+                res.attachment(req.params.filename);
+                res.send(csv);
+            });
+        });
     } else {
         next(new Error("Unknown filename: " + req.params.filename));
     }
 });
-
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_edit) return next();
     if (req.body.postAction == 'open') {
@@ -388,5 +426,4 @@ router.post('/', function(req, res, next) {
         return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
     }
 });
-
 module.exports = router;
