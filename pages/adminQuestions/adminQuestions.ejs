@@ -54,12 +54,12 @@
                       filter_functions: {
                           3: {
                               <% all_tags.forEach(function(tag) { %>
-                                  <%= tag.name %>: function(e, n, f, i, $r, c, data) { return /\b<%= tag.name %>\b/.test(e); },
+                                  "<%= tag.name %>": function(e, n, f, i, $r, c, data) { return /\b<%= tag.name %>\b/.test(e); },
                               <% }); %>
                           },
                           4: {
                               <% all_assessments.forEach(function(assessment) { %>
-                                  <%= assessment.label %>: function(e, n, f, i, $r, c, data) { return /\b<%= assessment.label %>\b/.test(e); },
+                                  "<%= assessment.label %>": function(e, n, f, i, $r, c, data) { return /\b<%= assessment.label %>\b/.test(e); },
                               <% }); %>
                           },
                       },
