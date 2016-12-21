@@ -119,7 +119,7 @@ print("    ],")
 print("    \"tags\": [")
 for (i, new_tag) in enumerate(new_tags_list):
     trailing_comma = ","
-    if i < len(new_tags_list) - 1:
+    if i >= len(new_tags_list) - 1:
         trailing_comma = ""
     print("        {\"name\": \"%s\", \"color\": \"%s\"}%s" % (new_tag["name"], new_tag["color"], trailing_comma))
 print("    ]")
