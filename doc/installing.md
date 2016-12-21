@@ -21,6 +21,14 @@ This is the easiest way to get started.
 
     Type Control-C to stop the PrairieLearn server.
 
+### Upgrading PrairieLearn with Docker
+
+To obtain the latest version of PrairieLearn at any time, run:
+
+    docker pull prairielearn/prairielearn
+
+After this, run PrairieLearn using the same commands as above.
+
 ## Method 2: Docker with local copy of PrairieLearn
 
 If you want to do development of PrairieLearn itself (not just question writing), then you'll need a local copy of PrairieLearn.
