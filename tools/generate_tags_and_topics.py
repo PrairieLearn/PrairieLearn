@@ -106,6 +106,7 @@ new_topics_list.sort(key=lambda x: x["name"])
 ######################################################################
 # print output
 
+print("New tags and topics not already present in %s" % course_info_file_name)
 print("{")
 
 print("    \"topics\": [")
