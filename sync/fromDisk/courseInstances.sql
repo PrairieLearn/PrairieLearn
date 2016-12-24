@@ -1,9 +1,10 @@
 -- BLOCK insert_course_instance
 INSERT INTO course_instances
-        (course_id,  short_name,  long_name,  number, deleted_at)
-VALUES ($course_id, $short_name, $long_name, $number, NULL)
-ON CONFLICT (course_id, short_name) DO UPDATE
+        (course_id,  uuid,  short_name,  long_name,  number, deleted_at)
+VALUES ($course_id, $uuid, $short_name, $long_name, $number, NULL)
+ON CONFLICT (course_id, uuid) DO UPDATE
 SET
+    short_name = EXCLUDED.short_name,
     long_name = EXCLUDED.long_name,
     number = EXCLUDED.number,
     deleted_at = EXCLUDED.deleted_at

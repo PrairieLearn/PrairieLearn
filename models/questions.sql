@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS questions (
     id SERIAL PRIMARY KEY,
+    uuid UUID,
     qid varchar(255),
     directory varchar(255),
     type enum_question_type,

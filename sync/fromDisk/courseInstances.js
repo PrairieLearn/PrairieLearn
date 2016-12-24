@@ -18,9 +18,11 @@ module.exports = {
         async.series([
             function(callback) {
                 async.forEachOfSeries(courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
+                    if (!courseInstance.uuid) return callback(new Error("No UUID in " + courseInstance.jsonFilename));
                     logger.debug('Syncing ' + courseInstance.longName);
                     var params = {
                         course_id: courseInfo.courseId,
+                        uuid: courseInstance.uuid,
                         short_name: courseInstanceShortName,
                         long_name: courseInstance.longName,
                         number: courseInstance.number,

@@ -1,5 +1,6 @@
 CREATE TABLE IF NOT EXISTS assessments (
     id SERIAL PRIMARY KEY,
+    uuid UUID,
     tid varchar(255),
     course_instance_id INTEGER NOT NULL REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE,
     type enum_assessment_type,
