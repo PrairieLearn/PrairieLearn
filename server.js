@@ -163,6 +163,7 @@ if (config.startServer) {
                 user: config.postgresqlUser,
                 database: config.postgresqlDatabase,
                 host: config.postgresqlHost,
+                password: config.postgresqlPassword,
                 max: 10,
                 idleTimeoutMillis: 30000,
             };
