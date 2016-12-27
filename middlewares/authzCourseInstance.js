@@ -2,6 +2,7 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var moment = require('moment-timezone');
 
+var logger = require('../lib/logger');
 var config = require('../lib/config');
 var error = require('../lib/error');
 var sqldb = require('../lib/sqldb');
@@ -89,6 +90,8 @@ module.exports = function(req, res, next) {
             has_admin_edit: authn_has_admin_edit,
         };
         res.locals.user = res.locals.authz_data.user;
+        // FIXME: debugging for #422
+        logger.debug('Preliminary authz_data', res.locals.authz_data);
 
         // handle user data override
         if (req.cookies.requestedUid || req.cookies.requestedRole || req.cookies.requestedMode) {
@@ -103,6 +106,8 @@ module.exports = function(req, res, next) {
             sqldb.queryOneRow(sql.select_effective_authz_data, params, function(err, result) {
                 if (ERR(err, next)) return;
                 _.assign(res.locals.authz_data, result.rows[0]);
+                // FIXME: debugging for #422
+                logger.debug('Overridden authz_data', res.locals.authz_data);
                 res.locals.user = res.locals.authz_data.user;
                 next();
             });
