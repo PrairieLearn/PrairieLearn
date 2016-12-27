@@ -37,6 +37,19 @@ module.exports = {
             //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
             function(callback) {
                 async.forEachOfSeries(questionDB, function(q, qid, callback) {
+                    logger.debug('Checking uuid for ' + qid);
+                    sqldb.call('questions_with_uuid_elsewhere', [courseInfo.courseId, q.uuid], function(err, result) {
+                        if (ERR(err, callback)) return;
+                        if (result.rowCount > 0) return callback(new Error('UUID ' + q.uuid + ' from question ' + qid + ' already in use in different course'));
+                        callback(null);
+                    });
+                }, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            function(callback) {
+                async.forEachOfSeries(questionDB, function(q, qid, callback) {
                     logger.debug('Syncing question ' + qid);
                     var params = {
                         uuid: q.uuid,

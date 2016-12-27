@@ -47,6 +47,9 @@ module.exports = {
             'set_question_uuid.sql',
             'set_assessment_uuid.sql',
             'set_course_instance_uuid.sql',
+            'course_instances_with_uuid_elsewhere.sql',
+            'questions_with_uuid_elsewhere.sql',
+            'assessments_with_uuid_elsewhere.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

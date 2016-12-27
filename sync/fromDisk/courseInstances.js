@@ -39,6 +39,19 @@ module.exports = {
             //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
             function(callback) {
                 async.forEachOfSeries(courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
+                    logger.debug('Checking uuid for ' + courseInstanceShortName);
+                    sqldb.call('course_instances_with_uuid_elsewhere', [courseInfo.courseId, courseInstance.uuid], function(err, result) {
+                        if (ERR(err, callback)) return;
+                        if (result.rowCount > 0) return callback(new Error('UUID ' + courseInstance.uuid + ' from course instance ' + courseInstanceShortName + ' already in use in different course'));
+                        callback(null);
+                    });
+                }, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            function(callback) {
+                async.forEachOfSeries(courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
                     logger.debug('Syncing ' + courseInstance.longName);
                     var params = {
                         course_id: courseInfo.courseId,
