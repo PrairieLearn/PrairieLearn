@@ -1,5 +1,7 @@
 DROP FUNCTION IF EXISTS check_assessment_access_rule(assessment_access_rules,enum_mode,enum_role,character varying,timestamp with time zone);
 DROP FUNCTION IF EXISTS check_assessment_access_rule(assessment_access_rules,enum_mode,enum_role,character varying,timestamp with time zone,boolean);
+DROP FUNCTION IF EXISTS check_assessment_access_rule(assessment_access_rules,enum_mode,enum_role,character varying,timestamp with time zone,OUT boolean);
+DROP FUNCTION IF EXISTS check_assessment_access_rule(assessment_access_rules,enum_mode,enum_role,character varying,timestamp with time zone);
 
 CREATE OR REPLACE FUNCTION
     check_assessment_access_rule (

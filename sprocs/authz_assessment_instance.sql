@@ -1,4 +1,4 @@
-DROP FUNCTION IF EXISTS authz_assessment_instance(integer, jsonb, boolean, boolean, integer, text, jsonb);
+DROP FUNCTION IF EXISTS authz_assessment_instance(integer, jsonb, OUT boolean, OUT boolean, OUT integer, OUT text, OUT jsonb);
 
 CREATE OR REPLACE FUNCTION
     authz_assessment_instance (

@@ -1,4 +1,4 @@
-DROP FUNCTION IF EXISTS assessment_points_exam(integer,integer,double precision,double precision,double precision,double precision);
+DROP FUNCTION IF EXISTS assessment_points_exam(integer,integer,OUT double precision,OUT double precision,OUT double precision,OUT double precision);
 
 CREATE OR REPLACE FUNCTION
     assessment_points_exam(
