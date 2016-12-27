@@ -1,5 +1,8 @@
-CREATE OR REPLACE FUNCTION course_instances_with_uuid_elsewhere(
-        course_id INTEGER,
+DROP FUNCTION IF EXISTS course_instances_with_uuid_elsewhere(integer,uuid);
+
+CREATE OR REPLACE FUNCTION
+    course_instances_with_uuid_elsewhere(
+        course_id bigint,
         uuid UUID
     ) RETURNS SETOF course_instances
 AS $$

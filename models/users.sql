@@ -1,5 +1,7 @@
 CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     uid varchar(255) UNIQUE,
     name varchar(255)
 );
+
+ALTER TABLE users ALTER COLUMN id SET DATA TYPE BIGINT;

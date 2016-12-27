@@ -2,7 +2,7 @@ DROP FUNCTION IF EXISTS all_courses(integer);
 
 CREATE OR REPLACE FUNCTION
     all_courses (
-        user_id integer
+        user_id bigint
     ) RETURNS JSONB
 AS $$
 WITH course_list AS (

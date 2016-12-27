@@ -1,3 +1,4 @@
+DROP FUNCTION IF EXISTS assessments_for_question(integer,integer,integer);
 
 -- Returns a JSON array describing the assessments containing question
 -- question_id for course instance course_instance_id. If skip_assessment_id
@@ -5,9 +6,9 @@
 
 CREATE OR REPLACE FUNCTION
     assessments_for_question(
-        question_id integer,
-        course_instance_id integer,
-        skip_assessment_id integer DEFAULT NULL
+        question_id bigint,
+        course_instance_id bigint,
+        skip_assessment_id bigint DEFAULT NULL
     ) RETURNS JSONB
 AS $$
 SELECT

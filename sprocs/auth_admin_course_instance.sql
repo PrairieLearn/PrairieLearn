@@ -1,12 +1,12 @@
-DROP FUNCTION IF EXISTS auth_admin_course_instance (integer, jsonb);
-DROP FUNCTION IF EXISTS auth_admin_course_instance (integer, enum_auth_action, jsonb);
+DROP FUNCTION IF EXISTS auth_admin_course_instance(integer, jsonb);
+DROP FUNCTION IF EXISTS auth_admin_course_instance(integer, enum_auth_action, jsonb);
 
 CREATE OR REPLACE FUNCTION
     auth_admin_course_instance (
-        course_instance_id integer,
+        course_instance_id bigint,
         auth_action enum_auth_action,
         auth_data JSONB
-    ) RETURNS TABLE (authorized boolean, auth_user_id integer)
+    ) RETURNS TABLE (authorized boolean, auth_user_id bigint)
 AS $$
 SELECT
     EXISTS (

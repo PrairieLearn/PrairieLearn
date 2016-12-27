@@ -2,10 +2,10 @@ DROP FUNCTION IF EXISTS check_assessment_access(integer,enum_mode,enum_role,char
 
 CREATE OR REPLACE FUNCTION
     check_assessment_access (
-        assessment_id integer,
+        assessment_id bigint,
         mode enum_mode,
         role enum_role,
-        uid varchar(255),
+        uid text,
         date TIMESTAMP WITH TIME ZONE
     ) RETURNS TABLE (
         authorized boolean,      -- Is this assessment available for the given user?

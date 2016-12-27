@@ -1,5 +1,8 @@
-CREATE OR REPLACE FUNCTION set_question_uuid(
-        course_id INTEGER,
+DROP FUNCTION IF EXISTS set_question_uuid(integer,text,uuid);
+
+CREATE OR REPLACE FUNCTION
+    set_question_uuid(
+        course_id bigint,
         qid TEXT,
         uuid UUID
     ) RETURNS VOID

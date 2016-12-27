@@ -1,5 +1,8 @@
-CREATE OR REPLACE FUNCTION assessments_with_uuid_elsewhere(
-        course_instance_id INTEGER,
+DROP FUNCTION IF EXISTS assessments_with_uuid_elsewhere(integer,uuid);
+
+CREATE OR REPLACE FUNCTION
+    assessments_with_uuid_elsewhere(
+        course_instance_id bigint,
         uuid UUID
     ) RETURNS SETOF assessments
 AS $$

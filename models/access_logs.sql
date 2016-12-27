@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS access_logs (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     mongo_id varchar(255) UNIQUE,
     date timestamp with time zone,
     mode enum_mode,
@@ -14,3 +14,5 @@ CREATE TABLE IF NOT EXISTS access_logs (
     params jsonb,
     body jsonb
 );
+
+ALTER TABLE access_logs ALTER COLUMN id SET DATA TYPE BIGINT;

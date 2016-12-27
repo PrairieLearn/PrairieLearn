@@ -1,7 +1,9 @@
+DROP FUNCTION IF EXISTS question_order(INTEGER, INTEGER, VARCHAR);
+
 CREATE OR REPLACE FUNCTION
     question_order (
-        assessment_instance_id INTEGER
-    ) RETURNS TABLE (instance_question_id INTEGER, row_order INTEGER, question_number VARCHAR)
+        assessment_instance_id BIGINT
+    ) RETURNS TABLE (instance_question_id BIGINT, row_order INTEGER, question_number TEXT)
 AS $$
 SELECT
     iq.id AS instance_question_id,

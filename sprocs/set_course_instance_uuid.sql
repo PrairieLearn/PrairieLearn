@@ -1,5 +1,8 @@
-CREATE OR REPLACE FUNCTION set_course_instance_uuid(
-        course_id INTEGER,
+DROP FUNCTION IF EXISTS set_course_instance_uuid(integer,text,uuid);
+
+CREATE OR REPLACE FUNCTION
+    set_course_instance_uuid(
+        course_id bigint,
         short_name TEXT,
         uuid UUID
     ) RETURNS VOID

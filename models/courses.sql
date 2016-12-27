@@ -1,5 +1,5 @@
 CREATE TABLE IF NOT EXISTS courses (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     short_name varchar(255) UNIQUE,
     title varchar(255),
     grading_queue TEXT,
@@ -13,3 +13,5 @@ DO $$
         WHEN duplicate_column THEN -- do nothing
     END;
 $$;
+
+ALTER TABLE courses ALTER COLUMN id SET DATA TYPE BIGINT;
