@@ -51,6 +51,7 @@ app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Middleware for all requests
+app.use(require('./middlewares/logResponse')); // defers to end of response
 app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPrefix = '/pl'; next();});
 app.use(function(req, res, next) {res.locals.devMode = (req.app.get('env') == 'development'); next();});
 app.use(require('./middlewares/cors'));
@@ -65,8 +66,10 @@ app.use('/pl', require('./pages/home/home'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
 
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
-app.use('/pl/admin/reload', require('./pages/adminReload/adminReload'));
-app.use('/pl/admin/jobSequence', require('./pages/adminJobSequence/adminJobSequence'));
+if (app.get('env' == 'development')) {
+    app.use('/pl/admin/reload', require('./pages/adminReload/adminReload'));
+    app.use('/pl/admin/jobSequence', require('./pages/adminJobSequence/adminJobSequence'));
+}
 
 // redirect plain course page to assessments page
 app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/courseInstance');} next();});
