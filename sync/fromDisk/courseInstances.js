@@ -16,9 +16,29 @@ module.exports = {
         var that = module.exports;
         var courseInstanceIds = [];
         async.series([
+            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            function(callback) {
+                logger.verbose('FIXME tmp uuid course_instances add');
+                async.forEachOfSeries(courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
+                    logger.debug('FIXME tmp uuid add ' + courseInstance.longName);
+                    sqldb.call('set_course_instance_uuid', [courseInfo.courseId, courseInstanceShortName, courseInstance.uuid], function(err, result) {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                }, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
             function(callback) {
                 async.forEachOfSeries(courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
-                    if (!courseInstance.uuid) return callback(new Error("No UUID in " + courseInstance.jsonFilename));
                     logger.debug('Syncing ' + courseInstance.longName);
                     var params = {
                         course_id: courseInfo.courseId,
@@ -32,7 +52,10 @@ module.exports = {
                         var courseInstanceId = result.rows[0].id;
                         courseInstanceIds.push(courseInstanceId);
                         courseInstance.courseInstanceId = courseInstanceId;
-                        that.syncAccessRules(courseInstance, callback);
+                        that.syncAccessRules(courseInstance, function(err) {
+                            if (ERR(err, callback)) return;
+                            callback(null);
+                        });
                     });
                 }, function(err) {
                     if (ERR(err, callback)) return;

@@ -15,11 +15,33 @@ module.exports = {
         var that = module.exports;
         var assessmentIds = [];
         async.series([
+            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            function(callback) {
+                logger.verbose('FIXME tmp uuid assessments add');
+                async.forEachOfSeries(courseInstance.assessmentDB, function(dbAssessment, tid, callback) {
+                    logger.debug('Syncing ' + tid);
+                    sqldb.call('set_assessment_uuid', [courseInstance.courseInstanceId, tid, dbAssessment.uuid], function(err, result) {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                }, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
             function(callback) {
                 async.forEachOfSeries(courseInstance.assessmentDB, function(dbAssessment, tid, callback) {
                     logger.debug('Syncing ' + tid);
                     var params = {
                         tid: tid,
+                        uuid: dbAssessment.uuid,
                         type: dbAssessment.type,
                         number: dbAssessment.number,
                         title: dbAssessment.title,
