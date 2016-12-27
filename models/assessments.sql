@@ -8,11 +8,11 @@ DROP VIEW IF EXISTS assessment_instance_durations;
 CREATE TABLE IF NOT EXISTS assessments (
     id BIGSERIAL PRIMARY KEY,
     uuid UUID NOT NULL UNIQUE,
-    tid varchar(255),
+    tid text,
     course_instance_id BIGINT NOT NULL REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE,
     type enum_assessment_type,
-    number varchar(20),
-    title varchar(255),
+    number text,
+    title text,
     config JSONB,
     text TEXT,
     multiple_instance boolean,
@@ -31,3 +31,6 @@ ALTER TABLE assessments DROP CONSTRAINT IF EXISTS assessments_tid_course_instanc
 ALTER TABLE assessments ALTER COLUMN id SET DATA TYPE BIGINT;
 ALTER TABLE assessments ALTER COLUMN course_instance_id SET DATA TYPE BIGINT;
 ALTER TABLE assessments ALTER COLUMN assessment_set_id SET DATA TYPE BIGINT;
+ALTER TABLE assessments ALTER COLUMN tid SET DATA TYPE TEXT;
+ALTER TABLE assessments ALTER COLUMN number SET DATA TYPE TEXT;
+ALTER TABLE assessments ALTER COLUMN title SET DATA TYPE TEXT;

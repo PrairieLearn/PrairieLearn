@@ -6,7 +6,7 @@ CREATE OR REPLACE FUNCTION
         IN assessment_access_rule assessment_access_rules,
         IN mode enum_mode,
         IN role enum_role,
-        IN uid varchar(255),
+        IN uid text,
         IN date TIMESTAMP WITH TIME ZONE,
         IN use_date_check BOOLEAN, -- use a separate flag for safety, rather than having 'date = NULL' indicate this
         OUT authorized boolean

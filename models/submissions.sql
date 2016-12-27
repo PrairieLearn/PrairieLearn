@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS submissions (
     id BIGSERIAL PRIMARY KEY,
-    sid varchar(255) UNIQUE, -- temporary, delete after Mongo import
+    sid text UNIQUE, -- temporary, delete after Mongo import
     date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     variant_id BIGINT NOT NULL REFERENCES variants ON DELETE CASCADE ON UPDATE CASCADE,
     auth_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
@@ -67,3 +67,4 @@ $$;
 ALTER TABLE submissions ALTER COLUMN id SET DATA TYPE BIGINT;
 ALTER TABLE submissions ALTER COLUMN variant_id SET DATA TYPE BIGINT;
 ALTER TABLE submissions ALTER COLUMN auth_user_id SET DATA TYPE BIGINT;
+ALTER TABLE submissions ALTER COLUMN sid SET DATA TYPE TEXT;

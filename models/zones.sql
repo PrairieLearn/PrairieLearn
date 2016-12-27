@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS zones (
     id BIGSERIAL PRIMARY KEY,
-    title varchar(255),
+    title text,
     number INTEGER,
     number_choose INTEGER, -- NULL means choose all
     assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,
@@ -17,3 +17,4 @@ $$;
 
 ALTER TABLE zones ALTER COLUMN id SET DATA TYPE BIGINT;
 ALTER TABLE zones ALTER COLUMN assessment_id SET DATA TYPE BIGINT;
+ALTER TABLE zones ALTER COLUMN title SET DATA TYPE TEXT;

@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS assessment_access_rules (
     number INTEGER,
     mode enum_mode,
     role enum_role,
-    uids varchar(255)[],
+    uids text[],
     start_date TIMESTAMP WITH TIME ZONE,
     end_date TIMESTAMP WITH TIME ZONE,
     credit INTEGER,
@@ -13,3 +13,4 @@ CREATE TABLE IF NOT EXISTS assessment_access_rules (
 
 ALTER TABLE assessment_access_rules ALTER COLUMN id SET DATA TYPE BIGINT;
 ALTER TABLE assessment_access_rules ALTER COLUMN assessment_id SET DATA TYPE BIGINT;
+ALTER TABLE assessment_access_rules ALTER COLUMN uids SET DATA TYPE TEXT[];

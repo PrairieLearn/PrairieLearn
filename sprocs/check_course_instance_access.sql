@@ -1,4 +1,5 @@
 DROP FUNCTION IF EXISTS check_course_instance_access(integer, enum_role, varchar(255), timestamp with time zone);
+DROP FUNCTION IF EXISTS check_course_instance_access(bigint, enum_role, varchar(255), timestamp with time zone);
 
 CREATE OR REPLACE FUNCTION
     check_course_instance_access (

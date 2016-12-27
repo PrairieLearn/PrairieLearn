@@ -1,10 +1,10 @@
 CREATE TABLE IF NOT EXISTS questions (
     id BIGSERIAL PRIMARY KEY,
     uuid UUID NOT NULL UNIQUE,
-    qid varchar(255),
-    directory varchar(255),
+    qid text,
+    directory text,
     type enum_question_type,
-    title varchar(255),
+    title text,
     config JSONB,
     client_files TEXT[] DEFAULT ARRAY[]::TEXT[],
     number INTEGER,
@@ -23,3 +23,6 @@ ALTER TABLE questions DROP CONSTRAINT IF EXISTS questions_qid_course_id_key;
 ALTER TABLE questions ALTER COLUMN id SET DATA TYPE BIGINT;
 ALTER TABLE questions ALTER COLUMN course_id SET DATA TYPE BIGINT;
 ALTER TABLE questions ALTER COLUMN topic_id SET DATA TYPE BIGINT;
+ALTER TABLE questions ALTER COLUMN qid SET DATA TYPE TEXT;
+ALTER TABLE questions ALTER COLUMN directory SET DATA TYPE TEXT;
+ALTER TABLE questions ALTER COLUMN title SET DATA TYPE TEXT;

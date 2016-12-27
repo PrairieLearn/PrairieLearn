@@ -1,6 +1,6 @@
 CREATE TABLE IF NOT EXISTS assessment_instances (
     id BIGSERIAL PRIMARY KEY,
-    tiid varchar(255) UNIQUE, -- temporary, delete after Mongo import
+    tiid text UNIQUE, -- temporary, delete after Mongo import
     qids JSONB, -- temporary, delete after Mongo import
     obj JSONB, -- temporary, delete after Mongo import
     date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
@@ -30,3 +30,4 @@ ALTER TABLE assessment_instances ALTER COLUMN id SET DATA TYPE BIGINT;
 ALTER TABLE assessment_instances ALTER COLUMN assessment_id SET DATA TYPE BIGINT;
 ALTER TABLE assessment_instances ALTER COLUMN user_id SET DATA TYPE BIGINT;
 ALTER TABLE assessment_instances ALTER COLUMN auth_user_id SET DATA TYPE BIGINT;
+ALTER TABLE assessment_instances ALTER COLUMN tiid SET DATA TYPE TEXT;
