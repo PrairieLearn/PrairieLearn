@@ -1,16 +1,17 @@
 -- BLOCK insert_assessment
 INSERT INTO assessments
-        (tid,  type,  number,  title,  config,  multiple_instance,  shuffle_questions,
+        (uuid,  tid,  type,  number,  title,  config,  multiple_instance,  shuffle_questions,
          max_points, deleted_at, course_instance_id,  text,
          assessment_set_id)
 (
     SELECT
-        $tid, $type, $number, $title, $config, $multiple_instance, $shuffle_questions,
+        $uuid, $tid, $type, $number, $title, $config, $multiple_instance, $shuffle_questions,
         $max_score,  NULL,      $course_instance_id, $text,
         COALESCE((SELECT id FROM assessment_sets WHERE name = $set_name AND course_id = $course_id), NULL)
 )
-ON CONFLICT (tid, course_instance_id) DO UPDATE
+ON CONFLICT (uuid) DO UPDATE
 SET
+    tid = EXCLUDED.tid,
     type = EXCLUDED.type,
     number = EXCLUDED.number,
     title = EXCLUDED.title,
@@ -21,6 +22,8 @@ SET
     deleted_at = EXCLUDED.deleted_at,
     text = EXCLUDED.text,
     assessment_set_id = EXCLUDED.assessment_set_id
+WHERE
+    assessments.course_instance_id = $course_instance_id
 RETURNING id;
 
 -- BLOCK soft_delete_unused_assessments

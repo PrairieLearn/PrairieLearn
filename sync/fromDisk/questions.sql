@@ -1,15 +1,16 @@
 -- BLOCK insert_question
 INSERT INTO questions
-    (qid, directory, type,                      title,  config,         client_files,
+    (uuid,  qid, directory, type,                      title,  config,         client_files,
     course_id,            grading_method,                      deleted_at,
     topic_id)
 (SELECT
-    $qid, $qid,     $type::enum_question_type, $title, $config::JSONB, $client_files::TEXT[],
+    $uuid, $qid, $qid,     $type::enum_question_type, $title, $config::JSONB, $client_files::TEXT[],
     $course_id::integer, $grading_method::enum_grading_method, NULL::timestamp with time zone,
     COALESCE((SELECT id FROM topics WHERE name = $topic AND course_id = $course_id), NULL)
 )
-ON CONFLICT (qid, course_id) DO UPDATE
+ON CONFLICT (uuid) DO UPDATE
 SET
+    qid = EXCLUDED.qid,
     directory = EXCLUDED.directory,
     type = EXCLUDED.type,
     title = EXCLUDED.title,
@@ -18,6 +19,8 @@ SET
     grading_method = EXCLUDED.grading_method,
     topic_id = EXCLUDED.topic_id,
     deleted_at = EXCLUDED.deleted_at
+WHERE
+    questions.course_id = $course_id
 RETURNING id;
 
 -- BLOCK soft_delete_unused_questions

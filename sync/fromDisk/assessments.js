@@ -15,11 +15,46 @@ module.exports = {
         var that = module.exports;
         var assessmentIds = [];
         async.series([
+            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            function(callback) {
+                logger.verbose('FIXME tmp uuid assessments add');
+                async.forEachOfSeries(courseInstance.assessmentDB, function(dbAssessment, tid, callback) {
+                    logger.debug('FIXME set_assessment_uuid ' + tid);
+                    sqldb.call('set_assessment_uuid', [courseInstance.courseInstanceId, tid, dbAssessment.uuid], function(err, result) {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                }, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            function(callback) {
+                async.forEachOfSeries(courseInstance.assessmentDB, function(dbAssessment, tid, callback) {
+                    logger.debug('Checking uuid for ' + tid);
+                    sqldb.call('assessments_with_uuid_elsewhere', [courseInstance.courseInstanceId, dbAssessment.uuid], function(err, result) {
+                        if (ERR(err, callback)) return;
+                        if (result.rowCount > 0) return callback(new Error('UUID ' + dbAssessment.uuid + ' from assessment ' + tid + ' in ' + courseInstance.tid + ' already in use in different course instance'));
+                        callback(null);
+                    });
+                }, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
             function(callback) {
                 async.forEachOfSeries(courseInstance.assessmentDB, function(dbAssessment, tid, callback) {
                     logger.debug('Syncing ' + tid);
                     var params = {
                         tid: tid,
+                        uuid: dbAssessment.uuid,
                         type: dbAssessment.type,
                         number: dbAssessment.number,
                         title: dbAssessment.title,

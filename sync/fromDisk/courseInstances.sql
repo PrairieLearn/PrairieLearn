@@ -1,12 +1,15 @@
 -- BLOCK insert_course_instance
 INSERT INTO course_instances
-        (course_id,  short_name,  long_name,  number, deleted_at)
-VALUES ($course_id, $short_name, $long_name, $number, NULL)
-ON CONFLICT (course_id, short_name) DO UPDATE
+        (course_id,  uuid,  short_name,  long_name,  number, deleted_at)
+VALUES ($course_id, $uuid, $short_name, $long_name, $number, NULL)
+ON CONFLICT (uuid) DO UPDATE
 SET
+    short_name = EXCLUDED.short_name,
     long_name = EXCLUDED.long_name,
     number = EXCLUDED.number,
     deleted_at = EXCLUDED.deleted_at
+WHERE
+    course_instances.course_id = $course_id
 RETURNING *;
 
 -- BLOCK soft_delete_unused_course_instances

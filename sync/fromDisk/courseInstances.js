@@ -16,11 +16,46 @@ module.exports = {
         var that = module.exports;
         var courseInstanceIds = [];
         async.series([
+            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            function(callback) {
+                logger.verbose('FIXME tmp uuid course_instances add');
+                async.forEachOfSeries(courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
+                    logger.debug('FIXME tmp uuid add ' + courseInstance.longName);
+                    sqldb.call('set_course_instance_uuid', [courseInfo.courseId, courseInstanceShortName, courseInstance.uuid], function(err, result) {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                }, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
+            function(callback) {
+                async.forEachOfSeries(courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
+                    logger.debug('Checking uuid for ' + courseInstanceShortName);
+                    sqldb.call('course_instances_with_uuid_elsewhere', [courseInfo.courseId, courseInstance.uuid], function(err, result) {
+                        if (ERR(err, callback)) return;
+                        if (result.rowCount > 0) return callback(new Error('UUID ' + courseInstance.uuid + ' from course instance ' + courseInstanceShortName + ' already in use in different course'));
+                        callback(null);
+                    });
+                }, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
             function(callback) {
                 async.forEachOfSeries(courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
                     logger.debug('Syncing ' + courseInstance.longName);
                     var params = {
                         course_id: courseInfo.courseId,
+                        uuid: courseInstance.uuid,
                         short_name: courseInstanceShortName,
                         long_name: courseInstance.longName,
                         number: courseInstance.number,
@@ -30,7 +65,10 @@ module.exports = {
                         var courseInstanceId = result.rows[0].id;
                         courseInstanceIds.push(courseInstanceId);
                         courseInstance.courseInstanceId = courseInstanceId;
-                        that.syncAccessRules(courseInstance, callback);
+                        that.syncAccessRules(courseInstance, function(err) {
+                            if (ERR(err, callback)) return;
+                            callback(null);
+                        });
                     });
                 }, function(err) {
                     if (ERR(err, callback)) return;

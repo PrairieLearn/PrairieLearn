@@ -4,6 +4,12 @@
     "description": "The specification file for a course instance.",
     "type": "object",
     "properties": {
+        "uuid": {
+            "description": "Unique identifier (UUID v4).",
+            "type": "string",
+            "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
+            "required": true
+        },
         "longName": {
             "description": "The long name of this course instance (e.g., 'Spring 2015').",
             "type": "string",
