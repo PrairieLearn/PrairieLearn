@@ -74,18 +74,24 @@ module.exports = {
                         logger.debug('Synced ' + tid + ' as assessment_id ' + assessmentId);
                         that.syncAccessRules(assessmentId, dbAssessment, function(err) {
                             if (ERR(err, callback)) return;
+                            var zoneList = null;
                             if (_(dbAssessment).has('options') && _(dbAssessment.options).has('zones')) {
                                 // RetryExam, new format
                                 zoneList = dbAssessment.options.zones;
                             } else if (_(dbAssessment).has('options') && _(dbAssessment.options).has('questionGroups')) {
                                 // RetryExam, old format
                                 zoneList = [{questions: _.flattenDeep(dbAssessment.options.questionGroups)}];
+                            } else if (_(dbAssessment).has('options') && _(dbAssessment.options).has('qidGroups')) {
+                                // Exam, old format
+                                zoneList = [{questions: _.map(_.flattenDeep(dbAssessment.options.qidGroups), q => ({"qid": q, "points": [1]}))}];
                             } else if (_(dbAssessment).has('options') && _(dbAssessment.options).has('questions')) {
                                 // Homework
                                 zoneList = [{questions: dbAssessment.options.questions}];
                             } else if (_(dbAssessment).has('options') && _(dbAssessment.options).has('qids')) {
                                 // Basic
                                 zoneList = [{questions: dbAssessment.options.qids}];
+                            } else {
+                                return callback(new Error('unable to determine question list for ' + tid));
                             }
                             that.syncZones(assessmentId, zoneList, function(err) {
                                 if (ERR(err, callback)) return;
