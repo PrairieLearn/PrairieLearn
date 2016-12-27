@@ -1,8 +1,10 @@
+DROP FUNCTION IF EXISTS check_course_instance_access_rule(course_instance_access_rules, enum_role, text, timestamp with time zone);
+
 CREATE OR REPLACE FUNCTION
     check_course_instance_access_rule (
         course_instance_access_rule course_instance_access_rules,
         role enum_role,
-        uid varchar(255),
+        uid text,
         date TIMESTAMP WITH TIME ZONE
     ) RETURNS BOOLEAN AS $$
 DECLARE

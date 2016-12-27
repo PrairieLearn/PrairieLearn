@@ -1,8 +1,9 @@
 DROP FUNCTION IF EXISTS authz_assessment(integer, jsonb);
+DROP FUNCTION IF EXISTS authz_assessment(integer, jsonb, boolean, boolean, integer, text, jsonb);
 
 CREATE OR REPLACE FUNCTION
     authz_assessment (
-        IN assessment_id integer,
+        IN assessment_id bigint,
         IN authz_data JSONB,
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?

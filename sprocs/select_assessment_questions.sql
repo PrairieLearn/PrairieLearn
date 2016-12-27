@@ -1,9 +1,10 @@
+DROP FUNCTION IF EXISTS select_assessment_questions(integer);
 
 CREATE OR REPLACE FUNCTION
     select_assessment_questions(
-        assessment_id INTEGER
+        assessment_id bigint
     ) RETURNS TABLE (
-        assessment_question_id INTEGER,
+        assessment_question_id bigint,
         question JSONB
     )
 AS $$

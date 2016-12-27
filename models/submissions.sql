@@ -1,9 +1,9 @@
 CREATE TABLE IF NOT EXISTS submissions (
-    id SERIAL PRIMARY KEY,
-    sid varchar(255) UNIQUE, -- temporary, delete after Mongo import
+    id BIGSERIAL PRIMARY KEY,
+    sid text UNIQUE, -- temporary, delete after Mongo import
     date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
-    variant_id INTEGER NOT NULL REFERENCES variants ON DELETE CASCADE ON UPDATE CASCADE,
-    auth_user_id INTEGER REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
+    variant_id BIGINT NOT NULL REFERENCES variants ON DELETE CASCADE ON UPDATE CASCADE,
+    auth_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
     submitted_answer JSONB,
     type enum_submission_type,
     override_score DOUBLE PRECISION,
@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS submissions (
 
 DO $$
     BEGIN
-        ALTER TABLE submissions ADD COLUMN variant_id INTEGER NOT NULL REFERENCES variants ON DELETE CASCADE ON UPDATE CASCADE;
+        ALTER TABLE submissions ADD COLUMN variant_id BIGINT NOT NULL REFERENCES variants ON DELETE CASCADE ON UPDATE CASCADE;
     EXCEPTION
         WHEN duplicate_column THEN -- do nothing
     END;
@@ -63,3 +63,8 @@ DO $$
         WHEN duplicate_column THEN -- do nothing
     END;
 $$;
+
+ALTER TABLE submissions ALTER COLUMN id SET DATA TYPE BIGINT;
+ALTER TABLE submissions ALTER COLUMN variant_id SET DATA TYPE BIGINT;
+ALTER TABLE submissions ALTER COLUMN auth_user_id SET DATA TYPE BIGINT;
+ALTER TABLE submissions ALTER COLUMN sid SET DATA TYPE TEXT;

@@ -1,16 +1,16 @@
 CREATE TABLE IF NOT EXISTS questions (
-    id SERIAL PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     uuid UUID NOT NULL UNIQUE,
-    qid varchar(255),
-    directory varchar(255),
+    qid text,
+    directory text,
     type enum_question_type,
-    title varchar(255),
+    title text,
     config JSONB,
     client_files TEXT[] DEFAULT ARRAY[]::TEXT[],
     number INTEGER,
     grading_method enum_grading_method NOT NULL DEFAULT 'Internal',
-    course_id INTEGER NOT NULL REFERENCES courses ON DELETE CASCADE ON UPDATE CASCADE,
-    topic_id INTEGER REFERENCES topics ON DELETE SET NULL ON UPDATE CASCADE,
+    course_id BIGINT NOT NULL REFERENCES courses ON DELETE CASCADE ON UPDATE CASCADE,
+    topic_id BIGINT REFERENCES topics ON DELETE SET NULL ON UPDATE CASCADE,
     deleted_at TIMESTAMP WITH TIME ZONE,
     UNIQUE (number, course_id)
 );
@@ -19,3 +19,10 @@ CREATE TABLE IF NOT EXISTS questions (
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS uuid UUID UNIQUE;
 
 ALTER TABLE questions DROP CONSTRAINT IF EXISTS questions_qid_course_id_key;
+
+ALTER TABLE questions ALTER COLUMN id SET DATA TYPE BIGINT;
+ALTER TABLE questions ALTER COLUMN course_id SET DATA TYPE BIGINT;
+ALTER TABLE questions ALTER COLUMN topic_id SET DATA TYPE BIGINT;
+ALTER TABLE questions ALTER COLUMN qid SET DATA TYPE TEXT;
+ALTER TABLE questions ALTER COLUMN directory SET DATA TYPE TEXT;
+ALTER TABLE questions ALTER COLUMN title SET DATA TYPE TEXT;

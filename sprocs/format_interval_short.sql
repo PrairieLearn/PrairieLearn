@@ -4,7 +4,7 @@ DECLARE
     hours integer;
     mins integer;
     secs integer;
-    s varchar;
+    s text;
 BEGIN
     days := div(CAST(floor(EXTRACT(EPOCH FROM d)) AS integer), 60 * 60 * 24);
     hours := mod(div(CAST(floor(EXTRACT(EPOCH FROM d)) AS integer), 60 * 60), 24);

@@ -1,8 +1,11 @@
+DROP FUNCTION IF EXISTS check_course_instance_access(integer, enum_role, varchar(255), timestamp with time zone);
+DROP FUNCTION IF EXISTS check_course_instance_access(bigint, enum_role, varchar(255), timestamp with time zone);
+
 CREATE OR REPLACE FUNCTION
     check_course_instance_access (
-        course_instance_id integer,
+        course_instance_id bigint,
         role enum_role,
-        uid varchar(255),
+        uid text,
         date TIMESTAMP WITH TIME ZONE
     ) RETURNS BOOLEAN AS $$
 SELECT

@@ -1,8 +1,8 @@
-DROP FUNCTION IF EXISTS assessment_points_homework(integer,integer);
+DROP FUNCTION IF EXISTS assessment_points_homework(integer,integer,double precision,double precision,double precision,double precision);
 
 CREATE OR REPLACE FUNCTION
     assessment_points_homework(
-        IN assessment_instance_id INTEGER,
+        IN assessment_instance_id bigint,
         IN credit INTEGER,
         OUT points DOUBLE PRECISION,
         OUT points_in_grading DOUBLE PRECISION,

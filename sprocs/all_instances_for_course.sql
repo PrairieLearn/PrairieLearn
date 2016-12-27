@@ -1,7 +1,9 @@
+DROP FUNCTION IF EXISTS all_instances_for_course(integer,integer);
+
 CREATE OR REPLACE FUNCTION
     all_instances_for_course(
-        course_id integer,
-        user_id integer
+        course_id bigint,
+        user_id bigint
     ) RETURNS JSONB
 AS $$
 WITH course_instance_list AS (
