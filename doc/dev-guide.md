@@ -20,35 +20,35 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 1. Top-level files and directories are:
 
         PrairieLearn/v2
-        +-- config.json       # server configuration file (optional)
-        +-- cron              # jobs to be periodically executed, one file per job
-        |   +-- index.js      # entry point for all cron jobs
-        |   `-- ...           # one JS file per cron job, executed by index.js
-        +-- doc               # documentation
-        +-- exampleCourse     # example content for a course
-        +-- lib               # miscellaneous helper code
-        +-- middlewares       # Express.js middleware, one per file
-        +-- models            # DB table creation, one file per table
-        |   +-- index.js      # entry point for all model initialization
-        |   `-- ...           # one JS file per table, executed by index.js
-        +-- package.json      # npm configuration file
-        +-- pages             # one sub-dir per web page
-        |   +-- partials      # EJS helper sub-templates
-        |   +-- adminHome     # all the code for the adminHome page
-        |   +-- userHome      # all the code for the userHome page
-        |   `-- ...           # other "admin" and "user" pages
-        +-- public            # all accessible without access control
-        |   +-- javascripts   # external packages only, no modificiations
-        |   +-- localscripts  # all local site-wide JS
-        |   `-- stylesheets   # all CSS, both external and local
-        +-- question-servers  # one file per question type
-        +-- schemas           # JSON schemas for input file formats
-        +-- server.js         # top-level program
-        +-- sprocs            # DB stored procedures, one per file
-        |   +-- index.js      # entry point for all sproc initialization
-        |   `-- ...           # one JS file per sproc, executed by index.js
-        +-- sync              # code to load on-disk course config into DB
-        `-- tests             # unit tests, currently unused
+        +-- config.json        # server configuration file (optional)
+        +-- cron               # jobs to be periodically executed, one file per job
+        |   +-- index.js       # entry point for all cron jobs
+        |   `-- ...            # one JS file per cron job, executed by index.js
+        +-- doc                # documentation
+        +-- exampleCourse      # example content for a course
+        +-- lib                # miscellaneous helper code
+        +-- middlewares        # Express.js middleware, one per file
+        +-- models             # DB table creation, one file per table
+        |   +-- index.js       # entry point for all model initialization
+        |   `-- ...            # one JS file per table, executed by index.js
+        +-- package.json       # npm configuration file
+        +-- pages              # one sub-dir per web page
+        |   +-- partials       # EJS helper sub-templates
+        |   +-- instructorHome # all the code for the instructorHome page
+        |   +-- userHome       # all the code for the userHome page
+        |   `-- ...            # other "instructor" and "user" pages
+        +-- public             # all accessible without access control
+        |   +-- javascripts    # external packages only, no modificiations
+        |   +-- localscripts   # all local site-wide JS
+        |   `-- stylesheets    # all CSS, both external and local
+        +-- question-servers   # one file per question type
+        +-- schemas            # JSON schemas for input file formats
+        +-- server.js          # top-level program
+        +-- sprocs             # DB stored procedures, one per file
+        |   +-- index.js       # entry point for all sproc initialization
+        |   `-- ...            # one JS file per sproc, executed by index.js
+        +-- sync               # code to load on-disk course config into DB
+        `-- tests              # unit tests, currently unused
 
 
 ## Page generation
@@ -59,19 +59,19 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. Each web page typically has all its files in a single directory, with the directory, the files, and the URL all named the same. Not all pages need all files. For example:
 
-        pages/adminUsers
-        +-- adminUsers.js         # main entry point, calls the SQL and renders the template
-        +-- adminUsers.sql        # all SQL code specific to this page
-        +-- adminUsers.ejs        # the EJS template for the page
-        `-- adminUsersClient.js   # any client-side JS needed
+        pages/instructorGradebook
+        +-- instructorGradebook.js         # main entry point, calls the SQL and renders the template
+        +-- instructorGradebook.sql        # all SQL code specific to this page
+        +-- instructorGradebook.ejs        # the EJS template for the page
+        `-- instructorGradebookClient.js   # any client-side JS needed
 
-1. The above `adminUsers` page is loaded from the top-level `server.js` with:
+1. The above `instructorGradebook` page is loaded from the top-level `server.js` with:
 
     ```javascript
-    app.use('/admin/:courseInstanceId/users', require('./pages/adminUsers/adminUsers'));
+    app.use('/instructor/:courseInstanceId/gradebook', require('./pages/instructorGradebook/instructorGradebook'));
     ```
 
-1. The `adminUsers.js` main JS file is an Express `router` and has the basic structure:
+1. The `instructorGradebook.js` main JS file is an Express `router` and has the basic structure:
 
     ```javascript
     var ERR = require('async-stacktrace');
@@ -88,7 +88,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
             if (ERR(err, next)) return;
             res.locals.user_scores = result.rows; // store the data in res.locals
 
-            res.render('pages/adminUsers/adminUsers', res.locals); // render the page
+            res.render('pages/instructorGradebook/instructorGradebook', res.locals); // render the page
             // inside the EJS template, "res.locals.var" can be accessed with just "var"
         });
     });
@@ -186,7 +186,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 ## DB Schema
 
-1. See the [list of DB tables](tables.txt), with the ER (entity relationship) diagram below ([PDF ER diagram](models.pdf)).
+1. See the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/models/), with the ER (entity relationship) diagram below ([PDF ER diagram](models.pdf)).
 
 <img style="width: 80em" src="models.png" />
 

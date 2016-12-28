@@ -11,7 +11,7 @@ open_assessment_instances AS (
         ai.open = true
         AND a.type = 'Exam'
         AND age(ai.date) > interval '6 hours' -- not required, but will reduce the search size
-        AND NOT ai.admin_opened
+        AND NOT ai.instructor_opened
 ),
 -- add the date of last activity to each of them (last submission, or the start date)
 last_dated_assessment_instances AS (

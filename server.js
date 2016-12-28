@@ -67,8 +67,8 @@ app.use('/pl/enroll', require('./pages/enroll/enroll'));
 
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
 if (app.get('env' == 'development')) {
-    app.use('/pl/admin/reload', require('./pages/adminReload/adminReload'));
-    app.use('/pl/admin/jobSequence', require('./pages/adminJobSequence/adminJobSequence'));
+    app.use('/pl/instructor/reload', require('./pages/instructorReload/instructorReload'));
+    app.use('/pl/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 }
 
 // redirect plain course page to assessments page
@@ -78,59 +78,59 @@ app.use('/pl/:course_instance_id/courseInstance', require('./middlewares/freshSt
 
 // all other pages need authorization
 app.use('/pl/:course_instance_id', require('./middlewares/authzCourseInstance')); // authorization for the course instance
-app.use('/pl/:course_instance_id/admin', require('./middlewares/authzCourseInstanceAdmin'));
+app.use('/pl/:course_instance_id/instructor', require('./middlewares/authzCourseInstanceInstructor'));
 app.use('/pl/:course_instance_id', require('./middlewares/navData')); // set res.locals.navData, res.locals.course, res.locals.course_instance
 app.use('/pl/:course_instance_id', require('./middlewares/urlPrefix')); // set res.locals.urlPrefix
 app.use('/pl/:course_instance_id', require('./middlewares/csrfToken')); // sets and checks res.locals.csrfToken
 
-// redirect to Admin or User page, as appropriate
+// redirect to Instructor or Student page, as appropriate
 app.use('/pl/:course_instance_id/redirect', require('./middlewares/redirectToCourseInstanceLanding'));
 
 app.use('/pl/:course_instance_id/effective', require('./pages/effective/effective'));
 
-app.use('/pl/:course_instance_id/assessments', require('./pages/userAssessments/userAssessments'));
-app.use('/pl/:course_instance_id/admin/assessments', require('./pages/adminAssessments/adminAssessments'));
+app.use('/pl/:course_instance_id/assessments', require('./pages/studentAssessments/studentAssessments'));
+app.use('/pl/:course_instance_id/instructor/assessments', require('./pages/instructorAssessments/instructorAssessments'));
 
 // polymorphic pages check type and call next() if they aren't the right page
-app.use('/pl/:course_instance_id/admin/assessment/:assessment_id', [
+app.use('/pl/:course_instance_id/instructor/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
-    require('./pages/adminAssessment/adminAssessment'),
+    require('./pages/instructorAssessment/instructorAssessment'),
 ]);
 app.use('/pl/:course_instance_id/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
-    require('./pages/userAssessmentHomework/userAssessmentHomework'),
-    require('./pages/userAssessmentExam/userAssessmentExam'),
+    require('./pages/studentAssessmentHomework/studentAssessmentHomework'),
+    require('./pages/studentAssessmentExam/studentAssessmentExam'),
 ]);
-app.use('/pl/:course_instance_id/admin/assessment_instance/:assessment_instance_id', [
+app.use('/pl/:course_instance_id/instructor/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
-    require('./pages/adminAssessmentInstance/adminAssessmentInstance'),
+    require('./pages/instructorAssessmentInstance/instructorAssessmentInstance'),
 ]);
 app.use('/pl/:course_instance_id/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
-    require('./pages/userAssessmentInstanceHomework/userAssessmentInstanceHomework'),
-    require('./pages/userAssessmentInstanceExam/userAssessmentInstanceExam'),
+    require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
+    require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
 ]);
 app.use('/pl/:course_instance_id/assessment_instance/:assessment_instance_id/clientFiles', require('./pages/assessmentInstanceClientFiles/assessmentInstanceClientFiles'));
 
-app.use('/pl/:course_instance_id/admin/users', require('./pages/adminUsers/adminUsers'));
-app.use('/pl/:course_instance_id/admin/questions', require('./pages/adminQuestions/adminQuestions'));
+app.use('/pl/:course_instance_id/instructor/gradebook', require('./pages/instructorGradebook/instructorGradebook'));
+app.use('/pl/:course_instance_id/instructor/questions', require('./pages/instructorQuestions/instructorQuestions'));
 
-app.use('/pl/:course_instance_id/admin/question/:question_id', [
-    require('./middlewares/selectAndAuthzAdminQuestion'),
-    require('./pages/adminQuestion/adminQuestion'),
+app.use('/pl/:course_instance_id/instructor/question/:question_id', [
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/instructorQuestion/instructorQuestion'),
 ]);
 
 app.use('/pl/:course_instance_id/instance_question/:instance_question_id', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
-    require('./pages/userInstanceQuestionHomework/userInstanceQuestionHomework'),
-    require('./pages/userInstanceQuestionExam/userInstanceQuestionExam'),
+    require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
+    require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
 ]);
 app.use('/pl/:course_instance_id/instance_question/:instance_question_id/file', require('./pages/questionFile/questionFile'));
 app.use('/pl/:course_instance_id/instance_question/:instance_question_id/text', require('./pages/questionText/questionText'));
 
-app.use('/pl/:course_instance_id/admin/syncs', require('./pages/adminSyncs/adminSyncs'));
-app.use('/pl/:course_instance_id/admin/jobSequence', require('./pages/adminJobSequence/adminJobSequence'));
-app.use('/pl/:course_instance_id/admin/reload', require('./pages/adminReload/adminReload'));
+app.use('/pl/:course_instance_id/instructor/syncs', require('./pages/instructorSyncs/instructorSyncs'));
+app.use('/pl/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
+app.use('/pl/:course_instance_id/instructor/reload', require('./pages/instructorReload/instructorReload'));
 
 // error handling
 app.use(require('./middlewares/notFound'));

@@ -1,0 +1,87 @@
+<nav class="navbar navbar-inverse navbar-static-top" role="navigation">
+  <div class="container-fluid">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a class="navbar-brand" href="<%= plainUrlPrefix %>">PrairieLearn</a>
+    </div>
+    <div class="collapse navbar-collapse">
+      <ul class="nav navbar-nav" id="main-nav">
+        
+        <!-------------------------------------------------------------------------------->
+        <!-------------------------------------------------------------------------------->
+        <!-------------------------------------------------------------------------------->
+        <!-- Course switcher ------------------------------------------------------------->
+
+        <li class="dropdown">
+          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><%= course.short_name %>, <%= course_instance.short_name %><span class="caret"></span></a>
+          <ul class="dropdown-menu">
+            <% nav_data.course_instances.forEach(function(course_instance) { %>
+            <li><a href="<%= plainUrlPrefix %>/<%= course_instance.id %>"><%= course_instance.course_short_name %>, <%= course_instance.short_name %></a></li>
+            <% }); %>
+          </ul>
+        </li>
+
+        <!-------------------------------------------------------------------------------->
+        <!-------------------------------------------------------------------------------->
+        <!-------------------------------------------------------------------------------->
+        <!-- Main pages ------------------------------------------------------------------>
+
+        <li <% if (navPage == "assessments") { %>class="active"<% } %>><a href="<%= urlPrefix %>/assessments">Assessments</a></li>
+
+        <!-------------------------------------------------------------------------------->
+        <!-------------------------------------------------------------------------------->
+        <!-------------------------------------------------------------------------------->
+        <!-- Reload ---------------------------------------------------------------------->
+
+        <% if (devMode) { %>
+        <a class="btn btn-success navbar-btn" href="<%= urlPrefix %>/instructor/reload">Reload</a>
+        <% } %>
+
+      </ul>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- User and logout ------------------------------------------------------------->
+
+      <div class="navbar-right">
+
+        <% if (authz_data.has_instructor_view) { %>
+        <div class="btn-group">
+          <button type="button" class="btn btn-info navbar-btn dropdown-toggle" data-toggle="dropdown"
+                  aria-haspopup="true" aria-expanded="false">
+            Student <span class="caret"></span>
+          </button>
+          <ul class="dropdown-menu">
+            <li><a href="<%= urlPrefix %>/instructor/assessments">Switch to instructor view</a></li>
+          </ul>
+        </div>
+        <% } // has_instructor_view %>
+
+        <% if (authz_data.authn_has_instructor_view) { %>
+        <ul class="nav navbar-nav" id="username-nav">
+          <li <% if (navPage == "effective") { %>class="active"<% } %>>
+            <a href="<%= urlPrefix %>/effective">
+              <%= authz_data.user.name %> (<%= authz_data.role %>), <%= authz_data.mode %>
+              <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
+            </a>
+          </li>
+        </ul>
+        <% } else { // authn_has_instructor_view %>
+        <p class="navbar-text"><%= authn_user.name %></p>
+        <% } // authn_has_instructor_view %>
+
+        <% if (devMode) { %>
+        <a class="btn btn-default navbar-btn" href="">Log out</a>
+        <% } else { %>
+        <a class="btn btn-default navbar-btn" href="https://prairielearn.engr.illinois.edu/Shibboleth.sso/Logout">Log out</a>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</nav>

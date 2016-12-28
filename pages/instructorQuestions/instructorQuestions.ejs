@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
+    <script type="text/javascript" src="/javascripts/jquery.tablesorter.min.js"></script>
+    <script type="text/javascript" src="/javascripts/jquery.tablesorter.widgets.js"></script>
+  </head>
+  <body>
+    <%- include('../partials/navbarInstructor', {navPage: 'questions'}); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Questions</h3>
+        </div>
+
+        <div class="panel-body">
+          <button class="btn btn-primary resetFilter">Clear all filters</button>
+        </div>
+        
+        <table id="questionsTable" class="table table-condensed table-hover tablesorter">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>QID</th>
+              <th class="filter-select filter-exact" data-placeholder="Choose topic">Topic</th>
+              <th data-placeholder="Choose tag">Tags</th>
+              <th data-placeholder="Choose assessment">Assessments</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% questions.forEach(function(question) { %>
+            <tr>
+              <td><a href="<%= urlPrefix %>/instructor/question/<%= question.id %>/"><%= question.title %></a></td>
+              <td><%= question.qid %></td>
+              <td><%- include('../partials/topic', {topic: question.topic}); %></td>
+              <td><%- include('../partials/tags', {tags: question.tags}); %></td>
+              <td><%- include('../partials/assessmentsInstructor', {assessments: question.assessments}); %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+        <script>
+          $(function(){
+              $("#questionsTable").tablesorter({
+                  theme: "bootstrap",
+                  widthFixed: true,
+                  headerTemplate: '{content} {icon}',
+                  widgets: ["uitheme", "filter", "zebra"],
+                  widgetOptions: {
+                      zebra: ["even", "odd"],
+                      filter_reset : ".resetFilter",
+                      filter_cssFilter: "form-control",
+                      filter_functions: {
+                          3: {
+                              <% all_tags.forEach(function(tag) { %>
+                                  "<%= tag.name %>": function(e, n, f, i, $r, c, data) { return /\b<%= tag.name %>\b/.test(e); },
+                              <% }); %>
+                          },
+                          4: {
+                              <% all_assessments.forEach(function(assessment) { %>
+                                  "<%= assessment.label %>": function(e, n, f, i, $r, c, data) { return /\b<%= assessment.label %>\b/.test(e); },
+                              <% }); %>
+                          },
+                      },
+                  },
+              });
+          });
+        </script>
+      </div>
+    </div>
+  </body>
+</html>

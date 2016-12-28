@@ -16,12 +16,12 @@ the server.
 
 ## Developer Documentation
 
-* [Contributing to PL development](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/contributing.md)
-* [Good blog post on how to contribute via GitHub](http://blog.davidecoppola.com/2016/11/howto-contribute-to-open-source-project-on-github/)
 * [Developer guide](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/dev-guide.md)
 * [DB ER diagram](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/models.pdf)
-* [DB table list](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/tables.txt)
+* [DB table list](https://github.com/PrairieLearn/PrairieLearn/blob/master/models/)
 * [Docker packaging](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/docker.md)
+* [Contributing to PL development](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/contributing.md)
+* [Good blog post on how to contribute via GitHub](http://blog.davidecoppola.com/2016/11/howto-contribute-to-open-source-project-on-github/)
 
 ## Old Version 1 User Documentation
 

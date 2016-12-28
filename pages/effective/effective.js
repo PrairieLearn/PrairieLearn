@@ -12,7 +12,7 @@ var sqlLoader = require('../../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
-    if (!res.locals.authz_data.authn_has_admin_view) return next();
+    if (!res.locals.authz_data.authn_has_instructor_view) return next();
     var params = {
         authn_user_id: res.locals.authn_user.id,
         course_instance_id: res.locals.course_instance.id,
@@ -27,7 +27,7 @@ router.get('/', function(req, res, next) {
 });
 
 router.post('/', function(req, res, next) {
-    if (!res.locals.authz_data.authn_has_admin_view) return next();
+    if (!res.locals.authz_data.authn_has_instructor_view) return next();
     if (req.body.postAction == 'reset') {
         res.clearCookie('requestedUid');
         res.clearCookie('requestedRole');

@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS assessment_instances (
     number INTEGER,
     open BOOLEAN DEFAULT TRUE,
     closed_at TIMESTAMP WITH TIME ZONE,
-    admin_opened BOOLEAN DEFAULT FALSE,
+    instructor_opened BOOLEAN DEFAULT FALSE,
     duration INTERVAL DEFAULT INTERVAL '0 seconds',
     assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,
     user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
@@ -25,6 +25,9 @@ DROP VIEW IF EXISTS student_assessment_scores CASCADE;
 DROP VIEW IF EXISTS user_assessment_scores CASCADE;
 ALTER TABLE assessment_instances ALTER COLUMN score_perc SET DATA TYPE DOUBLE PRECISION;
 ALTER TABLE assessment_instances ALTER COLUMN score_perc_in_grading SET DATA TYPE DOUBLE PRECISION;
+
+ALTER TABLE assessment_instances ADD COLUMN IF NOT EXISTS instructor_opened BOOLEAN DEFAULT FALSE;
+ALTER TABLE assessment_instances DROP COLUMN IF EXISTS admin_opened;
 
 ALTER TABLE assessment_instances ALTER COLUMN id SET DATA TYPE BIGINT;
 ALTER TABLE assessment_instances ALTER COLUMN assessment_id SET DATA TYPE BIGINT;

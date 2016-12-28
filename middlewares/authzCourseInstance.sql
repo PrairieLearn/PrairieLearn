@@ -1,8 +1,8 @@
 -- BLOCK select_authn_data
 SELECT
     e.role AS authn_role,
-    (e.role >= 'TA') AS authn_has_admin_view,
-    (e.role >= 'Instructor') AS authn_has_admin_edit
+    (e.role >= 'TA') AS authn_has_instructor_view,
+    (e.role >= 'Instructor') AS authn_has_instructor_edit
 FROM
     enrollments AS e
     JOIN users AS u ON (u.id = e.user_id)
@@ -38,8 +38,8 @@ WITH effective_data AS (
 )
 SELECT
     ed.*,
-    (ed.role >= 'TA') AS has_admin_view,
-    (ed.role >= 'Instructor') AS has_admin_edit
+    (ed.role >= 'TA') AS has_instructor_view,
+    (ed.role >= 'Instructor') AS has_instructor_edit
 FROM
     effective_data AS ed
 WHERE

@@ -69,11 +69,13 @@ module.exports = function(req, res, next) {
         authn_user_id: res.locals.authn_user.id,
         course_instance_id: req.params.course_instance_id,
     };
-    sqldb.queryOneRow(sql.select_authn_data, params, function(err, result) {
+    sqldb.queryZeroOrOneRow(sql.select_authn_data, params, function(err, result) {
         if (ERR(err, next)) return;
+        if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
+
         var authn_role = result.rows[0].authn_role;
-        var authn_has_admin_view = result.rows[0].authn_has_admin_view;
-        var authn_has_admin_edit = result.rows[0].authn_has_admin_edit;
+        var authn_has_instructor_view = result.rows[0].authn_has_instructor_view;
+        var authn_has_instructor_edit = result.rows[0].authn_has_instructor_edit;
 
         // effective user data defaults to auth user data
         var authn_mode = serverMode(req);
@@ -81,13 +83,13 @@ module.exports = function(req, res, next) {
             authn_user: _.cloneDeep(res.locals.authn_user),
             authn_role: authn_role,
             authn_mode: authn_mode,
-            authn_has_admin_view: authn_has_admin_view,
-            authn_has_admin_edit: authn_has_admin_edit,
+            authn_has_instructor_view: authn_has_instructor_view,
+            authn_has_instructor_edit: authn_has_instructor_edit,
             user: _.cloneDeep(res.locals.authn_user),
             role: authn_role,
             mode: authn_mode,
-            has_admin_view: authn_has_admin_view,
-            has_admin_edit: authn_has_admin_edit,
+            has_instructor_view: authn_has_instructor_view,
+            has_instructor_edit: authn_has_instructor_edit,
         };
         res.locals.user = res.locals.authz_data.user;
         // FIXME: debugging for #422
@@ -103,8 +105,10 @@ module.exports = function(req, res, next) {
                 requested_role: (req.cookies.requestedRole ? req.cookies.requestedRole : res.locals.authz_data.role),
                 requested_mode: (req.cookies.requestedMode ? req.cookies.requestedMode : res.locals.authz_data.mode),
             };
-            sqldb.queryOneRow(sql.select_effective_authz_data, params, function(err, result) {
+            sqldb.queryZeroOrOneRow(sql.select_effective_authz_data, params, function(err, result) {
                 if (ERR(err, next)) return;
+                if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
+
                 _.assign(res.locals.authz_data, result.rows[0]);
                 // FIXME: debugging for #422
                 logger.debug('Overridden authz_data', res.locals.authz_data);

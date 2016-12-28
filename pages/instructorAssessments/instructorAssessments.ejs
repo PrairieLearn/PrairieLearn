@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
+    <script type="text/javascript" src="/javascripts/d3.min.js"></script>
+    <script type="text/javascript" src="/localscripts/histmini.js"></script>
+  </head>
+  <body>
+    <%- include('../partials/navbarInstructor', {navPage: 'assessments'}); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Assessments</h3>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <thead>
+            <tr>
+              <th style="width: 1%"></th>
+              <th></th>
+              <th>TID</th>
+              <th class="cell-center">Students</th>
+              <th class="cell-center">Scores</th>
+              <th class="cell-center">Median Score</th>
+              <th class="cell-center">Median Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% rows.forEach(function(row, i) { %>
+            <% if (row.start_new_set) { %>
+            <tr class="<%= row.color %>">
+              <th colspan="7"><%= row.heading %></th>
+            </tr>
+            <% } %>
+            <tr>
+              <td style="width: 1%">
+                <a href="<%= urlPrefix %>/instructor/assessment/<%= row.id %>/" class="btn btn-<%= row.color %> btn-xs" role="button"><%= row.label %></a>
+              </td>
+              <td>
+                <a href="<%= urlPrefix %>/instructor/assessment/<%= row.id %>/"><%= row.title %></a>
+              </td>
+              <td><%= row.tid %></td>
+
+              <td class="cell-center"><%= row.number %></td>
+
+              <% if (row.number > 0) { %>
+              <td class="cell-center"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
+              <script>
+                $(function() {
+                    var data = [<%= row.score_hist %>];
+                    var options = {
+                        width: 60,
+                        height: 20,
+                    };
+                    histmini("#scoreHist<%= i %>", data, options);
+                });
+              </script>
+              <% } else { %>
+              <td class="cell-center"></td>
+              <% } %>
+
+              <% if (row.number > 0) { %>
+              <td class="cell-center"><%- include('../partials/scorebar', {score: row.median}); %></td>
+              <% } else { %>
+              <td class="cell-center"></td>
+              <% } %>
+
+              <% if (row.number > 0) { %>
+              <td class="cell-center"><%= row.median_duration %></td>
+              <% } else { %>
+              <td class="cell-center"></td>
+              <% } %>
+
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+
+        <div class="panel-footer">
+          Download <a href="<%= urlPrefix %>/instructor/assessments/<%= csvFilename %>"><%= csvFilename %></a>
+          (includes more statistics columns than displayed above)
+        </div>
+
+      </div>
+    </div>
+  </body>
+</html>

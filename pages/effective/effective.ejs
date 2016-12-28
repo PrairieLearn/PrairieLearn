@@ -4,10 +4,10 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
-    <% if (authz_data.has_admin_view) { %>
-    <%- include('../partials/navbarAdmin', {navPage: 'effective'}); %>
+    <% if (authz_data.has_instructor_view) { %>
+    <%- include('../partials/navbarInstructor', {navPage: 'effective'}); %>
     <% } else { %>
-    <%- include('../partials/navbarUser', {navPage: 'effective'}); %>
+    <%- include('../partials/navbarStudent', {navPage: 'effective'}); %>
     <% } %>
     <div id="content" class="container">
 
