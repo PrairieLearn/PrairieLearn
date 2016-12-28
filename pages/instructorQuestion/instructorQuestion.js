@@ -60,32 +60,37 @@ var render = function(req, res, next, variant, submission, submissionHtml, answe
     var params = [res.locals.question.id, res.locals.course_instance.id];
     sqldb.queryOneRow(sql.select_question, params, function(err, result) {
         if (ERR(err, next)) return;
-        questionServers.getModule(res.locals.question.type, function(err, questionModule) {
+        questionServers.getEffectiveQuestionType(res.locals.question.type, function(err, effectiveQuestionType) {
             if (ERR(err, next)) return;
-            questionModule.renderExtraHeaders(res.locals.question, res.locals.course, res.locals, function(err, extraHeaders) {
+            questionServers.getModule(res.locals.question.type, function(err, questionModule) {
                 if (ERR(err, next)) return;
-                questionModule.renderQuestion(variant, res.locals.question, null, res.locals.course, res.locals, function(err, questionHtml) {
+                questionModule.renderExtraHeaders(res.locals.question, res.locals.course, res.locals, function(err, extraHeaders) {
                     if (ERR(err, next)) return;
+                    questionModule.renderQuestion(variant, res.locals.question, null, res.locals.course, res.locals, function(err, questionHtml) {
+                        if (ERR(err, next)) return;
 
-                    res.locals.result = result.rows[0];
-                    res.locals.submission = submission;
-                    res.locals.extraHeaders = extraHeaders;
-                    res.locals.questionHtml = questionHtml;
-                    res.locals.submissionHtml = submissionHtml;
-                    res.locals.answerHtml = answerHtml;
-                    res.locals.postUrl = res.locals.urlPrefix + "/instructor/question/" + res.locals.question.id + "/";
-                    res.locals.questionJson = JSON.stringify({
-                        questionFilePath: res.locals.urlPrefix + "/instructor/question/" + res.locals.question.id + "/file",
-                        question: res.locals.question,
-                        course: res.locals.course,
-                        courseInstance: res.locals.course_instance,
-                        variant: variant,
-                        submittedAnswer: submission ? submission.submitted_answer : null,
-                        feedback: submission ? submission.feedback : null,
-                        trueAnswer: variant.true_answer,
-                        submissions: submission ? res.locals.submissions : null,
+                        res.locals.result = result.rows[0];
+                        res.locals.effectiveQuestionType = effectiveQuestionType,
+                        res.locals.submission = submission;
+                        res.locals.extraHeaders = extraHeaders;
+                        res.locals.questionHtml = questionHtml;
+                        res.locals.submissionHtml = submissionHtml;
+                        res.locals.answerHtml = answerHtml;
+                        res.locals.postUrl = res.locals.urlPrefix + "/instructor/question/" + res.locals.question.id + "/";
+                        res.locals.questionJson = JSON.stringify({
+                            questionFilePath: res.locals.urlPrefix + "/instructor/question/" + res.locals.question.id + "/file",
+                            question: res.locals.question,
+                            effectiveQuestionType: effectiveQuestionType,
+                            course: res.locals.course,
+                            courseInstance: res.locals.course_instance,
+                            variant: variant,
+                            submittedAnswer: submission ? submission.submitted_answer : null,
+                            feedback: submission ? submission.feedback : null,
+                            trueAnswer: variant.true_answer,
+                            submissions: submission ? res.locals.submissions : null,
+                        });
+                        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                     });
-                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                 });
             });
         });
@@ -99,20 +104,19 @@ router.get('/file/:filename', function(req, res, next) {
     var question = res.locals.question;
     var course = res.locals.course;
     var filename = req.params.filename;
-    filePaths.questionPath(question.directory, course.path, function(err, questionPath) {
+    filePaths.questionFilePath(filename, question.directory, course.path, question, function(err, fullPath, effectiveFilename, rootPath) {
         if (ERR(err, next)) return;
-        res.sendFile(filename, {root: questionPath});
+        res.sendFile(effectiveFilename, {root: rootPath});
     });
 });
 
 router.get('/text/:filename', function(req, res, next) {
     var question = res.locals.question;
     var course = res.locals.course;
-    var filename = req.params.filename;
-    filePaths.questionPath(question.directory, course.path, function(err, questionPath) {
+    var filename = 'text/' + req.params.filename;
+    filePaths.questionFilePath(filename, question.directory, course.path, question, function(err, fullPath, effectiveFilename, rootPath) {
         if (ERR(err, next)) return;
-        var rootPath = path.join(questionPath, "text");
-        res.sendFile(filename, {root: rootPath});
+        res.sendFile(effectiveFilename, {root: rootPath});
     });
 });
 

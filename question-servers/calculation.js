@@ -27,17 +27,19 @@ module.exports = {
     },
 
     getData: function(question, course, vid, callback) {
+        var questionDir = path.join(course.path, 'questions', question.directory);
         questionHelper.loadServer(question, course, function(err, server) {
             if (ERR(err, callback)) return;
+            var options = question.options || {};
             try {
-                var questionData = server.getData(vid, question.options, 'INVALID QUESTION DIRECTORY');
+                var questionData = server.getData(vid, options, questionDir);
             } catch (e) {
-                return callback(new Error('Error in question getData(): ' + String(e)));
+                return ERR(e, callback);
             }
             var data = {
                 params: questionData.params,
                 true_answer: questionData.trueAnswer,
-                options: questionData.options,
+                options: options,
             };
             callback(null, data);
         });

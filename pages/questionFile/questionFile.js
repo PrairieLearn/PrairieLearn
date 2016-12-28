@@ -25,9 +25,9 @@ router.get('/:filename', function(req, res, next) {
         if (ERR(err, next)) return;
         if (!result.rows[0].access_allowed) return next(error.make(403, 'Access denied', {locals: res.locals, filename: filename}));
 
-        filePaths.questionPath(question.directory, course.path, function(err, questionPath) {
+        filePaths.questionFilePath(filename, question.directory, course.path, question, function(err, fullPath, effectiveFilename, rootPath) {
             if (ERR(err, next)) return;
-            res.sendFile(filename, {root: questionPath});
+            res.sendFile(effectiveFilename, {root: rootPath});
         });
     });
 });

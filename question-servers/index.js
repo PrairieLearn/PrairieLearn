@@ -14,11 +14,32 @@ var sqlLoader = require('../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var questionModules = {
-    'ShortAnswer': require('./shortAnswer'),
-    'Calculation': require('./calculation'),
+    'ShortAnswer':       require('./shortAnswer'),
+    'Calculation':       require('./calculation'),
+    'File':              require('./calculation'),
+    'Checkbox':          require('./calculation'),
+    'MultipleChoice':    require('./calculation'),
+    'MultipleTrueFalse': require('./calculation'),
+};
+
+var effectiveQuestionTypes = {
+    'ShortAnswer':       'ShortAnswer',
+    'Calculation':       'Calculation',
+    'File':              'Calculation',
+    'Checkbox':          'Calculation',
+    'MultipleChoice':    'Calculation',
+    'MultipleTrueFalse': 'Calculation',
 };
 
 module.exports = {
+    getEffectiveQuestionType: function(type, callback) {
+        if (_(effectiveQuestionTypes).has(type)) {
+            callback(null, effectiveQuestionTypes[type]);
+        } else {
+            callback(new Error('Unknown question type: ' + type));
+        }
+    },
+
     getModule: function(type, callback) {
         if (_(questionModules).has(type)) {
             callback(null, questionModules[type]);

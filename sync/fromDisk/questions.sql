@@ -1,11 +1,13 @@
 -- BLOCK insert_question
 INSERT INTO questions
-    (uuid,  qid, directory, type,                      title,  config,         client_files,
+    (uuid,  qid, directory, type,                      title,  options,         client_files,
     course_id,            grading_method,                      deleted_at,
+    template_directory,
     topic_id)
 (SELECT
-    $uuid, $qid, $qid,     $type::enum_question_type, $title, $config::JSONB, $client_files::TEXT[],
+    $uuid, $qid, $qid,     $type::enum_question_type, $title, $options::JSONB, $client_files::TEXT[],
     $course_id::integer, $grading_method::enum_grading_method, NULL::timestamp with time zone,
+    $template_directory,
     COALESCE((SELECT id FROM topics WHERE name = $topic AND course_id = $course_id), NULL)
 )
 ON CONFLICT (uuid) DO UPDATE
@@ -14,9 +16,10 @@ SET
     directory = EXCLUDED.directory,
     type = EXCLUDED.type,
     title = EXCLUDED.title,
-    config = EXCLUDED.config,
+    options = EXCLUDED.options,
     client_files = EXCLUDED.client_files,
     grading_method = EXCLUDED.grading_method,
+    template_directory = EXCLUDED.template_directory,
     topic_id = EXCLUDED.topic_id,
     deleted_at = EXCLUDED.deleted_at
 WHERE

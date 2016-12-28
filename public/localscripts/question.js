@@ -5,7 +5,7 @@ $(function() {
     var initialize = function(questionContainer, callback) {
         var questionData = null;
         questionContainer.find(".question-data").each(function(i, x) {questionData = JSON.parse(x.innerHTML);});
-        var client = new document.questionClients[questionData.question.type];
+        var client = new document.questionClients[questionData.effectiveQuestionType];
         clients[questionContainer.attr('id')] = client;
         client.initialize(questionData, callback);
     };

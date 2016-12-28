@@ -7,7 +7,7 @@
     <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
     <script type="text/javascript" src="/localscripts/question.js"></script>
     <%- extraHeaders %>
-    <script type="text/javascript" src="/localscripts/question<%= question.type %>.js"></script>
+    <script type="text/javascript" src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
   </head>
   <body>
     <%- include('../partials/navbarStudent', {navPage: ''}); %>

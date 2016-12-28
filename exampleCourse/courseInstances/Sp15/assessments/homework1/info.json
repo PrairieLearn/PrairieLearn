@@ -33,9 +33,15 @@
     "options": {
         "questions": [
             {"qid": "addVectors",           "initValue": 1, "maxScore": 5},
+            {"qid": "fibonacci",            "initValue": 1, "maxScore": 5},
+            {"qid": "fibonacciEditor",      "initValue": 1, "maxScore": 5},
             {"qid": "fibonacciExternal",    "initValue": 1, "maxScore": 5},
             {"qid": "particleMotion",       "initValue": 1, "maxScore": 5},
-            {"qid": "randomZip",            "initValue": 1, "maxScore": 5}
+            {"qid": "randomZip",            "initValue": 1, "maxScore": 5},
+            {"qid": "fossilFuelsRadio",     "initValue": 2, "maxScore": 10},
+            {"qid": "fossilFuelsCheckbox",  "initValue": 2, "maxScore": 10},
+            {"qid": "fossilFuelsTrueFalse", "initValue": 2, "maxScore": 10},
+            {"qid": "randomZip",            "initValue": 3, "maxScore": 15}
         ]
     }
 }

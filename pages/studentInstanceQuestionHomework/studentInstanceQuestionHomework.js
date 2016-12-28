@@ -119,6 +119,13 @@ function processGet(req, res, variant_id, callback) {
             });
         },
         function(callback) {
+            questionServers.getEffectiveQuestionType(res.locals.question.type, function(err, eqt) {
+                if (ERR(err, callback)) return;
+                res.locals.effectiveQuestionType = eqt;
+                callback(null);
+            });
+        },
+        function(callback) {
             questionModule.renderExtraHeaders(res.locals.question, res.locals.course, res.locals, function(err, extraHeaders) {
                 if (ERR(err, callback)) return;
                 res.locals.extraHeaders = extraHeaders;
@@ -158,6 +165,7 @@ function processGet(req, res, variant_id, callback) {
             res.locals.questionJson = JSON.stringify({
                 questionFilePath: res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id + "/file",
                 question: res.locals.question,
+                effectiveQuestionType: res.locals.effectiveQuestionType,
                 course: res.locals.course,
                 courseInstance: res.locals.course_instance,
                 variant: {

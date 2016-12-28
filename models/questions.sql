@@ -3,9 +3,11 @@ CREATE TABLE IF NOT EXISTS questions (
     uuid UUID NOT NULL UNIQUE,
     qid text,
     directory text,
+    template_directory text,
     type enum_question_type,
     title text,
     config JSONB,
+    options JSONB,
     client_files TEXT[] DEFAULT ARRAY[]::TEXT[],
     number INTEGER,
     grading_method enum_grading_method NOT NULL DEFAULT 'Internal',
@@ -19,6 +21,10 @@ CREATE TABLE IF NOT EXISTS questions (
 ALTER TABLE questions ADD COLUMN IF NOT EXISTS uuid UUID UNIQUE;
 
 ALTER TABLE questions DROP CONSTRAINT IF EXISTS questions_qid_course_id_key;
+
+ALTER TABLE questions ADD COLUMN IF NOT EXISTS template_directory text;
+ALTER TABLE questions ADD COLUMN IF NOT EXISTS options jsonb;
+ALTER TABLE questions DROP COLUMN IF EXISTS config;
 
 ALTER TABLE questions ALTER COLUMN id SET DATA TYPE BIGINT;
 ALTER TABLE questions ALTER COLUMN course_id SET DATA TYPE BIGINT;
