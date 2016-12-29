@@ -4,8 +4,8 @@
 The course directory layout for PLv2 is:
 
     exampleCourse
-    |-- courseInfo.json # needs to be upgraded (see below)
-    |-- questions       # does not change in any way
+    +-- courseInfo.json # needs to be upgraded (see below)
+    +-- questions       # does not change in any way
     `-- courseInstances # replaces the 'tests' directory
 
 ## UUIDs
