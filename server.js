@@ -86,7 +86,7 @@ app.use('/pl/:course_instance_id', require('./middlewares/urlPrefix')); // set r
 // redirect to Instructor or Student page, as appropriate
 app.use('/pl/:course_instance_id/redirect', require('./middlewares/redirectToCourseInstanceLanding'));
 
-app.use('/pl/:course_instance_id/effective', require('./pages/effective/effective'));
+app.use('/pl/:course_instance_id/instructor/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
 
 app.use('/pl/:course_instance_id/assessments', require('./pages/studentAssessments/studentAssessments'));
 app.use('/pl/:course_instance_id/instructor/assessments', require('./pages/instructorAssessments/instructorAssessments'));

@@ -80,7 +80,7 @@
 
         <ul class="nav navbar-nav" id="username-nav">
           <li <% if (navPage == "effective") { %>class="active"<% } %>>
-            <a href="<%= urlPrefix %>/effective">
+            <a href="<%= urlPrefix %>/instructor/effectiveUser">
               <%= authz_data.user.name %> (<%= authz_data.role %>), <%= authz_data.mode %>
               <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
             </a>
