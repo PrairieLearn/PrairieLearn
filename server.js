@@ -67,7 +67,7 @@ app.use('/pl', require('./pages/home/home'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
 
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
-if (app.get('env' == 'development')) {
+if (app.get('env') == 'development') {
     app.use('/pl/instructor/reload', require('./pages/instructorReload/instructorReload'));
     app.use('/pl/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 }
