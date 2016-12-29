@@ -86,7 +86,7 @@ var render = function(req, res, next, variant, submission, submissionHtml, answe
                             variant: variant,
                             submittedAnswer: submission ? submission.submitted_answer : null,
                             feedback: submission ? submission.feedback : null,
-                            trueAnswer: variant.true_answer,
+                            trueAnswer: submission ? variant.true_answer : null,
                             submissions: submission ? res.locals.submissions : null,
                         });
                         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
