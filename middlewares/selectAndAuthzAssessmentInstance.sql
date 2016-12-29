@@ -5,7 +5,9 @@ SELECT
     to_jsonb(e) AS instance_enrollment,
     to_jsonb(a) AS assessment,
     to_jsonb(aset) AS assessment_set,
-    to_jsonb(aai) AS authz_result
+    to_jsonb(aai) AS authz_result,
+    assessment_instance_label(ai, a, aset) AS assessment_instance_label,
+    assessment_label(a, aset) AS assessment_label
 FROM
     assessment_instances AS ai
     JOIN assessments AS a ON (a.id = ai.assessment_id)

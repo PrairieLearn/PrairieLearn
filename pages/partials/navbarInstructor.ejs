@@ -46,6 +46,10 @@
         <li <% if (navPage == "sync")        { %>class="active"<% } %>><a href="<%= urlPrefix %>/instructor/syncs">Sync</a></li>
         <% } %>
 
+        <% if (typeof assessment_label != 'undefined' && typeof assessment != 'undefined') { %>
+        <li <% if (navPage == "assessment") { %>class="active"<% } %>><a href="<%= urlPrefix %>/instructor/assessment/<%= assessment.id %>"><%= assessment_label %></a></li>
+        <% } %>
+
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->

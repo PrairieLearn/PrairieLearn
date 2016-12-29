@@ -2,7 +2,8 @@
 SELECT
     to_jsonb(a) AS assessment,
     to_jsonb(aset) AS assessment_set,
-    to_jsonb(aa) AS authz_result
+    to_jsonb(aa) AS authz_result,
+    assessment_label(a, aset) AS assessment_label
 FROM
     assessments AS a
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)

@@ -33,6 +33,10 @@
 
         <li <% if (navPage == "assessments") { %>class="active"<% } %>><a href="<%= urlPrefix %>/assessments">Assessments</a></li>
 
+        <% if (typeof assessment_instance_label != 'undefined' && typeof assessment_instance != 'undefined') { %>
+        <li <% if (navPage == "assessment_instance") { %>class="active"<% } %>><a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>"><%= assessment_instance_label %></a></li>
+        <% } %>
+
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->
