@@ -56,6 +56,7 @@ app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPref
 app.use(function(req, res, next) {res.locals.devMode = (req.app.get('env') == 'development'); next();});
 app.use(require('./middlewares/cors'));
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
+app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.csrfToken
 app.use(require('./middlewares/logRequest'));
 
 // clear all cached course code in dev mode (no authorization needed)
@@ -81,7 +82,6 @@ app.use('/pl/:course_instance_id', require('./middlewares/authzCourseInstance'))
 app.use('/pl/:course_instance_id/instructor', require('./middlewares/authzCourseInstanceInstructor'));
 app.use('/pl/:course_instance_id', require('./middlewares/navData')); // set res.locals.navData, res.locals.course, res.locals.course_instance
 app.use('/pl/:course_instance_id', require('./middlewares/urlPrefix')); // set res.locals.urlPrefix
-app.use('/pl/:course_instance_id', require('./middlewares/csrfToken')); // sets and checks res.locals.csrfToken
 
 // redirect to Instructor or Student page, as appropriate
 app.use('/pl/:course_instance_id/redirect', require('./middlewares/redirectToCourseInstanceLanding'));

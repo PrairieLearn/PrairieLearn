@@ -8,7 +8,6 @@ var csrf = require('../lib/csrf');
 module.exports = function(req, res, next) {
     var tokenData = {
         url: req.originalUrl,
-        user_id: res.locals.user.id,
         authn_user_id: res.locals.authn_user.id,
     };
     res.locals.csrfToken = csrf.generateToken(tokenData, config.secretKey);
