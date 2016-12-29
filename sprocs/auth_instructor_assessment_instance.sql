@@ -17,4 +17,4 @@ FROM
 WHERE
     ai.id = auth_instructor_assessment_instance.assessment_instance_id
     AND a.deleted_at IS NULL;
-$$ LANGUAGE SQL;
+$$ LANGUAGE SQL STABLE;

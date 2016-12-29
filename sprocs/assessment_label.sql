@@ -10,4 +10,4 @@ BEGIN
     label := aset.abbrev || a.number;
     RETURN label;
 END;
-$$ LANGUAGE PLPGSQL;
+$$ LANGUAGE PLPGSQL IMMUTABLE;

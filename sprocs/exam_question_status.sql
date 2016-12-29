@@ -31,4 +31,4 @@ BEGIN
         RETURN 'incorrect';
     END IF;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql STABLE;

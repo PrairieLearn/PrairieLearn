@@ -60,4 +60,4 @@ BEGIN
 
     RETURN;
 END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql STABLE;

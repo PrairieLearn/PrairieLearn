@@ -20,4 +20,4 @@ BEGIN
     --     RAISE EXCEPTION 'QID not found: %', set_question_uuid.qid;
     -- END IF;
 END
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql VOLATILE;

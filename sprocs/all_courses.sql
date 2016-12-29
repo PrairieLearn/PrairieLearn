@@ -25,4 +25,4 @@ SELECT
     jsonb_agg(to_jsonb(course_list))
 FROM
     course_list;
-$$ LANGUAGE SQL;
+$$ LANGUAGE SQL STABLE;

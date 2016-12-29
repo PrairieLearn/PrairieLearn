@@ -71,4 +71,4 @@ FROM
         FROM
             rules_authorized_on_some_date AS raosd
     ) AS raosd_agg (access_rules)
-$$ LANGUAGE SQL;
+$$ LANGUAGE SQL STABLE;

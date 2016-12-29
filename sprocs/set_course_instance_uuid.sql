@@ -20,4 +20,4 @@ BEGIN
     --     RAISE EXCEPTION 'SHORT_NAME not found: %', set_course_instance_uuid.short_name;
     -- END IF;
 END
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql VOLATILE;

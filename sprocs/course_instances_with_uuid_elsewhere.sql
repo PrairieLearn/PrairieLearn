@@ -16,4 +16,4 @@ BEGIN
         ci.uuid = course_instances_with_uuid_elsewhere.uuid
         AND ci.course_id != course_instances_with_uuid_elsewhere.course_id;
 END
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql STABLE;

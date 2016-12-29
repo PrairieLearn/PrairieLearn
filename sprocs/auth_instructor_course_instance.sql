@@ -28,4 +28,4 @@ WHERE
     u.uid = auth_data->>'auth_uid'
     AND ci.id = course_instance_id
     AND ci.deleted_at IS NULL;
-$$ LANGUAGE SQL;
+$$ LANGUAGE SQL STABLE;

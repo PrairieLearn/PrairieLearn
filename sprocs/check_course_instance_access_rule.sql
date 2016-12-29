@@ -37,4 +37,4 @@ BEGIN
 
     RETURN available;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql IMMUTABLE;

@@ -23,4 +23,4 @@ SELECT
                 ciar.course_instance_id = check_course_instance_access.course_instance_id
         )
     END;
-$$ LANGUAGE SQL;
+$$ LANGUAGE SQL STABLE;

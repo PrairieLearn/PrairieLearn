@@ -16,4 +16,4 @@ BEGIN
         a.uuid = assessments_with_uuid_elsewhere.uuid
         AND a.course_instance_id != assessments_with_uuid_elsewhere.course_instance_id;
 END
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql STABLE;

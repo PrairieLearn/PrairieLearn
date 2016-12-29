@@ -45,4 +45,4 @@ SELECT
 FROM
     assessment_result,
     authz_result;
-$$ LANGUAGE SQL;
+$$ LANGUAGE SQL STABLE;

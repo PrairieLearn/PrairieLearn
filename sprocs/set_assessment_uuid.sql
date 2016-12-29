@@ -20,4 +20,4 @@ BEGIN
     --     RAISE EXCEPTION 'TID not found: %', set_assessment_uuid.tid;
     -- END IF;
 END
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql VOLATILE;

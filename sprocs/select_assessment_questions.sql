@@ -87,4 +87,4 @@ FROM
     JOIN questions AS q ON (q.id = aq.question_id)
 WHERE
     q.deleted_at IS NULL;
-$$ LANGUAGE SQL;
+$$ LANGUAGE SQL VOLATILE;

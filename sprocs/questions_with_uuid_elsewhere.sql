@@ -16,4 +16,4 @@ BEGIN
         q.uuid = questions_with_uuid_elsewhere.uuid
         AND q.course_id != questions_with_uuid_elsewhere.course_id;
 END
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql STABLE;

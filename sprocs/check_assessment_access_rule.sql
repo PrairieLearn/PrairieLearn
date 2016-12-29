@@ -50,4 +50,4 @@ BEGIN
         END IF;
     END IF;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql STABLE;

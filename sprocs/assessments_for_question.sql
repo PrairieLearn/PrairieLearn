@@ -33,4 +33,4 @@ WHERE
     AND a.deleted_at IS NULL
     AND a.course_instance_id = assessments_for_question.course_instance_id
     AND CASE WHEN skip_assessment_id IS NOT NULL THEN a.id != skip_assessment_id ELSE TRUE END;
-$$ LANGUAGE SQL;
+$$ LANGUAGE SQL STABLE;

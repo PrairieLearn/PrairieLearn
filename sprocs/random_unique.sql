@@ -14,4 +14,4 @@ BEGIN
     FROM (SELECT generate_series(lower_bound, upper_bound) EXCEPT SELECT unnest(exclude)) AS subq (number)
     ORDER BY random();
 END;
-$$ LANGUAGE plpgsql IMMUTABLE;
+$$ LANGUAGE plpgsql VOLATILE;

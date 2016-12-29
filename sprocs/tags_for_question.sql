@@ -13,4 +13,4 @@ SELECT
 FROM
     tags AS tag
     JOIN question_tags AS qt ON (qt.tag_id = tag.id AND qt.question_id = tags_for_question.question_id)
-$$ LANGUAGE SQL;
+$$ LANGUAGE SQL STABLE;

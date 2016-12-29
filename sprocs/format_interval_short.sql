@@ -28,4 +28,4 @@ BEGIN
     END IF;
     RETURN s;
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql IMMUTABLE;

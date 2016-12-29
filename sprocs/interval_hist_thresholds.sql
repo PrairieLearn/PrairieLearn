@@ -44,16 +44,16 @@ CREATE OR REPLACE FUNCTION
     SELECT array_agg(i * step)
     FROM selected,
     generate_series(0, num_steps) AS i
-$$ LANGUAGE SQL;
+$$ LANGUAGE SQL IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION
     interval_array_to_seconds (durations INTERVAL[]) RETURNS DOUBLE PRECISION[] AS $$
     SELECT array_agg(EXTRACT(EPOCH FROM d))
     FROM unnest(durations) AS vals (d)
-$$ LANGUAGE SQL;
+$$ LANGUAGE SQL IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION
     interval_array_to_strings (durations INTERVAL[]) RETURNS TEXT[] AS $$
     SELECT array_agg(format_interval_short(d))
     FROM unnest(durations) AS vals (d)
-$$ LANGUAGE SQL;
+$$ LANGUAGE SQL IMMUTABLE;

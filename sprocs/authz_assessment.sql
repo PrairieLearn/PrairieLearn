@@ -56,4 +56,4 @@ SELECT
 FROM
     authz_result,
     user_result
-$$ LANGUAGE SQL;
+$$ LANGUAGE SQL STABLE;

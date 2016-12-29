@@ -44,4 +44,4 @@ WINDOW
             END,
             iq.id
     );
-$$ LANGUAGE SQL;
+$$ LANGUAGE SQL STABLE;

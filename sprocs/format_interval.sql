@@ -14,4 +14,4 @@ CREATE OR REPLACE FUNCTION format_interval(d interval) RETURNS text AS $$
             ELSE secs::text || 's'
         END
     FROM parts;
-$$ LANGUAGE SQL;
+$$ LANGUAGE SQL IMMUTABLE;
