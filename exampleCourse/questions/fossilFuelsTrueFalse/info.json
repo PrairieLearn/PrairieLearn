@@ -2,7 +2,7 @@
     "uuid": "375ca0f7-6e12-40a3-a299-184d937b2ece",
     "title": "Advantages of fossil fuels (MTF)",
     "topic": "Energy",
-    "tags": ["Comparative"],
+    "tags": ["MC"],
     "type": "MultipleTrueFalse",
     "options": {
       "text": "For each of the following statements, select whether it is true or false.",

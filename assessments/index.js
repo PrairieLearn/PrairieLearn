@@ -1,6 +1,8 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var async = require('async');
+var path = require('path');
+var ejs = require('ejs');
 
 var error = require('../lib/error');
 var logger = require('../lib/logger');
@@ -52,6 +54,22 @@ module.exports = {
                 callback(null);
             });
         });
+    },
+
+    renderText: function(assessment, urlPrefix, callback) {
+        if (!assessment.text) return callback(null, null);
+        var context = {
+            clientFilesCourse: urlPrefix + '/clientFilesCourse',
+            clientFilesCourseInstance: urlPrefix + '/clientFilesCourseInstance',
+            clientFilesAssessment: urlPrefix + '/assessment/' + assessment.id + '/clientFilesAssessement',
+        };
+        var assessment_text_templated;
+        try {
+            assessment_text_templated = ejs.render(assessment.text, context);
+        } catch (e) {
+            return ERR(e, callback);
+        }
+        callback(null, assessment_text_templated);
     },
 };
 

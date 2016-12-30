@@ -51,6 +51,12 @@
             </div> <!-- row -->
           </div> <!-- well -->
 
+          <% if (assessment_text_templated) { %>
+          <div class="well well-sm small-bottom-margin">
+            <%- assessment_text_templated %>
+          </div> <!-- well -->
+          <% } %>
+
         </div> <!-- panel-body -->
 
         <table class="table table-condensed table-hover">

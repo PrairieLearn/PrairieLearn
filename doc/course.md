@@ -15,17 +15,17 @@ exampleCourse
 |   |   `-- ...         # configuration and assessments for Fa16
 |   `-- Sp17
 |       `-- ...
-+-- courseClientFiles   # files available from the client at all times
++-- clientFilesCourse   # files available from the client at all times
 |   +-- library.js
 |   +-- refs.html
 |   `-- formulas.pdf
-`-- courseServerFiles   # files only accessible from code on the server
+`-- serverFilesCourse   # files only accessible from code on the server
     `-- secret1.js
 ```
 
 * See an [example course directory](../exampleCourse) in PrairieLearn
 
-* See [clientFiles and serverFiles](clientServerFiles.md) for information on the `courseClientFiles` and `courseServerFiles` directories.
+* See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourse` and `serverFilesCourse` directories.
 
 ## `courseInfo.json`
 

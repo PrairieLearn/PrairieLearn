@@ -86,51 +86,68 @@ app.use('/pl/:course_instance_id', require('./middlewares/urlPrefix')); // set r
 // redirect to Instructor or Student page, as appropriate
 app.use('/pl/:course_instance_id/redirect', require('./middlewares/redirectToCourseInstanceLanding'));
 
+// Instructor pages
 app.use('/pl/:course_instance_id/instructor/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
-
-app.use('/pl/:course_instance_id/assessments', require('./pages/studentAssessments/studentAssessments'));
 app.use('/pl/:course_instance_id/instructor/assessments', require('./pages/instructorAssessments/instructorAssessments'));
-
-// polymorphic pages check type and call next() if they aren't the right page
 app.use('/pl/:course_instance_id/instructor/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
     require('./pages/instructorAssessment/instructorAssessment'),
 ]);
+app.use('/pl/:course_instance_id/instructor/assessment_instance/:assessment_instance_id', [
+    require('./middlewares/selectAndAuthzAssessmentInstance'),
+    require('./pages/instructorAssessmentInstance/instructorAssessmentInstance'),
+]);
+app.use('/pl/:course_instance_id/instructor/question/:question_id', [
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/instructorQuestion/instructorQuestion'),
+]);
+app.use('/pl/:course_instance_id/instructor/gradebook', require('./pages/instructorGradebook/instructorGradebook'));
+app.use('/pl/:course_instance_id/instructor/questions', require('./pages/instructorQuestions/instructorQuestions'));
+app.use('/pl/:course_instance_id/instructor/syncs', require('./pages/instructorSyncs/instructorSyncs'));
+app.use('/pl/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
+app.use('/pl/:course_instance_id/instructor/reload', require('./pages/instructorReload/instructorReload'));
+
+// Student pages
+// Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
+// which checks the assessment type and calls next() if it's not the right type
+app.use('/pl/:course_instance_id/assessments', require('./pages/studentAssessments/studentAssessments'));
 app.use('/pl/:course_instance_id/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
     require('./pages/studentAssessmentHomework/studentAssessmentHomework'),
     require('./pages/studentAssessmentExam/studentAssessmentExam'),
-]);
-app.use('/pl/:course_instance_id/instructor/assessment_instance/:assessment_instance_id', [
-    require('./middlewares/selectAndAuthzAssessmentInstance'),
-    require('./pages/instructorAssessmentInstance/instructorAssessmentInstance'),
 ]);
 app.use('/pl/:course_instance_id/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
     require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
     require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
 ]);
-app.use('/pl/:course_instance_id/assessment_instance/:assessment_instance_id/clientFiles', require('./pages/assessmentInstanceClientFiles/assessmentInstanceClientFiles'));
-
-app.use('/pl/:course_instance_id/instructor/gradebook', require('./pages/instructorGradebook/instructorGradebook'));
-app.use('/pl/:course_instance_id/instructor/questions', require('./pages/instructorQuestions/instructorQuestions'));
-
-app.use('/pl/:course_instance_id/instructor/question/:question_id', [
-    require('./middlewares/selectAndAuthzInstructorQuestion'),
-    require('./pages/instructorQuestion/instructorQuestion'),
-]);
-
 app.use('/pl/:course_instance_id/instance_question/:instance_question_id', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
 ]);
-app.use('/pl/:course_instance_id/instance_question/:instance_question_id/file', require('./pages/questionFile/questionFile'));
-app.use('/pl/:course_instance_id/instance_question/:instance_question_id/text', require('./pages/questionText/questionText'));
 
-app.use('/pl/:course_instance_id/instructor/syncs', require('./pages/instructorSyncs/instructorSyncs'));
-app.use('/pl/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
-app.use('/pl/:course_instance_id/instructor/reload', require('./pages/instructorReload/instructorReload'));
+// clientFiles
+app.use('/pl/:course_instance_id/clientFilesCourse', require('./pages/clientFilesCourse/clientFilesCourse'));
+app.use('/pl/:course_instance_id/clientFilesCourseInstance', require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'));
+app.use('/pl/:course_instance_id/assessment/:assessment_id/clientFilesAssessment', [
+    require('./middlewares/selectAndAuthzAssessment'),
+    require('./pages/clientFilesAssessment/clientFilesAssessment'),
+]);
+app.use('/pl/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion', [
+    require('./middlewares/selectAndAuthzInstanceQuestion'),
+    require('./pages/clientFilesQuestion/clientFilesQuestion'),
+]);
+
+// legacy client file paths
+app.use('/pl/:course_instance_id/instance_question/:instance_question_id/file', [
+    require('./middlewares/selectAndAuthzInstanceQuestion'),
+    require('./pages/legacyQuestionFile/legacyQuestionFile'),
+]);
+app.use('/pl/:course_instance_id/instance_question/:instance_question_id/text', [
+    require('./middlewares/selectAndAuthzInstanceQuestion'),
+    require('./pages/legacyQuestionText/legacyQuestionText'),
+]);
 
 // error handling
 app.use(require('./middlewares/notFound'));

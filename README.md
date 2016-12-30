@@ -18,6 +18,7 @@ the server.
 * [Question configuration](doc/questions.md)
 * [Access control to course instances and assessments](doc/accessControl)
 * [clientFiles and serverFiles for file and code libraries](clientServerFiles)
+* [UUIDs in JSON files](uuids.md)
 * [PrairieDraw graphics](doc/PrairieDraw.md)
 
 ## Developer Documentation

@@ -9,9 +9,13 @@ var logger = require('../../lib/logger');
 var filePaths = require('../../lib/file-paths');
 
 router.get('/*', function(req, res, next) {
-    var course = res.locals.course;
     var filename = req.params[0];
-    var clientFilesDir = path.join(res.locals.course.path, "clientFiles");
+    var clientFilesDir = path.join(
+        res.locals.course.path,
+        'questions',
+        res.locals.question.directory,
+        'clientFilesQuestion'
+    );
     res.sendFile(filename, {root: clientFilesDir});
 });
 

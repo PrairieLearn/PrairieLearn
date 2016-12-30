@@ -3,20 +3,24 @@
 
 The course directory layout for PLv2 is:
 
-    exampleCourse
-    +-- courseInfo.json # needs to be upgraded (see below)
-    +-- questions       # does not change in any way
-    `-- courseInstances # replaces the 'tests' directory
+```
+exampleCourse
++-- courseInfo.json # needs to be upgraded (see below)
++-- questions       # does not change in any way
+`-- courseInstances # replaces the 'tests' directory
+```
 
 ## UUIDs
 
-All JSON configuration files must now contain a [UUID (universally unique identifier)](https://en.wikipedia.org/wiki/Universally_unique_identifier) to link the on-disk JSON file to the corresponding object in the database. In PLv1 this linking was done via the directory name, which meant that directories couldn't be renamed without causing problems. In PLv2 the UUID is used for linking so directories can be freely renamed at any time.
+All JSON configuration files must now contain a [UUID (universally unique identifier)](https://en.wikipedia.org/wiki/Universally_unique_identifier) to link the on-disk JSON file to the corresponding object in the database (see [UUIDs in JSON files](uuids.md) for details). In PLv1 this linking was done via the directory name, which meant that directories couldn't be renamed without causing problems. In PLv2 the UUID is used for linking so directories can be freely renamed at any time.
 
 To add a UUID to all the JSON files in a course you can run the included `generated_uuids.py` Python script, like this:
 
-    cd <path_to_PrairieLearn>
-    cd tools
-    python generate_uuids.py <path_to_course_directory>
+```
+cd <path_to_PrairieLearn>
+cd tools
+python generate_uuids.py <path_to_course_directory>
+```
 
 For example, `python generate_uuids.py ~/git/pl-tam212`.
 
@@ -40,22 +44,24 @@ The `tests` directory is not used by PLv2. It doesn't matter if it is still pres
 
 There is a new directory at the top level called `courseInstances`. The layout of this is:
 
-    exampleCourse
-    `-- courseInstances                    # replaces the 'tests' directory
-        +-- Fa16                           # one directory per semester
-        |   +-- courseInstanceInfo.json    # settings for Fa16 semester
-        |   `-- assessments                # all assessments for the Fa16 semester (equivalent to old tests directory)
-        |       +-- hw1
-        |       |   `-- info.json
-        |       `-- hw2
-        |           `-- info.json
-        `-- Sp17                           # another semester
-            +-- courseInstanceInfo.json
-            `-- assessments
-                +-- hw1                    # it's ok to reuse assessment names in different semesters
-                |   `-- info.json
-                `-- hw2
-                    `-- info.json
+```
+exampleCourse
+`-- courseInstances                    # replaces the 'tests' directory
+    +-- Fa16                           # one directory per semester
+    |   +-- courseInstanceInfo.json    # settings for Fa16 semester
+    |   `-- assessments                # all assessments for the Fa16 semester (equivalent to old tests directory)
+    |       +-- hw1
+    |       |   `-- info.json
+    |       `-- hw2
+    |           `-- info.json
+    `-- Sp17                           # another semester
+        +-- courseInstanceInfo.json
+        `-- assessments
+            +-- hw1                    # it's ok to reuse assessment names in different semesters
+            |   `-- info.json
+            `-- hw2
+                `-- info.json
+```
 
 ## The `courseInstanceInfo.json` files
 
@@ -70,3 +76,17 @@ The `assessments` directory within each course instance is the equivalent of the
 See [writing assessments](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/writingAssessments.md) for details on the per-assessment `info.json` files. They are almost the same as the per-test `info.json` files from PLv1, with the following changes:
 
 1. FIXME
+
+## Renaming `clientCode`, `serverCode`, and `clientFiles`
+
+The following directories at the top course level need to be renamed, and `clientCode` and `clientFiles` should be copied into the single `clientFilesCourse` directory.
+
+```
+clientCode  -> clientFilesCourse
+clientFiles -> clientFilesCourse
+serverFiles -> serverFilesCourse
+```
+
+Question code that loads from `clientCode/` or `serverCode` will continue to work without modification, as PrairieLearn will internally map `clientCode` to `clientFilesCourse` (and similarly for `serverCode`).
+
+Any code within `clientCode` that loads other code from the same directory should load it as `./lib.js`, not at `clientCode/lib.js`.
