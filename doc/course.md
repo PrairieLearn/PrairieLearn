@@ -147,7 +147,7 @@ Copy the JSON block below to include the above standardized tag names in your co
 
 ```json
     "tags": [
-        {"name": "numeric", "backgroundColor": "brown1", "textColor": "#000000"},
+        {"name": "numeric", "color": "brown1"},
         {"name": "symbolic", "color": "blue1"},
         {"name": "drawing", "color": "yellow1"},
         {"name": "MC", "color": "green1"},
