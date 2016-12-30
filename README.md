@@ -10,18 +10,23 @@ the server.
 
 ## User Documentation
 
-* [Installing and running PrairieLearn v2](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/installing.md)
-* [Upgrading to PLv2 from PLv1](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/upgrading1.md)
-* [Course configuration](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/course.md)
-* [PrairieDraw graphics](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/PrairieDraw.md)
+* [Installing and running PrairieLearn v2](doc/installing.md)
+* [Upgrading to PLv2 from PLv1](doc/upgrading1.md)
+* [Course configuration](doc/course.md)
+* [Course instance configuration](doc/courseInstances.md)
+* [Assessment configuration](doc/assessments.md)
+* [Question configuration](doc/questions.md)
+* [Access control to course instances and assessments](doc/accessControl)
+* [clientFiles and serverFiles for file and code libraries](clientServerFiles)
+* [PrairieDraw graphics](doc/PrairieDraw.md)
 
 ## Developer Documentation
 
-* [Developer guide](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/dev-guide.md)
-* [DB ER diagram](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/models.pdf)
-* [DB table list](https://github.com/PrairieLearn/PrairieLearn/blob/master/models/)
-* [Docker packaging](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/docker.md)
-* [Contributing to PL development](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/contributing.md)
+* [Developer guide](doc/dev-guide.md)
+* [DB ER diagram](doc/models.pdf)
+* [DB table list](models/)
+* [Docker packaging](doc/docker.md)
+* [Contributing to PL development](doc/contributing.md)
 * [Good blog post on how to contribute via GitHub](http://blog.davidecoppola.com/2016/11/howto-contribute-to-open-source-project-on-github/)
 
 ## Old Version 1 User Documentation

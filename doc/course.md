@@ -5,25 +5,27 @@
 
 A course is specified by a single directory, with the following structure:
 
-    exampleCourse
-    +-- courseInfo.json     # course specification (see below)
-    +-- questions           # all questions for the course
-    |   `-- ...             # one subdirectory per question
-    |-- courseInstances
-    |   +-- Fa16            # one directory per semester
-    |   |   `-- ...         # configuration and assessments for Fa16
-    |   `-- Sp17
-    |       `-- ...
-    +-- courseClientFiles   # files available from the client at all times
-    |   +-- library.js
-    |   +-- refs.html
-    |   `-- formulas.pdf
-    `-- courseServerFiles   # files only accessible from code on the server
-        `-- secret1.js
+```
+exampleCourse
++-- courseInfo.json     # course specification (see below)
++-- questions           # all questions for the course
+|   `-- ...             # one subdirectory per question
++-- courseInstances
+|   +-- Fa16            # one directory per semester
+|   |   `-- ...         # configuration and assessments for Fa16
+|   `-- Sp17
+|       `-- ...
++-- courseClientFiles   # files available from the client at all times
+|   +-- library.js
+|   +-- refs.html
+|   `-- formulas.pdf
+`-- courseServerFiles   # files only accessible from code on the server
+    `-- secret1.js
+```
 
-* See an [example course directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse) in PrairieLearn
+* See an [example course directory](../exampleCourse) in PrairieLearn
 
-* See [clientFiles and serverFiles](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/clientServerFiles) for information on the `courseClientFiles` and `courseServerFiles` directories.
+* See [clientFiles and serverFiles](clientServerFiles) for information on the `courseClientFiles` and `courseServerFiles` directories.
 
 ## `courseInfo.json`
 
@@ -31,6 +33,7 @@ This file specifies basic information about the course:
 
 ```json
 {
+    "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
     "name": "TAM 212",
     "title": "Introductory Dynamics",
     "assessmentSets": [
@@ -48,9 +51,9 @@ This file specifies basic information about the course:
 }
 ```
 
-* Example [courseInfo.json](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInfo.json)
+* Example [courseInfo.json](../exampleCourse/courseInfo.json)
 
-* [Format specification for `courseInfo.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/backend/schemas/courseInfo.json)
+* [Format specification for `courseInfo.json`](../schemas/courseInfo.json)
 
 ## Assessment sets
 

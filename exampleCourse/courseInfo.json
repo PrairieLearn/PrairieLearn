@@ -2,13 +2,13 @@
     "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
     "name": "TPL 101",
     "title": "Example Course",
-    "currentCourseInstance": "Sp15",
     "assessmentSets": [
         {"shortName": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
         {"shortName": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1"},
         {"shortName": "PQ", "name": "Practice Quiz", "heading": "Practice Quizzes", "color": "pink1"},
         {"shortName": "E", "name": "Exam", "heading": "Exams", "color": "brown1"},
-        {"shortName": "PE", "name": "Practice Exam", "heading": "Practice Exams", "color": "yellow1"}
+        {"shortName": "PE", "name": "Practice Exam", "heading": "Practice Exams", "color": "yellow1"},
+        {"shortName": "P", "name": "Prep", "heading": "Question Preparation", "color": "turquoise1"}
     ],
     "topics": [
         {"name": "Vectors", "color": "blue3"},
@@ -19,12 +19,28 @@
         {"name": "Center of mass", "color": "green3"}
     ],
     "tags": [
-        {"name": "Drawing", "color": "gray2"},
-        {"name": "MC", "color": "brown2"},
-        {"name": "Estimation", "color": "orange2"},
-        {"name": "Comparative", "color": "yellow2"},
-        {"name": "Symbolic", "color": "green2"},
-        {"name": "Numeric", "color": "turquoise2"},
-        {"name": "Code", "color": "blue2"}
+        {"name": "numeric", "color": "brown1"},
+        {"name": "symbolic", "color": "blue1"},
+        {"name": "drawing", "color": "yellow1"},
+        {"name": "MC", "color": "green1"},
+        {"name": "code", "color": "turquoise1"},
+        {"name": "graph", "color": "purple1"},
+        {"name": "concept", "color": "pink1"},
+        {"name": "compute", "color": "purple1"},
+        {"name": "software", "color": "orange1"},
+        {"name": "estimation", "color": "red2"},
+        {"name": "secret", "color": "red3"},
+        {"name": "nontest", "color": "green3"},
+        {"name": "Sp15", "color": "gray1"},
+        {"name": "Su15", "color": "gray1"},
+        {"name": "Fa15", "color": "gray1"},
+        {"name": "Sp16", "color": "gray1"},
+        {"name": "Su16", "color": "gray1"},
+        {"name": "Fa16", "color": "gray1"},
+        {"name": "Sp17", "color": "gray1"},
+        {"name": "Su17", "color": "gray1"},
+        {"name": "Fa17", "color": "gray1"},
+        {"name": "insert your course name", "color": "gray1"},
+        {"name": "insert your NetID", "color": "gray1"}
     ]
 }
