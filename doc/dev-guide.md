@@ -5,7 +5,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 ## High level view
 
-<img style="width: 20em" src="high-level.png" />
+<img width="500" src="high-level.png" />
 
 1. The questions and assessments for a course are stored in a git repository. This is synced into the database by the course instructor and DB data is updated or added to represent the course. Students then interact with the course website by doing questions, with the results being stored in the DB. The instructor can view the student results on the website and download CSV files with the data.
 
