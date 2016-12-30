@@ -123,11 +123,13 @@ Answer format tag | Meaning
 `drawing` | The answer format requires drawing on a canvas to input a graphical representation of an answer.
 `MC` | The answer format is choosing from a small finite set of answers (multiple choice, possibly with multiple selections allowed, up to 10 possible answers).
 `code` | The answer format is a piece of code.
+`multianswer` | The question requires multiple answers, either as steps in a sequence or as separate questions.
 
 Skill testing tag | Meaning
 --- | ---
 `graph` | The question tests reading information from a graph or drawing a graph.
 `concept` | The question tests conceptual understanding of a topic.
+`calculate` | The questions tests performing a numerical calculation, with either a calculator or equivalent software.
 `compute` | The question tests the writing and running of a piece of code to compute the answer. The answer itself is not the code, but could be a numeric answer output by the code, for example (use `code` when the answer is the code).
 `software` | The question tests the use of a specific piece of software (e.g., Matlab).
 `estimation` | Answering the question correctly will require some amount of estimation, so an exact answer is not possible.
@@ -152,8 +154,10 @@ Copy the JSON block below to include the above standardized tag names in your co
         {"name": "drawing", "color": "yellow1"},
         {"name": "MC", "color": "green1"},
         {"name": "code", "color": "turquoise1"},
+        {"name": "multianswer", "color": "orange2"},
         {"name": "graph", "color": "purple1"},
         {"name": "concept", "color": "pink1"},
+        {"name": "calculate", "color": "green2"},
         {"name": "compute", "color": "red1"},
         {"name": "software", "color": "orange1"},
         {"name": "estimation", "color": "red2"},
