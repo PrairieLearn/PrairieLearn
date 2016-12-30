@@ -111,10 +111,9 @@
                     "items": {"$ref": "#/definitions/singleQuestion"}
                 }
             },
-            "required": ["points"],
             "oneOf": [
-                {"type": "object", "required": ["qid"]},
-                {"type": "object", "required": ["qids"]},
+                {"type": "object", "required": ["qid", "points"]},
+                {"type": "object", "required": ["qids", "points"]},
                 {"type": "object", "required": ["alternatives"]}
             ]
         },
@@ -130,7 +129,7 @@
             "type": "array",
             "minItems": 1,
             "items": {
-                "type": "integer"
+                "type": "number"
             }
         },
         "questionQID": {
