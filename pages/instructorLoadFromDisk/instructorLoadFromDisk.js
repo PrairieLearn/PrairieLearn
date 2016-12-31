@@ -13,16 +13,16 @@ var syncFromDisk = require('../../sync/syncFromDisk');
 var update = function(locals, callback) {
     var options = {
         course_id: locals.course ? locals.course.id : null,
-        type: 'reload',
-        description: 'Reload data from local disk',
+        type: 'loadFromDisk',
+        description: 'Load data from local disk',
     };
     serverJobs.createJobSequence(options, function(err, job_sequence_id) {
         if (ERR(err, callback)) return;
         
         var jobOptions = {
             course_id: locals.course ? locals.course.id : null,
-            type: 'reload_from_disk',
-            description: 'Reload configuation from disk',
+            type: 'load_from_disk',
+            description: 'Load configuation from disk',
             job_sequence_id: job_sequence_id,
             last_in_sequence: true,
         };

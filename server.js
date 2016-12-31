@@ -68,7 +68,7 @@ app.use('/pl/enroll', require('./pages/enroll/enroll'));
 
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
 if (app.get('env') == 'development') {
-    app.use('/pl/instructor/reload', require('./pages/instructorReload/instructorReload'));
+    app.use('/pl/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
     app.use('/pl/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 }
 
@@ -105,7 +105,7 @@ app.use('/pl/:course_instance_id/instructor/gradebook', require('./pages/instruc
 app.use('/pl/:course_instance_id/instructor/questions', require('./pages/instructorQuestions/instructorQuestions'));
 app.use('/pl/:course_instance_id/instructor/syncs', require('./pages/instructorSyncs/instructorSyncs'));
 app.use('/pl/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
-app.use('/pl/:course_instance_id/instructor/reload', require('./pages/instructorReload/instructorReload'));
+app.use('/pl/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
 
 // Student pages
 // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of

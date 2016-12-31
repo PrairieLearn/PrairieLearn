@@ -4,17 +4,56 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
-    <%- include('../partials/navbarPlain'); %>
+    <%- include('../partials/navbarPlain', {navPage: 'home'}); %>
     <div id="content" class="container">
+
+      <% if (devMode) { %>
+      <div class="panel panel-default">
+        <div class="panel-heading">
+          <h3 class="panel-title">Development Mode</h3>
+        </div>
+        <div class="panel-body">
+          <p>
+            PrairieLearn is running in Development Mode. Click
+            the <strong>“Load from disk”</strong> button above to load
+            question and assessment definitions from JSON files on
+            disk.
+          </p>
+          <p>
+            You need to click “Load from disk” every time that a JSON
+            file is changed on disk. Changes to other files (JS, HTML,
+            etc) will be automatically loaded every time you navigate
+            to a different page or if you reload the current page in
+            your web browser.
+          </p>
+          <p class="no-bottom-margin">
+            See
+            the <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/README.md">PrairieLearn
+            documentation</a> for information on creating questions
+            and assessments.
+          </p>
+        </div>
+      </div>
+      <% } %>
+
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title">Courses</h3>
         </div>
 
         <% if (course_instances.length == 0) { %>
+
+        <% if (devMode) { %>
         <div class="panel-body">
-            No courses found. Use the “Edit course list” button below.
+          No courses loaded. Click <strong>“Load from disk”</strong>
+          above and then click <strong>“Home”</strong> to come back to
+          this page.
         </div>
+        <% } else { %> <!-- devMode -->
+        <div class="panel-body">
+          No courses found. Use the “Edit course list” button below.
+        </div>
+        <% } %> <!-- devMode -->
         
         <% } else { %> <!-- course_instances.length -->
 
