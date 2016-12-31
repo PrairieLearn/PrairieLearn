@@ -79,10 +79,8 @@
               <td><%= question.qid %></td>
               <td><%- include('../partials/topic', {topic: question.topic}); %></td>
               <td>
-                <% if (assessment.type == "RetryExam") { %><%= question.points_list %><% } %>
-                <% if (assessment.type == "Exam")      { %><%= question.max_points %><% } %>
-                <% if (assessment.type == "Basic")     { %><%= question.max_points %><% } %>
-                <% if (assessment.type == "Game")      { %><%= question.init_points %>/<%= question.max_points %><% } %>
+                <% if (assessment.type == "Exam") { %><%= question.points_list %><% } %>
+                <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_points %><% } %>
               </td>
               <td>
                 <% if (question.other_assessments) { %>
