@@ -20,8 +20,11 @@ def add_uuid_to_file(filename):
             raise Exception("file does not begin with a single line containing a \"{\" character")
         new_contents = match.group(1) + ("    \"uuid\": \"%s\",\n" % uuid.uuid4()) + match.group(2)
         tmp_filename = filename + ".tmp_with_uuid"
+        if os.path.exists(tmp_filename):
+            os.remove(tmp_filename) # needed on Windows
         with open(tmp_filename, "w") as out_f:
             out_f.write(new_contents)
+        os.remove(filename) # needed on Windows
         os.rename(tmp_filename, filename)
         return 1
     except Exception as error:
