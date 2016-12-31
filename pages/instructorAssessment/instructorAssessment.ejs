@@ -29,6 +29,7 @@
               <th></th>
               <th>QID</th>
               <th>Topic</th>
+              <th>Tags</th>
               <th>Points</th>
               <th>Other Assessments</th>
             </tr>
@@ -37,7 +38,7 @@
             <% questions.forEach(function(question) { %>
             <% if (question.start_new_zone) { %>
             <tr>
-              <th colspan="5">
+              <th colspan="6">
                 Zone <%= question.zone_number %>. <%= question.zone_title %>
                 <% if (question.zone_number_choose == null) { %>
                 (Choose all questions)
@@ -51,7 +52,7 @@
             <% } %>
             <% if (question.start_new_alternative_group && question.alternative_group_size > 1) { %>
             <tr>
-              <td colspan="5">
+              <td colspan="6">
                 <%= question.alternative_group_number %>.
                 <% if (question.alternative_group_number_choose == null) { %>
                 Choose all questions from:
@@ -78,6 +79,7 @@
               </td>
               <td><%= question.qid %></td>
               <td><%- include('../partials/topic', {topic: question.topic}); %></td>
+              <td><%- include('../partials/tags', {tags: question.tags}); %></td>
               <td>
                 <% if (assessment.type == "Exam") { %><%= question.points_list %><% } %>
                 <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_points %><% } %>

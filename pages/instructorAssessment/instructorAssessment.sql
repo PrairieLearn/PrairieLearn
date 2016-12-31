@@ -1,6 +1,7 @@
 -- BLOCK questions
 SELECT
     aq.*,q.qid,q.title,row_to_json(top) AS topic,
+    tags_for_question(q.id) AS tags,
     ag.number AS alternative_group_number,
     ag.number_choose AS alternative_group_number_choose,
     (count(*) OVER (PARTITION BY ag.number)) AS alternative_group_size,
