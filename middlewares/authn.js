@@ -49,7 +49,7 @@ module.exports = function(req, res, next) {
     var params = {
         uid: authUid,
     };
-    sqldb.query(sql.get, params, function(err, result) {
+    sqldb.query(sql.get_user, params, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) {
             // the user doesn't exist so try to make it
@@ -57,23 +57,35 @@ module.exports = function(req, res, next) {
             if (!authName) {
                 return next(error.make(400, 'Name not specified for new user', {authUid: authUid}));
             }
+            var params = {
+                uid: authUid,
+                name: authName,
+            };
+            sqldb.queryOneOrZeroRow(sql.insert_user, params, function(err, result) {
+                if (ERR(err, next)) return;
+                if (result.rowCount == 0) return next(new Error('Error creating new user', {params}));
+                res.locals.authn_user = result.rows[0];
+                res.locals.is_administrator = false;
+                next();
+            });
         } else {
-            res.locals.authn_user = result.rows[0];
+            res.locals.authn_user = result.rows[0].user;
+            res.locals.is_administrator = result.rows[0].is_administrator;
             // if we don't have a name then there is nothing left to do
             if (!authName) return next();
             // if the name is correct then we are done
             if (res.locals.authn_user.name == authName) return next();
+            // authName differs from stored name, so update the DB
+            var params = {
+                user_id: res.locals.authn_user.id,
+                name: authName,
+            };
+            sqldb.queryOneOrZeroRow(sql.update_name, params, function(err, result) {
+                if (ERR(err, next)) return;
+                if (result.rowCount == 0) return next(new Error('Error updating name', {params}));
+                res.locals.authn_user = result.rows[0];
+                next();
+            });
         }
-
-        // we either don't have the user or the name is incorrect
-        var params = {
-            uid: authUid,
-            name: authName,
-        };
-        sqldb.queryOneRow(sql.set, params, function(err, result) {
-            if (ERR(err, next)) return;
-            res.locals.authn_user = result.rows[0];
-            next();
-        });
     });
 };

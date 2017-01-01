@@ -5,64 +5,69 @@ digraph partmc_modules {
     graph [nodesep = 0.2, ranksep = 0.3];
     edge [fontsize = 10, arrowsize = 0.7];
 
-    course [label="course", style=filled, fillcolor=mistyrose1]
+    users [style=filled, fillcolor=mistyrose1]
+    administrators [style=filled, fillcolor=mistyrose1]
+    courses [style=filled, fillcolor=mistyrose1]
+    course_permissions [style=filled, fillcolor=mistyrose1]
 
-    course_instance [label="course_instance*", style=filled, fillcolor=honeydew1]
-    course_instance_access_rule [style=filled, fillcolor=honeydew1]
-    assessment_access_rule [style=filled, fillcolor=honeydew1]
-    question [label="question*", style=filled, fillcolor=honeydew1]
-    question_tag [style=filled, fillcolor=honeydew1]
-    tag [style=filled, fillcolor=honeydew1]
-    assessment [label="assessment*", style=filled, fillcolor=honeydew1]
-    assessment_question [label="assessment_question*", style=filled, fillcolor=honeydew1]
-    assessment_set [style=filled, fillcolor=honeydew1]
-    topic [style=filled, fillcolor=honeydew1]
-    alternative_group [style=filled, fillcolor=honeydew1]
-    zone [style=filled, fillcolor=honeydew1]
+    course_instances [label="course_instances*", style=filled, fillcolor=honeydew1]
+    course_instance_access_rules [style=filled, fillcolor=honeydew1]
+    assessment_access_rules [style=filled, fillcolor=honeydew1]
+    questions [label="questions*", style=filled, fillcolor=honeydew1]
+    question_tags [style=filled, fillcolor=honeydew1]
+    tags [style=filled, fillcolor=honeydew1]
+    assessments [label="assessments*", style=filled, fillcolor=honeydew1]
+    assessment_questions [label="assessment_questions*", style=filled, fillcolor=honeydew1]
+    assessment_sets [style=filled, fillcolor=honeydew1]
+    topics [style=filled, fillcolor=honeydew1]
+    alternative_groups [style=filled, fillcolor=honeydew1]
+    zones [style=filled, fillcolor=honeydew1]
 
-    enrollment [style=filled, fillcolor=lavender]
-    user [style=filled, fillcolor=lavender]
-    assessment_instance [style=filled, fillcolor=lavender]
-    instance_question [style=filled, fillcolor=lavender]
-    variant [style=filled, fillcolor=lavender]
-    submission [style=filled, fillcolor=lavender]
-    job_sequence [style=filled, fillcolor=lavender]
-    job [style=filled, fillcolor=lavender]
+    enrollments [style=filled, fillcolor=lavender]
+    assessment_instances [style=filled, fillcolor=lavender]
+    instance_questions [style=filled, fillcolor=lavender]
+    variants [style=filled, fillcolor=lavender]
+    submissions [style=filled, fillcolor=lavender]
+    job_sequences [style=filled, fillcolor=lavender]
+    jobs [style=filled, fillcolor=lavender]
 
-    assessment_state_log [style=filled, fillcolor=white]
-    grading_log [style=filled, fillcolor=white]
-    assessment_score_log [style=filled, fillcolor=white]
-    question_score_log [style=filled, fillcolor=white]
-    variant_view_log [style=filled, fillcolor=white]
-    assessment_view_log [style=filled, fillcolor=white]
+    assessment_state_logs [style=filled, fillcolor=white]
+    grading_logs [style=filled, fillcolor=white]
+    assessment_score_logs [style=filled, fillcolor=white]
+    question_score_logs [style=filled, fillcolor=white]
+    variant_view_logs [style=filled, fillcolor=white]
+    assessment_view_logs [style=filled, fillcolor=white]
 
-    assessment_access_rule -> { assessment }
-    course_instance -> { course }
-    course_instance_access_rule -> { course_instance }
-    question -> { course; topic }
-    question_tag -> { question; tag }
-    tag -> { course }
-    assessment -> { course_instance; assessment_set }
-    assessment_question -> { assessment; alternative_group; question }
-    assessment_set -> { course }
-    topic -> { course }
-    zone -> { assessment }
-    alternative_group -> { zone }
+    administrators -> { users }
+    course_permissions -> { users; courses }
 
-    enrollment -> { user; course_instance }
-    assessment_instance -> { assessment; user }
-    instance_question -> { assessment_question; assessment_instance }
-    variant -> { instance_question }
-    submission -> { variant }
-    job_sequence -> { course }
-    job -> { job_sequence }
+    assessment_access_rules -> { assessments }
+    course_instances -> { courses }
+    course_instance_access_rules -> { course_instances }
+    questions -> { courses; topics }
+    question_tags -> { questions; tags }
+    tags -> { courses }
+    assessments -> { course_instances; assessment_sets }
+    assessment_questions -> { assessments; alternative_groups; questions }
+    assessment_sets -> { courses }
+    topics -> { courses }
+    zones -> { assessments }
+    alternative_groups -> { zones }
 
-    assessment_state_log -> { assessment_instance }
-    grading_log -> { submission }
-    assessment_score_log -> { assessment_instance }
-    question_score_log -> { instance_question }
-    variant_view_log -> { variant }
-    assessment_view_log -> { assessment_instance }
+    enrollments -> { users; course_instances }
+    assessment_instances -> { assessments; users }
+    instance_questions -> { assessment_questions; assessment_instances }
+    variants -> { instance_questions }
+    submissions -> { variants }
+    job_sequences -> { courses; users }
+    jobs -> { job_sequences }
+
+    assessment_state_logs -> { assessment_instances }
+    grading_logs -> { submissions }
+    assessment_score_logs -> { assessment_instances }
+    question_score_logs -> { instance_questions }
+    variant_view_logs -> { variants }
+    assessment_view_logs -> { assessment_instances }
 
     subgraph cluster_legend {
 
