@@ -7,7 +7,7 @@ AS $$
 DECLARE
     label text;
 BEGIN
-    label := aset.abbrev || a.number;
+    label := aset.abbreviation || a.number;
     RETURN label;
 END;
 $$ LANGUAGE PLPGSQL IMMUTABLE;

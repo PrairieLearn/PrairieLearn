@@ -19,6 +19,7 @@ module.exports = {
                 name: topic.name,
                 number: i + 1,
                 color: topic.color,
+                description: topic.description,
                 course_id: courseInfo.courseId,
             };
             sqldb.queryOneRow(sql.insert_topic, params, function(err, result) {

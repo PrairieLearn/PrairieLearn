@@ -89,7 +89,7 @@
           <thead>
             <tr>
               <th>Number</th>
-              <th>Abbrev</th>
+              <th>Abbreviation</th>
               <th>Name</th>
               <th>Heading</th>
               <th>Color</th>
@@ -100,7 +100,7 @@
               <td><%= assessment_set.number %></td>
               <td>
                 <button class="btn btn-<%= assessment_set.color %> btn-xs tag-button">
-                  <%= assessment_set.abbrev %>
+                  <%= assessment_set.abbreviation %>
                 </button>
               </td>
               <td><%= assessment_set.name %></td>
@@ -128,6 +128,7 @@
               <th>Number</th>
               <th>Name</th>
               <th>Color</th>
+              <th>Description</th>
           </thead>
           <tbody>
             <% topics.forEach(function(topic) { %>
@@ -135,6 +136,7 @@
               <td><%= topic.number %></td>
               <td><%- include('../partials/topic', {topic}); %></td>
               <td><%= topic.color %></td>
+              <td><%= topic.description %></td>
             </tr>
             <% }); %>
           </tbody>
@@ -157,6 +159,7 @@
               <th>Number</th>
               <th>Name</th>
               <th>Color</th>
+              <th>Description</th>
           </thead>
           <tbody>
             <% tags.forEach(function(tag) { %>
@@ -164,6 +167,7 @@
               <td><%= tag.number %></td>
               <td><%- include('../partials/tag', {tag}); %></td>
               <td><%= tag.color %></td>
+              <td><%= tag.description %></td>
             </tr>
             <% }); %>
           </tbody>

@@ -2,7 +2,7 @@
 SELECT
     a.id,a.number AS assessment_number,
     aset.number AS assessment_set_number,aset.color,
-    (aset.abbrev || a.number) AS label
+    (aset.abbreviation || a.number) AS label
 FROM assessments AS a
 JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
 WHERE a.deleted_at IS NULL

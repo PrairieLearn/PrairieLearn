@@ -8,7 +8,7 @@ AS $$
 DECLARE
     label text;
 BEGIN
-    label := aset.abbrev || a.number;
+    label := aset.abbreviation || a.number;
     IF (a.multiple_instance) THEN
         label := label || '#' || ai.number;
     END IF;

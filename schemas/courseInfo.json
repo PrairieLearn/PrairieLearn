@@ -42,7 +42,7 @@
                 "description": "A single assessment set description.",
                 "type": "object",
                 "properties": {
-                    "abbrev": {
+                    "abbreviation": {
                         "description": "Abbreviation (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc.",
                         "type": "string",
                         "required": true
@@ -83,6 +83,10 @@
                     "color": {
                         "$ref": "#/definitions/color",
                         "required": true
+                    },
+                    "description": {
+                        "description": "Description of the topic.",
+                        "type": "string"
                     }
                 }
             }
@@ -106,6 +110,10 @@
                     "color": {
                         "$ref": "#/definitions/color",
                         "required": true
+                    },
+                    "description": {
+                        "description": "Description of the tag.",
+                        "type": "string"
                     }
                 }
             }
