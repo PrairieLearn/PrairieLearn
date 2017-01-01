@@ -37,15 +37,6 @@
         <li <% if (navPage == "assessment_instance") { %>class="active"<% } %>><a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>"><%= assessment_instance_label %></a></li>
         <% } %>
 
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-- Load from disk -------------------------------------------------------------->
-
-        <% if (devMode) { %>
-        <a class="btn btn-success navbar-btn" href="<%= urlPrefix %>/instructor/loadFromDisk">Load from disk</a>
-        <% } %>
-
       </ul>
 
       <!-------------------------------------------------------------------------------->
@@ -79,6 +70,10 @@
         <% } else { // authn_has_instructor_view %>
         <p class="navbar-text"><%= authn_user.name %></p>
         <% } // authn_has_instructor_view %>
+
+        <% if (devMode) { %>
+        <a class="btn btn-success navbar-btn" href="<%= urlPrefix %>/instructor/loadFromDisk">Load from disk</a>
+        <% } %>
 
         <% if (devMode) { %>
         <a class="btn btn-default navbar-btn" href="">Log out</a>

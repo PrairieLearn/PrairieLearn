@@ -19,23 +19,20 @@
 
         <li <% if (navPage == "home") { %>class="active"<% } %>><a href="<%= plainUrlPrefix %>">Home</a></li>
 
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-- Load from disk -------------------------------------------------------------->
+      </ul>
+
+      <div class="navbar-right">
 
         <% if (devMode) { %>
         <a class="btn btn-success navbar-btn" href="<%= urlPrefix %>/instructor/loadFromDisk">Load from disk</a>
         <% } %>
 
-      </ul>
-
-      <div class="navbar-right">
         <% if (devMode) { %>
         <a class="btn btn-default navbar-btn" href="">Log out</a>
         <% } else { %>
         <a class="btn btn-default navbar-btn" href="https://prairielearn.engr.illinois.edu/Shibboleth.sso/Logout">Log out</a>
         <% } %>
+
       </div>
     </div>
   </div>

@@ -33,15 +33,6 @@
 
         <li <% if (navPage == "courseOverview") { %>class="active"<% } %>><a href="<%= urlPrefix %>/overview">Course</a></li>
 
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-- Load from disk -------------------------------------------------------------->
-
-        <% if (devMode) { %>
-        <a class="btn btn-success navbar-btn" href="<%= urlPrefix %>/instructor/loadFromDisk">Load from disk</a>
-        <% } %>
-
       </ul>
 
       <!-------------------------------------------------------------------------------->
@@ -59,6 +50,10 @@
             </a>
           </li>
         </ul>
+
+        <% if (devMode) { %>
+        <a class="btn btn-success navbar-btn" href="<%= urlPrefix %>/instructor/loadFromDisk">Load from disk</a>
+        <% } %>
 
         <% if (devMode) { %>
         <a class="btn btn-default navbar-btn" href="">Log out</a>
