@@ -1,22 +1,29 @@
 -- BLOCK select_authz_data
-WITH select_course_permission AS (
+WITH
+actual_course_permissions AS (
     SELECT
-        CASE
-            WHEN $is_administrator THEN 'Owner'
-            ELSE cp.course_role
-        END AS course_role
+        cp.course_role
     FROM
-        users AS u
-        LEFT JOIN course_permissions AS cp ON (cp.user_id = u.id)
+        course_permissions AS cp
     WHERE
-        u.id = $authn_user_id
-        AND (
-            cp.course_id = $course_id
-            OR (
-                (cp.id IS NULL)
-                AND $is_administrator
-            )
-        )
+        cp.user_id = $authn_user_id
+        AND cp.course_id = $course_id
+),
+administrator_course_permissions AS (
+    SELECT
+        'Owner'::enum_course_role AS course_role
+    WHERE
+        $is_administrator
+),
+effective_course_permissions AS (
+    SELECT
+        max(cp.course_role) AS course_role
+    FROM
+        (
+            SELECT * FROM actual_course_permissions
+            UNION
+            SELECT * FROM administrator_course_permissions
+        ) AS cp
 )
 SELECT
     cp.course_role AS authn_course_role,
@@ -25,7 +32,7 @@ SELECT
     (cp.course_role >= 'Owner') AS authn_has_permission_own,
     to_jsonb(c.*) AS course
 FROM
-    select_course_permission AS cp
+    effective_course_permissions AS cp
     JOIN courses AS c ON (TRUE)
 WHERE
     c.id = $course_id;
