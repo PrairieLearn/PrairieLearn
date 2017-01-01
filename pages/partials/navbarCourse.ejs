@@ -24,18 +24,14 @@
         <!-------------------------------------------------------------------------------->
         <!-- Course title ---------------------------------------------------------------->
 
-        <li><a href=""><%= course.short_name %>, <%= course_instance.short_name %></a></li>
+        <li><a href=""><%= course.short_name %></a></li>
 
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->
         <!-- Main pages ------------------------------------------------------------------>
 
-        <li <% if (navPage == "assessments") { %>class="active"<% } %>><a href="<%= urlPrefix %>/assessments">Assessments</a></li>
-
-        <% if (typeof assessment_instance_label != 'undefined' && typeof assessment_instance != 'undefined') { %>
-        <li <% if (navPage == "assessment_instance") { %>class="active"<% } %>><a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>"><%= assessment_instance_label %></a></li>
-        <% } %>
+        <li <% if (navPage == "courseOverview") { %>class="active"<% } %>><a href="<%= urlPrefix %>/overview">Course</a></li>
 
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->
@@ -55,30 +51,14 @@
 
       <div class="navbar-right">
 
-        <% if (authz_data.has_instructor_view) { %>
-        <div class="btn-group">
-          <button type="button" class="btn btn-info navbar-btn dropdown-toggle" data-toggle="dropdown"
-                  aria-haspopup="true" aria-expanded="false">
-            Student <span class="caret"></span>
-          </button>
-          <ul class="dropdown-menu">
-            <li><a href="<%= urlPrefix %>/instructor/assessments">Switch to instructor view</a></li>
-          </ul>
-        </div>
-        <% } // has_instructor_view %>
-
-        <% if (authz_data.authn_has_instructor_view) { %>
         <ul class="nav navbar-nav" id="username-nav">
           <li <% if (navPage == "effective") { %>class="active"<% } %>>
-            <a href="<%= urlPrefix %>/instructor/effectiveUser">
-              <%= authz_data.user.name %> (<%= authz_data.role %>), <%= authz_data.mode %>
+            <a href="<%= urlPrefix %>/course/effectiveUser">
+              <%= authz_data.user.name %> (<%= authz_data.course_role %>)
               <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
             </a>
           </li>
         </ul>
-        <% } else { // authn_has_instructor_view %>
-        <p class="navbar-text"><%= authn_user.name %></p>
-        <% } // authn_has_instructor_view %>
 
         <% if (devMode) { %>
         <a class="btn btn-default navbar-btn" href="">Log out</a>

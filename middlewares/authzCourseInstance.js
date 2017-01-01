@@ -69,9 +69,12 @@ module.exports = function(req, res, next) {
         authn_user_id: res.locals.authn_user.id,
         course_instance_id: req.params.course_instance_id,
     };
-    sqldb.queryZeroOrOneRow(sql.select_authn_data, params, function(err, result) {
+    sqldb.queryZeroOrOneRow(sql.select_authz_data, params, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
+
+        res.locals.course = result.rows[0].course;
+        res.locals.course_instance = result.rows[0].course_instance;
 
         var authn_role = result.rows[0].authn_role;
         var authn_has_instructor_view = result.rows[0].authn_has_instructor_view;

@@ -22,24 +22,9 @@
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->
-        <!-- Course switcher ------------------------------------------------------------->
+        <!-- Course title ---------------------------------------------------------------->
 
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><%= course.short_name %><span class="caret"></span></a>
-          <ul class="dropdown-menu">
-            <% nav_data.courses.forEach(function(course) { %>
-            <li><a href="<%= plainUrlPrefix %>/<%= course.course_instance_id %>"><%= course.short_name %></a></li>
-            <% }); %>
-          </ul>
-        </li>
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><%= course_instance.short_name %><span class="caret"></span></a>
-          <ul class="dropdown-menu">
-            <% nav_data.instances_for_course.forEach(function(course_instance) { %>
-            <li><a href="<%= plainUrlPrefix %>/<%= course_instance.id %>"><%= course_instance.short_name %></a></li>
-            <% }); %>
-          </ul>
-        </li>
+        <li><a href=""><%= course.short_name %>, <%= course_instance.short_name %></a></li>
 
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->

@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
+    <script type="text/javascript" src="/javascripts/d3.min.js"></script>
+    <script type="text/javascript" src="/localscripts/histmini.js"></script>
+  </head>
+  <body>
+    <%- include('../partials/navbarCourse', {navPage: 'courseOverview'}); %>
+    <div id="content" class="container">
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Course information ---------------------------------------------------------->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Course information</h3>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <tbody>
+            <tr><th>Short name:</th><td><%= course.short_name %></td></tr>
+            <tr><th>Title:</th><td><%= course.title %></td></tr>
+            <tr><th>Grading queue:</th><td><%= course.grading_queue %></td></tr>
+            <tr><th>Path:</th><td><%= course.path %></td></tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Access roles ---------------------------------------------------------------->
+
+      <% if (authz_data.has_permission_own) { %>
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Access roles</h3>
+        </div>
+
+        <div class="panel-body">
+          <button class="btn btn-xs btn-default">Add user for course access</button>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <thead>
+            <tr>
+              <th>UID</th>
+              <th>Name</th>
+              <th>Role</th>
+          </thead>
+          <tbody>
+            <% course_users.forEach(function(course_user) { %>
+            <tr>
+              <td><%= course_user.uid %></td>
+              <td><%= course_user.name %></td>
+              <td>
+                <%= course_user.course_role %>
+                <button class="btn btn-xs btn-default"><i class="fa fa-pencil" aria-hidden="true"></i> Change</button>
+                <button class="btn btn-xs btn-default"><i class="fa fa-times" aria-hidden="true"></i> Remove</button>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+
+        <div class="panel-footer">
+          <small>
+            Explain the roles.
+          </small>
+        </div>
+      </div>
+      <% } %> <!-- has_permission_own -->
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+
+    </div>
+  </body>
+</html>

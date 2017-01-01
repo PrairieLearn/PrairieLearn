@@ -1,14 +1,19 @@
--- BLOCK select_authn_data
+-- BLOCK select_authz_data
 SELECT
     e.role AS authn_role,
     (e.role >= 'TA') AS authn_has_instructor_view,
-    (e.role >= 'Instructor') AS authn_has_instructor_edit
+    (e.role >= 'Instructor') AS authn_has_instructor_edit,
+    to_jsonb(c.*) AS course,
+    to_jsonb(ci.*) AS course_instance
 FROM
     enrollments AS e
     JOIN users AS u ON (u.id = e.user_id)
+    JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
+    JOIN courses AS c ON (c.id = ci.course_id)
 WHERE
     u.id = $authn_user_id
-    AND e.course_instance_id = $course_instance_id
+    AND ci.id = $course_instance_id
+    AND ci.deleted_at IS NULL
     AND check_course_instance_access($course_instance_id, e.role, u.uid, current_timestamp);
 
 -- BLOCK select_effective_authz_data
