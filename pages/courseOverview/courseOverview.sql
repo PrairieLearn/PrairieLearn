@@ -2,11 +2,11 @@
 WITH
 select_course_users AS (
     SELECT
-        jsonb_agg(jsonb_build_object(
+        coalesce(jsonb_agg(jsonb_build_object(
             'uid', u.uid,
             'name', u.name,
             'course_role', cp.course_role
-        ) ORDER BY u.uid, u.id) AS course_users
+        ) ORDER BY u.uid, u.id), '[]'::jsonb) AS course_users
     FROM
         course_permissions AS cp
         JOIN users AS u ON (u.id = cp.user_id)
@@ -15,7 +15,7 @@ select_course_users AS (
 ),
 select_assessment_sets AS (
     SELECT
-        jsonb_agg(to_jsonb(aset.*) ORDER BY aset.number) AS assessment_sets
+        coalesce(jsonb_agg(to_jsonb(aset.*) ORDER BY aset.number), '[]'::jsonb) AS assessment_sets
     FROM
         assessment_sets AS aset
     WHERE
@@ -23,7 +23,7 @@ select_assessment_sets AS (
 ),
 select_topics AS (
     SELECT
-        jsonb_agg(to_jsonb(topic.*) ORDER BY topic.number) AS topics
+        coalesce(jsonb_agg(to_jsonb(topic.*) ORDER BY topic.number), '[]'::jsonb) AS topics
     FROM
         topics AS topic
     WHERE
@@ -31,7 +31,7 @@ select_topics AS (
 ),
 select_tags AS (
     SELECT
-        jsonb_agg(to_jsonb(tag.*) ORDER BY tag.number) AS tags
+        coalesce(jsonb_agg(to_jsonb(tag.*) ORDER BY tag.number), '[]'::jsonb) AS tags
     FROM
         tags AS tag
     WHERE

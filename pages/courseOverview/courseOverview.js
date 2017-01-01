@@ -16,9 +16,9 @@ router.get('/', function(req, res, next) {
         course_id: res.locals.course.id,
         authz_data: res.locals.authz_data,
     };
-    sqldb.query(sql.select_course_info, params, function(err, result) {
+    sqldb.queryOneRow(sql.select_course_info, params, function(err, result) {
         if (ERR(err, next)) return;
-        
+
         _.assign(res.locals, result.rows[0]);
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
