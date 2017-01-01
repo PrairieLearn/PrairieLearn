@@ -42,8 +42,8 @@
                 "description": "A single assessment set description.",
                 "type": "object",
                 "properties": {
-                    "shortName": {
-                        "description": "Short name (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc.",
+                    "abbrev": {
+                        "description": "Abbreviation (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc.",
                         "type": "string",
                         "required": true
                     },

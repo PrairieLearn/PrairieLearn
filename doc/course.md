@@ -37,8 +37,8 @@ This file specifies basic information about the course:
     "name": "TAM 212",
     "title": "Introductory Dynamics",
     "assessmentSets": [
-        {"shortName": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
-        {"shortName": "E", "name": "Exam", "heading": "Exams", "color": "red1"}
+        {"abbrev": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
+        {"abbrev": "E", "name": "Exam", "heading": "Exams", "color": "red1"}
     ],
     "topics": [
         {"name": "Vectors", "color": "blue3"},
@@ -61,7 +61,7 @@ Each assessment belongs to an `assessmentSet` defined in the `courseInfo.json` f
 
 Property | Description
 --- | ---
-`shortName` | Abbreviation that is joined with the assessment `number` to form the label, so `"shortName": "HW"` produces `HW1`, `HW2`, etc. This should be one or two uppercase letters (e.g., `HW` for homework, `E` for exam, `Q` for quiz).
+`abbrev` | Abbreviation that is joined with the assessment `number` to form the label, so `"abbrev": "HW"` produces `HW1`, `HW2`, etc. This should be one or two uppercase letters (e.g., `HW` for homework, `E` for exam, `Q` for quiz).
 `name` | Full name that is joined with the assessment `number` to describe the assessment, so `"name": "Homework"` produces `Homework 1`, etc. This should be a singular noun.
 `heading` | Title that is listed above all the assessments in the set. Should be the plural version of the `name`.
 `color` | The color scheme for this assessment (see below for choices).
@@ -70,7 +70,7 @@ Property | Description
 
 A list of standardized assessments sets is:
 
-shortName | name | purpose
+abbrev | name | purpose
 --- | --- | ---
 `HW` | Homework | Weekly homeworks done at home.
 `MP` | Machine Problem | Weekly coding assisgnments done outside of class.
@@ -84,13 +84,13 @@ Copy the JSON block below to include the above standardized tag names in your co
 
 ```json
     "assessmentSets": [
-        {"shortName": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
-        {"shortName": "MP", "name": "Machine Problem", "heading": "Machines Problems", "color": "green1"},
-        {"shortName": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1"},
-        {"shortName": "PQ", "name": "Practice Quiz", "heading": "Practice Quizzes", "color": "yellow1"},
-        {"shortName": "E", "name": "Exam", "heading": "Exams", "color": "red1"},
-        {"shortName": "PE", "name": "Practice Exam", "heading": "Practice Exams", "color": "yellow1"},
-        {"shortName": "P", "name": "Prep", "heading": "Question Preparation", "color": "blue1"}
+        {"abbrev": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
+        {"abbrev": "MP", "name": "Machine Problem", "heading": "Machines Problems", "color": "green1"},
+        {"abbrev": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1"},
+        {"abbrev": "PQ", "name": "Practice Quiz", "heading": "Practice Quizzes", "color": "yellow1"},
+        {"abbrev": "E", "name": "Exam", "heading": "Exams", "color": "red1"},
+        {"abbrev": "PE", "name": "Practice Exam", "heading": "Practice Exams", "color": "yellow1"},
+        {"abbrev": "P", "name": "Prep", "heading": "Question Preparation", "color": "blue1"}
     ],
 ```
 

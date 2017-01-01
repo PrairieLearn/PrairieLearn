@@ -45,7 +45,7 @@
           <button class="btn btn-xs btn-default">Add user for course access</button>
         </div>
 
-        <table class="table table-condensed table-hover">
+        <table class="table table-condensed table-hover table-striped">
           <thead>
             <tr>
               <th>UID</th>
@@ -74,6 +74,101 @@
         </div>
       </div>
       <% } %> <!-- has_permission_own -->
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Assessment sets ------------------------------------------------------------->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Assessment sets</h3>
+        </div>
+
+        <table class="table table-condensed table-hover table-striped">
+          <thead>
+            <tr>
+              <th>Number</th>
+              <th>Abbrev</th>
+              <th>Name</th>
+              <th>Heading</th>
+              <th>Color</th>
+          </thead>
+          <tbody>
+            <% assessment_sets.forEach(function(assessment_set) { %>
+            <tr>
+              <td><%= assessment_set.number %></td>
+              <td>
+                <button class="btn btn-<%= assessment_set.color %> btn-xs tag-button">
+                  <%= assessment_set.abbrev %>
+                </button>
+              </td>
+              <td><%= assessment_set.name %></td>
+              <td><%= assessment_set.heading %></td>
+              <td><%= assessment_set.color %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Topics ---------------------------------------------------------------------->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Topics</h3>
+        </div>
+
+        <table class="table table-condensed table-hover table-striped">
+          <thead>
+            <tr>
+              <th>Number</th>
+              <th>Name</th>
+              <th>Color</th>
+          </thead>
+          <tbody>
+            <% topics.forEach(function(topic) { %>
+            <tr>
+              <td><%= topic.number %></td>
+              <td><%- include('../partials/topic', {topic}); %></td>
+              <td><%= topic.color %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Tags ------------------------------------------------------------------------>
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Tags</h3>
+        </div>
+
+        <table class="table table-condensed table-hover table-striped">
+          <thead>
+            <tr>
+              <th>Number</th>
+              <th>Name</th>
+              <th>Color</th>
+          </thead>
+          <tbody>
+            <% tags.forEach(function(tag) { %>
+            <tr>
+              <td><%= tag.number %></td>
+              <td><%- include('../partials/tag', {tag}); %></td>
+              <td><%= tag.color %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
 
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
