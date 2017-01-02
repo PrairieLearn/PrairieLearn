@@ -60,6 +60,7 @@ module.exports = {
             'variant_view_logs.sql',
             'grading_logs.sql',
             'question_score_logs.sql',
+            'audit_logs.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

@@ -3,6 +3,7 @@ WITH
 select_course_users AS (
     SELECT
         coalesce(jsonb_agg(jsonb_build_object(
+            'id', u.id,
             'uid', u.uid,
             'name', u.name,
             'course_role', cp.course_role
