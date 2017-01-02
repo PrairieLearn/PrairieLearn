@@ -79,14 +79,30 @@ See [writing assessments](https://github.com/PrairieLearn/PrairieLearn/blob/mast
 
 ## Renaming `clientCode`, `serverCode`, and `clientFiles`
 
-The following directories at the top course level need to be renamed, and `clientCode` and `clientFiles` should be copied into the single `clientFilesCourse` directory.
+The following directories at the top course level need to be renamed, and the contents of `clientCode` and `clientFiles` should be copied into the single `clientFilesCourse` directory.
 
 ```
-clientCode  -> clientFilesCourse
-clientFiles -> clientFilesCourse
-serverFiles -> serverFilesCourse
+clientCode/*  -> clientFilesCourse/*
+clientFiles/* -> clientFilesCourse/*
+serverFiles/* -> serverFilesCourse/*
 ```
 
 Question code that loads from `clientCode/` or `serverCode` will continue to work without modification, as PrairieLearn will internally map `clientCode` to `clientFilesCourse` (and similarly for `serverCode`).
 
 Any code within `clientCode` that loads other code from the same directory should load it as `./lib.js`, not at `clientCode/lib.js`.
+
+## `testFile` moved to `clientFileAssessment`
+
+Files directly within an assessment directory are no longer available to the client. Instead, you should make an `clientFilesAssessment` directory inside the assessment and put files in this. Within the assessment `info.json` file, replace code like:
+
+```
+<% print(testFile(\"formulas.pdf\")) %>
+```
+
+with:
+
+```
+<%= clientFilesAssessment %>/formulas.pdf
+```
+
+See [clientFiles and serverFiles](clientServerFiles.md) for more details.

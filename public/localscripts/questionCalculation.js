@@ -1,9 +1,8 @@
-var PRAIRIELEARN_DEFAULT_API_SERVER = "http://localhost:3000";
-
 requirejs.config({
     baseUrl: '/localscripts/calculationQuestion',
     paths: {
-        clientCode: PRAIRIELEARN_DEFAULT_API_SERVER + "/clientCode",
+        clientCode: document.urlPrefix + "/clientFilesCourse",
+        clientFilesCourse: document.urlPrefix + "/clientFilesCourse",
     },
     map: {
         '*': {

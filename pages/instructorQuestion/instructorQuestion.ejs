@@ -10,6 +10,9 @@
     <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
     <script type="text/javascript" src="/localscripts/question.js"></script>
     <%- extraHeaders %>
+    <script>
+      document.urlPrefix = '<%= urlPrefix %>';
+    </script>
     <script type="text/javascript" src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
     <div id="content" class="container">
       <div class="panel panel-primary">

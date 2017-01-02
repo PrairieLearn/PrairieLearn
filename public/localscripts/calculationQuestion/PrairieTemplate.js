@@ -469,7 +469,7 @@ define(["underscore"], function(_) {
             return appModel.apiURL("tests/" + tInstance.get("tid") + "/" + name);
         };
         localData.clientFile = function(name) {
-            return appModel.apiURL("clientFiles/" + name);
+            return document.urlPrefix + '/clientFilesCourse/' + name;
         };
 
         var compiled = _.template(text);
