@@ -50,7 +50,7 @@
                 <td><%= job_sequence.description %></td>
                 <td><%= job_sequence.user_uid %></td>
                 <td><%- include('../partials/jobStatus', {status: job_sequence.status}); %></td>
-                <td><a href="<%= urlPrefix %>/instructor/jobSequence/<%= job_sequence.id %>" class="btn btn-xs btn-info">Details</a></td>
+                <td><a href="<%= urlPrefix %>/jobSequence/<%= job_sequence.id %>" class="btn btn-xs btn-info">Details</a></td>
               </tr>
               <% }); %>
             </tbody>

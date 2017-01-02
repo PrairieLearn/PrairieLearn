@@ -108,8 +108,10 @@ module.exports = function(req, res, next) {
                 requested_role: (req.cookies.requestedRole ? req.cookies.requestedRole : res.locals.authz_data.role),
                 requested_mode: (req.cookies.requestedMode ? req.cookies.requestedMode : res.locals.authz_data.mode),
             };
+            console.log('params', params);
             sqldb.queryZeroOrOneRow(sql.select_effective_authz_data, params, function(err, result) {
                 if (ERR(err, next)) return;
+                console.log('result', result);
                 if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
 
                 _.assign(res.locals.authz_data, result.rows[0]);
