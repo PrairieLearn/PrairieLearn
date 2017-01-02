@@ -34,11 +34,7 @@
 
       });
     </script>
-    <% if (typeof course_instance !== 'undefined') { %>
-    <%- include('../partials/navbarInstructor', {navPage: ''}); %>
-    <% } else { %>
-    <%- include('../partials/navbarPlain', {navPage: ''}); %>
-    <% } %>
+    <%- include('../partials/navbar', {navPage: ''}); %>
     <div id="content" class="container">
 
       <div class="panel panel-primary">

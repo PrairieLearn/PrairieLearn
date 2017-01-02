@@ -52,7 +52,7 @@ router.get('/', function(req, res, next) {
     if (!res.locals.devMode) return next();
     update(res.locals, function(err, job_sequence_id) {
         if (ERR(err, next)) return;
-        res.redirect(res.locals.urlPrefix + '/instructor/jobSequence/' + job_sequence_id);
+        res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     });
 });
 
