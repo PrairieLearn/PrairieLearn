@@ -146,16 +146,16 @@ var gitStatus = function(locals, callback) {
 };
 
 router.post('/', function(req, res, next) {
-    if (!res.locals.authz_data.has_instructor_edit) return next();
+    if (!res.locals.authz_data.has_course_permission_edit) return next(new Error('Access denied'));
     if (req.body.postAction == 'pull') {
         pullAndUpdate(res.locals, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
-            res.redirect(res.locals.urlPrefix + '/instructor/jobSequence/' + job_sequence_id);
+            res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else if (req.body.postAction == 'status') {
         gitStatus(res.locals, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
-            res.redirect(res.locals.urlPrefix + '/instructor/jobSequence/' + job_sequence_id);
+            res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else {
         return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));

@@ -16,28 +16,27 @@ module.exports = function(req, res, next) {
         course_id: req.params.course_id,
         is_administrator: res.locals.is_administrator,
     };
-    sqldb.queryZeroOrOneRow(sql.select_authz_data, params, function(err, result) {
+    sqldb.queryOneRow(sql.select_authz_data, params, function(err, result) {
         if (ERR(err, next)) return;
-        if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
 
+        var permissions_course = result.rows[0].permissions_course;
         res.locals.course = result.rows[0].course;
 
-        var authn_course_role = result.rows[0].authn_course_role;
-        var authn_has_permission_view = result.rows[0].authn_has_permission_view;
-        var authn_has_permission_edit = result.rows[0].authn_has_permission_edit;
-        var authn_has_permission_own = result.rows[0].authn_has_permission_own;
+        if (permissions_course.course_role == 'None') {
+            return next(error.make(403, 'Access denied'));
+        }
 
         res.locals.authz_data = {
             authn_user: _.cloneDeep(res.locals.authn_user),
-            authn_course_role: authn_course_role,
-            authn_has_permission_view: authn_has_permission_view,
-            authn_has_permission_edit: authn_has_permission_edit,
-            authn_has_permission_own: authn_has_permission_own,
+            authn_course_role: permissions_course.course_role,
+            authn_has_course_permission_view: permissions_course.has_course_permission_view,
+            authn_has_course_permission_edit: permissions_course.has_course_permission_edit,
+            authn_has_course_permission_own: permissions_course.has_course_permission_own,
             user: _.cloneDeep(res.locals.authn_user),
-            course_role: authn_course_role,
-            has_permission_view: authn_has_permission_view,
-            has_permission_edit: authn_has_permission_edit,
-            has_permission_own: authn_has_permission_own,
+            course_role: permissions_course.course_role,
+            has_course_permission_view: permissions_course.has_course_permission_view,
+            has_course_permission_edit: permissions_course.has_course_permission_edit,
+            has_course_permission_own: permissions_course.has_course_permission_own,
         };
         res.locals.user = res.locals.authz_data.user;
 

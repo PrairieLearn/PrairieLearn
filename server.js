@@ -44,6 +44,8 @@ var app = express();
 app.set('views', __dirname);
 app.set('view engine', 'ejs');
 
+config.devMode = (app.get('env') == 'development');
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
@@ -54,14 +56,14 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(require('./middlewares/logResponse')); // defers to end of response
 app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPrefix = '/pl'; next();});
 app.use(function(req, res, next) {res.locals.navbarType = 'plain'; next();});
-app.use(function(req, res, next) {res.locals.devMode = (req.app.get('env') == 'development'); next();});
+app.use(function(req, res, next) {res.locals.devMode = config.devMode; next();});
 app.use(require('./middlewares/cors'));
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.csrfToken
 app.use(require('./middlewares/logRequest'));
 
 // clear all cached course code in dev mode (no authorization needed)
-if (app.get('env') == 'development') {
+if (config.devMode) {
     app.use(require('./middlewares/undefCourseCode'));
 }
 
@@ -73,14 +75,14 @@ app.use('/pl', require('./pages/home/home'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
 
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
-if (app.get('env') == 'development') {
+if (config.devMode) {
     app.use('/pl/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
     app.use('/pl/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 }
 
 // all pages under /pl/course_instance require authorization
 app.use('/pl/course_instance/:course_instance_id', require('./middlewares/authzCourseInstance')); // sets res.locals.course and res.locals.courseInstance
-
+app.use('/pl/course_instance/:course_instance_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id; next();});
 app.use('/pl/course_instance/:course_instance_id', function(req, res, next) {res.locals.navbarType = 'student'; next();});
 
 // Redirect plain course page to Instructor or Student assessments page.
@@ -105,7 +107,7 @@ app.use(/^\/pl\/course_instance\/[0-9]+\/instructor\/effectiveUser(\/?.*)$/, fun
 });
 
 // all pages under /pl/course_instance/*/instructor require instructor permissions
-app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/authzCourseInstanceInstructor'));
+app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/authzCourseInstanceHasInstructorView'));
 app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id + '/instructor'; next();});
 app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
 
@@ -126,9 +128,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/gradebook', require('./pages/instructorGradebook/instructorGradebook'));
 app.use('/pl/course_instance/:course_instance_id/instructor/questions', require('./pages/instructorQuestions/instructorQuestions'));
-app.use('/pl/course_instance/:course_instance_id/instructor/syncs', require('./pages/instructorSyncs/instructorSyncs'));
+app.use('/pl/course_instance/:course_instance_id/instructor/syncs', require('./pages/courseSyncs/courseSyncs'));
 app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
+app.use('/pl/course_instance/:course_instance_id/instructor/course', require('./pages/courseOverview/courseOverview'));
 
 // Student pages
 // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
@@ -151,7 +154,7 @@ app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_que
 ]);
 
 // Allow access to effectiveUser as a Student page, but only for users have authn (not authz) as Instructor
-app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./middlewares/authzCourseInstanceAuthnIsInstructor'));
+app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./middlewares/authzCourseInstanceAuthnHasInstructorView'));
 app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
 
 // clientFiles at different levels
@@ -183,6 +186,7 @@ app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType
 app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, next) {res.redirect(res.locals.urlPrefix + '/overview');}); // redirect plain course URL to overview page
 app.use('/pl/course/:course_id/overview', require('./pages/courseOverview/courseOverview'));
 app.use('/pl/course/:course_id/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
+app.use('/pl/course/:course_id/syncs', require('./pages/courseSyncs/courseSyncs'));
 app.use('/pl/course/:course_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 
 // error handling
@@ -282,6 +286,29 @@ if (config.startServer) {
                 callback(null);
             });
         },
+        function(callback) {
+            if (!config.devMode) return callback(null);
+            // add dev user as Administrator
+            var sql
+                = "INSERT INTO users (uid, name)"
+                + " VALUES ('dev@example.com', 'Dev User')"
+                + " ON CONFLICT (uid) DO UPDATE"
+                + " SET name = EXCLUDED.name"
+                + " RETURNING id;";
+            sqldb.queryOneRow(sql, [], function(err, result) {
+                if (ERR(err, callback)) return;
+                var user_id = result.rows[0].id;
+                var sql
+                    = "INSERT INTO administrators (user_id)"
+                    + " VALUES ($user_id)"
+                    + " ON CONFLICT (user_id) DO NOTHING;";
+                var params = {user_id};
+                sqldb.query(sql, params, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            });
+        },
     ], function(err, data) {
         if (err) {
             logger.error('Error initializing PrairieLearn server:', err, data);
@@ -289,7 +316,7 @@ if (config.startServer) {
             process.exit(1);
         } else {
             logger.info('PrairieLearn server ready');
-            if (app.get('env') == 'development') {
+            if (config.devMode) {
                 logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort + '/pl');
             }
         }

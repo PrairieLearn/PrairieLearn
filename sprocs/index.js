@@ -52,6 +52,8 @@ module.exports = {
             'course_permissions_add_by_uid.sql',
             'course_permissions_change_role.sql',
             'course_permissions_delete_user.sql',
+            'authz_course.sql',
+            'authz_course_instance.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

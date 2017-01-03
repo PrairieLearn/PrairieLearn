@@ -12,7 +12,7 @@
           $('[data-toggle="popover"]').popover()
       });
     </script>
-    <%- include('../partials/navbarCourse', {navPage: 'courseOverview'}); %>
+    <%- include('../partials/navbar', {navPage: 'courseOverview'}); %>
     <div id="content" class="container">
 
       <!-------------------------------------------------------------------------------->
@@ -40,10 +40,10 @@
       <!-------------------------------------------------------------------------------->
       <!-- Access roles ---------------------------------------------------------------->
 
-      <% if (authz_data.has_permission_own) { %>
+      <% if (authz_data.has_course_permission_own) { %>
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title">Access roles</h3>
+          <h3 class="panel-title">Course access roles</h3>
         </div>
 
         <div class="panel-body">
@@ -62,7 +62,7 @@
             <tr>
               <th>UID</th>
               <th>Name</th>
-              <th>Role</th>
+              <th>Course access role</th>
           </thead>
           <tbody>
             <% course_users.forEach(function(course_user) { %>
@@ -103,11 +103,19 @@
 
         <div class="panel-footer">
           <small>
-            Explain the roles.
+            The <strong>Viewer</strong> role can see all questions in
+            the course. The <strong>Editor</strong> role can
+            additionally sync the course configuration from the git
+            repository. The <strong>Owner</strong> role can
+            additionally add and remove other access roles. Users must
+            already have logged in to PrairieLearn before they can be
+            given course access. These roles do not give access to
+            course instances for each semester. To do that, add users
+            to the <tt>info.json</tt> file for the course instance.
           </small>
         </div>
       </div>
-      <% } %> <!-- has_permission_own -->
+      <% } %> <!-- has_course_permission_own -->
 
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->

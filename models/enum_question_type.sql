@@ -5,6 +5,3 @@ BEGIN
     END IF;
 END;
 $$;
-
--- Can't add this here, but for reference:
--- ALTER TYPE enum_question_type ADD VALUE IF NOT EXISTS 'ShortAnswer';

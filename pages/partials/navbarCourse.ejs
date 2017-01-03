@@ -32,6 +32,9 @@
         <!-- Main pages ------------------------------------------------------------------>
 
         <li <% if (navPage == "courseOverview") { %>class="active"<% } %>><a href="<%= urlPrefix %>/overview">Course</a></li>
+        <% if (!devMode && authz_data.has_course_permission_edit) { %>
+        <li <% if (navPage == "sync")           { %>class="active"<% } %>><a href="<%= urlPrefix %>/syncs">Sync</a></li>
+        <% } %>
 
       </ul>
 

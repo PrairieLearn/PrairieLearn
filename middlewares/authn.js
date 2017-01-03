@@ -19,8 +19,8 @@ module.exports = function(req, res, next) {
 
     // bypass auth for local /pl/ serving
     if (config.authType === 'none') {
-        authUid = 'user1@illinois.edu';
-        authName = 'Test User';
+        authUid = 'dev@example.com';
+        authName = 'Dev User';
     } else if (config.authType == 'x-trust-auth') {
 
         // first try for trusted data
@@ -61,7 +61,7 @@ module.exports = function(req, res, next) {
                 uid: authUid,
                 name: authName,
             };
-            sqldb.queryOneOrZeroRow(sql.insert_user, params, function(err, result) {
+            sqldb.queryZeroOrOneRow(sql.insert_user, params, function(err, result) {
                 if (ERR(err, next)) return;
                 if (result.rowCount == 0) return next(new Error('Error creating new user', {params}));
                 res.locals.authn_user = result.rows[0];
@@ -80,7 +80,7 @@ module.exports = function(req, res, next) {
                 user_id: res.locals.authn_user.id,
                 name: authName,
             };
-            sqldb.queryOneOrZeroRow(sql.update_name, params, function(err, result) {
+            sqldb.queryZeroOrOneRow(sql.update_name, params, function(err, result) {
                 if (ERR(err, next)) return;
                 if (result.rowCount == 0) return next(new Error('Error updating name', {params}));
                 res.locals.authn_user = result.rows[0];

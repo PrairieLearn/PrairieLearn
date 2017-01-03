@@ -68,6 +68,8 @@ module.exports = function(req, res, next) {
     var params = {
         authn_user_id: res.locals.authn_user.id,
         course_instance_id: req.params.course_instance_id,
+        course_id: req.params.course_id,
+        is_administrator: res.locals.is_administrator,
     };
     sqldb.queryZeroOrOneRow(sql.select_authz_data, params, function(err, result) {
         if (ERR(err, next)) return;
@@ -80,19 +82,30 @@ module.exports = function(req, res, next) {
         var authn_has_instructor_view = result.rows[0].authn_has_instructor_view;
         var authn_has_instructor_edit = result.rows[0].authn_has_instructor_edit;
 
+        var permissions_course_instance = result.rows[0].permissions_course_instance;
+        var permissions_course = result.rows[0].permissions_course;
+
         // effective user data defaults to auth user data
         var authn_mode = serverMode(req);
         res.locals.authz_data = {
             authn_user: _.cloneDeep(res.locals.authn_user),
-            authn_role: authn_role,
+            authn_role: permissions_course_instance.role,
             authn_mode: authn_mode,
-            authn_has_instructor_view: authn_has_instructor_view,
-            authn_has_instructor_edit: authn_has_instructor_edit,
+            authn_has_instructor_view: permissions_course_instance.has_instructor_view,
+            authn_has_instructor_edit: permissions_course_instance.has_instructor_edit,
+            authn_course_role: permissions_course.course_role,
+            authn_has_course_permission_view: permissions_course.has_course_permission_view,
+            authn_has_course_permission_edit: permissions_course.has_course_permission_edit,
+            authn_has_course_permission_own: permissions_course.has_course_permission_own,
             user: _.cloneDeep(res.locals.authn_user),
-            role: authn_role,
+            role: permissions_course_instance.role,
             mode: authn_mode,
-            has_instructor_view: authn_has_instructor_view,
-            has_instructor_edit: authn_has_instructor_edit,
+            has_instructor_view: permissions_course_instance.has_instructor_view,
+            has_instructor_edit: permissions_course_instance.has_instructor_edit,
+            course_role: permissions_course.course_role,
+            has_course_permission_view: permissions_course.has_course_permission_view,
+            has_course_permission_edit: permissions_course.has_course_permission_edit,
+            has_course_permission_own: permissions_course.has_course_permission_own,
         };
         res.locals.user = res.locals.authz_data.user;
         // FIXME: debugging for #422
@@ -102,7 +115,8 @@ module.exports = function(req, res, next) {
         if (req.cookies.requestedUid || req.cookies.requestedRole || req.cookies.requestedMode) {
             var params = {
                 authn_user_id: res.locals.authn_user.id,
-                server_mode: res.locals.authz_data.mode,
+                authn_role: res.locals.authz_data.authn_role,
+                server_mode: res.locals.authz_data.authn_mode,
                 course_instance_id: req.params.course_instance_id,
                 requested_uid: (req.cookies.requestedUid ? req.cookies.requestedUid : res.locals.authz_data.user.uid),
                 requested_role: (req.cookies.requestedRole ? req.cookies.requestedRole : res.locals.authz_data.role),
@@ -115,6 +129,11 @@ module.exports = function(req, res, next) {
                 if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
 
                 _.assign(res.locals.authz_data, result.rows[0]);
+                // remove all course permissions if we are emulating another user
+                authz_data.course_role = 'None';
+                authz_data.has_course_permission_view = false;
+                authz_data.has_course_permission_edit = false;
+                authz_data.has_course_permission_own = false;
                 // FIXME: debugging for #422
                 logger.debug('Overridden authz_data', res.locals.authz_data);
                 res.locals.user = res.locals.authz_data.user;

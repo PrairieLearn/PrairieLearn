@@ -25,7 +25,7 @@ router.get('/', function(req, res, next) {
 });
 
 router.post('/', function(req, res, next) {
-    if (!res.locals.authz_data.has_permission_own) return next(new Error('Insufficient permissions'));
+    if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Insufficient permissions'));
     if (req.body.postAction == 'addUser') {
         var params = [
             res.locals.course.id,
