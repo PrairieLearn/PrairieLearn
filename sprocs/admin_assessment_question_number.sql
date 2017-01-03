@@ -1,11 +1,9 @@
-DROP FUNCTION IF EXISTS admin_assessment_question_number(integer);
-
 CREATE OR REPLACE FUNCTION
     admin_assessment_question_number (
-        assessment_question_id integer
+        assessment_question_id bigint
     ) RETURNS text
 AS $$
-SELECT 
+SELECT
     CASE
         WHEN questions_in_same_group.count = 1 THEN ag.number::text
         ELSE ag.number::text || '.' || aq.number_in_alternative_group::text
