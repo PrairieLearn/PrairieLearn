@@ -52,6 +52,7 @@ module.exports = {
             'assessments_with_uuid_elsewhere.sql',
             'assessment_instance_label.sql',
             'assessment_label.sql',
+            'admin_assessment_question_number.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

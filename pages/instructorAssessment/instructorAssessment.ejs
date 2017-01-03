@@ -104,7 +104,6 @@
         <div class="panel-heading">
           <h3 class="panel-title"><%= assessment_set.abbrev %><%= assessment.number %> Score statistics</h3>
         </div>
-
         <% if (assessment_stat.number > 0) { %>
         <div class="panel-body">
           <div id="scoreHist" class="scoreHistogram"></div>
@@ -231,6 +230,51 @@
           </small>
         </div>
 
+        <% } else { %>
+
+        <div class="panel-body">
+          <p>No student data.</p>
+        </div>
+        
+        <% }%>
+      </div>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title"><%= assessment_set.abbrev %><%= assessment.number %> Question difficulty vs discrimination</h3>
+        </div>
+
+        <% if (assessment_stat.number > 0) { %>
+        <div class="panel-body">
+          <div id="difficultyDiscriminationScatter" class="scatter"></div>
+          <script>
+            $(function() {
+                var xdata = [<% question_stats.forEach(function(question) { %><%= question.mean_score_per_question %>,<% }); %>];
+                var ydata = [<% question_stats.forEach(function(question) { %><%= question.discrimination %>,<% }); %>];
+                var labels = [<% question_stats.forEach(function(question) { %><%= question.number %>,<% }); %>];
+                var options = {
+                    xgrid: _.range(0, 110, 10),
+                    ygrid: _.range(0, 110, 10),
+                    xlabel: 'mean score / %',
+                    ylabel: 'discrimination / %',
+                    radius: 2,
+                    labels: labels
+                };
+                scatter("#difficultyDiscriminationScatter", xdata, ydata, options);
+            });
+          </script>
+        </div>
+          <div class="panel-footer">
+            <small>
+              <ul>
+                <li><strong>Mean score</strong> of a question is the average score for all students on the question. It is best to have a range of questions with different mean scores on the test, with some easy (mean score above 90%) and some hard (mean score below 50%).</li>
+                <li><strong>Discrimination</strong> of a question is the correlation coefficient between the scores on the question and the total assessment scores. Discrimination values should be above 20%, unless a question is very easy (mean score above 95%), in which case it is acceptable to have lower discriminations. It is always better to have higher discriminations for all questions, and a range of discriminations is not desired.</li>
+              </ul>
+            </small>
+          </div>
         <% } else { %>
 
         <div class="panel-body">
