@@ -18,6 +18,9 @@
         <!-- Home ------------------------------------------------------------------------>
 
         <li <% if (navPage == "home") { %>class="active"<% } %>><a href="<%= plainUrlPrefix %>">Home</a></li>
+        <% if (is_administrator) { %>
+        <li <% if (navPage == "admin") { %>class="active"<% } %>><a href="<%= plainUrlPrefix %>/administrator/overview">Admin</a></li>
+        <% } %>
 
       </ul>
 

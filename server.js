@@ -131,6 +131,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/questions', require(
 app.use('/pl/course_instance/:course_instance_id/instructor/syncs', require('./pages/courseSyncs/courseSyncs'));
 app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
+app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/authzCourseInstanceHasCourseView'));
 app.use('/pl/course_instance/:course_instance_id/instructor/course', require('./pages/courseOverview/courseOverview'));
 
 // Student pages
@@ -188,6 +189,10 @@ app.use('/pl/course/:course_id/overview', require('./pages/courseOverview/course
 app.use('/pl/course/:course_id/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
 app.use('/pl/course/:course_id/syncs', require('./pages/courseSyncs/courseSyncs'));
 app.use('/pl/course/:course_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
+
+// Administrator pages
+app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
+app.use('/pl/administrator/overview', require('./pages/administratorOverview/administratorOverview'));
 
 // error handling
 app.use(require('./middlewares/notFound')); // if no earlier routes matched, this will match and generate a 404 error

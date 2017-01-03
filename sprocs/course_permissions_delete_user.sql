@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION
-    course_permissions_remove_user(
+    course_permissions_delete_user(
         course_id bigint,
         user_id bigint,
         authn_user_id bigint
@@ -10,8 +10,8 @@ DECLARE
 BEGIN
     DELETE FROM course_permissions AS cp
     WHERE
-        cp.course_id = course_permissions_remove_user.course_id
-        AND cp.user_id = course_permissions_remove_user.user_id
+        cp.course_id = course_permissions_delete_user.course_id
+        AND cp.user_id = course_permissions_delete_user.user_id
     RETURNING
         cp.* INTO old_row;
         

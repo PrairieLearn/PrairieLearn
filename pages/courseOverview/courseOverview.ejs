@@ -7,11 +7,6 @@
     <script type="text/javascript" src="/localscripts/histmini.js"></script>
   </head>
   <body>
-    <script>
-      $(function () {
-          $('[data-toggle="popover"]').popover()
-      });
-    </script>
     <%- include('../partials/navbar', {navPage: 'courseOverview'}); %>
     <div id="content" class="container">
 
@@ -65,31 +60,31 @@
               <th>Course access role</th>
           </thead>
           <tbody>
-            <% course_users.forEach(function(course_user) { %>
+            <% course_users.forEach(function(course_user, i) { %>
             <tr>
               <td><%= course_user.uid %></td>
               <td><%= course_user.name %></td>
               <td>
                 <%= course_user.course_role %>
 
-                <a id="changeRoleButton"
+                <a id="changeRoleButton<%= i %>"
                    tabindex="0" class="btn btn-xs btn-default" role="button"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change course role"
                    data-content="<%= include('formChangeRole',
-                                 {id: 'changeRoleButton', uid: course_user.uid,
+                                 {id: 'changeRoleButton' + i, uid: course_user.uid,
                                  user_id: course_user.id,
                                  course_role: course_user.course_role}) %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-pencil" aria-hidden="true"></i> Change
                 </a>
 
-                <a id="deleteUserButton"
+                <a id="deleteUserButton<%= i %>"
                    tabindex="0" class="btn btn-xs btn-default" role="button"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Remove user access"
                    data-content="<%= include('formDeleteUser',
-                                 {id: 'deleteUserButton', uid: course_user.uid,
+                                 {id: 'deleteUserButton' + i, uid: course_user.uid,
                                  user_id: course_user.id}) %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-times" aria-hidden="true"></i> Remove
