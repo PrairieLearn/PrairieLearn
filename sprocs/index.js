@@ -49,13 +49,16 @@ module.exports = {
             'assessments_with_uuid_elsewhere.sql',
             'assessment_instance_label.sql',
             'assessment_label.sql',
-            'course_permissions_add_by_uid.sql',
-            'course_permissions_change_role.sql',
-            'course_permissions_delete_user.sql',
+            'course_permissions_insert_by_user_uid.sql',
+            'course_permissions_update_role.sql',
+            'course_permissions_delete.sql',
             'authz_course.sql',
             'authz_course_instance.sql',
-            'administrators_add_by_uid.sql',
-            'administrators_delete_user.sql',
+            'administrators_insert_by_user_uid.sql',
+            'administrators_delete_by_user_id.sql',
+            'courses_insert.sql',
+            'courses_update_column.sql',
+            'courses_delete.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

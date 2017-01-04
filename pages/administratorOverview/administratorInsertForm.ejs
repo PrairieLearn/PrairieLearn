@@ -1,9 +1,9 @@
 <form name="add-user-form" method="POST">
-  <input type="hidden" name="postAction" value="addUser">
+  <input type="hidden" name="postAction" value="administrators_insert_by_user_uid">
   <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
   <div class="form-group">
-    <label for="addUserInputUid">UID:</label>
-    <input type="text" class="form-control" id="addUserInputUid" name="uid" placeholder="username@domain.org">
+    <label for="administratorInsertFormUid">UID:</label>
+    <input type="text" class="form-control" id="administratorInsertFormUid" name="uid" placeholder="username@domain.org">
   </div>
   <button type="button" class="btn btn-default" onclick="$('#<%= id %>').popover('hide')">
     Cancel

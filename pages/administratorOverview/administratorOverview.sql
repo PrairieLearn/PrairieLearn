@@ -2,16 +2,28 @@
 WITH
 select_administrator_users AS (
     SELECT
-        coalesce(jsonb_agg(jsonb_build_object(
-            'id', u.id,
-            'uid', u.uid,
-            'name', u.name
-        ) ORDER BY u.uid, u.id), '[]'::jsonb) AS administrator_users
+        coalesce(
+            jsonb_agg(to_json(u) ORDER BY u.uid, u.id),
+            '[]'::jsonb
+        ) AS administrator_users
     FROM
         administrators AS adm
         JOIN users AS u ON (u.id = adm.user_id)
+),
+select_courses AS (
+    SELECT
+        coalesce(
+            jsonb_agg(to_json(c) ORDER BY c.short_name, c.title, c.id),
+            '[]'::jsonb
+        ) AS courses
+    FROM
+        courses AS c
+    WHERE
+        c.deleted_at IS NULL
 )
 SELECT
-    select_administrator_users.administrator_users
+    select_administrator_users.administrator_users,
+    select_courses.courses
 FROM
-    select_administrator_users
+    select_administrator_users,
+    select_courses;

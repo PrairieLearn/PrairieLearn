@@ -42,11 +42,12 @@
         </div>
 
         <div class="panel-body">
-          <a id="addUserButton"
+          <a id="coursePermissionsInsertButton"
              tabindex="0" class="btn btn-xs btn-default" role="button"
              data-toggle="popover" data-container="body"
              data-html="true" data-placement="auto" title="Add new user"
-             data-content="<%= include('formAddUser', {id: 'addUserButton'}) %>"
+             data-content="<%= include('coursePermissionsInsertForm',
+                           {id: 'coursePermissionsInsertButton'}) %>"
              data-trigger="manual" onclick="$(this).popover('show')">
             <i class="fa fa-user-plus" aria-hidden="true"></i> Add new user
           </a>
@@ -67,25 +68,25 @@
               <td>
                 <%= course_user.course_role %>
 
-                <a id="changeRoleButton<%= i %>"
+                <a id="coursePermissionsUpdateRoleButton<%= i %>"
                    tabindex="0" class="btn btn-xs btn-default" role="button"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change course role"
-                   data-content="<%= include('formChangeRole',
-                                 {id: 'changeRoleButton' + i, uid: course_user.uid,
-                                 user_id: course_user.id,
+                   data-content="<%= include('coursePermissionsUpdateRoleForm',
+                                 {id: 'coursePermissionsUpdateRoleButton' + i,
+                                 uid: course_user.uid, user_id: course_user.id,
                                  course_role: course_user.course_role}) %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-pencil" aria-hidden="true"></i> Change
                 </a>
 
-                <a id="deleteUserButton<%= i %>"
+                <a id="coursePermissionsDeleteButton<%= i %>"
                    tabindex="0" class="btn btn-xs btn-default" role="button"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Remove user access"
-                   data-content="<%= include('formDeleteUser',
-                                 {id: 'deleteUserButton' + i, uid: course_user.uid,
-                                 user_id: course_user.id}) %>"
+                   data-content="<%= include('coursePermissionsDeleteForm',
+                                 {id: 'coursePermissionsDeleteButton' + i,
+                                 uid: course_user.uid, user_id: course_user.id}) %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-times" aria-hidden="true"></i> Remove
                 </a>

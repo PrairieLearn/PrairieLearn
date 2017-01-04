@@ -1,9 +1,9 @@
 <form name="add-user-form" method="POST">
-  <input type="hidden" name="postAction" value="deleteUser">
+  <input type="hidden" name="postAction" value="administrators_delete_by_user_id">
   <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
   <input type="hidden" name="user_id" value="<%= user_id %>">
   <div class="form-group">
-    <label for="addUserInputUid">UID:</label>
+    <label>UID:</label>
     <p class="form-control-static"><%= uid %></p>
   </div>
   <button type="button" class="btn btn-default" onclick="$('#<%= id %>').popover('hide')">

@@ -21,11 +21,12 @@
         </div>
 
         <div class="panel-body">
-          <a id="addUserButton"
+          <a id="administratorInsertButton"
              tabindex="0" class="btn btn-xs btn-default" role="button"
              data-toggle="popover" data-container="body"
              data-html="true" data-placement="auto" title="Add new administrator"
-             data-content="<%= include('formAddUser', {id: 'addUserButton'}) %>"
+             data-content="<%= include('administratorInsertForm',
+                           {id: 'administratorInsertButton'}) %>"
              data-trigger="manual" onclick="$(this).popover('show')">
             <i class="fa fa-user-plus" aria-hidden="true"></i> Add new administrator
           </a>
@@ -44,12 +45,12 @@
               <td><%= administrator_user.uid %></td>
               <td><%= administrator_user.name %></td>
               <td>
-                <a id="deleteUserButton<%= i %>"
+                <a id="administratorDeleteButton<%= i %>"
                    tabindex="0" class="btn btn-xs btn-default" role="button"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Remove administrator access"
-                   data-content="<%= include('formDeleteUser',
-                                 {id: 'deleteUserButton' + i, uid: administrator_user.uid,
+                   data-content="<%= include('administratorDeleteForm',
+                                 {id: 'administratorDeleteButton' + i, uid: administrator_user.uid,
                                  user_id: administrator_user.id}) %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-times" aria-hidden="true"></i> Remove
@@ -68,6 +69,61 @@
             remove other administrators.
           </small>
         </div>
+      </div>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Courses --------------------------------------------------------------------->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Courses</h3>
+        </div>
+
+        <div class="panel-body">
+          <a id="courseInsertButton"
+             tabindex="0" class="btn btn-xs btn-default" role="button"
+             data-toggle="popover" data-container="body"
+             data-html="true" data-placement="auto" title="Add new administrator"
+             data-content="<%= include('courseInsertForm', {id: 'courseInsertButton'}) %>"
+             data-trigger="manual" onclick="$(this).popover('show')">
+            <i class="fa fa-plus" aria-hidden="true"></i> Add new course
+          </a>
+        </div>
+
+        <table class="table table-condensed table-hover table-striped">
+          <thead>
+            <tr>
+              <th>Short name</th>
+              <th>Title</th>
+              <th>Path</th>
+              <th>Repository</th>
+              <th></th>
+          </thead>
+          <tbody>
+            <% courses.forEach(function(course, i) { %>
+            <tr>
+              <%- include('courseUpdateColumn', {column_name: 'short_name', label: 'short name', course: course, i: i}) %>
+              <%- include('courseUpdateColumn', {column_name: 'title',      label: 'title',      course: course, i: i}) %>
+              <%- include('courseUpdateColumn', {column_name: 'path',       label: 'path',       course: course, i: i}) %>
+              <%- include('courseUpdateColumn', {column_name: 'repository', label: 'repository', course: course, i: i}) %>
+              <td>
+                <a id="courseDeleteButton<%= i %>"
+                   tabindex="0" class="btn btn-xs btn-default" role="button"
+                   data-toggle="popover" data-container="body"
+                   data-html="true" data-placement="auto" title="Really delete <%= course.short_name %>?"
+                   data-content="<%= include('courseDeleteForm',
+                                 {id: 'courseDeleteButton' + i, course: course, i: i}) %>"
+                   data-trigger="manual" onclick="$(this).popover('show')">
+                  <i class="fa fa-times" aria-hidden="true"></i> Delete course
+                </a>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+
       </div>
 
       <!-------------------------------------------------------------------------------->

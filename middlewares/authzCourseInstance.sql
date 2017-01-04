@@ -9,7 +9,8 @@ FROM
     JOIN courses AS c ON (c.id = ci.course_id)
 WHERE
     ci.id = $course_instance_id
-    AND ci.deleted_at IS NULL;
+    AND ci.deleted_at IS NULL
+    AND c.deleted_at IS NULL;
 
 -- BLOCK select_effective_authz_data
 WITH effective_data AS (

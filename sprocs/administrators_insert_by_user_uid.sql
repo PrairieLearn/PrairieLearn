@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION
-    administrators_add_by_uid(
+    administrators_insert_by_user_uid(
         uid text,
         authn_user_id bigint
     ) returns void
@@ -10,9 +10,10 @@ DECLARE
 BEGIN
     SELECT u.id INTO user_id
     FROM users AS u
-    WHERE u.uid = administrators_add_by_uid.uid;
+    WHERE u.uid = administrators_insert_by_user_uid.uid;
+
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'no user with uid: %s', uid;
+        RAISE EXCEPTION 'no user with uid: %', uid;
     END IF;
 
     BEGIN
@@ -23,11 +24,11 @@ BEGIN
         RETURNING
             adm.* INTO new_row;
     EXCEPTION
-        WHEN unique_violation THEN RAISE EXCEPTION 'user already is administrator, uid: %s', uid;
+        WHEN unique_violation THEN RAISE EXCEPTION 'user already is administrator, uid: %', uid;
     END;
 
     INSERT INTO audit_logs
-        (authn_user_id, user_id, tablename,
+        (authn_user_id, user_id, table_name,
         row_id,      action,  new_state)
     VALUES
         (authn_user_id, user_id, 'administrators',

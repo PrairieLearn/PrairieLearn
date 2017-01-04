@@ -18,8 +18,11 @@ courses_list AS (
         courses AS c
         LEFT JOIN course_permissions_for_user AS cp ON (cp.course_id = c.id)
     WHERE
-        $is_administrator
-        OR (cp.id IS NOT NULL)
+        c.deleted_at IS NULL
+        AND (
+            $is_administrator
+            OR (cp.id IS NOT NULL)
+        )
 ),
 enrollments_for_user AS (
     SELECT
@@ -43,6 +46,7 @@ course_instances_list AS (
         LEFT JOIN enrollments_for_user AS e ON (e.course_instance_id = ci.id)
     WHERE
         ci.deleted_at IS NULL
+        AND c.deleted_at IS NULL
         AND (
             $is_administrator
             OR (

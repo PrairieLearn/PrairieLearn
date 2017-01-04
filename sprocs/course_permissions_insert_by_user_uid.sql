@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION
-    course_permissions_add_by_uid(
+    course_permissions_insert_by_user_uid(
         course_id bigint,
         uid text,
         course_role enum_course_role,
@@ -12,9 +12,10 @@ DECLARE
 BEGIN
     SELECT u.id INTO user_id
     FROM users AS u
-    WHERE u.uid = course_permissions_add_by_uid.uid;
+    WHERE u.uid = course_permissions_insert_by_user_uid.uid;
+
     IF NOT FOUND THEN
-        RAISE EXCEPTION 'no user with uid: %s', uid;
+        RAISE EXCEPTION 'no user with uid: %', uid;
     END IF;
 
     BEGIN
@@ -25,7 +26,7 @@ BEGIN
         RETURNING
             cp.* INTO new_row;
     EXCEPTION
-        WHEN unique_violation THEN RAISE EXCEPTION 'user already in course, uid: %s', uid;
+        WHEN unique_violation THEN RAISE EXCEPTION 'user already in course, uid: %', uid;
     END;
 
     INSERT INTO audit_logs

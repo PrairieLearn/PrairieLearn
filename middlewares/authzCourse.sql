@@ -5,4 +5,5 @@ SELECT
 FROM
     courses AS c
 WHERE
-    c.id = $course_id;
+    c.id = $course_id
+    AND c.deleted_at IS NULL;
