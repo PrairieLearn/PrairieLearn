@@ -61,7 +61,7 @@ module.exports = {
         var context = {
             clientFilesCourse: urlPrefix + '/clientFilesCourse',
             clientFilesCourseInstance: urlPrefix + '/clientFilesCourseInstance',
-            clientFilesAssessment: urlPrefix + '/assessment/' + assessment.id + '/clientFilesAssessement',
+            clientFilesAssessment: urlPrefix + '/assessment/' + assessment.id + '/clientFilesAssessment',
         };
         var assessment_text_templated;
         try {
