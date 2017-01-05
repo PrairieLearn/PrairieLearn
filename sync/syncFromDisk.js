@@ -1,8 +1,10 @@
 var ERR = require('async-stacktrace');
+var _ = require('lodash');
 var async = require('async');
 
 var logger = require('../lib/logger');
 var courseDB = require('../lib/course-db');
+var sqldb = require('../lib/sqldb');
 
 var syncCourseInfo = require('./fromDisk/courseInfo');
 var syncCourseInstances = require('./fromDisk/courseInstances');
@@ -15,7 +17,7 @@ var syncAssessments = require('./fromDisk/assessments');
 
 module.exports = {};
 
-module.exports.syncDiskToSql = function(courseDir, logger, callback) {
+module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) {
     logger.info("Starting sync of git repository to database for " + courseDir);
     logger.info("Loading info.json files from git repository...");
     courseDB.loadFullCourse(courseDir, logger, function(err, course) {
@@ -23,7 +25,7 @@ module.exports.syncDiskToSql = function(courseDir, logger, callback) {
         logger.info("Successfully loaded all info.json files");
         async.series([
             function(callback) {logger.info("Syncing courseInfo from git repository to database..."); callback(null);},
-            syncCourseInfo.sync.bind(null, course.courseInfo),
+            syncCourseInfo.sync.bind(null, course.courseInfo, course_id),
             function(callback) {logger.info("Syncing courseInstances from git repository to database..."); callback(null);},
             syncCourseInstances.sync.bind(null, course.courseInfo, course.courseInstanceDB),
             function(callback) {logger.info("Syncing topics from git repository to database..."); callback(null);},
@@ -53,6 +55,17 @@ module.exports.syncDiskToSql = function(courseDir, logger, callback) {
                 logger.info("Completed sync of git repository to database");
                 callback(null);
             });
+        });
+    });
+};
+
+module.exports.syncOrCreateDiskToSql = function(courseDir, logger, callback) {
+    sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function(err, result) {
+        if (ERR(err, callback)) return;
+        var course_id = result.rows[0].course_id;
+        module.exports.syncDiskToSql(courseDir, course_id, logger, function(err) {
+            if (ERR(err, callback)) return;
+            callback(null);
         });
     });
 };

@@ -124,6 +124,18 @@
           </tbody>
         </table>
 
+        <div class="panel-footer">
+          <small>
+            When a course is synced, if the <strong>path</strong> does
+            not exist on disk then a <code>git clone</code> is
+            performed from the <strong>repository</strong>, otherwise
+            a <code>git pull</code> is run in
+            the <strong>path</strong> directory. The <strong>short
+            name</strong> and <strong>title</strong> are updated from
+            the JSON configuration file in the repository during the
+            sync.
+          </small>
+        </div>
       </div>
 
       <!-------------------------------------------------------------------------------->

@@ -33,7 +33,7 @@ var update = function(locals, callback) {
             // continue executing here to launch the actual job
             async.eachSeries(config.courseDirs || [], function(courseDir, callback) {
                 courseDir = path.resolve(process.cwd(), courseDir);
-                syncFromDisk.syncDiskToSql(courseDir, job, function(err) {
+                syncFromDisk.syncOrCreateDiskToSql(courseDir, job, function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });

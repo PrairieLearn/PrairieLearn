@@ -1,5 +1,6 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
+var fs = require('fs');
 var path = require('path');
 var csvStringify = require('csv').stringify;
 var express = require('express');
@@ -30,10 +31,49 @@ var pullAndUpdate = function(locals, callback) {
         user_id: locals.user.id,
         authn_user_id: locals.authz_data.authn_user.id,
         type: 'sync',
-        description: 'Sync from remote git repository',
+        description: 'Pull from remote git repository',
     };
     serverJobs.createJobSequence(options, function(err, job_sequence_id) {
         if (ERR(err, callback)) return;
+        callback(null, job_sequence_id);
+
+        // We've now triggered the callback to our caller, but we
+        // continue executing below to launch the jobs themselves.
+
+        // First define the jobs.
+
+        // We will use either 1A or 1B below.
+
+        var syncStage1A = function() {
+            var jobOptions = {
+                course_id: locals.course.id,
+                user_id: locals.user.id,
+                authn_user_id: locals.authz_data.authn_user.id,
+                job_sequence_id: job_sequence_id,
+                type: 'clone_from_git',
+                description: 'Clone from remote git repository',
+                command: 'git',
+                arguments: ['clone', locals.course.repository, locals.course.path],
+                on_success: syncStage2,
+            };
+            serverJobs.spawnJob(jobOptions);
+        };
+
+        var syncStage1B = function() {
+            var jobOptions = {
+                course_id: locals.course.id,
+                user_id: locals.user.id,
+                authn_user_id: locals.authz_data.authn_user.id,
+                job_sequence_id: job_sequence_id,
+                type: 'pull_from_git',
+                description: 'Pull from remote git repository',
+                command: 'git',
+                arguments: ['pull', '--force', 'origin', 'master'],
+                working_directory: locals.course.path,
+                on_success: syncStage2,
+            };
+            serverJobs.spawnJob(jobOptions);
+        };
         
         var syncStage2 = function() {
             var jobOptions = {
@@ -46,7 +86,7 @@ var pullAndUpdate = function(locals, callback) {
                 on_success: syncStage3,
             };
             serverJobs.createJob(jobOptions, function(err, job) {
-                syncFromDisk.syncDiskToSql(locals.course.path, job, function(err) {
+                syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, function(err) {
                     if (err) {
                         job.fail(err);
                     } else {
@@ -78,21 +118,15 @@ var pullAndUpdate = function(locals, callback) {
             });
         };
 
-        var jobOptions = {
-            course_id: locals.course.id,
-            user_id: locals.user.id,
-            authn_user_id: locals.authz_data.authn_user.id,
-            job_sequence_id: job_sequence_id,
-            type: 'pull_from_git',
-            description: 'Pull from remote git repository',
-            command: 'git',
-            arguments: ['pull', '--force', 'origin', 'master'],
-            working_directory: locals.course.path,
-            on_success: syncStage2,
-        };
-        serverJobs.spawnJob(jobOptions, function(err, job) {
-            if (ERR(err, callback)) return;
-            callback(null, job_sequence_id);
+        // Start the first job.
+        fs.access(locals.course.path, function(err) {
+            if (err) {
+                // path does not exist, start with 'git clone'
+                syncStage1A();
+            } else {
+                // path exists, start with 'git pull'
+                syncStage1B();
+            }
         });
     });
 };
@@ -103,10 +137,32 @@ var gitStatus = function(locals, callback) {
         user_id: locals.user.id,
         authn_user_id: locals.authz_data.authn_user.id,
         type: 'git_status',
-        description: 'Show status of server git repository',
+        description: 'Show server git status',
     };
     serverJobs.createJobSequence(options, function(err, job_sequence_id) {
         if (ERR(err, callback)) return;
+        callback(null, job_sequence_id);
+
+        // We've now triggered the callback to our caller, but we
+        // continue executing below to launch the jobs themselves.
+
+        // First define the jobs.
+
+        var statusStage1 = function() {
+            var jobOptions = {
+                course_id: locals.course.id,
+                user_id: locals.user.id,
+                authn_user_id: locals.authz_data.authn_user.id,
+                job_sequence_id: job_sequence_id,
+                type: 'describe_git',
+                description: 'Describe current git HEAD',
+                command: 'git',
+                arguments: ['show', '--format=fuller', '--no-patch', 'HEAD'],
+                working_directory: locals.course.path,
+                on_success: statusStage2,
+            };
+            serverJobs.spawnJob(jobOptions);
+        };
 
         var statusStage2 = function() {
             var jobOptions = {
@@ -121,27 +177,11 @@ var gitStatus = function(locals, callback) {
                 working_directory: locals.course.path,
                 last_in_sequence: true,
             };
-            serverJobs.spawnJob(jobOptions, function(err, job) {
-                if (ERR(err, function() {})) return logger.error('statusStage2 error', err);
-            });
+            serverJobs.spawnJob(jobOptions);
         };
 
-        var jobOptions = {
-            course_id: locals.course.id,
-            user_id: locals.user.id,
-            authn_user_id: locals.authz_data.authn_user.id,
-            job_sequence_id: job_sequence_id,
-            type: 'describe_git',
-            description: 'Describe current git HEAD',
-            command: 'git',
-            arguments: ['show', '--format=fuller', '--no-patch', 'HEAD'],
-            working_directory: locals.course.path,
-            on_success: statusStage2,
-        };
-        serverJobs.spawnJob(jobOptions, function(err, job) {
-            if (ERR(err, callback)) return;
-            callback(null, job_sequence_id);
-        });
+        // Start the first job.
+        statusStage1();
     });
 };
 

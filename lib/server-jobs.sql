@@ -88,16 +88,22 @@ job_sequence_updates AS (
         END AS update_job_sequence
     FROM
         updated_jobs AS j
+),
+update_results AS (
+    UPDATE job_sequences AS js
+    SET
+        finish_date = j.finish_date,
+        status = j.status
+    FROM
+        job_sequence_updates AS j
+    WHERE
+        js.id = j.job_sequence_id
+        AND j.update_job_sequence
 )
-UPDATE job_sequences AS js
-SET
-    finish_date = j.finish_date,
-    status = j.status
+SELECT
+    j.*
 FROM
-    job_sequence_updates AS j
-WHERE
-    js.id = j.job_sequence_id
-    AND j.update_job_sequence;
+    updated_jobs AS j;
 
 -- BLOCK update_job_on_error
 WITH updated_jobs AS (
