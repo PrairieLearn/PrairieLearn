@@ -4,7 +4,7 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
-    <%- include('../partials/navbarPlain', {navPage: 'home'}); %>
+    <%- include('../partials/navbar', {navPage: 'home'}); %>
     <div id="content" class="container">
 
       <% if (devMode) { %>
@@ -36,12 +36,35 @@
       </div>
       <% } %>
 
+      <% if (courses && courses.length > 0) { %>
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title">Courses</h3>
         </div>
 
-        <% if (course_instances.length == 0) { %>
+        <table class="table table-condensed table-hover table-striped">
+          <tbody>
+            <% courses.forEach(function(course) { %>
+            <tr>
+              <td>
+                <a href="<%= plainUrlPrefix %>/course/<%= course.id %>">
+                  <%= course.label %>
+                </a>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+
+      </div>
+      <% } %> <!-- course_instances.length -->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Classes</h3>
+        </div>
+
+        <% if (course_instances && course_instances.length == 0) { %>
 
         <% if (devMode) { %>
         <div class="panel-body">
@@ -51,7 +74,7 @@
         </div>
         <% } else { %> <!-- devMode -->
         <div class="panel-body">
-          No courses found. Use the “Edit course list” button below.
+          No classes found. Use the “Add or remove classes” button below.
         </div>
         <% } %> <!-- devMode -->
         
@@ -62,7 +85,7 @@
             <% course_instances.forEach(function(course_instance) { %>
             <tr>
               <td>
-                <a href="<%= plainUrlPrefix %>/<%= course_instance.course_instance_id %>">
+                <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>">
                   <%= course_instance.label %>
                 </a>
               </td>
@@ -76,7 +99,7 @@
         <div class="panel-footer">
           <p class="text-right no-bottom-margin">
             <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-primary">
-              Add or remove courses
+              Add or remove classes
             </a>
           </p>
         </div>

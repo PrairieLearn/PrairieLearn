@@ -4,7 +4,7 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
-    <%- include('../partials/navbarInstructor', {navPage: 'gradebook'}); %>
+    <%- include('../partials/navbar', {navPage: 'gradebook'}); %>
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
@@ -12,7 +12,7 @@
         </div>
 
         <div class="panel-body">
-          Download <a href="<%= urlPrefix %>/instructor/users/<%= csvFilename %>"><%= csvFilename %></a>
+          Download <a href="<%= urlPrefix %>/users/<%= csvFilename %>"><%= csvFilename %></a>
         </div>
 
         <div class="table-responsive">
@@ -23,7 +23,7 @@
                 <th>Name</th>
                 <th>Role</th>
                 <% course_assessments.forEach(function(assessment) { %>
-                <th><%- include('../partials/assessmentInstructor', {assessment: assessment}); %></th>
+                <th><%- include('../partials/assessment', {assessment: assessment}); %></th>
                 <% }); %>
               </tr>
             </thead>
@@ -49,7 +49,7 @@
         </div>
 
         <div class="panel-footer">
-          Download <a href="<%= urlPrefix %>/instructor/users/<%= csvFilename %>"><%= csvFilename %></a>
+          Download <a href="<%= urlPrefix %>/users/<%= csvFilename %>"><%= csvFilename %></a>
         </div>
 
       </div>

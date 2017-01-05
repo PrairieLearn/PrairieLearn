@@ -8,5 +8,5 @@ module.exports = function(req, res, next) {
     _(req.cookies).each(function(value, key) {
         res.clearCookie(key);
     });
-    res.redirect(res.locals.plainUrlPrefix + '/' + req.params.course_instance_id + '/redirect');
+    next();
 };

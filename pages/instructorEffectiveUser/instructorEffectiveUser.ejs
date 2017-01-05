@@ -4,11 +4,7 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
-    <% if (authz_data.has_instructor_view) { %>
-    <%- include('../partials/navbarInstructor', {navPage: 'effective'}); %>
-    <% } else { %>
-    <%- include('../partials/navbarStudent', {navPage: 'effective'}); %>
-    <% } %>
+    <%- include('../partials/navbar', {navPage: 'effective'}); %>
     <div id="content" class="container">
 
       <div class="panel panel-info">

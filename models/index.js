@@ -17,14 +17,21 @@ module.exports = {
             'enum_mode.sql',
             'enum_question_type.sql',
             'enum_role.sql',
+            'enum_role_add_none.sql',
+            'enum_course_role.sql',
             'enum_submission_type.sql',
             'enum_assessment_type.sql',
             'enum_auth_action.sql',
             'enum_grading_method.sql',
             'enum_job_status.sql',
 
-            // tables synced from git repo
+            // top-level tables
+            'users.sql',
+            'administrators.sql',
             'courses.sql',
+            'course_permissions.sql',
+
+            // tables synced from git repo
             'course_instances.sql',
             'course_instance_access_rules.sql',
             'topics.sql',
@@ -39,7 +46,6 @@ module.exports = {
             'assessment_questions.sql',
 
             // tables created during operation
-            'users.sql',
             'enrollments.sql',
             'assessment_instances.sql',
             'instance_questions.sql',
@@ -55,6 +61,7 @@ module.exports = {
             'variant_view_logs.sql',
             'grading_logs.sql',
             'question_score_logs.sql',
+            'audit_logs.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

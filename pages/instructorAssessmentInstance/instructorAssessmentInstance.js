@@ -17,7 +17,7 @@ var logCsvFilename = function(locals) {
         + '_'
         + locals.course_instance.short_name
         + '_'
-        + locals.assessment_set.abbrev
+        + locals.assessment_set.abbreviation
         + locals.assessment.number
         + '_'
         + locals.instance_user.uid.replace(/[^a-z0-9]/g, '_')

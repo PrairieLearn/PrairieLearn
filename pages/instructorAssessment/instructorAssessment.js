@@ -18,7 +18,7 @@ var scoreStatsCsvFilename = function(locals) {
         + '_'
         + locals.course_instance.short_name
         + '_'
-        + locals.assessment_set.abbrev
+        + locals.assessment_set.abbreviation
         + locals.assessment.number
         + '_'
         + 'score_stats.csv';
@@ -29,7 +29,7 @@ var durationStatsCsvFilename = function(locals) {
         + '_'
         + locals.course_instance.short_name
         + '_'
-        + locals.assessment_set.abbrev
+        + locals.assessment_set.abbreviation
         + locals.assessment.number
         + '_'
         + 'duration_stats.csv';
@@ -40,7 +40,7 @@ var scoresCsvFilename = function(locals) {
         + '_'
         + locals.course_instance.short_name
         + '_'
-        + locals.assessment_set.abbrev
+        + locals.assessment_set.abbreviation
         + locals.assessment.number
         + '_'
         + 'scores.csv';
@@ -96,7 +96,7 @@ router.get('/:filename', function(req, res, next) {
                 res.locals.course_instance.short_name,
                 res.locals.assessment_set.name,
                 res.locals.assessment.number,
-                res.locals.assessment_set.abbrev + res.locals.assessment.number,
+                res.locals.assessment_set.abbreviation + res.locals.assessment.number,
                 res.locals.assessment.title,
                 res.locals.assessment.tid,
                 assessmentStat.number,
@@ -133,7 +133,7 @@ router.get('/:filename', function(req, res, next) {
                 res.locals.course_instance.short_name,
                 res.locals.assessment_set.name,
                 res.locals.assessment.number,
-                res.locals.assessment_set.abbrev + res.locals.assessment.number,
+                res.locals.assessment_set.abbreviation + res.locals.assessment.number,
                 res.locals.assessment.title,
                 res.locals.assessment.tid,
                 durationStat.median_mins,

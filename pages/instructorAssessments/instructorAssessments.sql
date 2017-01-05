@@ -22,11 +22,11 @@ SELECT
     format_interval(dstats.median) AS median_duration,
     dstats.min AS min_duration,
     dstats.max AS max_duration,
-    aset.abbrev,
+    aset.abbreviation,
     aset.name,
     aset.heading,
     aset.color,
-    (aset.abbrev || a.number) as label,
+    (aset.abbreviation || a.number) as label,
     (lag(aset.id) OVER (PARTITION BY aset.id ORDER BY a.number, a.id) IS NULL) AS start_new_set
 FROM
     assessments AS a

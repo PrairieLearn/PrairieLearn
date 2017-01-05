@@ -1,10 +1,10 @@
 -- BLOCK insert_assessment_set
 INSERT INTO assessment_sets
-        (abbrev,  name,  heading,  color,  number,  course_id)
-VALUES ($abbrev, $name, $heading, $color, $number, $course_id)
+        (abbreviation,  name,  heading,  color,  number,  course_id)
+VALUES ($abbreviation, $name, $heading, $color, $number, $course_id)
 ON CONFLICT (name, course_id) DO UPDATE
 SET
-    abbrev = EXCLUDED.abbrev,
+    abbreviation = EXCLUDED.abbreviation,
     heading = EXCLUDED.heading,
     color = EXCLUDED.color,
     number = EXCLUDED.number;

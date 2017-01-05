@@ -28,7 +28,7 @@ WITH instance_questions_info AS (
 SELECT
     to_jsonb(ai) AS assessment_instance,
     to_jsonb(u) AS instance_user,
-    to_jsonb(e) AS instance_enrollment,
+    coalesce(to_jsonb(e), '{}'::jsonb) AS instance_enrollment,
     to_jsonb(iq) AS instance_question,
     to_jsonb(iqi) AS instance_question_info,
     to_jsonb(aq) AS assessment_question,
@@ -47,7 +47,7 @@ FROM
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     JOIN users AS u ON (u.id = ai.user_id)
-    JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = ci.id)
+    LEFT JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = ci.id)
     JOIN LATERAL authz_assessment_instance(ai.id, $authz_data) AS aai ON TRUE
 WHERE
     iq.id = $instance_question_id

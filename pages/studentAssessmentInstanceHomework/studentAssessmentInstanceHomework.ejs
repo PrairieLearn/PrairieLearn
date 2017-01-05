@@ -9,11 +9,11 @@
           $('[data-toggle="popover"]').popover()
       });
     </script>
-    <%- include('../partials/navbarStudent', {navPage: 'assessment_instance'}); %>
+    <%- include('../partials/navbar', {navPage: 'assessment_instance'}); %>
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.abbrev %><%= assessment.number %>: <%= assessment.title %></h3>
+          <h3 class="panel-title"><%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %></h3>
         </div>
 
         <div class="panel-body">

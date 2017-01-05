@@ -14,7 +14,7 @@ module.exports = {
         async.forEachOfSeries(courseInfo.assessmentSets, function(assessmentSet, i, callback) {
             logger.debug('Syncing assessment_set ' + assessmentSet.name);
             var params = {
-                abbrev: assessmentSet.shortName,
+                abbreviation: assessmentSet.abbreviation,
                 name: assessmentSet.name,
                 heading: assessmentSet.heading,
                 color: assessmentSet.color,

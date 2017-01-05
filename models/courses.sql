@@ -1,18 +1,18 @@
 CREATE TABLE IF NOT EXISTS courses (
     id BIGSERIAL PRIMARY KEY,
-    short_name text UNIQUE,
+    short_name text,
     title text,
-    grading_queue TEXT,
-    path text
+    grading_queue text,
+    path text,
+    repository text,
+    deleted_at TIMESTAMP WITH TIME ZONE
 );
 
-DO $$
-    BEGIN
-        ALTER TABLE courses ADD COLUMN grading_queue TEXT;
-    EXCEPTION
-        WHEN duplicate_column THEN -- do nothing
-    END;
-$$;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS repository text;
+
+ALTER TABLE courses DROP CONSTRAINT IF EXISTS courses_short_name_key;
+
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMP WITH TIME ZONE;
 
 ALTER TABLE courses ALTER COLUMN id SET DATA TYPE BIGINT;
 ALTER TABLE courses ALTER COLUMN short_name SET DATA TYPE TEXT;

@@ -21,6 +21,7 @@ module.exports = {
                         name: tag.name,
                         number: i + 1,
                         color: tag.color,
+                        description: tag.description,
                         course_id: courseInfo.courseId,
                     };
                     sqldb.query(sql.insert_tag, params, function(err, result) {

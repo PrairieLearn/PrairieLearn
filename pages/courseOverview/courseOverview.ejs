@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
+    <script type="text/javascript" src="/javascripts/d3.min.js"></script>
+    <script type="text/javascript" src="/localscripts/histmini.js"></script>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: 'courseOverview'}); %>
+    <div id="content" class="container">
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Course information ---------------------------------------------------------->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Course information</h3>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <tbody>
+            <tr><th>Short name:</th><td><%= course.short_name %></td></tr>
+            <tr><th>Title:</th><td><%= course.title %></td></tr>
+            <tr><th>Grading queue:</th><td><%= course.grading_queue %></td></tr>
+            <tr><th>Path:</th><td><%= course.path %></td></tr>
+            <tr><th>Repository:</th><td><%= course.repository %></td></tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Access roles ---------------------------------------------------------------->
+
+      <% if (authz_data.has_course_permission_own) { %>
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Course access roles</h3>
+        </div>
+
+        <div class="panel-body">
+          <a id="coursePermissionsInsertButton"
+             tabindex="0" class="btn btn-xs btn-default" role="button"
+             data-toggle="popover" data-container="body"
+             data-html="true" data-placement="auto" title="Add new user"
+             data-content="<%= include('coursePermissionsInsertForm',
+                           {id: 'coursePermissionsInsertButton'}) %>"
+             data-trigger="manual" onclick="$(this).popover('show')">
+            <i class="fa fa-user-plus" aria-hidden="true"></i> Add new user
+          </a>
+        </div>
+
+        <table class="table table-condensed table-hover table-striped">
+          <thead>
+            <tr>
+              <th>UID</th>
+              <th>Name</th>
+              <th>Course access role</th>
+          </thead>
+          <tbody>
+            <% course_users.forEach(function(course_user, i) { %>
+            <tr>
+              <td><%= course_user.uid %></td>
+              <td><%= course_user.name %></td>
+              <td>
+                <%= course_user.course_role %>
+
+                <a id="coursePermissionsUpdateRoleButton<%= i %>"
+                   tabindex="0" class="btn btn-xs btn-default" role="button"
+                   data-toggle="popover" data-container="body"
+                   data-html="true" data-placement="auto" title="Change course role"
+                   data-content="<%= include('coursePermissionsUpdateRoleForm',
+                                 {id: 'coursePermissionsUpdateRoleButton' + i,
+                                 uid: course_user.uid, user_id: course_user.id,
+                                 course_role: course_user.course_role}) %>"
+                   data-trigger="manual" onclick="$(this).popover('show')">
+                  <i class="fa fa-pencil" aria-hidden="true"></i> Change
+                </a>
+
+                <a id="coursePermissionsDeleteButton<%= i %>"
+                   tabindex="0" class="btn btn-xs btn-default" role="button"
+                   data-toggle="popover" data-container="body"
+                   data-html="true" data-placement="auto" title="Remove user access"
+                   data-content="<%= include('coursePermissionsDeleteForm',
+                                 {id: 'coursePermissionsDeleteButton' + i,
+                                 uid: course_user.uid, user_id: course_user.id}) %>"
+                   data-trigger="manual" onclick="$(this).popover('show')">
+                  <i class="fa fa-times" aria-hidden="true"></i> Remove
+                </a>
+
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+
+        <div class="panel-footer">
+          <small>
+            The <strong>Viewer</strong> role can see all questions in
+            the course. The <strong>Editor</strong> role can
+            additionally sync the course configuration from the git
+            repository. The <strong>Owner</strong> role can
+            additionally add and remove other access roles. Users must
+            already have logged in to PrairieLearn before they can be
+            given course access. These roles do not give access to
+            course instances for each semester. To do that, add users
+            to the <tt>info.json</tt> file for the course instance.
+          </small>
+        </div>
+      </div>
+      <% } %> <!-- has_course_permission_own -->
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Assessment sets ------------------------------------------------------------->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Assessment sets</h3>
+        </div>
+
+        <table class="table table-condensed table-hover table-striped">
+          <thead>
+            <tr>
+              <th>Number</th>
+              <th>Abbreviation</th>
+              <th>Name</th>
+              <th>Heading</th>
+              <th>Color</th>
+          </thead>
+          <tbody>
+            <% assessment_sets.forEach(function(assessment_set) { %>
+            <tr>
+              <td><%= assessment_set.number %></td>
+              <td>
+                <button class="btn btn-<%= assessment_set.color %> btn-xs tag-button">
+                  <%= assessment_set.abbreviation %>
+                </button>
+              </td>
+              <td><%= assessment_set.name %></td>
+              <td><%= assessment_set.heading %></td>
+              <td><%= assessment_set.color %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Topics ---------------------------------------------------------------------->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Topics</h3>
+        </div>
+
+        <table class="table table-condensed table-hover table-striped">
+          <thead>
+            <tr>
+              <th>Number</th>
+              <th>Name</th>
+              <th>Color</th>
+              <th>Description</th>
+          </thead>
+          <tbody>
+            <% topics.forEach(function(topic) { %>
+            <tr>
+              <td><%= topic.number %></td>
+              <td><%- include('../partials/topic', {topic}); %></td>
+              <td><%= topic.color %></td>
+              <td><%= topic.description %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Tags ------------------------------------------------------------------------>
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Tags</h3>
+        </div>
+
+        <table class="table table-condensed table-hover table-striped">
+          <thead>
+            <tr>
+              <th>Number</th>
+              <th>Name</th>
+              <th>Color</th>
+              <th>Description</th>
+          </thead>
+          <tbody>
+            <% tags.forEach(function(tag) { %>
+            <tr>
+              <td><%= tag.number %></td>
+              <td><%- include('../partials/tag', {tag}); %></td>
+              <td><%= tag.color %></td>
+              <td><%= tag.description %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+
+    </div>
+  </body>
+</html>

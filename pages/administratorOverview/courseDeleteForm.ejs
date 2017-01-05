@@ -1,0 +1,13 @@
+<form name="add-user-form" method="POST">
+  <input type="hidden" name="postAction" value="courses_delete">
+  <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+  <input type="hidden" name="course_id" value="<%= course.id %>">
+  <div class="form-group">
+    <label for="inputConfirm<%= id %>">Type “<%= course.short_name %>” to confirm:</label>
+    <input type="text" class="form-control" id="inputConfirm<%= id %>" name="confirm_short_name" %>">
+  </div>
+  <button type="button" class="btn btn-default" onclick="$('#<%= id %>').popover('hide')">
+    Cancel
+  </button>
+  <button type="submit" class="btn btn-danger">Delete course</button>
+</form>

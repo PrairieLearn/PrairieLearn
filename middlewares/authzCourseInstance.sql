@@ -1,35 +1,35 @@
--- BLOCK select_authn_data
+-- BLOCK select_authz_data
 SELECT
-    e.role AS authn_role,
-    (e.role >= 'TA') AS authn_has_instructor_view,
-    (e.role >= 'Instructor') AS authn_has_instructor_edit
+    authz_course_instance($authn_user_id, $course_instance_id, $is_administrator) AS permissions_course_instance,
+    authz_course($authn_user_id, $course_id, $is_administrator) AS permissions_course,
+    to_jsonb(c.*) AS course,
+    to_jsonb(ci.*) AS course_instance
 FROM
-    enrollments AS e
-    JOIN users AS u ON (u.id = e.user_id)
+    course_instances AS ci
+    JOIN courses AS c ON (c.id = ci.course_id)
 WHERE
-    u.id = $authn_user_id
-    AND e.course_instance_id = $course_instance_id
-    AND check_course_instance_access($course_instance_id, e.role, u.uid, current_timestamp);
+    ci.id = $course_instance_id
+    AND ci.deleted_at IS NULL
+    AND c.deleted_at IS NULL;
 
 -- BLOCK select_effective_authz_data
 WITH effective_data AS (
     SELECT
         CASE
-            WHEN authn_e.role >= 'TA' AND e.role <= authn_e.role THEN to_jsonb(u)
+            WHEN $authn_role::enum_role >= 'TA' AND e.role <= $authn_role::enum_role THEN to_jsonb(u)
             ELSE to_jsonb(authn_u)
         END AS user,
         CASE
-            WHEN authn_e.role >= 'TA' THEN least(authn_e.role, $requested_role)
-            ELSE authn_e.role
+            WHEN $authn_role::enum_role >= 'TA' THEN least($authn_role::enum_role, $requested_role::enum_role)
+            ELSE $authn_role::enum_role
         END AS role,
         CASE
-            WHEN $requested_mode = 'Default' THEN $server_mode
-            WHEN authn_e.role >= 'TA' THEN $requested_mode
-            ELSE $server_mode
+            WHEN $requested_mode::enum_mode = 'Default' THEN $server_mode::enum_mode
+            WHEN $authn_role::enum_role >= 'TA' THEN $requested_mode::enum_mode
+            ELSE $server_mode::enum_mode
         END AS mode
     FROM
-        users AS authn_u
-        JOIN enrollments AS authn_e ON (authn_e.user_id = authn_u.id AND authn_e.course_instance_id = $course_instance_id),
+        users AS authn_u,
         users AS u
         JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = $course_instance_id)
     WHERE

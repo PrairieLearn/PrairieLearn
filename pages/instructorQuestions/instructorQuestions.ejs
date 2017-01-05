@@ -7,7 +7,7 @@
     <script type="text/javascript" src="/javascripts/jquery.tablesorter.widgets.js"></script>
   </head>
   <body>
-    <%- include('../partials/navbarInstructor', {navPage: 'questions'}); %>
+    <%- include('../partials/navbar', {navPage: 'questions'}); %>
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
@@ -31,11 +31,11 @@
           <tbody>
             <% questions.forEach(function(question) { %>
             <tr>
-              <td><a href="<%= urlPrefix %>/instructor/question/<%= question.id %>/"><%= question.title %></a></td>
+              <td><a href="<%= urlPrefix %>/question/<%= question.id %>/"><%= question.title %></a></td>
               <td><%= question.qid %></td>
               <td><%- include('../partials/topic', {topic: question.topic}); %></td>
               <td><%- include('../partials/tags', {tags: question.tags}); %></td>
-              <td><%- include('../partials/assessmentsInstructor', {assessments: question.assessments}); %></td>
+              <td><%- include('../partials/assessments', {assessments: question.assessments}); %></td>
             </tr>
             <% }); %>
           </tbody>

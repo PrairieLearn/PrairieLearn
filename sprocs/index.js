@@ -38,9 +38,6 @@ module.exports = {
             'exam_question_status.sql',
             'auth_instructor_course_instance.sql',
             'auth_instructor_assessment_instance.sql',
-            'all_courses.sql',
-            'all_course_instances.sql',
-            'all_instances_for_course.sql',
             'authz_assessment.sql',
             'authz_assessment_instance.sql',
             'select_assessment_questions.sql',
@@ -53,6 +50,17 @@ module.exports = {
             'assessment_instance_label.sql',
             'assessment_label.sql',
             'admin_assessment_question_number.sql',
+            'course_permissions_insert_by_user_uid.sql',
+            'course_permissions_update_role.sql',
+            'course_permissions_delete.sql',
+            'authz_course.sql',
+            'authz_course_instance.sql',
+            'administrators_insert_by_user_uid.sql',
+            'administrators_delete_by_user_id.sql',
+            'courses_insert.sql',
+            'courses_update_column.sql',
+            'courses_delete.sql',
+            'select_or_insert_course_by_path.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

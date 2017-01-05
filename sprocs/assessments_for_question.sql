@@ -13,10 +13,10 @@ CREATE OR REPLACE FUNCTION
 AS $$
 SELECT
     JSONB_AGG(JSONB_BUILD_OBJECT(
-        'label',aset.abbrev || a.number,
+        'label',aset.abbreviation || a.number,
         'assessment_id',a.id,
         'color',aset.color
-    ) ORDER BY (aset.number, a.number))
+    ) ORDER BY (aset.number, aset.id, a.number, a.id))
 FROM
     assessments AS a
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)

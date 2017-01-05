@@ -24,7 +24,7 @@ WHERE tag.course_id = $course_id
 ORDER BY tag.number;
 
 -- BLOCK assessments
-SELECT aset.abbrev || a.number AS label
+SELECT aset.abbreviation || a.number AS label
 FROM assessments AS a
 JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
 WHERE a.course_instance_id = $course_instance_id

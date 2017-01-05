@@ -18,24 +18,30 @@
         <!-- Home ------------------------------------------------------------------------>
 
         <li <% if (navPage == "home") { %>class="active"<% } %>><a href="<%= plainUrlPrefix %>">Home</a></li>
-
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-- Load from disk -------------------------------------------------------------->
-
-        <% if (devMode) { %>
-        <a class="btn btn-success navbar-btn" href="<%= urlPrefix %>/instructor/loadFromDisk">Load from disk</a>
+        <% if (is_administrator) { %>
+        <li <% if (navPage == "admin") { %>class="active"<% } %>><a href="<%= plainUrlPrefix %>/administrator/overview">Admin</a></li>
         <% } %>
 
       </ul>
 
       <div class="navbar-right">
+
+        <% if (is_administrator) { %>
+        <p class="navbar-text"><%= authn_user.name %> (Administrator)</p>
+        <% } else { // authn_has_instructor_view %>
+        <p class="navbar-text"><%= authn_user.name %></p>
+        <% } // authn_has_instructor_view %>
+
+        <% if (devMode) { %>
+        <a class="btn btn-success navbar-btn" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a>
+        <% } %>
+
         <% if (devMode) { %>
         <a class="btn btn-default navbar-btn" href="">Log out</a>
         <% } else { %>
         <a class="btn btn-default navbar-btn" href="https://prairielearn.engr.illinois.edu/Shibboleth.sso/Logout">Log out</a>
         <% } %>
+
       </div>
     </div>
   </div>

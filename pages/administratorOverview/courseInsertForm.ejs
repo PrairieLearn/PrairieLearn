@@ -1,0 +1,24 @@
+<form name="add-course-form" method="POST">
+  <input type="hidden" name="postAction" value="courses_insert">
+  <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+  <div class="form-group">
+    <label for="courseAddInputShortName">Short name:</label>
+    <input type="text" class="form-control" id="courseAddInputShortName" name="short_name" placeholder="TPL 101">
+  </div>
+  <div class="form-group">
+    <label for="courseAddInputTitle">Title:</label>
+    <input type="text" class="form-control" id="courseAddInputTitle" name="title" placeholder="Template course title">
+  </div>
+  <div class="form-group">
+    <label for="courseAddInputPath">Path:</label>
+    <input type="text" class="form-control" id="courseAddInputPath" name="path" placeholder="/path/on/disk">
+  </div>
+  <div class="form-group">
+    <label for="courseAddInputRepository">Repository:</label>
+    <input type="text" class="form-control" id="courseAddInputRepository" name="repository" placeholder="git@github.com:PrairieLearn/pl-tpl101.git">
+  </div>
+  <button type="button" class="btn btn-default" onclick="$('#<%= id %>').popover('hide')">
+    Cancel
+  </button>
+  <button type="submit" class="btn btn-primary">Add course</button>
+</form>

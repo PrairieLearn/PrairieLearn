@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: 'sync'}); %>
+    <div id="content" class="container">
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Repository status ----------------------------------------------------------->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Repository status</h3>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-condensed table-hover">
+            <tbody>
+              <tr>
+                <th>Path on disk:</th>
+                <td><%= course.path %></td>
+                <td>
+                  <form name="confirm-form" method="POST">
+                    <input type="hidden" name="postAction" value="status">
+                    <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+                    <button type="submit" class="btn btn-xs btn-default">
+                      <i class="fa fa-info-circle" aria-hidden="true"></i>
+                      Show server git status
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              <tr>
+                <th>Remote repository:</th>
+                <td><%= course.repository %></td>
+                <td>
+                  <form name="confirm-form" method="POST">
+                    <input type="hidden" name="postAction" value="pull">
+                    <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+                    <button type="submit" class="btn btn-xs btn-default">
+                      <i class="fa fa-cloud-download" aria-hidden="true"></i>
+                      Pull from remote git repository
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Sync history ---------------------------------------------------------------->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Sync job history</h3>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-condensed table-hover">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Date</th>
+                <th>Description</th>
+                <th>User</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% job_sequences.forEach(function(job_sequence) { %>
+              <tr>
+                <td><%= job_sequence.number %></td>
+                <td><%= job_sequence.start_date_formatted %></td>
+                <td><%= job_sequence.description %></td>
+                <td><%= job_sequence.user_uid %></td>
+                <td><%- include('../partials/jobStatus', {status: job_sequence.status}); %></td>
+                <td><a href="<%= urlPrefix %>/jobSequence/<%= job_sequence.id %>" class="btn btn-xs btn-info">Details</a></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+
+      </div>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+
+    </div>
+  </body>
+</html>

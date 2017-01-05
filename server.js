@@ -44,6 +44,8 @@ var app = express();
 app.set('views', __dirname);
 app.set('view engine', 'ejs');
 
+config.devMode = (app.get('env') == 'development');
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
@@ -53,104 +55,147 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Middleware for all requests
 app.use(require('./middlewares/logResponse')); // defers to end of response
 app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPrefix = '/pl'; next();});
-app.use(function(req, res, next) {res.locals.devMode = (req.app.get('env') == 'development'); next();});
+app.use(function(req, res, next) {res.locals.navbarType = 'plain'; next();});
+app.use(function(req, res, next) {res.locals.devMode = config.devMode; next();});
 app.use(require('./middlewares/cors'));
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.csrfToken
 app.use(require('./middlewares/logRequest'));
 
 // clear all cached course code in dev mode (no authorization needed)
-app.use(require('./middlewares/undefCourseCode'));
+if (config.devMode) {
+    app.use(require('./middlewares/undefCourseCode'));
+}
+
+// clear cookies on the homepage to reset any stale session state
+app.use(/^\/pl\/?/, require('./middlewares/clearCookies'));
 
 // course selection pages don't need authorization
 app.use('/pl', require('./pages/home/home'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
 
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
-if (app.get('env') == 'development') {
-    app.use('/pl/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
-    app.use('/pl/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
+if (config.devMode) {
+    app.use('/pl/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
+    app.use('/pl/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 }
 
-// redirect plain course page to assessments page
-app.use(function(req, res, next) {if (/\/pl\/[0-9]+\/?$/.test(req.url)) {req.url = req.url.replace(/\/?$/, '/courseInstance');} next();});
-// course instance entry page just clears cookies and redirects, so no authorization needed
-app.use('/pl/:course_instance_id/courseInstance', require('./middlewares/freshStart'));
+// all pages under /pl/course_instance require authorization
+app.use('/pl/course_instance/:course_instance_id', require('./middlewares/authzCourseInstance')); // sets res.locals.course and res.locals.courseInstance
+app.use('/pl/course_instance/:course_instance_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id; next();});
+app.use('/pl/course_instance/:course_instance_id', function(req, res, next) {res.locals.navbarType = 'student'; next();});
 
-// all other pages need authorization
-app.use('/pl/:course_instance_id', require('./middlewares/authzCourseInstance')); // authorization for the course instance
-app.use('/pl/:course_instance_id/instructor', require('./middlewares/authzCourseInstanceInstructor'));
-app.use('/pl/:course_instance_id', require('./middlewares/navData')); // set res.locals.navData, res.locals.course, res.locals.course_instance
-app.use('/pl/:course_instance_id', require('./middlewares/urlPrefix')); // set res.locals.urlPrefix
+// Redirect plain course page to Instructor or Student assessments page.
+// We have to do this after initial authz so we know whether we are an Instructor,
+// but before instructor authz so we still get a chance to enforce that.
+app.use(/^\/pl\/course_instance\/[0-9]+\/?$/, function(req, res, next) {
+    if (res.locals.authz_data.has_instructor_view) {
+        res.redirect(res.locals.urlPrefix + '/instructor/assessments');
+    } else {
+        res.redirect(res.locals.urlPrefix + '/assessments');
+    }
+});
 
-// redirect to Instructor or Student page, as appropriate
-app.use('/pl/:course_instance_id/redirect', require('./middlewares/redirectToCourseInstanceLanding'));
+// Redirect Instructor effectiveUser page to the Student version if we don't have Instructor authz.
+// This is needed to handle the redirection after we change effective user to a student.
+app.use(/^\/pl\/course_instance\/[0-9]+\/instructor\/effectiveUser(\/?.*)$/, function(req, res, next) {
+    if (!res.locals.authz_data.has_instructor_view) {
+        res.redirect(res.locals.urlPrefix + '/effectiveUser');
+    } else {
+        next();
+    }
+});
+
+// all pages under /pl/course_instance/*/instructor require instructor permissions
+app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/authzCourseInstanceHasInstructorView'));
+app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id + '/instructor'; next();});
+app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
 
 // Instructor pages
-app.use('/pl/:course_instance_id/instructor/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
-app.use('/pl/:course_instance_id/instructor/assessments', require('./pages/instructorAssessments/instructorAssessments'));
-app.use('/pl/:course_instance_id/instructor/assessment/:assessment_id', [
+app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
+app.use('/pl/course_instance/:course_instance_id/instructor/assessments', require('./pages/instructorAssessments/instructorAssessments'));
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
     require('./pages/instructorAssessment/instructorAssessment'),
 ]);
-app.use('/pl/:course_instance_id/instructor/assessment_instance/:assessment_instance_id', [
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
     require('./pages/instructorAssessmentInstance/instructorAssessmentInstance'),
 ]);
-app.use('/pl/:course_instance_id/instructor/question/:question_id', [
+app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
     require('./pages/instructorQuestion/instructorQuestion'),
 ]);
-app.use('/pl/:course_instance_id/instructor/gradebook', require('./pages/instructorGradebook/instructorGradebook'));
-app.use('/pl/:course_instance_id/instructor/questions', require('./pages/instructorQuestions/instructorQuestions'));
-app.use('/pl/:course_instance_id/instructor/syncs', require('./pages/instructorSyncs/instructorSyncs'));
-app.use('/pl/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
-app.use('/pl/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
+app.use('/pl/course_instance/:course_instance_id/instructor/gradebook', require('./pages/instructorGradebook/instructorGradebook'));
+app.use('/pl/course_instance/:course_instance_id/instructor/questions', require('./pages/instructorQuestions/instructorQuestions'));
+app.use('/pl/course_instance/:course_instance_id/instructor/syncs', require('./pages/courseSyncs/courseSyncs'));
+app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
+app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
+app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/authzCourseInstanceHasCourseView'));
+app.use('/pl/course_instance/:course_instance_id/instructor/course', require('./pages/courseOverview/courseOverview'));
 
 // Student pages
 // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
 // which checks the assessment type and calls next() if it's not the right type
-app.use('/pl/:course_instance_id/assessments', require('./pages/studentAssessments/studentAssessments'));
-app.use('/pl/:course_instance_id/assessment/:assessment_id', [
+app.use('/pl/course_instance/:course_instance_id/assessments', require('./pages/studentAssessments/studentAssessments'));
+app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
     require('./pages/studentAssessmentHomework/studentAssessmentHomework'),
     require('./pages/studentAssessmentExam/studentAssessmentExam'),
 ]);
-app.use('/pl/:course_instance_id/assessment_instance/:assessment_instance_id', [
+app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
     require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
     require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
 ]);
-app.use('/pl/:course_instance_id/instance_question/:instance_question_id', [
+app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
 ]);
 
-// clientFiles
-app.use('/pl/:course_instance_id/clientFilesCourse', require('./pages/clientFilesCourse/clientFilesCourse'));
-app.use('/pl/:course_instance_id/clientFilesCourseInstance', require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'));
-app.use('/pl/:course_instance_id/assessment/:assessment_id/clientFilesAssessment', [
+// Allow access to effectiveUser as a Student page, but only for users have authn (not authz) as Instructor
+app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./middlewares/authzCourseInstanceAuthnHasInstructorView'));
+app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
+
+// clientFiles at different levels
+app.use('/pl/course_instance/:course_instance_id/clientFilesCourse', require('./pages/clientFilesCourse/clientFilesCourse'));
+app.use('/pl/course_instance/:course_instance_id/clientFilesCourseInstance', require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'));
+app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesAssessment', [
     require('./middlewares/selectAndAuthzAssessment'),
     require('./pages/clientFilesAssessment/clientFilesAssessment'),
 ]);
-app.use('/pl/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion', [
+app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     require('./pages/clientFilesQuestion/clientFilesQuestion'),
 ]);
 
 // legacy client file paths
-app.use('/pl/:course_instance_id/instance_question/:instance_question_id/file', [
+app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     require('./pages/legacyQuestionFile/legacyQuestionFile'),
 ]);
-app.use('/pl/:course_instance_id/instance_question/:instance_question_id/text', [
+app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     require('./pages/legacyQuestionText/legacyQuestionText'),
 ]);
 
+// Course pages
+app.use('/pl/course/:course_id', require('./middlewares/authzCourse')); // set res.locals.course
+app.use('/pl/course/:course_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();});
+app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType = 'course'; next();});
+app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, next) {res.redirect(res.locals.urlPrefix + '/overview');}); // redirect plain course URL to overview page
+app.use('/pl/course/:course_id/overview', require('./pages/courseOverview/courseOverview'));
+app.use('/pl/course/:course_id/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
+app.use('/pl/course/:course_id/syncs', require('./pages/courseSyncs/courseSyncs'));
+app.use('/pl/course/:course_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
+
+// Administrator pages
+app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
+app.use('/pl/administrator/overview', require('./pages/administratorOverview/administratorOverview'));
+
 // error handling
-app.use(require('./middlewares/notFound'));
+app.use(require('./middlewares/notFound')); // if no earlier routes matched, this will match and generate a 404 error
 app.use(require('./pages/error/error'));
 
 var server;
@@ -246,6 +291,29 @@ if (config.startServer) {
                 callback(null);
             });
         },
+        function(callback) {
+            if (!config.devMode) return callback(null);
+            // add dev user as Administrator
+            var sql
+                = "INSERT INTO users (uid, name)"
+                + " VALUES ('dev@example.com', 'Dev User')"
+                + " ON CONFLICT (uid) DO UPDATE"
+                + " SET name = EXCLUDED.name"
+                + " RETURNING id;";
+            sqldb.queryOneRow(sql, [], function(err, result) {
+                if (ERR(err, callback)) return;
+                var user_id = result.rows[0].id;
+                var sql
+                    = "INSERT INTO administrators (user_id)"
+                    + " VALUES ($user_id)"
+                    + " ON CONFLICT (user_id) DO NOTHING;";
+                var params = {user_id};
+                sqldb.query(sql, params, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            });
+        },
     ], function(err, data) {
         if (err) {
             logger.error('Error initializing PrairieLearn server:', err, data);
@@ -253,7 +321,7 @@ if (config.startServer) {
             process.exit(1);
         } else {
             logger.info('PrairieLearn server ready');
-            if (app.get('env') == 'development') {
+            if (config.devMode) {
                 logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort + '/pl');
             }
         }

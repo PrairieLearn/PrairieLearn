@@ -33,7 +33,7 @@ var update = function(locals, callback) {
             // continue executing here to launch the actual job
             async.eachSeries(config.courseDirs || [], function(courseDir, callback) {
                 courseDir = path.resolve(process.cwd(), courseDir);
-                syncFromDisk.syncDiskToSql(courseDir, job, function(err) {
+                syncFromDisk.syncOrCreateDiskToSql(courseDir, job, function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -52,7 +52,7 @@ router.get('/', function(req, res, next) {
     if (!res.locals.devMode) return next();
     update(res.locals, function(err, job_sequence_id) {
         if (ERR(err, next)) return;
-        res.redirect(res.locals.urlPrefix + '/instructor/jobSequence/' + job_sequence_id);
+        res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     });
 });
 

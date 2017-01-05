@@ -5,9 +5,7 @@ SELECT
     to_jsonb(ci) AS course_instance,
     to_jsonb(aaci) AS auth,
     to_jsonb(auth_u) AS auth_user,
-    to_jsonb(auth_e) AS auth_enrollment,
-    all_courses(auth_u.id) AS all_courses,
-    all_course_instances(c.id, auth_u.id) AS all_course_instances
+    to_jsonb(auth_e) AS auth_enrollment
 FROM
     questions AS q,
     course_instances AS ci

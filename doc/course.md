@@ -37,16 +37,16 @@ This file specifies basic information about the course:
     "name": "TAM 212",
     "title": "Introductory Dynamics",
     "assessmentSets": [
-        {"shortName": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
-        {"shortName": "E", "name": "Exam", "heading": "Exams", "color": "red1"}
+        {"abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
+        {"abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "red1"}
     ],
     "topics": [
-        {"name": "Vectors", "color": "blue3"},
-        {"name": "Center of mass", "color": "green3"}
+        {"name": "Vectors", "color": "blue3", "description": "Vector algebra in 3D"},
+        {"name": "Center of mass", "color": "green3", "description": "Finding and using the center of mass of irregular bodies."}
     ],
     "tags": [
-        {"name": "drawing", "color": "gray2"},
-        {"name": "estimation", "color": "orange2"}
+        {"name": "drawing", "color": "gray2", "description": "The answer requires drawing."},
+        {"name": "estimation", "color": "orange2", "description": "Answering requires estimating a quantity."}
     ]
 }
 ```
@@ -61,7 +61,7 @@ Each assessment belongs to an `assessmentSet` defined in the `courseInfo.json` f
 
 Property | Description
 --- | ---
-`shortName` | Abbreviation that is joined with the assessment `number` to form the label, so `"shortName": "HW"` produces `HW1`, `HW2`, etc. This should be one or two uppercase letters (e.g., `HW` for homework, `E` for exam, `Q` for quiz).
+`abbreviation` | Abbreviation that is joined with the assessment `number` to form the label, so `"abbreviation": "HW"` produces `HW1`, `HW2`, etc. This should be one or two uppercase letters (e.g., `HW` for homework, `E` for exam, `Q` for quiz).
 `name` | Full name that is joined with the assessment `number` to describe the assessment, so `"name": "Homework"` produces `Homework 1`, etc. This should be a singular noun.
 `heading` | Title that is listed above all the assessments in the set. Should be the plural version of the `name`.
 `color` | The color scheme for this assessment (see below for choices).
@@ -70,7 +70,7 @@ Property | Description
 
 A list of standardized assessments sets is:
 
-shortName | name | purpose
+abbreviation | name | purpose
 --- | --- | ---
 `HW` | Homework | Weekly homeworks done at home.
 `MP` | Machine Problem | Weekly coding assisgnments done outside of class.
@@ -84,13 +84,13 @@ Copy the JSON block below to include the above standardized tag names in your co
 
 ```json
     "assessmentSets": [
-        {"shortName": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
-        {"shortName": "MP", "name": "Machine Problem", "heading": "Machines Problems", "color": "green1"},
-        {"shortName": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1"},
-        {"shortName": "PQ", "name": "Practice Quiz", "heading": "Practice Quizzes", "color": "yellow1"},
-        {"shortName": "E", "name": "Exam", "heading": "Exams", "color": "red1"},
-        {"shortName": "PE", "name": "Practice Exam", "heading": "Practice Exams", "color": "yellow1"},
-        {"shortName": "P", "name": "Prep", "heading": "Question Preparation", "color": "blue1"}
+        {"abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
+        {"abbreviation": "MP", "name": "Machine Problem", "heading": "Machines Problems", "color": "green1"},
+        {"abbreviation": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1"},
+        {"abbreviation": "PQ", "name": "Practice Quiz", "heading": "Practice Quizzes", "color": "yellow1"},
+        {"abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "red1"},
+        {"abbreviation": "PE", "name": "Practice Exam", "heading": "Practice Exams", "color": "yellow1"},
+        {"abbreviation": "P", "name": "Prep", "heading": "Question Preparation", "color": "blue1"}
     ],
 ```
 
@@ -102,6 +102,7 @@ Property | Description
 --- | ---
 `name` | Brief name for the topic. Shorter is better. Should be in sentence case (leading captial letter).
 `color` | The color scheme for this topic (see below for choices).
+`description` | An explanation of what the topic includes, for human referance.
 
 ## Tags
 
@@ -111,8 +112,9 @@ Property | Description
 --- | ---
 `name` | Brief name for the tag. Tags should have very short names (preferably just a single word) because there might be many of them on one question. Should typically be in lower case (e.g., `drawing`) or an uppercase abbreviation (e.g., `MC`).
 `color` | The color scheme for this tag (see below for choices).
+`description` | An explanation of what the tag means, for human referance.
 
-## Standardized tags names
+## Standardized tag names
 
 Tags can be used for a variety of purposes. Some standardized tag names are given below.
 
@@ -141,9 +143,9 @@ Question use tag | Meaning
 
 Tracking tag | Meaning
 --- | ---
-`course` | The course for which the question was originally written. E.g., `TAM212`, `CS233`.
-`NetID` | The NetID of the person who wrote the question, E.g., `mwest`, `zilles`, etc. Multiple NetIDs can be tagged when several people had significant input.
-`semester` | The semester when the question was written. E.g., `Sp15`, `Su16`, `Fa16`.
+`<course>` | The course for which the question was originally written. E.g., `TAM212`, `CS233`.
+`<email>` | The email of the person who wrote the question, E.g., `mwest@illinois.edu`. Multiple emails can be tagged when several people had significant input.
+`<semester>` | The semester when the question was written. E.g., `Sp15`, `Su16`, `Fa16`.
 
 Copy the JSON block below to include the above standardized tag names in your course.
 

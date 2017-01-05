@@ -22,48 +22,25 @@
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->
-        <!-- Course switcher ------------------------------------------------------------->
+        <!-- Course title ---------------------------------------------------------------->
 
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><%= course.short_name %><span class="caret"></span></a>
-          <ul class="dropdown-menu">
-            <% nav_data.courses.forEach(function(course) { %>
-            <li><a href="<%= plainUrlPrefix %>/<%= course.course_instance_id %>"><%= course.short_name %></a></li>
-            <% }); %>
-          </ul>
-        </li>
-        <li class="dropdown">
-          <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false"><%= course_instance.short_name %><span class="caret"></span></a>
-          <ul class="dropdown-menu">
-            <% nav_data.instances_for_course.forEach(function(course_instance) { %>
-            <li><a href="<%= plainUrlPrefix %>/<%= course_instance.id %>"><%= course_instance.short_name %></a></li>
-            <% }); %>
-          </ul>
-        </li>
+        <li><a href=""><%= course.short_name %>, <%= course_instance.short_name %></a></li>
 
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->
         <!-- Main pages ------------------------------------------------------------------>
 
-        <li <% if (navPage == "assessments") { %>class="active"<% } %>><a href="<%= urlPrefix %>/instructor/assessments">Assessments</a></li>
-        <li <% if (navPage == "questions")   { %>class="active"<% } %>><a href="<%= urlPrefix %>/instructor/questions">Questions</a></li>
-        <li <% if (navPage == "gradebook")   { %>class="active"<% } %>><a href="<%= urlPrefix %>/instructor/gradebook">Gradebook</a></li>
-        <% if (!devMode) { %>
-        <li <% if (navPage == "sync")        { %>class="active"<% } %>><a href="<%= urlPrefix %>/instructor/syncs">Sync</a></li>
+        <li <% if (navPage == "assessments") { %>class="active"<% } %>><a href="<%= urlPrefix %>/assessments">Assessments</a></li>
+        <li <% if (navPage == "questions")   { %>class="active"<% } %>><a href="<%= urlPrefix %>/questions">Questions</a></li>
+        <li <% if (navPage == "gradebook")   { %>class="active"<% } %>><a href="<%= urlPrefix %>/gradebook">Gradebook</a></li>
+        <li <% if (navPage == "course")      { %>class="active"<% } %>><a href="<%= urlPrefix %>/course">Course</a></li>
+        <% if (!devMode && authz_data.has_course_permission_edit) { %>
+        <li <% if (navPage == "sync")        { %>class="active"<% } %>><a href="<%= urlPrefix %>/syncs">Sync</a></li>
         <% } %>
 
         <% if (typeof assessment_label != 'undefined' && typeof assessment != 'undefined') { %>
-        <li <% if (navPage == "assessment") { %>class="active"<% } %>><a href="<%= urlPrefix %>/instructor/assessment/<%= assessment.id %>"><%= assessment_label %></a></li>
-        <% } %>
-
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-- Load from disk -------------------------------------------------------------->
-
-        <% if (devMode) { %>
-        <a class="btn btn-success navbar-btn" href="<%= urlPrefix %>/instructor/loadFromDisk">Load from disk</a>
+        <li <% if (navPage == "assessment") { %>class="active"<% } %>><a href="<%= urlPrefix %>/assessment/<%= assessment.id %>"><%= assessment_label %></a></li>
         <% } %>
 
       </ul>
@@ -81,18 +58,22 @@
             Instructor <span class="caret"></span>
           </button>
           <ul class="dropdown-menu">
-            <li><a href="<%= urlPrefix %>/assessments">Switch to student view</a></li>
+            <li><a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/assessments">Switch to student view</a></li>
           </ul>
         </div>
 
         <ul class="nav navbar-nav" id="username-nav">
           <li <% if (navPage == "effective") { %>class="active"<% } %>>
-            <a href="<%= urlPrefix %>/instructor/effectiveUser">
+            <a href="<%= urlPrefix %>/effectiveUser">
               <%= authz_data.user.name %> (<%= authz_data.role %>), <%= authz_data.mode %>
               <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
             </a>
           </li>
         </ul>
+
+        <% if (devMode) { %>
+        <a class="btn btn-success navbar-btn" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a>
+        <% } %>
 
         <% if (devMode) { %>
         <a class="btn btn-default navbar-btn" href="">Log out</a>

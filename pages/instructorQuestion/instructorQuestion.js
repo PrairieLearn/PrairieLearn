@@ -76,9 +76,9 @@ var render = function(req, res, next, variant, submission, submissionHtml, answe
                         res.locals.questionHtml = questionHtml;
                         res.locals.submissionHtml = submissionHtml;
                         res.locals.answerHtml = answerHtml;
-                        res.locals.postUrl = res.locals.urlPrefix + "/instructor/question/" + res.locals.question.id + "/";
+                        res.locals.postUrl = res.locals.urlPrefix + "/question/" + res.locals.question.id + "/";
                         res.locals.questionJson = JSON.stringify({
-                            questionFilePath: res.locals.urlPrefix + "/instructor/question/" + res.locals.question.id + "/file",
+                            questionFilePath: res.locals.urlPrefix + "/question/" + res.locals.question.id + "/file",
                             question: res.locals.question,
                             effectiveQuestionType: effectiveQuestionType,
                             course: res.locals.course,
