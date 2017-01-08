@@ -9,16 +9,18 @@ WHERE
     u.uid = $uid;
 
 -- BLOCK insert_user
-INSERT INTO users
-    ( uid,  name)
+INSERT INTO users AS u
+    ( uid,  name,  uin)
 VALUES
-    ($uid, $name)
-ON CONFLICT (uid) DO NOTHING;
+    ($uid, $name, $uin)
+RETURNING
+    u.*;
 
--- BLOCK update_name
+-- BLOCK update_user
 UPDATE users AS u
 SET
-    name = $name
+    name = $name,
+    uin = $uin
 WHERE
     u.id = $user_id
 RETURNING

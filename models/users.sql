@@ -1,6 +1,7 @@
 CREATE TABLE IF NOT EXISTS users (
     id BIGSERIAL PRIMARY KEY,
     uid text UNIQUE,
+    uin char(9) UNIQUE,
     name text
 );
 

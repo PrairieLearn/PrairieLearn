@@ -9,7 +9,7 @@ var sqlLoader = require('../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(req, res, next) {
-    var authUid = null, authName = null;
+    var authUid = null, authName = null, authUin = null;
 
     if (req.method === 'OPTIONS') {
         // don't authenticate for OPTIONS requests, as these are just for CORS
@@ -21,11 +21,13 @@ module.exports = function(req, res, next) {
     if (config.authType === 'none') {
         authUid = 'dev@example.com';
         authName = 'Dev User';
+        authUin = '123456789';
     } else if (config.authType == 'x-trust-auth') {
 
         // first try for trusted data
         if (req.headers['x-trust-auth-uid']) authUid = req.headers['x-trust-auth-uid'];
         if (req.headers['x-trust-auth-name']) authName = req.headers['x-trust-auth-name'];
+        if (req.headers['x-trust-auth-uin']) authUin = req.headers['x-trust-auth-uin'];
 
         // next try for signed data
         if (!authUid) {
@@ -53,13 +55,17 @@ module.exports = function(req, res, next) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) {
             // the user doesn't exist so try to make it
-            // we need a name to do this
+            // we need a name and UIN to do this
             if (!authName) {
                 return next(error.make(400, 'Name not specified for new user', {authUid: authUid}));
+            }
+            if (!authUin) {
+                return next(error.make(400, 'UIN not specified for new user', {authUid: authUid}));
             }
             var params = {
                 uid: authUid,
                 name: authName,
+                uin: authUin,
             };
             sqldb.queryZeroOrOneRow(sql.insert_user, params, function(err, result) {
                 if (ERR(err, next)) return;
@@ -71,18 +77,19 @@ module.exports = function(req, res, next) {
         } else {
             res.locals.authn_user = result.rows[0].user;
             res.locals.is_administrator = result.rows[0].is_administrator;
-            // if we don't have a name then there is nothing left to do
-            if (!authName) return next();
+            // if we don't have a name or UIN then there is nothing left to do
+            if (!authName && !authUin) return next();
             // if the name is correct then we are done
-            if (res.locals.authn_user.name == authName) return next();
-            // authName differs from stored name, so update the DB
+            if (res.locals.authn_user.name == authName && res.locals.authn_user.uin == authUin) return next();
+            // authName or authUin differs from stored values, so update the DB
             var params = {
                 user_id: res.locals.authn_user.id,
-                name: authName,
+                name: authName || res.locals.authn_user.name,
+                uin: authUin || res.locals.authn_user.uin,
             };
-            sqldb.queryZeroOrOneRow(sql.update_name, params, function(err, result) {
+            sqldb.queryZeroOrOneRow(sql.update_user, params, function(err, result) {
                 if (ERR(err, next)) return;
-                if (result.rowCount == 0) return next(new Error('Error updating name', {params}));
+                if (result.rowCount == 0) return next(new Error('Error updating user data', {params}));
                 res.locals.authn_user = result.rows[0];
                 next();
             });
