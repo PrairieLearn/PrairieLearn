@@ -66,7 +66,7 @@ function serverMode(req) {
 module.exports = function(req, res, next) {
 
     var params = {
-        authn_user_id: res.locals.authn_user.id,
+        authn_user_id: res.locals.authn_user.user_id,
         course_instance_id: req.params.course_instance_id,
         course_id: req.params.course_id,
         is_administrator: res.locals.is_administrator,
@@ -114,7 +114,7 @@ module.exports = function(req, res, next) {
         // handle user data override
         if (req.cookies.requestedUid || req.cookies.requestedRole || req.cookies.requestedMode) {
             var params = {
-                authn_user_id: res.locals.authn_user.id,
+                authn_user_id: res.locals.authn_user.user_id,
                 authn_role: res.locals.authz_data.authn_role,
                 server_mode: res.locals.authz_data.authn_mode,
                 course_instance_id: req.params.course_instance_id,

@@ -38,8 +38,8 @@ FROM
     users AS u,
     course_instances AS ci
 WHERE
-    u.id = e.user_id
+    u.user_id = e.user_id
     AND ci.id = $course_instance_id
     AND ci.id = e.course_instance_id
-    AND u.id NOT IN (SELECT unnest($preserve_user_ids::integer[]))
+    AND u.user_id NOT IN (SELECT unnest($preserve_user_ids::integer[]))
     AND e.role != 'Student';

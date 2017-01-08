@@ -5,7 +5,7 @@ SELECT
     u.uid AS user_uid
 FROM
     job_sequences AS js
-    JOIN users AS u on (u.id = js.user_id)
+    JOIN users AS u on (u.user_id = js.user_id)
 WHERE
     js.course_id = $course_id
     AND (js.type = 'sync' OR js.type = 'git_status')

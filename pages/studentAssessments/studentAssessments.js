@@ -15,7 +15,7 @@ router.get('/', function(req, res, next) {
     var params = {
         course_instance_id: res.locals.course_instance.id,
         authz_data: res.locals.authz_data,
-        user_id: res.locals.user.id,
+        user_id: res.locals.user.user_id,
     };
     sqldb.query(sql.select_assessments, params, function(err, result) {
         if (ERR(err, next)) return;

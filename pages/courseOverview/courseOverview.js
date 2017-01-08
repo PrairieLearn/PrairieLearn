@@ -31,7 +31,7 @@ router.post('/', function(req, res, next) {
             res.locals.course.id,
             req.body.uid,
             req.body.course_role,
-            res.locals.authz_data.authn_user.id,
+            res.locals.authz_data.authn_user.user_id,
         ];
         sqldb.call('course_permissions_insert_by_user_uid', params, function(err, result) {
             if (ERR(err, next)) return;
@@ -42,7 +42,7 @@ router.post('/', function(req, res, next) {
             res.locals.course.id,
             req.body.user_id,
             req.body.course_role,
-            res.locals.authz_data.authn_user.id,
+            res.locals.authz_data.authn_user.user_id,
         ];
         sqldb.call('course_permissions_update_role', params, function(err, result) {
             if (ERR(err, next)) return;
@@ -52,7 +52,7 @@ router.post('/', function(req, res, next) {
         var params = [
             res.locals.course.id,
             req.body.user_id,
-            res.locals.authz_data.authn_user.id,
+            res.locals.authz_data.authn_user.user_id,
         ];
         sqldb.call('course_permissions_delete', params, function(err, result) {
             if (ERR(err, next)) return;

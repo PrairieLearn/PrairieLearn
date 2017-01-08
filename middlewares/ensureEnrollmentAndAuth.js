@@ -9,7 +9,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(req, res, next) {
     var params = {
-        user_id: res.locals.user.id,
+        user_id: res.locals.user.user_id,
         course_instance_id: req.params.courseInstanceId,
     };
     sqldb.query(sql.all, params, function(err, result) {

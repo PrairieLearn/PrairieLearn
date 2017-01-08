@@ -83,7 +83,7 @@ UNION
         'Grade submission'::TEXT AS event_name,
         'orange3'::TEXT AS event_color,
         format_date_full_compact(s.graded_at) AS date,
-        u.id AS auth_user_id,
+        u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -103,7 +103,7 @@ UNION
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN users AS u ON (u.id = gl.auth_user_id)
+        LEFT JOIN users AS u ON (u.user_id = gl.auth_user_id)
     WHERE
         iq.assessment_instance_id = $assessment_instance_id
         AND s.graded_at IS NOT NULL
@@ -115,7 +115,7 @@ UNION
         'Score question'::TEXT AS event_name,
         'brown1'::TEXT AS event_color,
         format_date_full_compact(qsl.date) AS date,
-        u.id AS auth_user_id,
+        u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -131,7 +131,7 @@ UNION
         JOIN instance_questions AS iq ON (iq.id = qsl.instance_question_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN users AS u ON (u.id = qsl.auth_user_id)
+        LEFT JOIN users AS u ON (u.user_id = qsl.auth_user_id)
     WHERE
         iq.assessment_instance_id = $assessment_instance_id
 )
@@ -142,7 +142,7 @@ UNION
         'Score assessment'::TEXT AS event_name,
         'brown3'::TEXT AS event_color,
         format_date_full_compact(date) AS date,
-        u.id AS auth_user_id,
+        u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
         NULL::TEXT as qid,
         NULL::INTEGER as question_id,
@@ -155,7 +155,7 @@ UNION
         ) AS data
     FROM
         assessment_score_logs AS asl
-        LEFT JOIN users AS u ON (u.id = asl.auth_user_id)
+        LEFT JOIN users AS u ON (u.user_id = asl.auth_user_id)
     WHERE
         asl.assessment_instance_id = $assessment_instance_id
 )
@@ -166,7 +166,7 @@ UNION
         CASE WHEN asl.open THEN 'Open'::TEXT ELSE 'Close'::TEXT END AS event_name,
         'gray3'::TEXT AS event_color,
         format_date_full_compact(asl.date) AS date,
-        u.id AS auth_user_id,
+        u.user_id AS auth_user_id,
         u.uid AS auth_user_uid,
         NULL::TEXT as qid,
         NULL::INTEGER as question_id,
@@ -175,7 +175,7 @@ UNION
         NULL::JSONB as data
     FROM
         assessment_state_logs AS asl
-        LEFT JOIN users AS u ON (u.id = asl.auth_user_id)
+        LEFT JOIN users AS u ON (u.user_id = asl.auth_user_id)
     WHERE
         asl.assessment_instance_id = $assessment_instance_id
 )

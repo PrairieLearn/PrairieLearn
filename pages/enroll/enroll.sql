@@ -10,9 +10,9 @@ FROM
         course_instances AS ci
         JOIN courses AS c ON (c.id = ci.course_id)
     )
-    LEFT JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = ci.id)
+    LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
 WHERE
-    u.id = $user_id
+    u.user_id = $user_id
     AND ci.deleted_at IS NULL
     AND check_course_instance_access(ci.id, COALESCE(e.role, 'Student'), u.uid, current_timestamp)
 ORDER BY
@@ -23,11 +23,11 @@ INSERT INTO enrollments AS e
         (user_id, course_instance_id, role)
 (
     SELECT
-        u.id, $course_instance_id, 'Student'
+        u.user_id, $course_instance_id, 'Student'
     FROM
         users AS u
     WHERE
-        u.id = $user_id
+        u.user_id = $user_id
         AND check_course_instance_access($course_instance_id, 'Student', u.uid, current_timestamp)
 )
 RETURNING e.id;
@@ -37,7 +37,7 @@ DELETE FROM enrollments AS e
 USING
     users AS u
 WHERE
-    u.id = $user_id
+    u.user_id = $user_id
     AND e.user_id = $user_id
     AND e.course_instance_id = $course_instance_id
     AND check_course_instance_access($course_instance_id, e.role, u.uid, current_timestamp)

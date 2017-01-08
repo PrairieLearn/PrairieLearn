@@ -10,7 +10,7 @@ DECLARE
     user_id bigint;
     new_row course_permissions;
 BEGIN
-    SELECT u.id INTO user_id
+    SELECT u.user_id INTO user_id
     FROM users AS u
     WHERE u.uid = course_permissions_insert_by_user_uid.uid;
 

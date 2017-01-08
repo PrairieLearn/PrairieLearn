@@ -12,9 +12,9 @@ ORDER BY (aset.number, a.number);
 -- BLOCK user_scores
 WITH
 course_users AS (
-    SELECT u.id,u.uid,u.name AS user_name,e.role
+    SELECT u.user_id,u.uid,u.name AS user_name,e.role
     FROM users AS u
-    JOIN enrollments AS e ON (e.user_id = u.id)
+    JOIN enrollments AS e ON (e.user_id = u.user_id)
     WHERE e.course_instance_id = $course_instance_id
 ),
 course_assessments AS (
@@ -25,12 +25,12 @@ course_assessments AS (
     AND a.course_instance_id = $course_instance_id
 ),
 scores AS (
-    SELECT u.id AS user_id,u.uid,u.user_name,u.role,
+    SELECT u.user_id AS user_id,u.uid,u.user_name,u.role,
         a.id AS assessment_id,a.assessment_number,a.assessment_set_number,
         uas.score_perc
     FROM course_users AS u
     CROSS JOIN course_assessments AS a
-    LEFT JOIN user_assessment_scores AS uas ON (uas.assessment_id = a.id AND uas.user_id = u.id)
+    LEFT JOIN user_assessment_scores AS uas ON (uas.assessment_id = a.id AND uas.user_id = u.user_id)
 )
 SELECT user_id,uid,user_name,role,
     ARRAY_AGG(score_perc

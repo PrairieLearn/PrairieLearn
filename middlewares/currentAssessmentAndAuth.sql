@@ -10,7 +10,7 @@ FROM
     LATERAL check_assessment_access(a.id, $mode::enum_mode, $role::enum_role, u.uid, current_timestamp) AS cta
 WHERE
     a.id = $assessment_id
-    AND u.id = $user_id
+    AND u.user_id = $user_id
     AND a.deleted_at IS NULL
     AND a.course_instance_id = $course_instance_id
     AND cta.available;

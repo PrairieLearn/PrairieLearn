@@ -10,7 +10,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 module.exports = function(req, res, next) {
     var params = {
         assessment_instance_id: req.params.assessmentInstanceId,
-        user_id: res.locals.user.id,
+        user_id: res.locals.user.user_id,
     };
     sqldb.queryOneRow(sql.assessmentInstance, params, function(err, result) {
         if (ERR(err, next)) return;
@@ -19,7 +19,7 @@ module.exports = function(req, res, next) {
         var params = {
             assessment_id: res.locals.assessmentInstance.assessment_id,
             course_instance_id: req.params.courseInstanceId,
-            user_id: res.locals.user.id,
+            user_id: res.locals.user.user_id,
         };
         sqldb.queryOneRow(sql.assessment, params, function(err, result) {
             if (ERR(err, next)) return;

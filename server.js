@@ -299,10 +299,10 @@ if (config.startServer) {
                 + " VALUES ('dev@example.com', 'Dev User')"
                 + " ON CONFLICT (uid) DO UPDATE"
                 + " SET name = EXCLUDED.name"
-                + " RETURNING id;";
+                + " RETURNING user_id;";
             sqldb.queryOneRow(sql, [], function(err, result) {
                 if (ERR(err, callback)) return;
-                var user_id = result.rows[0].id;
+                var user_id = result.rows[0].user_id;
                 var sql
                     = "INSERT INTO administrators (user_id)"
                     + " VALUES ($user_id)"

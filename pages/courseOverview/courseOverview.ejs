@@ -75,7 +75,7 @@
                    data-html="true" data-placement="auto" title="Change course role"
                    data-content="<%= include('coursePermissionsUpdateRoleForm',
                                  {id: 'coursePermissionsUpdateRoleButton' + i,
-                                 uid: course_user.uid, user_id: course_user.id,
+                                 uid: course_user.uid, user_id: course_user.user_id,
                                  course_role: course_user.course_role}) %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-pencil" aria-hidden="true"></i> Change
@@ -87,7 +87,7 @@
                    data-html="true" data-placement="auto" title="Remove user access"
                    data-content="<%= include('coursePermissionsDeleteForm',
                                  {id: 'coursePermissionsDeleteButton' + i,
-                                 uid: course_user.uid, user_id: course_user.id}) %>"
+                                 uid: course_user.uid, user_id: course_user.user_id}) %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-times" aria-hidden="true"></i> Remove
                 </a>

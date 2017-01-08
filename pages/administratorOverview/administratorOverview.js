@@ -26,7 +26,7 @@ router.post('/', function(req, res, next) {
     if (req.body.postAction == 'administrators_insert_by_user_uid') {
         var params = [
             req.body.uid,
-            res.locals.authn_user.id,
+            res.locals.authn_user.user_id,
         ];
         sqldb.call('administrators_insert_by_user_uid', params, function(err, result) {
             if (ERR(err, next)) return;
@@ -35,7 +35,7 @@ router.post('/', function(req, res, next) {
     } else if (req.body.postAction == 'administrators_delete_by_user_id') {
         var params = [
             req.body.user_id,
-            res.locals.authn_user.id,
+            res.locals.authn_user.user_id,
         ];
         sqldb.call('administrators_delete_by_user_id', params, function(err, result) {
             if (ERR(err, next)) return;
@@ -47,7 +47,7 @@ router.post('/', function(req, res, next) {
             req.body.title,
             req.body.path,
             req.body.repository,
-            res.locals.authn_user.id,
+            res.locals.authn_user.user_id,
         ];
         sqldb.call('courses_insert', params, function(err, result) {
             if (ERR(err, next)) return;
@@ -58,7 +58,7 @@ router.post('/', function(req, res, next) {
             req.body.course_id,
             req.body.column_name,
             req.body.value,
-            res.locals.authn_user.id,
+            res.locals.authn_user.user_id,
         ];
         sqldb.call('courses_update_column', params, function(err, result) {
             if (ERR(err, next)) return;
@@ -82,7 +82,7 @@ router.post('/', function(req, res, next) {
 
             var params = [
                 req.body.course_id,
-                res.locals.authn_user.id,
+                res.locals.authn_user.user_id,
             ];
             sqldb.call('courses_delete', params, function(err, result) {
                 if (ERR(err, next)) return;

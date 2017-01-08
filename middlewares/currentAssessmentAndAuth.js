@@ -11,7 +11,7 @@ module.exports = function(req, res, next) {
     var params = {
         assessment_id: res.locals.assessmentId ? res.locals.assessmentId : req.params.assessmentId,
         course_instance_id: req.params.courseInstanceId,
-        user_id: res.locals.user.id,
+        user_id: res.locals.user.user_id,
         mode: req.mode,
         role: res.locals.enrollment.role,
     };

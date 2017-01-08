@@ -191,7 +191,7 @@ router.post('/', function(req, res, next) {
         var params = {
             assessment_id: res.locals.assessment.id,
             assessment_instance_id: req.body.assessment_instance_id,
-            authn_user_id: res.locals.authz_data.authn_user.id,
+            authn_user_id: res.locals.authz_data.authn_user.user_id,
         };
         sqldb.queryOneRow(sql.open, params, function(err, result) {
             if (ERR(err, next)) return;
@@ -207,7 +207,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             var credit = result.rows[0].credit;
             var finish = true;
-            assessments.gradeAssessmentInstance(req.body.assessment_instance_id, res.locals.authn_user.id, credit, finish, function(err) {
+            assessments.gradeAssessmentInstance(req.body.assessment_instance_id, res.locals.authn_user.user_id, credit, finish, function(err) {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });

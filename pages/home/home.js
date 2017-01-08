@@ -12,7 +12,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
     var params = {
-        user_id: res.locals.authn_user.id,
+        user_id: res.locals.authn_user.user_id,
         is_administrator: res.locals.is_administrator,
     };
     sqldb.queryOneRow(sql.select_home, params, function(err, result) {

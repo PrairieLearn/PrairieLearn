@@ -8,7 +8,7 @@ DECLARE
     user_id bigint;
     new_row administrators;
 BEGIN
-    SELECT u.id INTO user_id
+    SELECT u.user_id INTO user_id
     FROM users AS u
     WHERE u.uid = administrators_insert_by_user_uid.uid;
 

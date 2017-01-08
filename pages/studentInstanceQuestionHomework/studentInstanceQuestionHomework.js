@@ -53,7 +53,7 @@ function processSubmission(req, res, callback) {
     }
     var submission = {
         variant_id: postData.variant ? postData.variant.id : null,
-        auth_user_id: res.locals.authz_data.authn_user.id,
+        auth_user_id: res.locals.authz_data.authn_user.user_id,
         submitted_answer: postData.submittedAnswer,
         type: postData.type,
         credit: res.locals.assessment.credit,

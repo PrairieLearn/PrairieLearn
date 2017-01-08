@@ -3,12 +3,12 @@ WITH
 select_administrator_users AS (
     SELECT
         coalesce(
-            jsonb_agg(to_json(u) ORDER BY u.uid, u.id),
+            jsonb_agg(to_json(u) ORDER BY u.uid, u.user_id),
             '[]'::jsonb
         ) AS administrator_users
     FROM
         administrators AS adm
-        JOIN users AS u ON (u.id = adm.user_id)
+        JOIN users AS u ON (u.user_id = adm.user_id)
 ),
 select_courses AS (
     SELECT

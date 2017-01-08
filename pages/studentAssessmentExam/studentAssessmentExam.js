@@ -23,7 +23,7 @@ function makeAssessmentInstance(req, res, callback) {
             function(callback) {
                 var params = {
                     assessment_id: res.locals.assessment.id,
-                    user_id: res.locals.user.id,
+                    user_id: res.locals.user.user_id,
                     mode: res.locals.authz_data.mode,
                 };
                 sqldb.queryWithClientOneRow(client, sql.insert_assessment_instance, params, function(err, result) {
@@ -95,7 +95,7 @@ router.get('/', function(req, res, next) {
     } else {
         var params = {
             assessment_id: res.locals.assessment.id,
-            user_id: res.locals.user.id,
+            user_id: res.locals.user.user_id,
         };
         sqldb.query(sql.select_single_assessment_instance, params, function(err, result) {
             if (ERR(err, next)) return;

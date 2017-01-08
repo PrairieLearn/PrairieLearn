@@ -22,8 +22,8 @@ dates_from_submissions AS (
     JOIN variants AS v ON (v.id = s.variant_id)
     JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-    JOIN users AS u ON (u.id = ai.user_id)
-    WHERE u.id = s.auth_user_id
+    JOIN users AS u ON (u.user_id = ai.user_id)
+    WHERE u.user_id = s.auth_user_id
     GROUP BY ai.id
 ),
 -- # TEMPORARILY DISABLE due to "Instructor finish" incorrectly setting the auth_user_id to the user_id
@@ -34,8 +34,8 @@ dates_from_submissions AS (
 --         max(tsc.date) AS max_date
 --     FROM assessment_scores AS tsc
 --     JOIN assessment_instances AS ai ON (ai.id = tsc.assessment_instance_id)
---     JOIN users AS u ON (u.id = ai.user_id)
---     WHERE u.id = tsc.auth_user_id
+--     JOIN users AS u ON (u.user_id = ai.user_id)
+--     WHERE u.user_id = tsc.auth_user_id
 --     GROUP BY ai.id
 -- ),
 all_dates AS (

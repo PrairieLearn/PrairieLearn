@@ -13,7 +13,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
     var params = {
-        user_id: res.locals.authn_user.id,
+        user_id: res.locals.authn_user.user_id,
     };
     sqldb.query(sql.select_course_instances, params, function(err, result) {
         if (ERR(err, next)) return;
@@ -27,7 +27,7 @@ router.post('/', function(req, res, next) {
     if (req.body.postAction == 'enroll') {
         var params = {
             course_instance_id: req.body.course_instance_id,
-            user_id: res.locals.authn_user.id,
+            user_id: res.locals.authn_user.user_id,
         };
         sqldb.queryOneRow(sql.enroll, params, function(err, result) {
             if (ERR(err, next)) return;
@@ -36,7 +36,7 @@ router.post('/', function(req, res, next) {
     } else if (req.body.postAction == 'unenroll') {
         var params = {
             course_instance_id: req.body.course_instance_id,
-            user_id: res.locals.authn_user.id,
+            user_id: res.locals.authn_user.user_id,
         };
         sqldb.queryOneRow(sql.unenroll, params, function(err, result) {
             if (ERR(err, next)) return;

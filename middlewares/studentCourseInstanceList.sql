@@ -5,7 +5,7 @@ WITH
         FROM
             course_instances AS ci
             JOIN enrollments AS e ON (e.course_instance_id = ci.id)
-            JOIN users AS u ON (u.id = e.user_id)
+            JOIN users AS u ON (u.user_id = e.user_id)
         WHERE
             u.uid = $uid
             AND ci.deleted_at IS NULL

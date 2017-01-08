@@ -31,9 +31,9 @@ WITH effective_data AS (
     FROM
         users AS authn_u,
         users AS u
-        JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = $course_instance_id)
+        JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = $course_instance_id)
     WHERE
-        authn_u.id = $authn_user_id
+        authn_u.user_id = $authn_user_id
         AND u.uid = $requested_uid
 )
 SELECT

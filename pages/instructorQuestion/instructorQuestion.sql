@@ -11,8 +11,8 @@ FROM
     course_instances AS ci
     JOIN courses AS c ON (c.id = ci.course_id)
     JOIN LATERAL auth_instructor_course_instance(ci.id, 'View', $auth_data) AS aaci ON TRUE
-    JOIN users AS auth_u ON (auth_u.id = aaci.auth_user_id)
-    JOIN enrollments AS auth_e ON (auth_e.user_id = auth_u.id AND auth_e.course_instance_id = ci.id)
+    JOIN users AS auth_u ON (auth_u.user_id = aaci.auth_user_id)
+    JOIN enrollments AS auth_e ON (auth_e.user_id = auth_u.user_id AND auth_e.course_instance_id = ci.id)
 WHERE
     q.id = $question_id
     AND ci.id = $course_instance_id

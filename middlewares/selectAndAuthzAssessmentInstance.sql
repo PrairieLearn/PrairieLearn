@@ -13,8 +13,8 @@ FROM
     JOIN assessments AS a ON (a.id = ai.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-    JOIN users AS u ON (u.id = ai.user_id)
-    LEFT JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = ci.id)
+    JOIN users AS u ON (u.user_id = ai.user_id)
+    LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
     JOIN LATERAL authz_assessment_instance(ai.id, $authz_data) AS aai ON TRUE
 WHERE
     ai.id = $assessment_instance_id

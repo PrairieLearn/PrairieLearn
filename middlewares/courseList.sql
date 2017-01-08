@@ -6,7 +6,7 @@ SELECT
 -- for each course, order by course_instances.number and number the rows
 FROM
     enrollments AS e
-    JOIN users AS u ON (u.id = e.user_id)
+    JOIN users AS u ON (u.user_id = e.user_id)
     JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
     JOIN courses AS c ON (c.id = ci.course_id)
 WHERE

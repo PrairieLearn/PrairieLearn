@@ -88,7 +88,7 @@ WHERE id = $assessment_id;
 
 -- BLOCK assessment_instance_scores
 SELECT
-    u.id AS user_id, u.uid, u.name, e.role, ai.score_perc,
+    u.user_id, u.uid, u.name, e.role, ai.score_perc,
     ai.number,ai.id AS assessment_instance_id,ai.open,
     format_interval(aid.duration) AS duration,
     EXTRACT(EPOCH FROM aid.duration) AS duration_secs,
@@ -96,13 +96,13 @@ SELECT
 FROM
     assessments AS a
     JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-    JOIN users AS u ON (u.id = ai.user_id)
-    JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = a.course_instance_id)
+    JOIN users AS u ON (u.user_id = ai.user_id)
+    JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
     LEFT JOIN assessment_instance_durations AS aid ON (aid.id = ai.id)
 WHERE
     a.id = $assessment_id
 ORDER BY
-    e.role DESC, u.uid, u.id, ai.number;
+    e.role DESC, u.uid, u.user_id, ai.number;
 
 
 -- BLOCK open
@@ -157,6 +157,6 @@ FROM
     JOIN assessment_instances AS ai ON (ai.id = ld.id)
     JOIN assessments AS a ON (a.id = ai.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-    JOIN users AS u ON (u.id = ai.user_id)
-    JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = ci.id)
+    JOIN users AS u ON (u.user_id = ai.user_id)
+    JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
     JOIN LATERAL check_assessment_access(a.id, ld.mode, e.role, u.uid, ld.date) AS caa ON TRUE;

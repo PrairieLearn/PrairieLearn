@@ -14,13 +14,13 @@ SELECT
         FROM enrollments AS e
         WHERE
             e.course_instance_id = ci.id
-            AND e.user_id = u.id
+            AND e.user_id = u.user_id
             AND (
                 (auth_action = 'View' AND e.role >= 'TA')
                 OR (auth_action = 'Edit' AND e.role >= 'Instructor')
             )
     ) AS authorized,
-    u.id AS auth_user_id
+    u.user_id AS auth_user_id
 FROM
     users AS u,
     course_instances AS ci

@@ -30,9 +30,9 @@ enrollments_for_user AS (
         u.uid
     FROM
         enrollments AS e
-        JOIN users AS u ON (u.id = e.user_id)
+        JOIN users AS u ON (u.user_id = e.user_id)
     WHERE
-        u.id = $user_id
+        u.user_id = $user_id
 ),
 course_instances_list AS (
     SELECT

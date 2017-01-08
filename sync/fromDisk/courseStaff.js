@@ -20,7 +20,7 @@ module.exports = {
             var params = {uid: uid};
             sqldb.query(sql.insert_user, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                var userId = result.rows[0].id;
+                var userId = result.rows[0].user_id;
                 staffIds.push(userId);
 
                 // Instructors and TAs only get enrolled in the current courseInstance

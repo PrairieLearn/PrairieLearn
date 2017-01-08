@@ -14,7 +14,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 router.get('/', function(req, res, next) {
     if (!res.locals.authz_data.authn_has_instructor_view) return next();
     var params = {
-        authn_user_id: res.locals.authn_user.id,
+        authn_user_id: res.locals.authn_user.user_id,
         course_instance_id: res.locals.course_instance.id,
         authn_role: res.locals.authz_data.authn_role,
     };

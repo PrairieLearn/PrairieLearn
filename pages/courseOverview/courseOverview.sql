@@ -3,14 +3,14 @@ WITH
 select_course_users AS (
     SELECT
         coalesce(jsonb_agg(jsonb_build_object(
-            'id', u.id,
+            'user_id', u.user_id,
             'uid', u.uid,
             'name', u.name,
             'course_role', cp.course_role
-        ) ORDER BY u.uid, u.id), '[]'::jsonb) AS course_users
+        ) ORDER BY u.uid, u.user_id), '[]'::jsonb) AS course_users
     FROM
         course_permissions AS cp
-        JOIN users AS u ON (u.id = cp.user_id)
+        JOIN users AS u ON (u.user_id = cp.user_id)
     WHERE
         cp.course_id = $course_id
 ),

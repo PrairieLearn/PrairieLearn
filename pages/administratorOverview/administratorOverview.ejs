@@ -51,7 +51,7 @@
                    data-html="true" data-placement="auto" title="Remove administrator access"
                    data-content="<%= include('administratorDeleteForm',
                                  {id: 'administratorDeleteButton' + i, uid: administrator_user.uid,
-                                 user_id: administrator_user.id}) %>"
+                                 user_id: administrator_user.user_id}) %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
                   <i class="fa fa-times" aria-hidden="true"></i> Remove
                 </a>

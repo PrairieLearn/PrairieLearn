@@ -39,7 +39,7 @@ function processSubmission(req, res, callback) {
         function(callback) {
             var params = {
                 variant_id: res.locals.variant.id,
-                auth_user_id: res.locals.user.id,
+                auth_user_id: res.locals.user.user_id,
                 submitted_answer: postData.submittedAnswer,
                 type: postData.type,
                 credit: res.locals.assessment.credit,

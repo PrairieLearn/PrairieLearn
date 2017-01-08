@@ -4,7 +4,7 @@ SELECT
     (adm.id IS NOT NULL) AS is_administrator
 FROM
     users AS u
-    LEFT JOIN administrators AS adm ON (adm.user_id = u.id)
+    LEFT JOIN administrators AS adm ON (adm.user_id = u.user_id)
 WHERE
     u.uid = $uid;
 
@@ -22,6 +22,6 @@ SET
     name = $name,
     uin = $uin
 WHERE
-    u.id = $user_id
+    u.user_id = $user_id
 RETURNING
     u.*;

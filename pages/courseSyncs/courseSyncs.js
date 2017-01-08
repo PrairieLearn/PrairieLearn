@@ -28,8 +28,8 @@ router.get('/', function(req, res, next) {
 var pullAndUpdate = function(locals, callback) {
     var options = {
         course_id: locals.course.id,
-        user_id: locals.user.id,
-        authn_user_id: locals.authz_data.authn_user.id,
+        user_id: locals.user.user_id,
+        authn_user_id: locals.authz_data.authn_user.user_id,
         type: 'sync',
         description: 'Pull from remote git repository',
     };
@@ -47,8 +47,8 @@ var pullAndUpdate = function(locals, callback) {
         var syncStage1A = function() {
             var jobOptions = {
                 course_id: locals.course.id,
-                user_id: locals.user.id,
-                authn_user_id: locals.authz_data.authn_user.id,
+                user_id: locals.user.user_id,
+                authn_user_id: locals.authz_data.authn_user.user_id,
                 job_sequence_id: job_sequence_id,
                 type: 'clone_from_git',
                 description: 'Clone from remote git repository',
@@ -62,8 +62,8 @@ var pullAndUpdate = function(locals, callback) {
         var syncStage1B = function() {
             var jobOptions = {
                 course_id: locals.course.id,
-                user_id: locals.user.id,
-                authn_user_id: locals.authz_data.authn_user.id,
+                user_id: locals.user.user_id,
+                authn_user_id: locals.authz_data.authn_user.user_id,
                 job_sequence_id: job_sequence_id,
                 type: 'pull_from_git',
                 description: 'Pull from remote git repository',
@@ -78,8 +78,8 @@ var pullAndUpdate = function(locals, callback) {
         var syncStage2 = function() {
             var jobOptions = {
                 course_id: locals.course.id,
-                user_id: locals.user.id,
-                authn_user_id: locals.authz_data.authn_user.id,
+                user_id: locals.user.user_id,
+                authn_user_id: locals.authz_data.authn_user.user_id,
                 type: 'sync_from_disk',
                 description: 'Sync git repository to database',
                 job_sequence_id: job_sequence_id,
@@ -99,8 +99,8 @@ var pullAndUpdate = function(locals, callback) {
         var syncStage3 = function() {
             var jobOptions = {
                 course_id: locals.course.id,
-                user_id: locals.user.id,
-                authn_user_id: locals.authz_data.authn_user.id,
+                user_id: locals.user.user_id,
+                authn_user_id: locals.authz_data.authn_user.user_id,
                 type: 'reload_question_servers',
                 description: 'Reload question server.js code',
                 job_sequence_id: job_sequence_id,
@@ -134,8 +134,8 @@ var pullAndUpdate = function(locals, callback) {
 var gitStatus = function(locals, callback) {
     var options = {
         course_id: locals.course.id,
-        user_id: locals.user.id,
-        authn_user_id: locals.authz_data.authn_user.id,
+        user_id: locals.user.user_id,
+        authn_user_id: locals.authz_data.authn_user.user_id,
         type: 'git_status',
         description: 'Show server git status',
     };
@@ -151,8 +151,8 @@ var gitStatus = function(locals, callback) {
         var statusStage1 = function() {
             var jobOptions = {
                 course_id: locals.course.id,
-                user_id: locals.user.id,
-                authn_user_id: locals.authz_data.authn_user.id,
+                user_id: locals.user.user_id,
+                authn_user_id: locals.authz_data.authn_user.user_id,
                 job_sequence_id: job_sequence_id,
                 type: 'describe_git',
                 description: 'Describe current git HEAD',
@@ -167,8 +167,8 @@ var gitStatus = function(locals, callback) {
         var statusStage2 = function() {
             var jobOptions = {
                 course_id: locals.course.id,
-                user_id: locals.user.id,
-                authn_user_id: locals.authz_data.authn_user.id,
+                user_id: locals.user.user_id,
+                authn_user_id: locals.authz_data.authn_user.user_id,
                 type: 'git_history',
                 description: 'List git history',
                 job_sequence_id: job_sequence_id,

@@ -83,7 +83,7 @@ module.exports = function(req, res, next) {
             if (res.locals.authn_user.name == authName && res.locals.authn_user.uin == authUin) return next();
             // authName or authUin differs from stored values, so update the DB
             var params = {
-                user_id: res.locals.authn_user.id,
+                user_id: res.locals.authn_user.user_id,
                 name: authName || res.locals.authn_user.name,
                 uin: authUin || res.locals.authn_user.uin,
             };

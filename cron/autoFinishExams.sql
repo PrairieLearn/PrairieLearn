@@ -41,14 +41,14 @@ SELECT
     ai.id AS assessment_instance_id,
     caa.credit,
     naai.last_active_date, -- for logging
-    u.id AS user_id, -- for logging
+    u.user_id, -- for logging
     u.uid AS user_uid -- for logging
 FROM
     no_activity_assessment_instances AS naai
     JOIN assessment_instances AS ai ON (ai.id = naai.id)
     JOIN assessments AS a ON (a.id = ai.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-    JOIN users AS u ON (u.id = ai.user_id)
-    JOIN enrollments AS e ON (e.user_id = u.id AND e.course_instance_id = ci.id)
+    JOIN users AS u ON (u.user_id = ai.user_id)
+    JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
     JOIN LATERAL check_assessment_access(a.id, naai.mode, e.role, u.uid, naai.last_active_date) AS caa ON TRUE;
     -- Don't check access. The submissions were allowed, so grading must be ok.

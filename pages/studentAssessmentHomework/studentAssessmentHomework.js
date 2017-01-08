@@ -15,7 +15,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 function makeAssessmentInstance(req, res, callback) {
     var params = {
         assessment_id: res.locals.assessment.id,
-        user_id: res.locals.user.id,
+        user_id: res.locals.user.user_id,
         mode: res.locals.authz_data.mode,
     };
     sqldb.queryOneRow(sql.new_assessment_instance, params, function(err, result) {
@@ -32,7 +32,7 @@ router.get('/', function(req, res, next) {
     }
     var params = {
         assessment_id: res.locals.assessment.id,
-        user_id: res.locals.user.id,
+        user_id: res.locals.user.user_id,
     };
     sqldb.query(sql.find_single_assessment_instance, params, function(err, result) {
         if (ERR(err, next)) return;

@@ -8,8 +8,8 @@ WITH member_jobs AS (
         authn_u.uid AS authn_user_uid
     FROM
         jobs AS j
-        LEFT JOIN users AS u ON (u.id = j.user_id)
-        LEFT JOIN users AS authn_u ON (authn_u.id = j.authn_user_id)
+        LEFT JOIN users AS u ON (u.user_id = j.user_id)
+        LEFT JOIN users AS authn_u ON (authn_u.user_id = j.authn_user_id)
     WHERE
         j.job_sequence_id = $job_sequence_id
         AND j.course_id IS NOT DISTINCT FROM $course_id
@@ -30,8 +30,8 @@ SELECT
     aggregated_member_jobs.*
 FROM
     job_sequences AS js
-    LEFT JOIN users AS u ON (u.id = js.user_id)
-    LEFT JOIN users AS authn_u ON (authn_u.id = js.authn_user_id),
+    LEFT JOIN users AS u ON (u.user_id = js.user_id)
+    LEFT JOIN users AS authn_u ON (authn_u.user_id = js.authn_user_id),
     aggregated_member_jobs
 WHERE
     js.id = $job_sequence_id

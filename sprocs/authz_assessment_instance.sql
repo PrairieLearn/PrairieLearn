@@ -14,12 +14,12 @@ WITH
 assessment_result AS (
     SELECT
         aa.*,
-        u.id AS user_id
+        u.user_id
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
         JOIN LATERAL authz_assessment(a.id, authz_data) AS aa ON TRUE
-        JOIN users AS u ON (u.id = ai.user_id)
+        JOIN users AS u ON (u.user_id = ai.user_id)
     WHERE
         ai.id = authz_assessment_instance.assessment_instance_id
 ),
