@@ -9,10 +9,10 @@ CREATE TABLE IF NOT EXISTS assessment_sets (
     UNIQUE (name, course_id)
 );
 
-ALTER TABLE assessment_sets ADD COLUMN IF NOT EXISTS abbreviation text;
-ALTER TABLE assessment_sets DROP COLUMN IF EXISTS abbrev;
+ALTER TABLE assessment_sets RENAME COLUMN abbrev TO abbreviation;
 
 ALTER TABLE assessment_sets ALTER COLUMN id SET DATA TYPE BIGINT;
+ALTER TABLE assessment_sets ALTER COLUMN abbreviation SET DATA TYPE TEXT;
 ALTER TABLE assessment_sets ALTER COLUMN course_id SET DATA TYPE BIGINT;
 ALTER TABLE assessment_sets ALTER COLUMN name SET DATA TYPE TEXT;
 ALTER TABLE assessment_sets ALTER COLUMN heading SET DATA TYPE TEXT;
