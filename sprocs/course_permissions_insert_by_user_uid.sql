@@ -30,7 +30,7 @@ BEGIN
     END;
 
     INSERT INTO audit_logs
-        (authn_user_id, course_id, user_id, tablename,
+        (authn_user_id, course_id, user_id, table_name,
         row_id,      action,  new_state)
     VALUES
         (authn_user_id, course_id, user_id, 'course_permissions',

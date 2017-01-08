@@ -54,7 +54,7 @@ router.post('/', function(req, res, next) {
             req.body.user_id,
             res.locals.authz_data.authn_user.id,
         ];
-        sqldb.call('course_permissions_delete_user', params, function(err, result) {
+        sqldb.call('course_permissions_delete', params, function(err, result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
