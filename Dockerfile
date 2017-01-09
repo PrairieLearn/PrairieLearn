@@ -38,7 +38,8 @@ EXPOSE 3000
 COPY docker/init.sh /etc/init.sh
 RUN chmod +x /etc/init.sh
 
-COPY exampleCourse /course
+COPY exampleCourse /exampleCourse
+RUN mkdir /course
 COPY docker/config.json /prairielearn
 
 CMD /etc/init.sh

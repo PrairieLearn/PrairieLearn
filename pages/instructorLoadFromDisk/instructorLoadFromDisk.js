@@ -1,6 +1,7 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var async = require('async');
+var fs = require('fs');
 var path = require('path');
 var express = require('express');
 var router = express.Router();
@@ -33,9 +34,18 @@ var update = function(locals, callback) {
             // continue executing here to launch the actual job
             async.eachSeries(config.courseDirs || [], function(courseDir, callback) {
                 courseDir = path.resolve(process.cwd(), courseDir);
-                syncFromDisk.syncOrCreateDiskToSql(courseDir, job, function(err) {
-                    if (ERR(err, callback)) return;
-                    callback(null);
+                var infoCourseFile = path.join(courseDir, 'infoCourse.json')
+                fs.access(infoCourseFile, function(err) {
+                    if (err) {
+                        job.info('File not found: ' + infoCourseFile + ', skipping...');
+                        callback(null);
+                    } else {
+                        job.info('Found file ' + infoCourseFile + ', loading...');
+                        syncFromDisk.syncOrCreateDiskToSql(courseDir, job, function(err) {
+                            if (ERR(err, callback)) return;
+                            callback(null);
+                        });
+                    }
                 });
             }, function(err) {
                 if (err) {
