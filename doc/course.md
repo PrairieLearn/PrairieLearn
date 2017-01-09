@@ -1,6 +1,8 @@
 
 # Course configuration
 
+**NOTE:** *Any time you edit the `infoCourse.json` file, you need to click the “Load from disk” button in the header so that the PrairieLearn server reloads the changes.
+
 ## Directory layout
 
 A course is specified by a single directory, with the following structure:
@@ -151,20 +153,20 @@ Copy the JSON block below to include the above standardized tag names in your co
 
 ```json
     "tags": [
-        {"name": "numeric", "color": "brown1"},
-        {"name": "symbolic", "color": "blue1"},
-        {"name": "drawing", "color": "yellow1"},
-        {"name": "MC", "color": "green1"},
-        {"name": "code", "color": "turquoise1"},
-        {"name": "multianswer", "color": "orange2"},
-        {"name": "graph", "color": "purple1"},
-        {"name": "concept", "color": "pink1"},
-        {"name": "calculate", "color": "green2"},
-        {"name": "compute", "color": "red1"},
-        {"name": "software", "color": "orange1"},
-        {"name": "estimation", "color": "red2"},
-        {"name": "secret", "color": "red3"},
-        {"name": "nontest", "color": "green3"},
+        {"name": "numeric", "color": "brown1", "description": "The answer format is one or more numerical values."},
+        {"name": "symbolic", "color": "blue1", "description": "The answer format is a symbolic expression."},
+        {"name": "drawing", "color": "yellow1", "description": "The answer format requires drawing on a canvas to input a graphical representation of an answer."},
+        {"name": "MC", "color": "green1", "description": "The answer format is choosing from a small finite set of answers (multiple choice, possibly with multiple selections allowed, up to 10 possible answers)."},
+        {"name": "code", "color": "turquoise1", "description": "The answer format is a piece of code."},
+        {"name": "multianswer", "color": "orange2", "description": "The question requires multiple answers, either as steps in a sequence or as separate questions."},
+        {"name": "graph", "color": "purple1", "description": "The question tests reading information from a graph or drawing a graph."},
+        {"name": "concept", "color": "pink1", "description": "The question tests conceptual understanding of a topic."},
+        {"name": "calculate", "color": "green2", "description": "The questions tests performing a numerical calculation, with either a calculator or equivalent software."},
+        {"name": "compute", "color": "purple1", "description": "The question tests the writing and running of a piece of code to compute the answer. The answer itself is not the code, but could be a numeric answer output by the code, for example (use `code` when the answer is the code)."},
+        {"name": "software", "color": "orange1", "description": "The question tests the use of a specific piece of software (e.g., Matlab)."},
+        {"name": "estimation", "color": "red2", "description": "Answering the question correctly will require some amount of estimation, so an exact answer is not possible."},
+        {"name": "secret", "color": "red3", "description": "Only use this question on exams or quizzes that won't be released to students, so the question can be kept secret."},
+        {"name": "nontest", "color": "green3", "description": "This question is not appropriate for use in a restricted testing environment, so only use it on homeworks or similar."},
         {"name": "Sp15", "color": "gray1"},
         {"name": "Su15", "color": "gray1"},
         {"name": "Fa15", "color": "gray1"},

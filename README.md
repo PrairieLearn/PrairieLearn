@@ -13,12 +13,12 @@ the server.
 * [Installing and running PrairieLearn v2](doc/installing.md)
 * [Upgrading to PLv2 from PLv1](doc/upgrading1.md)
 * [Course configuration](doc/course.md)
-* [Course instance configuration](doc/courseInstances.md)
-* [Assessment configuration](doc/assessments.md)
-* [Question configuration](doc/questions.md)
-* [Access control to course instances and assessments](doc/accessControl)
+* [Course instance configuration](doc/courseInstance.md)
+* [Assessment configuration](doc/assessment.md)
+* [Question configuration](doc/question.md)
+* [Access control to course instances and assessments](doc/accessControl.md)
 * [clientFiles and serverFiles for file and code libraries](doc/clientServerFiles.md)
-* [UUIDs in JSON files](doc/uuids.md)
+* [UUIDs in JSON files](doc/uuid.md)
 * [PrairieDraw graphics](doc/PrairieDraw.md)
 
 ## Developer Documentation

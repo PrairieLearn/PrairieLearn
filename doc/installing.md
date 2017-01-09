@@ -11,15 +11,15 @@ This is the easiest way to get started.
 
         docker run -it -p 3000:3000 prairielearn/prairielearn
 
-    This will run PrairieLearn with the Example Course. Type Control-C to stop the PrairieLearn server after you are done.
+    This will run PrairieLearn with the example course.
 
 1. Open a web browser and connect to http://localhost:3000/pl
+
+1. When you are finished with PrairieLearn, type Control-C on the commandline where your ran the server to stop it.
 
 1. To use your own course, point Docker to the correct directory with:
 
         docker run -it -p 3000:3000 -v /path/to/course:/course prairielearn/prairielearn
-
-    Type Control-C to stop the PrairieLearn server after you are done.
 
 ### Upgrading PrairieLearn with Docker
 
@@ -48,14 +48,14 @@ To install PrairieLearn locally you should:
 
 1. Install the pre-requisites:
 
-    * [Node.js](http://nodejs.org/) version 0.12 or higher
+    * [Node.js](http://nodejs.org/) version 7.3 or higher
     * [npm](https://npmjs.org/) (included with Node.js on Windows)
     * [PostgreSQL](https://www.postgresql.org) version 9.6 or higher
     * command-line git or [GitHub Desktop](https://desktop.github.com)
 
   On OS X these can be installed with [MacPorts](http://www.macports.org/) or [Homebrew](http://brew.sh/). On Linux these should all be standard packages from the OS distrbution.
 
-  Note that with MacPorts you need to select the active version of PostgreSQL, for example `port select postgresql postgresql95`.
+  Note that with MacPorts you need to select the active version of PostgreSQL, for example `port select postgresql postgresql96`.
 
 1. Clone the latest code:
 

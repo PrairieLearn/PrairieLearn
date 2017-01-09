@@ -282,4 +282,4 @@ The part in the box shown to the student after the question has been graded.
 
 ## Library code and other files
 
-See [clientFiles and serverFiles](clientServerFiles) for information on accessing `clientFiles` and `serverFiles` directories from within question code.
+See [clientFiles and serverFiles](clientServerFiles.md) for information on accessing `clientFiles` and `serverFiles` directories from within question code.

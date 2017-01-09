@@ -1,6 +1,8 @@
 
 # Course instance configuration
 
+**NOTE:** *Any time you edit or add an `infoCourseInstance.json` file, you need to click the “Load from disk” button in the header so that the PrairieLearn server reloads the changes.
+
 ## Directory layout
 
 A _course instance_ corresponds to a single offering of a [course](course.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuation file (`infoCourseInstance.json`) and a list of [assessments](assessment.md) in an `assessments` subdirectory.
@@ -15,23 +17,23 @@ exampleCourse
     |   |   |   `-- ...               # files for Homework 1
     |   |   `-- hw02                  # second homework for Fa16
     |   |       `-- ...               # files for Homework 2
-    |   +-- courseInstanceClientFiles
+    |   +-- clientFilesCourseInstance
     |   |   `-- Fa16_rules.pdf        # files for Fall 2016
-    |   `-- courseInstanceServerFiles
+    |   `-- serverFilesCourseInstance
     |       `-- secret2.js            # files only accessible from the server
     `-- Sp17
         +-- infoCourseInstance.json   # Spring 2017 configuration
         +-- assessments
         |   `-- ...                   # Spring 2017 assessments
-        +-- courseInstanceClientFiles
+        +-- clientFilesCourseInstance
         |   `-- ...                   # files for Spring 2017
-        `-- courseInstanceServerFiles
+        `-- serverFilesCourseInstance
             `-- ...                   # files only accessible from the server
 ```
 
 * See an [example course instances directory](../exampleCourse/courseInstances) in PrairieLearn
 
-* See [clientFiles and serverFiles](clientServerFiles.md) for information on the `courseClientFiles` and `courseServerFiles` directories.
+* See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourseInstance` and `serverFilesCourseInstance` directories.
 
 ## `infoCourseInstance.json`
 

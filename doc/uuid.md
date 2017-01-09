@@ -5,8 +5,7 @@ All JSON configuration files must contain a [UUID (universally unique identifier
 
 ```json
 {
-    "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
-    ...
+    "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd"
 }
 ```
 
@@ -19,9 +18,9 @@ When you make new questions, assessments, etc, you will need to add a UUID to th
 
 * **Copying a directory: needs a new UUID.** For example, if you copy an existing question or assessment to make a new one, then you will need a new UUID for the new object, so that PrairieLearn can distinguish it from the original.
 
-* **Moving a directory: needs a new UUID.** For example, if you move an assessment between course instances or if you move a question between courses, then you will need a new UUID for the object in its new location, so that PrairieLearn will know that this is a different object from the original.
+* **Moving a directory: needs a new UUID.** For example, if you move an assessment between course instances or if you move a question between courses, then you will need a new UUID for the object in its new location, so that PrairieLearn will know that this object should not be associated with the original.
 
-If you copy questions or assessments from a different course and don't give them new UUIDs, then a local development copy of PrairieLearn running on your own machine may not be able to detect that you have not changed the UUIDs. This will only be detected, causing an error, when you sync your course to the production PrairieLearn server.
+If you copy questions or assessments from a different course and don't give them new UUIDs, then a local development copy of PrairieLearn running on your own machine may not be able to detect that you have not changed the UUIDs. This will only be detected when you sync your course to the production PrairieLearn server, at which point it will give an error.
 
 
 ## Bulk addition of UUIDs

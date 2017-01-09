@@ -14,14 +14,12 @@ Each assessment is a single directory in the `assessments` folder. The directory
     "title": "Coordinates and Vectors",
     "set": "Quiz",
     "number": "2",
-    "allowAccess": [...],
-    "zones": [...]
+    "allowAccess": [],
+    "zones": []
 }
 ```
 
 * [Format specification for assessment `infoAssessment.json`](../schemas/infoAssessment.json)
-
-The `type` of the assessment controls the way questions are asked and the grading scheme.
 
 ## Assessment naming
 
@@ -30,6 +28,8 @@ Assessments are organized into `sets` (e.g., `Homework`, `Quiz`, `Exam`) and wit
 * Short name = `Set Number` (e.g., `Quiz 2` in the above example).
 
 * Long name = `Set Number: Title` (e.g., `Quiz 2: Coordinates and Vectors` above).
+
+The allowable set names are specified in the (`courseInfo.json`)[course.md] file.
 
 ## Assessment types
 
@@ -50,14 +50,22 @@ An assessment is broken down in to a list of zones, like this:
         "title": "Easy questions",
         "questions": [
             {"id": "anEasyQ", "points": [10, 5, 3, 1, 0.5, 0.25]},
-            {"id": "aSlightlyHarderQ", "points": [10, 9, 7, 5]},
+            {"id": "aSlightlyHarderQ", "points": [10, 9, 7, 5]}
         ]
     },
     {
         "title": "Hard questions",
         "questions": [
-            {"id": ["hardQV1", "hardQV2"], "points": [10]}
-            {"id": "reallyHardQ", "points": [10, 10, 10]}
+            {"id": ["hardQV1", "hardQV2"], "points": 10},
+            {"id": "reallyHardQ", "points": [10, 10, 10]},
+            {
+                "numberChoose": 1,
+                "points": 5,
+                "alternatives": [
+                    {"id": "FirstAltQ", "points": 10},
+                    {"id": "SecondAltQ"}
+                ]
+            }
         ]
     }
 ],
@@ -67,13 +75,15 @@ An assessment is broken down in to a list of zones, like this:
 
 * Within each zone the question order is randomized for `Exam` assessments.
 
-* An assessment question can be specified by either a single `id` or by a list of alternatives, in which case one or more of these alternatives is chosen at random. Once the question `id` is determined, then a random variant of that question is selected.
+* An assessment question can be specified by either a single `id` or by a list of alternatives, in which case one or more of these alternatives is chosen at random. Once the question `id` is determined, then a random variant of that question is selected. Question alternatives inherit the points of their parent group, if specified.
 
 ## Assessment and question instances and resetting assessments
 
-PrairieLearn distinguishes between *assessments* and *assessment instances*. A *assessment* is determined by the code in the `course/assessments`, and is something like "Midterm 1". Given an assessment, PrairieLearn needs to generate the random set of questions and question variants for each student, and it is this selection that is the *assessment instance* for the student. There is only one copy of each assessment, but every student has their own assessment instance. Once assessment instances have been generated they are stored persistently in the database, and they aren't automatically regenerated if the assessment code or configuration changes. This is a safety mechanism to avoid having student’s assessments deleted/regenerated during an exam just because an instructor makes some minor change (e.g., changing the end date of an assessment).
+PrairieLearn distinguishes between *assessments* and *assessment instances*. A *assessment* is determined by the code in an `assessments` directory, and is something like "Midterm 1". Given an assessment, PrairieLearn needs to generate the random set of questions and question variants for each student, and it is this selection that is the *assessment instance* for the student. There is only one copy of each assessment, but every student has their own assessment instance. The rules for updating assessment instances differ between `Homework` and `Exam` assessments.
 
-However, if you want to force the regeneration of assessment instances then you can do so with the “reset” button on the assessment “Admin” page. While writing an assessment you might need to do this many times. Once an assessment is live, you should of course be very careful about doing this (basically, don’t do it on a production server once an assessment is underway).
+**`Exam` assessment updates:** Exam assessment instances are generated when the student starts the exam, and they are never automatically deleted, regenerated, or updated, even when the original assessment is changed in some way. This is a safety mechanism to avoid having students' assessments changed during an exam. However, if you want to force the regeneration of assessment instances then you can do so with the “reset” button on instructor view of the assessment. While writing an assessment you might need to do this many times. Once an assessment is live, you should of course be very careful about doing this (basically, don’t do it on a production server once an assessment is underway).
+
+**`Homework` assessment updates:** New questions added to Homeworks will be automatically integrated into student homeworks currently in progress. Updates to `maxPoints` will take effect the next time a student grades a question. A student's “points” and “percentage score” will never decrease.
 
 ## Multiple-instance versus single-instance assessments
 
