@@ -8,7 +8,7 @@ FROM
     users AS u
     CROSS JOIN (
         course_instances AS ci
-        JOIN courses AS c ON (c.id = ci.course_id)
+        JOIN pl_courses AS c ON (c.id = ci.course_id)
     )
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
 WHERE

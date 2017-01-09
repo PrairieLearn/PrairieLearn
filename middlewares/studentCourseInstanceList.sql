@@ -30,5 +30,5 @@ SELECT
 FROM
     (SELECT * FROM course_instances_with_enrollments
         UNION SELECT * FROM course_instances_as_student) AS ci
-    JOIN courses AS c ON (c.id = ci.course_id)
+    JOIN pl_courses AS c ON (c.id = ci.course_id)
 ORDER BY c.short_name, ci.number DESC;

@@ -1,5 +1,5 @@
 -- BLOCK insert_course
-UPDATE courses AS c
+UPDATE pl_courses AS c
 SET
     short_name = $short_name,
     title = $title,

@@ -15,7 +15,7 @@ courses_list AS (
             'id', c.id
         ) ORDER BY c.short_name, c.title, c.id), '[]'::jsonb) AS courses
     FROM
-        courses AS c
+        pl_courses AS c
         LEFT JOIN course_permissions_for_user AS cp ON (cp.course_id = c.id)
     WHERE
         c.deleted_at IS NULL
@@ -41,7 +41,7 @@ course_instances_list AS (
             'id', ci.id
         ) ORDER BY c.short_name, c.title, c.id, ci.number DESC, ci.id), '[]'::jsonb) AS course_instances
     FROM
-        courses AS c
+        pl_courses AS c
         JOIN course_instances AS ci ON (ci.course_id = c.id)
         LEFT JOIN enrollments_for_user AS e ON (e.course_instance_id = ci.id)
     WHERE

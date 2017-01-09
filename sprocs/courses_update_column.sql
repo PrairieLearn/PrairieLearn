@@ -7,12 +7,12 @@ CREATE OR REPLACE FUNCTION
     ) returns void
 AS $$
 DECLARE
-    old_row courses%ROWTYPE;
-    new_row courses%ROWTYPE;
+    old_row pl_courses%ROWTYPE;
+    new_row pl_courses%ROWTYPE;
 BEGIN
     SELECT c.* INTO old_row
     FROM
-        courses AS c
+        pl_courses AS c
     WHERE
         c.id = course_id
     FOR UPDATE;
@@ -23,19 +23,19 @@ BEGIN
 
     CASE column_name
         WHEN 'short_name' THEN
-            UPDATE courses AS c SET short_name = value
+            UPDATE pl_courses AS c SET short_name = value
             WHERE c.id = course_id
             RETURNING c.* INTO new_row;
         WHEN 'title' THEN
-            UPDATE courses AS c SET title = value
+            UPDATE pl_courses AS c SET title = value
             WHERE c.id = course_id
             RETURNING c.* INTO new_row;
         WHEN 'path' THEN
-            UPDATE courses AS c SET path = value
+            UPDATE pl_courses AS c SET path = value
             WHERE c.id = course_id
             RETURNING c.* INTO new_row;
         WHEN 'repository' THEN
-            UPDATE courses AS c SET repository = value
+            UPDATE pl_courses AS c SET repository = value
             WHERE c.id = course_id
             RETURNING c.* INTO new_row;
         ELSE
@@ -49,7 +49,7 @@ BEGIN
         old_state, new_state)
     VALUES
         (authn_user_id, course_id,
-        'courses',  column_name, course_id,
+        'pl_courses',  column_name, course_id,
         'update', jsonb_build_object(column_name, value),
         to_jsonb(old_row), to_jsonb(new_row));
 END;

@@ -46,7 +46,7 @@ FROM
     ) AS s ON (s.variant_id = v.id)
     JOIN assessments AS a ON (a.id = ai.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-    JOIN courses AS c ON (c.id = ci.course_id)
+    JOIN pl_courses AS c ON (c.id = ci.course_id)
 WHERE
     ai.id = $assessment_instance_id
     AND s.score IS NULL

@@ -2,4 +2,4 @@
 SELECT
     c.path
 FROM
-    courses AS c;
+    pl_courses AS c;

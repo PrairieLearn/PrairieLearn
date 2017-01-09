@@ -121,4 +121,4 @@ FROM
     JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
     JOIN questions AS q ON (q.id = aq.question_id)
-    JOIN courses AS c ON (c.id = q.course_id);
+    JOIN pl_courses AS c ON (c.id = q.course_id);

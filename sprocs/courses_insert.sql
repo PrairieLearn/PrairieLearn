@@ -8,10 +8,10 @@ CREATE OR REPLACE FUNCTION
     ) returns void
 AS $$
 DECLARE
-    new_row courses%ROWTYPE;
+    new_row pl_courses%ROWTYPE;
 BEGIN
     BEGIN
-        INSERT INTO courses AS c
+        INSERT INTO pl_courses AS c
             (short_name, title, path, repository)
         VALUES
             (short_name, title, path, repository)
@@ -25,7 +25,7 @@ BEGIN
         (authn_user_id, table_name,
         row_id,      action,  new_state)
     VALUES
-        (authn_user_id, 'courses',
+        (authn_user_id, 'pl_courses',
         new_row.id, 'insert', to_jsonb(new_row));
 END;
 $$ LANGUAGE plpgsql VOLATILE;

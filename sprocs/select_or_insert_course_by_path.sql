@@ -8,12 +8,12 @@ BEGIN
     SELECT INTO course_id
         last_value(c.id) OVER (ORDER BY id)
     FROM
-        courses AS c
+        pl_courses AS c
     WHERE
         c.path = select_or_insert_course_by_path.path;
 
     IF NOT FOUND THEN
-        INSERT INTO courses AS c
+        INSERT INTO pl_courses AS c
             (path)
         VALUES
             (path)

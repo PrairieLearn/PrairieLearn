@@ -17,7 +17,7 @@ select_courses AS (
             '[]'::jsonb
         ) AS courses
     FROM
-        courses AS c
+        pl_courses AS c
     WHERE
         c.deleted_at IS NULL
 )

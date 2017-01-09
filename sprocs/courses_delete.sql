@@ -5,9 +5,9 @@ CREATE OR REPLACE FUNCTION
     ) returns void
 AS $$
 DECLARE
-    new_row courses%ROWTYPE;
+    new_row pl_courses%ROWTYPE;
 BEGIN
-    UPDATE courses AS c
+    UPDATE pl_courses AS c
     SET
         deleted_at = now()
     WHERE
@@ -23,7 +23,7 @@ BEGIN
         (authn_user_id,  table_name,
         row_id,      action,       new_state)
     VALUES
-        (authn_user_id, 'courses',
+        (authn_user_id, 'pl_courses',
         new_row.id, 'soft_delete', to_jsonb(new_row));
 END;
 $$ LANGUAGE plpgsql VOLATILE;

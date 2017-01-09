@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS topics (
     number INTEGER,
     color text,
     description text,
-    course_id BIGINT NOT NULL REFERENCES courses ON DELETE CASCADE ON UPDATE CASCADE,
+    course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (name, course_id)
 );
 
