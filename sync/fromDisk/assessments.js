@@ -223,11 +223,9 @@ module.exports = {
                 } else {
                     return callback(error.make(400, 'Must specify either "id" or "alternatives" in question', {dbQuestion}));
                 }
-                console.log('alternatives', alternatives);
 
                 for (var i = 0; i < alternatives.length; i++) {
                     var question = alternatives[i];
-                    console.log("i", i, "question", question);
                     if (dbAssessment.type == 'Exam') {
                         if (question.maxPoints != undefined) {
                             return callback(error.make(400, 'Cannot specify "maxPoints" for a question in an "Exam" assessment',
