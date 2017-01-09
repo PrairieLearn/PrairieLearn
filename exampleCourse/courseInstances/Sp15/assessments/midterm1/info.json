@@ -3,7 +3,7 @@
     "type": "Exam",
     "title": "Template Exam",
     "set": "Exam",
-    "number": 1,
+    "number": "1",
     "allowAccess": [
         {
             "mode": "Public",
@@ -17,17 +17,14 @@
             "endDate": "2014-07-10T23:59:59"
         }
     ],
-    "clientFiles": ["formulas.pdf", "formulas.html"],
-    "options": {
-        "zones": [
-            {
-                "title": "Hard questions",
-                "questions": [
-                    {"qid": "fibonacciExternal", "points": [10, 10, 7, 3, 1, 0.5, 0.25]},
-                    {"qid": "addVectors", "points": [10, 10, 7, 3, 1, 0.5, 0.25]}
-                ]
-            }
-        ],
-        "text": "For this exam you can use the <a target=\"_blank\" href=\"<% print(testFile(\"formulas.pdf\")) %>\">PDF formula sheet</a>, the <a target=\"_blank\" href=\"<% print(testFile(\"formulas.html\")) %>\">HTML formula sheet</a> or <a target=\"_blank\" href=\"https://en.wikipedia.org/wiki/List_of_moments_of_inertia\">this Wikipedia page</a>."
-    }
+    "zones": [
+        {
+            "title": "Hard questions",
+            "questions": [
+                {"id": "fibonacciExternal", "points": [10, 10, 7, 3, 1, 0.5, 0.25]},
+                {"id": "addVectors",        "points": [10, 10, 7, 3, 1, 0.5, 0.25]}
+            ]
+        }
+    ],
+    "text": "For this exam you can use the <a target=\"_blank\" href=\"<%= clientFilesAssessment %>/formulas.pdf\">PDF formula sheet</a> or the <a target=\"_blank\" href=\"<%= clientFilesAssessment %>/formulas.html\">HTML formula sheet."
 }

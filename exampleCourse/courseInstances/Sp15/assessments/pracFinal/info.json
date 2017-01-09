@@ -3,7 +3,7 @@
     "type": "Exam",
     "title": "Practice Final",
     "set": "Practice Exam",
-    "number": 1,
+    "number": "1",
     "multipleInstance": true,
     "allowAccess": [
         {
@@ -11,14 +11,12 @@
             "credit": 100
         }
     ],
-    "options": {
-        "zones": [
-            {
-                "questions": [
-                    {"qid": "particleMotion", "points": [10, 5, 2]},
-                    {"qid": "addVectors", "points": [10, 5, 2]}
-                ]
-            }
-        ]
-    }
+    "zones": [
+        {
+            "questions": [
+                {"id": "particleMotion", "points": [10, 5, 2]},
+                {"id": "addVectors",     "points": [10, 5, 2]}
+            ]
+        }
+    ]
 }

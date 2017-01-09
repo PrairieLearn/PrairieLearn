@@ -1,7 +1,7 @@
 {
     "$schema": "http://json-schema.org/draft-04/schema#",
-    "title": "Test Info",
-    "description": "Info files for tests.",
+    "title": "Assessment info",
+    "description": "Configuration data for an assessment.",
     "type": "object",
     "additionalProperties": false,
     "properties": {
@@ -12,92 +12,160 @@
             "required": true
         },
         "type": {
-            "description": "Type of the test.",
-            "enum": ["Basic", "Exam", "Game", "OldExam", "Homework"],
+            "description": "Type of the assessment.",
+            "enum": ["Homework", "Exam"],
             "required": true
         },
         "title": {
-            "description": "The title of the test (e.g., 'Derivatives and anti-derivatives').",
+            "description": "The title of the assessment (e.g., 'Derivatives and anti-derivatives').",
             "type": "string",
             "required": true
         },
-        "semester": {
-            "description": "Which semester this test is in.",
-            "enum": ["Fa15", "Sp16"]
-        },
         "set": {
-            "description": "Which set of tests this one belongs to (e.g., 'Homework', 'Practice Quiz').",
+            "description": "Which assessmentSet this one belongs to (e.g., 'Homework', 'Practice Quiz').",
             "type": "string",
             "required": true
         },
         "number": {
-            "description": "The number of this test within the set (e.g., 1, 2, 3).",
-            "oneOf": [
-                {"type": "integer"},
-                {"type": "string"}
-            ],
+            "description": "The number of this assessment within the set (e.g., '1', '2R', '3B').",
+            "type": "string",
             "required": true
         },
         "multipleInstance": {
-            "description": "Whether to allow students to create additional instances of the test",
+            "description": "Whether to allow students to create additional instances of the assessment",
             "type": "boolean",
             "default": false
         },
         "shuffleQuestions": {
-            "description": "Whether the questions will be shuffled in Student's view",
+            "description": "Whether the questions will be shuffled in the student",
             "type": "boolean",
             "default": false
         },
         "allowAccess": {
-            "description": "List of access rules for the test. Access is permitted if any access rule is satisfied.",
+            "description": "List of access rules for the assessment. Access is permitted if any access rule is satisfied.",
             "type": "array",
-            "items": {
-                "description": "An access rule that permits people to access this test. All restrictions in the rule must be satisfied for the rule to allow access.",
-                "type": "object",
-                "properties": {
-                    "mode" : {
-                        "description": "The server mode required for access.",
-                        "enum": ["Public", "Exam"]
-                    },
-                    "role" : {
-                        "description": "The minimum user role required for access.",
-                        "enum": ["Student", "TA", "Instructor", "Superuser"]
-                    },
-                    "uids" : {
-                        "description": "A list of UIDs, one of which is required for access",
-                        "type": "array",
-                        "items": {
-                            "type": "string"
-                        }
-                    },
-                    "credit" : {
-                        "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
-                        "type": "integer",
-                        "minimum": 0
-                    },
-                    "startDate" : {
-                        "description": "The earliest date on which access is permitted.",
-                        "type": "string"
-                    },
-                    "endDate" : {
-                        "description": "The latest date on which access is permitted.",
+            "items": {"$ref": "#/definitions/accessRule"}
+        },
+        "text": {
+            "description": "HTML text shown on the assessment overview page.",
+            "type": "string"
+        },
+        "maxPoints": {
+            "description": "The maximum number of points that can be earned for this assessment.",
+            "type": "number"
+        },
+        "zones": {
+            "description": "Array of \"zones\" in the assessment, each containing questions that can be randomized within the zone.",
+            "type": "array",
+            "items": {"$ref": "#/definitions/zone"}
+        }
+    },
+    "definitions": {
+        "accessRule": {
+            "description": "An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.",
+            "type": "object",
+            "properties": {
+                "mode" : {
+                    "description": "The server mode required for access.",
+                    "enum": ["Public", "Exam"]
+                },
+                "role" : {
+                    "description": "The minimum user role required for access.",
+                    "enum": ["Student", "TA", "Instructor"]
+                },
+                "uids" : {
+                    "description": "A list of UIDs (like 'username@example.com', one of which is required for access",
+                    "type": "array",
+                    "items": {
                         "type": "string"
                     }
+                },
+                "credit" : {
+                    "description": "How much credit is awarded for doing the homework, as a percentage (100 means full credit).",
+                    "type": "integer",
+                    "minimum": 0
+                },
+                "startDate" : {
+                    "description": "The earliest date on which access is permitted.",
+                    "type": "string"
+                },
+                "endDate" : {
+                    "description": "The latest date on which access is permitted.",
+                    "type": "string"
                 }
             }
         },
-        "clientFiles": {
-            "description": "The list of test files accessible by the client (defaults to None).",
-            "type": "array",
-            "items": {
-                "description": "A single file accessible by the client.",
-                "type": "string"
+        "zone": {
+            "type": "object",
+            "properties": {
+                "title": {
+                    "description": "Zone title, displayed to the students at the top of the question list for the zone.",
+                    "type": "string"
+                },
+                "numberChoose": {
+                    "description": "Number of questions to choose from this zone.",
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 1
+                },
+                "questions": {
+                    "description": "Array of questions in the zone.",
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {"$ref": "#/definitions/zoneQuestion"}
+                }
+            },
+            "required": ["questions"]
+        },
+        "zoneQuestion": {
+            "type": "object",
+            "properties": {
+                "points": {"$ref": "#/definitions/points"},
+                "maxPoints": {"$ref": "#/definitions/points"},
+                "id": {"$ref": "#/definitions/questionId"},
+                "alternatives": {
+                    "description": "Array of question alternatives to choose from.",
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {"$ref": "#/definitions/questionAlternative"}
+                },
+                "numberChoose": {
+                    "description": "Number of questions to choose from this group.",
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 1
+                }
             }
         },
-        "options": {
-            "description": "Options that define how the test will work, specific to the individual test type.",
-            "required": true,
-            "type": "object"
+        "questionAlternative": {
+            "type": "object",
+            "properties": {
+                "points": {"$ref": "#/definitions/points"},
+                "maxPoints": {"$ref": "#/definitions/points"},
+                "id": {"$ref": "#/definitions/questionId"}
+            }
+        },
+        "points": {
+            "oneOf": [
+                {"$ref": "#/definitions/pointsSingle"},
+                {"$ref": "#/definitions/pointsList"}
+            ]
+        },
+        "pointsSingle": {
+            "description": "A single points value.",
+            "type": "number",
+            "minimum": 0,
+            "default": 1
+        },
+        "pointsList": {
+            "description": "An array of points values.",
+            "type": "array",
+            "minItems": 1,
+            "items": {"$ref": "#/definitions/points"}
+        },
+        "questionId": {
+            "description": "Question ID (directory name of the question).",
+            "type": "string"
         }
     }
 }

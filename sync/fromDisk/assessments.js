@@ -4,6 +4,7 @@ var async = require('async');
 var moment = require('moment-timezone');
 
 var logger = require('../../lib/logger');
+var error = require('../../lib/error');
 var sqldb = require('../../lib/sqldb');
 var config = require('../../lib/config');
 var sqlLoader = require('../../lib/sql-loader');
@@ -73,29 +74,9 @@ module.exports = {
                         assessmentIds.push(assessmentId);
                         logger.debug('Synced ' + tid + ' as assessment_id ' + assessmentId);
                         that.syncAccessRules(assessmentId, dbAssessment, function(err) {
-                            if (ERR(err, callback)) return;
-                            var zoneList = null;
-                            if (_(dbAssessment).has('options') && _(dbAssessment.options).has('zones')) {
-                                // RetryExam, new format
-                                zoneList = dbAssessment.options.zones;
-                            } else if (_(dbAssessment).has('options') && _(dbAssessment.options).has('questionGroups')) {
-                                // RetryExam, old format
-                                zoneList = [{questions: _.flattenDeep(dbAssessment.options.questionGroups)}];
-                            } else if (_(dbAssessment).has('options') && _(dbAssessment.options).has('qidGroups')) {
-                                // Exam, old format
-                                zoneList = [{questions: _.map(_.flattenDeep(dbAssessment.options.qidGroups), q => ({"qid": q, "points": [1]}))}];
-                            } else if (_(dbAssessment).has('options') && _(dbAssessment.options).has('questions')) {
-                                // Homework
-                                zoneList = [{questions: dbAssessment.options.questions}];
-                            } else if (_(dbAssessment).has('options') && _(dbAssessment.options).has('qids')) {
-                                // Basic
-                                zoneList = [{questions: dbAssessment.options.qids}];
-                            } else {
-                                return callback(new Error('unable to determine question list for ' + tid));
-                            }
-                            that.syncZones(assessmentId, zoneList, function(err) {
+                            that.syncZones(assessmentId, dbAssessment, function(err) {
                                 if (ERR(err, callback)) return;
-                                that.syncAssessmentQuestions(assessmentId, zoneList, courseInfo, function(err) {
+                                that.syncAssessmentQuestions(assessmentId, dbAssessment, courseInfo, function(err) {
                                     if (ERR(err, callback)) return;
                                     callback(null);
                                 });
@@ -182,7 +163,8 @@ module.exports = {
         });
     },
 
-    syncZones: function(assessmentId, zoneList, callback) {
+    syncZones: function(assessmentId, dbAssessment, callback) {
+        var zoneList = dbAssessment.zones || [];
         async.forEachOfSeries(zoneList, function(dbZone, i, callback) {
             logger.debug('Syncing zone number ' + (i + 1));
             var params = {
@@ -211,56 +193,73 @@ module.exports = {
         });
     },
 
-    syncAssessmentQuestions: function(assessmentId, zoneList, courseInfo, callback) {
+    syncAssessmentQuestions: function(assessmentId, dbAssessment, courseInfo, callback) {
         var that = module.exports;
+        var zoneList = dbAssessment.zones || [];
         var iAssessmentQuestion = 0;
         var iInAlternativeGroup;
         var iAlternativeGroup = 0;
         var assessmentQuestionIds = [];
         async.forEachOfSeries(zoneList, function(dbZone, iZone, callback) {
             async.forEachOfSeries(dbZone.questions, function(dbQuestion, iQuestion, callback) {
-                var alternatives = null, maxPoints = null, pointsList = null, initPoints = null;
-                if (_(dbQuestion).isString()) {
-                    alternatives = [{qid: dbQuestion, maxPoints: 1}];
+                var alternatives;
+                if (_(dbQuestion).has('alternatives')) {
+                    if (_(dbQuestion).has('id')) return callback(error.make(400, 'Cannot have both "id" and "alternatives" in one question', {dbQuestion}));
+                    alternatives = _.map(dbQuestion.alternatives, function(question) {
+                        return {
+                            qid: question.id,
+                            maxPoints: question.maxPoints || dbQuestion.maxPoints,
+                            points: question.points || dbQuestion.points,
+                        };
+                    });
+                } else if (_(dbQuestion).has('id')) {
+                    alternatives = [
+                        {
+                            qid: dbQuestion.id,
+                            maxPoints: dbQuestion.maxPoints,
+                            points: dbQuestion.points,
+                        }
+                    ];
                 } else {
-                    var qids = null;
-                    if (_(dbQuestion).has('alternatives')) {
-                        alternatives = _.map(dbQuestion.alternatives, function(question) {
-                            return {
-                                qid: question.qid,
-                                maxPoints: _(question.points).max(),
-                                pointsList: question.points,
-                            };
-                        });
-                    } else if (_(dbQuestion).has('qids')) {
-                        qids = dbQuestion.qids;
-                    } else if (_(dbQuestion).has('qid')) {
-                        qids = [dbQuestion.qid];
-                    } else {
-                        return callback(error.make(500, 'Unable to determine question qids', {dbQuestion: dbQuestion}));
-                    }
-                    if (qids) {
-                        if (_(dbQuestion).has('points')) {
-                            alternatives = _.map(qids, function(qid) {
-                                return {
-                                    qid: qid,
-                                    maxPoints: _(dbQuestion.points).max(),
-                                    pointsList: dbQuestion.points,
-                                };
-                            });
-                        } else if (_(dbQuestion).has('initValue')) {
-                            alternatives = _.map(qids, function(qid) {
-                                return {
-                                    qid: qid,
-                                    maxPoints: dbQuestion.maxScore,
-                                    initPoints: dbQuestion.initValue,
-                                };
-                            });
+                    return callback(error.make(400, 'Must specify either "id" or "alternatives" in question', {dbQuestion}));
+                }
+                console.log('alternatives', alternatives);
+
+                for (var i = 0; i < alternatives.length; i++) {
+                    var question = alternatives[i];
+                    console.log("i", i, "question", question);
+                    if (dbAssessment.type == 'Exam') {
+                        if (question.maxPoints != undefined) {
+                            return callback(error.make(400, 'Cannot specify "maxPoints" for a question in an "Exam" assessment',
+                                                       {dbQuestion}));
+                        }
+                        if (question.points == undefined) {
+                            return callback(error.make(400, 'Must specifiy "points" for a question in an "Exam" assessment',
+                                                       {dbQuestion}));
+                        }
+                        if (_.isArray(question.points)) {
+                            question.pointsList = question.points;
                         } else {
-                            return callback(error.make(500, 'Unable to determine question points', {dbQuestion: dbQuestion}));
+                            question.pointsList = [question.points];
+                        }
+                        delete question.points;
+                        question.maxPoints = _.max(question.pointsList);
+                    }
+                    if (dbAssessment.type == 'Homework') {
+                        if (question.points == undefined) {
+                            return callback(error.make(400, 'Must specifiy "points" for a question in a "Homework" assessment',
+                                                       {dbQuestion}));
+                        }
+                        if (_.isArray(question.points)) {
+                            return callback(error.make(400, 'Cannot specify "points" as a list for a question in'
+                                                       + ' a "Homework" assessment', {dbQuestion}));
+                        }
+                        if (question.maxPoints == undefined) {
+                            question.maxPoints = question.points;
                         }
                     }
                 }
+
                 iAlternativeGroup++;
                 var params = {
                     number: iAlternativeGroup,

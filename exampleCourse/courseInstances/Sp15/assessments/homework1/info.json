@@ -3,7 +3,7 @@
     "type": "Homework",
     "title": "Miscellaneous question set",
     "set": "Homework",
-    "number": 1,
+    "number": "1",
     "allowAccess": [
         {
             "mode": "Public",
@@ -30,18 +30,20 @@
             "endDate": "2024-09-10T23:59:59"
         }
     ],
-    "options": {
-        "questions": [
-            {"qid": "addVectors",           "initValue": 1, "maxScore": 5},
-            {"qid": "fibonacci",            "initValue": 1, "maxScore": 5},
-            {"qid": "fibonacciEditor",      "initValue": 1, "maxScore": 5},
-            {"qid": "fibonacciExternal",    "initValue": 1, "maxScore": 5},
-            {"qid": "particleMotion",       "initValue": 1, "maxScore": 5},
-            {"qid": "randomZip",            "initValue": 1, "maxScore": 5},
-            {"qid": "fossilFuelsRadio",     "initValue": 2, "maxScore": 10},
-            {"qid": "fossilFuelsCheckbox",  "initValue": 2, "maxScore": 10},
-            {"qid": "fossilFuelsTrueFalse", "initValue": 2, "maxScore": 10},
-            {"qid": "randomZip",            "initValue": 3, "maxScore": 15}
-        ]
-    }
+    "zones": [
+        {
+            "questions": [
+                {"id": "addVectors",           "points": 1, "maxPoints": 5},
+                {"id": "fibonacci",            "points": 1, "maxPoints": 5},
+                {"id": "fibonacciEditor",      "points": 1, "maxPoints": 5},
+                {"id": "fibonacciExternal",    "points": 1, "maxPoints": 5},
+                {"id": "particleMotion",       "points": 1, "maxPoints": 5},
+                {"id": "randomZip",            "points": 1, "maxPoints": 5},
+                {"id": "fossilFuelsRadio",     "points": 2, "maxPoints": 10},
+                {"id": "fossilFuelsCheckbox",  "points": 2, "maxPoints": 10},
+                {"id": "fossilFuelsTrueFalse", "points": 2, "maxPoints": 10},
+                {"id": "randomZip",            "points": 3, "maxPoints": 15}
+            ]
+        }
+    ]
 }

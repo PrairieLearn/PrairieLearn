@@ -9,7 +9,16 @@ CREATE TABLE IF NOT EXISTS assessment_sets (
     UNIQUE (name, course_id)
 );
 
-ALTER TABLE assessment_sets RENAME COLUMN abbrev TO abbreviation;
+DO $$
+BEGIN
+    PERFORM 1 FROM information_schema.columns
+    WHERE table_name = 'assessment_sets' AND column_name = 'abbrev';
+
+    IF FOUND THEN
+        ALTER TABLE assessment_sets RENAME COLUMN abbrev TO abbreviation;
+    END IF;
+END;
+$$;
 
 ALTER TABLE assessment_sets ALTER COLUMN id SET DATA TYPE BIGINT;
 ALTER TABLE assessment_sets ALTER COLUMN abbreviation SET DATA TYPE TEXT;
