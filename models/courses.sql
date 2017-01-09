@@ -1,3 +1,5 @@
+ALTER TABLE IF EXISTS courses RENAME TO pl_courses;
+
 CREATE TABLE IF NOT EXISTS pl_courses (
     id BIGSERIAL PRIMARY KEY,
     short_name text,
