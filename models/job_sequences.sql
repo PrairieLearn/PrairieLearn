@@ -11,8 +11,3 @@ CREATE TABLE IF NOT EXISTS job_sequences (
     status enum_job_status DEFAULT 'Running',
     UNIQUE (course_id, number)
 );
-
-ALTER TABLE job_sequences ALTER COLUMN id SET DATA TYPE BIGINT;
-ALTER TABLE job_sequences ALTER COLUMN course_id SET DATA TYPE BIGINT;
-ALTER TABLE job_sequences ALTER COLUMN user_id SET DATA TYPE BIGINT;
-ALTER TABLE job_sequences ALTER COLUMN authn_user_id SET DATA TYPE BIGINT;

@@ -5,11 +5,3 @@ CREATE TABLE IF NOT EXISTS assessment_state_logs (
     assessment_instance_id BIGINT NOT NULL REFERENCES assessment_instances ON DELETE CASCADE ON UPDATE CASCADE,
     auth_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE
 );
-
-ALTER TABLE assessment_state_logs ALTER COLUMN date SET DEFAULT CURRENT_TIMESTAMP;
-
-ALTER TABLE assessment_state_logs ALTER COLUMN auth_user_id DROP NOT NULL;
-
-ALTER TABLE assessment_state_logs ALTER COLUMN id SET DATA TYPE BIGINT;
-ALTER TABLE assessment_state_logs ALTER COLUMN assessment_instance_id SET DATA TYPE BIGINT;
-ALTER TABLE assessment_state_logs ALTER COLUMN auth_user_id SET DATA TYPE BIGINT;

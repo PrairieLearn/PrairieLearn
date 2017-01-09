@@ -13,6 +13,3 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     old_state JSONB,
     new_state JSONB
 );
-
-ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS table_name text;
-ALTER TABLE audit_logs ADD COLUMN IF NOT EXISTS column_name text;

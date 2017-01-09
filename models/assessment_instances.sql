@@ -20,17 +20,3 @@ CREATE TABLE IF NOT EXISTS assessment_instances (
     score_perc_in_grading DOUBLE PRECISION DEFAULT 0,
     UNIQUE (number, assessment_id, user_id)
 );
-
-DROP VIEW IF EXISTS student_assessment_scores CASCADE;
-DROP VIEW IF EXISTS user_assessment_scores CASCADE;
-ALTER TABLE assessment_instances ALTER COLUMN score_perc SET DATA TYPE DOUBLE PRECISION;
-ALTER TABLE assessment_instances ALTER COLUMN score_perc_in_grading SET DATA TYPE DOUBLE PRECISION;
-
-ALTER TABLE assessment_instances ADD COLUMN IF NOT EXISTS instructor_opened BOOLEAN DEFAULT FALSE;
-ALTER TABLE assessment_instances DROP COLUMN IF EXISTS admin_opened;
-
-ALTER TABLE assessment_instances ALTER COLUMN id SET DATA TYPE BIGINT;
-ALTER TABLE assessment_instances ALTER COLUMN assessment_id SET DATA TYPE BIGINT;
-ALTER TABLE assessment_instances ALTER COLUMN user_id SET DATA TYPE BIGINT;
-ALTER TABLE assessment_instances ALTER COLUMN auth_user_id SET DATA TYPE BIGINT;
-ALTER TABLE assessment_instances ALTER COLUMN tiid SET DATA TYPE TEXT;

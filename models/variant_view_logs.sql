@@ -5,7 +5,3 @@ CREATE TABLE IF NOT EXISTS variant_view_logs (
     open BOOLEAN,
     credit INTEGER
 );
-
-ALTER TABLE variant_view_logs ALTER COLUMN id SET DATA TYPE BIGINT;
-ALTER TABLE variant_view_logs ALTER COLUMN variant_id SET DATA TYPE BIGINT;
-ALTER TABLE variant_view_logs ALTER COLUMN access_log_id SET DATA TYPE BIGINT;

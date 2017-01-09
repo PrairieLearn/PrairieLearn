@@ -15,10 +15,3 @@ CREATE TABLE IF NOT EXISTS instance_questions (
     assessment_question_id BIGINT NOT NULL REFERENCES assessment_questions ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (assessment_question_id, assessment_instance_id)
 );
-
-ALTER TABLE instance_questions ALTER COLUMN score_perc SET DATA TYPE DOUBLE PRECISION;
-ALTER TABLE instance_questions ALTER COLUMN score_perc_in_grading SET DATA TYPE DOUBLE PRECISION;
-
-ALTER TABLE instance_questions ALTER COLUMN id SET DATA TYPE BIGINT;
-ALTER TABLE instance_questions ALTER COLUMN assessment_instance_id SET DATA TYPE BIGINT;
-ALTER TABLE instance_questions ALTER COLUMN assessment_question_id SET DATA TYPE BIGINT;

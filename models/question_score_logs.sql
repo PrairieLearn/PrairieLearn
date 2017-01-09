@@ -7,9 +7,3 @@ CREATE TABLE IF NOT EXISTS question_score_logs (
     max_points DOUBLE PRECISION,
     score_perc DOUBLE PRECISION
 );
-
-ALTER TABLE question_score_logs ALTER COLUMN score_perc SET DATA TYPE DOUBLE PRECISION;
-
-ALTER TABLE question_score_logs ALTER COLUMN id SET DATA TYPE BIGINT;
-ALTER TABLE question_score_logs ALTER COLUMN instance_question_id SET DATA TYPE BIGINT;
-ALTER TABLE question_score_logs ALTER COLUMN auth_user_id SET DATA TYPE BIGINT;

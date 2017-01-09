@@ -5,7 +5,3 @@ CREATE TABLE IF NOT EXISTS enrollments (
     role enum_role,
     UNIQUE (user_id, course_instance_id)
 );
-
-ALTER TABLE enrollments ALTER COLUMN id SET DATA TYPE BIGINT;
-ALTER TABLE enrollments ALTER COLUMN user_id SET DATA TYPE BIGINT;
-ALTER TABLE enrollments ALTER COLUMN course_instance_id SET DATA TYPE BIGINT;

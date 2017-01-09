@@ -8,7 +8,3 @@ CREATE TABLE IF NOT EXISTS course_instance_access_rules (
     end_date TIMESTAMP WITH TIME ZONE,
     UNIQUE (number, course_instance_id)
 );
-
-ALTER TABLE course_instance_access_rules ALTER COLUMN id SET DATA TYPE BIGINT;
-ALTER TABLE course_instance_access_rules ALTER COLUMN course_instance_id SET DATA TYPE BIGINT;
-ALTER TABLE course_instance_access_rules ALTER COLUMN uids SET DATA TYPE TEXT[];
