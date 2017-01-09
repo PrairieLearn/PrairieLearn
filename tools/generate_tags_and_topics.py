@@ -14,7 +14,7 @@ if not os.path.isdir(course_dir):
 ######################################################################
 # read in existing topics and tags
 
-course_info_file_name = os.path.join(course_dir, 'courseInfo.json')
+course_info_file_name = os.path.join(course_dir, 'infoCourse.json')
 try:
     with open(course_info_file_name) as course_info_file:
         course_info = json.load(course_info_file)

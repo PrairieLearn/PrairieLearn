@@ -41,7 +41,7 @@ num_added = 0
 course_dir = sys.argv[1]
 print("Processing course directory: %s" % course_dir)
 ensure_is_dir(course_dir)
-num_added += add_uuid_to_file(os.path.join(course_dir, "courseInfo.json"))
+num_added += add_uuid_to_file(os.path.join(course_dir, "infoCourse.json"))
 
 questions_dir = os.path.join(course_dir, "questions")
 print("Processing questions directory: %s" % questions_dir)
@@ -60,7 +60,7 @@ course_instance_dir_names = os.listdir(course_instances_dir)
 for course_instance_dir_name in course_instance_dir_names:
     course_instance_path = os.path.join(course_instances_dir, course_instance_dir_name)
     if os.path.isdir(course_instance_path):
-        info_file_name = os.path.join(course_instance_path, "courseInstanceInfo.json")
+        info_file_name = os.path.join(course_instance_path, "infoCourseInstance.json")
         num_added += add_uuid_to_file(info_file_name)
         assessments_dir = os.path.join(course_instance_path, "assessments")
         print("Processing assessments directory: %s" % assessments_dir)
@@ -69,7 +69,7 @@ for course_instance_dir_name in course_instance_dir_names:
             for assessment_dir_name in assessment_dir_names:
                 assessment_path = os.path.join(assessments_dir, assessment_dir_name)
                 if os.path.isdir(assessment_path):
-                    info_file_name = os.path.join(assessment_path, "info.json")
+                    info_file_name = os.path.join(assessment_path, "infoAssessment.json")
                     num_added += add_uuid_to_file(info_file_name)
 
 print("Sucessfully completed")
