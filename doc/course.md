@@ -7,7 +7,7 @@ A course is specified by a single directory, with the following structure:
 
 ```
 exampleCourse
-+-- courseInfo.json     # course specification (see below)
++-- infoCourse.json     # course specification (see below)
 +-- questions           # all questions for the course
 |   `-- ...             # one subdirectory per question
 +-- courseInstances
@@ -27,7 +27,7 @@ exampleCourse
 
 * See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourse` and `serverFilesCourse` directories.
 
-## `courseInfo.json`
+## `infoCourse.json`
 
 This file specifies basic information about the course:
 
@@ -51,13 +51,13 @@ This file specifies basic information about the course:
 }
 ```
 
-* Example [courseInfo.json](../exampleCourse/courseInfo.json)
+* Example [infoCourse.json](../exampleCourse/infoCourse.json)
 
-* [Format specification for `courseInfo.json`](../schemas/courseInfo.json)
+* [Format specification for `infoCourse.json`](../schemas/infoCourse.json)
 
 ## Assessment sets
 
-Each assessment belongs to an `assessmentSet` defined in the `courseInfo.json` file. Each assessment set must have the following properties.
+Each assessment belongs to an `assessmentSet` defined in the `infoCourse.json` file. Each assessment set must have the following properties.
 
 Property | Description
 --- | ---
@@ -96,7 +96,7 @@ Copy the JSON block below to include the above standardized tag names in your co
 
 ## Topics
 
-Each question in the course has a topic from the list specified in the `courseInfo.json` file. Topics should be thought of as chapters or sections in a textbook, and there should be about 10 to 30 topics in a typical course. The topic properties are as follows.
+Each question in the course has a topic from the list specified in the `infoCourse.json` file. Topics should be thought of as chapters or sections in a textbook, and there should be about 10 to 30 topics in a typical course. The topic properties are as follows.
 
 Property | Description
 --- | ---

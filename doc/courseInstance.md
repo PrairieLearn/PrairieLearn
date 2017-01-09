@@ -3,13 +3,13 @@
 
 ## Directory layout
 
-A _course instance_ corresponds to a single offering of a [course](course.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuation file (`courseInstanceInfo.json`) and a list of [assessments](assessment.md) in an `assessments` subdirectory.
+A _course instance_ corresponds to a single offering of a [course](course.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuation file (`infoCourseInstance.json`) and a list of [assessments](assessment.md) in an `assessments` subdirectory.
 
 ```
 exampleCourse
 `-- courseInstances
     +-- Fa16                          # Fall 2016 course instance
-    |   +-- courseInstanceInfo.json   # configuration file (see below)
+    |   +-- infoCourseInstance.json   # configuration file (see below)
     |   +-- assessments
     |   |   +-- hw01                  # first homework for Fa16
     |   |   |   `-- ...               # files for Homework 1
@@ -20,7 +20,7 @@ exampleCourse
     |   `-- courseInstanceServerFiles
     |       `-- secret2.js            # files only accessible from the server
     `-- Sp17
-        +-- courseInstanceInfo.json   # Spring 2017 configuration
+        +-- infoCourseInstance.json   # Spring 2017 configuration
         +-- assessments
         |   `-- ...                   # Spring 2017 assessments
         +-- courseInstanceClientFiles
@@ -33,7 +33,7 @@ exampleCourse
 
 * See [clientFiles and serverFiles](clientServerFiles.md) for information on the `courseClientFiles` and `courseServerFiles` directories.
 
-## `courseInstanceInfo.json`
+## `infoCourseInstance.json`
 
 This file specifies basic information about the course instance:
 
@@ -56,9 +56,9 @@ This file specifies basic information about the course instance:
 }
 ```
 
-* Example [courseInstanceInfo.json](../exampleCourse/courseInstances/Sp15/courseInstanceInfo.json)
+* Example [infoCourseInstance.json](../exampleCourse/courseInstances/Sp15/infoCourseInstance.json)
 
-* [Format specification for `courseInstanceInfo.json`](../schemas/courseInstanceInfo.json)
+* [Format specification for `infoCourseInstance.json`](../schemas/infoCourseInstance.json)
 
 ## User roles
 
@@ -69,14 +69,11 @@ Role         | Description
 `Student`    | A student participating in the class. They can only see their own information, and can do do assessments.
 `TA`         | A teaching assisstant. They can see the data of all users, but can only edit their own information.
 `Instructor` | A person in charge of the course. Has full permission to see and edit the information of other users.
-`Superuser`  | A server administrator. Has full access to everything.
-
-User roles `Student` through `Instructor` can be set in the `courseConfig.json` file. The `Superuser` role can only be specified directly on the production server.
 
 
 ## Course instance `allowAccess`
 
-See [Access control](https://github.com/PrairieLearn/PrairieLearn/blob/master/doc/accessControl.md) for details.
+See [Access control](accessControl.md) for details.
 
 The course instance `allowAccess` rules determine who can access the course instance and when they can do so. Instructors always have access. The simplest case gives everyone access between the start (Jan 19th) and end (May 13th) of the semester, as follows.
 
