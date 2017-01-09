@@ -1,5 +1,5 @@
 
-# Installing and running PrairieLearn v2
+# Installing and running PrairieLearn
 
 ## Method 1: Docker with built-in PrairieLearn
 
@@ -11,7 +11,7 @@ This is the easiest way to get started.
 
         docker run -it -p 3000:3000 prairielearn/prairielearn
 
-    This will run the built-in PrairieLearn and access to the Example Course. Type Control-C to stop the PrairieLearn server.
+    This will run PrairieLearn with the Example Course. Type Control-C to stop the PrairieLearn server after you are done.
 
 1. Open a web browser and connect to http://localhost:3000/pl
 
@@ -19,7 +19,7 @@ This is the easiest way to get started.
 
         docker run -it -p 3000:3000 -v /path/to/course:/course prairielearn/prairielearn
 
-    Type Control-C to stop the PrairieLearn server.
+    Type Control-C to stop the PrairieLearn server after you are done.
 
 ### Upgrading PrairieLearn with Docker
 
@@ -63,7 +63,7 @@ To install PrairieLearn locally you should:
 
 1. Install the backend libraries:
 
-        cd PrairieLearn/v2
+        cd PrairieLearn
         npm install
 
 1. Create the database (one time only):
@@ -74,7 +74,7 @@ To install PrairieLearn locally you should:
 
         pg_ctl -D ~/defaultdb -l ~/logfile start
 
-1. Create the file `PrairieLearn/v2/config.json` with the path of your local course repository:
+1. Create the file `PrairieLearn/config.json` with the path of your local course repository:
 
         {
             "courseDirs": [
@@ -85,7 +85,7 @@ To install PrairieLearn locally you should:
 
 1. Run the server:
 
-        cd PrairieLearn/v2
+        cd PrairieLearn
         node server
 
    This should end with `PrairieLearn server ready` and will remain running in the foreground, so this terminal can't be used for anything else. Stopping or restarting the server can be done with `Crtl-C`.
