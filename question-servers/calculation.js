@@ -56,7 +56,8 @@ module.exports = {
                 var trueAnswer = variant.true_answer;
                 var submittedAnswer = submission.submitted_answer;
                 var options = variant.options;
-                grading = server.gradeAnswer(vid, params, trueAnswer, submittedAnswer, options);
+                var questionDir = path.join(course.path, 'questions', question.directory);
+                grading = server.gradeAnswer(vid, params, trueAnswer, submittedAnswer, options, questionDir);
             } catch (e) {
                 var data = {
                     submission: submission,
