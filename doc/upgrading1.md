@@ -79,7 +79,7 @@ The `assessments` directory within each course instance is the equivalent of the
 
 See [assessment configuration](assessment.md) for details on the per-assessment `infoAssessment.json` files. They are similar to the per-test `info.json` files from PLv1, but there are some format changes.
 
-## `testFile` replaced with `clientFileAssessment`
+## `testFile` replaced with `clientFileAssessment` (also `clientFile`)
 
 Files directly within an assessment directory are no longer available to the client. Instead, you should make an `clientFilesAssessment` directory inside the assessment and put files in this. Within the `infoAssessment.json` file, replace code like:
 
@@ -92,6 +92,8 @@ with:
 ```
 <%= clientFilesAssessment %>/formulas.pdf
 ```
+
+Similarly, `<% print(clientFile(\"filename.pdf\")) %>` blocks need to be replaced with `<%= clientFilesCourse %>/filename.pdf`.
 
 See [clientFiles and serverFiles](clientServerFiles.md) for more details.
 
