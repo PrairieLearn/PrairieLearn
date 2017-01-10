@@ -108,3 +108,7 @@ serverFiles/* -> serverFilesCourse/*
 Question code that loads from `clientCode/` or `serverCode` will continue to work without modification, as PrairieLearn will internally map `clientCode` to `clientFilesCourse` (and similarly for `serverCode`).
 
 Any code within `clientCode` that loads other code from the same directory should load it as `./lib.js`, not at `clientCode/lib.js`.
+
+## Rendering LaTeX labels on figures
+
+When using PrairieDraw to dynamically generate figures, the command to generate LaTeX figure labels has changed. See [PrairieDraw](PrairieDraw.md) for details.
