@@ -56,7 +56,7 @@ An assessment is broken down in to a list of zones, like this:
     {
         "title": "Hard questions",
         "questions": [
-            {"id": ["hardQV1", "hardQV2"], "points": 10},
+            {"id": "hardQV1", "points": 10},
             {"id": "reallyHardQ", "points": [10, 10, 10]},
             {
                 "numberChoose": 1,
