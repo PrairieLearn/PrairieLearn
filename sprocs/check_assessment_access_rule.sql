@@ -16,7 +16,7 @@ CREATE OR REPLACE FUNCTION
 BEGIN
     authorized := TRUE;
 
-    IF role > 'Instructor' THEN
+    IF role >= 'Instructor' THEN
         RETURN;
     END IF;
 
