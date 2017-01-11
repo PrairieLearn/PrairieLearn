@@ -28,9 +28,9 @@
 
         <% if (is_administrator) { %>
         <p class="navbar-text"><%= authn_user.name %> (Administrator)</p>
-        <% } else { // authn_has_instructor_view %>
+        <% } else { // is_administrator %>
         <p class="navbar-text"><%= authn_user.name %></p>
-        <% } // authn_has_instructor_view %>
+        <% } // is_administrator %>
 
         <% if (devMode) { %>
         <a class="btn btn-success navbar-btn" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a>

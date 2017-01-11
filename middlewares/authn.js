@@ -9,6 +9,7 @@ var sqlLoader = require('../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(req, res, next) {
+    res.locals.is_administrator = false;
     var authUid = null, authName = null, authUin = null;
 
     if (req.method === 'OPTIONS') {
