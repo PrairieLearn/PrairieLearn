@@ -14,27 +14,6 @@ module.exports = {
         var questionIds = [];
         logger.debug('Syncing questions');
         async.series([
-            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
-            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
-            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
-            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
-            function(callback) {
-                logger.verbose('FIXME tmp uuid questions add');
-                async.forEachOfSeries(questionDB, function(q, qid, callback) {
-                    logger.debug('FIXME tmp uuid question add ' + qid);
-                    sqldb.call('set_question_uuid', [courseInfo.courseId, qid, q.uuid], function(err, result) {
-                        if (ERR(err, callback)) return;
-                        callback(null);
-                    });
-                }, function(err) {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            },
-            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
-            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
-            // TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
-            //   TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP TMP
             function(callback) {
                 async.forEachOfSeries(questionDB, function(q, qid, callback) {
                     logger.debug('Checking uuid for ' + qid);
