@@ -157,7 +157,7 @@ var gitStatus = function(locals, callback) {
                 type: 'describe_git',
                 description: 'Describe current git HEAD',
                 command: 'git',
-                arguments: ['show', '--format=fuller', '--no-patch', 'HEAD'],
+                arguments: ['show', '--format=fuller', '--quiet', 'HEAD'],
                 working_directory: locals.course.path,
                 on_success: statusStage2,
             };
