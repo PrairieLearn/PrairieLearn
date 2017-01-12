@@ -1,4 +1,3 @@
-DROP FUNCTION IF EXISTS tags_for_question(integer);
 
 -- Returns a JSON array describing the tags for question question_id.
 

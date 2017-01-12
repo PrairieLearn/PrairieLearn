@@ -1,5 +1,3 @@
-DROP FUNCTION IF EXISTS questions_with_uuid_elsewhere(integer,uuid);
-
 CREATE OR REPLACE FUNCTION
     questions_with_uuid_elsewhere(
         course_id bigint,

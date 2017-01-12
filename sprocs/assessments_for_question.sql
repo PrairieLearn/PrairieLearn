@@ -1,5 +1,3 @@
-DROP FUNCTION IF EXISTS assessments_for_question(integer,integer,integer);
-
 -- Returns a JSON array describing the assessments containing question
 -- question_id for course instance course_instance_id. If skip_assessment_id
 -- is provided then that individual assessment is not included.

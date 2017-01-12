@@ -1,5 +1,3 @@
-DROP FUNCTION IF EXISTS question_order(INTEGER);
-
 CREATE OR REPLACE FUNCTION
     question_order (
         assessment_instance_id BIGINT

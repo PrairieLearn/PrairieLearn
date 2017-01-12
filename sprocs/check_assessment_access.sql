@@ -1,5 +1,3 @@
-DROP FUNCTION IF EXISTS check_assessment_access(integer,enum_mode,enum_role,character varying,timestamp with time zone);
-
 CREATE OR REPLACE FUNCTION
     check_assessment_access (
         assessment_id bigint,

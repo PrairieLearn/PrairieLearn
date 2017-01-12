@@ -1,5 +1,3 @@
-DROP FUNCTION IF EXISTS set_course_instance_uuid(integer,text,uuid);
-
 CREATE OR REPLACE FUNCTION
     set_course_instance_uuid(
         course_id bigint,

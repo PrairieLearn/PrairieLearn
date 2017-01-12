@@ -1,4 +1,3 @@
-
 CREATE OR REPLACE FUNCTION
     authz_course_instance(
         user_id bigint,

@@ -1,6 +1,3 @@
-DROP FUNCTION IF EXISTS authz_assessment(integer, jsonb);
-DROP FUNCTION IF EXISTS authz_assessment(integer, jsonb, OUT boolean, OUT boolean, OUT integer, OUT text, OUT jsonb);
-
 CREATE OR REPLACE FUNCTION
     authz_assessment (
         IN assessment_id bigint,

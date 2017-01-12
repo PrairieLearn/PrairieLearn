@@ -1,6 +1,3 @@
-DROP FUNCTION IF EXISTS auth_admin_course_instance(integer, jsonb);
-DROP FUNCTION IF EXISTS auth_admin_course_instance(integer, enum_auth_action, jsonb);
-
 CREATE OR REPLACE FUNCTION
     auth_instructor_course_instance (
         course_instance_id bigint,

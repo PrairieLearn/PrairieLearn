@@ -1,5 +1,3 @@
-DROP FUNCTION IF EXISTS set_assessment_uuid(integer,text,uuid);
-
 CREATE OR REPLACE FUNCTION
     set_assessment_uuid(
         course_instance_id bigint,

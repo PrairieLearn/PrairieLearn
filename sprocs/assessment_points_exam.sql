@@ -1,5 +1,3 @@
-DROP FUNCTION IF EXISTS assessment_points_exam(integer,integer,OUT double precision,OUT double precision,OUT double precision,OUT double precision);
-
 CREATE OR REPLACE FUNCTION
     assessment_points_exam(
         IN assessment_instance_id bigint,

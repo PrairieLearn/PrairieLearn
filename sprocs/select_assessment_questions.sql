@@ -1,5 +1,3 @@
-DROP FUNCTION IF EXISTS select_assessment_questions(integer);
-
 CREATE OR REPLACE FUNCTION
     select_assessment_questions(
         assessment_id bigint

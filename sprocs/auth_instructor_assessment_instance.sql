@@ -1,5 +1,3 @@
-DROP FUNCTION IF EXISTS auth_admin_assessment_instance (integer, enum_auth_action, jsonb);
-
 CREATE OR REPLACE FUNCTION
     auth_instructor_assessment_instance (
         assessment_instance_id bigint,
