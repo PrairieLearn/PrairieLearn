@@ -11,6 +11,7 @@ the server.
 ## User Documentation
 
 * [Installing and running PrairieLearn v2](doc/installing.md)
+* [Syncing course content to the live website](doc/sync.md)
 * [Upgrading to PLv2 from PLv1](doc/upgrading1.md)
 * [Course configuration](doc/course.md)
 * [Course instance configuration](doc/courseInstance.md)
