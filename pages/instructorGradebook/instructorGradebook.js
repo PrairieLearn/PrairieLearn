@@ -16,7 +16,7 @@ var csvFilename = function(locals) {
         + '_'
         + locals.course_instance.short_name
         + '_'
-        + 'user_scores.csv';
+        + 'gradebook.csv';
 };
 
 router.get('/', function(req, res, next) {
