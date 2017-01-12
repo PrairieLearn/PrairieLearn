@@ -66,7 +66,7 @@ module.exports = {
                         course_instance_id: courseInstance.courseInstanceId,
                         course_id: courseInfo.courseId,
                         set_name: dbAssessment.set,
-                        text: dbAssessment.options ? dbAssessment.options.text : null,
+                        text: dbAssessment.text,
                     };
                     sqldb.query(sql.insert_assessment, params, function(err, result) {
                         if (ERR(err, callback)) return;
