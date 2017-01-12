@@ -49,7 +49,7 @@
             <form class="form-inline" id="changeRoleForm" method="POST">
               <div class="form-group">
                 <label for="changeEffectiveRole">Change effective role to:</label>
-                <select class="form-control" id="changeEffectiveRole" name="requestedRole">
+                <select class="form-control" id="changeEffectiveRole" name="pl_requested_role">
                   <% available_roles.reverse().forEach(function(available_role) { %>
                   <% if (available_role == authz_data.role) { %>
                   <option value="<%= available_role %>" selected><%= available_role %> (current)</option>
@@ -91,7 +91,7 @@
               <div class="form-group">
                 <label for="changeEffectiveUid">Change effective UID to:</label>
                 <input list="userList" type="text" class="form-control"
-                       style="width: 20em;" name="requestedUid"
+                       style="width: 20em;" name="pl_requested_uid"
                        id="changeEffectiveUid" placeholder="username@domain.org">
                 <datalist id="userList">
                   <% if (available_uids) { %>
@@ -132,7 +132,7 @@
             <form class="form-inline" id="changeModeForm" method="POST">
               <div class="form-group">
                 <label for="changeMode">Change effective mode to:</label>
-                <select class="form-control" id="changeMode" name="requestedMode">
+                <select class="form-control" id="changeMode" name="pl_requested_mode">
                   <% if (authz_data.mode == 'Public') { %>
                   <option value="Public" selected>Public (current)</option>
                   <% } else { %>

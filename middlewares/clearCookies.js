@@ -6,7 +6,9 @@ var logger = require('../lib/logger');
 
 module.exports = function(req, res, next) {
     _(req.cookies).each(function(value, key) {
-        res.clearCookie(key);
+        if (/^pl_/.test(key)) {
+            res.clearCookie(key);
+        }
     });
     next();
 };

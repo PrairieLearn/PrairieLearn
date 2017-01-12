@@ -24,7 +24,6 @@ WITH effective_data AS (
             ELSE $authn_role::enum_role
         END AS role,
         CASE
-            WHEN $requested_mode::enum_mode = 'Default' THEN $server_mode::enum_mode
             WHEN $authn_role::enum_role >= 'TA' THEN $requested_mode::enum_mode
             ELSE $server_mode::enum_mode
         END AS mode

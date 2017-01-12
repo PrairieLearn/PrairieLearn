@@ -112,28 +112,26 @@ module.exports = function(req, res, next) {
         logger.debug('Preliminary authz_data', res.locals.authz_data);
 
         // handle user data override
-        if (req.cookies.requestedUid || req.cookies.requestedRole || req.cookies.requestedMode) {
+        if (req.cookies.pl_requested_uid || req.cookies.pl_requested_role || req.cookies.pl_requested_mode) {
             var params = {
                 authn_user_id: res.locals.authn_user.user_id,
                 authn_role: res.locals.authz_data.authn_role,
                 server_mode: res.locals.authz_data.authn_mode,
                 course_instance_id: req.params.course_instance_id,
-                requested_uid: (req.cookies.requestedUid ? req.cookies.requestedUid : res.locals.authz_data.user.uid),
-                requested_role: (req.cookies.requestedRole ? req.cookies.requestedRole : res.locals.authz_data.role),
-                requested_mode: (req.cookies.requestedMode ? req.cookies.requestedMode : res.locals.authz_data.mode),
+                requested_uid: (req.cookies.pl_requested_uid ? req.cookies.pl_requested_uid : res.locals.authz_data.user.uid),
+                requested_role: (req.cookies.pl_requested_role ? req.cookies.pl_requested_role : res.locals.authz_data.role),
+                requested_mode: (req.cookies.pl_requested_mode ? req.cookies.pl_requested_mode : res.locals.authz_data.mode),
             };
-            console.log('params', params);
             sqldb.queryZeroOrOneRow(sql.select_effective_authz_data, params, function(err, result) {
                 if (ERR(err, next)) return;
-                console.log('result', result);
                 if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
 
                 _.assign(res.locals.authz_data, result.rows[0]);
                 // remove all course permissions if we are emulating another user
-                authz_data.course_role = 'None';
-                authz_data.has_course_permission_view = false;
-                authz_data.has_course_permission_edit = false;
-                authz_data.has_course_permission_own = false;
+                res.locals.authz_data.course_role = 'None';
+                res.locals.authz_data.has_course_permission_view = false;
+                res.locals.authz_data.has_course_permission_edit = false;
+                res.locals.authz_data.has_course_permission_own = false;
                 // FIXME: debugging for #422
                 logger.debug('Overridden authz_data', res.locals.authz_data);
                 res.locals.user = res.locals.authz_data.user;
