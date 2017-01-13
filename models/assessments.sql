@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS assessments (
     course_instance_id BIGINT NOT NULL REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE,
     type enum_assessment_type,
     number text,
+    order_by integer,
     title text,
     config JSONB,
     text TEXT,
@@ -15,3 +16,5 @@ CREATE TABLE IF NOT EXISTS assessments (
     deleted_at TIMESTAMP WITH TIME ZONE,
     obj JSONB
 );
+
+ALTER TABLE assessments ADD COLUMN IF NOT EXISTS order_by integer;

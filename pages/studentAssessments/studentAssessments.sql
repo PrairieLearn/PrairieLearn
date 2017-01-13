@@ -5,6 +5,7 @@ WITH
             TRUE AS multiple_instance_header,
             a.id AS assessment_id,
             a.number AS assessment_number,
+            a.order_by AS assessment_order_by,
             a.title AS title,
             aset.id AS assessment_set_id,
             aset.abbreviation AS assessment_set_abbreviation,
@@ -35,6 +36,7 @@ WITH
             FALSE AS multiple_instance_header,
             mia.assessment_id,
             mia.assessment_number,
+            mia.assessment_order_by,
             mia.title || ' instance #' || ai.number,
             mia.assessment_set_id,
             mia.assessment_set_abbreviation,
@@ -62,6 +64,7 @@ WITH
             FALSE AS multiple_instance_header,
             a.id AS assessment_id,
             a.number AS assessment_number,
+            a.order_by AS assessment_order_by,
             a.title AS title,
             aset.id AS assessment_set_id,
             aset.abbreviation AS assessment_set_abbreviation,
@@ -108,4 +111,4 @@ FROM
 WHERE
     authorized
 ORDER BY
-    assessment_set_number, assessment_number, assessment_id, assessment_instance_number NULLS FIRST;
+    assessment_set_number, assessment_order_by, assessment_id, assessment_instance_number NULLS FIRST;

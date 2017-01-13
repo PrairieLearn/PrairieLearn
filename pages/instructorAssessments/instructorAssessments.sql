@@ -39,4 +39,4 @@ WHERE
     AND a.deleted_at IS NULL
     AND aa.authorized
 ORDER BY
-    aset.number, a.number, a.id;
+    aset.number, a.order_by, a.id;

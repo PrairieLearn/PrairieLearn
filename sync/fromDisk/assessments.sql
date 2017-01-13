@@ -1,11 +1,11 @@
 -- BLOCK insert_assessment
 INSERT INTO assessments
-        (uuid,  tid,  type,  number,  title,  config,  multiple_instance,  shuffle_questions,
+        (uuid,  tid,  type,  number,  order_by,  title,  config,  multiple_instance,  shuffle_questions,
          max_points, deleted_at, course_instance_id,  text,
          assessment_set_id)
 (
     SELECT
-        $uuid, $tid, $type, $number, $title, $config, $multiple_instance, $shuffle_questions,
+        $uuid, $tid, $type, $number, $order_by, $title, $config, $multiple_instance, $shuffle_questions,
         $max_score,  NULL,      $course_instance_id, $text,
         COALESCE((SELECT id FROM assessment_sets WHERE name = $set_name AND course_id = $course_id), NULL)
 )
@@ -14,6 +14,7 @@ SET
     tid = EXCLUDED.tid,
     type = EXCLUDED.type,
     number = EXCLUDED.number,
+    order_by = EXCLUDED.order_by,
     title = EXCLUDED.title,
     config = EXCLUDED.config,
     multiple_instance = EXCLUDED.multiple_instance,

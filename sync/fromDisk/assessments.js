@@ -2,6 +2,7 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var async = require('async');
 var moment = require('moment-timezone');
+var naturalSort = require('javascript-natural-sort');
 
 var logger = require('../../lib/logger');
 var error = require('../../lib/error');
@@ -16,6 +17,12 @@ module.exports = {
         var that = module.exports;
         var assessmentIds = [];
         async.series([
+            function(callback) {
+                var assessmentList = _.values(courseInstance.assessmentDB);
+                assessmentList.sort(function(a, b) {return naturalSort(String(a.number), String(b.number));});
+                _.each(assessmentList, function(assessment, i) {assessment.order_by = i;});
+                callback(null);
+            },
             function(callback) {
                 async.forEachOfSeries(courseInstance.assessmentDB, function(dbAssessment, tid, callback) {
                     logger.debug('Checking uuid for ' + tid);
@@ -37,6 +44,7 @@ module.exports = {
                         uuid: dbAssessment.uuid,
                         type: dbAssessment.type,
                         number: dbAssessment.number,
+                        order_by: dbAssessment.order_by,
                         title: dbAssessment.title,
                         config: dbAssessment.options,
                         multiple_instance: dbAssessment.multipleInstance ? true : false,
