@@ -7,6 +7,8 @@ including directory structure.
 Tests on RetryExams and Game mode homeworks. I've tried to grab all of the
 appropriate data from the info.json files to convert into the new forms, but
 it's possible I've missed options that I (or my other testers) do not currently use.
+
+Written for python3 (3.4); appears to be compatible with python2 (2.7).
 """
 
 __author__ = 'Dallas R. Trinkle'
@@ -112,7 +114,8 @@ By default, does not overwrite existing infoAssessment.json files; use -f instea
                 if not args.quiet:
                     print('Converting assessment {} in {} to {}'.format(assessment, adir, tdir))
                 try:
-                    os.makedirs(tdir, exist_ok=True)
+                    if not os.path.isdir(tdir):
+                        os.makedirs(tdir)  # 3.4 option: exist_ok=True
                 except:
                     print('Error making directory {}?'.format(tdir))
                 if not args.force:
