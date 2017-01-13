@@ -117,7 +117,7 @@ By default, does not overwrite existing infoAssessment.json files; use -f instea
                     if not os.path.isdir(tdir):
                         os.makedirs(tdir)  # 3.4 option: exist_ok=True
                 except:
-                    print('Error making directory {}?'.format(tdir))
+                    print('Error making directory {}'.format(tdir))
                 if not args.force:
                     if os.path.isfile(target):
                         if not args.quiet:
