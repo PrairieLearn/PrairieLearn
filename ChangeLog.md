@@ -1,6 +1,34 @@
 
 # ChangeLog
 
+* __2.0.0__ - 2017-01-13
+
+  * Make v2 the primary version and shift the old v1 to a subdirectory.
+
+  * Add support for syncing a course from a remote git repository.
+
+  * Add dev mode with local disk syncing and other dev features.
+
+  * Convert score_perc to double (instead of integer).
+
+  * Add UUIDs to all input JSON files to support renaming.
+
+  * Convert all DB tables to bigserial primary keys.
+
+  * Add docker build for course development.
+
+  * Add question difficulty vs discrimination plots (Paras Sud).
+
+  * Add 'Administrator' users will full site access.
+
+  * Standardize names of JSON files and client/server file directories.
+
+  * Clean up JSON file formats for everything except questions.
+
+  * Add documentation for all v2 file formats.
+
+  * Add conversion script from v1 to v2 assessment format (Dallas Trinkle).
+
 * __1.22.0__ - 2016-12-09
 
   * Add IP ranges for final exams in DCL.
