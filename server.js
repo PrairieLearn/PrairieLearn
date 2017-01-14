@@ -111,7 +111,11 @@ app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlew
 app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id + '/instructor'; next();});
 app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
 
-// Instructor pages
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+// Instructor pages //////////////////////////////////////////////////
+
 app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
 app.use('/pl/course_instance/:course_instance_id/instructor/assessments', require('./pages/instructorAssessments/instructorAssessments'));
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', [
@@ -134,7 +138,33 @@ app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', requi
 app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/authzCourseInstanceHasCourseView'));
 app.use('/pl/course_instance/:course_instance_id/instructor/course', require('./pages/courseOverview/courseOverview'));
 
-// Student pages
+// clientFiles
+app.use('/pl/course_instance/:course_instance_id/instructor/clientFilesCourse', require('./pages/clientFilesCourse/clientFilesCourse'));
+app.use('/pl/course_instance/:course_instance_id/instructor/clientFilesCourseInstance', require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'));
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/clientFilesAssessment', [
+    require('./middlewares/selectAndAuthzAssessment'),
+    require('./pages/clientFilesAssessment/clientFilesAssessment'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/clientFilesQuestion', [
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/clientFilesQuestion/clientFilesQuestion'),
+]);
+
+// legacy client file paths
+app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file', [
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/legacyQuestionFile/legacyQuestionFile'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/text', [
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/legacyQuestionText/legacyQuestionText'),
+]);
+
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+// Student pages /////////////////////////////////////////////////////
+
 // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
 // which checks the assessment type and calls next() if it's not the right type
 app.use('/pl/course_instance/:course_instance_id/assessments', require('./pages/studentAssessments/studentAssessments'));
@@ -163,7 +193,7 @@ if (config.devMode) {
 app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./middlewares/authzCourseInstanceAuthnHasInstructorView'));
 app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
 
-// clientFiles at different levels
+// clientFiles
 app.use('/pl/course_instance/:course_instance_id/clientFilesCourse', require('./pages/clientFilesCourse/clientFilesCourse'));
 app.use('/pl/course_instance/:course_instance_id/clientFilesCourseInstance', require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'));
 app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesAssessment', [
@@ -185,7 +215,11 @@ app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_que
     require('./pages/legacyQuestionText/legacyQuestionText'),
 ]);
 
-// Course pages
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+// Course pages //////////////////////////////////////////////////////
+
 app.use('/pl/course/:course_id', require('./middlewares/authzCourse')); // set res.locals.course
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();});
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType = 'course'; next();});
@@ -195,13 +229,26 @@ app.use('/pl/course/:course_id/loadFromDisk', require('./pages/instructorLoadFro
 app.use('/pl/course/:course_id/syncs', require('./pages/courseSyncs/courseSyncs'));
 app.use('/pl/course/:course_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 
-// Administrator pages
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+// Administrator pages ///////////////////////////////////////////////
+
 app.use('/pl/administrator', require('./middlewares/authzIsAdministrator'));
 app.use('/pl/administrator/overview', require('./pages/administratorOverview/administratorOverview'));
 
-// error handling
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+// Error handling ////////////////////////////////////////////////////
+
 app.use(require('./middlewares/notFound')); // if no earlier routes matched, this will match and generate a 404 error
 app.use(require('./pages/error/error'));
+
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+// Server startup ////////////////////////////////////////////////////
 
 var server;
 
