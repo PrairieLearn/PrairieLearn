@@ -38,15 +38,20 @@ RETURNING v.*;
 -- BLOCK select_submissions
 SELECT
     s.*,
-    format_date_full_compact(s.date) AS formatted_date,
+    format_date_full_compact(s.date, ci.display_timezone) AS formatted_date,
     CASE
         WHEN s.grading_requested_at IS NOT NULL THEN format_interval(now() - s.grading_requested_at)
         ELSE NULL
     END AS elapsed_grading_time
 FROM
     submissions AS s
+    JOIN variants AS v ON (v.id = s.variant_id)
+    JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+    JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+    JOIN assessments AS a ON (a.id = ai.assessment_id)
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
 WHERE
-    s.variant_id = $variant_id
+    v.id = $variant_id
 ORDER BY
     s.date DESC;
 

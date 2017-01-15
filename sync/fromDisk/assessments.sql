@@ -68,17 +68,28 @@ WHERE NOT EXISTS (
 
 -- BLOCK insert_assessment_access_rule
 INSERT INTO assessment_access_rules
-    ( assessment_id,  number,  mode,  role,  uids,          start_date,  end_date,  credit)
-VALUES
-    ($assessment_id, $number, $mode, $role, $uids::TEXT[], $start_date, $end_date, $credit)
+        (assessment_id,  number,  mode,  role,  credit,  uids,
+        start_date,
+        end_date)
+(
+    SELECT
+        $assessment_id, $number, $mode, $role, $credit, $uids::TEXT[],
+        input_date($start_date, ci.display_timezone),
+        input_date($end_date, ci.display_timezone)
+    FROM
+        assessments AS a
+        JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    WHERE
+        a.id = $assessment_id
+)
 ON CONFLICT (number, assessment_id) DO UPDATE
 SET
     mode = EXCLUDED.mode,
     role = EXCLUDED.role,
+    credit = EXCLUDED.credit,
     uids = EXCLUDED.uids,
     start_date = EXCLUDED.start_date,
-    end_date = EXCLUDED.end_date,
-    credit = EXCLUDED.credit;
+    end_date = EXCLUDED.end_date;
 
 -- BLOCK delete_excess_assessment_access_rules
 DELETE FROM assessment_access_rules

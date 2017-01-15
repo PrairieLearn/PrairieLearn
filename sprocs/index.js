@@ -20,6 +20,7 @@ module.exports = {
             'format_date_short.sql',
             'format_date_full.sql',
             'format_date_full_compact.sql',
+            'input_date.sql',
             'interval_hist_thresholds.sql',
             'check_course_instance_access_rule.sql',
             'check_course_instance_access.sql',

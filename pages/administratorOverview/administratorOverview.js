@@ -45,6 +45,7 @@ router.post('/', function(req, res, next) {
         var params = [
             req.body.short_name,
             req.body.title,
+            req.body.display_timezone,
             req.body.path,
             req.body.repository,
             res.locals.authn_user.user_id,

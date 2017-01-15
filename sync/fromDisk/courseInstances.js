@@ -2,7 +2,6 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var path = require('path');
 var async = require('async');
-var moment = require('moment-timezone');
 
 var logger = require('../../lib/logger');
 var config = require('../../lib/config');
@@ -38,6 +37,7 @@ module.exports = {
                         short_name: courseInstanceShortName,
                         long_name: courseInstance.longName,
                         number: courseInstance.number,
+                        display_timezone: courseInstance.timezone || courseInfo.timezone || 'America/Chicago',
                     };
                     sqldb.query(sql.insert_course_instance, params, function(err, result) {
                         if (ERR(err, callback)) return;
@@ -89,8 +89,8 @@ module.exports = {
                 number: i + 1,
                 role: _(dbRule).has('role') ? dbRule.role : null,
                 uids: _(dbRule).has('uids') ? dbRule.uids : null,
-                start_date: _(dbRule).has('startDate') ? moment.tz(dbRule.startDate, config.timezone).format() : null,
-                end_date: _(dbRule).has('endDate') ? moment.tz(dbRule.endDate, config.timezone).format() : null,
+                start_date: _(dbRule).has('startDate') ? dbRule.startDate : null,
+                end_date: _(dbRule).has('endDate') ? dbRule.endDate : null,
             };
             sqldb.query(sql.insert_course_instance_access_rule, params, function(err) {
                 if (ERR(err, callback)) return;

@@ -10,12 +10,16 @@
     <input type="text" class="form-control" id="courseAddInputTitle" name="title" placeholder="Template course title">
   </div>
   <div class="form-group">
+    <label for="courseAddInputTimezone">Timezone:</label>
+    <input type="text" class="form-control" id="courseAddInputTimezone" name="display_timezone" value="America/Chicago">
+  </div>
+  <div class="form-group">
     <label for="courseAddInputPath">Path:</label>
-    <input type="text" class="form-control" id="courseAddInputPath" name="path" placeholder="/path/on/disk">
+    <input type="text" class="form-control" id="courseAddInputPath" name="path" value="/data1/courses/pl-XXX">
   </div>
   <div class="form-group">
     <label for="courseAddInputRepository">Repository:</label>
-    <input type="text" class="form-control" id="courseAddInputRepository" name="repository" placeholder="git@github.com:PrairieLearn/pl-tpl101.git">
+    <input type="text" class="form-control" id="courseAddInputRepository" name="repository" value="git@github.com:PrairieLearn/pl-XXX.git">
   </div>
   <button type="button" class="btn btn-default" onclick="$('#<%= id %>').popover('hide')">
     Cancel

@@ -87,3 +87,16 @@ The course instance `allowAccess` rules determine who can access the course inst
         }
     ]
 ```
+
+
+## Timezone
+
+The default timezone for course instances is the timezone of the course. This can be changed with the `timezone` property in `infoCourseInstance.json`. For example:
+
+```json
+{
+    "timezone": "America/New_York"
+}
+```
+
+Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).

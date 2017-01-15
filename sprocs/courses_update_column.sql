@@ -30,6 +30,10 @@ BEGIN
             UPDATE pl_courses AS c SET title = value
             WHERE c.id = course_id
             RETURNING c.* INTO new_row;
+        WHEN 'display_timezone' THEN
+            UPDATE pl_courses AS c SET display_timezone = value
+            WHERE c.id = course_id
+            RETURNING c.* INTO new_row;
         WHEN 'path' THEN
             UPDATE pl_courses AS c SET path = value
             WHERE c.id = course_id

@@ -4,7 +4,8 @@ CREATE OR REPLACE FUNCTION
         mode enum_mode,
         role enum_role,
         uid text,
-        date TIMESTAMP WITH TIME ZONE
+        date TIMESTAMP WITH TIME ZONE,
+        display_timezone text
     ) RETURNS TABLE (
         authorized boolean,      -- Is this assessment available for the given user?
         credit integer,          -- How much credit will they receive?
@@ -21,7 +22,7 @@ chosen_access_rule AS (
             WHEN aar.credit > 0 THEN
                 aar.credit::text || '%'
                 || (CASE WHEN aar.end_date IS NOT NULL
-                        THEN ' until ' || format_date_short(aar.end_date)
+                        THEN ' until ' || format_date_short(aar.end_date, display_timezone)
                     END)
             ELSE 'None'
         END AS credit_date_string,
@@ -62,8 +63,8 @@ FROM
         SELECT
             jsonb_agg(jsonb_build_object(
                 'credit', CASE WHEN credit IS NOT NULL THEN raosd.credit::text || '%' ELSE 'None' END,
-                'start_date', CASE WHEN start_date IS NOT NULL THEN format_date_full(start_date) ELSE '—' END,
-                'end_date', CASE WHEN end_date IS NOT NULL THEN format_date_full(end_date) ELSE '—' END,
+                'start_date', CASE WHEN start_date IS NOT NULL THEN format_date_full(start_date, display_timezone) ELSE '—' END,
+                'end_date', CASE WHEN end_date IS NOT NULL THEN format_date_full(end_date, display_timezone) ELSE '—' END,
                 'active', car.id = raosd.id
             ) ORDER BY raosd.number)
         FROM

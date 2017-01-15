@@ -15,12 +15,14 @@ module.exports = {
             course_id: course_id,
             short_name: courseInfo.name,
             title: courseInfo.title,
+            display_timezone: courseInfo.timezone || null,
             grading_queue: courseInfo.name.toLowerCase().replace(' ', ''),
         };
-        sqldb.queryZeroOrOneRow(sql.insert_course, params, function(err, result) {
+        sqldb.queryZeroOrOneRow(sql.update_course, params, function(err, result) {
             if (ERR(err, callback)) return;
             if (result.rowCount != 1) return callback(error.makeWithData('Unable to find course', {course_id, courseInfo}));
             courseInfo.courseId = course_id;
+            courseInfo.timezone = result.rows[0].display_timezone;
             callback(null);
         });
     },

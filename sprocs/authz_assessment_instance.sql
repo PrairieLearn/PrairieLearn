@@ -2,6 +2,7 @@ CREATE OR REPLACE FUNCTION
     authz_assessment_instance (
         IN assessment_instance_id bigint,
         IN authz_data JSONB,
+        IN display_timezone text,
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
         OUT credit integer,          -- How much credit will they receive?
@@ -16,7 +17,7 @@ assessment_result AS (
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
-        JOIN LATERAL authz_assessment(a.id, authz_data) AS aa ON TRUE
+        JOIN LATERAL authz_assessment(a.id, authz_data, display_timezone) AS aa ON TRUE
         JOIN users AS u ON (u.user_id = ai.user_id)
     WHERE
         ai.id = authz_assessment_instance.assessment_instance_id

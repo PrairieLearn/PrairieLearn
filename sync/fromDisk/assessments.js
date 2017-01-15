@@ -1,7 +1,6 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var async = require('async');
-var moment = require('moment-timezone');
 var naturalSort = require('javascript-natural-sort');
 
 var logger = require('../../lib/logger');
@@ -127,8 +126,8 @@ module.exports = {
                 mode: _(dbRule).has('mode') ? dbRule.mode : null,
                 role: _(dbRule).has('role') ? dbRule.role : null,
                 uids: _(dbRule).has('uids') ? dbRule.uids : null,
-                start_date: _(dbRule).has('startDate') ? moment.tz(dbRule.startDate, config.timezone).format() : null,
-                end_date: _(dbRule).has('endDate') ? moment.tz(dbRule.endDate, config.timezone).format() : null,
+                start_date: _(dbRule).has('startDate') ? dbRule.startDate : null,
+                end_date: _(dbRule).has('endDate') ? dbRule.endDate : null,
                 credit: _(dbRule).has('credit') ? dbRule.credit : null,
             };
             sqldb.query(sql.insert_assessment_access_rule, params, function(err) {

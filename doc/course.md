@@ -186,3 +186,16 @@ Copy the JSON block below to include the above standardized tag names in your co
 The possible colors for assessment sets, topic, and tags are:
 
 <img width="1890" src="colors.png" />
+
+
+## Timezone
+
+The default timezone for courses is `America/Chicago` (U.S. Central Time). This can be changed with the `timezone` property in `infoCourse.json`. For example:
+
+```json
+{
+    "timezone": "America/New_York"
+}
+```
+
+Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).

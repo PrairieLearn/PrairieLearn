@@ -1,6 +1,5 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
-var moment = require('moment-timezone');
 
 var logger = require('../lib/logger');
 var config = require('../lib/config');

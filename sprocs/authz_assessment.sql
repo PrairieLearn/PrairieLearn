@@ -2,6 +2,7 @@ CREATE OR REPLACE FUNCTION
     authz_assessment (
         IN assessment_id bigint,
         IN authz_data JSONB,
+        IN display_timezone text,
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
         OUT credit integer,          -- How much credit will they receive?
@@ -18,7 +19,8 @@ authn_result AS (
             (authz_data->>'authn_mode')::enum_mode,
             (authz_data->>'authn_role')::enum_role,
             authz_data->'authn_user'->>'uid',
-            current_timestamp
+            current_timestamp,
+            display_timezone
         )
 ),
 user_result AS (
@@ -30,7 +32,8 @@ user_result AS (
             (authz_data->>'mode')::enum_mode,
             (authz_data->>'role')::enum_role,
             authz_data->'user'->>'uid',
-            current_timestamp
+            current_timestamp,
+            display_timezone
         )
 ),
 authz_result AS (

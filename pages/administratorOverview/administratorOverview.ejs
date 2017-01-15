@@ -97,6 +97,7 @@
             <tr>
               <th>Short name</th>
               <th>Title</th>
+              <th>Timezone</th>
               <th>Path</th>
               <th>Repository</th>
               <th></th>
@@ -104,10 +105,11 @@
           <tbody>
             <% courses.forEach(function(course, i) { %>
             <tr>
-              <%- include('courseUpdateColumn', {column_name: 'short_name', label: 'short name', course: course, i: i}) %>
-              <%- include('courseUpdateColumn', {column_name: 'title',      label: 'title',      course: course, i: i}) %>
-              <%- include('courseUpdateColumn', {column_name: 'path',       label: 'path',       course: course, i: i}) %>
-              <%- include('courseUpdateColumn', {column_name: 'repository', label: 'repository', course: course, i: i}) %>
+              <%- include('courseUpdateColumn', {column_name: 'short_name',       label: 'short name', course: course, i: i}) %>
+              <%- include('courseUpdateColumn', {column_name: 'title',            label: 'title',      course: course, i: i}) %>
+              <%- include('courseUpdateColumn', {column_name: 'display_timezone', label: 'timezone',   course: course, i: i}) %>
+              <%- include('courseUpdateColumn', {column_name: 'path',             label: 'path',       course: course, i: i}) %>
+              <%- include('courseUpdateColumn', {column_name: 'repository',       label: 'repository', course: course, i: i}) %>
               <td>
                 <a id="courseDeleteButton<%= i %>"
                    tabindex="0" class="btn btn-xs btn-default" role="button"

@@ -1,12 +1,13 @@
 -- BLOCK insert_course_instance
 INSERT INTO course_instances
-        (course_id,  uuid,  short_name,  long_name,  number, deleted_at)
-VALUES ($course_id, $uuid, $short_name, $long_name, $number, NULL)
+        (course_id,  uuid,  short_name,  long_name,  number,  display_timezone, deleted_at)
+VALUES ($course_id, $uuid, $short_name, $long_name, $number, $display_timezone, NULL)
 ON CONFLICT (uuid) DO UPDATE
 SET
     short_name = EXCLUDED.short_name,
     long_name = EXCLUDED.long_name,
     number = EXCLUDED.number,
+    display_timezone = EXCLUDED.display_timezone,
     deleted_at = EXCLUDED.deleted_at
 WHERE
     course_instances.course_id = $course_id
@@ -31,8 +32,17 @@ WHERE NOT EXISTS (
 
 -- BLOCK insert_course_instance_access_rule
 INSERT INTO course_instance_access_rules
-        (course_instance_id,  number,  role,  uids,          start_date,  end_date)
-VALUES ($course_instance_id, $number, $role, $uids::TEXT[], $start_date, $end_date)
+    (course_instance_id,  number,  role,  uids,
+    start_date,
+    end_date)
+SELECT
+    $course_instance_id, $number, $role, $uids::TEXT[],
+    input_date($start_date, ci.display_timezone),
+    input_date($end_date, ci.display_timezone)
+FROM
+    course_instances AS ci
+WHERE
+    ci.id = $course_instance_id
 ON CONFLICT (number, course_instance_id) DO UPDATE
 SET
     role = EXCLUDED.role,

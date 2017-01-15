@@ -19,6 +19,11 @@
             "description": "The number of this course instance, used for sorting.",
             "type": "integer"
         },
+        "timezone": {
+            "description": "The timezone for all date input and display (e.g., \"America/Chicago\", from the TZ column at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).",
+            "type": "string",
+            "default": "America/Chicago"
+        },
         "userRoles": {
             "description": "Special roles for specific users (anyone not listed is assumed to be a 'Student').",
             "type": "object",

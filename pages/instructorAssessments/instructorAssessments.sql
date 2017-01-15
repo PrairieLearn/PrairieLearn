@@ -30,12 +30,13 @@ SELECT
     (lag(aset.id) OVER (PARTITION BY aset.id ORDER BY a.number, a.id) IS NULL) AS start_new_set
 FROM
     assessments AS a
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     LEFT JOIN assessment_stats AS tstats ON (tstats.id = a.id)
     LEFT JOIN assessment_duration_stats AS dstats ON (dstats.id = a.id)
-    LEFT JOIN LATERAL authz_assessment(a.id, $authz_data) AS aa ON TRUE
+    LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, ci.display_timezone) AS aa ON TRUE
 WHERE
-    a.course_instance_id = $course_instance_id
+    ci.id = $course_instance_id
     AND a.deleted_at IS NULL
     AND aa.authorized
 ORDER BY

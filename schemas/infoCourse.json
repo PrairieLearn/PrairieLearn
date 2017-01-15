@@ -21,6 +21,11 @@
             "type": "string",
             "required": true
         },
+        "timezone": {
+            "description": "The timezone for all date input and display (e.g., \"America/Chicago\", from the TZ column at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).",
+            "type": "string",
+            "default": "America/Chicago"
+        },
         "assessmentSets": {
             "description": "Assessment sets.",
             "type": "array",

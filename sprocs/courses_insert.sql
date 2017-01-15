@@ -2,6 +2,7 @@ CREATE OR REPLACE FUNCTION
     courses_insert(
         short_name text,
         title text,
+        display_timezone text,
         path text,
         repository text,
         authn_user_id bigint
@@ -12,9 +13,9 @@ DECLARE
 BEGIN
     BEGIN
         INSERT INTO pl_courses AS c
-            (short_name, title, path, repository)
+            (short_name, title, display_timezone, path, repository)
         VALUES
-            (short_name, title, path, repository)
+            (short_name, title, display_timezone, path, repository)
         RETURNING
             c.* INTO new_row;
     EXCEPTION

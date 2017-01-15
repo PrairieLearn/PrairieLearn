@@ -22,7 +22,6 @@ var cron = require('./cron');
 var socketServer = require('./lib/socket-server');
 var serverJobs = require('./lib/server-jobs');
 var syncFromDisk = require('./sync/syncFromDisk');
-var syncFromMongo = require('./sync/syncFromMongo');
 
 if (config.startServer) {
     logger.info('PrairieLearn server start');
