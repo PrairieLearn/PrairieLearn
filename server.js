@@ -52,6 +52,9 @@ app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Middleware for all requests
+// response_id is logged on request, response, and error to link them together
+var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+app.use(function(req, res, next) {res.locals.response_id = _.times(12, function() {return _.sample(chars);}).join(''); next();});
 app.use(require('./middlewares/logResponse')); // defers to end of response
 app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPrefix = '/pl'; next();});
 app.use(function(req, res, next) {res.locals.navbarType = 'plain'; next();});

@@ -14,6 +14,7 @@ module.exports = function(req, res, next) {
             path: req.path,
             params: req.params,
             body: req.body,
+            response_id: res.locals.response_id,
         };
         logger.verbose("request", access);
     }

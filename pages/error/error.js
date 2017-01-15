@@ -22,6 +22,7 @@ module.exports = function(err, req, res, next) {
         stack: err.stack,
         data: JSON.stringify(err.data),
         referrer: referrer,
+        response_id: res.locals.response_id,
     });
 
     if (req.app.get('env') == 'development') {

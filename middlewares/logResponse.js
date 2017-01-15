@@ -6,6 +6,7 @@ module.exports = function(req, res, next) {
     if (req.method !== 'OPTIONS') {
         res.on('finish', function() {
             var access = {
+                response_id: res.locals.response_id,
                 timestamp: (new Date()).toISOString(),
                 ip: req.ip,
                 forwardedIP: req.headers['x-forwarded-for'],
