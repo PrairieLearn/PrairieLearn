@@ -21,7 +21,7 @@ chosen_access_rule AS (
             WHEN aar.credit > 0 THEN
                 aar.credit::text || '%'
                 || (CASE WHEN aar.end_date IS NOT NULL
-                        THEN ' until ' || to_char(aar.end_date, 'FMHH:MIam Dy, Mon FMDD')
+                        THEN ' until ' || format_date_short(aar.end_date)
                     END)
             ELSE 'None'
         END AS credit_date_string,
@@ -62,8 +62,8 @@ FROM
         SELECT
             jsonb_agg(jsonb_build_object(
                 'credit', CASE WHEN credit IS NOT NULL THEN raosd.credit::text || '%' ELSE 'None' END,
-                'start_date', CASE WHEN start_date IS NOT NULL THEN to_char(start_date, 'YYYY-MM-DD HH24:MI') ELSE '—' END,
-                'end_date', CASE WHEN end_date IS NOT NULL THEN to_char(end_date, 'YYYY-MM-DD HH24:MI') ELSE '—' END,
+                'start_date', CASE WHEN start_date IS NOT NULL THEN format_date_full(start_date) ELSE '—' END,
+                'end_date', CASE WHEN end_date IS NOT NULL THEN format_date_full(end_date) ELSE '—' END,
                 'active', car.id = raosd.id
             ) ORDER BY raosd.number)
         FROM

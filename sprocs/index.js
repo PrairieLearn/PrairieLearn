@@ -17,6 +17,8 @@ module.exports = {
             'array_histogram.sql',
             'format_interval.sql',
             'format_interval_short.sql',
+            'format_date_short.sql',
+            'format_date_full.sql',
             'format_date_full_compact.sql',
             'interval_hist_thresholds.sql',
             'check_course_instance_access_rule.sql',
