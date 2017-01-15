@@ -34,7 +34,11 @@
         <li <% if (navPage == "assessments") { %>class="active"<% } %>><a href="<%= urlPrefix %>/assessments">Assessments</a></li>
         <li <% if (navPage == "questions")   { %>class="active"<% } %>><a href="<%= urlPrefix %>/questions">Questions</a></li>
         <li <% if (navPage == "gradebook")   { %>class="active"<% } %>><a href="<%= urlPrefix %>/gradebook">Gradebook</a></li>
+
+        <% if (authz_data.has_course_permission_view) { %>
         <li <% if (navPage == "course")      { %>class="active"<% } %>><a href="<%= urlPrefix %>/course">Course</a></li>
+        <% } %>
+
         <% if (!devMode && authz_data.has_course_permission_edit) { %>
         <li <% if (navPage == "sync")        { %>class="active"<% } %>><a href="<%= urlPrefix %>/syncs">Sync</a></li>
         <% } %>

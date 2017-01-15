@@ -68,7 +68,6 @@ module.exports = function(req, res, next) {
     var params = {
         authn_user_id: res.locals.authn_user.user_id,
         course_instance_id: req.params.course_instance_id,
-        course_id: req.params.course_id,
         is_administrator: res.locals.is_administrator,
     };
     sqldb.queryZeroOrOneRow(sql.select_authz_data, params, function(err, result) {

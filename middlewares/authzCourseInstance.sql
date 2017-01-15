@@ -1,7 +1,7 @@
 -- BLOCK select_authz_data
 SELECT
-    authz_course_instance($authn_user_id, $course_instance_id, $is_administrator) AS permissions_course_instance,
-    authz_course($authn_user_id, $course_id, $is_administrator) AS permissions_course,
+    authz_course_instance($authn_user_id, ci.id, $is_administrator) AS permissions_course_instance,
+    authz_course($authn_user_id, c.id, $is_administrator) AS permissions_course,
     to_jsonb(c.*) AS course,
     to_jsonb(ci.*) AS course_instance
 FROM
