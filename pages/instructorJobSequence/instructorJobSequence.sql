@@ -14,6 +14,8 @@ WITH member_jobs AS (
     WHERE
         j.job_sequence_id = $job_sequence_id
         AND j.course_id IS NOT DISTINCT FROM $course_id
+    ORDER BY
+        j.number_in_sequence, j.id
 ),
 aggregated_member_jobs AS (
     SELECT
