@@ -3,6 +3,16 @@
 
 By default, course instances and assessments are only accessible to `Instructor` users. To change this, the `allowAccess` option can be used in the corresponding `infoCourseInstance.json` or `infoAssessment.json` file.
 
+## Two level of access control for assessments
+
+In PrairieLearn there are two levels of access control to gain access to assessments:
+
+1. First, a student or TA must have access to the **course instance**. This access is granted with the `allowAccess` rules in [infoCourseInstance.json](courseInstance.md). Giving a student or TA access to a course instance does not by default grant them access to any assessments in the course instance, however (see the next item).
+
+2. Second, a student or TA must also have access to the specific **assessment**. This access is granted with the `allowAccess` rules in [infoAssessment.json](assessment.md). Even if a student has been granted access to an assessment, however, they will only be able to actually access it if they also have access to the course instance (see previous item).
+
+Note that instructors for a course instance automatically have access to all assessments and questions in that course instance.
+
 ## `allowAccess` format
 
 The general format of `allowAccess` is:
