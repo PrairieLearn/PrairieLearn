@@ -25,7 +25,7 @@ assessment_result AS (
 authz_result AS (
     SELECT
         (assessment_result.authorized
-            AND (assessment_result.user_id = (authz_data->'user'->>'id')::integer
+            AND (assessment_result.user_id = (authz_data->'user'->>'user_id')::integer
                     OR (authz_data->>'has_instructor_view')::boolean)
         ) AS authorized
     FROM
@@ -34,7 +34,7 @@ authz_result AS (
 SELECT
     authz_result.authorized,
     CASE
-        WHEN authz_data->'authn_user'->'id' = authz_data->'user'->'id' THEN TRUE
+        WHEN authz_data->'authn_user'->'user_id' = authz_data->'user'->'user_id' THEN TRUE
         WHEN (authz_data->>'has_instructor_edit')::boolean THEN TRUE
         ELSE FALSE
     END AND authz_result.authorized AS authorized_edit,
