@@ -1,7 +1,9 @@
 
-# Access control
+# Access control to course instances and assessments
 
 By default, course instances and assessments are only accessible to `Instructor` users. To change this, the `allowAccess` option can be used in the corresponding `infoCourseInstance.json` or `infoAssessment.json` file.
+
+The `allowAccess` rules in course instances and assessments do not grant authorization to sync course content from GitHub. This is controlled by [sync permissions](sync.md#sync-permissions).
 
 ## Two level of access control for assessments
 
