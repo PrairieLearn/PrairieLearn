@@ -59,7 +59,7 @@ This file specifies basic information about the course:
 
 ## Assessment sets
 
-Each assessment belongs to an `assessmentSet` defined in the `infoCourse.json` file. Each assessment set must have the following properties.
+Each assessment belongs to an *assessment set*. Each assessment set must have the following properties.
 
 Property | Description
 --- | ---
@@ -70,7 +70,7 @@ Property | Description
 
 ## Standardized assessment sets
 
-A list of standardized assessments sets is:
+The following list of standardized assessments sets is automatically included in every course. You do not need to include these in your JSON file, but you can add extra assessment sets if needed (see below).
 
 abbreviation | name | purpose
 --- | --- | ---
@@ -82,17 +82,14 @@ abbreviation | name | purpose
 `PE` | Practice Exam | Practice exams.
 `P` | Prep | Temporary assessments used while writing new questions.
 
-Copy the JSON block below to include the above standardized tag names in your course.
+## Adding your own assessment sets
+
+You can add more assessment sets by listing them in the `infoCourse.json` file as follows. Note that HW and Q don't need to be listed because they are automatically available as standardized sets (see above).
 
 ```json
     "assessmentSets": [
         {"abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1"},
-        {"abbreviation": "MP", "name": "Machine Problem", "heading": "Machines Problems", "color": "green1"},
-        {"abbreviation": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1"},
-        {"abbreviation": "PQ", "name": "Practice Quiz", "heading": "Practice Quizzes", "color": "yellow1"},
-        {"abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "red1"},
-        {"abbreviation": "PE", "name": "Practice Exam", "heading": "Practice Exams", "color": "yellow1"},
-        {"abbreviation": "P", "name": "Prep", "heading": "Question Preparation", "color": "blue1"}
+        {"abbreviation": "Q", "name": "Quiz", "heading": "Quizzes", "color": "red1"}
     ],
 ```
 
@@ -106,6 +103,15 @@ Property | Description
 `color` | The color scheme for this topic (see below for choices).
 `description` | An explanation of what the topic includes, for human referance.
 
+For example, topics could be listed like:
+
+```json
+    "topics": [
+        {"name": "Vectors", "color": "blue3", "description": "Vector algebra in 3D."},
+        {"name": "Center of mass", "color": "green3", "description": "Calculating the center of mass for irregular bodies and systems."}
+    ],
+```
+
 ## Tags
 
 Each question can have zero, one, or many tags associated with it. The properties of a tag are as follows.
@@ -118,7 +124,7 @@ Property | Description
 
 ## Standardized tag names
 
-Tags can be used for a variety of purposes. Some standardized tag names are given below.
+The following list of standardized tags is automatically included in every course. You do not need to include these in your JSON file, but you can add extra tags (see below).
 
 Answer format tag | Meaning
 --- | ---
@@ -149,35 +155,15 @@ Tracking tag | Meaning
 `<email>` | The email of the person who wrote the question, E.g., `mwest@illinois.edu`. Multiple emails can be tagged when several people had significant input.
 `<semester>` | The semester when the question was written. E.g., `Sp15`, `Su16`, `Fa16`.
 
-Copy the JSON block below to include the above standardized tag names in your course.
+
+## Adding your own tags
+
+You can add more tags to your course by listing them in the `infoCourse.json` file. For example:
 
 ```json
     "tags": [
-        {"name": "numeric", "color": "brown1", "description": "The answer format is one or more numerical values."},
-        {"name": "symbolic", "color": "blue1", "description": "The answer format is a symbolic expression."},
-        {"name": "drawing", "color": "yellow1", "description": "The answer format requires drawing on a canvas to input a graphical representation of an answer."},
-        {"name": "MC", "color": "green1", "description": "The answer format is choosing from a small finite set of answers (multiple choice, possibly with multiple selections allowed, up to 10 possible answers)."},
-        {"name": "code", "color": "turquoise1", "description": "The answer format is a piece of code."},
-        {"name": "multianswer", "color": "orange2", "description": "The question requires multiple answers, either as steps in a sequence or as separate questions."},
-        {"name": "graph", "color": "purple1", "description": "The question tests reading information from a graph or drawing a graph."},
-        {"name": "concept", "color": "pink1", "description": "The question tests conceptual understanding of a topic."},
-        {"name": "calculate", "color": "green2", "description": "The questions tests performing a numerical calculation, with either a calculator or equivalent software."},
-        {"name": "compute", "color": "purple1", "description": "The question tests the writing and running of a piece of code to compute the answer. The answer itself is not the code, but could be a numeric answer output by the code, for example (use `code` when the answer is the code)."},
-        {"name": "software", "color": "orange1", "description": "The question tests the use of a specific piece of software (e.g., Matlab)."},
-        {"name": "estimation", "color": "red2", "description": "Answering the question correctly will require some amount of estimation, so an exact answer is not possible."},
-        {"name": "secret", "color": "red3", "description": "Only use this question on exams or quizzes that won't be released to students, so the question can be kept secret."},
-        {"name": "nontest", "color": "green3", "description": "This question is not appropriate for use in a restricted testing environment, so only use it on homeworks or similar."},
-        {"name": "Sp15", "color": "gray1"},
-        {"name": "Su15", "color": "gray1"},
-        {"name": "Fa15", "color": "gray1"},
-        {"name": "Sp16", "color": "gray1"},
-        {"name": "Su16", "color": "gray1"},
-        {"name": "Fa16", "color": "gray1"},
-        {"name": "Sp17", "color": "gray1"},
-        {"name": "Su17", "color": "gray1"},
-        {"name": "Fa17", "color": "gray1"},
-        {"name": "insert your course name", "color": "gray1"},
-        {"name": "insert your NetID", "color": "gray1"}
+        {"name": "TAM212", "color": "red1", "description": "This question was originally written for TAM 212."},
+        {"name": "mwest", "color": "gray1", "description": "This question was written by Matthew West (mwest@illinois.edu)."}
     ]
 ```
 
