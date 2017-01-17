@@ -14,5 +14,5 @@ set -x
 dropdb anondb
 createdb anondb
 pg_restore --dbname anondb "${INPUT_DUMP}"
-psql --dbname anondb --command "UPDATE users AS u SET uid = 'user' || u.id || '@example.com', name = 'User Name';"
+psql --dbname anondb --command "UPDATE users AS u SET uid = 'user' || u.user_id || '@example.com', name = 'User Name';"
 pg_dump -Fc --file "${OUTPUT_DUMP}" anondb
