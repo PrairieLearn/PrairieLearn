@@ -1,19 +1,21 @@
+DROP FUNCTION IF EXISTS check_assessment_access(bigint,enum_mode,enum_role,text,timestamp with time zone,text);
+
 CREATE OR REPLACE FUNCTION
     check_assessment_access (
-        assessment_id bigint,
-        mode enum_mode,
-        role enum_role,
-        uid text,
-        date TIMESTAMP WITH TIME ZONE,
-        display_timezone text
-    ) RETURNS TABLE (
-        authorized boolean,      -- Is this assessment available for the given user?
-        credit integer,          -- How much credit will they receive?
-        credit_date_string TEXT, -- For display to the user.
-        access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
+        IN assessment_id bigint,
+        IN mode enum_mode,
+        IN role enum_role,
+        IN uid text,
+        IN date TIMESTAMP WITH TIME ZONE,
+        IN display_timezone text,
+        OUT authorized boolean,      -- Is this assessment available for the given user?
+        OUT credit integer,          -- How much credit will they receive?
+        OUT credit_date_string TEXT, -- For display to the user.
+        OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     ) AS $$
-WITH
-chosen_access_rule AS (
+DECLARE
+    active_access_rule_id bigint;
+BEGIN
     -- Choose the access rule which grants access ('authorized' is TRUE), if any, and has the highest 'credit'.
     SELECT
         caar.authorized,
@@ -21,12 +23,19 @@ chosen_access_rule AS (
         CASE
             WHEN aar.credit > 0 THEN
                 aar.credit::text || '%'
-                || (CASE WHEN aar.end_date IS NOT NULL
+                || (CASE
+                        WHEN aar.end_date IS NOT NULL
                         THEN ' until ' || format_date_short(aar.end_date, display_timezone)
+                        ELSE ''
                     END)
             ELSE 'None'
         END AS credit_date_string,
         aar.id
+    INTO
+        authorized,
+        credit,
+        credit_date_string,
+        active_access_rule_id
     FROM
         assessment_access_rules AS aar
         JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.mode, check_assessment_access.role,
@@ -37,37 +46,40 @@ chosen_access_rule AS (
     ORDER BY
         aar.credit DESC NULLS LAST,
         aar.number
-    LIMIT 1
-),
-rules_authorized_on_some_date AS (
+    LIMIT 1;
+
+    -- Fill in data if there were no access rules found
+    IF active_access_rule_id IS NULL THEN
+        authorized = FALSE;
+        credit = 0;
+        credit_date_string = 'None';
+    END IF;
+
+    -- Override if we are an Instructor
+    IF role >= 'Instructor' THEN
+        authorized = TRUE;
+        credit = 100;
+        credit_date_string = '100% (Instructor override)';
+        active_access_rule_id = NULL;
+    END IF;
+
     -- List of all access rules that will grant access to this user/mode/role at some date (past or future),
     -- computed by ignoring the date argument.
     SELECT
-        aar.*
+        coalesce(jsonb_agg(jsonb_build_object(
+            'credit', CASE WHEN aar.credit IS NOT NULL THEN aar.credit::text || '%' ELSE 'None' END,
+            'start_date', CASE WHEN start_date IS NOT NULL THEN format_date_full(start_date, display_timezone) ELSE '—' END,
+            'end_date', CASE WHEN end_date IS NOT NULL THEN format_date_full(end_date, display_timezone) ELSE '—' END,
+            'active', aar.id = active_access_rule_id
+        ) ORDER BY aar.number), '[]'::jsonb)
+    INTO
+        access_rules
     FROM
         assessment_access_rules AS aar
         JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.mode, check_assessment_access.role,
             check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
-        AND caar.authorized
-)
-SELECT
-    car.authorized,
-    car.credit,
-    car.credit_date_string,
-    raosd_agg.access_rules
-FROM
-    chosen_access_rule AS car,
-    LATERAL (
-        SELECT
-            jsonb_agg(jsonb_build_object(
-                'credit', CASE WHEN credit IS NOT NULL THEN raosd.credit::text || '%' ELSE 'None' END,
-                'start_date', CASE WHEN start_date IS NOT NULL THEN format_date_full(start_date, display_timezone) ELSE '—' END,
-                'end_date', CASE WHEN end_date IS NOT NULL THEN format_date_full(end_date, display_timezone) ELSE '—' END,
-                'active', car.id = raosd.id
-            ) ORDER BY raosd.number)
-        FROM
-            rules_authorized_on_some_date AS raosd
-    ) AS raosd_agg (access_rules)
-$$ LANGUAGE SQL STABLE;
+        AND caar.authorized;
+END;
+$$ LANGUAGE plpgsql STABLE;

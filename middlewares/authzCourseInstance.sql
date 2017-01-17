@@ -12,6 +12,12 @@ WHERE
     AND ci.deleted_at IS NULL
     AND c.deleted_at IS NULL;
 
+-- BLOCK ensure_enrollment
+INSERT INTO enrollments
+        (course_instance_id,  user_id,  role)
+VALUES ($course_instance_id, $user_id, $role)
+ON CONFLICT (user_id, course_instance_id) DO NOTHING;
+
 -- BLOCK select_effective_authz_data
 WITH effective_data AS (
     SELECT

@@ -80,8 +80,23 @@ module.exports = function(req, res, next) {
         // FIXME: debugging for #422
         logger.debug('Preliminary authz_data', res.locals.authz_data);
 
-        // handle user data override
-        if (req.cookies.pl_requested_uid || req.cookies.pl_requested_role || req.cookies.pl_requested_mode) {
+        // check whether we are requesting user data override
+        if (!req.cookies.pl_requested_uid && !req.cookies.pl_requested_role && !req.cookies.pl_requested_mode) {
+            // no user data override, just continue
+            return next();
+        }
+
+        // We are trying to override the user data.
+        // Ensure we are enrolled in this course (we are already authorized, so this must be ok).
+        var params = {
+            course_instance_id: res.locals.course_instance.id,
+            user_id: res.locals.authn_user.user_id,
+            role: res.locals.authz_data.authn_role,
+        };
+        sqldb.query(sql.ensure_enrollment, params, function(err, result) {
+            if (ERR(err, next)) return;
+
+            // now do the actual override
             var params = {
                 authn_user_id: res.locals.authn_user.user_id,
                 authn_role: res.locals.authz_data.authn_role,
@@ -106,9 +121,6 @@ module.exports = function(req, res, next) {
                 res.locals.user = res.locals.authz_data.user;
                 next();
             });
-        } else {
-            // no user data override, just continue
-            next();
-        }
+        });
     });
 };
