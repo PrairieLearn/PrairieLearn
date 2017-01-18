@@ -9,12 +9,11 @@ RUN yum -y install \
     && su postgres -c "/usr/pgsql-9.6/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log"
 
 # NOTE: Modify .dockerignore to whitelist files/directories to copy.
-COPY . /prairielearn/
+COPY . /PrairieLearn/
 
-RUN mv /prairielearn/docker/init.sh /etc/init.sh && chmod +x /etc/init.sh \
-    && mv /prairielearn/docker/config.json /prairielearn \
-    && mv /prairielearn/exampleCourse /exampleCourse \
+RUN chmod +x /PrairieLearn/docker/init.sh \
+    && mv /PrairieLearn/docker/config.json /PrairieLearn \
     && mkdir /course \
-    && cd /prairielearn && npm install
+    && cd /PrairieLearn && npm install
 
-CMD /etc/init.sh
+CMD /PrairieLearn/docker/init.sh
