@@ -1,3 +1,24 @@
-v1
-node_modules
-server.log
+# blacklist all
+*
+
+# whitelist things to copy
+!assessments/
+!cron/
+!doc/
+!lib/
+!middlewares/
+!models/
+!pages/
+!public/
+!question-servers/
+!schemas/
+!sprocs/
+!sync/
+!tests/
+!tools/
+!package.json
+!server.js
+
+!docker/
+
+!exampleCourse/
