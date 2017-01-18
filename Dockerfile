@@ -1,8 +1,9 @@
 FROM centos:7
 
 RUN yum -y install \
-    https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/pgdg-centos96-9.6-3.noarch.rpm \
     epel-release \
+    https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/pgdg-centos96-9.6-3.noarch.rpm \
+    https://rpm.nodesource.com/pub_7.x/el/7/x86_64/nodesource-release-el7-1.noarch.rpm \
     && yum -y install postgresql96-server postgresql96-contrib nodejs \
     && yum clean all \
     && mkdir /var/postgres && chown postgres:postgres /var/postgres \
