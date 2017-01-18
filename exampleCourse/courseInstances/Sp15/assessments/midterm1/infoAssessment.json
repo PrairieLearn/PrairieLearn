@@ -26,5 +26,5 @@
             ]
         }
     ],
-    "text": "For this exam you can use the <a target=\"_blank\" href=\"<%= clientFilesAssessment %>/formulas.pdf\">PDF formula sheet</a> or the <a target=\"_blank\" href=\"<%= clientFilesAssessment %>/formulas.html\">HTML formula sheet."
+    "text": "For this exam you can use the <a target=\"_blank\" href=\"<%= clientFilesAssessment %>/formulas.pdf\">PDF formula sheet</a> or the <a target=\"_blank\" href=\"<%= clientFilesAssessment %>/formulas.html\">HTML formula sheet</a>."
 }
