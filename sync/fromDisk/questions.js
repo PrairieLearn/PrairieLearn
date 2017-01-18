@@ -15,6 +15,20 @@ module.exports = {
         logger.debug('Syncing questions');
         async.series([
             function(callback) {
+                var err = null;
+                _(questionDB)
+                    .groupBy('uuid')
+                    .each(function(questions, uuid) {
+                        if (questions.length > 1) {
+                            err = new Error('UUID ' + uuid + ' is used in multiple questions: '
+                                            + _.map(questions, 'directory').join());
+                            return false; // terminate each()
+                        }
+                    });
+                if (err) return callback(err);
+                callback(null);
+            },
+            function(callback) {
                 async.forEachOfSeries(questionDB, function(q, qid, callback) {
                     logger.debug('Checking uuid for ' + qid);
                     sqldb.call('questions_with_uuid_elsewhere', [courseInfo.courseId, q.uuid], function(err, result) {

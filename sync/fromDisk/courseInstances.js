@@ -16,6 +16,35 @@ module.exports = {
         var courseInstanceIds = [];
         async.series([
             function(callback) {
+                var err = null;
+                _(courseInstanceDB)
+                    .groupBy('uuid')
+                    .each(function(courseInstances, uuid) {
+                        if (courseInstances.length > 1) {
+                            err = new Error('UUID ' + uuid + ' is used in multiple courseInstances: '
+                                            + _.map(courseInstances, 'directory').join());
+                            return false; // terminate each()
+                        }
+                    });
+                if (err) return callback(err);
+                callback(null);
+            },
+            function(callback) {
+                var err = null;
+                _(courseInstanceDB)
+                    .flatMap(ci => _.map(ci.assessmentDB || [], a => _.assign(a, {course_instance_directory: ci.directory})))
+                    .groupBy('uuid')
+                    .each(function(assessments, uuid) {
+                        if (assessments.length > 1) {
+                            err = new Error('UUID ' + uuid + ' is used in multiple assessments: '
+                                            + _.map(assessments, a => a.course_instance_directory + '/' + a.directory).join());
+                            return false; // terminate each()
+                        }
+                    });
+                if (err) return callback(err);
+                callback(null);
+            },
+            function(callback) {
                 async.forEachOfSeries(courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
                     logger.debug('Checking uuid for ' + courseInstanceShortName);
                     sqldb.call('course_instances_with_uuid_elsewhere', [courseInfo.courseId, courseInstance.uuid], function(err, result) {

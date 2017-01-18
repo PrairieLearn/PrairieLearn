@@ -23,11 +23,25 @@ module.exports = {
                 callback(null);
             },
             function(callback) {
+                var err = null;
+                _(courseInstance.assessmentDB)
+                    .groupBy('uuid')
+                    .each(function(assessments, uuid) {
+                        if (assessments.length > 1) {
+                            err = new Error('UUID ' + uuid + ' is used in multiple assessments: '
+                                            + _.map(assessments, 'directory').join());
+                            return false; // terminate each()
+                        }
+                    });
+                if (err) return callback(err);
+                callback(null);
+            },
+            function(callback) {
                 async.forEachOfSeries(courseInstance.assessmentDB, function(dbAssessment, tid, callback) {
                     logger.debug('Checking uuid for ' + tid);
                     sqldb.call('assessments_with_uuid_elsewhere', [courseInstance.courseInstanceId, dbAssessment.uuid], function(err, result) {
                         if (ERR(err, callback)) return;
-                        if (result.rowCount > 0) return callback(new Error('UUID ' + dbAssessment.uuid + ' from assessment ' + tid + ' in ' + courseInstance.tid + ' already in use in different course instance'));
+                        if (result.rowCount > 0) return callback(new Error('UUID ' + dbAssessment.uuid + ' from assessment ' + tid + ' in ' + courseInstance.directory + ' already in use in different course instance (possibly in a different course)'));
                         callback(null);
                     });
                 }, function(err) {
