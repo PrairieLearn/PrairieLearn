@@ -19,7 +19,7 @@ WITH
             ai.assessment_id = $assessment_id
             AND ai.user_id = $user_id
     )
-INSERT INTO assessment_instances AS ai (number, assessment_id, user_id, mode)
+INSERT INTO assessment_instances AS ai (number, assessment_id, user_id, mode, max_points)
 (
     SELECT
         CASE
@@ -28,7 +28,8 @@ INSERT INTO assessment_instances AS ai (number, assessment_id, user_id, mode)
         END,
         $assessment_id,
         $user_id,
-        $mode
+        $mode,
+        a.max_points
     FROM
         assessments AS a,
         max_existing_number

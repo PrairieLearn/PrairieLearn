@@ -20,7 +20,7 @@
           <div class="well well-sm small-bottom-margin">
             <div class="row">
               <div class="col-md-3 col-sm-6 col-xs-12">
-                Total points: <%= assessment_instance.points %>/<%= assessment_instance.max_points || assessment.max_points %>
+                Total points: <%= assessment_instance.points %>/<%= assessment_instance.max_points %>
               </div>
               <div class="col-md-3 col-sm-6 col-xs-12">
                 <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>

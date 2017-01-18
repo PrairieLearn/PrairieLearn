@@ -48,7 +48,7 @@ module.exports = {
                         config: dbAssessment.options,
                         multiple_instance: dbAssessment.multipleInstance ? true : false,
                         shuffle_questions: dbAssessment.shuffleQuestions ? true : false,
-                        max_score: dbAssessment.options ? dbAssessment.options.maxScore : null,
+                        max_points: dbAssessment.maxPoints,
                         course_instance_id: courseInstance.courseInstanceId,
                         course_id: courseInfo.courseId,
                         set_name: dbAssessment.set,
@@ -64,7 +64,13 @@ module.exports = {
                                 if (ERR(err, callback)) return;
                                 that.syncAssessmentQuestions(assessmentId, dbAssessment, courseInfo, function(err) {
                                     if (ERR(err, callback)) return;
-                                    callback(null);
+                                    var params = {
+                                        assessment_id: assessmentId,
+                                    };
+                                    sqldb.query(sql.update_assessment_max_points, params, function(err, result) {
+                                        if (ERR(err, callback)) return;
+                                        callback(null);
+                                    });
                                 });
                             });
                         });
@@ -241,6 +247,7 @@ module.exports = {
                         if (question.maxPoints == undefined) {
                             question.maxPoints = question.points;
                         }
+                        question.initPoints = question.points;
                     }
                 }
 

@@ -6,7 +6,7 @@ INSERT INTO assessments
 (
     SELECT
         $uuid, $tid, $type, $number, $order_by, $title, $config, $multiple_instance, $shuffle_questions,
-        $max_score,  NULL,      $course_instance_id, $text,
+        $max_points, NULL,      $course_instance_id, $text,
         COALESCE((SELECT id FROM assessment_sets WHERE name = $set_name AND course_id = $course_id), NULL)
 )
 ON CONFLICT (uuid) DO UPDATE
@@ -164,3 +164,33 @@ SET
     number_in_alternative_group = EXCLUDED.number_in_alternative_group,
     question_id = EXCLUDED.question_id
 RETURNING aq.id;
+
+-- BLOCK update_assessment_max_points
+WITH
+total_points AS (
+    SELECT
+        sum(aq.max_points) AS max_points
+    FROM
+        assessment_questions AS aq
+    WHERE
+        aq.assessment_id = $assessment_id
+        AND aq.deleted_at IS NULL
+),
+assessment_max_points AS (
+    UPDATE assessments AS a
+    SET
+        max_points = CASE WHEN a.max_points IS NOT NULL THEN a.max_points ELSE total_points.max_points END
+    FROM
+        total_points
+    WHERE
+        a.id = $assessment_id
+    RETURNING
+        a.*
+)
+UPDATE assessment_instances AS ai
+SET
+    max_points = a.max_points
+FROM
+    assessment_max_points AS a
+WHERE
+    ai.assessment_id = $assessment_id;

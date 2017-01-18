@@ -23,10 +23,9 @@ BEGIN
         iq.assessment_instance_id = assessment_points_homework.assessment_instance_id
         AND aq.deleted_at IS NULL;
 
-    SELECT COALESCE(ai.max_points, a.max_points) INTO max_points
+    SELECT ai.max_points INTO max_points
     FROM
         assessment_instances AS ai
-        JOIN assessments AS a ON (a.id = ai.assessment_id)
     WHERE
         ai.id = assessment_instance_id;
 
