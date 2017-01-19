@@ -212,6 +212,15 @@ router.post('/', function(req, res, next) {
                 res.redirect(req.originalUrl);
             });
         });
+    } else if (req.body.postAction == 'delete') {
+        var params = [
+            req.body.assessment_instance_id,
+            res.locals.authn_user.user_id,
+        ];
+        sqldb.call('assessment_instances_delete', params, function(err, result) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
     } else {
         return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
     }

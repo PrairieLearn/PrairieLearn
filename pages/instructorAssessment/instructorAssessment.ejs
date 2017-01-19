@@ -287,6 +287,51 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
       
+      <div class="modal fade" id="deleteAssessmentInstanceModal" tabindex="-1" role="dialog" aria-labelledby="deleteAssessmentInstance">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="deleteAssessmentInstanceModalLabel">Delete assessment instance</h4>
+            </div>
+            <div class="modal-body">
+              Are you sure you want to delete assessment
+              instance <span class="modal-number"></span>
+              of <strong><%= assessment_set.name
+              %> <%= assessment.number %></strong>
+              for <strong><span class="modal-name"></span></strong>
+              (<span class="modal-uid"></span>) with a score
+              of <span class="modal-score-perc"></span>%?
+            </div>
+            <div class="modal-footer">
+              <form name="finish-form" method="POST">
+                <input type="hidden" name="postAction" value="delete">
+                <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+                <input type="hidden" name="assessment_instance_id" class="modal-assessment-instance-id" value="">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger">Delete</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        $('#deleteAssessmentInstanceModal').on('show.bs.modal', function (event) {
+            var button = $(event.relatedTarget); // Button that triggered the modal
+            var uid = button.data('uid'); // Extract info from data-* attributes
+            var name = button.data('name');
+            var number = button.data('number');
+            var score_perc = button.data('score-perc');
+            var assessment_instance_id = button.data('assessment-instance-id');
+            var modal = $(this);
+            modal.find('.modal-uid').text(uid);
+            modal.find('.modal-name').text(name);
+            modal.find('.modal-number').text(number);
+            modal.find('.modal-score-perc').text(score_perc);
+            modal.find('.modal-assessment-instance-id').val(assessment_instance_id);
+        });
+      </script>
+
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title"><%= assessment_set.abbreviation %><%= assessment.number %> Scores</h3>
@@ -310,6 +355,7 @@
               <% if (assessment.type == 'Exam') { %>
               <th class="cell-center">Status</th>
               <% } %> <!-- if type == Exam -->
+              <th class="cell-center"></th>
               <th class="cell-center"></th>
             </tr>
           </thead>
@@ -360,6 +406,25 @@
                 <% } %> <!-- if open -->
               </td>
               <% } %> <!-- if type == Exam -->
+              <td class="cell-center">
+                <div class="btn-group">
+                  <button type="button" class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    Action <span class="caret"></span>
+                  </button>
+                  <ul class="dropdown-menu">
+                    <li>
+                      <a data-toggle="modal" data-target="#deleteAssessmentInstanceModal"
+                         data-uid="<%= row.uid %>" data-name="<%= row.name %>"
+                         data-number="<%= row.number %>"
+                         data-score-perc="<%= Math.floor(row.score_perc) %>"
+                         data-assessment-instance-id="<%= row.assessment_instance_id %>"
+                         >
+                        <i class="fa fa-times" aria-hidden="true"></i> Delete
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+              </td>
               <td class="cell-center"><a href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>" class="btn btn-xs btn-info">Details</a></td>
             </tr>
             <% }); %>
@@ -373,7 +438,13 @@
                   headerTemplate: '{content} {icon}',
                   widgets: ["uitheme"],
                   headers: {
-                      7: {sorter: false},
+                      <% if (assessment.type == 'Exam') { %>
+                          7: {sorter: false},
+                          8: {sorter: false},
+                      <% } else { %> <!-- if type == Exam -->
+                          6: {sorter: false},
+                          7: {sorter: false},
+                      <% } %> <!-- if type == Exam -->
                   },
               });
           });
