@@ -20,6 +20,7 @@ router.get('/:filename', function(req, res, next) {
     var params = {
         question_id: question.id,
         filename: filename,
+        type: question.type,
     };
     sqldb.queryOneRow(sql.check_client_files, params, function(err, result) {
         if (ERR(err, next)) return;
