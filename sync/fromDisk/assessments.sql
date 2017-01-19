@@ -139,10 +139,11 @@ WHERE
     AND aq.id NOT IN (SELECT unnest($keep_assessment_question_ids::integer[]));
 
 -- BLOCK select_question_by_qid
-SELECT id FROM questions
+SELECT id FROM questions AS q
 WHERE
-    qid = $qid
-    AND course_id = $course_id;
+    q.qid = $qid
+    AND q.course_id = $course_id
+    AND q.deleted_at IS NULL;
 
 -- BLOCK insert_assessment_question
 INSERT INTO assessment_questions AS aq
