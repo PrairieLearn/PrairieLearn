@@ -221,6 +221,15 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
+    } else if (req.body.postAction == 'delete_all') {
+        var params = [
+            req.body.assessment_id,
+            res.locals.authn_user.user_id,
+        ];
+        sqldb.call('assessment_instances_delete_all', params, function(err, result) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
     } else {
         return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
     }

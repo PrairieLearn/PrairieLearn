@@ -62,6 +62,7 @@ module.exports = {
             'courses_delete.sql',
             'select_or_insert_course_by_path.sql',
             'assessment_instances_delete.sql',
+            'assessment_instances_delete_all.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

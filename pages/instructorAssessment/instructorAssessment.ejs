@@ -332,15 +332,48 @@
         });
       </script>
 
+      <div class="modal fade" id="deleteAllAssessmentInstancesModal" tabindex="-1" role="dialog" aria-labelledby="deleteAllAssessmentInstances">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="deleteAllAssessmentInstancesModalLabel">Delete all assessment instances</h4>
+            </div>
+            <div class="modal-body">
+              Are you sure you want to delete all assessment instances
+              for <strong><%= assessment_set.name %>
+              <%= assessment.number %></strong>? This cannot be
+              undone.
+            </div>
+            <div class="modal-footer">
+              <form name="finish-form" method="POST">
+                <input type="hidden" name="postAction" value="delete_all">
+                <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+                <input type="hidden" name="assessment_id" value="<%= assessment.id %>">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger">Delete all</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title"><%= assessment_set.abbreviation %><%= assessment.number %> Scores</h3>
         </div>
         <div class="panel-body">
-          <small>
+          <p>
+            <a class="btn btn-xs btn-default" role="button"
+               data-toggle="modal" data-target="#deleteAllAssessmentInstancesModal">
+              <i class="fa fa-times" aria-hidden="true"></i> Delete all assessment instances
+            </a>
+          </p>
+          <p class="no-bottom-margin">
+            <small>
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= scoresCsvFilename %>"><%= scoresCsvFilename %></a>.
             Click on a column header to sort. Shift-click on a second header to sub-sort.
           </small>
+          </p>
         </div>
 
         <table id="usersTable" class="table table-condensed table-hover tablesorter">
