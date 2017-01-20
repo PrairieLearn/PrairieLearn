@@ -8,6 +8,7 @@ var router = express.Router();
 var error = require('../../lib/error');
 var logger = require('../../lib/logger');
 var csvMaker = require('../../lib/csv-maker');
+var dataFiles = require('../../lib/data-files');
 var assessments = require('../../assessments');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
@@ -31,7 +32,8 @@ var filenames = function(locals) {
         allInstanceScoresCsvFilename: prefix + 'all_instance_scores.csv',
         finalSubmissionsCsvFilename:  prefix + 'final_submissions.csv',
         allSubmissionsCsvFilename:    prefix + 'all_submissions.csv',
-        filesZipFilename:             prefix + 'files.zip',
+        finalFilesZipFilename:        prefix + 'final_files.zip',
+        allFilesZipFilename:          prefix + 'all_files.zip',
     };
 };
 
@@ -210,9 +212,14 @@ router.get('/:filename', function(req, res, next) {
                 res.send(csv);
             });
         });
-    } else if (req.params.filename == res.locals.allSubmissionsCsvFilename) {
-        var params = {assessment_id: res.locals.assessment.id};
-        sqldb.query(sql.assessment_instance_final_submissions, params, function(err, result) {
+    } else if (req.params.filename == res.locals.allSubmissionsCsvFilename
+               || req.params.filename == res.locals.finalSubmissionsCsvFilename) {
+        var include_all = (req.params.filename == res.locals.allSubmissionsCsvFilename);
+        var params = {
+            assessment_id: res.locals.assessment.id,
+            include_all: include_all,
+        };
+        sqldb.query(sql.assessment_instance_submissions, params, function(err, result) {
             if (ERR(err, next)) return;
             var columns = [
                 ['UID', 'uid'],
@@ -242,6 +249,22 @@ router.get('/:filename', function(req, res, next) {
                 if (ERR(err, next)) return;
                 res.attachment(req.params.filename);
                 res.send(csv);
+            });
+        });
+    } else if (req.params.filename == res.locals.allFilesZipFilename
+               || req.params.filename == res.locals.finalFilesZipFilename) {
+        var include_all = (req.params.filename == res.locals.allFilesZipFilename);
+        var params = {
+            assessment_id: res.locals.assessment.id,
+            include_all: include_all,
+        };
+        sqldb.query(sql.assessment_instance_files, params, function(err, result) {
+            if (ERR(err, next)) return;
+            var dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(' ', '');
+            dataFiles.filesToZipBuffer(result.rows, dirname, function(err, zipBuffer) {
+                if (ERR(err, next)) return;
+                res.attachment(req.params.filename);
+                res.send(zipBuffer);
             });
         });
     } else {

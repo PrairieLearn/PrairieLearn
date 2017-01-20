@@ -20,7 +20,7 @@
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %></h3>
+          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Questions</h3>
         </div>
 
         <table class="table table-condensed table-hover">
@@ -102,7 +102,7 @@
       
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.abbreviation %><%= assessment.number %> Score statistics</h3>
+          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Score statistics</h3>
         </div>
         <% if (assessment_stat.number > 0) { %>
         <div class="panel-body">
@@ -153,7 +153,7 @@
       
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.abbreviation %><%= assessment.number %> Duration statistics</h3>
+          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Duration statistics</h3>
         </div>
 
         <% if (assessment_stat.number > 0) { %>
@@ -202,7 +202,7 @@
       
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.abbreviation %><%= assessment.number %> Duration versus score</h3>
+          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Duration versus score</h3>
         </div>
 
         <% if (assessment_stat.number > 0) { %>
@@ -244,7 +244,7 @@
 
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.abbreviation %><%= assessment.number %> Question difficulty vs discrimination</h3>
+          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Question difficulty vs discrimination</h3>
         </div>
 
         <% if (assessment_stat.number > 0) { %>
@@ -289,7 +289,7 @@
       
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.abbreviation %><%= assessment.number %> Downloads</h3>
+          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Downloads</h3>
         </div>
 
         <table class="table table-condensed table-hover">
@@ -337,28 +337,44 @@
             </tr>
             <tr>
               <td>
-              </td>
-              <td>
-                Final submitted answers for all students that were
-                used to compute the total score.
-              </td>
-            </tr>
-            <tr>
-              <td>
                 <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= allSubmissionsCsvFilename %>"><%= allSubmissionsCsvFilename %></a>
               </td>
               <td>
                 All submitted answers for all students for all
                 assessment instances. Not all submitted answers will
                 have been used to compute the final score, as some may
-                have been overwritten by subsequent attempts.
+                have been superceded by subsequent attempts.
               </td>
             </tr>
             <tr>
               <td>
+                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= finalSubmissionsCsvFilename %>"><%= finalSubmissionsCsvFilename %></a>
               </td>
               <td>
-                Final submitted files for all students. Only data
+                Final submitted answers for each question for all
+                students for all assessment instances.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= allFilesZipFilename %>"><%= allFilesZipFilename %></a>
+              </td>
+              <td>
+                All submitted files for all students for all
+                assessment instances. Only data
+                from <tt>File</tt>-type questions will be included in
+                the zip. Not all submitted files will have been used
+                to compute the final score, as some may have been
+                superceded by subsequent attempts.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= finalFilesZipFilename %>"><%= finalFilesZipFilename %></a>
+              </td>
+              <td>
+                Final submitted files for each question for all
+                students for all assessment instances. Only data
                 from <tt>File</tt>-type questions will be included in
                 the zip.
               </td>
@@ -442,7 +458,7 @@
 
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.abbreviation %><%= assessment.number %> Scores</h3>
+          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Scores</h3>
         </div>
         <div class="panel-body">
           <p>

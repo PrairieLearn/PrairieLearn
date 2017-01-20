@@ -154,46 +154,100 @@ ORDER BY
     u.uid, u.user_id, ai.number;
 
 
--- BLOCK assessment_instance_final_submissions
+-- BLOCK assessment_instance_submissions
+WITH all_submissions AS (
+    SELECT
+        u.uid,
+        u.name,
+        e.role,
+        (aset.name || ' ' || a.number) AS assessment_label,
+        ai.number AS assessment_instance_number,
+        q.qid,
+        iq.number AS instance_question_number,
+        v.number AS variant_number,
+        v.variant_seed,
+        v.params,
+        v.true_answer,
+        v.options,
+        s.date,
+        format_date_iso8601(s.date, ci.display_timezone) AS submission_date_formatted,
+        s.submitted_answer,
+        s.override_score,
+        s.credit,
+        s.mode,
+        format_date_iso8601(s.grading_requested_at, ci.display_timezone) AS grading_requested_at_formatted,
+        format_date_iso8601(s.graded_at, ci.display_timezone) AS graded_at_formatted,
+        s.score,
+        CASE WHEN s.correct THEN 'TRUE' ELSE 'FALSE' END AS correct,
+        s.feedback,
+        (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1 AS final_submission_per_variant
+    FROM
+        assessments AS a
+        JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+        JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+        JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
+        JOIN users AS u ON (u.user_id = ai.user_id)
+        JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
+        JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        JOIN questions AS q ON (q.id = aq.question_id)
+        JOIN variants AS v ON (v.instance_question_id = iq.id)
+        JOIN submissions AS s ON (s.variant_id = v.id)
+    WHERE
+        a.id = $assessment_id
+)
 SELECT
-    u.uid,
-    u.name,
-    e.role,
-    (aset.name || ' ' || a.number) AS assessment_label,
-    ai.number AS assessment_instance_number,
-    q.qid,
-    iq.number AS instance_question_number,
-    v.number AS variant_number,
-    v.variant_seed,
-    v.params,
-    v.true_answer,
-    v.options,
-    format_date_iso8601(s.date, ci.display_timezone) AS submission_date_formatted,
-    s.submitted_answer,
-    s.override_score,
-    s.credit,
-    s.mode,
-    format_date_iso8601(s.grading_requested_at, ci.display_timezone) AS grading_requested_at_formatted,
-    format_date_iso8601(s.graded_at, ci.display_timezone) AS graded_at_formatted,
-    s.score,
-    CASE WHEN s.correct THEN 'TRUE' ELSE 'FALSE' END AS correct,
-    s.feedback
+    *
 FROM
-    assessments AS a
-    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-    JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-    JOIN users AS u ON (u.user_id = ai.user_id)
-    JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
-    JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
-    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-    JOIN questions AS q ON (q.id = aq.question_id)
-    JOIN variants AS v ON (v.instance_question_id = iq.id)
-    JOIN submissions AS s ON (s.variant_id = v.id)
+    all_submissions
 WHERE
-    a.id = $assessment_id
+    $include_all OR final_submission_per_variant
 ORDER BY
-    u.uid, u.user_id, ai.number, ai.id, q.qid, iq.number, iq.id, v.number, v.id, s.date;
+    uid, assessment_instance_number, qid, instance_question_number, variant_number, date;
+
+
+-- BLOCK assessment_instance_files
+WITH all_file_submissions AS (
+    SELECT
+        u.uid,
+        ai.number AS assessment_instance_number,
+        q.qid,
+        v.number AS variant_number,
+        v.params,
+        s.date,
+        s.submitted_answer,
+        row_number() OVER (PARTITION BY v.id ORDER BY s.date) AS submission_number,
+        (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1 AS final_submission_per_variant
+    FROM
+        assessments AS a
+        JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
+        JOIN users AS u ON (u.user_id = ai.user_id)
+        JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        JOIN questions AS q ON (q.id = aq.question_id)
+        JOIN variants AS v ON (v.instance_question_id = iq.id)
+        JOIN submissions AS s ON (s.variant_id = v.id)
+    WHERE
+        a.id = $assessment_id
+        AND v.params ? 'fileName'
+        AND s.submitted_answer ? 'fileData'
+)
+SELECT
+    (
+        uid
+        || '_' || assessment_instance_number
+        || '_' || qid
+        || '_' || variant_number
+        || '_' || submission_number
+        || '_' || (params->>'fileName')
+    ) AS filename,
+    decode(submitted_answer->>'fileData', 'base64') AS contents
+FROM
+    all_file_submissions
+WHERE
+    $include_all OR final_submission_per_variant
+ORDER BY
+    uid, assessment_instance_number, qid, variant_number, date;
 
 
 -- BLOCK open
