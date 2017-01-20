@@ -23,7 +23,7 @@ INSERT INTO variants AS v (instance_question_id, number, variant_seed, params, t
 (
     SELECT
         $instance_question_id,
-        max(other_v.number) + 1,
+        coalesce(max(other_v.number) + 1, 1),
         $variant_seed,
         $question_params,
         $true_answer,
