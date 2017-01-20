@@ -86,8 +86,9 @@ FROM assessment_duration_stats AS ads
 WHERE id = $assessment_id;
 
 
--- BLOCK assessment_instance_scores
+-- BLOCK assessment_instance_data
 SELECT
+    (aset.name || ' ' || a.number) AS assessment_label,
     u.user_id, u.uid, u.name, e.role, ai.score_perc,
     ai.number,ai.id AS assessment_instance_id,ai.open,
     format_interval(aid.duration) AS duration,
@@ -95,6 +96,7 @@ SELECT
     EXTRACT(EPOCH FROM aid.duration) / 60 AS duration_mins
 FROM
     assessments AS a
+    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
     JOIN users AS u ON (u.user_id = ai.user_id)
     JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
@@ -103,6 +105,95 @@ WHERE
     a.id = $assessment_id
 ORDER BY
     e.role DESC, u.uid, u.user_id, ai.number;
+
+
+-- BLOCK assessment_instance_scores
+SELECT
+    u.uid,
+    max(ai.score_perc) AS score_perc
+FROM
+    assessments AS a
+    JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
+    JOIN users AS u ON (u.user_id = ai.user_id)
+WHERE
+    a.id = $assessment_id
+GROUP BY
+    u.user_id
+ORDER BY
+    u.uid, u.user_id;
+
+
+-- BLOCK assessment_instance_scores_by_username
+SELECT
+    regexp_replace(u.uid, '@.*', '') AS username,
+    max(ai.score_perc) AS score_perc
+FROM
+    assessments AS a
+    JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
+    JOIN users AS u ON (u.user_id = ai.user_id)
+WHERE
+    a.id = $assessment_id
+GROUP BY
+    u.user_id
+ORDER BY
+    u.uid, u.user_id;
+
+
+-- BLOCK assessment_instance_scores_all
+SELECT
+    u.uid,
+    ai.number,
+    ai.score_perc
+FROM
+    assessments AS a
+    JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
+    JOIN users AS u ON (u.user_id = ai.user_id)
+WHERE
+    a.id = $assessment_id
+ORDER BY
+    u.uid, u.user_id, ai.number;
+
+
+-- BLOCK assessment_instance_final_submissions
+SELECT
+    u.uid,
+    u.name,
+    e.role,
+    (aset.name || ' ' || a.number) AS assessment_label,
+    ai.number AS assessment_instance_number,
+    q.qid,
+    iq.number AS instance_question_number,
+    v.number AS variant_number,
+    v.variant_seed,
+    v.params,
+    v.true_answer,
+    v.options,
+    format_date_iso8601(s.date, ci.display_timezone) AS submission_date_formatted,
+    s.submitted_answer,
+    s.override_score,
+    s.credit,
+    s.mode,
+    format_date_iso8601(s.grading_requested_at, ci.display_timezone) AS grading_requested_at_formatted,
+    format_date_iso8601(s.graded_at, ci.display_timezone) AS graded_at_formatted,
+    s.score,
+    CASE WHEN s.correct THEN 'TRUE' ELSE 'FALSE' END AS correct,
+    s.feedback
+FROM
+    assessments AS a
+    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
+    JOIN users AS u ON (u.user_id = ai.user_id)
+    JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
+    JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
+    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+    JOIN questions AS q ON (q.id = aq.question_id)
+    JOIN variants AS v ON (v.instance_question_id = iq.id)
+    JOIN submissions AS s ON (s.variant_id = v.id)
+WHERE
+    a.id = $assessment_id
+ORDER BY
+    u.uid, u.user_id, ai.number, ai.id, q.qid, iq.number, iq.id, v.number, v.id, s.date;
 
 
 -- BLOCK open

@@ -7,49 +7,36 @@ var router = express.Router();
 
 var error = require('../../lib/error');
 var logger = require('../../lib/logger');
+var csvMaker = require('../../lib/csv-maker');
 var assessments = require('../../assessments');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-var scoreStatsCsvFilename = function(locals) {
-    return locals.course.short_name.replace(/\s+/g, '')
+var filenames = function(locals) {
+    var prefix = locals.course.short_name.replace(/\s+/g, '')
         + '_'
         + locals.course_instance.short_name
         + '_'
         + locals.assessment_set.abbreviation
         + locals.assessment.number
-        + '_'
-        + 'score_stats.csv';
-};
-
-var durationStatsCsvFilename = function(locals) {
-    return locals.course.short_name.replace(/\s+/g, '')
-        + '_'
-        + locals.course_instance.short_name
-        + '_'
-        + locals.assessment_set.abbreviation
-        + locals.assessment.number
-        + '_'
-        + 'duration_stats.csv';
-};
-
-var scoresCsvFilename = function(locals) {
-    return locals.course.short_name.replace(/\s+/g, '')
-        + '_'
-        + locals.course_instance.short_name
-        + '_'
-        + locals.assessment_set.abbreviation
-        + locals.assessment.number
-        + '_'
-        + 'scores.csv';
+        + '_';
+    return {
+        scoreStatsCsvFilename:        prefix + 'score_stats.csv',
+        durationStatsCsvFilename:     prefix + 'duration_stats.csv',
+        instancesCsvFilename:         prefix + 'instances.csv',
+        scoresCsvFilename:            prefix + 'scores.csv',
+        scoresByUsernameCsvFilename:  prefix + 'scores_by_username.csv',
+        allInstanceScoresCsvFilename: prefix + 'all_instance_scores.csv',
+        finalSubmissionsCsvFilename:  prefix + 'final_submissions.csv',
+        allSubmissionsCsvFilename:    prefix + 'all_submissions.csv',
+        filesZipFilename:             prefix + 'files.zip',
+    };
 };
 
 router.get('/', function(req, res, next) {
-    res.locals.scoreStatsCsvFilename = scoreStatsCsvFilename(res.locals);
-    res.locals.durationStatsCsvFilename = durationStatsCsvFilename(res.locals);
-    res.locals.scoresCsvFilename = scoresCsvFilename(res.locals);
+    _.assign(res.locals, filenames(res.locals));
 
     var params = {assessment_id: res.locals.assessment.id};
     sqldb.query(sql.questions, params, function(err, result) {
@@ -71,7 +58,7 @@ router.get('/', function(req, res, next) {
                     res.locals.duration_stat = result.rows[0];
     
                     var params = {assessment_id: res.locals.assessment.id};
-                    sqldb.query(sql.assessment_instance_scores, params, function(err, result) {
+                    sqldb.query(sql.assessment_instance_data, params, function(err, result) {
                         if (ERR(err, next)) return;
                         res.locals.user_scores = result.rows;
                     
@@ -84,7 +71,9 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/:filename', function(req, res, next) {
-    if (req.params.filename == scoreStatsCsvFilename(res.locals)) {
+    _.assign(res.locals, filenames(res.locals));
+
+    if (req.params.filename == res.locals.scoreStatsCsvFilename) {
         var params = {assessment_id: res.locals.assessment.id};
         sqldb.queryOneRow(sql.assessment_stats, params, function(err, result) {
             if (ERR(err, next)) return;
@@ -116,12 +105,12 @@ router.get('/:filename', function(req, res, next) {
             });
             csvData = [csvHeaders, csvData];
             csvStringify(csvData, function(err, csv) {
-                if (err) throw Error("Error formatting CSV", err);
+                if (ERR(err, next)) return;
                 res.attachment(req.params.filename);
                 res.send(csv);
             });
         });
-    } else if (req.params.filename == durationStatsCsvFilename(res.locals)) {
+    } else if (req.params.filename == res.locals.durationStatsCsvFilename) {
         var params = {assessment_id: res.locals.assessment.id};
         sqldb.queryOneRow(sql.assessment_duration_stats, params, function(err, result) {
             if (ERR(err, next)) return;
@@ -151,31 +140,106 @@ router.get('/:filename', function(req, res, next) {
             });
             csvData = [csvHeaders, csvData];
             csvStringify(csvData, function(err, csv) {
-                if (err) throw Error("Error formatting CSV", err);
+                if (ERR(err, next)) return;
                 res.attachment(req.params.filename);
                 res.send(csv);
             });
         });
-    } else if (req.params.filename == scoresCsvFilename(res.locals)) {
+    } else if (req.params.filename == res.locals.instancesCsvFilename) {
+        var params = {assessment_id: res.locals.assessment.id};
+        sqldb.query(sql.assessment_instance_data, params, function(err, result) {
+            if (ERR(err, next)) return;
+            var columns = [
+                ['UID', 'uid'],
+                ['Name', 'name'],
+                ['Role', 'role'],
+                ['Assessment', 'assessment_label'],
+                ['Instance', 'number'],
+                ['Score (%)', 'score_perc'],
+                ['Duration (min)', 'duration_mins'],
+            ];
+            csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
+                if (ERR(err, next)) return;
+                res.attachment(req.params.filename);
+                res.send(csv);
+            });
+        });
+    } else if (req.params.filename == res.locals.scoresCsvFilename) {
         var params = {assessment_id: res.locals.assessment.id};
         sqldb.query(sql.assessment_instance_scores, params, function(err, result) {
             if (ERR(err, next)) return;
-            var userScores = result.rows;
-            var csvHeaders = ['UID', 'Name', 'Role', 'Instance', 'Score (%)', 'Duration (min)'];
-            var csvData = [];
-            _(userScores).each(function(row) {
-                csvData.push([
-                    row.uid,
-                    row.name,
-                    row.role,
-                    row.number,
-                    row.score_perc,
-                    row.duration_mins,
-                ]);
+            var assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
+            var columns = [
+                ['UID', 'uid'],
+                [assessmentName, 'score_perc'],
+            ];
+            csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
+                if (ERR(err, next)) return;
+                res.attachment(req.params.filename);
+                res.send(csv);
             });
-            csvData.splice(0, 0, csvHeaders);
-            csvStringify(csvData, function(err, csv) {
-                if (err) throw Error("Error formatting CSV", err);
+        });
+    } else if (req.params.filename == res.locals.scoresByUsernameCsvFilename) {
+        var params = {assessment_id: res.locals.assessment.id};
+        sqldb.query(sql.assessment_instance_scores_by_username, params, function(err, result) {
+            if (ERR(err, next)) return;
+            var assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
+            var columns = [
+                ['Username', 'username'],
+                [assessmentName, 'score_perc'],
+            ];
+            csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
+                if (ERR(err, next)) return;
+                res.attachment(req.params.filename);
+                res.send(csv);
+            });
+        });
+    } else if (req.params.filename == res.locals.allInstanceScoresCsvFilename) {
+        var params = {assessment_id: res.locals.assessment.id};
+        sqldb.query(sql.assessment_instance_scores_all, params, function(err, result) {
+            if (ERR(err, next)) return;
+            var assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
+            var columns = [
+                ['UID', 'uid'],
+                ['Instance', 'number'],
+                [assessmentName, 'score_perc'],
+            ];
+            csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
+                if (ERR(err, next)) return;
+                res.attachment(req.params.filename);
+                res.send(csv);
+            });
+        });
+    } else if (req.params.filename == res.locals.allSubmissionsCsvFilename) {
+        var params = {assessment_id: res.locals.assessment.id};
+        sqldb.query(sql.assessment_instance_final_submissions, params, function(err, result) {
+            if (ERR(err, next)) return;
+            var columns = [
+                ['UID', 'uid'],
+                ['Name', 'name'],
+                ['Role', 'role'],
+                ['Assessment', 'assessment_label'],
+                ['Assessment instance', 'assessment_instance_number'],
+                ['Question', 'qid'],
+                ['Question instance', 'instance_question_number'],
+                ['Variant', 'variant_number'],
+                ['Seed', 'variant_seed'],
+                ['Params', 'params'],
+                ['True answer', 'true_answer'],
+                ['Options', 'options'],
+                ['Submission date', 'submission_date_formatted'],
+                ['Submitted answer', 'submitted_answer'],
+                ['Override score', 'override_score'],
+                ['Credit', 'credit'],
+                ['Mode', 'mode'],
+                ['Grading requested date', 'grading_requested_at_formatted'],
+                ['Grading date', 'graded_at_formatted'],
+                ['Score', 'score'],
+                ['Correct', 'correct'],
+                ['Feedback', 'feedback'],
+            ];
+            csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
+                if (ERR(err, next)) return;
                 res.attachment(req.params.filename);
                 res.send(csv);
             });
