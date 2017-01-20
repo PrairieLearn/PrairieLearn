@@ -15,25 +15,25 @@ The `clientFiles` and `serverFiles` subdirectories can be associated with the co
 exampleCourse
 +-- clientFilesCourse                     # client files for the entire course
 |   +-- library.js
-+-- courseServerFiles                     # server files for the entire course
++-- serverFilesCourse                     # server files for the entire course
 |   `-- secret1.js
 +-- questions
 |   `-- fossilFuels
 |       +-- clientFilesQuestion           # client files for the fossilFuels question
 |       |   `-- power-station.jpg
-|       `-- questionServerFiles           # server files for the fossilFuels question
+|       `-- serverFilesQuestion           # server files for the fossilFuels question
 |           `-- 
 `-- courseInstances
     `-- Fa16
        +-- clientFilesCourseInstance      # client files for the Fall 2016 course instance
        |   `-- Fa16_rules.pdf
-       +-- courseInstanceServerFiles
+       +-- serverFilesCourseInstance
        |   `-- secret2.js                 # server files for the Fall 2016 course instance
        `-- assessments
            `-- hw01
                `-- clientFilesAssessment  # client files for the Homework 1 assessment
                    `-- formulaSheet.pdf
-               `-- assessmentServerFiles  # server for the Homework 1 assessment
+               `-- serverFilesAssessment  # server for the Homework 1 assessment
                    `-- ...
 ```
 
@@ -82,4 +82,4 @@ To use this `library.js` file inside a question's `client.js` or 'server.js` fil
 
 ## Deprecated access modes
 
-To support old code, `clientFilesCourse` is also accessible as `clientFiles` and `clientCode`, while `courseServerFiles` is accessible as `serverCode`.
+To support old code, `clientFilesCourse` is also accessible as `clientFiles` and `clientCode`, while `serverFilesCourse` is accessible as `serverCode`.
