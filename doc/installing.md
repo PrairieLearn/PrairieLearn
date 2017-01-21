@@ -9,7 +9,7 @@ This is the easiest way to get started.
 
 1. Run PrairieLearn with:
 
-        docker run -it -p 3000:3000 prairielearn/prairielearn
+        docker run -it --rm -p 3000:3000 prairielearn/prairielearn
 
     This will run PrairieLearn with the example course.
 
@@ -19,7 +19,9 @@ This is the easiest way to get started.
 
 1. To use your own course, point Docker to the correct directory with:
 
-        docker run -it -p 3000:3000 -v /path/to/course:/course prairielearn/prairielearn
+        docker run -it --rm -p 3000:3000 -v /path/to/course:/course prairielearn/prairielearn
+
+    If you're in the root of your course directory already, you can substitute `%cd%` (on Windows) or `$PWD` (everything else) for `/path/to/course`.
 
 ### Upgrading PrairieLearn with Docker
 
@@ -28,6 +30,14 @@ To obtain the latest version of PrairieLearn at any time, run:
     docker pull prairielearn/prairielearn
 
 After this, run PrairieLearn using the same commands as above.
+
+### Running Commands in Docker
+
+If needed, you can run the container with a different command:
+
+    docker run -it --rm -p 3000:3000 -v /path/to/course:/course prairielearn/prairielearn COMMAND
+
+This can be used to, e.g., run scripts distributed with PrairieLearn.
 
 ## Method 2: Docker with local copy of PrairieLearn
 
