@@ -56,7 +56,7 @@ function processSubmission(req, res, callback) {
         auth_user_id: res.locals.authz_data.authn_user.user_id,
         submitted_answer: postData.submittedAnswer,
         type: postData.type,
-        credit: res.locals.assessment.credit,
+        credit: res.locals.authz_result.credit,
         mode: res.locals.authz_data.mode,
     };
     assessmentsHomework.submitAndGrade(submission, res.locals.instance_question.id, res.locals.question, res.locals.course, function(err) {

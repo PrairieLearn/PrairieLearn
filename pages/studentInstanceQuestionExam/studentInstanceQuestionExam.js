@@ -42,7 +42,7 @@ function processSubmission(req, res, callback) {
                 auth_user_id: res.locals.user.user_id,
                 submitted_answer: postData.submittedAnswer,
                 type: postData.type,
-                credit: res.locals.assessment.credit,
+                credit: res.locals.authz_result.credit,
                 mode: res.locals.authz_data.mode,
             };
             sqldb.query(sql.new_submission, params, function(err, result) {

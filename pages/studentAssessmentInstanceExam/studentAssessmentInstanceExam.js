@@ -27,7 +27,7 @@ router.post('/', function(req, res, next) {
     } else {
         return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
     }
-    assessmentsExam.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.user.user_id, res.locals.assessment_instance.credit, finishExam, function(err) {
+    assessmentsExam.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.user.user_id, res.locals.authz_result.credit, finishExam, function(err) {
         if (ERR(err, next)) return;
         res.redirect(req.originalUrl);
     });
