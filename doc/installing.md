@@ -39,7 +39,7 @@ If you want to do development of PrairieLearn itself (not just question writing)
 
 1. Run it with:
 
-        docker run --rm -p 3000:3000 -v /path/to/PrairieLearn:/prairielearn prairielearn/prairielearn
+        docker run --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn
 
 
 ## Method 3: Fully local installation
