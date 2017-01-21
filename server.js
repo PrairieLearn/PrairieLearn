@@ -69,6 +69,9 @@ if (config.devMode) {
     app.use(require('./middlewares/undefCourseCode'));
 }
 
+// redirect / to /pl
+app.use(/^\/?$/, function(req, res, next) {res.redirect('/pl');});
+
 // clear cookies on the homepage to reset any stale session state
 app.use(/^\/pl\/?/, require('./middlewares/clearCookies'));
 
