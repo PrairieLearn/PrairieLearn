@@ -5,7 +5,7 @@ SELECT
     z.id AS zone_id,
     z.title AS zone_title,
     q.title AS question_title,
-    COALESCE(iq.points_list[1], 0) AS max_points,
+    aq.max_points,
     CASE
         WHEN iq.open THEN
             iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)]
