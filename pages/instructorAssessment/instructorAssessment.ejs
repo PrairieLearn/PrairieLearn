@@ -504,6 +504,7 @@
               <td class="cell-center">
                 <% if (row.open) { %>
                 Open
+                <% if (authz_data.has_instructor_edit) { %>
                 <a tabindex="0" class="btn btn-xs btn-default" role="button"
                    data-toggle="popover" data-trigger="focus" data-container="body"
                    data-html="true" data-placement="auto" title="Confirm close"
@@ -517,8 +518,10 @@
                                  ">
                   <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
                 </a>
+                <% } %> <!-- if has_instructor_edit -->
                 <% } else { %> <!-- if open -->
                 Closed
+                <% if (authz_data.has_instructor_edit) { %>
                 <a tabindex="0" class="btn btn-xs btn-default" role="button"
                    data-toggle="popover" data-trigger="focus" data-container="body"
                    data-html="true" data-placement="auto" title="Confirm open"
@@ -535,6 +538,7 @@
                                  ">
                   <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
                 </a>
+                <% } %> <!-- if has_instructor_edit -->
                 <% } %> <!-- if open -->
               </td>
               <% } %> <!-- if type == Exam -->
@@ -544,6 +548,7 @@
                     Action <span class="caret"></span>
                   </button>
                   <ul class="dropdown-menu">
+                    <% if (authz_data.has_instructor_edit) { %>
                     <li>
                       <a data-toggle="modal" data-target="#deleteAssessmentInstanceModal"
                          data-uid="<%= row.uid %>" data-name="<%= row.name %>"
@@ -554,6 +559,7 @@
                         <i class="fa fa-times" aria-hidden="true"></i> Delete
                       </a>
                     </li>
+                    <% } %> <!-- if has_instructor_edit -->
                   </ul>
                 </div>
               </td>
