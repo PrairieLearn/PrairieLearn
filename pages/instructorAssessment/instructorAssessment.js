@@ -15,13 +15,17 @@ var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
+var sanitizeName = function(name) {
+    return name.replace(/[^a-zA-Z0-9]/g, '_');
+};
+
 var filenames = function(locals) {
-    var prefix = locals.course.short_name.replace(/\s+/g, '')
+    var prefix = sanitizeName(locals.course.short_name)
         + '_'
-        + locals.course_instance.short_name
+        + sanitizeName(locals.course_instance.short_name)
         + '_'
-        + locals.assessment_set.abbreviation
-        + locals.assessment.number
+        + sanitizeName(locals.assessment_set.abbreviation)
+        + sanitizeName(locals.assessment.number)
         + '_';
     return {
         scoreStatsCsvFilename:        prefix + 'score_stats.csv',
