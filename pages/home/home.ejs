@@ -61,7 +61,11 @@
 
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title">Classes</h3>
+          <% if (courses && courses.length > 0) { %>
+          <h3 class="panel-title">Course instances</h3>
+          <% } else { %>
+          <h3 class="panel-title">Courses</h3>
+          <% } %>
         </div>
 
         <% if (course_instances && course_instances.length == 0) { %>
@@ -74,7 +78,7 @@
         </div>
         <% } else { %> <!-- devMode -->
         <div class="panel-body">
-          No classes found. Use the “Add or remove classes” button below.
+          No courses found. Use the “Add or remove courses” button below.
         </div>
         <% } %> <!-- devMode -->
         
@@ -99,7 +103,7 @@
         <div class="panel-footer">
           <p class="text-right no-bottom-margin">
             <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-primary">
-              Add or remove classes
+              Add or remove courses
             </a>
           </p>
         </div>
