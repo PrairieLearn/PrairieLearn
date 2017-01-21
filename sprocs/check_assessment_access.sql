@@ -11,6 +11,7 @@ CREATE OR REPLACE FUNCTION
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT credit integer,          -- How much credit will they receive?
         OUT credit_date_string TEXT, -- For display to the user.
+        OUT time_limit_min integer,  -- What is the time limit (if any) for this assessment.
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     ) AS $$
 DECLARE
@@ -30,11 +31,13 @@ BEGIN
                     END)
             ELSE 'None'
         END AS credit_date_string,
+        aar.time_limit_min,
         aar.id
     INTO
         authorized,
         credit,
         credit_date_string,
+        time_limit_min,
         active_access_rule_id
     FROM
         assessment_access_rules AS aar
@@ -53,6 +56,7 @@ BEGIN
         authorized = FALSE;
         credit = 0;
         credit_date_string = 'None';
+        time_limit_min = NULL;
     END IF;
 
     -- Override if we are an Instructor
@@ -61,6 +65,7 @@ BEGIN
         credit = 100;
         credit_date_string = '100% (Instructor override)';
         active_access_rule_id = NULL;
+        time_limit_min = NULL;
     END IF;
 
     -- List of all access rules that will grant access to this user/mode/role at some date (past or future),
@@ -68,6 +73,7 @@ BEGIN
     SELECT
         coalesce(jsonb_agg(jsonb_build_object(
             'credit', CASE WHEN aar.credit IS NOT NULL THEN aar.credit::text || '%' ELSE 'None' END,
+            'time_limit_min', CASE WHEN aar.time_limit_min IS NOT NULL THEN aar.time_limit_min::text || ' min' ELSE '—' END,
             'start_date', CASE WHEN start_date IS NOT NULL THEN format_date_full(start_date, display_timezone) ELSE '—' END,
             'end_date', CASE WHEN end_date IS NOT NULL THEN format_date_full(end_date, display_timezone) ELSE '—' END,
             'active', aar.id = active_access_rule_id

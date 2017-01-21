@@ -74,6 +74,13 @@
           </div> <!-- well -->
           <% } %>
 
+          <% if (assessment_instance.date_limit) { %>
+          <div class="well well-sm small-bottom-margin">
+            Time remaining:
+            <%- assessment_instance.date_limit %>
+          </div> <!-- well -->
+          <% } %>
+
           <div class="well well-sm no-bottom-margin">
             <div class="row">
               <div class="col-xs-12">

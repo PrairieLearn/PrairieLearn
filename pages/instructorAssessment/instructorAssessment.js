@@ -1,5 +1,6 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
+var async = require('async');
 var path = require('path');
 var csvStringify = require('csv').stringify;
 var express = require('express');
@@ -38,37 +39,63 @@ var filenames = function(locals) {
 };
 
 router.get('/', function(req, res, next) {
-    _.assign(res.locals, filenames(res.locals));
-
-    var params = {assessment_id: res.locals.assessment.id};
-    sqldb.query(sql.questions, params, function(err, result) {
-        if (ERR(err, next)) return;
-        res.locals.questions = result.rows;
-
-        var params = {assessment_id: res.locals.assessment.id};
-        sqldb.query(sql.question_stats, params, function(err, result) {
-            if (ERR(err, next)) return;
-            res.locals.question_stats = result.rows;
-
-            sqldb.queryOneRow(sql.assessment_stats, params, function(err, result) {
-                if (ERR(err, next)) return;
-                res.locals.assessment_stat = result.rows[0];
-                // FIXME: change to assessment_instance_duration_stats and show all instances
-                var params = {assessment_id: res.locals.assessment.id};
-                sqldb.queryOneRow(sql.assessment_duration_stats, params, function(err, result) {
-                    if (ERR(err, next)) return;
-                    res.locals.duration_stat = result.rows[0];
-    
-                    var params = {assessment_id: res.locals.assessment.id};
-                    sqldb.query(sql.assessment_instance_data, params, function(err, result) {
-                        if (ERR(err, next)) return;
-                        res.locals.user_scores = result.rows;
-                    
-                        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                    });
-                });
+    async.series([
+        function(callback) {
+            _.assign(res.locals, filenames(res.locals));
+            callback(null);
+        },
+        function(callback) {
+            var params = {assessment_id: res.locals.assessment.id};
+            sqldb.query(sql.questions, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                res.locals.questions = result.rows;
+                callback(null);
             });
-        });
+        },
+        function(callback) {
+            var params = {assessment_id: res.locals.assessment.id};
+            sqldb.query(sql.assessment_access_rules, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                res.locals.access_rules = result.rows;
+                callback(null);
+            });
+        },
+        function(callback) {
+            var params = {assessment_id: res.locals.assessment.id};
+            sqldb.query(sql.question_stats, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                res.locals.question_stats = result.rows;
+                callback(null);
+            });
+        },
+        function(callback) {
+            var params = {assessment_id: res.locals.assessment.id};
+            sqldb.queryOneRow(sql.assessment_stats, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                res.locals.assessment_stat = result.rows[0];
+                callback(null);
+            });
+        },
+        function(callback) {
+            // FIXME: change to assessment_instance_duration_stats and show all instances
+            var params = {assessment_id: res.locals.assessment.id};
+            sqldb.queryOneRow(sql.assessment_duration_stats, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                res.locals.duration_stat = result.rows[0];
+                callback(null);
+            });
+        },
+        function(callback) {
+            var params = {assessment_id: res.locals.assessment.id};
+            sqldb.query(sql.assessment_instance_data, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                res.locals.user_scores = result.rows;
+                callback(null);
+            });
+        },
+    ], function(err) {
+        if (ERR(err, next)) return;
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
 

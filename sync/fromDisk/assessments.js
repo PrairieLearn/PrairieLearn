@@ -149,6 +149,7 @@ module.exports = {
                 start_date: _(dbRule).has('startDate') ? dbRule.startDate : null,
                 end_date: _(dbRule).has('endDate') ? dbRule.endDate : null,
                 credit: _(dbRule).has('credit') ? dbRule.credit : null,
+                time_limit_min: _(dbRule).has('timeLimitMin') ? dbRule.timeLimitMin : null,
             };
             sqldb.query(sql.insert_assessment_access_rule, params, function(err) {
                 if (ERR(err, callback)) return;

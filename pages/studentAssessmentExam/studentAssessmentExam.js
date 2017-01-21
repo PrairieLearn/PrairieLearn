@@ -25,6 +25,7 @@ function makeAssessmentInstance(req, res, callback) {
                     assessment_id: res.locals.assessment.id,
                     user_id: res.locals.user.user_id,
                     mode: res.locals.authz_data.mode,
+                    time_limit_min: res.locals.authz_result.time_limit_min,
                 };
                 sqldb.queryWithClientOneRow(client, sql.insert_assessment_instance, params, function(err, result) {
                     if (ERR(err, callback)) return;

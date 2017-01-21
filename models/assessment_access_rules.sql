@@ -8,5 +8,8 @@ CREATE TABLE IF NOT EXISTS assessment_access_rules (
     start_date TIMESTAMP WITH TIME ZONE,
     end_date TIMESTAMP WITH TIME ZONE,
     credit INTEGER,
+    time_limit_min integer,
     UNIQUE (number, assessment_id)
 );
+
+ALTER TABLE assessment_access_rules ADD COLUMN IF NOT EXISTS time_limit_min integer;

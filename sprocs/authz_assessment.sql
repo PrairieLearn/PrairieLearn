@@ -1,3 +1,5 @@
+DROP FUNCTION IF EXISTS authz_assessment(bigint,jsonb,text);
+
 CREATE OR REPLACE FUNCTION
     authz_assessment (
         IN assessment_id bigint,
@@ -7,6 +9,7 @@ CREATE OR REPLACE FUNCTION
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
         OUT credit integer,          -- How much credit will they receive?
         OUT credit_date_string TEXT, -- For display to the user.
+        OUT time_limit_min integer,  -- What is the time limit (if any) for this assessment.
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     ) AS $$
 WITH
@@ -52,6 +55,7 @@ SELECT
     END AND authz_result.authorized AS authorized_edit,
     user_result.credit,
     user_result.credit_date_string,
+    user_result.time_limit_min,
     user_result.access_rules
 FROM
     authz_result,
