@@ -25,7 +25,11 @@ If you copy questions or assessments from a different course and don't give them
 
 ## Bulk addition of UUIDs
 
-To add a UUID to all the JSON files in a course you can run the included [`generate_uuids.py`](../tools/generate_uuids.py) Python script, like this:
+To add a UUID to all the JSON files in a course you can run the included [`generate_uuids.py`](../tools/generate_uuids.py) Python script.
+
+This script will add a UUID to the start of every JSON file that doesn't currently have one, so it's safe to run it multiple times. You will then need to commit and push these changes to GitHub.
+
+To use the script, run:
 
 ```
 cd <path_to_PrairieLearn>
@@ -35,4 +39,8 @@ python generate_uuids.py <path_to_course_directory>
 
 For example, `python generate_uuids.py ~/git/pl-tam212`.
 
-This script will add a UUID to the start of every JSON file that doesn't currently have one, so it's safe to run it multiple times. You will then need to commit and push these changes to GitHub.
+If you're using the Docker container, you can avoid downloading the script by running:
+
+```
+docker run --rm -v /path/to/course:/course prairielearn/prairielearn python /PrairieLearn/tools/generate_uuids.py /course
+```
