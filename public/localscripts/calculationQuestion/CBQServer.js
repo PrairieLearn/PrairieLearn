@@ -17,10 +17,22 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
             maxCorrectAnswers: 3,
         });
 
+        // we can't choose more correct answers than we have
         var maxNumberCorrect = Math.min(options.maxCorrectAnswers, options.correctAnswers.length);
-        var minNumberCorrect = Math.min(options.minCorrectAnswers, maxNumberCorrect);
+
+        // we need to choose at least this many correct answers to ensure we can make the total number
+        var minNumberCorrect = Math.max(options.minCorrectAnswers, options.numberAnswers - options.incorrectAnswers.length);
+
+        // but we must have minNumber <= maxNumber
+        minNumberCorrect = Math.min(minNumberCorrect, maxNumberCorrect);
+
+        // actually pick the number of correct answers
         var numberCorrect = rand.randInt(minNumberCorrect, maxNumberCorrect);
+
+        // compute the number of incorrect answers we need based on the desired total
         var numberIncorrect = options.numberAnswers - numberCorrect;
+
+        // but we can't choose more incorrect answers than we have
         numberIncorrect = Math.min(numberIncorrect, options.incorrectAnswers.length);
         
         var answers = [];
