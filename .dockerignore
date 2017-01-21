@@ -10,6 +10,7 @@
 !models/
 !pages/
 !public/
+public/MathJax
 !question-servers/
 !schemas/
 !sprocs/

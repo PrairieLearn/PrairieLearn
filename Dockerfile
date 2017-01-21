@@ -7,7 +7,9 @@ RUN yum -y install \
     && yum -y install postgresql96-server postgresql96-contrib nodejs \
     && yum clean all \
     && mkdir /var/postgres && chown postgres:postgres /var/postgres \
-    && su postgres -c "/usr/pgsql-9.6/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log"
+    && su postgres -c "/usr/pgsql-9.6/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log" \
+    && mkdir -p /PrairieLearn/public/MathJax \
+    && curl -L https://github.com/mathjax/MathJax/archive/2.6.0.tar.gz | tar xz --strip-components=1 -C /PrairieLearn/public/MathJax
 
 # NOTE: Modify .dockerignore to whitelist files/directories to copy.
 COPY . /PrairieLearn/
