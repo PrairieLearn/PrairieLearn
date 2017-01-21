@@ -30,7 +30,7 @@ function ensureVariant(locals, callback) {
             if (ERR(err, callback)) return;
             var params = {
                 instance_question_id: locals.instance_question.id,
-                variant_seed: variant.vid,
+                variant_seed: variant.variant_seed,
                 question_params: variant.params,
                 true_answer: variant.true_answer,
                 options: variant.options,

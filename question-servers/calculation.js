@@ -26,12 +26,13 @@ module.exports = {
         callback(null, "");
     },
 
-    getData: function(question, course, vid, callback) {
+    getData: function(question, course, variant_seed, callback) {
         var questionDir = path.join(course.path, 'questions', question.directory);
         questionHelper.loadServer(question, course, function(err, server) {
             if (ERR(err, callback)) return;
             var options = question.options || {};
             try {
+                var vid = variant_seed;
                 var questionData = server.getData(vid, options, questionDir);
             } catch (e) {
                 return ERR(e, callback);
@@ -51,12 +52,13 @@ module.exports = {
             if (ERR(err, callback)) return;
             var grading;
             try {
-                var vid = variant.vid;
+                var vid = variant.variant_seed;
                 var params = variant.params;
                 var trueAnswer = variant.true_answer;
                 var submittedAnswer = submission.submitted_answer;
                 var options = variant.options;
                 var questionDir = path.join(course.path, 'questions', question.directory);
+                console.log('vid', vid);
                 grading = server.gradeAnswer(vid, params, trueAnswer, submittedAnswer, options, questionDir);
             } catch (e) {
                 var data = {

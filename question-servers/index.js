@@ -49,18 +49,18 @@ module.exports = {
     },
 
     makeVariant: function(question, course, options, callback) {
-        var vid;
-        if (_(options).has('vid')) {
-            vid = options.vid;
+        var variant_seed;
+        if (_(options).has('variant_seed')) {
+            variant_seed = options.variant_seed;
         } else {
-            vid = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
+            variant_seed = Math.floor(Math.random() * Math.pow(2, 32)).toString(36);
         }
         this.getModule(question.type, function(err, questionModule) {
             if (ERR(err, callback)) return;
-            questionModule.getData(question, course, vid, function(err, questionData) {
+            questionModule.getData(question, course, variant_seed, function(err, questionData) {
                 if (ERR(err, callback)) return;
                 var variant = {
-                    vid: vid,
+                    variant_seed: variant_seed,
                     params: questionData.params || {},
                     true_answer: questionData.true_answer || {},
                     options: questionData.options || {},

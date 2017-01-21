@@ -39,10 +39,11 @@ module.exports = {
         questionHelper.renderRivetsTemplate("answer.html", context, question, course, locals, callback);
     },
 
-    getData: function(question, course, vid, callback) {
+    getData: function(question, course, variant_seed, callback) {
         questionHelper.loadServer(question, course, function(err, server) {
             if (ERR(err, callback)) return;
             try {
+                var vid = variant_seed;
                 var questionData = server.getData(vid, question.options, 'INVALID QUESTION DIRECTORY');
             } catch (e) {
                 return callback(new Error('Error in question getData(): ' + String(e)));
@@ -93,7 +94,7 @@ module.exports = {
             if (ERR(err, callback)) return;
             var grading;
             try {
-                var vid = variant.vid;
+                var vid = variant.variant_seed;
                 var params = variant.params;
                 var trueAnswer = variant.true_answer;
                 var submittedAnswer = submission.submitted_answer;
