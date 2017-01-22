@@ -11,6 +11,7 @@
 !pages/
 !public/
 public/MathJax
+!public/MathJax/package.json
 !question-servers/
 !schemas/
 !sprocs/
