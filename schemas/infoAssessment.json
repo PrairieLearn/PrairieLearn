@@ -54,6 +54,11 @@
             "description": "The maximum number of points that can be earned for this assessment.",
             "type": "number"
         },
+        "autoClose": {
+            "description": "Whether to automatically close the assessment after a period of inactivity.",
+            "type": "boolean",
+            "default": true
+        },
         "zones": {
             "description": "Array of \"zones\" in the assessment, each containing questions that can be randomized within the zone.",
             "type": "array",

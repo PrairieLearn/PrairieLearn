@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS assessments (
     text TEXT,
     multiple_instance boolean,
     shuffle_questions boolean DEFAULT false,
+    auto_close boolean DEFAULT true,
     max_points DOUBLE PRECISION,
     assessment_set_id BIGINT REFERENCES assessment_sets ON DELETE SET NULL ON UPDATE CASCADE,
     deleted_at TIMESTAMP WITH TIME ZONE,
@@ -18,3 +19,4 @@ CREATE TABLE IF NOT EXISTS assessments (
 );
 
 ALTER TABLE assessments ADD COLUMN IF NOT EXISTS order_by integer;
+ALTER TABLE assessments ADD COLUMN IF NOT EXISTS auto_close boolean DEFAULT true;

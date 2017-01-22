@@ -10,6 +10,7 @@ open_assessment_instances AS (
     WHERE
         ai.open = true
         AND a.type = 'Exam'
+        AND a.auto_close
         AND age(ai.date) > interval '6 hours' -- not required, but will reduce the search size
         AND NOT ai.instructor_opened
 ),

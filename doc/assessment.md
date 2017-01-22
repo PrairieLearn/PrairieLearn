@@ -91,6 +91,10 @@ By default all assessments are *single instance*, meaning that each student has 
 
 For practice exams it is often desirable to make a *multiple instance* assessment by setting the option `"multipleInstance": true`. This will allow students to create new assessment instances and try the whole assessment repeatedly.
 
+## Auto-closing Exam assessments
+
+By default Exam assessments will auto-close after six hours of inactivity by the student. This generally means that you don't need to explicity close exams that students accidentally did not close when they were done. If you want to prevent auto-closing then you can set `"autoClose": false` as a top-level option in the `infoAssessment.json` file.
+
 ## Access control
 
 See the [Access control page](accessControl.md) for details.

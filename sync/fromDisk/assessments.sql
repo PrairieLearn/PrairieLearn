@@ -1,12 +1,12 @@
 -- BLOCK insert_assessment
 INSERT INTO assessments
         (uuid,  tid,  type,  number,  order_by,  title,  config,  multiple_instance,  shuffle_questions,
-         max_points, deleted_at, course_instance_id,  text,
+         max_points,  auto_close, deleted_at, course_instance_id,  text,
          assessment_set_id)
 (
     SELECT
         $uuid, $tid, $type, $number, $order_by, $title, $config, $multiple_instance, $shuffle_questions,
-        $max_points, NULL,      $course_instance_id, $text,
+        $max_points, $auto_close, NULL,      $course_instance_id, $text,
         COALESCE((SELECT id FROM assessment_sets WHERE name = $set_name AND course_id = $course_id), NULL)
 )
 ON CONFLICT (uuid) DO UPDATE
@@ -19,6 +19,7 @@ SET
     config = EXCLUDED.config,
     multiple_instance = EXCLUDED.multiple_instance,
     shuffle_questions = EXCLUDED.shuffle_questions,
+    auto_close = EXCLUDED.auto_close,
     max_points = EXCLUDED.max_points,
     deleted_at = EXCLUDED.deleted_at,
     text = EXCLUDED.text,
