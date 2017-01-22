@@ -19,6 +19,15 @@
           <p class="lead text-center">
             This is <strong><%= assessment_set.name %> <%= assessment.number %></strong> for <strong><%= course.short_name %></strong>
           </p>
+          <% if (authz_result.time_limit_min != undefined) { %>
+          <p class="lead text-center">
+            The time limit for this assessment is
+            <strong>
+              <%= authz_result.time_limit_min %>
+              <%= (authz_result.time_limit_min == 1) ? 'minute' : 'minutes' %>
+            </strong>
+          </p>
+          <% } %>
           <form name="confirm-form" method="POST">
             <input type="hidden" name="postAction" value="newInstance">
             <input type="hidden" name="csrfToken" value="<%= csrfToken %>">

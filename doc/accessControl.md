@@ -27,16 +27,17 @@ The general format of `allowAccess` is:
 ],
 ```
 
-Each `accessRule` is an object that specifies a set of circumstances under which the assessment is accessible. If any of the access rules gives access, then the assessment is accessible. Each access rule can have one or more restrictions:
+Each `accessRule` is an object that specifies a set of circumstances under which the assessment is accessible. If any of the access rules gives access, then the assessment is accessible. Each access rule can have one or more restrictions as follows. The "courseInstance" and "assessment" columns indicate whether the restiction is available for the respective objects.
 
-Access restriction | Meaning | Example
----                | ---     | ---
-`mode`             | Only allow access from this server mode.                            | `"mode": "Exam"`
-`role`             | Require at least this role to access.                               | `"role": "TA"`
-`uids`             | Require one of the UIDs in the array to access.                     | `"uids": ["mwest@illinois.edu", "zilles@illinois.edu"]`
-`startDate`        | Only allow access after this date.                                  | `"startDate": "2015-01-19T00:00:01"`
-`endDate`          | Only access access before this date.                                | `"endDate": "2015-05-13T23:59:59"`
-`credit`           | Maximum credit as percentage of full credit (can be more than 100). | `"credit": 100`
+Access restriction | courseInstance | assessment | Meaning | Example
+---                | ---            | ---        | ---     | ---
+`role`             | ✓ | ✓ | Require at least this role to access.                               | `"role": "TA"`
+`uids`             | ✓ | ✓ | Require one of the UIDs in the array to access.                     | `"uids": ["mwest@illinois.edu", "zilles@illinois.edu"]`
+`startDate`        | ✓ | ✓ | Only allow access after this date.                                  | `"startDate": "2015-01-19T00:00:01"`
+`endDate`          | ✓ | ✓ | Only access access before this date.                                | `"endDate": "2015-05-13T23:59:59"`
+`mode`             |   | ✓ | Only allow access from this server mode.                            | `"mode": "Exam"`
+`credit`           |   | ✓ | Maximum credit as percentage of full credit (can be more than 100). | `"credit": 100`
+`timeLimitMin`     |   | ✓ | Time limit in minutes to complete an assessment                     | `"timeLimitMin": 60`
 
 Each access role will only grant access if all of the restrictions are satisfied.
 

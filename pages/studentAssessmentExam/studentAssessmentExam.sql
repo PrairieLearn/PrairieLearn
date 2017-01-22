@@ -10,9 +10,13 @@ WHERE
 
 -- BLOCK insert_assessment_instance
 INSERT INTO assessment_instances AS ai
-    (assessment_id, user_id, mode, open, number)
+    (assessment_id, user_id, mode, open, date_limit, number)
 SELECT
     $assessment_id, $user_id, $mode, TRUE,
+    CASE
+        WHEN $time_limit_min::integer IS NULL THEN NULL
+        ELSE current_timestamp + make_interval(mins => $time_limit_min::integer)
+    END AS date_limit,
     CASE
         WHEN a.multiple_instance THEN (
             SELECT

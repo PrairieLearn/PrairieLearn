@@ -97,6 +97,11 @@
                 "endDate" : {
                     "description": "The latest date on which access is permitted.",
                     "type": "string"
+                },
+                "timeLimitMin": {
+                    "description": "The time limit to complete the assessment, in minutes.",
+                    "type": "integer",
+                    "minimum": 0
                 }
             }
         },

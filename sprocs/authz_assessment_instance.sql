@@ -1,3 +1,5 @@
+DROP FUNCTION IF EXISTS authz_assessment_instance(bigint,jsonb,text);
+
 CREATE OR REPLACE FUNCTION
     authz_assessment_instance (
         IN assessment_instance_id bigint,
@@ -7,6 +9,8 @@ CREATE OR REPLACE FUNCTION
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
         OUT credit integer,          -- How much credit will they receive?
         OUT credit_date_string TEXT, -- For display to the user.
+        OUT time_limit_min integer,  -- What is the time limit (if any) for this assessment.
+        OUT time_limit_expired boolean, -- Is the time limit expired?
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     ) AS $$
 WITH
@@ -40,8 +44,16 @@ SELECT
     END AND authz_result.authorized AS authorized_edit,
     assessment_result.credit,
     assessment_result.credit_date_string,
+    assessment_result.time_limit_min,
+    CASE
+        WHEN ai.date_limit IS NOT NULL AND ai.date_limit < current_timestamp THEN TRUE
+        ELSE FALSE
+    END AS time_limit_expired,
     assessment_result.access_rules
 FROM
     assessment_result,
-    authz_result;
+    authz_result,
+    assessment_instances AS ai
+WHERE
+    ai.id = authz_assessment_instance.assessment_instance_id;
 $$ LANGUAGE SQL STABLE;

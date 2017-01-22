@@ -65,6 +65,45 @@ GROUP BY
     mean_question_scores.question_id,
     mean_question_scores.number;
 
+-- BLOCK assessment_access_rules
+SELECT
+    CASE
+        WHEN aar.mode IS NULL THEN '—'
+        ELSE aar.mode::text
+    END AS mode,
+    CASE
+        WHEN aar.role IS NULL THEN '—'
+        ELSE aar.role::text
+    END AS role,
+    CASE
+        WHEN aar.uids IS NULL THEN '—'
+        ELSE array_to_string(aar.uids, ', ')
+    END AS uids,
+    CASE
+        WHEN aar.start_date IS NULL THEN '—'
+        ELSE format_date_full_compact(aar.start_date, ci.display_timezone)
+    END AS start_date,
+    CASE
+        WHEN aar.end_date IS NULL THEN '—'
+        ELSE format_date_full_compact(aar.end_date, ci.display_timezone)
+    END AS end_date,
+    CASE
+        WHEN aar.credit IS NULL THEN '—'
+        ELSE aar.credit::text || '%'
+    END AS credit,
+    CASE
+        WHEN aar.time_limit_min IS NULL THEN '—'
+        ELSE aar.time_limit_min::text || ' min'
+    END AS time_limit
+FROM
+    assessment_access_rules AS aar
+    JOIN assessments AS a ON (a.id = aar.assessment_id)
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+WHERE
+    a.id = $assessment_id
+ORDER BY
+    aar.number;
+
 -- BLOCK assessment_stats
 SELECT * FROM assessment_stats WHERE id = $assessment_id;
 

@@ -8,6 +8,7 @@ var router = express.Router();
 
 var error = require('../../lib/error');
 var questionServers = require('../../question-servers');
+var assessmentsExam = require('../../assessments/exam');
 var logger = require('../../lib/logger');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
@@ -57,9 +58,18 @@ router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
     if (req.body.postAction == 'submitQuestionAnswer') {
+        if (res.locals.authz_result.time_limit_expired) {
+            return next(new Error('time limit is expired, please go back and finish your assessment'));
+        }
         return processSubmission(req, res, function(err) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
+        });
+    } else if (req.body.postAction == 'finish') {
+        var finishExam = true;
+        assessmentsExam.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.user.user_id, res.locals.assessment_instance.credit, finishExam, function(err) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/assessment_instance/' + res.locals.assessment_instance.id);
         });
     } else {
         return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));

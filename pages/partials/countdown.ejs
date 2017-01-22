@@ -1,0 +1,83 @@
+<%
+/*********************************************************************
+
+This code makes a countdown timer to a fixed final time. We assume
+that the server and client clocks are not synchronized, so we only use
+time differentials to relate server to client times. The key event
+times are:
+
+Server time:        process                       countdownEnd
+                       |                                |
+Real time: ------------|----d1----|----d2----|----d3----|------
+                                  |          |
+Client time:                clientStart     now
+
+process:      server time during response processing
+clientStart:  client time as soon as possible after processStart
+now:          client time when the countdown is rendered
+countdownEnd: server time when the timer should expire
+d1, d2, d3:   time intervals between real event times
+
+To find clientStart we use either
+window.performance.timing.responseStart if available, or otherwise the
+current client time when the JS below first executes during page
+render.
+
+We want a tight upper bound on d3 = (countdownEnd - now), and we want
+to calculate it only using time differentials computed either purely
+with server times or purely with client times.
+
+Observe that:
+countdownEnd - process = d1 + d2 + d3
+                       < d2 + d3
+
+Thus:
+d3 > (countdownEnd - process) - (now - clientStart)
+
+This bound is fairly tight if d1 is small.
+
+We assume that we have been passed the value of (countdownEnd -
+process) in milliseconds as the variable "durationMS".
+
+*********************************************************************/
+%>
+
+<% var randId = "id-" + String(Math.random()).replace(/[^0-9]/g, '') %>
+
+<span id="<%= randId %>"></span>
+<script>
+  var clientStart;
+  if (window.performance && window.performance.timing && window.performance.timing.responseStart) {
+      clientStart = window.performance.timing.responseStart;
+  } else {
+      clientStart = Date.now();
+  }
+  var countdownSpan = $('#<%= randId %>');
+  var modalObj;
+  <% if (typeof expiredModalSelector != 'undefined') { %>
+  var modalObj = $('<%= expiredModalSelector %>');
+  <% } %>
+  var displayModal = function() {
+      if (modalObj && modalObj.modal) {
+          modalObj.modal({keyboard: false});
+      }
+  }
+  var displayCountdown = function() {
+      var remainingMS = Math.max(0, <%= durationMS %> - (Date.now() - clientStart));
+      var remainingSec = Math.floor(remainingMS / 1000);
+      var remainingMin = Math.floor(remainingSec / 60);
+      if (remainingSec >= 60) {
+          countdownSpan.text(remainingMin + ' min');
+      } else {
+          countdownSpan.text(remainingSec + ' sec');
+      }
+
+      if (remainingMS > 500) {
+          // reschedule for the next half-second time
+          window.setTimeout(displayCountdown, (remainingMS - 500) % 1000);
+      } else {
+          displayModal();
+      }
+  };
+  displayCountdown();
+</script>

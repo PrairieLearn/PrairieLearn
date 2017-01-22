@@ -6,6 +6,7 @@ CREATE TABLE IF NOT EXISTS assessment_instances (
     date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     mode enum_mode, -- mode at creation
     number INTEGER,
+    date_limit TIMESTAMP WITH TIME ZONE, -- if NOT NULL, when we have to finish by
     open BOOLEAN DEFAULT TRUE,
     closed_at TIMESTAMP WITH TIME ZONE,
     instructor_opened BOOLEAN DEFAULT FALSE,
@@ -20,3 +21,5 @@ CREATE TABLE IF NOT EXISTS assessment_instances (
     score_perc_in_grading DOUBLE PRECISION DEFAULT 0,
     UNIQUE (number, assessment_id, user_id)
 );
+
+ALTER TABLE assessment_instances ADD COLUMN IF NOT EXISTS date_limit TIMESTAMP WITH TIME ZONE;
