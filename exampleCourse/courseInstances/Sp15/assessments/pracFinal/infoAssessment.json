@@ -9,7 +9,7 @@
         {
             "mode": "Public",
             "credit": 100,
-            "timeLimitMin": 5
+            "timeLimitMin": 1
         }
     ],
     "zones": [

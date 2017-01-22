@@ -27,6 +27,10 @@ WITH instance_questions_info AS (
 )
 SELECT
     to_jsonb(ai) AS assessment_instance,
+    CASE
+        WHEN ai.date_limit IS NULL THEN NULL
+        ELSE floor(extract(epoch from (date_limit - current_timestamp)) * 1000)
+    END AS assessment_instance_remaining_ms,
     to_jsonb(u) AS instance_user,
     coalesce(to_jsonb(e), '{}'::jsonb) AS instance_enrollment,
     to_jsonb(iq) AS instance_question,
