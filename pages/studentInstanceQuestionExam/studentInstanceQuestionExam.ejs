@@ -83,30 +83,6 @@
         <!-- ################################################################################# -->
         <!-- SIDEBAR ######################################################################### -->
 
-        <div id="timeExpiredModal" class="modal fade">
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h4 class="modal-title">Time limit is over</h4>
-              </div>
-              <div class="modal-body">
-                <p>
-                  The assessment time limit is now over. Plese click
-                  the “Finish assessment” button below to compute your
-                  final score.
-                </p>
-              </div>
-              <div class="modal-footer">
-                <form name="finish-form" method="POST">
-                  <input type="hidden" name="postAction" value="finish">
-                  <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
-                  <button type="submit" class="btn btn-danger">Finish assessment</button>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-
         <div class="col-md-3 col-sm-4 col-xs-12">
 
           <div class="panel panel-default">
@@ -118,9 +94,16 @@
               </p>
 
               <% if (assessment_instance.open && assessment_instance_remaining_ms) { %>
+              <div id="countdownProgress"></div>
               <p class="no-bottom-margin">
-                Time remaining: <%- include('../partials/countdown', {durationMS: assessment_instance_remaining_ms, expiredModalSelector: '#timeExpiredModal'}) %>
+                Time remaining: <span id="countdownDisplay"></span>
               </p>
+              <%- include('../partials/countdown', {
+                  serverTimeLimitMS: assessment_instance_time_limit_ms,
+                  serverRemainingMS: assessment_instance_remaining_ms,
+                  progressSelector: '#countdownProgress',
+                  displaySelector: '#countdownDisplay',
+                  }) %>
               <% } %>
             </div>
 

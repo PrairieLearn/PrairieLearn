@@ -65,11 +65,11 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.postAction == 'finish') {
+    } else if (req.body.postAction == 'timeLimitFinish') {
         var finishExam = true;
         assessmentsExam.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.user.user_id, res.locals.assessment_instance.credit, finishExam, function(err) {
             if (ERR(err, next)) return;
-            res.redirect(res.locals.urlPrefix + '/assessment_instance/' + res.locals.assessment_instance.id);
+            res.redirect(res.locals.urlPrefix + '/assessment_instance/' + res.locals.assessment_instance.id + '?timeLimitExpired=true');
         });
     } else {
         return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));

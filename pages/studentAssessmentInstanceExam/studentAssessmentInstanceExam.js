@@ -24,12 +24,20 @@ router.post('/', function(req, res, next) {
         finishExam = false;
     } else if (req.body.postAction == 'finish') {
         finishExam = true;
+    } else if (req.body.postAction == 'timeLimitFinish') {
+        finishExam = true;
     } else {
         return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
     }
     assessmentsExam.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.user.user_id, res.locals.authz_result.credit, finishExam, function(err) {
         if (ERR(err, next)) return;
-        res.redirect(req.originalUrl);
+        console.log('req.body.postAction', req.body.postAction);
+        if (req.body.postAction == 'timeLimitFinish') {
+            console.log('redirect', req.originalUrl + '?timeLimitExpired=true');
+            res.redirect(req.originalUrl + '?timeLimitExpired=true');
+        } else {
+            res.redirect(req.originalUrl);
+        }
     });
 });
 
@@ -44,6 +52,10 @@ router.get('/', function(req, res, next) {
         assessments.renderText(res.locals.assessment, res.locals.urlPrefix, function(err, assessment_text_templated) {
             if (ERR(err, next)) return;
             res.locals.assessment_text_templated = assessment_text_templated;
+
+            console.log('req.query', req.query);
+            res.locals.showTimeLimitExpiredModal = (req.query.timeLimitExpired == 'true');
+            console.log('res.locals.showTimeLimitExpiredModal', res.locals.showTimeLimitExpiredModal);
 
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });

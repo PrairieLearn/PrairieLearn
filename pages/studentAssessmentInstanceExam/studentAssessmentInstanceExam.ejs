@@ -36,29 +36,27 @@
       </div>
     </div>
 
-    <div id="timeExpiredModal" class="modal fade">
+    <% if (showTimeLimitExpiredModal) { %>
+    <div id="timeLimitExpiredModal" class="modal fade">
       <div class="modal-dialog">
         <div class="modal-content">
           <div class="modal-header">
-            <h4 class="modal-title">Time limit is over</h4>
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title">Time limit expired</h4>
           </div>
           <div class="modal-body">
-            <p>
-              The assessment time limit is now over. Plese click
-              the “Finish assessment” button below to compute your
-              final score.
-            </p>
+            <p>Your time limit expired and your assessment is now finished.</p>
           </div>
           <div class="modal-footer">
-            <form name="finish-form" method="POST">
-              <input type="hidden" name="postAction" value="finish">
-              <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
-              <button type="submit" class="btn btn-danger">Finish assessment</button>
-            </form>
+            <button type="button" class="btn btn-primary" data-dismiss="modal">OK</button>
           </div>
         </div>
       </div>
     </div>
+    <script>
+      $(function() {$('#timeLimitExpiredModal').modal({})})
+    </script>
+    <% } // showTimeLimitExpiredModal %>
 
     <%- include('../partials/navbar', {navPage: 'assessment_instance'}); %>
     <div id="content" class="container">
@@ -100,7 +98,20 @@
 
           <% if (assessment_instance.open && assessment_instance_remaining_ms) { %>
           <div class="well well-sm small-bottom-margin">
-            Time remaining: <%- include('../partials/countdown', {durationMS: assessment_instance_remaining_ms, expiredModalSelector: '#timeExpiredModal'}) %>
+            <div class="row">
+              <div class="col-md-2 col-sm-12 col-xs-12">
+                <div id="countdownProgress"></div>
+              </div>
+              <div class="col-md-10 col-sm-12 col-xs-12">
+                Time remaining: <span id="countdownDisplay"></span>
+              </div>
+            </div> <!-- row -->
+            <%- include('../partials/countdown', {
+                serverTimeLimitMS: assessment_instance_time_limit_ms,
+                serverRemainingMS: assessment_instance_remaining_ms,
+                progressSelector: '#countdownProgress',
+                displaySelector: '#countdownDisplay',
+                }) %>
           </div> <!-- well -->
           <% } %>
 
