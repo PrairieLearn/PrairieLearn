@@ -16,7 +16,7 @@ if not os.path.isdir(course_dir):
 
 course_info_file_name = os.path.join(course_dir, 'infoCourse.json')
 try:
-    with open(course_info_file_name) as course_info_file:
+    with open(course_info_file_name, 'rU') as course_info_file:
         course_info = json.load(course_info_file)
 except Exception as error:
     print("ERROR: Unable to read %s: %s" % (course_info_file_name, error))
@@ -51,7 +51,7 @@ for question_dir_name in question_dir_names:
     if os.path.isdir(question_path):
         info_file_name = os.path.join(question_path, 'info.json')
         try:
-            with open(info_file_name) as info_file:
+            with open(info_file_name, 'rU') as info_file:
                 question_info = json.load(info_file)
                 if 'tags' in question_info:
                     tags |= set(question_info['tags'])

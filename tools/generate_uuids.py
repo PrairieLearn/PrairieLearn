@@ -10,7 +10,7 @@ start_re = re.compile(r"^(\s*{ *\n)(.*)$", re.DOTALL)
     
 def add_uuid_to_file(filename):
     try:
-        with open(filename) as in_f:
+        with open(filename, 'rU') as in_f:
             contents = in_f.read()
         data = json.loads(contents)
         if "uuid" in data:
