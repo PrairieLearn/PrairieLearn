@@ -21,6 +21,7 @@ the server.
 * [clientFiles and serverFiles for file and code libraries](doc/clientServerFiles.md)
 * [UUIDs in JSON files](doc/uuid.md)
 * [PrairieDraw graphics](doc/PrairieDraw.md)
+* [What to tell students about PrairieLearn](doc/whatToTellStudents.md)
 
 ## Developer Documentation
 
