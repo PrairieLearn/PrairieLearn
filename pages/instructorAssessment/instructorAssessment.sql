@@ -294,7 +294,6 @@ WITH results AS (
     UPDATE assessment_instances AS ai
     SET
         open = true,
-        opened_at = CURRENT_TIMESTAMP,
         instructor_opened = TRUE
     FROM
         assessments AS a
