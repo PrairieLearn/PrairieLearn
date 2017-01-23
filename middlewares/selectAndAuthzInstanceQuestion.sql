@@ -31,7 +31,10 @@ SELECT
         WHEN ai.date_limit IS NULL THEN NULL
         ELSE floor(extract(epoch from (date_limit - current_timestamp)) * 1000)
     END AS assessment_instance_remaining_ms,
-    ai.time_limit_min * 60 * 1000 AS assessment_instance_time_limit_ms,
+    CASE
+        WHEN ai.date_limit IS NULL THEN NULL
+        ELSE floor(extract(epoch from (ai.date_limit - ai.date)) * 1000)
+    END AS assessment_instance_time_limit_ms,
     to_jsonb(u) AS instance_user,
     coalesce(to_jsonb(e), '{}'::jsonb) AS instance_enrollment,
     to_jsonb(iq) AS instance_question,

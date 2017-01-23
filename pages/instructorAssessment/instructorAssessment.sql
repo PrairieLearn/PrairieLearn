@@ -294,6 +294,7 @@ WITH results AS (
     UPDATE assessment_instances AS ai
     SET
         open = true,
+        date_limit = NULL,
         instructor_opened = TRUE
     FROM
         assessments AS a
