@@ -329,13 +329,14 @@ WITH last_dates AS (
         LEFT JOIN submissions AS s ON (s.variant_id = v.id) -- left join in case we have no submissions
     WHERE
         ai.id = $assessment_instance_id
-        AND a.id = $assessment_id
+        AND a.id = $assessment_id -- check that we are in the assessment that we have authorized
     ORDER BY
         id, date DESC
 )
 -- determine credit as of the last submission time
 SELECT
-    caa.credit
+    caa.credit,
+    a.type AS assessment_type
 FROM
     last_dates AS ld
     JOIN assessment_instances AS ai ON (ai.id = ld.id)
