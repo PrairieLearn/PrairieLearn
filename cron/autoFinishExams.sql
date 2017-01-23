@@ -10,14 +10,13 @@ open_assessment_instances AS (
     WHERE
         ai.open = true
         AND a.type = 'Exam'
-        AND a.auto_close
-        AND age(ai.date) > interval '6 hours' -- not required, but will reduce the search size
-        AND NOT ai.instructor_opened
+        AND ai.auto_close
 ),
 -- add the date of last activity to each of them (last submission, or the start date)
 last_dated_assessment_instances AS (
     SELECT DISTINCT ON (id)
         ai.id,
+        ai.date_limit,
         coalesce(s.date, ai.date) AS last_active_date, -- if no submissions then use the exam start date
         coalesce(s.mode, ai.mode) AS mode
     FROM
@@ -35,7 +34,11 @@ no_activity_assessment_instances AS (
     FROM
         last_dated_assessment_instances
     WHERE
-        age(last_active_date) > interval '6 hours'
+        current_timestamp - last_active_date > interval '6 hours'
+        OR (
+            date_limit IS NOT NULL
+            AND current_timestamp - date_limit > interval '1 minute'
+        )
 )
 -- determine credit
 SELECT

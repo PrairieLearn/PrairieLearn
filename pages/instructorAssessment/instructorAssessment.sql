@@ -130,6 +130,12 @@ SELECT
     (aset.name || ' ' || a.number) AS assessment_label,
     u.user_id, u.uid, u.name, e.role, ai.score_perc,
     ai.number,ai.id AS assessment_instance_id,ai.open,
+    CASE
+        WHEN ai.open AND ai.date_limit IS NOT NULL
+            THEN greatest(0, floor(extract(epoch from (ai.date_limit - current_timestamp)) / (60 * 1000)))::text || ' min'
+        WHEN ai.open THEN 'Open'
+        ELSE 'Closed'
+    END AS time_remaining,
     format_interval(aid.duration) AS duration,
     EXTRACT(EPOCH FROM aid.duration) AS duration_secs,
     EXTRACT(EPOCH FROM aid.duration) / 60 AS duration_mins
@@ -295,7 +301,7 @@ WITH results AS (
     SET
         open = true,
         date_limit = NULL,
-        instructor_opened = TRUE
+        auto_close = FALSE
     FROM
         assessments AS a
     WHERE

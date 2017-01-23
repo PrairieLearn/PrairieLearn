@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS assessment_instances (
     date_limit TIMESTAMP WITH TIME ZONE, -- if NOT NULL, when we have to finish by
     open BOOLEAN DEFAULT TRUE,
     closed_at TIMESTAMP WITH TIME ZONE,
-    instructor_opened BOOLEAN DEFAULT FALSE,
+    auto_close BOOLEAN DEFAULT FALSE,
     duration INTERVAL DEFAULT INTERVAL '0 seconds',
     assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,
     user_id BIGINT NOT NULL REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
@@ -23,3 +23,4 @@ CREATE TABLE IF NOT EXISTS assessment_instances (
 );
 
 ALTER TABLE assessment_instances ADD COLUMN IF NOT EXISTS date_limit TIMESTAMP WITH TIME ZONE;
+ALTER TABLE assessment_instances ADD COLUMN IF NOT EXISTS auto_close BOOLEAN DEFAULT FALSE;
