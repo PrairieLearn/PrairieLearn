@@ -71,7 +71,7 @@
         <p class="navbar-text"><%= authn_user.name %></p>
         <% } // authn_has_instructor_view %>
 
-        <% if (devMode) { %>
+        <% if (devMode && authz_data.has_instructor_view) { %>
         <a class="btn btn-success navbar-btn" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a>
         <% } %>
 
