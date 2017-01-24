@@ -51,12 +51,6 @@ This makes local code changes and then pushes them up to your forked repository 
 
 Once your code is accepted, you can then get it back into your master by updating your fork from upstream, and then you can delete your branch that was merged. See also [Using pull requests](https://help.github.com/articles/using-pull-requests/) on GitHub Help.
 
-
-## GitHub: distributed model (for owners)
-
-**Starting the project:** Make a repo on GitHub called `code_name` and a team also called `code_name`. Add the repository to the team, set team permissions to "read access", and add people to the team. If there is going to be more than one maintainer with direct write access, then make a `code_name_maintainers` team with "write access". Alternatively, if this is a public repository with just one owner/maintainer then no teams are needed.
-
-
 ## Branches and tags
 
 PrairieLearn version numbers have the format `major.minor.patch`. Patch-level changes are only for bugfixes.
