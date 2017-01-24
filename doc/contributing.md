@@ -22,7 +22,7 @@ This means that you now have three key repositories to keep track of:
 **Updating your fork from upstream:** Getting new changes from upstream is a two-step process. First you pull from upstream to your local repository, then you push the new changes back to your origin. There is no direct communication between upstream and your forked origin repository. Note that for this to work it is critical that you have never committed anything to your master branch. The procedure to pull and then push is:
 
         git checkout master      # make sure you are on the master branch
-        git pull upstream        # pull new changes from upstream
+        git pull upstream master # pull new changes from upstream
         git push origin master   # push the new changes back up to your fork (origin)
 
 See also the GitHub Help pages on [Syncing a fork](https://help.github.com/articles/syncing-a-fork/) and [Pushing to a remote](https://help.github.com/articles/pushing-to-a-remote/).
