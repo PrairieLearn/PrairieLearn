@@ -205,6 +205,7 @@
 
         </div> <!-- panel-body -->
 
+        <% if (assessment_instance.allow_review || authz_data.has_instructor_view) { %>
         <table class="table table-condensed table-hover">
           <thead>
             <tr>
@@ -232,6 +233,11 @@
             <% }); %>
           </tbody>
         </table>
+        <% } else { %> <!-- assessment_instance.allow_review || authz_data.has_instructor_view -->
+        <p class="text-center">
+          Reviewing your answers has been disabled for this assessment.
+        </p>
+        <% } %> <!-- assessment_instance.allow_review || authz.has_instructor_view -->
 
         <!-- ######################################################################################### -->
         <!-- ######################################################################################### -->

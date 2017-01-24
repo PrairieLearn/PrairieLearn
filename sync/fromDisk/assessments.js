@@ -63,6 +63,7 @@ module.exports = {
                         multiple_instance: dbAssessment.multipleInstance ? true : false,
                         shuffle_questions: dbAssessment.shuffleQuestions ? true : false,
                         auto_close: _.has(dbAssessment, 'autoClose') ? dbAssessment.autoClose : true,
+                        allow_review: _.has(dbAssessment, 'allowReview') ? dbAssessment.allowReview : true,
                         max_points: dbAssessment.maxPoints,
                         course_instance_id: courseInstance.courseInstanceId,
                         course_id: courseInfo.courseId,

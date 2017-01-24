@@ -63,6 +63,11 @@
             "description": "Array of \"zones\" in the assessment, each containing questions that can be randomized within the zone.",
             "type": "array",
             "items": {"$ref": "#/definitions/zone"}
+        },
+        "allowReview": {
+            "description": "Whether to allow students to view their questions and answers when the assessment is closed.",
+            "type": "boolean",
+            "default": true
         }
     },
     "definitions": {
