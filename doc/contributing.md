@@ -1,8 +1,6 @@
 
 # Contributing to PrairieLearn
 
-For background information on using git effectively, see Matt's [git quick reference](http://lagrange.mechse.illinois.edu/git_quick_ref/).
-
 ## GitHub: distributed model (for contributors)
 
 **Getting started as a collaborator:** Everyone should fork the main repository on GitHub. The full name of this repository is `PrairieLearn/PrairieLearn` (`"organization_name/repo_name"`); when you fork it, GitHub will create a repo named `user_name/PrairieLearn`. If you're not sure you to fork the repo, see [Github's instructions](https://help.github.com/articles/fork-a-repo/).
