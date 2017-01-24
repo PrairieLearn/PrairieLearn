@@ -39,6 +39,7 @@ var filenames = function(locals) {
         allSubmissionsCsvFilename:    prefix + 'all_submissions.csv',
         finalFilesZipFilename:        prefix + 'final_files.zip',
         allFilesZipFilename:          prefix + 'all_files.zip',
+        perQuestionStatsCsvFilename:  prefix + 'per_question_stats.csv',
     };
 };
 
@@ -296,6 +297,40 @@ router.get('/:filename', function(req, res, next) {
                 if (ERR(err, next)) return;
                 res.attachment(req.params.filename);
                 res.send(zipBuffer);
+            });
+        });
+    } else if (req.params.filename == res.locals.perQuestionStatsCsvFilename) {
+        var params = {assessment_id: res.locals.assessment.id};
+        sqldb.query(sql.question_stats, params, function(err, result) {
+            if (ERR(err, next)) return;
+            var questionStatsList = result.rows;
+            var csvData = [];
+            var csvHeaders = ['Question number', 'Question title', 'Mean score', 'Discrimination', 'Attempts'];
+            for (var i = 0; i < 5; i++) {
+                csvHeaders.push("Hist " + (i + 1));
+            }
+
+            csvData.push(csvHeaders);
+
+            _(questionStatsList).each(function(questionStats) {
+                questionStatsData = [];
+                questionStatsData.push(questionStats.number);
+                questionStatsData.push(questionStats.title);
+                questionStatsData.push(questionStats.mean_score_per_question);
+                questionStatsData.push(questionStats.discrimination);
+                questionStatsData.push(questionStats.average_number_attempts);
+
+                _(questionStats.quintile_scores).each(function(perc) {
+                    questionStatsData.push(perc);
+                });
+
+                csvData.push(questionStatsData);
+            });
+
+            csvStringify(csvData, function(err, csv) {
+                if (ERR(err, next)) return;
+                res.attachment(req.params.filename);
+                res.send(csv);
             });
         });
     } else {
