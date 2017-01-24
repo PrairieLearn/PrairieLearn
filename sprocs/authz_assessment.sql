@@ -50,7 +50,7 @@ SELECT
     authz_result.authorized,
     CASE
         WHEN authz_data->'authn_user'->'user_id' = authz_data->'user'->'user_id' THEN TRUE
-        WHEN (authz_data->>'has_instructor_edit')::boolean THEN TRUE
+        WHEN (authz_data->>'authn_has_instructor_edit')::boolean THEN TRUE
         ELSE FALSE
     END AND authz_result.authorized AS authorized_edit,
     user_result.credit,
