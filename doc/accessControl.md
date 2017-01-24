@@ -23,11 +23,24 @@ The general format of `allowAccess` is:
 "allowAccess": [
     { <accessRule1> },
     { <accessRule2> },
-    { <accessRule3> }
+    ...
 ],
 ```
 
-Each `accessRule` is an object that specifies a set of circumstances under which the assessment is accessible. If any of the access rules gives access, then the assessment is accessible. Each access rule can have one or more restrictions as follows. The "courseInstance" and "assessment" columns indicate whether the restiction is available for the respective objects.
+Each `accessRule` is an object that specifies a set of circumstances under which the assessment is accessible, like:
+
+```
+    {
+        <accessRestriction1>,
+        <accessRestriction2>,
+        ...,
+        <accessModification1>,
+        <accessModification2>,
+        ...
+    }
+```
+
+Each access rule can have zero or more *access restrictions* and zero or more *access modifications*. The possible access restrictions and modifications are as follows, where the “courseInstance” and “assessment” columns indicate whether the restiction is available for the respective objects.
 
 Access restriction | courseInstance | assessment | Meaning | Example
 ---                | ---            | ---        | ---     | ---
@@ -36,19 +49,25 @@ Access restriction | courseInstance | assessment | Meaning | Example
 `startDate`        | ✓ | ✓ | Only allow access after this date.                                  | `"startDate": "2015-01-19T00:00:01"`
 `endDate`          | ✓ | ✓ | Only access access before this date.                                | `"endDate": "2015-05-13T23:59:59"`
 `mode`             |   | ✓ | Only allow access from this server mode.                            | `"mode": "Exam"`
-`credit`           |   | ✓ | Maximum credit as percentage of full credit (can be more than 100). | `"credit": 100`
-`timeLimitMin`     |   | ✓ | Time limit in minutes to complete an assessment                     | `"timeLimitMin": 60`
 
-Each access role will only grant access if all of the restrictions are satisfied.
+Access modification | courseInstance | assessment | Meaning | Example
+---                 | ---            | ---        | ---     | ---
+`credit`            |   | ✓ | Maximum credit as percentage of full credit (can be more than 100, default is 0). | `"credit": 100`
+`timeLimitMin`      |   | ✓ | Time limit in minutes to complete an assessment (default is no time limit).       | `"timeLimitMin": 60`
 
-In summary, `allowAccess` uses the algorithm:
+The first accessRule for which all access restrictions are true is said to be the *active* rule. If there is an active rule then access is granted with the modifications of the active rule. In pseudo-code the algorithm is:
 
 ```
-each accessRule is True if (restriction1 AND restriction2 AND restriction3)
-allowAccess is True if (accessRule1 OR accessRule2 OR accessRule3)
+activeRule = NULL
+FOR rule IN allowAccess:
+    IF (rule.restriction1 AND rule.restriction2 AND rule.restriction3) THEN
+       activeRule = rule
+       break
+IF (activeRule IS NULL) THEN
+    # access is denied
+ELSE
+    # access is granted subject to activeRule.modification1 AND activeRule.modification2
 ```
-
-If multiple access rules are satisfied then the highest `credit` value is taken from them. Access rules without an explicit `credit` value have credit of 0, meaning they allow viewing of the assessment but not doing questions for credit.
 
 ## Dates
 
