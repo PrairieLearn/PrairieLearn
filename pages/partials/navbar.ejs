@@ -1,4 +1,4 @@
-<% if (navbarType == 'plain') { %>
+<% if (typeof navbarType == 'undefined' || navbarType == 'plain') { %>
 <%- include('navbarPlain'); %>
 <% } else if (navbarType == 'student') { %>
 <%- include('navbarStudent'); %>
