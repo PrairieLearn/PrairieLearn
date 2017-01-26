@@ -34,8 +34,15 @@ module.exports = {
             try {
                 var vid = variant_seed;
                 var questionData = server.getData(vid, options, questionDir);
-            } catch (e) {
-                return ERR(e, callback);
+            } catch (err) {
+                var data = {
+                    variant_seed: variant_seed,
+                    question: question,
+                    course: course,
+                };
+                err.status = 500;
+                err = error.addData(err, data);
+                return ERR(err, callback);
             }
             var data = {
                 params: questionData.params,
@@ -43,6 +50,32 @@ module.exports = {
                 options: questionData.options,
             };
             callback(null, data);
+        });
+    },
+
+    getFile: function(filename, variant, question, course, callback) {
+        var that = this;
+        questionHelper.loadServer(question, course, function(err, server) {
+            if (ERR(err, callback)) return;
+            var fileData;
+            try {
+                var vid = variant.variant_seed;
+                var params = variant.params;
+                var trueAnswer = variant.true_answer;
+                var options = variant.options;
+                var questionDir = path.join(course.path, 'questions', question.directory);
+                fileData = server.getFile(filename, vid, params, trueAnswer, options, questionDir);
+            } catch (err) {
+                var data = {
+                    variant: variant,
+                    question: question,
+                    course: course,
+                };
+                err.status = 500;
+                err = error.addData(err, data);
+                return ERR(err, callback);
+            }
+            callback(null, fileData);
         });
     },
 
@@ -59,14 +92,16 @@ module.exports = {
                 var options = variant.options;
                 var questionDir = path.join(course.path, 'questions', question.directory);
                 grading = server.gradeAnswer(vid, params, trueAnswer, submittedAnswer, options, questionDir);
-            } catch (e) {
+            } catch (err) {
                 var data = {
                     submission: submission,
                     variant: variant,
                     question: question,
                     course: course,
                 };
-                return callback(error.addData(e, data));
+                err.status = 500;
+                err = error.addData(err, data);
+                return ERR(err, callback);
             }
             callback(null, grading);
         });

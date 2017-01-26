@@ -168,6 +168,7 @@ router.get('/', function(req, res, next) {
             res.locals.postUrl = res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id + "/";
             res.locals.questionJson = JSON.stringify({
                 questionFilePath: res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id + "/file",
+                questionGeneratedFilePath: res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id + "/generatedFilesQuestion/variant/" + res.locals.variant.id,
                 question: res.locals.question,
                 effectiveQuestionType: res.locals.effectiveQuestionType,
                 course: res.locals.course,

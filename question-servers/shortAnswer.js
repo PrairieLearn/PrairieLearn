@@ -57,6 +57,10 @@ module.exports = {
         });
     },
 
+    getFile: function(variant, question, course, callback) {
+        callback(new Error('not implemented'));
+    },
+
     defaultGradeAnswer: function(vid, params, trueAnswer, submittedAnswer, options) {
         options = _.defaults(options, {
             type: "equal",

@@ -155,6 +155,12 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
     require('./pages/clientFilesQuestion/clientFilesQuestion'),
 ]);
 
+// generatedFiles
+app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion', [
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/instructorGeneratedFilesQuestion/instructorGeneratedFilesQuestion'),
+]);
+
 // legacy client file paths
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/file', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
@@ -208,6 +214,12 @@ app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id/clien
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     require('./pages/clientFilesQuestion/clientFilesQuestion'),
+]);
+
+// generatedFiles
+app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion', [
+    require('./middlewares/selectAndAuthzInstanceQuestion'),
+    require('./pages/studentGeneratedFilesQuestion/studentGeneratedFilesQuestion'),
 ]);
 
 // legacy client file paths

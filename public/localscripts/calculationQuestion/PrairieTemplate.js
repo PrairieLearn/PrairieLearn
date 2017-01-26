@@ -471,6 +471,9 @@ define(["underscore"], function(_) {
         localData.clientFile = function(name) {
             return document.urlPrefix + '/clientFilesCourse/' + name;
         };
+        localData.generatedQuestionFile = function(name) {
+            return questionDataModel.get('questionGeneratedFilePath') + '/' + name;
+        };
 
         var compiled = _.template(text);
         var rendered = compiled(localData);

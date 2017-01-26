@@ -51,6 +51,7 @@ CalculationClient.prototype.initialize = function(questionData, callback) {
         require([questionData.questionFilePath + "/client.js"], function(qc) {
             that.questionDataModel = new Backbone.Model();
             that.questionDataModel.set('questionFilePath', questionData.questionFilePath);
+            that.questionDataModel.set('questionGeneratedFilePath', questionData.questionGeneratedFilePath);
             that.appModel = new Backbone.Model();
             that.qClient = qc;
             that.qClient.initialize(questionData.variant.params);
