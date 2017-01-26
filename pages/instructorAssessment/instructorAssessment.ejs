@@ -330,7 +330,7 @@
       
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.abbrev %><%= assessment.number %> Stats</h3>
+          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Question statistics</h3>
         </div>
 
         <table id="questionsTable" class="table table-condensed table-hover tablesorter">
@@ -347,9 +347,9 @@
             <% question_stats.forEach(function(row, i) { %>
             <tr>
               <td>
-                  <a href="<%= urlPrefix %>/instructor/question/<%= row.question_id %>/">
-                      <%= row.number %>. <%= row.title %>
-                  <a/>
+                <a href="<%= urlPrefix %>/question/<%= row.question_id %>/">
+                  <%= row.number %>. <%= row.title %>
+                </a>
               </td>
               <td class="cell-center"><%- include('../partials/scorebar', {score: Math.round(row.mean_score_per_question)}); %></td>
               <td class="cell-center"><%- include('../partials/scorebar', {score: Math.round(row.discrimination)}); %></td>
@@ -373,22 +373,9 @@
             <% }); %>
           </tbody>
         </table>
-        <script>
-          $(function(){
-              $("#usersTable").tablesorter({
-                  theme: "bootstrap",
-                  widthFixed: true,
-                  headerTemplate: '{content} {icon}',
-                  widgets: ["uitheme"],
-                  headers: {
-                      7: {sorter: false},
-                  },
-              });
-          });
-        </script>
         <div class="panel-footer">
           <p>
-            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= perQuestionStatsCsvFilename %>"><%= perQuestionStatsCsvFilename %></a>
+            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= questionStatsCsvFilename %>"><%= questionStatsCsvFilename %></a>
           </p>
           <small>
             <ul>

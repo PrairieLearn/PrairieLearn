@@ -39,7 +39,7 @@ var filenames = function(locals) {
         allSubmissionsCsvFilename:    prefix + 'all_submissions.csv',
         finalFilesZipFilename:        prefix + 'final_files.zip',
         allFilesZipFilename:          prefix + 'all_files.zip',
-        perQuestionStatsCsvFilename:  prefix + 'per_question_stats.csv',
+        questionStatsCsvFilename:     prefix + 'question_stats.csv',
     };
 };
 
@@ -299,7 +299,7 @@ router.get('/:filename', function(req, res, next) {
                 res.send(zipBuffer);
             });
         });
-    } else if (req.params.filename == res.locals.perQuestionStatsCsvFilename) {
+    } else if (req.params.filename == res.locals.questionStatsCsvFilename) {
         var params = {assessment_id: res.locals.assessment.id};
         sqldb.query(sql.question_stats, params, function(err, result) {
             if (ERR(err, next)) return;
