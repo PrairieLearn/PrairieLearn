@@ -10,7 +10,7 @@ SELECT
         WHEN a.type = 'Homework' THEN
             CASE
                 WHEN a.shuffle_questions THEN '#' || q.number::text
-                ELSE aset.abbreviation || a.number || '.' || aq.number::text
+                ELSE aset.abbreviation || a.number || '.' || (row_number() OVER w)::text
             END
         WHEN a.type = 'Exam' THEN (row_number() OVER w)::text
         ELSE aq.number::text

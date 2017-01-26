@@ -1,22 +1,32 @@
+DROP FUNCTION IF EXISTS select_assessment_questions(bigint,bigint);
+
 CREATE OR REPLACE FUNCTION
     select_assessment_questions(
-        assessment_id bigint
+        assessment_id bigint,
+        assessment_instance_id bigint DEFAULT NULL -- if provided, an existing assessment instance
     ) RETURNS TABLE (
         assessment_question_id bigint,
+        init_points double precision,
         question JSONB
     )
 AS $$
 WITH
--- First assign two random orderings to the list of questions,
--- one for alternative_group question selection and one for
--- zone question selection.
+-- First assign two random orderings to the list of questions, one for
+-- alternative_group question selection and one for zone question
+-- selection, plus a fixed ordering based on the existing question
+-- number (if any).
 randomized_assessment_questions AS (
     SELECT
         aq.*,
+        CASE WHEN iq.id IS NOT NULL THEN 1 ELSE 2 END AS existing_order,
         random() AS ag_rand, -- for alternative_group selection
         random() AS z_rand -- for zone selection
     FROM
         assessment_questions AS aq
+        LEFT JOIN ( -- existing questions if they exist
+            SELECT * FROM instance_questions
+            WHERE assessment_instance_id IS NOT DISTINCT FROM select_assessment_questions.assessment_instance_id
+        ) AS iq ON (iq.assessment_question_id = aq.id)
     WHERE
         aq.assessment_id = select_assessment_questions.assessment_id
         AND aq.deleted_at IS NULL
@@ -30,7 +40,7 @@ randomized_assessment_questions AS (
 ag_numbered_assessment_questions AS (
     SELECT
         aq.*,
-        (row_number() OVER (PARTITION BY aq.alternative_group_id ORDER BY aq.ag_rand, aq.id)) AS ag_row_number
+        (row_number() OVER (PARTITION BY aq.alternative_group_id ORDER BY aq.existing_order, aq.ag_rand, aq.id)) AS ag_row_number
     FROM
         randomized_assessment_questions AS aq
 ),
@@ -58,7 +68,7 @@ ag_chosen_asssesment_questions AS (
 z_numbered_assessment_questions AS (
     SELECT
         aq.*,
-        (row_number() OVER (PARTITION BY z.id ORDER BY aq.ag_row_number, aq.z_rand, aq.id)) AS z_row_number
+        (row_number() OVER (PARTITION BY z.id ORDER BY aq.ag_row_number, aq.existing_order, aq.z_rand, aq.id)) AS z_row_number
     FROM
         ag_chosen_asssesment_questions AS aq
         JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
@@ -79,6 +89,7 @@ z_chosen_assessment_questions AS (
 -- Finally format the data for easy question creation.
 SELECT
     aq.id,
+    aq.init_points,
     to_jsonb(q) AS question
 FROM
     z_chosen_assessment_questions AS aq
