@@ -1,3 +1,4 @@
+DROP FUNCTION IF EXISTS select_assessment_questions(bigint);
 DROP FUNCTION IF EXISTS select_assessment_questions(bigint,bigint);
 
 CREATE OR REPLACE FUNCTION
