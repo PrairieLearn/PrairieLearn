@@ -17,7 +17,7 @@ CREATE OR REPLACE FUNCTION
 DECLARE
     active_access_rule_id bigint;
 BEGIN
-    -- Choose the first access rule which grants access ('authorized' is TRUE)
+    -- Choose the access rule which grants access ('authorized' is TRUE), if any, and has the highest 'credit'.
     SELECT
         caar.authorized,
         aar.credit,
@@ -47,6 +47,7 @@ BEGIN
         aar.assessment_id = check_assessment_access.assessment_id
         AND caar.authorized
     ORDER BY
+        aar.credit DESC NULLS LAST,
         aar.number
     LIMIT 1;
 
