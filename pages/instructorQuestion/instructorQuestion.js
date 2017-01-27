@@ -77,7 +77,7 @@ var render = function(req, res, next, variant, submission, submissionHtml, answe
                         res.locals.submissionHtml = submissionHtml;
                         res.locals.answerHtml = answerHtml;
                         res.locals.postUrl = res.locals.urlPrefix + "/question/" + res.locals.question.id + "/";
-                        res.locals.questionJson = JSON.stringify({
+                        var questionJson = JSON.stringify({
                             questionFilePath: res.locals.urlPrefix + "/question/" + res.locals.question.id + "/file",
                             questionGeneratedFilePath: res.locals.urlPrefix + "/question/" + res.locals.question.id + "/generatedFilesQuestion/variant_seed/" + variant.variant_seed,
                             question: res.locals.question,
@@ -90,6 +90,7 @@ var render = function(req, res, next, variant, submission, submissionHtml, answe
                             trueAnswer: submission ? variant.true_answer : null,
                             submissions: submission ? res.locals.submissions : null,
                         });
+                        res.locals.questionJsonBase64 = (new Buffer(questionJson)).toString('base64');
                         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                     });
                 });

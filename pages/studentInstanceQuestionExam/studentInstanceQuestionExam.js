@@ -166,7 +166,7 @@ router.get('/', function(req, res, next) {
         },
         function(callback) {
             res.locals.postUrl = res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id + "/";
-            res.locals.questionJson = JSON.stringify({
+            var questionJson = JSON.stringify({
                 questionFilePath: res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id + "/file",
                 questionGeneratedFilePath: res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id + "/generatedFilesQuestion/variant/" + res.locals.variant.id,
                 question: res.locals.question,
@@ -182,6 +182,7 @@ router.get('/', function(req, res, next) {
                 trueAnswer: res.locals.showTrueAnswer ? res.locals.variant.true_answer : null,
                 submissions : res.locals.showSubmissions ? res.locals.submissions : null,
             });
+            res.locals.questionJsonBase64 = (new Buffer(questionJson)).toString('base64');
             res.locals.video = null;
             callback(null);
         },
