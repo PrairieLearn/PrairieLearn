@@ -1,6 +1,6 @@
 -- BLOCK course_assessments
 SELECT
-    a.id,a.number AS assessment_number,
+    a.id AS assessment_id,a.number AS assessment_number,
     aset.number AS assessment_set_number,aset.color,
     (aset.abbreviation || a.number) AS label
 FROM assessments AS a
