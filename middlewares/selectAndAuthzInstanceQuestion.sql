@@ -60,4 +60,5 @@ FROM
 WHERE
     iq.id = $instance_question_id
     AND ci.id = $course_instance_id
-    AND aai.authorized;
+    AND aai.authorized
+    AND (ai.open OR ai.allow_review OR (($authz_data)->>'has_instructor_view')::boolean);
