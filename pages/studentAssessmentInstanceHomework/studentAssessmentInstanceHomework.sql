@@ -1,4 +1,4 @@
--- BLOCK update
+-- BLOCK update_question_list
 INSERT INTO instance_questions
         (current_value,  assessment_instance_id, assessment_question_id)
 (
@@ -8,6 +8,30 @@ INSERT INTO instance_questions
         select_assessment_questions($assessment_id, $assessment_instance_id) AS aq
 )
 ON CONFLICT (assessment_question_id, assessment_instance_id) DO NOTHING;
+
+-- BLOCK update_max_points
+WITH calculated AS (
+    SELECT
+        sum(aq.max_points) AS max_points
+    FROM
+        instance_questions AS iq
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+    WHERE
+        iq.assessment_instance_id = $assessment_instance_id
+        AND aq.deleted_at IS NULL
+)
+UPDATE assessment_instances AS ai
+SET
+    max_points = CASE
+        WHEN $assessment_max_points::double precision IS NOT NULL THEN $assessment_max_points::double precision
+        ELSE calculated.max_points
+    END
+FROM
+    calculated
+WHERE
+    ai.id = $assessment_instance_id
+RETURNING
+    ai.max_points;
 
 -- BLOCK get_questions
 SELECT
@@ -28,6 +52,7 @@ FROM
     JOIN question_order($assessment_instance_id) AS qo ON (iq.id = qo.instance_question_id)
 WHERE
     iq.assessment_instance_id = $assessment_instance_id
+    AND aq.deleted_at IS NULL
 WINDOW
     w AS (ORDER BY qo.row_order)
 ORDER BY qo.row_order;

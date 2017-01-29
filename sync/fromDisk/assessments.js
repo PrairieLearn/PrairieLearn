@@ -79,13 +79,7 @@ module.exports = {
                                 if (ERR(err, callback)) return;
                                 that.syncAssessmentQuestions(assessmentId, dbAssessment, courseInfo, function(err) {
                                     if (ERR(err, callback)) return;
-                                    var params = {
-                                        assessment_id: assessmentId,
-                                    };
-                                    sqldb.query(sql.update_assessment_max_points, params, function(err, result) {
-                                        if (ERR(err, callback)) return;
-                                        callback(null);
-                                    });
+                                    callback(null);
                                 });
                             });
                         });
