@@ -17,9 +17,15 @@ This is the easiest way to get started.
 
 1. When you are finished with PrairieLearn, type Control-C on the commandline where your ran the server to stop it.
 
-1. To use your own course, point Docker to the correct directory with:
+1. To use your own course, point Docker to the correct directory (replace the precise path with your own):
 
-        docker run -it --rm -p 3000:3000 -v /path/to/course:/course prairielearn/prairielearn
+        docker run -it --rm -p 3000:3000 -v C:\GitHub\pl-tam212:/course prairielearn/prairielearn
+
+    or
+
+        docker run -it --rm -p 3000:3000 -v /Users/mwest/git/pl-tam212:/course prairielearn/prairielearn
+
+    If you are using Docker for Windows then you will need to first give Docker permission to access the C: drive (or whichever drive your course directory is on). This can be done by right-clicking on the Docker "whale" icon in the taskbar, choosing "Settings", and granting shared access to the C: drive.
 
     If you're in the root of your course directory already, you can substitute `%cd%` (on Windows) or `$PWD` (everything else) for `/path/to/course`.
 
