@@ -104,6 +104,7 @@ WHERE
     AND aq.id = iq.assessment_question_id;
 
 -- BLOCK update_assessment_instance_score
+-- FIXME: replace with a call to assessment_instances_score()
 WITH results AS (
     UPDATE assessment_instances AS ai
     SET

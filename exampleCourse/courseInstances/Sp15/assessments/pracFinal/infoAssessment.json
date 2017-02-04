@@ -15,7 +15,7 @@
     "zones": [
         {
             "questions": [
-                {"id": "particleMotion", "points": [10, 5, 2]},
+                {"id": "particleMotion", "points": [10, 5, 2], "forceMaxPoints": true},
                 {"id": "addVectors",     "points": [10, 5, 2]}
             ]
         }

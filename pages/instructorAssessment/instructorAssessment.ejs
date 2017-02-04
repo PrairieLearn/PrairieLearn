@@ -557,6 +557,31 @@
         </div>
       </div>
 
+      <div class="modal fade" id="regradeAllAssessmentInstancesModal" tabindex="-1" role="dialog" aria-labelledby="regradeAllAssessmentInstances">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="regradeAllAssessmentInstancesModalLabel">Regrade all assessment instances</h4>
+            </div>
+            <div class="modal-body">
+              Are you sure you want to regrade all assessment instances
+              for <strong><%= assessment_set.name %>
+              <%= assessment.number %></strong>? This cannot be
+              undone.
+            </div>
+            <div class="modal-footer">
+              <form name="finish-form" method="POST">
+                <input type="hidden" name="postAction" value="regrade_all">
+                <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+                <input type="hidden" name="assessment_id" value="<%= assessment.id %>">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Regrade all</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Scores</h3>
@@ -566,6 +591,10 @@
             <a class="btn btn-xs btn-default" role="button"
                data-toggle="modal" data-target="#deleteAllAssessmentInstancesModal">
               <i class="fa fa-times" aria-hidden="true"></i> Delete all assessment instances
+            </a>
+            <a class="btn btn-xs btn-default" role="button"
+               data-toggle="modal" data-target="#regradeAllAssessmentInstancesModal">
+              <i class="fa fa-refresh" aria-hidden="true"></i> Regrade all assessment instances
             </a>
           </p>
           <p class="no-bottom-margin">
@@ -638,6 +667,21 @@
                                      </form>
                                      ">
                   </div>
+                  <div id="row<%= iRow %>PopoverRegrade"
+                       tabindex="0" data-toggle="popover" data-trigger="focus" data-container="body"
+                       data-html="true" data-placement="auto" title="Confirm regrade"
+                       data-content="
+                                     <form name=&quot;open-form&quot; method=&quot;POST&quot;>
+                                       <input type=&quot;hidden&quot; name=&quot;postAction&quot; value=&quot;regrade&quot;>
+                                       <input type=&quot;hidden&quot; name=&quot;csrfToken&quot; value=&quot;<%= csrfToken %>&quot;>
+                                       <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
+                                       <button type=&quot;button&quot; class=&quot;btn btn-default&quot; onclick=&quot;$('#row<%= iRow %>PopoverRegrade').popover('hide')&quot;>
+                                         Cancel
+                                       </button>
+                                       <button type=&quot;submit&quot; class=&quot;btn btn-primary&quot;>Regrade</button>
+                                     </form>
+                                     ">
+                  </div>
                   <ul class="dropdown-menu">
 
                     <!-- ################################################## -->
@@ -651,6 +695,16 @@
                          data-assessment-instance-id="<%= row.assessment_instance_id %>"
                          >
                         <i class="fa fa-times" aria-hidden="true"></i> Delete
+                      </a>
+                    </li>
+                    <% } %> <!-- if has_instructor_edit -->
+
+                    <!-- ################################################## -->
+
+                    <% if (authz_data.has_instructor_edit) { %>
+                    <li>
+                      <a onclick="$('#row<%= iRow %>PopoverRegrade').popover('show')">
+                        <i class="fa fa-refresh" aria-hidden="true"></i> Regrade
                       </a>
                     </li>
                     <% } %> <!-- if has_instructor_edit -->

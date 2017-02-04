@@ -407,3 +407,16 @@ FROM
     JOIN users AS u ON (u.user_id = ai.user_id)
     JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
     JOIN LATERAL check_assessment_access(a.id, ld.mode, e.role, u.uid, ld.date, ci.display_timezone) AS caa ON TRUE;
+
+
+-- BLOCK select_assessment_instances
+SELECT
+    ai.id
+FROM
+    assessments AS a
+    JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
+    JOIN users AS u ON (u.user_id = ai.user_id)
+WHERE
+    a.id = $assessment_id
+ORDER BY
+    u.uid, u.user_id, ai.number;

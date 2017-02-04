@@ -149,11 +149,11 @@ WHERE
 
 -- BLOCK insert_assessment_question
 INSERT INTO assessment_questions AS aq
-    (number,  max_points,  init_points,  points_list,
+    (number,  max_points,  init_points,  points_list, force_max_points,
     deleted_at,  assessment_id,  question_id, alternative_group_id,
     number_in_alternative_group)
 VALUES
-    ($number, $max_points, $init_points, $points_list::double precision[],
+    ($number, $max_points, $init_points, $points_list::double precision[], $force_max_points,
     NULL,       $assessment_id, $question_id, $alternative_group_id,
     $number_in_alternative_group)
 ON CONFLICT (question_id, assessment_id) DO UPDATE
@@ -162,6 +162,7 @@ SET
     max_points = EXCLUDED.max_points,
     points_list = EXCLUDED.points_list,
     init_points = EXCLUDED.init_points,
+    force_max_points = EXCLUDED.force_max_points,
     deleted_at = EXCLUDED.deleted_at,
     alternative_group_id = EXCLUDED.alternative_group_id,
     number_in_alternative_group = EXCLUDED.number_in_alternative_group,
