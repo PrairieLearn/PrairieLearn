@@ -23,7 +23,7 @@ var update = function(locals, callback) {
         var jobOptions = {
             course_id: locals.course ? locals.course.id : null,
             type: 'load_from_disk',
-            description: 'Load configuation from disk',
+            description: 'Load configuration from disk',
             job_sequence_id: job_sequence_id,
             last_in_sequence: true,
         };
