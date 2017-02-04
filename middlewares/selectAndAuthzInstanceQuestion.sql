@@ -4,16 +4,7 @@ WITH instance_questions_info AS (
         iq.id,
         (lag(iq.id) OVER w) AS prev_instance_question_id,
         (lead(iq.id) OVER w) AS next_instance_question_id,
-        qo.question_number,
-        CASE
-            WHEN a.type = 'Exam' THEN COALESCE(iq.points_list[1], 0)
-            ELSE aq.max_points
-        END AS max_points,
-        iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)] AS remaining_points,
-        CASE
-            WHEN a.type = 'Exam' THEN exam_question_status(iq)
-            ELSE NULL
-        END AS status
+        qo.question_number
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
@@ -38,7 +29,21 @@ SELECT
     to_jsonb(u) AS instance_user,
     coalesce(to_jsonb(e), '{}'::jsonb) AS instance_enrollment,
     to_jsonb(iq) AS instance_question,
-    to_jsonb(iqi) AS instance_question_info,
+    jsonb_build_object(
+        'id', iqi.id,
+        'prev_instance_question_id', iqi.prev_instance_question_id,
+        'next_instance_question_id', next_instance_question_id,
+        'question_number', question_number,
+        'max_points', CASE
+            WHEN a.type = 'Exam' THEN COALESCE(iq.points_list[1], 0)
+            ELSE aq.max_points
+        END,
+        'remaining_points', iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)],
+        'status', CASE
+            WHEN a.type = 'Exam' THEN exam_question_status(iq)
+            ELSE NULL
+        END
+    ) AS instance_question_info,
     to_jsonb(aq) AS assessment_question,
     to_jsonb(q) AS question,
     to_jsonb(a) AS assessment,
