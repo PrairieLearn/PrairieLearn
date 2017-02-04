@@ -19,8 +19,11 @@ CREATE TABLE IF NOT EXISTS assessment_instances (
     max_points DOUBLE PRECISION,
     score_perc DOUBLE PRECISION DEFAULT 0,
     score_perc_in_grading DOUBLE PRECISION DEFAULT 0,
+    tmp_upgraded_iq_status BOOLEAN DEFAULT FALSE,
     UNIQUE (number, assessment_id, user_id)
 );
 
 ALTER TABLE assessment_instances ADD COLUMN IF NOT EXISTS date_limit TIMESTAMP WITH TIME ZONE;
 ALTER TABLE assessment_instances ADD COLUMN IF NOT EXISTS auto_close BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE assessment_instances ADD COLUMN IF NOT EXISTS tmp_upgraded_iq_status BOOLEAN DEFAULT FALSE;

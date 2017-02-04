@@ -39,7 +39,7 @@ SELECT
             ELSE aq.max_points
         END,
         'remaining_points', iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)],
-        'status', CASE
+        'check_status', CASE
             WHEN a.type = 'Exam' THEN exam_question_status(iq)
             ELSE NULL
         END

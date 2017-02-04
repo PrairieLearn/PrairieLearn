@@ -101,16 +101,29 @@ WHERE
     s.id = gl.submission_id;
 
 -- BLOCK update_instance_question
-WITH results AS (
+WITH open_result AS (
+    SELECT
+        CASE
+            WHEN $correct THEN false
+            ELSE CASE
+                    WHEN iq.number_attempts + 1 < array_length(iq.points_list, 1) THEN TRUE
+                    ELSE FALSE
+            END
+        END AS open
+    FROM
+        instance_questions AS iq
+    WHERE
+        iq.id = $instance_question_id
+),
+results AS (
     UPDATE instance_questions AS iq
     SET
-        open = CASE
-                    WHEN $correct THEN false
-                    ELSE CASE
-                            WHEN iq.number_attempts + 1 < array_length(iq.points_list, 1) THEN TRUE
-                            ELSE FALSE
-                    END
-                END,
+        open = open_result.open,
+        status = CASE
+            WHEN NOT open_result.open THEN 'complete'::enum_instance_question_status
+            WHEN $correct THEN 'correct'::enum_instance_question_status
+            ELSE 'incorrect'::enum_instance_question_status
+        END,
         points = CASE WHEN $correct THEN iq.current_value ELSE 0 END,
         points_in_grading = 0,
         score_perc = (CASE WHEN $correct THEN iq.current_value ELSE 0 END)
@@ -118,6 +131,8 @@ WITH results AS (
         score_perc_in_grading = 0,
         current_value = CASE WHEN $correct THEN NULL ELSE iq.points_list[iq.number_attempts + 2] END,
         number_attempts = iq.number_attempts + 1
+    FROM
+        open_result
     WHERE
         iq.id = $instance_question_id
     RETURNING iq.*

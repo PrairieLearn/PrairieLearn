@@ -17,6 +17,10 @@ module.exports = function(req, res, next) {
     sqldb.queryOneRow(sql.select_and_auth, params, function(err, result) {
         if (ERR(err, next)) return;
         _.assign(res.locals, result.rows[0]);
+
+        console.log('################################################################################');
+        console.log(res.locals.instance_question.status == res.locals.instance_question.check_status, res.locals.instance_question.id, res.locals.instance_question.status, res.locals.instance_question_info.check_status);
+        
         next();
     });
 };
