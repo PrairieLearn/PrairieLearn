@@ -29,15 +29,17 @@ ORDER BY
     s.date DESC;
 
 -- BLOCK new_submission
-INSERT INTO submissions AS s
-    ( variant_id,  auth_user_id,  submitted_answer,  type,  credit,  mode)
-VALUES
-    ($variant_id, $auth_user_id, $submitted_answer, $type, $credit, $mode);
-
--- BLOCK get_instance_question_status
-SELECT
-    exam_question_status(iq)
+WITH submission_result AS (
+    INSERT INTO submissions AS s
+        ( variant_id,  auth_user_id,  submitted_answer,  type,  credit,  mode)
+    VALUES
+        ($variant_id, $auth_user_id, $submitted_answer, $type, $credit, $mode)
+)
+UPDATE instance_questions AS iq
+SET
+    status = 'saved'
 FROM
-    instance_questions AS iq
+    variants AS v
 WHERE
-    iq.id = $instance_question_id;
+    iq.id = v.instance_question_id
+    AND v.id = $variant_id;

@@ -24,6 +24,7 @@ module.exports = {
             'enum_auth_action.sql',
             'enum_grading_method.sql',
             'enum_job_status.sql',
+            'enum_instance_question_status.sql',
 
             // top-level tables
             'users.sql',

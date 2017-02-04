@@ -11,7 +11,14 @@ CREATE TABLE IF NOT EXISTS instance_questions (
     current_value DOUBLE PRECISION,
     number_attempts INTEGER DEFAULT 0,
     points_list DOUBLE PRECISION[],
+    status enum_instance_question_status DEFAULT 'unanswered'::enum_instance_question_status,
     assessment_instance_id BIGINT NOT NULL REFERENCES assessment_instances ON DELETE CASCADE ON UPDATE CASCADE,
     assessment_question_id BIGINT NOT NULL REFERENCES assessment_questions ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (assessment_question_id, assessment_instance_id)
 );
+
+ALTER TABLE instance_questions ADD COLUMN IF NOT EXISTS status enum_instance_question_status DEFAULT 'unanswered';
+
+--UPDATE instance_questions AS iq
+--SET
+--    status = exam_question_status(iq)::enum_instance_question_status;
