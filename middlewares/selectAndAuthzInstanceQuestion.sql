@@ -38,11 +38,7 @@ SELECT
             WHEN a.type = 'Exam' THEN COALESCE(iq.points_list[1], 0)
             ELSE aq.max_points
         END,
-        'remaining_points', iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)],
-        'check_status', CASE
-            WHEN a.type = 'Exam' THEN exam_question_status(iq)
-            ELSE NULL
-        END
+        'remaining_points', iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)]
     ) AS instance_question_info,
     to_jsonb(aq) AS assessment_question,
     to_jsonb(q) AS question,

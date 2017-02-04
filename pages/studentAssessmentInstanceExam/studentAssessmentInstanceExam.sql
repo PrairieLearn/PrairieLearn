@@ -11,7 +11,6 @@ SELECT
             iq.points_list[(iq.number_attempts + 2):array_length(iq.points_list, 1)]
         ELSE NULL
     END AS remaining_points,
-    exam_question_status(iq) AS check_status,
     qo.row_order,
     qo.question_number
 FROM

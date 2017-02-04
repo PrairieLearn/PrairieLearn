@@ -18,7 +18,3 @@ CREATE TABLE IF NOT EXISTS instance_questions (
 );
 
 ALTER TABLE instance_questions ADD COLUMN IF NOT EXISTS status enum_instance_question_status DEFAULT 'unanswered';
-
---UPDATE instance_questions AS iq
---SET
---    status = exam_question_status(iq)::enum_instance_question_status;

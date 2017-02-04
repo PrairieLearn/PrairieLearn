@@ -68,11 +68,6 @@ router.get('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.locals.questions = result.rows;
 
-            console.log('################################################################################');
-            _.each(res.locals.questions, function(q) {
-                console.log(q.status == q.check_status, q.id, q.status, q.check_status);
-            });
-
             assessments.renderText(res.locals.assessment, res.locals.urlPrefix, function(err, assessment_text_templated) {
                 if (ERR(err, next)) return;
                 res.locals.assessment_text_templated = assessment_text_templated;
