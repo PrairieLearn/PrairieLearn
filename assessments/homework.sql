@@ -68,7 +68,8 @@ WITH results AS (
     SET
         points = CASE WHEN $correct THEN least(iq.points + iq.current_value, aq.max_points) ELSE iq.points END,
         points_in_grading = 0,
-        score_perc = CASE WHEN $correct THEN least(iq.points + iq.current_value, aq.max_points) / aq.max_points * 100 ELSE iq.score_perc END,
+        score_perc = CASE WHEN $correct THEN least(iq.points + iq.current_value, aq.max_points)
+            / (CASE WHEN aq.max_points > 0 THEN aq.max_points ELSE 1 END) * 100 ELSE iq.score_perc END,
         score_perc_in_grading = 0,
         current_value = CASE WHEN $correct THEN least(iq.current_value + aq.init_points, aq.max_points) ELSE aq.init_points END,
         number_attempts = iq.number_attempts + 1
@@ -93,7 +94,8 @@ INSERT INTO question_score_logs
 UPDATE instance_questions AS iq
 SET
     points_in_grading = least(iq.points + iq.current_value, aq.max_points) - iq.points,
-    score_perc_in_grading = least(iq.points + iq.current_value, aq.max_points) / aq.max_points * 100 - iq.score_perc
+    score_perc_in_grading = least(iq.points + iq.current_value, aq.max_points)
+        / (CASE WHEN aq.max_points > 0 THEN aq.max_points ELSE 1 END) * 100 - iq.score_perc
 FROM
     assessment_questions AS aq
 WHERE

@@ -40,7 +40,8 @@ BEGIN
     points := least(total_points, max_points);
 
     -- compute the score as a percentage, applying credit bonus/limits
-    score_perc := points / max_points * 100;
+    score_perc := points
+        / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
     IF credit < 100 THEN
         score_perc := least(score_perc, credit);
     ELSIF (credit > 100) AND (points = max_points) THEN
@@ -60,7 +61,8 @@ BEGIN
     total_points_in_grading := max_possible_points - points;
 
     -- compute max achieveable score_perc if all grading points are awarded
-    max_possible_score_perc := max_possible_points / max_points * 100;
+    max_possible_score_perc := max_possible_points
+        / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
     IF credit < 100 THEN
         max_possible_score_perc := least(max_possible_score_perc, credit);
     ELSIF (credit > 100) AND (max_possible_points = max_points) THEN
