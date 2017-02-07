@@ -90,7 +90,7 @@ To install PrairieLearn locally you should:
 
 1. If you **ARE** using Ubuntu:
  
- You need to get the latest node.js:
+ You need to get the latest node.js. Make sure the command in this step matches what's described at the following link, just in case there had been some kind of hijacking incident: [check here](https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions)
 
         curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash -
         sudo apt-get install -y nodejs
