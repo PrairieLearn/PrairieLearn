@@ -83,40 +83,41 @@ To install PrairieLearn locally you should:
 
  Create the database (one time only):
 
-        initdb -D ~/defaultdb
+      initdb -D ~/defaultdb
  Run the database:
 
-        pg_ctl -D ~/defaultdb -l ~/logfile start
+      pg_ctl -D ~/defaultdb -l ~/logfile start
 
 1. If you **ARE** using Ubuntu:
  
  You need to get the latest node.js. Make sure the command in this step matches what's described at the following link, just in case there had been some kind of hijacking incident: [check here](https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions)
 
-        curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash -
-        sudo apt-get install -y nodejs
-        sudo apt-get install -y build-essential
+      curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash -
+      sudo apt-get install -y nodejs
+      sudo apt-get install -y build-essential
+ Install PostgreSQL: First, [add the repository for your version of Ubuntu](https://www.postgresql.org/download/linux/ubuntu/). Then you can install version 9.6:
 
- Install PostgreSQL:
+      sudo apt-get install postgresql-9.6
+ Make sure the cluster is set up:
 
-        sudo apt-get install postgresql-9.6
-        sudo pg_createcluster --start 9.6 main
+      sudo pg_createcluster --start 9.6 main
  (You will probably get a message that it already exists.)
 
  Create a password for the postgres user:
 
-        sudo passwd postgres
+      sudo passwd postgres
  Set it to "fnord" or whatever. Then enter it in the database settings:
 
-        sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'fnord';"
+      sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'fnord';"
  Edit this file (as root):
 
-        sudo nano /etc/postgresql/9.6/main/pg_hba.conf
+      sudo nano /etc/postgresql/9.6/main/pg_hba.conf
  Put this line in the file (not very secure, but it works):
 
-        host all postgres 127.0.0.1 255.255.255.0 trust
+      host all postgres 127.0.0.1 255.255.255.0 trust
  Restart the service:
 
-        sudo pg_ctlcluster 9.6 main restart
+      sudo pg_ctlcluster 9.6 main restart
 
 1. Install the backend libraries:
 
@@ -139,4 +140,4 @@ To install PrairieLearn locally you should:
 
    This should end with `PrairieLearn server ready` and will remain running in the foreground, so this terminal can't be used for anything else. Stopping or restarting the server can be done with `Crtl-C`.
 
-1. In a web-browswer go to `http://localhost:3000/pl`
+1. In a web browser go to: `http://localhost:3000/pl`
