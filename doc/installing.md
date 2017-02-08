@@ -115,7 +115,7 @@ To install PrairieLearn locally you should:
  Put this line in the file (not very secure, but it works):
 
       host all postgres 127.0.0.1 255.255.255.0 trust
- Restart the service:
+ Restart the service. (This command can also be used later if the database isn't running after a reboot.)
 
       sudo pg_ctlcluster 9.6 main restart
 
