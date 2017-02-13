@@ -1,6 +1,26 @@
 
 # ChangeLog
 
+* __2.1.0__ - 2017-02-13
+
+  * Fix division-by-zero error in homeworks when `max_points` is zero (Jake Bailey).
+
+  * Fix typos in documentation (Andre Schleife).
+
+  * Fix MTF questions.
+
+* __2.0.3__ - 2017-02-04
+
+  * Cache `instance_questions.status` to speed up page loads.
+
+* __2.0.2__ - 2017-02-04
+
+  * Speed up SQL query in `instance_questions` authorization.
+
+* __2.0.1__ - 2017-01-28
+
+  * Fix incorrect `max_points` for homeworks with question alternatives.
+
 * __2.0.0__ - 2017-01-13
 
   * Make v2 the primary version and shift the old v1 to a subdirectory.
