@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __2.1.1__ - 2017-02-13
+
+  * Update ChangeLog.
+
 * __2.1.0__ - 2017-02-13
 
   * Fix division-by-zero error in homeworks when `max_points` is zero (Jake Bailey).
