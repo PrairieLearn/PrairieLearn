@@ -13,6 +13,10 @@
 
   * Fix MTF questions.
 
+  * Fix assessment links on Instructor Gradebook page.
+
+  * Fix XSS vulnerability by storing `questionJson` in base64.
+
 * __2.0.3__ - 2017-02-04
 
   * Cache `instance_questions.status` to speed up page loads.
