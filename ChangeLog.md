@@ -1,6 +1,8 @@
 
 # ChangeLog
 
+  * Fix course deletion on Admin page.
+
 * __2.1.2__ - 2017-02-15
 
   * Catch bad Shibboleth authentication data with "(null)" UID.

@@ -27,3 +27,6 @@ SELECT
 FROM
     select_administrator_users,
     select_courses;
+
+-- BLOCK select_course
+SELECT * FROM pl_courses WHERE id = $course_id;

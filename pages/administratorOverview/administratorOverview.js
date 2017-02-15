@@ -66,11 +66,10 @@ router.post('/', function(req, res, next) {
             res.redirect(req.originalUrl);
         });
     } else if (req.body.postAction == 'courses_delete') {
-        var sql = 'SELECT * FROM courses WHERE id = $course_id';
         var params = {
             course_id: req.body.course_id,
         }
-        sqldb.queryZeroOrOneRow(sql, params, function(err, result) {
+        sqldb.queryZeroOrOneRow(sql.select_course, params, function(err, result) {
             if (ERR(err, next)) return;
             if (result.rowCount != 1) return next(new Error('course not found'));
 
