@@ -53,11 +53,6 @@ define(["underscore", "QServer", "PrairieRandom"], function(_, QServer, PrairieR
     }
 
     MTFServer.prototype.gradeAnswer = function(vid, params, trueAnswer, submittedAnswer, options) {
-        options = {
-            correctScore: 1,
-            incorrectScore: 0,
-            guessingPenalty: 0
-        };
         trueAnswer = trueAnswer.correctAnswers;
         var finalScore = 0.0;
         var maxScore = options.correctScore * trueAnswer.length;
