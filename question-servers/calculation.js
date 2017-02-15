@@ -47,7 +47,7 @@ module.exports = {
             var data = {
                 params: questionData.params,
                 true_answer: questionData.trueAnswer,
-                options: questionData.options,
+                options: questionData.options || question.options || {},
             };
             callback(null, data);
         });
