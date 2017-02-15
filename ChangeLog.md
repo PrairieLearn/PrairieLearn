@@ -1,7 +1,9 @@
 
 # ChangeLog
 
-* __2.1.2__ - XXXX-XX-XX
+* __2.1.2__ - 2017-02-15
+
+  * Catch bad Shibboleth authentication data with "(null)" UID.
 
   * Fix logging of `instance_question_id` in response.
 

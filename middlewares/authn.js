@@ -49,6 +49,11 @@ module.exports = function(req, res, next) {
         return next(error.make(500, "Invalid authType: " + config.authType));
     }
 
+    // catch bad Shibboleth data
+    if (authUid == '(null)') {
+        return next(error.make(400, 'Invalid authentication', {info: '(null) authUid', headers: req.headers}));
+    }
+
     var params = {
         uid: authUid,
     };
