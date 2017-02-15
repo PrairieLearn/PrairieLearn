@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __2.1.2__ - XXXX-XX-XX
+
+  * Fix logging of `instance_question_id` in response.
+
 * __2.1.1__ - 2017-02-13
 
   * Update ChangeLog.

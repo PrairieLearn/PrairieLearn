@@ -27,7 +27,7 @@ module.exports = function(req, res, next) {
                 assessment_instance_id: (res.locals && res.locals.assessment_instance) ? res.locals.assessment_instance.id : null,
                 question_id: (res.locals && res.locals.question) ? res.locals.question.id : null,
                 question_directory: (res.locals && res.locals.question) ? res.locals.question.directory : null,
-                question_instance_id: (res.locals && res.locals.question_instance) ? res.locals.question_instance.id : null,
+                instance_question_id: (res.locals && res.locals.instance_question) ? res.locals.instance_question.id : null,
             };
             logger.verbose("response", access);
         });
