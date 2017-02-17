@@ -1,6 +1,8 @@
 
 # ChangeLog
 
+* __2.1.3__ - 2017-02-17
+
   * Prevent multiple submissions to a single homework question variant.
 
   * Fix option passing to question server.js functions.
