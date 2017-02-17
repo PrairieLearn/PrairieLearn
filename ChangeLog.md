@@ -1,6 +1,8 @@
 
 # ChangeLog
 
+  * Prevent multiple submissions to a single homework question variant.
+
   * Fix option passing to question server.js functions.
 
   * Fix course deletion on Admin page.

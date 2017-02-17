@@ -27,6 +27,7 @@ FROM
 WHERE
     v.id = $variant_id
     AND iq.id = $instance_question_id -- ensure the variant matches the instance_question
+    AND v.available -- ensure the variant is still available
 FOR UPDATE OF ai;
 
 -- BLOCK update_grading_log_and_submission
