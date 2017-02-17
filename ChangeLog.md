@@ -1,6 +1,8 @@
 
 # ChangeLog
 
+  * Fix option passing to question server.js functions.
+
   * Fix course deletion on Admin page.
 
 * __2.1.2__ - 2017-02-15
