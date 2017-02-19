@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __2.2.1__ - 2017-02-18
+
+  * Only show feedback for open exams in CS 233.
+
 * __2.2.0__ - 2017-02-18
 
   * Show feedback for graded questions on exams, even if exam is
