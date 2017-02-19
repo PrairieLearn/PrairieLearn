@@ -92,6 +92,16 @@ router.get('/', function(req, res, next) {
             });
         },
         function(callback) {
+            var params = {
+                assessment_id: res.locals.assessment.id,
+            };
+            sqldb.query(sql.select_regrading_job_sequences, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                res.locals.regrading_job_sequences = result.rows;
+                callback(null);
+            });
+        },
+        function(callback) {
             var params = {assessment_id: res.locals.assessment.id};
             sqldb.query(sql.assessment_instance_data, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -341,7 +351,7 @@ router.get('/:filename', function(req, res, next) {
 
 var regradeAssessmentInstance = function(assessment_instance_id, locals, callback) {
     var params = {assessment_instance_id};
-    sqldb.query('select_regrade_assessment_instance_info', params, function(err, result) {
+    sqldb.query(sql.select_regrade_assessment_instance_info, params, function(err, result) {
         if (ERR(err, callback)) return;
         var assessment_instance_label = result.rows[0].assessment_instance_label;
         var user_uid = result.rows[0].user_uid;
@@ -354,7 +364,7 @@ var regradeAssessmentInstance = function(assessment_instance_id, locals, callbac
             user_id: locals.user.user_id,
             authn_user_id: locals.authz_data.authn_user.user_id,
             type: 'regrade_assessment_instance',
-            description: 'Regrade ' + label + ' for ' + user_uid,
+            description: 'Regrade ' + assessment_instance_label + ' for ' + user_uid,
         };
         serverJobs.createJobSequence(options, function(err, job_sequence_id) {
             if (ERR(err, callback)) return;
@@ -370,12 +380,12 @@ var regradeAssessmentInstance = function(assessment_instance_id, locals, callbac
                 user_id: locals.user.user_id,
                 authn_user_id: locals.authz_data.authn_user.user_id,
                 type: 'regrade_assessment_instance',
-                description: 'Regrade ' + label + ' for ' + user_uid,
+                description: 'Regrade ' + assessment_instance_label + ' for ' + user_uid,
                 job_sequence_id: job_sequence_id,
                 last_in_sequence: true,
             };
             serverJobs.createJob(jobOptions, function(err, job) {
-                job.verbose('Regrading ' + label + ' for ' + user_uid);
+                job.verbose('Regrading ' + assessment_instance_label + ' for ' + user_uid);
                 var params = [
                     assessment_instance_id,
                     locals.authn_user.user_id,
@@ -390,7 +400,7 @@ var regradeAssessmentInstance = function(assessment_instance_id, locals, callbac
                         job.verbose('Regrading complete');
                         var regrade = result.rows[0];
                         if (regrade.updated) {
-                            job.verbose('Questions updated: ' + regrade.updated_question_names.join(','));
+                            job.verbose('Questions updated: ' + regrade.updated_question_names.join(', '));
                             job.verbose('New score: ' + Math.floor(regrade.new_score_perc) + '% (was ' + Math.floor(regrade.old_score_perc) + '%)');
                         } else {
                             job.verbose('No changes made');
@@ -416,7 +426,7 @@ var regradeAllAssessmentInstances = function(assessment_id, locals, callback) {
             user_id: locals.user.user_id,
             authn_user_id: locals.authz_data.authn_user.user_id,
             type: 'regrade_assessment',
-            description: 'Regrade all instances for ' + assessment_label,
+            description: 'Regrade ' + assessment_label,
         };
         serverJobs.createJobSequence(options, function(err, job_sequence_id) {
             if (ERR(err, callback)) return;
@@ -431,8 +441,8 @@ var regradeAllAssessmentInstances = function(assessment_id, locals, callback) {
                 assessment_id: assessment_id,
                 user_id: locals.user.user_id,
                 authn_user_id: locals.authz_data.authn_user.user_id,
-                type: 'regrade_assessment_instances',
-                description: 'Regrade all instances for ' + assessment_label,
+                type: 'regrade_assessment',
+                description: 'Regrade ' + assessment_label,
                 job_sequence_id: job_sequence_id,
                 last_in_sequence: true,
             };
@@ -467,7 +477,7 @@ var regradeAllAssessmentInstances = function(assessment_id, locals, callback) {
                                     updated_count++;
                                     msg += 'New score: ' + Math.floor(regrade.new_score_perc)
                                         + '% (was ' + Math.floor(regrade.old_score_perc) + '%), '
-                                        + 'Questions updated: ' + regrade.updated_question_names.join(',');
+                                        + 'Questions updated: ' + regrade.updated_question_names.join(', ');
                                 } else {
                                     msg += 'No changes made';
                                 }
@@ -494,8 +504,10 @@ var regradeAllAssessmentInstances = function(assessment_id, locals, callback) {
                         job.verbose('Number of assessment instances updated: ' + updated_count);
                         if (error_count > 0) {
                             job.verbose('Number of errors: ' + error_count);
+                            job.fail(new Error('Errors occurred while regrading, see output for details'));
+                        } else {
+                            job.succeed();
                         }
-                        job.succeed();
                     });
                 });
             });
