@@ -1,6 +1,11 @@
 
 # ChangeLog
 
+* __2.2.0__ - 2017-02-18
+
+  * Show feedback for graded questions on exams, even if exam is
+    still open (Jake Bailey).
+
 * __2.1.3__ - 2017-02-17
 
   * Prevent multiple submissions to a single homework question variant.
