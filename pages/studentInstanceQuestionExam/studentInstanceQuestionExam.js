@@ -126,7 +126,7 @@ router.get('/', function(req, res, next) {
         function(callback) {
             // default to show none of the optional components
             res.locals.showSaveButton = false;
-            res.locals.showFeedback = false;
+            res.locals.showFeedback = true;
             res.locals.showTrueAnswer = false;
             if (res.locals.assessment_instance.open) {
                 if (res.locals.instance_question.open) {
