@@ -3,6 +3,8 @@ CREATE TABLE IF NOT EXISTS jobs (
     start_date TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
     finish_date TIMESTAMP WITH TIME ZONE,
     course_id BIGINT REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,
+    course_instance_id BIGINT REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE,
+    assessment_id BIGINT REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,
     number INTEGER,
     job_sequence_id BIGINT REFERENCES job_sequences ON DELETE CASCADE ON UPDATE CASCADE,
     number_in_sequence INTEGER,
@@ -25,3 +27,6 @@ CREATE TABLE IF NOT EXISTS jobs (
     UNIQUE (course_id, number),
     UNIQUE (job_sequence_id, number_in_sequence)
 );
+
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS course_instance_id BIGINT REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE jobs ADD COLUMN IF NOT EXISTS assessment_id BIGINT REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE;

@@ -35,10 +35,10 @@ max_over_jobs_with_same_sequence AS (
         AND j.job_sequence_id IS NOT NULL
 )
 INSERT INTO jobs
-    (course_id, number,      job_sequence_id, number_in_sequence,      last_in_sequence,
+    (course_id,  course_instance_id,  assessment_id, number,      job_sequence_id, number_in_sequence,      last_in_sequence,
      user_id,  authn_user_id,  type,  description,  status,    command,  arguments,          working_directory)
 SELECT
-    $course_id, new_number, $job_sequence_id, new_number_in_sequence, $last_in_sequence,
+    $course_id, $course_instance_id, $assessment_id, new_number, $job_sequence_id, new_number_in_sequence, $last_in_sequence,
     $user_id, $authn_user_id, $type, $description, 'Running', $command, $arguments::TEXT[], $working_directory
 FROM
     max_over_jobs_with_same_course,
@@ -55,9 +55,9 @@ WITH max_over_job_sequences_with_same_course AS (
         js.course_id IS NOT DISTINCT FROM $course_id
 )
 INSERT INTO job_sequences
-    (course_id, number,      user_id,  authn_user_id,  type,  description)
+    (course_id,  course_instance_id,  assessment_id, number,      user_id,  authn_user_id,  type,  description)
 SELECT
-    $course_id, new_number, $user_id, $authn_user_id, $type, $description
+    $course_id, $course_instance_id, $assessment_id, new_number, $user_id, $authn_user_id, $type, $description
 FROM
     max_over_job_sequences_with_same_course
 RETURNING id;

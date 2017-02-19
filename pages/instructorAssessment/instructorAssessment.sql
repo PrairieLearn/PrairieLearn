@@ -409,11 +409,38 @@ FROM
     JOIN LATERAL check_assessment_access(a.id, ld.mode, e.role, u.uid, ld.date, ci.display_timezone) AS caa ON TRUE;
 
 
--- BLOCK select_assessment_instances
+-- BLOCK select_regrade_assessment_instance_info
 SELECT
-    ai.id
+    assessment_instance_label(ai, a, aset),
+    u.uid AS user_uid,
+    a.id AS assessment_id
+FROM
+    assessment_instances AS ai
+    JOIN assessments AS a ON (a.id = ai.assessment_id)
+    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+    JOIN users AS u USING (user_id)
+WHERE
+    ai.id = $assessment_instance_id;
+
+
+-- BLOCK select_regrade_assessment_info
+SELECT
+    assessment_label(a, aset)
 FROM
     assessments AS a
+    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+WHERE
+    a.id = $assessment_id;
+
+
+-- BLOCK select_regrade_assessment_instances
+SELECT
+    ai.id AS assessment_instance_id,
+    assessment_instance_label(ai, a, aset),
+    u.uid AS user_uid
+FROM
+    assessments AS a
+    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
     JOIN users AS u ON (u.user_id = ai.user_id)
 WHERE

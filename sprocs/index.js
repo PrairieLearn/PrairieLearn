@@ -67,7 +67,6 @@ module.exports = {
             'assessment_instances_delete_all.sql',
             'assessment_instances_score.sql',
             'assessment_instances_regrade.sql',
-            'assessment_instances_select_label.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
