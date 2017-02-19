@@ -1,6 +1,6 @@
 
 CREATE OR REPLACE FUNCTION
-    assessment_instances_score(
+    assessment_instances_grade(
         IN assessment_instance_id bigint,
         IN authn_user_id bigint,
         IN credit integer,

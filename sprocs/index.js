@@ -65,7 +65,7 @@ module.exports = {
             'select_or_insert_course_by_path.sql',
             'assessment_instances_delete.sql',
             'assessment_instances_delete_all.sql',
-            'assessment_instances_score.sql',
+            'assessment_instances_grade.sql',
             'assessment_instances_regrade.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);

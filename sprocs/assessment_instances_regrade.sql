@@ -103,7 +103,7 @@ BEGIN
     -- regrade the assessment instance
     SELECT *
     INTO assessment_instance_updated, new_points, new_score_perc
-    FROM assessment_instances_score(assessment_instance_id, authn_user_id, credit, TRUE);
+    FROM assessment_instances_grade(assessment_instance_id, authn_user_id, credit, TRUE);
 
     updated := updated OR assessment_instance_updated;
 END;
