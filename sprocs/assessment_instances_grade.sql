@@ -1,4 +1,3 @@
-
 CREATE OR REPLACE FUNCTION
     assessment_instances_grade(
         IN assessment_instance_id bigint,
