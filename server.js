@@ -167,6 +167,7 @@ app.use('/pl/course_instance/:course_instance_id/elements', require('./pages/ele
 app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
 app.use('/pl/course_instance/:course_instance_id/instructor/assessments', require('./pages/instructorAssessments/instructorAssessments'));
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', [
+    require('./pages/shared/assessmentStatDescriptions'),
     require('./middlewares/selectAndAuthzAssessment'),
     require('./pages/instructorAssessment/instructorAssessment'),
 ]);
@@ -175,6 +176,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/
     require('./pages/instructorAssessmentInstance/instructorAssessmentInstance'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id', [
+    require('./pages/shared/assessmentStatDescriptions'),
     require('./middlewares/selectAndAuthzInstructorQuestion'),
     require('./pages/instructorQuestion/instructorQuestion'),
 ]);

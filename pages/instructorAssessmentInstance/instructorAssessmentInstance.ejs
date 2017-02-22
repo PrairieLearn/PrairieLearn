@@ -34,6 +34,58 @@
         </table>
       </div>
 
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">
+            <%= assessment_instance_label %>
+            Instance question statistics:
+            <%= instance_user.name %> (<%= instance_user.uid %>)
+          </h3>
+        </div>
+        <table id="instanceQuestionStatsTable" class="table table-condensed table-hover tablesorter">
+          <thead>
+          <tr>
+            <th>Instance question ID</th>
+            <th>Question</th>
+            <th>Some correct submission</th>
+            <th>First attempt correct</th>
+            <th>Last attempt correct</th>
+            <th>Some submission</th>
+            <th>Average success rate (%) </th>
+            <th>Length of incorrect streak</th>
+          </tr>
+          </thead>
+          <tbody>
+          <% assessment_instance_stats.forEach(function(row) { %>
+          <tr>
+            <td><%= row.instance_question_id %></td>
+            <td>
+              <a href="<%= urlPrefix %>/question/<%= row.question_id %>/">
+                  <%= row.number %>. <%= row.title %>
+              </a>
+            </td>
+            <td><%= row.some_correct_submission %></td>
+            <td><%= row.first_attempt_correct %></td>
+            <td><%= row.last_attempt_correct %></td>
+            <td><%= row.some_submission %></td>
+            <td><%= row.average_success_rate %></td>
+            <td><%= row.length_of_incorrect_streak %></td>
+          </tr>
+          <% }); %>
+          </tbody>
+        </table>
+        <script>
+            $(function(){
+                $("#loginstanceQuestionStatsTable").tablesorter({
+                    theme: "bootstrap",
+                    widthFixed: true,
+                    headerTemplate: '{content} {icon}',
+                    widgets: ["uitheme"],
+                });
+            });
+        </script>
+      </div>
+
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
       

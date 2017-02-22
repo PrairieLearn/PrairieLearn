@@ -28,6 +28,16 @@ module.exports = {
                 module: require('./externalGraderLoad'),
                 intervalSec: config.cronIntervalExternalGraderLoadSec,
             },
+            {
+                name: 'calculateAssessmentQuestionStats',
+                module: require('./calculateAssessmentQuestionStats'),
+                intervalSec: 'daily',
+            },
+            {
+                name: 'calculateAssessmentMode',
+                module: require('./calculateAssessmentMode'),
+                intervalSec: 'daily',
+            },
         ];
         logger.verbose('initializing cron', _.map(jobs, j => _.pick(j, ['name', 'intervalSec'])));
 
