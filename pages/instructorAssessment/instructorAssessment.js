@@ -86,7 +86,6 @@ router.get('/', function(req, res, next) {
             var params = {assessment_id: res.locals.assessment.id};
             sqldb.query(sql.assessment_score_histogram_by_date, params, function(err, result) {
                 if (ERR(err, next)) return;
-                console.log(result.rows);
                 res.locals.assessment_score_histogram_by_date = result.rows;
                 callback(null);
             });
@@ -349,7 +348,7 @@ router.get('/:filename', function(req, res, next) {
             if (ERR(err, next)) return;
             var scoresByDay = result.rows;
 
-            var csvHeaders = ["Date: "];
+            var csvHeaders = ["Date"];
             _(scoresByDay).each(function(day) {
                 csvHeaders.push(day.date_formatted);
             });
@@ -367,7 +366,7 @@ router.get('/:filename', function(req, res, next) {
             }
             csvData.splice(0, 0, csvHeaders);
             csvStringify(csvData, function(err, csv) {
-                if (err) throw Error("Error formatting CSV", err);
+                if (ERR(err, next)) return;
                 res.attachment(req.params.filename);
                 res.send(csv);
             });

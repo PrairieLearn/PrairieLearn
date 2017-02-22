@@ -9,6 +9,7 @@ function parallel_histograms(selector, data, options) {
         yAxisWidth: 100,
         xAxisHeight: 100,
         topPadding: 15,
+        rightPadding: 2,
     });
 
     var width = options.width;
@@ -21,8 +22,9 @@ function parallel_histograms(selector, data, options) {
     var xAxisHeight = options.xAxisHeight;
 
     var topPadding = options.topPadding;
+    var rightPadding = options.rightPadding;
 
-    var totalWidth = width + yAxisWidth;
+    var totalWidth = width + yAxisWidth + rightPadding;
     var heightWithPadding = height + topPadding;
     var totalHeight = heightWithPadding + xAxisHeight;
 
@@ -86,35 +88,6 @@ function parallel_histograms(selector, data, options) {
         .attr("transform", function(d) { return "translate(" + yAxisWidth + "," + topPadding + ")"; })
         .call(horizontalGrid);
 
-    var yAxis = d3.svg.axis()
-        .orient("left")
-        .tickFormat(function(d, i) {
-            return yTickLabels[i];
-         })
-        .scale(yLinear);
-
-    plot.append("g")
-        .attr("class", "y axis")
-        .attr("transform", function(d) { return "translate(" + yAxisWidth + ", " + topPadding + ")"; })
-        .call(yAxis)
-        .append("text")
-        .attr("class", "label")
-        .text(options.ylabel)
-
-    // it's rotated, so x means y, and y means x
-    plot.selectAll("text.label")
-        .attr("y", -50)
-        .attr("x", -1 * heightWithPadding / 2)
-        .attr("dy", ".35em")
-        .attr("transform", "rotate(-90)")
-        .style("text-anchor", "start");
-
-    plot.append("line")
-        .attr({x1: yAxisWidth, y1: topPadding, x2: totalWidth, y2: topPadding, "class": "x axis"})
-
-    plot.append("line")
-        .attr({x1: totalWidth, y1: topPadding, x2: totalWidth, y2: heightWithPadding, "class": "y axis"});
-
     var max = calculate_max(data);
 
     var width_per_day = width / numDays;
@@ -135,12 +108,41 @@ function parallel_histograms(selector, data, options) {
         g.selectAll(".bar")
             .data(histogram)
             .enter().append("rect")
-            .attr("class", "bar")
+            .attr("class", "outlineBar")
             .attr("x", function(d, i) { return widthForBucketFunction(i) * -0.5; })
             .attr("y", function(d, i) { return heightWithPadding - yLinear(i + 1); })
             .attr("width", function(d, i) { return widthForBucketFunction(i); })
             .attr("height", function(d, i) { return height_per_bucket;});
     }
+
+    var yAxis = d3.svg.axis()
+        .orient("left")
+        .tickFormat(function(d, i) {
+          return yTickLabels[i];
+        })
+        .scale(yLinear);
+
+    plot.append("g")
+        .attr("class", "y axis")
+        .attr("transform", function(d) { return "translate(" + yAxisWidth + ", " + topPadding + ")"; })
+        .call(yAxis)
+        .append("text")
+        .attr("class", "label")
+        .text(options.ylabel)
+
+    // it's rotated, so x means y, and y means x
+    plot.selectAll("text.label")
+        .attr("y", -50)
+        .attr("x", -1 * heightWithPadding / 2)
+        .attr("dy", ".35em")
+        .attr("transform", "rotate(-90)")
+        .style("text-anchor", "start");
+
+    plot.append("line")
+        .attr({x1: yAxisWidth, y1: topPadding, x2: width + yAxisWidth, y2: topPadding, "class": "x axis"})
+
+    plot.append("line")
+        .attr({x1: width + yAxisWidth, y1: topPadding, x2: width + yAxisWidth, y2: heightWithPadding, "class": "y axis"});
 
     var xTickFormat = (options.xTickLabels == "auto" ? null
                        : function(d, i) {return options.xTickLabels[i];});
