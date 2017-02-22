@@ -1,3 +1,36 @@
+-- BLOCK assessment_instance_stats
+SELECT
+    iq.id AS instance_question_id,
+    q.title,
+    q.id AS question_id,
+    admin_assessment_question_number(aq.id) as number,
+    iq.some_correct_submission,
+    iq.first_attempt_correct,
+    iq.last_attempt_correct,
+    iq.some_submission,
+    iq.average_success_rate,
+    iq.length_of_incorrect_streak
+FROM
+    instance_questions AS iq
+    JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+    JOIN questions AS q ON (q.id = aq.question_id)
+    JOIN assessments AS a ON (ai.assessment_id = a.id)
+    JOIN course_instances AS ci ON (a.course_instance_id = ci.id)
+    JOIN enrollments AS e ON (ai.user_id = e.user_id AND ci.id = e.course_instance_id)
+WHERE
+    ai.id=$assessment_instance_id
+    AND aq.deleted_at IS NULL
+    AND q.deleted_at IS NULL
+    AND e.role = 'Student'
+GROUP BY
+    q.id,
+    iq.id,
+    aq.id,
+    ai.id
+ORDER BY
+    admin_assessment_question_number(aq.id);
+
 -- BLOCK select_data
 SELECT
     format_interval(ai.duration) AS assessment_instance_duration

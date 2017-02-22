@@ -11,9 +11,19 @@ WITH issue_count AS (
         AND i.course_caused
         AND i.open
     GROUP BY q.id
+), question_scores AS (
+    SELECT
+        aq.question_id,
+        avg(aq.mean_score) AS question_score
+    FROM
+        assessment_questions AS aq
+    GROUP BY
+        aq.question_id
 )
 SELECT
     aq.*,q.qid,q.title,row_to_json(top) AS topic,
+    q.id AS question_id,
+    admin_assessment_question_number(aq.id) as number,
     tags_for_question(q.id) AS tags,
     ag.number AS alternative_group_number,
     ag.number_choose AS alternative_group_number_choose,
@@ -24,6 +34,7 @@ SELECT
     (lag(ag.id) OVER (PARTITION BY ag.id ORDER BY aq.number) IS NULL) AS start_new_alternative_group,
     assessments_format_for_question(q.id,ci.id,a.id) AS other_assessments,
     coalesce(ic.open_issue_count, 0) AS open_issue_count
+    question_scores.question_score AS avg_question_score_perc
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
@@ -33,109 +44,12 @@ FROM
     JOIN assessments AS a ON (a.id = aq.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     LEFT JOIN issue_count AS ic ON (ic.question_id = q.id)
+    LEFT JOIN question_scores ON (question_scores.question_id = q.id)
 WHERE
     a.id = $assessment_id
     AND aq.deleted_at IS NULL
     AND q.deleted_at IS NULL
 ORDER BY z.number, z.id, aq.number;
-
--- BLOCK question_stats
-WITH mean_question_scores AS (
-    SELECT
-        ai.user_id,
-        aq.question_id,
-        avg(iq.number_attempts) as average_number_attempts,
-        admin_assessment_question_number(aq.id) as number,
-        avg(iq.score_perc) as user_score_perc
-    FROM
-        instance_questions AS iq
-        JOIN assessment_instances AS ai ON (iq.assessment_instance_id = ai.id)
-        JOIN assessment_questions AS aq ON (iq.assessment_question_id = aq.id)
-    WHERE
-        aq.assessment_id = $assessment_id AND
-        aq.deleted_at IS NULL
-    GROUP BY
-        user_id,
-        question_id,
-        aq.id
-),
-mean_assessment_scores AS (
-    SELECT
-        ai.user_id,
-        avg(ai.score_perc) AS user_score_perc,
-        ntile(5) OVER () as quintile
-    FROM
-        assessment_instances AS ai
-    WHERE
-        ai.assessment_id = $assessment_id
-    GROUP BY
-        user_id
-),
-question_users AS (
-    SELECT
-        aq.question_id,
-        ai.user_id
-    FROM
-        instance_questions AS iq
-        JOIN assessment_instances AS ai ON (iq.assessment_instance_id=ai.id)
-        JOIN assessment_questions AS aq ON (iq.assessment_question_id=aq.id)
-    WHERE
-        aq.assessment_id = $assessment_id AND
-        aq.deleted_at IS NULL
-    GROUP BY
-        user_id,
-        question_id,
-        aq.id
-),
-assessment_score_quintiles AS (
-    SELECT
-        mean_assessment_scores.user_id,
-        ntile(5) OVER (ORDER BY mean_assessment_scores.user_score_perc) AS quintile
-    FROM
-        mean_assessment_scores
-),
-question_score_quintiles AS (
-    SELECT
-        question_users.question_id AS question_id,
-        assessment_score_quintiles.quintile AS user_quintile,
-        avg(mean_question_scores.user_score_perc) AS score_perc
-    FROM
-        question_users
-        JOIN assessment_score_quintiles ON (assessment_score_quintiles.user_id = question_users.user_id)
-        JOIN mean_question_scores ON (mean_question_scores.question_id = question_users.question_id AND mean_question_scores.user_id = question_users.user_id)
-    GROUP BY
-        assessment_score_quintiles.quintile,
-        question_users.question_id
-    ORDER BY
-        assessment_score_quintiles.quintile
-),
-question_score_quintiles_condensed AS (
-    SELECT
-        question_score_quintiles.question_id AS question_id,
-        array_agg(question_score_quintiles.score_perc) AS quintile_scores
-    FROM question_score_quintiles
-    GROUP BY
-        question_score_quintiles.question_id
-)
-SELECT
-    q.title,
-    avg(mean_question_scores.average_number_attempts) as average_number_attempts,
-    mean_question_scores.question_id,
-    greatest(0, least(100, avg(mean_question_scores.user_score_perc))) as mean_score_per_question,
-    mean_question_scores.number,
-    greatest(0, least(100, corr(mean_question_scores.user_score_perc, mean_assessment_scores.user_score_perc) * 100.0)) as discrimination,
-    question_score_quintiles_condensed.quintile_scores
-FROM mean_question_scores
-    JOIN mean_assessment_scores ON (mean_assessment_scores.user_id = mean_question_scores.user_id)
-    JOIN questions AS q ON (q.id = mean_question_scores.question_id)
-    JOIN question_score_quintiles_condensed ON (mean_question_scores.question_id = question_score_quintiles_condensed.question_id)
-GROUP BY
-    mean_question_scores.question_id,
-    mean_question_scores.number,
-    q.title,
-    question_score_quintiles_condensed.quintile_scores
-ORDER BY
-    mean_question_scores.number
 
 -- BLOCK assessment_access_rules
 SELECT
@@ -258,7 +172,6 @@ WHERE
     a.id = $assessment_id
 ORDER BY
     e.role DESC NULLS FIRST, u.uid, u.user_id, ai.number, ai.id;
-
 
 -- BLOCK select_regrading_job_sequences
 SELECT
@@ -487,3 +400,15 @@ WHERE
     a.id = $assessment_id
 ORDER BY
     u.uid, u.user_id, ai.number;
+
+-- BLOCK assessment_stats_last_updated
+SELECT
+    CASE
+        WHEN a.stats_last_updated IS NULL THEN 'never'
+        ELSE format_date_full_compact(a.stats_last_updated, ci.display_timezone)
+    END AS stats_last_updated
+FROM
+    assessments AS a
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+WHERE
+    a.id = $assessment_id

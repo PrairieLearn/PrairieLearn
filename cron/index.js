@@ -7,23 +7,24 @@ var config = require('../lib/config');
 var autoFinishExams = require('./autoFinishExams');
 var errorAbandonedJobs = require('./errorAbandonedJobs');
 var sendExternalGraderStats = require('./sendExternalGraderStats');
+var calculateAssessmentQuestionStats = require('./calculateAssessmentQuestionStats');
+var calculateAssessmentMode = require('./calculateAssessmentMode');
 
 module.exports = {
     init: function(callback) {
-        var that = module.exports;
         logger.verbose('initializing cron', {cronIntervalMS: config.cronIntervalMS});
-        that.runJobs();
+        logger.verbose('and ', {statsCronIntervalMS: config.statsCronIntervalMS});
+        var that = module.exports;
+        that.queueAll();
         callback(null);
     },
 
-    runJobs: function() {
-        var that = module.exports;
-        logger.verbose('cron jobs starting');
-        async.eachSeries([
-            ['autoFinishExams', autoFinishExams],
-            ['errorAbandonedJobs', errorAbandonedJobs],
-            ['sendExternalGraderStats', sendExternalGraderStats]
-        ], function(item, callback) {
+    runJobs: function(jobs, callback) {
+        logger.verbose('cron jobs starting:');
+        jobs.forEach(function(job) {
+          logger.verbose(job[0]);
+        });
+        async.eachSeries(jobs, function(item, callback) {
             var title = item[0];
             var cronModule = item[1];
             if (typeof cronModule.shouldRun === 'function') {
@@ -46,7 +47,33 @@ module.exports = {
             });
         }, function() {
             logger.verbose('cron jobs finished');
-            setTimeout(that.runJobs, config.cronIntervalMS);
+            callback();
         });
     },
+
+    queueJobs: function(jobs, timeout) {
+      var that = module.exports;
+      var callback = function() {
+        that.queueJobs(jobs, timeout);
+      };
+      var run = function() {
+        that.runJobs(jobs, callback);
+      };
+      setTimeout(run, timeout);
+    },
+
+    queueAll: function() {
+      var that = module.exports;
+      var jobs = [
+        ['autoFinishExams', autoFinishExams],
+        ['errorAbandonedJobs', errorAbandonedJobs],
+        ['sendExternalGraderStats', sendExternalGraderStats]
+      ];
+      that.queueJobs(jobs, config.cronIntervalMS);
+      var statsJobs = [
+        ['calculateAssessmentQuestionStats', calculateAssessmentQuestionStats],
+        ['calculateAssessmentMode', calculateAssessmentMode],
+      ];
+      that.queueJobs(statsJobs, config.statsCronIntervalMS);
+    }
 };

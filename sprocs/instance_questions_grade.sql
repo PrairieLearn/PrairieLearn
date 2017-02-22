@@ -37,5 +37,8 @@ BEGIN
     VALUES
         (instance_question_id, authn_user_id, new_values.max_points,
         new_values.points, new_values.score_perc);
+
+    PERFORM instance_questions_calculate_stats(instance_question_id);
+
 END;
 $$ LANGUAGE plpgsql VOLATILE;
