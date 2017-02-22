@@ -55,6 +55,14 @@ router.get('/', function(req, res, next) {
     debug('GET /');
     async.series([
         function(callback) {
+          var params = {assessment_id: res.locals.assessment.id};
+          sqldb.queryOneRow(sql.assessment_stats_last_updated, params, function(err, result) {
+            if (ERR(err, callback)) return;
+            res.locals.stats_last_updated = result.rows[0].stats_last_updated;
+            callback(null);
+          });
+        },
+        function(callback) {
             debug('set filenames');
             _.assign(res.locals, filenames(res.locals));
             callback(null);
@@ -77,15 +85,6 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.assessment_access_rules, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.access_rules = result.rows;
-                callback(null);
-            });
-        },
-        function(callback) {
-            debug('query question_stats');
-            var params = {assessment_id: res.locals.assessment.id};
-            sqldb.query(sql.question_stats, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                res.locals.question_stats = result.rows;
                 callback(null);
             });
         },
@@ -389,7 +388,7 @@ router.get('/:filename', function(req, res, next) {
                 var questionStatsData = [];
                 questionStatsData.push(questionStats.number);
                 questionStatsData.push(questionStats.title);
-                questionStatsData.push(questionStats.mean_score_per_question);
+                questionStatsData.push(questionStats.mean_score);
                 questionStatsData.push(questionStats.discrimination);
                 questionStatsData.push(questionStats.average_number_attempts);
 
@@ -675,6 +674,14 @@ router.post('/', function(req, res, next) {
         regradeAllAssessmentInstances(req.body.assessment_id, res.locals, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+        });
+    } else if (req.body.postAction == 'refresh_stats') {
+        var params = [
+            req.body.assessment_id
+        ];
+        sqldb.call('assessment_questions_calculate_stats_for_assessment', params, function(err) {
+          if (ERR(err, next)) return;
+          res.redirect(req.originalUrl);
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));

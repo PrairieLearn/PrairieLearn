@@ -5,6 +5,9 @@
     <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
     <script type="text/javascript" src="/MathJax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
     <script type="text/javascript" src="/javascripts/socket.io.js"></script>
+    <script type="text/javascript" src="/javascripts/d3.min.js"></script>
+    <script type="text/javascript" src="/localscripts/stacked_histogram.js"></script>
+    <script type="text/javascript" src="/localscripts/histmini.js"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
@@ -95,6 +98,205 @@
       </div>
 
       <%- include('../partials/question', {question_context: 'instructor'}); %>
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Num Attempts</h3>
+        </div>
+        <table class="table table-condensed table-hover two-column-description">
+          <tbody>
+            <% if (question_attempts_histogram && question_attempts_before_giving_up_histogram) { %>
+              <tr>
+                <th> Num Attempts Histogram Exams </th>
+                <td>
+                  <%- include('../partials/attempts-histogram', {
+                    question_attempts_histogram: question_attempts_histogram,
+                    question_attempts_before_giving_up_histogram: question_attempts_before_giving_up_histogram,
+                    title: 'exams'
+                  }); %>
+              </td>
+              </tr>
+            <% } %>
+            <% if (question_attempts_histogram_hw && question_attempts_before_giving_up_histogram_hw) { %>
+              <tr>
+                <th> Num Attempts Histogram HW </th>
+                <td>
+                  <%- include('../partials/attempts-histogram', {
+                    question_attempts_histogram: question_attempts_histogram_hw,
+                    question_attempts_before_giving_up_histogram: question_attempts_before_giving_up_histogram_hw,
+                  title: 'hw'
+                  }); %>
+              </td>
+              </tr>
+              <% } %>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Detailed assessment statistics</h3>
+        </div>
+
+        <table id="questionsTable" class="table table-condensed table-hover tablesorter">
+          <thead>
+          <tr>
+            <th class="cell-center">Course Instance</th>
+            <th class="cell-center">Assessment</th>
+            <% Object.keys(stat_descriptions).forEach(function(stat) {%>
+            <th
+                    class="cell-center"
+                    title="<%= stat_descriptions[stat].description %>">
+              <%= stat_descriptions[stat].title %>
+            </th>
+            <% }); %>
+
+          </tr>
+          </thead>
+          <tbody>
+          <% assessment_stats.forEach(function(row, i) { %>
+          <tr>
+            <td>
+              <%= row.course_title %>
+            </td>
+            <td style="width: 1%">
+              <a href="<%= urlPrefix %>/assessment/<%= row.assessment_id %>/" class="btn btn-<%=
+                row.color %> btn-xs" role="button"><%= row.label %></a>
+            </td>
+            <td class="cell-center">
+              <% if (row.mean_score) { %>
+                <%= parseFloat(row.mean_score).toFixed(1); %>
+              <% } %></td>
+            <td class="cell-center">
+              <% if (row.discrimination) { %>
+                <%= parseFloat(row.discrimination).toFixed(1); %>
+              <% } %>
+            </td>
+            <td class="cell-center">
+              <% if (row.average_number_attempts) { %>
+                <%= parseFloat(row.average_number_attempts).toFixed(2); %>
+              <% } %>
+            </td>
+            <% if (row.quintile_scores) { %>
+              <td class="cell-center"><div id="scoreHist2<%= i %>" class="miniHist"></div></td>
+              <script>
+                $(function() {
+                  var data = [<%= row.quintile_scores %>];
+                  var options = {
+                    width: 60,
+                    height: 20,
+                    ymax: 100
+                  };
+                  histmini("#scoreHist2<%= i %>", data, options);
+                });
+              </script>
+            <% } else { %>
+              <td class="cell-center"></td>
+            <% } %>
+            <td class="cell-center">
+                <% if (row.some_correct_submission_perc) { %>
+                  <%= parseFloat(row.some_correct_submission_perc).toFixed(1) %>
+                <% } %>
+            </td>
+            <td class="cell-center">
+                <% if (row.first_attempt_correct_perc) { %>
+                  <%= parseFloat(row.first_attempt_correct_perc).toFixed(1) %>
+                <% } %>
+            </td>
+            <td class="cell-center">
+                <% if (row.last_attempt_correct_perc) { %>
+                  <%= parseFloat(row.last_attempt_correct_perc).toFixed(1) %>
+                <% } %>
+            </td>
+            <td class="cell-center">
+              <% if (row.some_submission_perc) { %>
+                <%= parseFloat(row.some_submission_perc).toFixed(1) %></td>
+              <% } %>
+            <td class="cell-center">
+              <% if (row.average_of_average_success_rates) { %>
+                <%= parseFloat(row.average_of_average_success_rates).toFixed(1) %></td>
+              <% } %>
+            <td class="cell-center">
+              <% if (row.average_success_rate_hist) { %>
+                <div id="successRateHist<%= i %>" class="miniHist"></div></td>
+              <% } %>
+            <td class="cell-center">
+              <% if (row.average_length_of_incorrect_streak_with_some_correct_submission) { %>
+                <%= parseFloat(row.average_length_of_incorrect_streak_with_some_correct_submission)
+                        .toFixed(2)
+                %>
+              <% } %>
+            </td>
+            <td class="cell-center">
+              <% if (row.length_of_incorrect_streak_hist_with_some_correct_submission) { %>
+                <div id="incorrectStreakHistSomeSubmission<%= i %>" class="miniHist"></div>
+              <% } %>
+            </td>
+            <td class="cell-center">
+              <% if (row.average_length_of_incorrect_streak_with_no_correct_submission) { %>
+                <%= parseFloat(row
+                        .average_length_of_incorrect_streak_with_no_correct_submission).toFixed(2)
+                %>
+              <% } %>
+            </td>
+            <td class="cell-center">
+              <% if (row.length_of_incorrect_streak_hist_with_no_correct_submission) { %>
+                <div id="incorrectStreakHistNoSubmission<%= i %>" class="miniHist"></div>
+              <% } %>
+            </td>
+
+            <script>
+              $(function() {
+                var data = [<%= row.average_success_rate_hist %>];
+                var options = {
+                  width: 60,
+                  height: 20,
+                };
+                histmini("#successRateHist<%= i %>", data, options);
+              });
+            </script>
+            <script>
+              $(function() {
+                var data = [<%= row.length_of_incorrect_streak_hist_with_some_correct_submission %>];
+                var options = {
+                  width: 60,
+                  height: 20,
+                };
+                histmini("#incorrectStreakHistSomeSubmission<%= i %>", data, options);
+              });
+            </script>
+            <script>
+              $(function() {
+                var data = [<%= row.length_of_incorrect_streak_hist_with_no_correct_submission %>];
+                var options = {
+                  width: 60,
+                  height: 20,
+                };
+                histmini("#incorrectStreakHistNoSubmission<%= i %>", data, options);
+              });
+            </script>
+          </tr>
+          <% }); %>
+          </tbody>
+        </table>
+        <div class="panel-footer">
+          <small>
+            <ul>
+              <% Object.keys(stat_descriptions).forEach(function(stat) {%>
+                <li>
+                  <strong>
+                    <%= stat_descriptions[stat].title %>:
+                  </strong>
+                  <%= stat_descriptions[stat].description %>
+                </li>
+              <% }); %>
+            </ul>
+          </small>
+        </div>
+      </div>
 
     </div>
   </body>

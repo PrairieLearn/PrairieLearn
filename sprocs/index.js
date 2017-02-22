@@ -111,6 +111,10 @@ module.exports = {
             'variants_ensure_open.sql',
             'variants_unlink.sql',
             'grader_loads_current.sql',
+            'assessment_questions_calculate_stats_for_assessment.sql',
+            'assessment_questions_calculate_stats.sql',
+            'length_of_incorrect_streak.sql',
+            'instance_questions_calculate_stats.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
