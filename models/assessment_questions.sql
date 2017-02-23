@@ -12,4 +12,8 @@ CREATE TABLE IF NOT EXISTS assessment_questions (
     UNIQUE (question_id, assessment_id)
 );
 
+CREATE INDEX IF NOT EXISTS assessment_questions_assessment_id_idx ON assessment_questions (assessment_id);
+CREATE INDEX IF NOT EXISTS assessment_questions_alternative_group_id_idx ON assessment_questions (alternative_group_id);
+
+
 ALTER TABLE assessment_questions ALTER COLUMN alternative_group_id DROP NOT NULL;

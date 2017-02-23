@@ -13,3 +13,5 @@ CREATE TABLE IF NOT EXISTS grading_logs (
     feedback JSONB,
     auth_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE
 );
+
+CREATE INDEX IF NOT EXISTS grading_logs_submission_id_idx ON grading_logs (submission_id);

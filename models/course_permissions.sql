@@ -5,3 +5,5 @@ CREATE TABLE IF NOT EXISTS course_permissions (
     course_role enum_course_role,
     UNIQUE (user_id, course_id)
 );
+
+CREATE INDEX IF NOT EXISTS course_permissions_course_id_idx ON course_permissions (course_id);

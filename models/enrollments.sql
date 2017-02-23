@@ -5,3 +5,5 @@ CREATE TABLE IF NOT EXISTS enrollments (
     role enum_role,
     UNIQUE (user_id, course_instance_id)
 );
+
+CREATE INDEX IF NOT EXISTS enrollments_course_instance_id_idx ON enrollments (course_instance_id);

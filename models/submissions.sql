@@ -15,3 +15,5 @@ CREATE TABLE IF NOT EXISTS submissions (
     correct BOOLEAN,
     feedback JSONB
 );
+
+CREATE INDEX IF NOT EXISTS submissions_variant_id_idx ON submissions (variant_id);

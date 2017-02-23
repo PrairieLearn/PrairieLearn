@@ -5,3 +5,5 @@ CREATE TABLE IF NOT EXISTS variant_view_logs (
     open BOOLEAN,
     credit INTEGER
 );
+
+CREATE INDEX IF NOT EXISTS variant_view_logs_variant_id_idx ON variant_view_logs (variant_id);

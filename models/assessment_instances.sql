@@ -20,10 +20,29 @@ CREATE TABLE IF NOT EXISTS assessment_instances (
     score_perc DOUBLE PRECISION DEFAULT 0,
     score_perc_in_grading DOUBLE PRECISION DEFAULT 0,
     tmp_upgraded_iq_status BOOLEAN DEFAULT FALSE,
-    UNIQUE (number, assessment_id, user_id)
+    UNIQUE (assessment_id, user_id, number)
 );
+
+CREATE INDEX IF NOT EXISTS assessment_instances_user_id_idx ON assessment_instances (user_id);
+
 
 ALTER TABLE assessment_instances ADD COLUMN IF NOT EXISTS date_limit TIMESTAMP WITH TIME ZONE;
 ALTER TABLE assessment_instances ADD COLUMN IF NOT EXISTS auto_close BOOLEAN DEFAULT FALSE;
 
 ALTER TABLE assessment_instances ADD COLUMN IF NOT EXISTS tmp_upgraded_iq_status BOOLEAN DEFAULT FALSE;
+
+ALTER TABLE assessment_instances DROP COLUMN IF EXISTS instructor_opened;
+
+ALTER TABLE assessment_instances DROP CONSTRAINT IF EXISTS assessment_instances_number_assessment_id_user_id_key;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+            SELECT 1 FROM information_schema.table_constraints
+            WHERE constraint_name = 'assessment_instances_assessment_id_user_id_number_key'
+        )
+        THEN
+        ALTER TABLE assessment_instances ADD UNIQUE (assessment_id, user_id, number);
+    END IF;
+END;
+$$

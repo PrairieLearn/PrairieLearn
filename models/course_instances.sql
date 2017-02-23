@@ -9,6 +9,8 @@ CREATE TABLE IF NOT EXISTS course_instances (
     deleted_at TIMESTAMP WITH TIME ZONE
 );
 
+CREATE INDEX IF NOT EXISTS course_instances_course_id_idx ON course_instances (course_id);
+
 ALTER TABLE course_instances ADD COLUMN IF NOT EXISTS display_timezone text;
 UPDATE course_instances SET display_timezone = 'America/Chicago' WHERE display_timezone IS NULL;
 -- FIXME: make display_timezone NOT NULL in the future

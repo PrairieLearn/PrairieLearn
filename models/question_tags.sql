@@ -5,3 +5,5 @@ CREATE TABLE IF NOT EXISTS question_tags (
     number INTEGER,
     UNIQUE (question_id, tag_id)
 );
+
+CREATE INDEX IF NOT EXISTS question_tags_tag_id_idx ON question_tags (tag_id);

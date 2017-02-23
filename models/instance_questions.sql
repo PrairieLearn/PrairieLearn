@@ -17,4 +17,6 @@ CREATE TABLE IF NOT EXISTS instance_questions (
     UNIQUE (assessment_question_id, assessment_instance_id)
 );
 
+CREATE INDEX IF NOT EXISTS instance_questions_assessment_instance_id_idx ON instance_questions (assessment_instance_id);
+
 ALTER TABLE instance_questions ADD COLUMN IF NOT EXISTS status enum_instance_question_status DEFAULT 'unanswered';
