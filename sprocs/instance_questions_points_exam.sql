@@ -1,9 +1,9 @@
 CREATE OR REPLACE FUNCTION
-    instance_question_points_homework(
+    instance_questions_points_exam(
         IN instance_question_id bigint,
         IN correct boolean,
         OUT open BOOLEAN,
-        OUT status TEXT,
+        OUT status enum_instance_question_status,
         OUT points DOUBLE PRECISION,
         OUT score_perc DOUBLE PRECISION,
         OUT current_value DOUBLE PRECISION,

@@ -1,9 +1,9 @@
 CREATE OR REPLACE FUNCTION
-    instance_question_points_homework(
+    instance_questions_points_homework(
         IN instance_question_id bigint,
         IN correct boolean,
         OUT open BOOLEAN,
-        OUT status TEXT,
+        OUT status enum_instance_question_status,
         OUT points DOUBLE PRECISION,
         OUT score_perc DOUBLE PRECISION,
         OUT current_value DOUBLE PRECISION,
@@ -27,12 +27,12 @@ BEGIN
     max_points := aq.max_points;
 
     open := TRUE;
-    status := 'answered';
 
     IF aq.force_max_points THEN
         points := aq.max_points;
         score_perc := 100;
         current_value := aq.max_points;
+        status := 'correct';
         RETURN;
     END IF;
 
@@ -40,10 +40,17 @@ BEGIN
         points := least(iq.points + iq.current_value, aq.max_points);
         score_perc := points / (CASE WHEN aq.max_points > 0 THEN aq.max_points ELSE 1 END) * 100;
         current_value := least(iq.current_value + aq.init_points, aq.max_points);
+        status := 'correct';
     ELSE
         points := iq.points;
         score_perc := iq.score_perc;
         current_value := aq.init_points;
+
+        -- use current status unless it's 'unanswered'
+        status := iq.status;
+        IF iq.status = 'unanswered' THEN
+            status := 'incorrect';
+        END IF;
     END IF;
 END;
 $$ LANGUAGE plpgsql STABLE;

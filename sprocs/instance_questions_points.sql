@@ -3,7 +3,7 @@ CREATE OR REPLACE FUNCTION
         IN instance_question_id bigint,
         IN correct boolean,
         OUT open BOOLEAN,
-        OUT status TEXT,
+        OUT status enum_instance_question_status,
         OUT points DOUBLE PRECISION,
         OUT score_perc DOUBLE PRECISION,
         OUT current_value DOUBLE PRECISION,
@@ -30,10 +30,10 @@ BEGIN
     CASE type
         WHEN 'Exam' THEN
             SELECT * INTO open, status, points, score_perc, current_value, max_points
-            FROM instance_question_points_exam(instance_question_id, correct);
+            FROM instance_questions_points_exam(instance_question_id, correct);
         WHEN 'Homework' THEN
             SELECT * INTO open, status, points, score_perc, current_value, max_points
-            FROM instance_question_points_homework(instance_question_id, correct);
+            FROM instance_questions_points_homework(instance_question_id, correct);
         ELSE
             RAISE EXCEPTION 'Unknown assessment type: %', type;
     END CASE;
