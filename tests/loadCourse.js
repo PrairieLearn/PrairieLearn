@@ -3,6 +3,7 @@ var _ = require('lodash');
 var assert = require('assert');
 
 var courseDB = require('../lib/course-db');
+var logger = require('./dummyLogger');
 
 var courseDir = '../exampleCourse';
 
@@ -10,7 +11,7 @@ describe('courseDB.loadFullCourse()', function() {
 
     var course;
     before("load course from disk", function(callback) {
-        courseDB.loadFullCourse(courseDir, function(err, c) {
+        courseDB.loadFullCourse(courseDir, logger, function(err, c) {
             if (ERR(err, callback)) return;
             course = c;
             callback(null);

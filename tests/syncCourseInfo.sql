@@ -2,6 +2,6 @@
 SELECT
     *
 FROM
-    courses AS c
+    pl_courses AS c
 WHERE
     c.short_name = 'TPL 101';
