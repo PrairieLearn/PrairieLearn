@@ -1,0 +1,8 @@
+dist: trusty
+language: node_js
+node_js:
+  - "7.4"
+addons:
+  postgresql: "9.6"
+services:
+  - postgresql

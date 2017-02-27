@@ -32,5 +32,8 @@
         "mocha": "3.2.x",
         "request": "2.79.x",
         "cheerio": "0.22.x"
+    },
+    "scripts": {
+        "test": "cd tests && ../node_modules/mocha/bin/mocha index.js"
     }
 }
