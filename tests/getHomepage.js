@@ -8,7 +8,7 @@ var testHelperServer = require('./testHelperServer');
 
 var baseUrl = 'http://localhost:3000/pl';
 
-describe('GET /', function() {
+describe('GET /pl', function() {
 
     before("set up testing server", testHelperServer.before);
     after("shut down testing server", testHelperServer.after);
