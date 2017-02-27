@@ -19,6 +19,9 @@ var courseDir = '../exampleCourse';
 
 module.exports = {
     before: function(callback) {
+        // long timeout because DROP DATABASE might take a long time to error
+        // if other processes have an open connection to that database
+        this.timeout(10000);
         var client;
         async.series([
             function(callback) {

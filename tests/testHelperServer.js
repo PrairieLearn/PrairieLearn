@@ -14,21 +14,30 @@ var syncFromDisk = require('../sync/syncFromDisk');
 config.startServer = false;
 var server = require('../server');
 
+var logger = require('./dummyLogger');
 var testHelperDb = require('./testHelperDb');
 
 var courseDir = '../exampleCourse';
 
 module.exports = {
     before: function(callback) {
+        var that = this;
         async.series([
             function(callback) {
-                testHelperDb.before(function(err) {
+                // pass "this" explicitly to enable this.timeout() calls
+                testHelperDb.before.call(that, function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
             },
             function(callback) {
-                syncFromDisk.syncDiskToSql(courseDir, function(err) {
+                server.insertDevUser(function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            function(callback) {
+                syncFromDisk.syncOrCreateDiskToSql(courseDir, logger, function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });

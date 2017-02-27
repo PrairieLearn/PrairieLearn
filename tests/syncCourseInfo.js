@@ -10,13 +10,15 @@ var sqlLoader = require('../lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
+var logger = require('./dummyLogger');
 var courseDir = '../exampleCourse';
+var course_id = 1;
 
 describe('sync/fromDisk/courseInfo', function() {
 
     var course;
     before("load course from disk", function(callback) {
-        courseDB.loadFullCourse(courseDir, function(err, c) {
+        courseDB.loadFullCourse(courseDir, logger, function(err, c) {
             if (ERR(err, callback)) return;
             course = c;
             callback(null);
@@ -25,17 +27,29 @@ describe('sync/fromDisk/courseInfo', function() {
 
     before("set up testing DB", testHelperDb.before);
     after("shut down testing DB", testHelperDb.after);
-    
+
+    describe('sprocs/select_or_insert_course_by_path', function() {
+        it('should use id 1 for exampleCourse', function(callback) {
+            sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function(err, result) {
+                if (ERR(err, callback)) return;
+                if (course_id != result.rows[0].course_id) {
+                    return callback(new Error('unexpected course_id: ' + result.rows[0].course_id));
+                }
+                callback(null);
+            });
+        });
+    });
+
     describe('syncCourseInfo()', function() {
         it('should succeed', function(callback) {
-            syncCourseInfo.sync(course.courseInfo, function(err) {
+            syncCourseInfo.sync(course.courseInfo, course_id, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
         });
     });
 
-    describe('the database "course" table', function() {
+    describe('the "pl_courses" table', function() {
         it('should contain TPL 101', function(callback) {
             sqldb.queryOneRow(sql.select_course, [], function(err) {
                 if (ERR(err, callback)) return;

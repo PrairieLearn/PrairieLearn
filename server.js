@@ -290,6 +290,29 @@ module.exports.startServer = function(callback) {
     }
 };
 
+module.exports.insertDevUser = function(callback) {
+    // add dev user as Administrator
+    var sql
+        = "INSERT INTO users (uid, name)"
+        + " VALUES ('dev@example.com', 'Dev User')"
+        + " ON CONFLICT (uid) DO UPDATE"
+        + " SET name = EXCLUDED.name"
+        + " RETURNING user_id;";
+    sqldb.queryOneRow(sql, [], function(err, result) {
+        if (ERR(err, callback)) return;
+        var user_id = result.rows[0].user_id;
+        var sql
+            = "INSERT INTO administrators (user_id)"
+            + " VALUES ($user_id)"
+            + " ON CONFLICT (user_id) DO NOTHING;";
+        var params = {user_id};
+        sqldb.query(sql, params, function(err) {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    });
+};
+
 if (config.startServer) {
     async.series([
         function(callback) {
@@ -342,6 +365,13 @@ if (config.startServer) {
             });
         },
         function(callback) {
+            if (!config.devMode) return callback(null);
+            module.exports.insertDevUser(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
             logger.verbose('Starting server...');
             module.exports.startServer(function(err) {
                 if (ERR(err, callback)) return;
@@ -358,29 +388,6 @@ if (config.startServer) {
             serverJobs.init(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
-            });
-        },
-        function(callback) {
-            if (!config.devMode) return callback(null);
-            // add dev user as Administrator
-            var sql
-                = "INSERT INTO users (uid, name)"
-                + " VALUES ('dev@example.com', 'Dev User')"
-                + " ON CONFLICT (uid) DO UPDATE"
-                + " SET name = EXCLUDED.name"
-                + " RETURNING user_id;";
-            sqldb.queryOneRow(sql, [], function(err, result) {
-                if (ERR(err, callback)) return;
-                var user_id = result.rows[0].user_id;
-                var sql
-                    = "INSERT INTO administrators (user_id)"
-                    + " VALUES ($user_id)"
-                    + " ON CONFLICT (user_id) DO NOTHING;";
-                var params = {user_id};
-                sqldb.query(sql, params, function(err) {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
             });
         },
     ], function(err, data) {
