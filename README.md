@@ -4,8 +4,8 @@
 PrairieLearn is an online problem-driven learning system for creating homeworks and tests. It allows questions to be written using arbitrary HTML/JavaScript, thus enabling very powerful questions that can randomize and autograde themselves, and can access client- and server-side libraries to handle tasks such as graphical drawing, symbolic algebra, and student code compilation and execution.
 
 * [ChangeLog: versions of PrairieLearn with change list](https://github.com/PrairieLearn/PrairieLearn/blob/master/ChangeLog.md)
-* [Build status:](https://travis-ci.org/PrairieLearn/PrairieLearn) <img src="https://travis-ci.org/PrairieLearn/PrairieLearn.svg?branch=master" />
-* [![Build Status](https://travis-ci.org/PrairieLearn/PrairieLearn.svg?branch=master)](https://travis-ci.org/PrairieLearn/PrairieLearn)
+
+[![Build Status](https://travis-ci.org/PrairieLearn/PrairieLearn.svg?branch=master)](https://travis-ci.org/PrairieLearn/PrairieLearn)
 
 ## User Documentation
 
