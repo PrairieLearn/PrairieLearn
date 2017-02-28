@@ -1,6 +1,8 @@
 
 # ChangeLog
 
+  * Add per-day score histograms to instructor assessment page (Paras Sud).
+
 * __2.2.2__ - 2017-02-23
 
   * Add more indexes and improve unique constraint ordering for indexes.
