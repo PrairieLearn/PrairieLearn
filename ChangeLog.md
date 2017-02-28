@@ -1,6 +1,8 @@
 
 # ChangeLog
 
+  * Add per-day score histograms to instructor assessment page (Paras Sud).
+
 * __2.2.1__ - 2017-02-18
 
   * Only show feedback for open exams in CS 233.
