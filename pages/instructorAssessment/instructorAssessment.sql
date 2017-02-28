@@ -166,7 +166,7 @@ WITH assessment_instances_by_user_and_date AS (
     SELECT
         ai.user_id,
         avg(ai.score_perc) AS score_perc,
-        date_trunc('day', date AT TIME ZONE ci.display_timezone) AS date
+        date_trunc('day', ai.date AT TIME ZONE ci.display_timezone) AS date
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)

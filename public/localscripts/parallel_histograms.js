@@ -6,8 +6,8 @@ function parallel_histograms(selector, data, options) {
         height: 370,
         xTickLabels: "auto",
         yTickLabels: "auto",
-        yAxisWidth: 100,
-        xAxisHeight: 100,
+        yAxisWidth: 70,
+        xAxisHeight: 70,
         topPadding: 15,
         rightPadding: 2,
     });
@@ -158,20 +158,13 @@ function parallel_histograms(selector, data, options) {
         .attr("class", "x axis")
         .attr("transform", function(d) { return "translate(" + yAxisWidth + ", " + heightWithPadding + ")"; })
         .attr("height", xAxisHeight)
-        .call(xAxis);
-
-    xAxisElement.append("text")
+        .call(xAxis)
+        .append("text")
         .attr("class", "label")
         .attr("x", width / 2)
-        .attr("y", 40)
-        .attr("transform", "rotate(-90)");
-
-   // it's rotated, so x means y, and y means x
-   xAxisElement.selectAll("text")
-      .attr("y", 20)
-      .attr("x", 0)
-      .attr("dy", ".35em")
-      .style("text-anchor", "middle");
+        .attr("y", "3em")
+        .style("text-anchor", "middle")
+        .text(options.xlabel);
 };
 
 function calculate_max(data) {
