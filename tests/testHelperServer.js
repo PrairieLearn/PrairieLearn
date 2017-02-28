@@ -62,6 +62,12 @@ module.exports = {
                     callback(null);
                 });
             },
+            function(callback) {
+                server.stopServer(function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
         ], function(err) {
             if (ERR(err, callback)) return;
             callback(null);

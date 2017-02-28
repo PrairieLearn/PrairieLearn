@@ -290,6 +290,14 @@ module.exports.startServer = function(callback) {
     }
 };
 
+module.exports.stopServer = function(callback) {
+    if (!server) return callback(new Error('cannot stop an undefined server'));
+    server.close(function(err) {
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
+};
+
 module.exports.insertDevUser = function(callback) {
     // add dev user as Administrator
     var sql
