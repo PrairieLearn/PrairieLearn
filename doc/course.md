@@ -10,18 +10,27 @@ A course is specified by a single directory, with the following structure:
 ```
 exampleCourse
 +-- infoCourse.json     # course specification (see below)
-+-- questions           # all questions for the course
-|   `-- ...             # one subdirectory per question
-+-- courseInstances
-|   +-- Fa16            # one directory per semester
-|   |   `-- ...         # configuration and assessments for Fa16
++-- questions           # all questions for the course (see other doc)
+|   `-- ...
+|   `-- ...
++-- courseInstances     # instances of the course (see other doc)
+|   +-- Fa16
+|   |   `-- ...
 |   `-- Sp17
 |       `-- ...
-+-- clientFilesCourse   # files available from the client at all times
-|   +-- library.js
-|   +-- refs.html
++-- autograders         # all autograders for the course (see other doc)
+|   +-- ag1
+|       `-- ...
+|   +-- ag2
+|       `-- ...
++-- environment         # files needed to configure the autograder environment (see other doc)
+|   `-- ...
+|   `-- ...
++-- clientFilesCourse   # files available from the client at all times (see other doc)
+|   `-- library.js
+|   `-- refs.html
 |   `-- formulas.pdf
-`-- serverFilesCourse   # files only accessible from code on the server
+`-- serverFilesCourse   # files only accessible from code on the server (see other doc)
     `-- secret1.js
 ```
 

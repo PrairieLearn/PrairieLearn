@@ -55,6 +55,9 @@ module.exports = {
                         course_id: courseInfo.courseId,
                         topic: q.topic,
                         grading_method: q.gradingMethod || 'Internal',
+                        autograding_enabled: q.autogradingEnabled,
+                        autograder: q.autograder,
+                        environment: q.environment,
                     };
                     sqldb.queryOneRow(sql.insert_question, params, function(err, result) {
                         if (ERR(err, callback)) return;

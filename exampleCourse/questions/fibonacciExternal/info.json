@@ -5,5 +5,8 @@
     "tags": ["code"],
     "clientFiles": ["client.js", "question.html", "answer.html", "submission.html"],
     "type": "Calculation",
-    "gradingMethod": "External"
+    "gradingMethod": "External",
+    "autogradingEnabled": true,
+    "autograder": "child_pythondev",
+    "environment": "python-main"
 }

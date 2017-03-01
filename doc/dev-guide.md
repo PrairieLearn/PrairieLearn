@@ -20,6 +20,8 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 1. Top-level files and directories are:
 
         PrairieLearn/v2
+        +-- autograder         # files needed to autograde code on a seperate server
+        |   `-- ...            # various scripts and docker images
         +-- config.json        # server configuration file (optional)
         +-- cron               # jobs to be periodically executed, one file per job
         |   +-- index.js       # entry point for all cron jobs

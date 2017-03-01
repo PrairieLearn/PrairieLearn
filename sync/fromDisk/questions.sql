@@ -3,12 +3,14 @@ INSERT INTO questions
     (uuid,  qid, directory, type,                      title,  options,         client_files,
     course_id,            grading_method,                      deleted_at,
     template_directory,
-    topic_id)
+    topic_id,
+    autograding_enabled,  autograder,  environment)
 (SELECT
     $uuid, $qid, $qid,     $type::enum_question_type, $title, $options::JSONB, $client_files::TEXT[],
     $course_id::integer, $grading_method::enum_grading_method, NULL::timestamp with time zone,
     $template_directory,
-    COALESCE((SELECT id FROM topics WHERE name = $topic AND course_id = $course_id), NULL)
+    COALESCE((SELECT id FROM topics WHERE name = $topic AND course_id = $course_id), NULL),
+    $autograding_enabled, $autograder, $environment
 )
 ON CONFLICT (uuid) DO UPDATE
 SET
@@ -21,7 +23,10 @@ SET
     grading_method = EXCLUDED.grading_method,
     template_directory = EXCLUDED.template_directory,
     topic_id = EXCLUDED.topic_id,
-    deleted_at = EXCLUDED.deleted_at
+    deleted_at = EXCLUDED.deleted_at,
+    autograding_enabled = EXCLUDED.autograding_enabled,
+    autograder = EXCLUDED.autograder,
+    environment = EXCLUDED.environment
 WHERE
     questions.course_id = $course_id
 RETURNING id;

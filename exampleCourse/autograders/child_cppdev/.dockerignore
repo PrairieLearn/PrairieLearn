@@ -1,0 +1,5 @@
+.dockerignore
+DockerFile
+*~
+*.swp
+*.swo
