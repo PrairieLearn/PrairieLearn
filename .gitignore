@@ -22,3 +22,7 @@ frontend-build/
 
 # Swap files
 **/*.swp
+**/*.swo
+
+# Backup Files
+**/*~

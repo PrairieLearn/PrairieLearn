@@ -17,6 +17,7 @@ PrairieLearn is an online problem-driven learning system for creating homeworks 
 * [Access control to course instances and assessments](doc/accessControl.md)
 * [clientFiles and serverFiles for file and code libraries](doc/clientServerFiles.md)
 * [UUIDs in JSON files](doc/uuid.md)
+* [Configuring the Autograder](doc/autograder.md)
 * [PrairieDraw graphics](doc/PrairieDraw.md)
 * [What to tell students about PrairieLearn](doc/whatToTellStudents.md)
 

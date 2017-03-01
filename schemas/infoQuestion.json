@@ -69,6 +69,18 @@
         "options": {
             "description": "Options that define how the question will work, specific to the individual question type.",
             "type": "object"
+        },
+        "autogradingEnabled": {
+            "description": "Whether the autograder is currently enabled. Useful if it is breaking for example.",
+            "type": "boolean"
+        },
+        "autograder": {
+            "description": "The name of the autograder. Searches in currentClass/autograders/",
+            "type": "string"
+        },
+        "environment":{
+            "description": "Which environment to set up. Will look in currentClass/environments/",
+            "type": "string"
         }
     }
 }

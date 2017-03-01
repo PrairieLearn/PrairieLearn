@@ -71,7 +71,7 @@ The basic form of a `library.js` file is:
         return library;
     });
 
-To use this `library.js` file inside a question's `client.js` or 'server.js` file:
+To use this `library.js` file inside a question's `client.js` or `server.js` file:
 
     define([<OTHER-LIBRARY-PATHS>, 'clientCode/library'], function(<OTHER-LIBRARY-VARS>, library) {
     

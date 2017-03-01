@@ -73,18 +73,9 @@ module.exports = {
     },
 };
 
-module.exports.processGradingResult = function(msg) {
-    var content, assessment_type;
+module.exports.processGradingResult = function(content) {
+    var assessment_type;
     async.series([
-        function(callback) {
-            try {
-                content = JSON.parse(msg.content.toString());
-            } catch (err) {
-                ERR(err, callback);
-                return;
-            }
-            callback(null);
-        },
         function(callback) {
             if (!_(content.gradingId).isInteger()) return callback(new Error('invalid gradingId'));
             var params = {
@@ -127,6 +118,6 @@ module.exports.processGradingResult = function(msg) {
             logger.error('processGradingResult: error',
                          {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
         }
-        return messageQueue.mqChannel.ack(msg);
+        //return messageQueue.mqChannel.ack(msg);
     });
 };
