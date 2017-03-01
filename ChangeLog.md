@@ -1,6 +1,8 @@
 
 # ChangeLog
 
+  * Add question points and percentage scores to `*_final_submissions.csv`.
+
   * Add per-day score histograms to instructor assessment page (Paras Sud).
 
 * __2.2.2__ - 2017-02-23
