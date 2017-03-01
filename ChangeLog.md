@@ -1,6 +1,11 @@
 
 # ChangeLog
 
+* __2.3.0__ - unreleased
+
+  * Add preliminary external autograder support by the HackIllinois team
+    (Jordi Ferrer, Genna Helsel, Teju Nareddy, Nathan Walters).
+
   * Add question points and percentage scores to `*_final_submissions.csv`.
 
   * Add per-day score histograms to instructor assessment page (Paras Sud).
