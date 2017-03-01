@@ -33,7 +33,7 @@ describe('Homework assessment', function() {
         });
     });
 
-    describe('/pl/assessments', function() {
+    describe('GET /pl/assessments', function() {
         it('should load successfully', function(callback) {
             request(assessmentsUrl, function (error, response, body) {
                 if (error) {
@@ -74,6 +74,10 @@ describe('Homework assessment', function() {
                 callback(null);
             })
         });
+        it('should redirect to the correct path', function() {
+            assessmentInstanceUrl = siteUrl + res.req.path;
+            assert.equal(res.req.path, '/pl/course_instance/1/assessment_instance/1');
+        });
         it('should create one assessment_instance', function(callback) {
             sqldb.query(sql.select_assessment_instances, [], function(err, result) {
                 if (ERR(err, callback)) return;
@@ -102,6 +106,37 @@ describe('Homework assessment', function() {
         });
         it('should have the correct second question', function() {
             assert.equal(instance_questions[1].qid, 'fossilFuelsRadio');
+        });
+    });
+
+    describe('GET to assessment_instance URL', function() {
+        it('should load successfully', function(callback) {
+            request(assessmentInstanceUrl, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                res = response;
+                page = body;
+                callback(null);
+            })
+        });
+        it('should parse', function() {
+            $ = cheerio.load(page);
+        });
+        it('should link to addVectors question', function() {
+            linkList = $('td a:contains("Addition of vectors in Cartesian coordinates")');
+            assert.equal(linkList.length, 1);
+            q1Url = siteUrl + linkList[0].attribs.href;
+            assert.equal(q1Url, baseUrl + '/course_instance/1/instance_question/' + instance_questions[0].id + '/');
+        });
+        it('should link to fossilFuelsRadio question', function() {
+            linkList = $('td a:contains("Advantages of fossil fuels (radio)")');
+            assert.equal(linkList.length, 1);
+            q1Url = siteUrl + linkList[0].attribs.href;
+            assert.equal(q1Url, baseUrl + '/course_instance/1/instance_question/' + instance_questions[1].id + '/');
         });
     });
 });
