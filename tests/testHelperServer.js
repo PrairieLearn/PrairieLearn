@@ -17,7 +17,7 @@ var server = require('../server');
 var logger = require('./dummyLogger');
 var testHelperDb = require('./testHelperDb');
 
-var courseDir = '../exampleCourse';
+var courseDir = 'exampleCourse';
 
 module.exports = {
     before: function(callback) {

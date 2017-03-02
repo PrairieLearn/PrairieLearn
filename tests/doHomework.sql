@@ -25,3 +25,35 @@ FROM
     JOIN questions AS q ON (q.id = aq.question_id)
 ORDER BY
     q.qid;
+
+-- BLOCK select_instance_question
+SELECT
+    iq.*
+FROM
+    instance_questions AS iq
+WHERE
+    iq.id = $instance_question_id;
+
+-- BLOCK select_assessment_instance
+SELECT
+    ai.*
+FROM
+    assessment_instances AS ai
+WHERE
+    ai.id = $assessment_instance_id;
+
+-- BLOCK select_variants
+SELECT
+    v.*
+FROM
+    variants AS v
+ORDER BY
+    v.date;
+
+-- BLOCK select_submissions
+SELECT
+    s.*
+FROM
+    submissions AS s
+ORDER BY
+    s.date;
