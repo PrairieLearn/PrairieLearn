@@ -50,10 +50,22 @@ FROM
 ORDER BY
     v.date;
 
--- BLOCK select_submissions
+-- BLOCK select_variant
+SELECT
+    v.*
+FROM
+    variants AS v
+WHERE
+    v.id = $variant_id
+    AND v.instance_question_id = instance_question_id;
+
+-- BLOCK select_submission_for_variant
 SELECT
     s.*
 FROM
     submissions AS s
+    JOIN variants AS v ON (v.id = s.variant_id)
+WHERE
+    v.id = $variant_id
 ORDER BY
     s.date;
