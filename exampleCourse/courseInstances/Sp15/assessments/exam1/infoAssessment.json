@@ -1,7 +1,7 @@
 {
     "uuid": "70564328-a8e8-42be-9122-60ed1ef83ddc",
     "type": "Exam",
-    "title": "Template Exam",
+    "title": "Exam for automatic test suite",
     "set": "Exam",
     "number": "1",
     "allowAccess": [
@@ -21,8 +21,8 @@
         {
             "title": "Hard questions",
             "questions": [
-                {"id": "fibonacciExternal", "points": [10, 10, 7, 3, 1, 0.5, 0.25]},
-                {"id": "addVectors",        "points": [10, 10, 7, 3, 1, 0.5, 0.25]}
+                {"id": "addVectors",       "points": [10, 3]},
+                {"id": "fossilFuelsRadio", "points": [10, 5, 1]}
             ]
         }
     ],

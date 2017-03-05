@@ -22,6 +22,7 @@ FROM
     assessment_instances AS ai
 WHERE
     ai.id = $assessment_instance_id
+    AND ai.open
 FOR UPDATE OF ai;
 
 -- BLOCK select_work_list
@@ -100,51 +101,6 @@ FROM
 WHERE
     s.id = gl.submission_id;
 
--- BLOCK update_instance_question
-WITH open_result AS (
-    SELECT
-        CASE
-            WHEN $correct THEN false
-            ELSE CASE
-                    WHEN iq.number_attempts + 1 < array_length(iq.points_list, 1) THEN TRUE
-                    ELSE FALSE
-            END
-        END AS open
-    FROM
-        instance_questions AS iq
-    WHERE
-        iq.id = $instance_question_id
-),
-results AS (
-    UPDATE instance_questions AS iq
-    SET
-        open = open_result.open,
-        status = CASE
-            WHEN NOT open_result.open THEN 'complete'::enum_instance_question_status
-            WHEN $correct THEN 'correct'::enum_instance_question_status
-            ELSE 'incorrect'::enum_instance_question_status
-        END,
-        points = CASE WHEN $correct THEN iq.current_value ELSE 0 END,
-        points_in_grading = 0,
-        score_perc = (CASE WHEN $correct THEN iq.current_value ELSE 0 END)
-                        / (CASE WHEN iq.points_list[1] > 0 THEN iq.points_list[1] ELSE 1 END) * 100,
-        score_perc_in_grading = 0,
-        current_value = CASE WHEN $correct THEN NULL ELSE iq.points_list[iq.number_attempts + 2] END,
-        number_attempts = iq.number_attempts + 1
-    FROM
-        open_result
-    WHERE
-        iq.id = $instance_question_id
-    RETURNING iq.*
-)
-INSERT INTO question_score_logs
-        (instance_question_id, auth_user_id, points, max_points,     score_perc)
-(
-    SELECT
-         id,                  $auth_user_id, points, points_list[1], score_perc
-    FROM results
-);
-
 -- BLOCK update_instance_question_in_grading
 UPDATE instance_questions AS iq
 SET
@@ -152,29 +108,6 @@ SET
     score_perc_in_grading = floor(iq.current_value / iq.points_list[1] * 100)
 WHERE
     iq.id = $instance_question_id;
-
--- BLOCK update_assessment_instance_score
-WITH results AS (
-    UPDATE assessment_instances AS ai
-    SET
-        points = new_values.points,
-        points_in_grading = new_values.points_in_grading,
-        score_perc = new_values.score_perc,
-        score_perc_in_grading = new_values.score_perc_in_grading
-    FROM
-        assessment_points_exam($assessment_instance_id, $credit) AS new_values
-    WHERE
-        ai.id = $assessment_instance_id
-    RETURNING ai.*
-)
-INSERT INTO assessment_score_logs
-        (points, points_in_grading, max_points, score_perc, score_perc_in_grading, assessment_instance_id, auth_user_id)
-(
-    SELECT
-         points, points_in_grading, max_points, score_perc, score_perc_in_grading, id,                    $auth_user_id
-    FROM
-        results
-);
 
 -- BLOCK close_assessment_instance
 WITH

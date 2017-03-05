@@ -11,7 +11,7 @@ var sqlLoader = require('../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var logger = require('./dummyLogger');
-var courseDir = '../exampleCourse';
+var courseDir = 'exampleCourse';
 var course_id = 1;
 
 describe('sync/fromDisk/courseInfo', function() {

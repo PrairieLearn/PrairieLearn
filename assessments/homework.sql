@@ -63,34 +63,6 @@ SET
 WHERE
     v.id = $variant_id;
 
--- BLOCK update_instance_question
-WITH results AS (
-    UPDATE instance_questions AS iq
-    SET
-        points = CASE WHEN $correct THEN least(iq.points + iq.current_value, aq.max_points) ELSE iq.points END,
-        points_in_grading = 0,
-        score_perc = CASE WHEN $correct THEN least(iq.points + iq.current_value, aq.max_points)
-            / (CASE WHEN aq.max_points > 0 THEN aq.max_points ELSE 1 END) * 100 ELSE iq.score_perc END,
-        score_perc_in_grading = 0,
-        current_value = CASE WHEN $correct THEN least(iq.current_value + aq.init_points, aq.max_points) ELSE aq.init_points END,
-        number_attempts = iq.number_attempts + 1
-    FROM
-        assessment_questions AS aq
-    WHERE
-        iq.id = $instance_question_id
-        AND aq.id = iq.assessment_question_id
-    RETURNING
-        iq.*,
-        aq.max_points
-)
-INSERT INTO question_score_logs
-        (instance_question_id, auth_user_id, points, max_points,     score_perc)
-(
-    SELECT
-         id,                  $auth_user_id, points, max_points, score_perc
-    FROM results
-);
-
 -- BLOCK update_instance_question_in_grading
 UPDATE instance_questions AS iq
 SET
@@ -102,31 +74,6 @@ FROM
 WHERE
     iq.id = $instance_question_id
     AND aq.id = iq.assessment_question_id;
-
--- BLOCK update_assessment_instance_score
-WITH results AS (
-    UPDATE assessment_instances AS ai
-    SET
-        points = new_values.points,
-        points_in_grading = new_values.points_in_grading,
-        score_perc = new_values.score_perc,
-        score_perc_in_grading = new_values.score_perc_in_grading
-    FROM
-        assessment_points_homework($assessment_instance_id, $credit) AS new_values
-    WHERE
-        ai.id = $assessment_instance_id
-    RETURNING ai.*
-)
-INSERT INTO assessment_score_logs
-        (points, points_in_grading, max_points, score_perc,
-        score_perc_in_grading, assessment_instance_id, auth_user_id)
-(
-    SELECT
-         points, points_in_grading, max_points, score_perc,
-         score_perc_in_grading, id,                    $auth_user_id
-    FROM
-        results
-);
 
 -- BLOCK new_submission
 INSERT INTO submissions AS s

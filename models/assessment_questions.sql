@@ -4,6 +4,7 @@ CREATE TABLE IF NOT EXISTS assessment_questions (
     max_points DOUBLE PRECISION,
     points_list DOUBLE PRECISION[],
     init_points DOUBLE PRECISION,
+    force_max_points BOOLEAN DEFAULT FALSE,
     assessment_id BIGINT NOT NULL REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE,
     alternative_group_id BIGINT REFERENCES alternative_groups ON DELETE SET NULL ON UPDATE CASCADE,
     number_in_alternative_group INTEGER,
@@ -17,3 +18,4 @@ CREATE INDEX IF NOT EXISTS assessment_questions_alternative_group_id_idx ON asse
 
 
 ALTER TABLE assessment_questions ALTER COLUMN alternative_group_id DROP NOT NULL;
+ALTER TABLE assessment_questions ADD COLUMN IF NOT EXISTS force_max_points BOOLEAN DEFAULT FALSE;

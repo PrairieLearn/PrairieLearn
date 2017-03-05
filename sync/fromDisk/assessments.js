@@ -212,6 +212,8 @@ module.exports = {
                             qid: question.id,
                             maxPoints: question.maxPoints || dbQuestion.maxPoints,
                             points: question.points || dbQuestion.points,
+                            forceMaxPoints: _.has(question, 'forceMaxPoints') ? question.forceMaxPoints
+                                : (_.has(dbQuestion, 'forceMaxPoints') ? dbQuestion.forceMaxPoints : false),
                         };
                     });
                 } else if (_(dbQuestion).has('id')) {
@@ -220,6 +222,7 @@ module.exports = {
                             qid: dbQuestion.id,
                             maxPoints: dbQuestion.maxPoints,
                             points: dbQuestion.points,
+                            forceMaxPoints: _.has(dbQuestion, 'forceMaxPoints') ? dbQuestion.forceMaxPoints : false,
                         }
                     ];
                 } else {
@@ -275,7 +278,7 @@ module.exports = {
                     async.eachSeries(alternatives, function(alternative, callback) {
                         iAssessmentQuestion++;
                         iInAlternativeGroup++;
-                        that.syncAssessmentQuestion(alternative.qid, alternative.maxPoints, alternative.pointsList, alternative.initPoints, iInAlternativeGroup, iAssessmentQuestion, assessmentId, alternative_group_id, courseInfo, function(err, assessmentQuestionId) {
+                        that.syncAssessmentQuestion(alternative.qid, alternative.maxPoints, alternative.pointsList, alternative.initPoints, alternative.forceMaxPoints, iInAlternativeGroup, iAssessmentQuestion, assessmentId, alternative_group_id, courseInfo, function(err, assessmentQuestionId) {
                             if (ERR(err, callback)) return;
                             assessmentQuestionIds.push(assessmentQuestionId);
                             callback(null);
@@ -313,7 +316,7 @@ module.exports = {
         });
     },
 
-    syncAssessmentQuestion: function(qid, maxPoints, pointsList, initPoints, iInAlternativeGroup, iAssessmentQuestion, assessmentId, alternative_group_id, courseInfo, callback) {
+    syncAssessmentQuestion: function(qid, maxPoints, pointsList, initPoints, forceMaxPoints, iInAlternativeGroup, iAssessmentQuestion, assessmentId, alternative_group_id, courseInfo, callback) {
         var params = {
             qid: qid,
             course_id: courseInfo.courseId,
@@ -329,6 +332,7 @@ module.exports = {
                 max_points: maxPoints,
                 points_list: pointsList,
                 init_points: initPoints,
+                force_max_points: forceMaxPoints,
                 assessment_id: assessmentId,
                 question_id: questionId,
                 alternative_group_id: alternative_group_id,

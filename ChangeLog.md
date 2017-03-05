@@ -3,6 +3,8 @@
 
 * __2.3.0__ - unreleased
 
+  * Add regrading support with `forceMaxPoints` option.
+
   * Add preliminary external autograder support by the HackIllinois team
     (Jordi Ferrer, Genna Helsel, Teju Nareddy, Nathan Walters).
 

@@ -5,7 +5,7 @@ var assert = require('assert');
 var courseDB = require('../lib/course-db');
 var logger = require('./dummyLogger');
 
-var courseDir = '../exampleCourse';
+var courseDir = 'exampleCourse';
 
 describe('courseDB.loadFullCourse()', function() {
 

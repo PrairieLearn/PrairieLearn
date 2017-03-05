@@ -17,7 +17,7 @@ var server = require('../server');
 var logger = require('./dummyLogger');
 var testHelperDb = require('./testHelperDb');
 
-var courseDir = '../exampleCourse';
+var courseDir = 'exampleCourse';
 
 module.exports = {
     before: function(callback) {
@@ -58,6 +58,12 @@ module.exports = {
         async.series([
             function(callback) {
                 testHelperDb.after(function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            function(callback) {
+                server.stopServer(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });

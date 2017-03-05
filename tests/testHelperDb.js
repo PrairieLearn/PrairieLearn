@@ -15,8 +15,6 @@ var postgresqlDatabase = 'pltest';
 var postgresqlHost = 'localhost';
 var initConString = 'postgres://localhost/postgres';
 
-var courseDir = '../exampleCourse';
-
 module.exports = {
     before: function(callback) {
         // long timeout because DROP DATABASE might take a long time to error

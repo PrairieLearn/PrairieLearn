@@ -133,6 +133,7 @@
                 "points": {"$ref": "#/definitions/points"},
                 "maxPoints": {"$ref": "#/definitions/points"},
                 "id": {"$ref": "#/definitions/questionId"},
+                "forceMaxPoints": {"$ref": "#/definitions/forceMaxPoints"},
                 "alternatives": {
                     "description": "Array of question alternatives to choose from.",
                     "type": "array",
@@ -152,7 +153,8 @@
             "properties": {
                 "points": {"$ref": "#/definitions/points"},
                 "maxPoints": {"$ref": "#/definitions/points"},
-                "id": {"$ref": "#/definitions/questionId"}
+                "id": {"$ref": "#/definitions/questionId"},
+                "forceMaxPoints": {"$ref": "#/definitions/forceMaxPoints"}
             }
         },
         "points": {
@@ -176,6 +178,11 @@
         "questionId": {
             "description": "Question ID (directory name of the question).",
             "type": "string"
+        },
+        "forceMaxPoints": {
+            "description": "Whether to force this question to be awarded maximum points on a regrade.",
+            "type": "boolean",
+            "default": false
         }
     }
 }
