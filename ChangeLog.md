@@ -1,6 +1,8 @@
 
 # ChangeLog
 
+  * Add regrading support with `forceMaxPoints` option.
+
 * __2.2.1__ - 2017-02-18
 
   * Only show feedback for open exams in CS 233.
