@@ -4,9 +4,10 @@ var assert = require('assert');
 var request = require('request');
 var cheerio = require('cheerio');
 
+var config = require('../lib/config');
 var testHelperServer = require('./testHelperServer');
 
-var baseUrl = 'http://localhost:3000/pl';
+var baseUrl = 'http://localhost:' + config.serverPort + '/pl';
 
 describe('GET /pl', function() {
 
