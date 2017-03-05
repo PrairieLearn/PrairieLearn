@@ -40,18 +40,19 @@ BEGIN
         status := 'complete';
         points := iq.current_value;
         score_perc := points / (CASE WHEN aq.max_points > 0 THEN aq.max_points ELSE 1 END) * 100;
-        current_value := iq.points_list[iq.number_attempts + 2];
+        current_value := NULL;
     ELSE
-        IF iq.number_attempts + 1 < cardinality(iq.points_list) THEN
+        IF iq.number_attempts + 2 <= cardinality(iq.points_list) THEN
             open := TRUE;
             status := 'incorrect';
+            current_value := iq.points_list[iq.number_attempts + 2];
         ELSE
             open := FALSE;
             status := 'complete';
+            current_value := NULL;
         END IF;
         points := 0;
         score_perc := 0;
-        current_value := NULL;
     END IF;
 END;
 $$ LANGUAGE plpgsql STABLE;
