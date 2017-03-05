@@ -21,8 +21,8 @@
         {
             "title": "Hard questions",
             "questions": [
-                {"id": "fibonacciExternal", "points": [10, 10, 7, 3, 1, 0.5, 0.25]},
-                {"id": "addVectors",        "points": [10, 10, 7, 3, 1, 0.5, 0.25]}
+                {"id": "addVectors",       "points": [10, 10, 7, 3, 1]},
+                {"id": "fossilFuelsRadio", "points": [10, 5, 1]}
             ]
         }
     ],

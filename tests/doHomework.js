@@ -25,7 +25,7 @@ describe('Homework assessment', function() {
     var res, page, $, elemList;
     var assessment_id, assessment_instance, instance_questions, variant, submission;
     var csrfToken, instance_question, instance_question_1_id, instance_question_2_id;
-    var questionTests = [];
+    var locals = {};
 
     describe('database', function() {
         it('should contain HW1', function(callback) {
@@ -146,218 +146,10 @@ describe('Homework assessment', function() {
         });
     });
 
-    describe('setting up question tests', function() {
-        it('should set up test 0 for question 1 being correct', function() {
-            questionTests.push({
-                instance_question_id: instance_questions[0].id,
-                expectedResult: {
-                    submission_score: 1,
-                    submission_correct: true,
-                    instance_question_points: 1,
-                    instance_question_score_perc: 1/5 * 100,
-                    assessment_instance_points: 1,
-                    assessment_instance_score_perc: 1/15 * 100,
-                },
-                getSubmittedAnswer: function(variant) {
-                    return {
-                        wx: variant.true_answer.wx,
-                        wy: variant.true_answer.wy,
-                    };
-                },
-            });
-        });
-        it('should set up test 1 for question 2 being correct', function() {
-            questionTests.push({
-                instance_question_id: instance_questions[1].id,
-                expectedResult: {
-                    submission_score: 1,
-                    submission_correct: true,
-                    instance_question_points: 2,
-                    instance_question_score_perc: 2/10 * 100,
-                    assessment_instance_points: 3,
-                    assessment_instance_score_perc: 3/15 * 100,
-                },
-                getSubmittedAnswer: function(variant) {
-                    return {
-                        key: variant.true_answer.key,
-                    };
-                },
-            });
-        });
-        it('should set up test 2 for question 1 being incorrect', function() {
-            questionTests.push({
-                instance_question_id: instance_questions[0].id,
-                expectedResult: {
-                    submission_score: 0,
-                    submission_correct: false,
-                    instance_question_points: 1,
-                    instance_question_score_perc: 1/5 * 100,
-                    assessment_instance_points: 3,
-                    assessment_instance_score_perc: 3/15 * 100,
-                },
-                getSubmittedAnswer: function(variant) {
-                    return {
-                        wx: 400,
-                        wy: -700,
-                    };
-                },
-            });
-        });
-        it('should set up test 3 for question 1 being correct', function() {
-            questionTests.push({
-                instance_question_id: instance_questions[0].id,
-                expectedResult: {
-                    submission_score: 1,
-                    submission_correct: true,
-                    instance_question_points: 2,
-                    instance_question_score_perc: 2/5 * 100,
-                    assessment_instance_points: 4,
-                    assessment_instance_score_perc: 4/15 * 100,
-                },
-                getSubmittedAnswer: function(variant) {
-                    return {
-                        wx: variant.true_answer.wx,
-                        wy: variant.true_answer.wy,
-                    };
-                },
-            });
-        });
-        it('should set up test 4 for question 1 being correct', function() {
-            questionTests.push({
-                instance_question_id: instance_questions[0].id,
-                expectedResult: {
-                    submission_score: 1,
-                    submission_correct: true,
-                    instance_question_points: 4,
-                    instance_question_score_perc: 4/5 * 100,
-                    assessment_instance_points: 6,
-                    assessment_instance_score_perc: 6/15 * 100,
-                },
-                getSubmittedAnswer: function(variant) {
-                    return {
-                        wx: variant.true_answer.wx,
-                        wy: variant.true_answer.wy,
-                    };
-                },
-            });
-        });
-        it('should set up test 5 for question 1 being correct', function() {
-            questionTests.push({
-                instance_question_id: instance_questions[0].id,
-                expectedResult: {
-                    submission_score: 1,
-                    submission_correct: true,
-                    instance_question_points: 5,
-                    instance_question_score_perc: 5/5 * 100,
-                    assessment_instance_points: 7,
-                    assessment_instance_score_perc: 7/15 * 100,
-                },
-                getSubmittedAnswer: function(variant) {
-                    return {
-                        wx: variant.true_answer.wx,
-                        wy: variant.true_answer.wy,
-                    };
-                },
-            });
-        });
-        it('should set up test 6 for question 2 being correct', function() {
-            questionTests.push({
-                instance_question_id: instance_questions[1].id,
-                expectedResult: {
-                    submission_score: 1,
-                    submission_correct: true,
-                    instance_question_points: 6,
-                    instance_question_score_perc: 6/10 * 100,
-                    assessment_instance_points: 11,
-                    assessment_instance_score_perc: 11/15 * 100,
-                },
-                getSubmittedAnswer: function(variant) {
-                    return {
-                        key: variant.true_answer.key,
-                    };
-                },
-            });
-        });
-        it('should set up test 7 for question 2 being incorrect', function() {
-            questionTests.push({
-                instance_question_id: instance_questions[1].id,
-                expectedResult: {
-                    submission_score: 0,
-                    submission_correct: false,
-                    instance_question_points: 6,
-                    instance_question_score_perc: 6/10 * 100,
-                    assessment_instance_points: 11,
-                    assessment_instance_score_perc: 11/15 * 100,
-                },
-                getSubmittedAnswer: function(variant) {
-                    return {
-                        key: (variant.true_answer.key == 'a') ? 'b' : 'a',
-                    };
-                },
-            });
-        });
-        it('should set up test 8 for question 2 being correct', function() {
-            questionTests.push({
-                instance_question_id: instance_questions[1].id,
-                expectedResult: {
-                    submission_score: 1,
-                    submission_correct: true,
-                    instance_question_points: 8,
-                    instance_question_score_perc: 8/10 * 100,
-                    assessment_instance_points: 13,
-                    assessment_instance_score_perc: 13/15 * 100,
-                },
-                getSubmittedAnswer: function(variant) {
-                    return {
-                        key: variant.true_answer.key,
-                    };
-                },
-            });
-        });
-        it('should set up test 9 for question 2 being correct', function() {
-            questionTests.push({
-                instance_question_id: instance_questions[1].id,
-                expectedResult: {
-                    submission_score: 1,
-                    submission_correct: true,
-                    instance_question_points: 10,
-                    instance_question_score_perc: 10/10 * 100,
-                    assessment_instance_points: 15,
-                    assessment_instance_score_perc: 15/15 * 100,
-                },
-                getSubmittedAnswer: function(variant) {
-                    return {
-                        key: variant.true_answer.key,
-                    };
-                },
-            });
-        });
-        it('should set up test 10 for question 2 being correct', function() {
-            questionTests.push({
-                instance_question_id: instance_questions[1].id,
-                expectedResult: {
-                    submission_score: 1,
-                    submission_correct: true,
-                    instance_question_points: 10,
-                    instance_question_score_perc: 10/10 * 100,
-                    assessment_instance_points: 15,
-                    assessment_instance_score_perc: 15/15 * 100,
-                },
-                getSubmittedAnswer: function(variant) {
-                    return {
-                        key: variant.true_answer.key,
-                    };
-                },
-            });
-        });
-    });
-    
-    describe('doing questions', function() {
-        _.range(11).forEach(function(iTest) {
-            var questionData, variant, res, page, submittedAnswer;
-        
-            it(iTest + ' GET should load successfully', function(callback) {
-                var instanceQuestionUrl = courseInstanceBaseUrl + '/instance_question/' + questionTests[iTest].instance_question_id;
+    var doSubmission = function() {
+        describe('GET to instance_question URL', function() {
+            it('should load successfully', function(callback) {
+                var instanceQuestionUrl = courseInstanceBaseUrl + '/instance_question/' + locals.instance_question_id;
                 request(instanceQuestionUrl, function (error, response, body) {
                     if (error) {
                         return callback(error);
@@ -370,27 +162,27 @@ describe('Homework assessment', function() {
                     callback(null);
                 })
             });
-            it(iTest + ' GET should parse', function() {
+            it('should parse', function() {
                 $ = cheerio.load(page);
             });
-            it(iTest + ' GET should contain question-data', function() {
+            it('should contain question-data', function() {
                 elemList = $('.question-data');
                 elemList.length.should.equal(1);
             });
-            it(iTest + ' GET question-data should contain base64 data', function() {
+            it('question-data should contain base64 data', function() {
                 should.exist(elemList[0].children);
                 should.exist(elemList[0].children[0]);
                 should.exist(elemList[0].children[0].data);
             });
-            it(iTest + ' GET base64 data should parse to JSON', function() {
+            it('base64 data should parse to JSON', function() {
                 questionData = JSON.parse(new Buffer(elemList[0].children[0].data, 'base64').toString());
             });
-            it(iTest + ' GET should have a variant_id in the questionData', function() {
+            it('should have a variant_id in the questionData', function() {
                 questionData.should.have.property('variant');
                 variant = questionData.variant;
                 variant.should.have.property('id');
             });
-            it(iTest + ' GET should have the variant in the DB', function(callback) {
+            it('should have the variant in the DB', function(callback) {
                 var params = {
                     variant_id: variant.id,
                     instance_question_id: variant.instance_question_id,
@@ -401,10 +193,10 @@ describe('Homework assessment', function() {
                     callback(null);
                 });
             });
-            it(iTest + ' GET should have the correct variant.instance_question_id', function() {
-                assert.equal(variant.instance_question_id, questionTests[iTest].instance_question_id);
+            it('should have the correct variant.instance_question_id', function() {
+                assert.equal(variant.instance_question_id, locals.instance_question_id);
             });
-            it(iTest + ' GET should have a CSRF token', function() {
+            it('should have a CSRF token', function() {
                 elemList = $('.question-form input[name="csrfToken"]');
                 elemList.length.should.equal(1);
                 elemList[0].should.have.property('attribs');
@@ -413,32 +205,34 @@ describe('Homework assessment', function() {
                 csrfToken.should.be.a.String();
                 csrfToken.length.should.be.above(10);
             });
-            it(iTest + ' POST should generate the submittedAnswer', function() {
-                submittedAnswer = questionTests[iTest].getSubmittedAnswer(variant);
+        });
+        describe('POST to instance_question URL', function() {
+            it('should generate the submittedAnswer', function() {
+                submittedAnswer = locals.getSubmittedAnswer(variant);
             });
-            it(iTest + ' POST should load successfully', function(callback) {
-                var instanceQuestionUrl = courseInstanceBaseUrl + '/instance_question/' + questionTests[iTest].instance_question_id;
+            it('should load successfully', function(callback) {
+                var instanceQuestionUrl = courseInstanceBaseUrl + '/instance_question/' + locals.instance_question_id;
                 var form = {
                     postAction: 'submitQuestionAnswer',
                     csrfToken: csrfToken,
                     postData: JSON.stringify({variant, submittedAnswer}),
                 };
-                request.post({url: instanceQuestionUrl, form: form}, function (error, response, body) {
+                request.post({url: instanceQuestionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 302) {
-                        return callback(new Error('bad status (expected 302): ' + response.statusCode));
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
                     }
                     res = response;
                     page = body;
                     callback(null);
                 })
             });
-            it(iTest + ' POST should parse', function() {
+            it('should parse', function() {
                 $ = cheerio.load(page);
             });
-            it(iTest + ' POST should create one submission', function(callback) {
+            it('should create one submission', function(callback) {
                 var params = {variant_id: variant.id};
                 sqldb.query(sql.select_submission_for_variant, params, function(err, result) {
                     if (ERR(err, callback)) return;
@@ -449,18 +243,18 @@ describe('Homework assessment', function() {
                     callback(null);
                 });
             });
-            it(iTest + ' POST should have the correct submission.variant_id', function() {
+            it('should have the correct submission.variant_id', function() {
                 assert.equal(submission.variant_id, variant.id);
             });
-            it(iTest + ' POST should be graded with expected score', function() {
-                assert.equal(submission.score, questionTests[iTest].expectedResult.submission_score);
+            it('should be graded with expected score', function() {
+                assert.equal(submission.score, locals.expectedResult.submission_score);
             });
-            it(iTest + ' POST should be graded with expected correctness', function() {
-                assert.equal(submission.correct, questionTests[iTest].expectedResult.submission_correct);
+            it('should be graded with expected correctness', function() {
+                assert.equal(submission.correct, locals.expectedResult.submission_correct);
             });
-            it(iTest + ' POST should still have the instance_question', function(callback) {
+            it('should still have the instance_question', function(callback) {
                 var params = {
-                    instance_question_id: questionTests[iTest].instance_question_id,
+                    instance_question_id: locals.instance_question_id,
                 };
                 sqldb.queryOneRow(sql.select_instance_question, params, function(err, result) {
                     if (ERR(err, callback)) return;
@@ -468,13 +262,13 @@ describe('Homework assessment', function() {
                     callback(null);
                 });
             });
-            it(iTest + ' POST should update instance_question points', function() {
-                instance_question.points.should.equal(questionTests[iTest].expectedResult.instance_question_points);
+            it('should update instance_question points', function() {
+                instance_question.points.should.equal(locals.expectedResult.instance_question_points);
             });
-            it(iTest + ' POST should update instance_question score_perc', function() {
-                instance_question.score_perc.should.be.approximately(questionTests[iTest].expectedResult.instance_question_score_perc, 1e-6);
+            it('should update instance_question score_perc', function() {
+                instance_question.score_perc.should.be.approximately(locals.expectedResult.instance_question_score_perc, 1e-6);
             });
-            it(iTest + ' POST should still have the assessment_instance', function(callback) {
+            it('should still have the assessment_instance', function(callback) {
                 var params = {
                     assessment_instance_id: assessment_instance.id,
                 };
@@ -484,12 +278,281 @@ describe('Homework assessment', function() {
                     callback(null);
                 });
             });
-            it(iTest + ' POST should update assessment_instance points', function() {
-                assessment_instance.points.should.equal(questionTests[iTest].expectedResult.assessment_instance_points);
+            it('should update assessment_instance points', function() {
+                assessment_instance.points.should.equal(locals.expectedResult.assessment_instance_points);
             });
-            it(iTest + ' POST should update assessment_instance score_perc', function() {
-                assessment_instance.score_perc.should.be.approximately(questionTests[iTest].expectedResult.assessment_instance_score_perc, 1e-6);
+            it('should update assessment_instance score_perc', function() {
+                assessment_instance.score_perc.should.be.approximately(locals.expectedResult.assessment_instance_score_perc, 1e-6);
             });
         });
+    };
+
+    describe('submit correct answer to question 1', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals = {
+                    instance_question_id: instance_questions[0].id,
+                    expectedResult: {
+                        submission_score: 1,
+                        submission_correct: true,
+                        instance_question_points: 1,
+                        instance_question_score_perc: 1/5 * 100,
+                        assessment_instance_points: 1,
+                        assessment_instance_score_perc: 1/15 * 100,
+                    },
+                    getSubmittedAnswer: function(variant) {
+                        return {
+                            wx: variant.true_answer.wx,
+                            wy: variant.true_answer.wy,
+                        };
+                    },
+                };
+            });
+        });
+        doSubmission();
+    });
+
+    describe('submit correct answer to question 2', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals = {
+                    instance_question_id: instance_questions[1].id,
+                    expectedResult: {
+                        submission_score: 1,
+                        submission_correct: true,
+                        instance_question_points: 2,
+                        instance_question_score_perc: 2/10 * 100,
+                        assessment_instance_points: 3,
+                        assessment_instance_score_perc: 3/15 * 100,
+                    },
+                    getSubmittedAnswer: function(variant) {
+                        return {
+                            key: variant.true_answer.key,
+                        };
+                    },
+                };
+            });
+        });
+        doSubmission();
+    });
+
+    describe('submit incorrect answer to question 1', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals = {
+                    instance_question_id: instance_questions[0].id,
+                    expectedResult: {
+                        submission_score: 0,
+                        submission_correct: false,
+                        instance_question_points: 1,
+                        instance_question_score_perc: 1/5 * 100,
+                        assessment_instance_points: 3,
+                        assessment_instance_score_perc: 3/15 * 100,
+                    },
+                    getSubmittedAnswer: function(variant) {
+                        return {
+                            wx: 400,
+                            wy: -700,
+                        };
+                    },
+                };
+            });
+        });
+        doSubmission();
+    });
+
+    describe('submit correct answer to question 1', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals = {
+                    instance_question_id: instance_questions[0].id,
+                    expectedResult: {
+                        submission_score: 1,
+                        submission_correct: true,
+                        instance_question_points: 2,
+                        instance_question_score_perc: 2/5 * 100,
+                        assessment_instance_points: 4,
+                        assessment_instance_score_perc: 4/15 * 100,
+                    },
+                    getSubmittedAnswer: function(variant) {
+                        return {
+                            wx: variant.true_answer.wx,
+                            wy: variant.true_answer.wy,
+                        };
+                    },
+                };
+            });
+        });
+        doSubmission();
+    });
+
+    describe('submit correct answer to question 1', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals = {
+                    instance_question_id: instance_questions[0].id,
+                    expectedResult: {
+                        submission_score: 1,
+                        submission_correct: true,
+                        instance_question_points: 4,
+                        instance_question_score_perc: 4/5 * 100,
+                        assessment_instance_points: 6,
+                        assessment_instance_score_perc: 6/15 * 100,
+                    },
+                    getSubmittedAnswer: function(variant) {
+                        return {
+                            wx: variant.true_answer.wx,
+                            wy: variant.true_answer.wy,
+                        };
+                    },
+                };
+            });
+        });
+        doSubmission();
+    });
+
+    describe('submit correct answer to question 1', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals = {
+                    instance_question_id: instance_questions[0].id,
+                    expectedResult: {
+                        submission_score: 1,
+                        submission_correct: true,
+                        instance_question_points: 5,
+                        instance_question_score_perc: 5/5 * 100,
+                        assessment_instance_points: 7,
+                        assessment_instance_score_perc: 7/15 * 100,
+                    },
+                    getSubmittedAnswer: function(variant) {
+                        return {
+                            wx: variant.true_answer.wx,
+                            wy: variant.true_answer.wy,
+                        };
+                    },
+                };
+            });
+        });
+        doSubmission();
+    });
+
+    describe('submit correct answer to question 2', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals = {
+                    instance_question_id: instance_questions[1].id,
+                    expectedResult: {
+                        submission_score: 1,
+                        submission_correct: true,
+                        instance_question_points: 6,
+                        instance_question_score_perc: 6/10 * 100,
+                        assessment_instance_points: 11,
+                        assessment_instance_score_perc: 11/15 * 100,
+                    },
+                    getSubmittedAnswer: function(variant) {
+                        return {
+                            key: variant.true_answer.key,
+                        };
+                    },
+                };
+            });
+        });
+        doSubmission();
+    });
+
+    describe('submit incorrect answer to question 2', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals = {
+                    instance_question_id: instance_questions[1].id,
+                    expectedResult: {
+                        submission_score: 0,
+                        submission_correct: false,
+                        instance_question_points: 6,
+                        instance_question_score_perc: 6/10 * 100,
+                        assessment_instance_points: 11,
+                        assessment_instance_score_perc: 11/15 * 100,
+                    },
+                    getSubmittedAnswer: function(variant) {
+                        return {
+                            key: (variant.true_answer.key == 'a') ? 'b' : 'a',
+                        };
+                    },
+                };
+            });
+        });
+        doSubmission();
+    });
+
+    describe('submit correct answer to question 2', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals = {
+                    instance_question_id: instance_questions[1].id,
+                    expectedResult: {
+                        submission_score: 1,
+                        submission_correct: true,
+                        instance_question_points: 8,
+                        instance_question_score_perc: 8/10 * 100,
+                        assessment_instance_points: 13,
+                        assessment_instance_score_perc: 13/15 * 100,
+                    },
+                    getSubmittedAnswer: function(variant) {
+                        return {
+                            key: variant.true_answer.key,
+                        };
+                    },
+                };
+            });
+        });
+        doSubmission();
+    });
+
+    describe('submit correct answer to question 2', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals = {
+                    instance_question_id: instance_questions[1].id,
+                    expectedResult: {
+                        submission_score: 1,
+                        submission_correct: true,
+                        instance_question_points: 10,
+                        instance_question_score_perc: 10/10 * 100,
+                        assessment_instance_points: 15,
+                        assessment_instance_score_perc: 15/15 * 100,
+                    },
+                    getSubmittedAnswer: function(variant) {
+                        return {
+                            key: variant.true_answer.key,
+                        };
+                    },
+                };
+            });
+        });
+        doSubmission();
+    });
+
+    describe('submit correct answer to question 2', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals = {
+                    instance_question_id: instance_questions[1].id,
+                    expectedResult: {
+                        submission_score: 1,
+                        submission_correct: true,
+                        instance_question_points: 10,
+                        instance_question_score_perc: 10/10 * 100,
+                        assessment_instance_points: 15,
+                        assessment_instance_score_perc: 15/15 * 100,
+                    },
+                    getSubmittedAnswer: function(variant) {
+                        return {
+                            key: variant.true_answer.key,
+                        };
+                    },
+                };
+            });
+        });
+        doSubmission();
     });
 });
