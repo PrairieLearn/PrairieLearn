@@ -3,7 +3,7 @@
 
 Despite all our best efforts, sometimes we put a broken question onto an exam. The recommended procedure for dealing with this situation is:
 
-1. If the error is detected when just a small number of students have taken the exam, correct the question or replace it with a new question. The small number of students who were affected can have their scores adjusted by hand, perhaps with some correction factor for the added challenge they faced by encountering a broken question.
+1. If the error is detected when just a small number of students have taken the exam, correct the question or replace it with a new question. Either regrade the broken question with maximum points (see below) or adjust the scores of affected students by hand, perhaps with some correction factor for the added challenge they faced by encountering a broken question.
 
 2. If many students have taken the exam with the broken question then do not attempt to fix it but rather let the exam complete with all students experiencing the same issue. Then afterwards regrade the exam with all students being awarded maximum points for the broken question, as described below.
 
@@ -59,8 +59,14 @@ Generally it is preferred to take the second approach above and to award maximum
 
 The procedure to regrade an assessment is:
 
-1. First update the `infoAssessment.json` file with `"forceMaxPoints"` as described above, and sync this to the live PrairieLearn server.
+1. First update the `infoAssessment.json` file with `"forceMaxPoints": true` as described above, and sync this to the live PrairieLearn server.
 
-2. Go to the instructor page for the assessment and click the "Regrade all students" button at the top of the "Assessment instances" box, or use the "Action" menu to regrade a single assessment instance.
+1. Go to the instructor page for the assessment and click the "Regrade all students" button at the top of the "Assessment instances" box, or use the "Action" menu to regrade a single assessment instance.
 
-Note that `"forceMaxPoints"` on a question only takes affect during a regrade, and has no effect while students are taking an assessment normally. For this reason you should make sure to do a regrade after all students have completed the assessment. Regrading multiple times will not have any negative impact, so it's fine to regrade while some students still need to take the assessment, and then again when all students have finished. Results may be surprising to students if they are regraded while taking their test, so this is best avoided, although there will be no lasting negative effect.
+## Notes on the regrading procedure
+
+1. Once an assessment question has `"forceMaxPoints": true` set, any student who is still doing the assessment will automatically be awarded full points for that question when they grade a submission, irrespective of whether they submitted a correct or incorrect answer. However, the correctness of their answer will still be reported to them so a student might see an "incorrect" submission but receive full points for it.
+
+1. Regrading an assessment multiple times will not have any negative impact. However, after regrading with `"forceMaxPoints": true`, if you later set `"forceMaxPoints": false` and regrade again then the points will not be downgraded back to their old values. That is, once points are awarded they can't be taken away again.
+
+1. It is generally recommended that regrading not be performed while students are currently doing an assessment. There is no danger in doing so, but it might be confusing to students to see their points changing unrelated to their actions.
