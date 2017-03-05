@@ -397,8 +397,8 @@ describe('Exam assessment', function() {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 403) {
-                        return callback(new Error('bad status (expected 403): ' + response.statusCode));
+                    if (response.statusCode != 500) {
+                        return callback(new Error('bad status (expected 500): ' + response.statusCode));
                     }
                     res = response;
                     page = body;
@@ -474,8 +474,8 @@ describe('Exam assessment', function() {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 403) {
-                        return callback(new Error('bad status (expected 403): ' + response.statusCode));
+                    if (response.statusCode != 500) {
+                        return callback(new Error('bad status (expected 500): ' + response.statusCode));
                     }
                     res = response;
                     page = body;
