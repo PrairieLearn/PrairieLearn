@@ -5,13 +5,14 @@ var should = require('should');
 var request = require('request');
 var cheerio = require('cheerio');
 
+var config = require('../lib/config');
 var sqldb = require('../lib/sqldb');
 var sqlLoader = require('../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var testHelperServer = require('./testHelperServer');
 
-var siteUrl = 'http://localhost:3000';
+var siteUrl = 'http://localhost:' + config.serverPort;
 var baseUrl = siteUrl + '/pl';
 var courseInstanceBaseUrl = baseUrl + '/course_instance/1';
 var assessmentsUrl = courseInstanceBaseUrl + '/assessments';

@@ -12,6 +12,7 @@ var courseDB = require('../lib/course-db');
 var syncFromDisk = require('../sync/syncFromDisk');
 
 config.startServer = false;
+config.serverPort = 3007;
 var server = require('../server');
 
 var logger = require('./dummyLogger');

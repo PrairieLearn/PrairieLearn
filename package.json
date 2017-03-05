@@ -38,6 +38,6 @@
         "cheerio": "0.22.x"
     },
     "scripts": {
-        "test": "cd tests && ../node_modules/mocha/bin/mocha index.js"
+        "test": "node_modules/mocha/bin/mocha tests/index.js"
     }
 }

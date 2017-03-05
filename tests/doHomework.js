@@ -5,13 +5,14 @@ var should = require('should');
 var request = require('request');
 var cheerio = require('cheerio');
 
+var config = require('../lib/config');
 var sqldb = require('../lib/sqldb');
 var sqlLoader = require('../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var testHelperServer = require('./testHelperServer');
 
-var siteUrl = 'http://localhost:3000';
+var siteUrl = 'http://localhost:' + config.serverPort;
 var baseUrl = siteUrl + '/pl';
 var courseInstanceBaseUrl = baseUrl + '/course_instance/1';
 var assessmentsUrl = courseInstanceBaseUrl + '/assessments';
@@ -287,7 +288,7 @@ describe('Homework assessment', function() {
         });
     };
 
-    describe('submit correct answer to question 1', function() {
+    describe('1. submit correct answer to question 1', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -312,7 +313,7 @@ describe('Homework assessment', function() {
         doSubmission();
     });
 
-    describe('submit correct answer to question 2', function() {
+    describe('2. submit correct answer to question 2', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -336,7 +337,7 @@ describe('Homework assessment', function() {
         doSubmission();
     });
 
-    describe('submit incorrect answer to question 1', function() {
+    describe('3. submit incorrect answer to question 1', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -361,7 +362,7 @@ describe('Homework assessment', function() {
         doSubmission();
     });
 
-    describe('submit correct answer to question 1', function() {
+    describe('4. submit correct answer to question 1', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -386,7 +387,7 @@ describe('Homework assessment', function() {
         doSubmission();
     });
 
-    describe('submit correct answer to question 1', function() {
+    describe('5. submit correct answer to question 1', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -411,7 +412,7 @@ describe('Homework assessment', function() {
         doSubmission();
     });
 
-    describe('submit correct answer to question 1', function() {
+    describe('6. submit correct answer to question 1', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -436,7 +437,7 @@ describe('Homework assessment', function() {
         doSubmission();
     });
 
-    describe('submit correct answer to question 2', function() {
+    describe('7. submit correct answer to question 2', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -460,7 +461,7 @@ describe('Homework assessment', function() {
         doSubmission();
     });
 
-    describe('submit incorrect answer to question 2', function() {
+    describe('8. submit incorrect answer to question 2', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -484,7 +485,7 @@ describe('Homework assessment', function() {
         doSubmission();
     });
 
-    describe('submit correct answer to question 2', function() {
+    describe('9. submit correct answer to question 2', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -508,7 +509,7 @@ describe('Homework assessment', function() {
         doSubmission();
     });
 
-    describe('submit correct answer to question 2', function() {
+    describe('10. submit correct answer to question 2', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -532,7 +533,7 @@ describe('Homework assessment', function() {
         doSubmission();
     });
 
-    describe('submit correct answer to question 2', function() {
+    describe('11. submit correct answer to question 2', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
