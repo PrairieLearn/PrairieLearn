@@ -22,6 +22,7 @@ FROM
     assessment_instances AS ai
 WHERE
     ai.id = $assessment_instance_id
+    AND ai.open
 FOR UPDATE OF ai;
 
 -- BLOCK select_work_list
