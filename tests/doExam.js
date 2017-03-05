@@ -510,7 +510,6 @@ describe('Exam assessment', function() {
                 sqldb.queryOneRow(sql.select_instance_question, params, function(err, result) {
                     if (ERR(err, callback)) return;
                     instance_question = result.rows[0];
-                    console.log('instance_question', instance_question);
                     callback(null);
                 });
             });
@@ -544,7 +543,7 @@ describe('Exam assessment', function() {
         });
     };
 
-    describe('submit correct answer to question 1', function() {
+    describe('1. submit correct answer to question 1', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -562,7 +561,7 @@ describe('Exam assessment', function() {
         postInstanceQuestion();
     });
 
-    describe('submit incorrect answer to question 1', function() {
+    describe('2. submit incorrect answer to question 1', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -580,7 +579,7 @@ describe('Exam assessment', function() {
         postInstanceQuestion();
     });
 
-    describe('submit incorrect answer to question 2', function() {
+    describe('3. submit incorrect answer to question 2', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -597,7 +596,7 @@ describe('Exam assessment', function() {
         postInstanceQuestion();
     });
 
-    describe('grade exam', function() {
+    describe('4. grade exam', function() {
         getGradeAssessmentInstance();
         postGradeAssessmentInstance();
         describe('setting up the expected question 1 results', function() {
@@ -641,25 +640,7 @@ describe('Exam assessment', function() {
         checkAssessmentScore();
     });
 
-    describe('submit incorrect answer to question 1', function() {
-        describe('setting up the submission data', function() {
-            it('should succeed', function() {
-                locals = {
-                    instance_question_id: instance_questions[0].id,
-                    getSubmittedAnswer: function(variant) {
-                        return {
-                            wx: 1000,
-                            wy: -800,
-                        };
-                    },
-                };
-            });
-        });
-        getInstanceQuestion();
-        postInstanceQuestion();
-    });
-
-    describe('submit correct answer to question 2', function() {
+    describe('5. submit correct answer to question 2', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -676,7 +657,7 @@ describe('Exam assessment', function() {
         postInstanceQuestion();
     });
 
-    describe('load question 2 page and save data for later submission', function() {
+    describe('6. load question 2 page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -693,7 +674,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('grade exam', function() {
+    describe('7. grade exam', function() {
         getGradeAssessmentInstance();
         postGradeAssessmentInstance();
         describe('setting up the expected question 1 results', function() {
@@ -737,25 +718,7 @@ describe('Exam assessment', function() {
         checkAssessmentScore();
     });
 
-    describe('submit correct answer to question 1', function() {
-        describe('setting up the submission data', function() {
-            it('should succeed', function() {
-                locals = {
-                    instance_question_id: instance_questions[0].id,
-                    getSubmittedAnswer: function(variant) {
-                        return {
-                            wx: variant.true_answer.wx,
-                            wy: variant.true_answer.wy,
-                        };
-                    },
-                };
-            });
-        });
-        getInstanceQuestion();
-        postInstanceQuestion();
-    });
-
-    describe('submit correct answer to saved question 2 page', function() {
+    describe('8. submit correct answer to saved question 2 page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -777,7 +740,25 @@ describe('Exam assessment', function() {
         postInstanceQuestionAndFail();
     });
 
-    describe('load question 1 page and save data for later submission', function() {
+    describe('9. submit incorrect answer to question 1', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals = {
+                    instance_question_id: instance_questions[0].id,
+                    getSubmittedAnswer: function(variant) {
+                        return {
+                            wx: 2000,
+                            wy: -3000,
+                        };
+                    },
+                };
+            });
+        });
+        getInstanceQuestion();
+        postInstanceQuestion();
+    });
+
+    describe('10. load question 1 page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -794,7 +775,74 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('load assessment instance page and save data for later grade', function() {
+    describe('11. grade exam', function() {
+        getGradeAssessmentInstance();
+        postGradeAssessmentInstance();
+        describe('setting up the expected question 1 results', function() {
+            it('should succeed', function() {
+                locals = {
+                    instance_question_id: instance_questions[0].id,
+                    expectedResult: {
+                        submission_score: 0,
+                        submission_correct: false,
+                        instance_question_points: 0,
+                        instance_question_score_perc: 0,
+                    },
+                };
+            });
+        });
+        checkQuestionScore();
+        describe('setting up the expected question 2 results', function() {
+            it('should succeed', function() {
+                locals = {
+                    instance_question_id: instance_questions[1].id,
+                    expectedResult: {
+                        submission_score: 1,
+                        submission_correct: true,
+                        instance_question_points: 5,
+                        instance_question_score_perc: 5/10 * 100,
+                    },
+                };
+            });
+        });
+        checkQuestionScore();
+        describe('setting up the expected assessment results', function() {
+            it('should succeed', function() {
+                locals = {
+                    expectedResult: {
+                        assessment_instance_points: 5,
+                        assessment_instance_score_perc: 5/20 * 100,
+                    },
+                };
+            });
+        });
+        checkAssessmentScore();
+    });
+
+    describe('12. submit correct answer to saved question 1 page', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals = {
+                    instance_question_id: instance_questions[0].id,
+                    getSubmittedAnswer: function(variant) {
+                        return {
+                            wx: variant.true_answer.wx,
+                            wy: variant.true_answer.wy,
+                        };
+                    },
+                };
+            });
+        });
+        describe('restore saved data for submission', function() {
+            it('should succeed', function() {
+                variant = _.clone(savedVariant);
+                csrfToken = questionSavedCsrfToken;
+            });
+        });
+        postInstanceQuestionAndFail();
+    });
+
+    describe('13. load assessment instance page and save data for later grade', function() {
         getGradeAssessmentInstance();
         describe('save data for later grade', function() {
             it('should succeed', function() {
@@ -803,7 +851,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('load assessment instance page and save data for later finish', function() {
+    describe('14. load assessment instance page and save data for later finish', function() {
         getFinishAssessmentInstance();
         describe('save data for later finish', function() {
             it('should succeed', function() {
@@ -812,7 +860,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('finish exam', function() {
+    describe('15. finish exam', function() {
         getFinishAssessmentInstance();
         postFinishAssessmentInstance();
         describe('setting up the expected question 1 results', function() {
@@ -856,30 +904,7 @@ describe('Exam assessment', function() {
         checkAssessmentScore();
     });
 
-    describe('submit correct answer to saved question 1 page', function() {
-        describe('setting up the submission data', function() {
-            it('should succeed', function() {
-                locals = {
-                    instance_question_id: instance_questions[0].id,
-                    getSubmittedAnswer: function(variant) {
-                        return {
-                            wx: variant.true_answer.wx,
-                            wy: variant.true_answer.wy,
-                        };
-                    },
-                };
-            });
-        });
-        describe('restore saved data for submission', function() {
-            it('should succeed', function() {
-                variant = _.clone(savedVariant);
-                csrfToken = questionSavedCsrfToken;
-            });
-        });
-        postInstanceQuestionAndFail();
-    });
-
-    describe('grade exam', function() {
+    describe('16. grade exam', function() {
         describe('restore saved data for grade', function() {
             it('should succeed', function() {
                 csrfToken = assessmentGradeSavedCsrfToken;
@@ -888,7 +913,7 @@ describe('Exam assessment', function() {
         postGradeAssessmentInstanceAndFail();
     });
 
-    describe('finish exam', function() {
+    describe('17. finish exam', function() {
         describe('restore saved data for finish', function() {
             it('should succeed', function() {
                 csrfToken = assessmentFinishSavedCsrfToken;
