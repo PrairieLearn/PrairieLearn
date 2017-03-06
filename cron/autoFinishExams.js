@@ -17,7 +17,7 @@ module.exports.run = function(callback) {
         if (ERR(err, callback)) return;
         var examList = result.rows;
 
-        async.eachSeries(examList, function(examItem) {
+        async.eachSeries(examList, function(examItem, callback) {
             logger.verbose('autoFinishExams: finishing ' + examItem.assessment_instance_id, examItem);
             var auth_user_id = null; // graded by the system
             var finishExam = true; // close the exam after grading it
