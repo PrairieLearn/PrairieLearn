@@ -38,7 +38,8 @@ BEGIN
     IF correct THEN
         open := FALSE;
         status := 'complete';
-        points := iq.current_value;
+        points := iq.points_list[iq.number_attempts + 1];
+        -- FIXME: replace above expression with iq.current_value when all existing exams are over
         score_perc := points / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
         current_value := NULL;
     ELSE
