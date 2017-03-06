@@ -24,12 +24,12 @@ BEGIN
     FROM assessment_questions
     WHERE id = iq.assessment_question_id;
 
-    max_points := COALESCE(iq.points_list[0], 0);
+    max_points := COALESCE(aq.max_points, 0);
 
     IF aq.force_max_points THEN
         open := FALSE;
         status := 'complete';
-        points := iq.points_list[0];
+        points := aq.max_points;
         score_perc := 100;
         current_value := NULL;
         RETURN;
@@ -39,7 +39,7 @@ BEGIN
         open := FALSE;
         status := 'complete';
         points := iq.current_value;
-        score_perc := points / (CASE WHEN aq.max_points > 0 THEN aq.max_points ELSE 1 END) * 100;
+        score_perc := points / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
         current_value := NULL;
     ELSE
         IF iq.number_attempts + 2 <= cardinality(iq.points_list) THEN
