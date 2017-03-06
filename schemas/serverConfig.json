@@ -59,6 +59,14 @@
         "serverPort": {
             "description": "The TCP port number for the server.",
             "type": "string"
+        },
+        "cronIntervalMS": {
+            "description": "Time between cron job runs (milliseconds).",
+            "type": "integer"
+        },
+        "autoFinishAgeMins": {
+            "description": "Time after last activity when exams are auto-closed (minutes).",
+            "type": "integer"
         }
     }
 }

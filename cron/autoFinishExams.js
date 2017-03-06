@@ -11,7 +11,7 @@ var sqldb = require('../lib/sqldb');
 module.exports = {};
 
 module.exports.run = function(callback) {
-    var params = [6 * 60];
+    var params = [config.autoFinishAgeMins];
     sqldb.call('assessment_instances_select_for_auto_close', params, function(err, result) {
         if (ERR(err, callback)) return;
         var examList = result.rows;
