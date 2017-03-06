@@ -2,18 +2,17 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var async = require('async');
 
+var config = require('../lib/config');
 var logger = require('../lib/logger');
 var error = require('../lib/error');
 var assessmentsExam = require('../assessments/exam');
 var sqldb = require('../lib/sqldb');
-var sqlLoader = require('../lib/sql-loader');
-
-var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = {};
 
 module.exports.run = function(callback) {
-    sqldb.query(sql.select_exam_list, [], function(err, result) {
+    var params = [6 * 60];
+    sqldb.call('assessment_instances_select_for_auto_close', params, function(err, result) {
         if (ERR(err, callback)) return;
         var examList = result.rows;
 
