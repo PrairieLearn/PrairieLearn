@@ -65,7 +65,7 @@ The procedure to regrade an assessment is:
 
 ## Notes on the regrading procedure
 
-1. Once an assessment question has `"forceMaxPoints": true` set, any student who is still doing the assessment will automatically be awarded full points for that question when they grade a submission, irrespective of whether they submitted a correct or incorrect answer. However, the correctness of their answer will still be reported to them so a student might see an "incorrect" submission but receive full points for it.
+1. Once an assessment question has `"forceMaxPoints": true` set, any student who is still doing the assessment will automatically be awarded full points for that question when they grade a submission, irrespective of whether they submitted a correct or incorrect answer. However, the correctness of their answer will still be reported to them so a student might see an "incorrect" submission but receive full points for it. Also, they will not be given points for the question unless they submit an answer.
 
 1. Regrading an assessment multiple times will not have any negative impact. However, after regrading with `"forceMaxPoints": true`, if you later set `"forceMaxPoints": false` and regrade again then the points will not be downgraded back to their old values. That is, once points are awarded they can't be taken away again.
 
