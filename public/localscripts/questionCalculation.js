@@ -74,7 +74,7 @@ CalculationClient.prototype.renderQuestion = function(container, questionData) {
 };
 
 CalculationClient.prototype.renderSubmission = function(container, questionData, submissionIndex) {
-    this.qClient.renderSubmission(container, this.questionDataModel, this.appModel, questionData.submissions[submissionIndex].submitted_answer, submissionIndex);
+    this.qClient.renderSubmission(container, this.questionDataModel, this.appModel, questionData.submissions[submissionIndex].submitted_answer, questionData.submissions[submissionIndex].feedback, submissionIndex);
 };
 
 CalculationClient.prototype.renderAnswer = function(container, questionData) {
