@@ -3,6 +3,8 @@
 
 * __2.3.0__ - unreleased
 
+  * Fix auto-finishing of exams after a 6-hour timeout.
+
   * Add regrading support with `forceMaxPoints` option.
 
   * Add preliminary external autograder support by the HackIllinois team
