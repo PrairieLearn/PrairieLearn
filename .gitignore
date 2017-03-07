@@ -8,6 +8,9 @@
 v1/backend/node_modules/
 node_modules/
 
+# Custom startup script
+/start.sh
+
 # Server log files
 v1/backend/server.log
 /server.log
@@ -16,6 +19,7 @@ v1/backend/server.log
 v1/backend/config.json
 v1/backend/config.json.*
 /config.json
+/aws-config.json
 
 # Build files
 frontend-build/

@@ -362,12 +362,7 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            var ampqConfig = {
-                amqpAddress: config.amqpAddress,
-                amqpResultQueue: config.amqpResultQueue,
-                amqpStartQueue: config.amqpStartQueue,
-            };
-            messageQueue.init(ampqConfig, assessments.processGradingResult, function(err) {
+            messageQueue.init(assessments.processGradingResult, function(err) {
                 if (err) err = error.newMessage(err, 'Unable to connect to message queue');
                 if (ERR(err, callback)) return;
                 callback(null);
