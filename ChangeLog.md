@@ -1,7 +1,11 @@
 
 # ChangeLog
 
-* __2.3.0__ - unreleased
+* __2.3.0__ - 2017-03-08
+
+  * Change `feedback` to be visible for open questions on exams.
+
+  * Make `feedback` visible within `submission.html` (Ray Essick).
 
   * Fix auto-finishing of exams after a 6-hour timeout.
 
