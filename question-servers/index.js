@@ -103,6 +103,7 @@ module.exports = {
                     sqldb.queryWithClientOneRow(client, sql.update_submission, params, function(err, result) {
                         if (ERR(err, callback)) return;
                         var grading_log = result.rows[0];
+						console.log(grading_log);
                         callback(null, grading_log);
                     });
                 });
@@ -138,11 +139,13 @@ module.exports = {
         } else if (question.grading_method == 'Manual') {
             var params = {
                 submission_id: submission_id,
+                auth_user_id: auth_user_id,
                 grading_method: question.grading_method,
             };
             sqldb.queryWithClientOneRow(client, sql.update_submission_for_manual_grading, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 var grading_log = result.rows[0].grading_log;
+				console.log(grading_log);
                 callback(null, grading_log);
             });
         } else {

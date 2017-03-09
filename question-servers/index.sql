@@ -79,14 +79,15 @@ WITH submission_results AS (
         s.id = $submission_id
     RETURNING s.*
 )
-INSERT INTO grading_logs
+INSERT INTO grading_logs AS gl
         (submission_id, grading_requested_at, auth_user_id,  grading_method)
 (
     SELECT
          id,            CURRENT_TIMESTAMP,   $auth_user_id, $grading_method
     FROM
         submission_results
-);
+)
+RETURNING gl.*;
 
 -- BLOCK update_for_external_grading_job_submission
 WITH
