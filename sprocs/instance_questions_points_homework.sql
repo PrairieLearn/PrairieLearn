@@ -28,14 +28,6 @@ BEGIN
 
     open := TRUE;
 
-    IF aq.force_max_points THEN
-        points := aq.max_points;
-        score_perc := 100;
-        current_value := aq.max_points;
-        status := 'correct';
-        RETURN;
-    END IF;
-
     IF correct THEN
         points := least(iq.points + iq.current_value, aq.max_points);
         score_perc := points / (CASE WHEN aq.max_points > 0 THEN aq.max_points ELSE 1 END) * 100;
