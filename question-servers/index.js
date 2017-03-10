@@ -103,7 +103,6 @@ module.exports = {
                     sqldb.queryWithClientOneRow(client, sql.update_submission, params, function(err, result) {
                         if (ERR(err, callback)) return;
                         var grading_log = result.rows[0];
-						console.log(grading_log);
                         callback(null, grading_log);
                     });
                 });
@@ -132,7 +131,7 @@ module.exports = {
                     sqldb.queryWithClientOneRow(client, sql.insert_grading_log_for_external_grading, params, function(err, result) {
                         if (ERR(err, callback)) return;
                         var grading_log = result.rows[0];
-                        callback(null, grading_log, grading_log.id);
+                        callback(null, grading_log);
                     });
                 });
             });
@@ -144,8 +143,7 @@ module.exports = {
             };
             sqldb.queryWithClientOneRow(client, sql.update_submission_for_manual_grading, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                var grading_log = result.rows[0].grading_log;
-				console.log(grading_log);
+                var grading_log = result.rows[0];
                 callback(null, grading_log);
             });
         } else {
