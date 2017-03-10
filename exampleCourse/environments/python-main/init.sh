@@ -22,4 +22,4 @@ cp $TEST_DIR* $MERGE_DIR
 
 # create an ag user, if the dockerfile didn't already have one
 # if it did, the command just prints the warning, which is fine
-useradd ag
+#useradd ag
