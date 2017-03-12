@@ -8,5 +8,6 @@
     "gradingMethod": "External",
     "autogradingEnabled": true,
     "autograder": "child_pythondev",
-    "environment": "python-main"
+    "environment": "python-main",
+    "autograderImage": "prairielearn/centos7-base"
 }
