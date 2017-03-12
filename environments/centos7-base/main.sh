@@ -52,4 +52,8 @@ else
   echo "[${0##*/}] ERR: /grade/run.sh missing"
 fi
 
+# Let's zip up /grade and send it back to S3 for forensics
+tar -zcf /archive.tar.gz /grade/
+aws s3 cp /archive.tar.gz s3://$S3_ARCHIVES_BUCKET/job_$JOB_ID.tar.gz
+
 echo "[${0##*/}] finishing"
