@@ -12,7 +12,7 @@ if [ ! -d "environments/$1/" ]; then
 fi
 
 if [ ! -f "environments/$1/Dockerfile" ]; then
-  echo "ERR: environments/$1/Dockerfile is not present"
+  echo "ERR: environments/$1/Dockerfile does not exist" >& 2
   exit 3
 fi
 
@@ -20,7 +20,7 @@ cd environments/$1/
 docker build . -t prairielearn/$1:latest
 
 if [ $? -ne 0 ]; then
-  echo "ERR: building image failed. skipping upload."
+  echo "ERR: building image failed. skipping upload." >& 2
   exit 4
 fi
 
