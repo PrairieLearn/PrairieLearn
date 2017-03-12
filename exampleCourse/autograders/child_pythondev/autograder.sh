@@ -4,7 +4,7 @@
 # THIS IS IMPORTANT
 
 # this file is in /grade/run/autograder.sh, and its working directory will be the root (or either way we can be safe and cd to use anyways)
-cd grade/run/
+cd /grade/run/
 
 # give the ag user the ownership of it's small bin folder
 sudo chown ag bin
