@@ -20,6 +20,9 @@ cp $STUDENT_DIR* $BIN_DIR
 cp $SHARED_DIR* $MERGE_DIR
 cp $TEST_DIR* $MERGE_DIR
 
+# move our run script into its proper location
+cp $SHARED_DIR'run.sh' $JOB_DIR'run.sh'
+
 # create an ag user, if the dockerfile didn't already have one
 # if it did, the command just prints the warning, which is fine
 #useradd ag
