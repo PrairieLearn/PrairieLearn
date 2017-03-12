@@ -1,14 +1,18 @@
 
 # ChangeLog
 
-* __2.3.0__ - unreleased
+* __2.3.0__ - 2017-03-08
+
+  * Change `feedback` to be visible for open questions on exams.
+
+  * Make `feedback` visible within `submission.html` (Ray Essick).
 
   * Fix auto-finishing of exams after a 6-hour timeout.
 
   * Add regrading support with `forceMaxPoints` option.
 
   * Add preliminary external autograder support by the HackIllinois team
-    (Jordi Ferrer, Genna Helsel, Teju Nareddy, Nathan Walters).
+    (Genna Helsel, Teju Nareddy, Jordi Paris Ferrer, Nathan Walters).
 
   * Add question points and percentage scores to `*_final_submissions.csv`.
 
