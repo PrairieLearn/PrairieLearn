@@ -78,8 +78,12 @@
             "description": "The name of the autograder. Searches in currentClass/autograders/",
             "type": "string"
         },
-        "environment":{
+        "environment": {
             "description": "Which environment to set up. Will look in currentClass/environments/",
+            "type": "string"
+        },
+        "autograderImage": {
+            "description": "The Docker image that will be used to grade this question. Should be specified as Dockerhub image.",
             "type": "string"
         }
     }

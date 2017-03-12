@@ -15,4 +15,4 @@ ADD main.sh /
 
 RUN chmod +x /main.sh
 
-CMD sh /main.sh
+ENTRYPOINT ["sh",  "/main.sh"]

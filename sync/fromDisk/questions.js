@@ -58,6 +58,7 @@ module.exports = {
                         autograding_enabled: q.autogradingEnabled,
                         autograder: q.autograder,
                         environment: q.environment,
+                        autograder_image: q.autograderImage,
                     };
                     sqldb.queryOneRow(sql.insert_question, params, function(err, result) {
                         if (ERR(err, callback)) return;
