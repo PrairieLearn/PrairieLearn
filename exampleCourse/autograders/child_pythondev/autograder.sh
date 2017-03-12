@@ -15,7 +15,7 @@ sudo chmod -R +rw bin/
 
 echo "[ag] chmod"
 
-cd student
+cd bin
 
 echo "[ag] cded"
 
