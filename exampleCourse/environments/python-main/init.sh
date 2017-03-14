@@ -6,6 +6,7 @@ JOB_DIR='/grade/'
 STUDENT_DIR=$JOB_DIR'student/'
 SHARED_DIR=$JOB_DIR'shared/'
 TEST_DIR=$JOB_DIR'tests/'
+OUT_DIR=$JOB_DIR'results/'
 
 # where we will copy everything
 MERGE_DIR=$JOB_DIR'run/'
@@ -15,6 +16,7 @@ BIN_DIR=$MERGE_DIR'bin/'
 # now set up the stuff so that our run.sh can work
 mkdir $MERGE_DIR
 mkdir $BIN_DIR
+mkdir $OUT_DIR
 
 cp $STUDENT_DIR* $BIN_DIR
 cp $SHARED_DIR* $MERGE_DIR
