@@ -1,80 +1,81 @@
 import py_compile
 
 def main():
-    def test1():
+    def test1(out):
         trueAns = 1
-        studAns = fib.fib(1);
+        studAns = fib(1)
         maxpoints = '1'
 
-        f.write('test 1\n')
+        out.append("Test1")
 
         result = str(studAns == trueAns)
         if (result == 'True'):
             result = '1'
         else:
             result = '0'
-        f.write(result + '\n')
+        out.append(result)
 
-        f.write(maxpoints + '\n')
+        out.append(maxpoints)
 
         error = ""
         if (studAns != trueAns):
             error = "Your answer was wrong"
 
-        f.write(error + '\n')
+        output.append(error)
 
-    def test2():
+    def test2(out):
         trueAns = 0
-        studAns = fib.fib(0);
+        studAns = fib(0)
+        maxpoints = '1'
+
+        out.append("Test 2")
+
+        result = str(studAns == trueAns)
+        if (result == 'True'):
+            result = '1'
+        else:
+            result = '0'
+        out.append(result)
+
+        out.append(maxpoints)
+
+        error = ""
+        if (studAns != trueAns):
+            error = "Your answer was wrong"
+
+        out.append(error)
+
+    def test3(out):
+        trueAns = 13
+        studAns = fib(7)
         maxpoints = '2'
 
-        f.write('test 2\n')
+        out.append("Test 3")
 
         result = str(studAns == trueAns)
         if (result == 'True'):
             result = '2'
         else:
             result = '0'
-        f.write(result + '\n')
+        out.append(result)
 
-        f.write(maxpoints + '\n')
-
-        error = ""
-        if (studAns != trueAns):
-            error = "Your answer was wrong"
-
-        f.write(error + '\n')
-
-    def test3():
-        trueAns = 13
-        studAns = fib.fib(7);
-        maxpoints = '1'
-
-        f.write('test 3\n')
-
-        result = str(studAns == trueAns)
-        if (result == 'True'):
-            result = '1'
-        else:
-            result = '0'
-        f.write(result + '\n')
-
-        f.write(maxpoints + '\n')
+        out.append(maxpoints)
 
         error = ""
         if (studAns != trueAns):
             error = "Your answer was wrong"
 
-        f.write(error + '\n')
+        out.append(error)
 
-    f = open('results.txt', 'w')
+    output = []
     try:
-        py_compile.compile('fib.py', doraise=True)
+        py_compile.compile('bin/fib.py', doraise=True)
     except py_compile.PyCompileError:
-        f.write("compile error\n")
+        output.append("Compile error!")
     else:
-        import fib
-        test1()
-        test2()
-        test3()
-    f.close()
+        from bin.fib import fib
+        test1(output)
+        test2(output)
+        test3(output)
+    return "\n".join(output)
+

@@ -1,22 +1,22 @@
 # An example wrapper script that takes existing autograder output
 # and converts it to a format readable by the grading machine
 
-import student.autograder as ag
+# this wrapper is run as the ag user by autograder.sh
+
+import autograder as ag
 import os
 import json
 
 
 def main(job_id):
     # Call the autograder, we expect it to write to results.txt
-    ag.main()
+    output = ag.main()
 
     # Start generating the grading results json
     grading_result = {'job_id': job_id}
 
-    # Read all the lines from results.txt as a array and store in the grading_result
-    file = open('results.txt', 'r')
-    lines = file.readlines()
-    grading_result['output'] = file.read()
+    grading_result['output'] = output
+    lines = output.split("\n")
 
     earned_points = 0
     total_points = 0
@@ -60,10 +60,8 @@ def main(job_id):
     # Remove the results file
     # os.remove('results.txt')
 
-    # Write the grading results to a file
-    with open('/grade/results.json', 'w') as f:
-        json.dump(grading_result, f)
-
+    # Write the grading results to stdout
+    print(json.dumps(grading_result))
 if __name__ == '__main__':
     # Pass in a dummy job id
     main(49)
