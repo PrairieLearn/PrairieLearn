@@ -3,7 +3,7 @@
 
 # this wrapper is run as the ag user by autograder.sh
 
-import .bin.autograder as ag
+import autograder as ag
 import os
 import json
 
