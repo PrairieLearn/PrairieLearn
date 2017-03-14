@@ -11,6 +11,8 @@ import json
 def main(job_id):
     # Call the autograder, we expect it to write to results.txt
     output = ag.main()
+    print(output)
+
 
     # Start generating the grading results json
     grading_result = {'job_id': job_id}
@@ -31,13 +33,14 @@ def main(job_id):
         line_num = 0
         for i in range(0, int(len(lines) / 4)):
             test = {}
-            test['name'] = lines[line_num][:-1]
+            test['name'] = lines[line_num].rstrip('\n')
             test['id'] = i
-            test['point'] = lines[line_num + 1][:-1]
-            earned_points += int(lines[line_num + 1][:-1])
-            test['maxPoints'] = lines[line_num + 2][:-1]
-            total_points += int(lines[line_num + 2][:-1])
-            test['output'] = lines[line_num + 3][:-1]
+            print(lines[line_num+1].rstrip('\n'))
+            test['point'] = lines[line_num + 1].rstrip('\n')
+            earned_points += int(lines[line_num + 1].rstrip('\n'))
+            test['maxPoints'] = lines[line_num + 2].rstrip('\n')
+            total_points += int(lines[line_num + 2].rstrip('\n'))
+            test['output'] = lines[line_num + 3].rstrip('\n')
             test['message'] = ''
             line_num += 4
             tests.append(test)
