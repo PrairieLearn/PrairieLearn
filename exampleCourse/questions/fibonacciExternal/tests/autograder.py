@@ -6,7 +6,7 @@ def main():
         studAns = fib(1)
         maxpoints = '1'
 
-        out.append("Test1")
+        out.append("Test 1")
 
         result = str(studAns == trueAns)
         if (result == 'True'):
