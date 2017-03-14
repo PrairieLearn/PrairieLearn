@@ -3,7 +3,7 @@ import py_compile
 def main():
     def test1(out):
         trueAns = 1
-        studAns = fib.fib(1)
+        studAns = fib(1)
         maxpoints = '1'
 
         out.append("Test1")
@@ -25,7 +25,7 @@ def main():
 
     def test2(out):
         trueAns = 0
-        studAns = fib.fib(0)
+        studAns = fib(0)
         maxpoints = '1'
 
         out.append("Test 2")
@@ -43,11 +43,11 @@ def main():
         if (studAns != trueAns):
             error = "Your answer was wrong"
 
-        out.write(error)
+        out.append(error)
 
     def test3(out):
         trueAns = 13
-        studAns = fib.fib(7)
+        studAns = fib(7)
         maxpoints = '2'
 
         out.append("Test 3")
@@ -69,12 +69,13 @@ def main():
 
     output = []
     try:
-        py_compile.compile('fib.py', doraise=True)
+        py_compile.compile('bin/fib.py', doraise=True)
     except py_compile.PyCompileError:
         output.append("Compile error!")
     else:
-        import fib
+        from bin.fib import fib
         test1(output)
         test2(output)
         test3(output)
-    print(output.join("\n")
+    return "\n".join(output)
+

@@ -23,6 +23,10 @@ cp $TEST_DIR* $MERGE_DIR
 # move our run script into its proper location
 cp $SHARED_DIR'run.sh' $JOB_DIR'run.sh'
 
+# we need this to include code as python modules
+# There is already one in the /run directory, but we need one in the /run/bin directory as well
+echo "" > $BIN_DIR/__init__.py
+
 # create an ag user, if the dockerfile didn't already have one
 # if it did, the command just prints the warning, which is fine
 #useradd ag
