@@ -10,10 +10,12 @@ RUN yum -y update \
     && yum install -y python35u python35u-pip \
     && pip3.5 install awscli
 
+RUN useradd ag
+
 RUN mkdir /grade
 
 ADD main.sh /
 
 RUN chmod +x /main.sh
 
-ENTRYPOINT ["sh",  "/main.sh"]
+ENTRYPOINT ["/main.sh"]
