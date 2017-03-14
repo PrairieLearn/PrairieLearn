@@ -15,12 +15,12 @@ sudo chmod -R +rw bin/
 
 echo "[ag] chmod"
 
-cd bin
+#cd bin
 
-echo "[ag] cded"
+#echo "[ag] cded"
 
 # we do the capturing ourselves, so that only the stdout of the autograder is used and that we aren't relying on any files that the student code could easily create
 # we are also running the autograder as a limited user called ag
-sudo -H -u ag bash -c 'python ../autograder_wrapper.py' > results.json
+sudo -H -u ag bash -c 'python autograder_wrapper.py' > results.json
 
 echo "[ag] done"
