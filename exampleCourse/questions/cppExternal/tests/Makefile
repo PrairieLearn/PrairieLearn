@@ -8,7 +8,6 @@ EXENAME = tester
 
 all: tester
 
-
 tester: q1.o
 	$(LD) $(LDFLAGS) main.cpp q1.o -o $(EXENAME)
 
