@@ -1,4 +1,0 @@
-{
-"testingCompleted" : "true",tests: [
-{ "name": "test 1", "id": 1, "points": "10", "maxpoints": 10 },{ "name": "test 2", "id": 2, "points": "10", "maxpoints": 10},{ "name": "test 3", "id": 3, "points": "0", "maxpoints": 10},],
-"output": "All testing completed!"}
