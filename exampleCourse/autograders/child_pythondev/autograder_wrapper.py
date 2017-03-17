@@ -31,13 +31,13 @@ def main(job_id):
         line_num = 0
         for i in range(0, int(len(lines) / 4)):
             test = {}
-            test['name'] = lines[line_num][:-1]
+            test['name'] = lines[line_num].rstrip('\n')
             test['id'] = i
-            test['point'] = lines[line_num + 1][:-1]
-            earned_points += int(lines[line_num + 1][:-1])
-            test['maxPoints'] = lines[line_num + 2][:-1]
-            total_points += int(lines[line_num + 2][:-1])
-            test['output'] = lines[line_num + 3][:-1]
+            test['point'] = lines[line_num + 1].rstrip('\n')
+            earned_points += int(lines[line_num + 1].rstrip('\n'))
+            test['maxPoints'] = lines[line_num + 2].rstrip('\n')
+            total_points += int(lines[line_num + 2].rstrip('\n'))
+            test['output'] = lines[line_num + 3].rstrip('\n')
             test['message'] = ''
             line_num += 4
             tests.append(test)
@@ -45,8 +45,8 @@ def main(job_id):
         # Add the tests to the grading result
         grading_result['tests'] = tests
 
-        print("earned_points: ", earned_points);
-        print("total_points: ", total_points);
+        #print("earned_points: ", earned_points);
+        #print("total_points: ", total_points);
         grading_result['score'] = float(earned_points) / float(total_points)
 
     elif len(lines) == 1:

@@ -7,9 +7,23 @@ Despite all our best efforts, sometimes we put a broken question onto an exam. T
 
 2. If many students have taken the exam with the broken question then do not attempt to fix it but rather let the exam complete with all students experiencing the same issue. Then afterwards regrade the exam with all students being awarded maximum points for the broken question, as described below.
 
-## Awarding all students maximum points for a question
 
-To regrade an exam and award all students maximum points for a question, edit the [`infoAssessment.json`] file and set `"forceMaxPoints": true` for any broken questions. For example:
+## Regrading an assessment
+
+The procedure to regrade an assessment is:
+
+1. First update the `infoAssessment.json` file with `"forceMaxPoints": true` as described below, and sync this to the live PrairieLearn server.
+
+1. Go to the instructor page for the assessment and click the "Regrade all assessment instances" button at the top of the "Assessment instances" box, or use the "Action" menu to regrade a single assessment instance for just one student.
+
+**The `forceMaxPoints` setting only affects assessment instances that are explicitly regraded.** Students who take the exam later are not affected by `forceMaxPoints` in any way.
+
+Regrading an assessment instance while the student is still working on it will not have any negative effects, but it may be confusing to the student if they see their points suddenly change during an exam, for example.
+
+
+## Setting `forceMaxPoints` for a question
+
+To award some or all students maximum points for a question during a regrade, edit the [`infoAssessment.json`] file and set `"forceMaxPoints": true` for any broken questions. For example:
 
 ```json
 "zones": [
@@ -27,9 +41,9 @@ To regrade an exam and award all students maximum points for a question, edit th
             {"id": "reallyHardQ", "points": [10, 10, 10]},
             {
                 "numberChoose": 1,
-                "points": 5,
+                "points": 10,
                 "alternatives": [
-                    {"id": "FirstAltQ", "points": 10},
+                    {"id": "FirstAltQ"},
                     {"id": "SecondAltQ", "forceMaxPoints": true}
                 ]
             }
@@ -38,34 +52,23 @@ To regrade an exam and award all students maximum points for a question, edit th
 ],
 ```
 
-In the example above the questions `anEasyQ` and `SecondAltQ` will be regraded with maximum points being awarded to any student who has these questions. For questions that all students have this is straightforward. For questions with alternatives it is less clear. For example, consider the case when `SecondAltQ` is broken. We can either award maxinum points to only those students who received `SecondAltQ`, while students with `FirstAltQ` are not regraded, or we could give maximum points to all students irrespective of which alternative they received, as follows:
+In the example above the questions `anEasyQ` and `SecondAltQ` will award maximum points to any student who has these questions and is regraded.
+
+
+## Handling questions with alternatives
+
+For questions that all students get on their assessment the above system is straightforward. For questions with alternatives it is less clear. For example, consider the case when `SecondAltQ` is broken in the assessment above. In the above example we only awarded maxinum points to those students who received `SecondAltQ`, while students with `FirstAltQ` did not receive automatic maximum points. However, it is probably a better idea to give maximum points to all students irrespective of which alternative they received, as follows:
 
 ```json
             {
                 "numberChoose": 1,
-                "points": 5,
+                "points": 10,
                 "forceMaxPoints": true,
                 "alternatives": [
-                    {"id": "FirstAltQ", "points": 10},
+                    {"id": "FirstAltQ"},
                     {"id": "SecondAltQ"}
                 ]
             }
 ```
 
-Generally it is preferred to take the second approach above and to award maximum points to all students, no matter which alternative question appeared on their particular assessment instance.
-
-## Regrading an assessment
-
-The procedure to regrade an assessment is:
-
-1. First update the `infoAssessment.json` file with `"forceMaxPoints": true` as described above, and sync this to the live PrairieLearn server.
-
-1. Go to the instructor page for the assessment and click the "Regrade all assessment instances" button at the top of the "Assessment instances" box, or use the "Action" menu to regrade a single assessment instance.
-
-## Notes on the regrading procedure
-
-1. Once an assessment question has `"forceMaxPoints": true` set, any student who is still doing the assessment will automatically be awarded full points for that question when they grade a submission, irrespective of whether they submitted a correct or incorrect answer. However, the correctness of their answer will still be reported to them so a student might see an "incorrect" submission but receive full points for it. Also, they will not be given points for the question unless they submit an answer.
-
-1. Regrading an assessment multiple times will not have any negative impact. However, after regrading with `"forceMaxPoints": true`, if you later set `"forceMaxPoints": false` and regrade again then the points will not be downgraded back to their old values. That is, once points are awarded they can't be taken away again.
-
-1. Regrading while students are currently taking an exam will not have any negative side effects. It may be slightly surprising for a student to see their points suddenly increase, but it will be otherwise fine.
+For fairness, it is generally it is preferred to take the approach immediately above and award maximum points to all students, no matter which alternative question appeared on their particular assessment instance.

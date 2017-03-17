@@ -26,15 +26,6 @@ BEGIN
 
     max_points := COALESCE(aq.max_points, 0);
 
-    IF aq.force_max_points THEN
-        open := FALSE;
-        status := 'complete';
-        points := aq.max_points;
-        score_perc := 100;
-        current_value := NULL;
-        RETURN;
-    END IF;
-
     IF correct THEN
         open := FALSE;
         status := 'complete';
