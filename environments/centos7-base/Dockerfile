@@ -14,8 +14,6 @@ RUN useradd ag
 
 RUN mkdir /grade
 
-ADD main.sh /
+ADD main.py /
 
-RUN chmod +x /main.sh
-
-ENTRYPOINT ["/main.sh"]
+ENTRYPOINT ["python", "main.py"]
