@@ -14,7 +14,7 @@ BIN_DIR=$MERGE_DIR'bin/'
 
 # for legacy reasons, before we start copy fib.py into q1.cpp
 # ideally this would be something more generic, depending on autograder setup
-cp $MERGE_DIR/'fib.py' $MERGE_DIR/'q1.cpp'
+mv $MERGE_DIR/'fib.py' $MERGE_DIR/'q1.cpp'
 
 # run the autograder as non-root
 # THIS IS IMPORTANT
