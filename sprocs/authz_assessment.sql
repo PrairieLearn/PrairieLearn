@@ -11,11 +11,15 @@ CREATE OR REPLACE FUNCTION
         OUT credit_date_string TEXT, -- For display to the user.
         OUT time_limit_min integer,  -- What is the time limit (if any) for this assessment.
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
-    ) AS $$
-WITH
-authn_result AS (
-    SELECT
-        *
+    )
+AS $$
+DECLARE
+    authn_result record;
+    user_result record;
+BEGIN
+    -- authorization for the authn_user
+    SELECT *
+    INTO authn_result
     FROM
         check_assessment_access(
             assessment_id,
@@ -24,11 +28,11 @@ authn_result AS (
             authz_data->'authn_user'->>'uid',
             current_timestamp,
             display_timezone
-        )
-),
-user_result AS (
-    SELECT
-        *
+        );
+
+    -- authorization for the effective user
+    SELECT *
+    INTO user_result
     FROM
         check_assessment_access(
             assessment_id,
@@ -37,27 +41,26 @@ user_result AS (
             authz_data->'user'->>'uid',
             current_timestamp,
             display_timezone
-        )
-),
-authz_result AS (
-    SELECT
-        (authn_result.authorized AND user_result.authorized) AS authorized
-    FROM
-        authn_result,
-        user_result
-)
-SELECT
-    authz_result.authorized,
-    CASE
-        WHEN authz_data->'authn_user'->'user_id' = authz_data->'user'->'user_id' THEN TRUE
-        WHEN (authz_data->>'authn_has_instructor_edit')::boolean THEN TRUE
-        ELSE FALSE
-    END AND authz_result.authorized AS authorized_edit,
-    user_result.credit,
-    user_result.credit_date_string,
-    user_result.time_limit_min,
-    user_result.access_rules
-FROM
-    authz_result,
-    user_result
-$$ LANGUAGE SQL STABLE;
+        );
+
+    -- we need to be authorized for both our authn_user and effective user
+    authorized := authn_result.authorized AND user_result.authorized;
+
+    authorized_edit := FALSE;
+    IF authz_data->'authn_user'->'user_id' = authz_data->'user'->'user_id' THEN
+        -- allow editing if we are not emulating a different user
+        -- this is the normal case
+        authorized_edit := FALSE;
+    END IF;
+    IF (authz_data->>'authn_has_instructor_edit')::boolean THEN
+        -- also allow editing if we are really an instructor with edit permissions
+        authorized_edit := FALSE;
+    END IF;
+
+    -- all other variables are from the effective user authorization
+    credit := user_result.credit;
+    credit_date_string := user_result.credit_date_string;
+    time_limit_min := user_result.time_limit_min;
+    access_rules := user_result.access_rules;
+END;
+$$ LANGUAGE plpgsql STABLE;

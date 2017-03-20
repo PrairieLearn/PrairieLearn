@@ -186,7 +186,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
         second_preliminary_table AS spt;
     ```
 
-## DB Schema
+## DB schema
 
 1. See the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/models/), with the ER (entity relationship) diagram below ([PDF ER diagram](models.pdf)).
 
@@ -208,6 +208,13 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. We (almost) never delete student data from the DB. To avoid having rows with broken or missing foreign keys, course configuration tables (e.g. `assessments`) can't be actually deleted. Instead they are "soft-deleted" by setting the `deleted_at` column to non-NULL. This means that when using any soft-deletable table we need to have a `WHERE deleted_at IS NULL` to get only the active rows.
 
+## DB schema migrations
+
+1. We don't use an automated system for schema migrations.
+
+1. The `CREATE TABLE` statements in the `models/` directory should always be up-to-date, so they will create the current state of the DB.
+
+1. 
 
 ## Database access
 

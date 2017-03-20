@@ -1,14 +1,18 @@
-CREATE TABLE IF NOT EXISTS pl_courses (
-    id BIGSERIAL PRIMARY KEY,
-    short_name text,
-    title text,
-    display_timezone text,
-    grading_queue text,
-    path text,
-    repository text,
-    deleted_at TIMESTAMP WITH TIME ZONE
+CREATE TABLE IF NOT EXISTS courses (
+  course_id BIGSERIAL PRIMARY KEY,
+  pl_course_id bigint REFERENCES pl_courses ON DELETE SET NULL ON UPDATE CASCADE
 );
 
-ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS display_timezone text;
-UPDATE pl_courses SET display_timezone = 'America/Chicago' WHERE display_timezone IS NULL;
--- FIXME: make display_timezone NOT NULL in the future
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS pl_course_id bigint;
+
+DO $$
+BEGIN
+    IF NOT EXISTS (
+            SELECT 1 FROM information_schema.table_constraints
+            WHERE constraint_name = 'courses_pl_course_id_fkey'
+        )
+        THEN
+        ALTER TABLE courses ADD FOREIGN KEY (pl_course_id) REFERENCES pl_courses ON DELETE SET NULL ON UPDATE CASCADE;
+    END IF;
+END;
+$$

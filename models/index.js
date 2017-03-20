@@ -29,6 +29,7 @@ module.exports = {
             // top-level tables
             'users.sql',
             'administrators.sql',
+            'pl_courses.sql',
             'courses.sql',
             'course_permissions.sql',
 
