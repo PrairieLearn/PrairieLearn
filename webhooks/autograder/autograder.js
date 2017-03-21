@@ -25,7 +25,10 @@ router.post('/', function(req, res, next) {
             if (err) return next(err)
 
             // TODO actually process the results
-            logger(JSON.stringify(data, null, 4))
+            logger.info(JSON.stringify(data, null, 4))
+
+            res.status(200)
+            res.send()
         })
     } else {
         return next(new Error('Unknown event'));
