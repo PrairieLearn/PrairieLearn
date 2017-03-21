@@ -18,19 +18,13 @@
             "required": true
         },
         "event": {
-            "description": "The event type of this webhook callback; should be 'auograder_result'.",
+            "description": "The event type of this webhook callback; should be 'autograder_result'.",
             "type": "string",
             "pattern": "^autograder_result$"
         },
-        "data": {
-            "description": "An object containing the actual results.",
-            "type": "object",
-            "properties": {
-                "job_id": {
-                    "description": "A unique identifier for this particular job",
-                    "type": "integer"
-                }
-            }
+        "job_id": {
+            "description": "A unique identifier for this particular job",
+            "type": "integer"
         }
     }
 }
