@@ -1,0 +1,36 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Webhook: Autograder Results",
+    "description": "The format of a webhook callback containing autograder results.",
+    "type": "object",
+    "properties": {
+        "courseDirs": {
+            "description": "Paths of the course directories.",
+            "type": "array",
+            "items": {
+                "description": "A single course directory path.",
+                "type": "string"
+            }
+        },
+        "secret": {
+            "description": "A secret key used to authenticate that this callback comes from an authorized source.",
+            "type": "string",
+            "required": true
+        },
+        "event": {
+            "description": "The event type of this webhook callback; should be 'auograder_result'.",
+            "type": "string",
+            "pattern": "^autograder_result$"
+        },
+        "data": {
+            "description": "An object containing the actual results.",
+            "type": "object",
+            "properties": {
+                "job_id": {
+                    "description": "A unique identifier for this particular job",
+                    "type": "integer"
+                }
+            }
+        }
+    }
+}

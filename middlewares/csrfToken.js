@@ -6,6 +6,13 @@ var error = require('../lib/error');
 var csrf = require('../lib/csrf');
 
 module.exports = function(req, res, next) {
+    // We need to disable CSRF checking for webhooks
+    // TODO write custom middleware to let us disable CSRF checking per-route
+    // in a more configurable manner?
+    if (req.path === '/pl/webhooks/autograder') {
+        return next()
+    }
+
     var tokenData = {
         url: req.originalUrl,
         authn_user_id: res.locals.authn_user.user_id,
