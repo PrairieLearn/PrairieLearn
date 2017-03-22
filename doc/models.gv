@@ -10,6 +10,10 @@ digraph partmc_modules {
     pl_courses [label="pl_courses*", style=filled, fillcolor=mistyrose1]
     course_permissions [style=filled, fillcolor=mistyrose1]
 
+    courses [style=filled, fillcolor=lemonchiffon]
+    exams [style=filled, fillcolor=lemonchiffon]
+    reservations [style=filled, fillcolor=lemonchiffon]
+
     course_instances [label="course_instances*", style=filled, fillcolor=honeydew1]
     course_instance_access_rules [style=filled, fillcolor=honeydew1]
     assessment_access_rules [style=filled, fillcolor=honeydew1]
@@ -40,6 +44,10 @@ digraph partmc_modules {
 
     administrators -> { users }
     course_permissions -> { users; pl_courses }
+
+    courses -> { pl_courses }
+    exams -> { courses }
+    reservations -> { users; exams }
 
     assessment_access_rules -> { assessments }
     course_instances -> { pl_courses }
@@ -74,6 +82,9 @@ digraph partmc_modules {
         labelloc=b;
         label="Legend";
 
+        k5 [shape=plaintext, style=solid, label="PrairieSchedule tables.\l"];
+        kc5[label=" ", style=filled, fillcolor=lemonchiffon];
+
         k4 [shape=plaintext, style=solid, label="Logging objects.\lNot needed for operation.\lCannot be deleted.\l"];
         kc4[label=" ", style=filled, fillcolor=white];
 
@@ -86,9 +97,11 @@ digraph partmc_modules {
         k1 [shape=plaintext, style=solid, label="Made by superuser.\l'*' means soft deletes.\l"];
         kc1[label=" ", style=filled, fillcolor=mistyrose1];
 
+        kc5 -> kc4 [style=invis];
         kc4 -> kc3 [style=invis];
         kc3 -> kc2 [style=invis];
         kc2 -> kc1 [style=invis];
+        k5 -> k4 [style=invis];
         k4 -> k3 [style=invis];
         k3 -> k2 [style=invis];
         k2 -> k1 [style=invis];

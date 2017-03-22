@@ -60,7 +60,7 @@ BEGIN
             JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
             JOIN users AS u ON (u.user_id = assessment_instance.user_id)
             LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
-            JOIN LATERAL check_assessment_access(a.id, mode, coalesce(e.role, 'Student'), u.uid, last_active_date, ci.display_timezone) AS caa ON TRUE
+            JOIN LATERAL check_assessment_access(a.id, mode, coalesce(e.role, 'Student'), u.user_id, u.uid, last_active_date, ci.display_timezone) AS caa ON TRUE
         WHERE
             a.id = assessment_instance.assessment_id;
             -- Don't check access. The submissions were allowed, so grading must be ok.

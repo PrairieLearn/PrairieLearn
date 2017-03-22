@@ -1,3 +1,4 @@
+DROP FUNCTION IF EXISTS authz_assessment(bigint,jsonb);
 DROP FUNCTION IF EXISTS authz_assessment(bigint,jsonb,text);
 
 CREATE OR REPLACE FUNCTION
@@ -25,6 +26,7 @@ BEGIN
             assessment_id,
             (authz_data->>'authn_mode')::enum_mode,
             (authz_data->>'authn_role')::enum_role,
+            authz_data->'authn_user'->>'id',
             authz_data->'authn_user'->>'uid',
             current_timestamp,
             display_timezone
@@ -38,6 +40,7 @@ BEGIN
             assessment_id,
             (authz_data->>'mode')::enum_mode,
             (authz_data->>'role')::enum_role,
+            authz_data->'user'->>'id',
             authz_data->'user'->>'uid',
             current_timestamp,
             display_timezone
@@ -63,4 +66,4 @@ BEGIN
     time_limit_min := user_result.time_limit_min;
     access_rules := user_result.access_rules;
 END;
-$$ LANGUAGE plpgsql STABLE;
+$$ LANGUAGE plpgsql VOLATILE;

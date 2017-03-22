@@ -1,3 +1,4 @@
+DROP FUNCTION IF EXISTS authz_assessment_instance(bigint,jsonb);
 DROP FUNCTION IF EXISTS authz_assessment_instance(bigint,jsonb,text);
 
 CREATE OR REPLACE FUNCTION
