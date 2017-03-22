@@ -58,11 +58,12 @@ BEGIN
         EXIT schedule_access WHEN NOT use_date_check;
 
         -- is there a corresponding PrairieSchedule course?
-        SELECT ps_c.id
+        SELECT ps_c.course_id
         INTO ps_course_id
         FROM
             assessments AS a
-            JOIN pl_courses AS pl_c ON (pl_c.id = a.course_id)
+            JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+            JOIN pl_courses AS pl_c ON (pl_c.id = ci.course_id)
             JOIN courses as ps_c ON (ps_c.pl_course_id = pl_c.id)
         WHERE
             a.id = assessment_access_rule.assessment_id;

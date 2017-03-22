@@ -10,7 +10,7 @@ CREATE OR REPLACE FUNCTION
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
         OUT credit integer,          -- How much credit will they receive?
         OUT credit_date_string TEXT, -- For display to the user.
-        OUT time_limit_min integer,  -- What is the time limit (if any) for this assessment.
+        OUT time_limit_min integer,  -- The time limit (if any) for this assessment.
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     )
 AS $$
@@ -26,7 +26,7 @@ BEGIN
             assessment_id,
             (authz_data->>'authn_mode')::enum_mode,
             (authz_data->>'authn_role')::enum_role,
-            authz_data->'authn_user'->>'id',
+            (authz_data->'authn_user'->>'user_id')::bigint,
             authz_data->'authn_user'->>'uid',
             current_timestamp,
             display_timezone
@@ -40,7 +40,7 @@ BEGIN
             assessment_id,
             (authz_data->>'mode')::enum_mode,
             (authz_data->>'role')::enum_role,
-            authz_data->'user'->>'id',
+            (authz_data->'user'->>'user_id')::bigint,
             authz_data->'user'->>'uid',
             current_timestamp,
             display_timezone
@@ -53,12 +53,15 @@ BEGIN
     IF authz_data->'authn_user'->'user_id' = authz_data->'user'->'user_id' THEN
         -- allow editing if we are not emulating a different user
         -- this is the normal case
-        authorized_edit := FALSE;
+        authorized_edit := TRUE;
     END IF;
     IF (authz_data->>'authn_has_instructor_edit')::boolean THEN
         -- also allow editing if we are really an instructor with edit permissions
-        authorized_edit := FALSE;
+        authorized_edit := TRUE;
     END IF;
+
+    -- only allow editing if we are authorized to view
+    authorized_edit := authorized_edit AND authorized;
 
     -- all other variables are from the effective user authorization
     credit := user_result.credit;

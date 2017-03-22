@@ -10,51 +10,60 @@ CREATE OR REPLACE FUNCTION
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
         OUT credit integer,          -- How much credit will they receive?
         OUT credit_date_string TEXT, -- For display to the user.
-        OUT time_limit_min integer,  -- What is the time limit (if any) for this assessment.
+        OUT time_limit_min integer,  -- Time limit (if any) for this assessment.
         OUT time_limit_expired boolean, -- Is the time limit expired?
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
-    ) AS $$
-WITH
-assessment_result AS (
-    SELECT
-        aa.*,
-        u.user_id
-    FROM
-        assessment_instances AS ai
-        JOIN assessments AS a ON (a.id = ai.assessment_id)
-        JOIN LATERAL authz_assessment(a.id, authz_data, display_timezone) AS aa ON TRUE
-        JOIN users AS u ON (u.user_id = ai.user_id)
-    WHERE
-        ai.id = authz_assessment_instance.assessment_instance_id
-),
-authz_result AS (
-    SELECT
-        (assessment_result.authorized
-            AND (assessment_result.user_id = (authz_data->'user'->>'user_id')::integer
-                    OR (authz_data->>'has_instructor_view')::boolean)
-        ) AS authorized
-    FROM
-        assessment_result
-)
-SELECT
-    authz_result.authorized,
-    CASE
-        WHEN authz_data->'authn_user'->'user_id' = authz_data->'user'->'user_id' THEN TRUE
-        WHEN (authz_data->>'authn_has_instructor_edit')::boolean THEN TRUE
-        ELSE FALSE
-    END AND authz_result.authorized AS authorized_edit,
-    assessment_result.credit,
-    assessment_result.credit_date_string,
-    assessment_result.time_limit_min,
-    CASE
-        WHEN ai.date_limit IS NOT NULL AND ai.date_limit < current_timestamp THEN TRUE
-        ELSE FALSE
-    END AS time_limit_expired,
-    assessment_result.access_rules
-FROM
-    assessment_result,
-    authz_result,
-    assessment_instances AS ai
-WHERE
-    ai.id = authz_assessment_instance.assessment_instance_id;
-$$ LANGUAGE SQL STABLE;
+    )
+AS $$
+DECLARE
+    assessment_instance assessment_instances;
+    assessment_result record;
+BEGIN
+    SELECT ai.*
+    INTO assessment_instance
+    FROM assessment_instances AS ai
+    WHERE ai.id = assessment_instance_id;
+
+    SELECT *
+    INTO assessment_result
+    FROM authz_assessment(assessment_instance.assessment_id, authz_data, display_timezone);
+
+    -- take most data directly from the assessment_result
+    credit := assessment_result.credit;
+    credit_date_string := assessment_result.credit_date_string;
+    time_limit_min := assessment_result.time_limit_min;
+    access_rules := assessment_result.access_rules;
+
+    time_limit_expired := FALSE;
+    IF assessment_instance.date_limit IS NOT NULL AND assessment_instance.date_limit < current_timestamp THEN
+        time_limit_expired := TRUE;
+    END IF;
+
+    -- start with no acccess
+    authorized := FALSE;
+    authorized_edit := FALSE;
+
+    -- give access if this is our own assessment and we aren't emulating
+    IF (authz_data->'user'->>'user_id')::bigint = assessment_instance.user_id THEN
+        IF authz_data->'authn_user'->'user_id' = authz_data->'user'->'user_id' THEN
+            authorized := TRUE;
+            authorized_edit := TRUE;
+        END IF;
+    END IF;
+
+    -- give access if we are an instructor
+    IF (authz_data->>'authn_has_instructor_view')::boolean THEN
+        authorized := TRUE;
+    END IF;
+    IF (authz_data->>'authn_has_instructor_edit')::boolean THEN
+        authorized_edit := TRUE;
+    END IF;
+
+    -- we can't have higher authz than the assessment
+    authorized := authorized AND assessment_result.authorized;
+    authorized_edit := authorized_edit AND assessment_result.authorized_edit;
+
+    -- we can't have higher edit access than view access
+    authorized_edit := authorized_edit AND authorized;
+END;
+$$ LANGUAGE plpgsql VOLATILE;

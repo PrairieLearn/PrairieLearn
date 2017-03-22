@@ -111,8 +111,9 @@ router.get('/', function(req, res, next) {
 });
 
 router.post('/', function(req, res, next) {
+    if (res.locals.assessment.type !== 'Exam') return next();
+    if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
     if (req.body.postAction == 'newInstance') {
-        if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
         makeAssessmentInstance(req, res, function(err, assessment_instance_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
