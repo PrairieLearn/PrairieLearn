@@ -47,12 +47,9 @@ module.exports = function(req, res, next) {
         res.locals.course = result.rows[0].course;
         res.locals.course_instance = result.rows[0].course_instance;
 
-        var authn_role = result.rows[0].authn_role;
-        var authn_has_instructor_view = result.rows[0].authn_has_instructor_view;
-        var authn_has_instructor_edit = result.rows[0].authn_has_instructor_edit;
-
         var permissions_course_instance = result.rows[0].permissions_course_instance;
         var permissions_course = result.rows[0].permissions_course;
+        var authn_date = result.rows[0].date;
 
         // effective user data defaults to auth user data
         var authn_mode = serverMode(req);
@@ -60,6 +57,7 @@ module.exports = function(req, res, next) {
             authn_user: _.cloneDeep(res.locals.authn_user),
             authn_role: permissions_course_instance.role,
             authn_mode: authn_mode,
+            authn_date: authn_date,
             authn_has_instructor_view: permissions_course_instance.has_instructor_view,
             authn_has_instructor_edit: permissions_course_instance.has_instructor_edit,
             authn_course_role: permissions_course.course_role,
@@ -75,13 +73,14 @@ module.exports = function(req, res, next) {
             has_course_permission_view: permissions_course.has_course_permission_view,
             has_course_permission_edit: permissions_course.has_course_permission_edit,
             has_course_permission_own: permissions_course.has_course_permission_own,
+            date: authn_date,
         };
         res.locals.user = res.locals.authz_data.user;
         // FIXME: debugging for #422
         logger.debug('Preliminary authz_data', res.locals.authz_data);
 
         // check whether we are requesting user data override
-        if (!req.cookies.pl_requested_uid && !req.cookies.pl_requested_role && !req.cookies.pl_requested_mode) {
+        if (!req.cookies.pl_requested_uid && !req.cookies.pl_requested_role && !req.cookies.pl_requested_mode && !req.cookies.pl_requested_date) {
             // no user data override, just continue
             return next();
         }
@@ -105,6 +104,7 @@ module.exports = function(req, res, next) {
                 requested_uid: (req.cookies.pl_requested_uid ? req.cookies.pl_requested_uid : res.locals.authz_data.user.uid),
                 requested_role: (req.cookies.pl_requested_role ? req.cookies.pl_requested_role : res.locals.authz_data.role),
                 requested_mode: (req.cookies.pl_requested_mode ? req.cookies.pl_requested_mode : res.locals.authz_data.mode),
+                requested_date: (req.cookies.pl_requested_date ? req.cookies.pl_requested_date : res.locals.authz_data.date),
             };
             sqldb.queryZeroOrOneRow(sql.select_effective_authz_data, params, function(err, result) {
                 if (ERR(err, next)) return;
