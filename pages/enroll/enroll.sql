@@ -14,6 +14,7 @@ FROM
 WHERE
     u.user_id = $user_id
     AND ci.deleted_at IS NULL
+    AND c.deleted_at IS NULL
     AND check_course_instance_access(ci.id, COALESCE(e.role, 'Student'), u.uid, current_timestamp)
 ORDER BY
     c.short_name, c.title, c.id, ci.number DESC, ci.id;
