@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __2.3.1__ - 2017-03-23
+
+  * Don't display deleted courses on the enroll (add/remove courses) page.
+
 * __2.3.0__ - 2017-03-08
 
   * Change `feedback` to be visible for open questions on exams.
