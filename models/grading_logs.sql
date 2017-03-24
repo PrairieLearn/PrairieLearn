@@ -11,7 +11,12 @@ CREATE TABLE IF NOT EXISTS grading_logs (
     score DOUBLE PRECISION,
     correct BOOLEAN,
     feedback JSONB,
-    auth_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE
+    auth_user_id BIGINT REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE,
+    autograde_started_at TIMESTAMP WITH TIME ZONE,
+    autograde_finished_at TIMESTAMP WITH TIME ZONE
 );
 
 CREATE INDEX IF NOT EXISTS grading_logs_submission_id_idx ON grading_logs (submission_id);
+
+ALTER TABLE grading_logs ADD COLUMN IF NOT EXISTS autograde_started_at TIMESTAMP WITH TIME ZONE;
+ALTER TABLE grading_logs ADD COLUMN IF NOT EXISTS autograde_finished_at TIMESTAMP WITH TIME ZONE;
