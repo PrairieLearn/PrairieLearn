@@ -177,11 +177,12 @@ module.exports.submitAndGrade = function(submission, instance_question_id, quest
                              {instance_question_id: instance_question_id,
                               submission_id: submission_id, variant: variant,
                               question: question, course: course});
-                questionServers.gradeSavedSubmission(client, submission_id, submission.auth_user_id, variant, question, course, function(err, grading_log, external_grading_log_id) {
+                questionServers.gradeSavedSubmission(client, submission_id, submission.auth_user_id, variant, question, course, function(err, grading_log) {
                     if (ERR(err, callback)) return;
                     logger.debug('homework.submitAndGrade(): finished gradeSavedSubmission()',
                                  {instance_question_id: instance_question_id, grading_log: grading_log});
-                    if (grading_log.correct != null) {
+                    if (grading_log.grading_method == 'Internal') {
+                        if (grading_log.correct == null) return callback(new Error("Invalid 'correct' value"));
                         var params = [
                             instance_question_id,
                             grading_log.correct,
@@ -195,11 +196,24 @@ module.exports.submitAndGrade = function(submission, instance_question_id, quest
                                          {instance_question_id: instance_question_id});
                             callback(null);
                         });
-                    } else if (external_grading_log_id != null) {
-                        external_grading_log_ids.push(external_grading_log_id);
-                            logger.debug('homework.submitAndGrade(): pushed to external_grading_log_ids',
-                                         {instance_question_id: instance_question_id,
-                                          external_grading_log_ids: external_grading_log_ids});
+                    } else if (grading_log.grading_method == 'External') {
+                        external_grading_log_ids.push(grading_log.id);
+                        logger.debug('homework.submitAndGrade(): pushed to external_grading_log_ids',
+                                     {instance_question_id: instance_question_id,
+                                      external_grading_log_ids: external_grading_log_ids});
+                        var params = {
+                            instance_question_id: instance_question_id,
+                            auth_user_id: submission.auth_user_id,
+                        };
+                        logger.debug('homework.submitAndGrade(): calling update_instance_question_in_grading',
+                                     {instance_question_id: instance_question_id, params: params});
+                        sqldb.queryWithClient(client, sql.update_instance_question_in_grading, params, function(err) {
+                            if (ERR(err, callback)) return;
+                            logger.debug('homework.submitAndGrade(): finished update_instance_question_in_grading',
+                                         {instance_question_id: instance_question_id});
+                            callback(null);
+                        });
+                    } else if (grading_log.grading_method == 'Manual') {
                         var params = {
                             instance_question_id: instance_question_id,
                             auth_user_id: submission.auth_user_id,
