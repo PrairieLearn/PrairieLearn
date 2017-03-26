@@ -3,6 +3,8 @@
 
 * __2.4.0__ - unreleased
 
+  * Fix `Manual` grading type (Jake Bailey).
+
   * Change `forceMaxPoints` to only take affect during an explicit regrade.
 
 * __2.3.1__ - 2017-03-23
