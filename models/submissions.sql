@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS submissions (
     override_score DOUBLE PRECISION,
     credit INTEGER,
     mode enum_mode,
+    grading_method enum_grading_method,
     grading_requested_at TIMESTAMP WITH TIME ZONE,
     graded_at TIMESTAMP WITH TIME ZONE,
     score DOUBLE PRECISION,
@@ -17,3 +18,4 @@ CREATE TABLE IF NOT EXISTS submissions (
 );
 
 CREATE INDEX IF NOT EXISTS submissions_variant_id_idx ON submissions (variant_id);
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS grading_method enum_grading_method;
