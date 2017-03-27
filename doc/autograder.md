@@ -63,20 +63,21 @@ The following fields must be added to each question's `info.json`:
 
 ```json
 "autrogradingEnabled": true,
-"environment": "env1"
+"environment": "prairielearn/centos7-base"
 ```
 
-Additionally, you can specify and autograder with `"autograder": "ag1"`.
+`environment` should correspond to a docker image on a container repository, and will be passed directly to AWS Batch as the `image` field in a job definition. See [here](http://docs.aws.amazon.com/batch/latest/userguide/job_definition_parameters.html) for more information. In the future, PrairieLearn will be able to automatically build and deploy the environments in your `environments/` directory; when that feature is added, we'll first check if your `environment` value corresponds to a directory in `environments/`. If it does, we'll build an image from that environment and use it to run your grading job; if not, we'll treat the value as a reference to an image on a container repository.
+
+Additionally, you can specify and autograder with `"autograder": "ag1"`. If you specify an autograder `placeholder`, the files from `[course]/autograders/placeholder` will be present in `/grade/shared/` when your job is run.
 
 If `autogradingEnabled` does not exist, autograding will be turned off by default.
 
 ## Grading Result
 
-In order to run a custom autograder, a wrapper must be written. The autograder must write a grading result to `/grade/results.json` in the following format:
+The autograder must write a grading result to `/grade/results/results.json` in the following format:
 
 ```json
 {
-   "jobId": 49,
    "testedCompleted": "true",
    "score": 1,
    "output": "Test 1 passed\nTest 2 passed\n...",
