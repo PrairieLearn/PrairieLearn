@@ -105,7 +105,7 @@ submission_results AS (
     UPDATE submissions AS s
     SET
         grading_requested_at = gl.grading_requested_at,
-        grading_method = $grading_method
+        grading_method = gl.grading_method
     FROM
         grading_log_results AS gl
     WHERE

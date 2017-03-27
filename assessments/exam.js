@@ -174,7 +174,7 @@ module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_u
                                 callback(null);
                             });
                         } else if (grading_log.grading_method == 'External') {
-                            external_grading_log_ids.push(external_grading_log_id);
+                            external_grading_log_ids.push(grading_log.id);
                             logger.debug('exam.gradeAssessmentInstance(): pushed to external_grading_log_ids',
                                          {assessment_instance_id: assessment_instance_id,
                                           external_grading_log_ids: external_grading_log_ids});
