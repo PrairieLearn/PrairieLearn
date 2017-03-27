@@ -3,6 +3,8 @@
 
 * __2.4.0__ - unreleased
 
+  * Show all submissions in downloaded CSV files when running in dev mode.
+
   * Fix `Manual` grading type (Jake Bailey).
 
   * Change `forceMaxPoints` to only take affect during an explicit regrade.

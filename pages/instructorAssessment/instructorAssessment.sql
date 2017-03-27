@@ -332,7 +332,7 @@ WITH all_submissions AS (
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
         JOIN users AS u ON (u.user_id = ai.user_id)
-        JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
+        LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
         JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
