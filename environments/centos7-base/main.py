@@ -22,12 +22,16 @@ def log(message):
     print(Template('[main] $message').substitute(message=message))
     sys.stdout.flush()
 
-# This function will attempt to read any results file, add our metadata to it,
-# write it to disk, send everything to S3, and exit the program.
-#
-# If succeeded is false, we'll assume things failed badly enough that we shouldn't
-# even try to read /grade/results/results.json.
+
 def finish(succeeded, info):
+    """
+    This function will attempt to read any results file, add our metadata to it,
+    write it to disk, send everything to S3, and exit the program.
+
+    If succeeded is false, we'll assume things failed badly enough that we shouldn't
+    even try to read /grade/results/results.json.
+    """
+
     if info['job_id'] is None:
         # Someone screwed up bad; without a job ID, we can't upload archives to
         # S3 or notify the webhook that we've failed
@@ -35,14 +39,14 @@ def finish(succeeded, info):
         sys.exit(1)
 
     data = None
-    if succeeded and os.path.isfile('/grade/results/results.json'):
-        # Let's try to read their results file
-        # They successfully wrote out the results file!
-        with open('/grade/results/results.json') as json_data:
-            try:
+    if succeeded:
+        try:
+            with open('/grade/results/results.json') as json_data:
                 data = json.load(json_data)
-            except JSONDecodeError:
-                data = None
+        except JSONDecodeError:
+            pass
+        except Exception:
+            pass
 
     results = {}
     results['data'] = data
@@ -188,7 +192,7 @@ def main():
         else:
             run_ret = call([grading_script])
             if run_ret is not 0:
-                error(Templaste('error executing $file').substitute(file=grading_script))
+                error(Template('error executing $file').substitute(file=grading_script))
                 finish(False, info)
     else:
         error(Template('$file not found').substitute(grading_script))
