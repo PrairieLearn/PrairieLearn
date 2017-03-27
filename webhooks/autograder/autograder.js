@@ -9,11 +9,13 @@ var validate = require('../../lib/validator').validateFromFile;
 var config = require('../../lib/config');
 var logger = require('../../lib/logger');
 var filePaths = require('../../lib/file-paths');
+var assessments = require('../../assessments');
+
 
 router.post('/', function(req, res, next) {
 
     if (!req.body.secret) {
-        return next(new Error('No secret specified'))
+        return next(new Error('No secret specified'));
     }
 
     if (req.body.secret !== config.autograderWebhookSecret) {
@@ -22,13 +24,21 @@ router.post('/', function(req, res, next) {
 
     if (req.body.event === 'autograder_result') {
         validate(req.body, 'schemas/webhookAutograderResult.json', (err, data) => {
-            if (err) return next(err)
+            if (ERR(err, next)) return;
 
             // TODO actually process the results
-            logger.info(JSON.stringify(data, null, 4))
+            logger.info(JSON.stringify(data, null, 4));
 
-            res.status(200)
-            res.send()
+            const gradingResult = {
+                gradingId: data.job_id,
+                grading: {
+                }
+            }
+
+            // assessments.
+
+            res.status(200);
+            res.send();
         })
     } else {
         return next(new Error('Unknown event'));
