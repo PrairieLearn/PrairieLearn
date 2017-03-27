@@ -64,7 +64,7 @@ def finish(succeeded, info):
     if info['results_bucket']:
         s3_results_file = Template('s3://$bucket/job_$job.json').substitute(bucket=info['results_bucket'], job=info['job_id'])
         s3_results_push_ret = call(['aws', 's3', 'cp', '/grade/results.json', s3_results_file])
-        if s3_results_push_ret is not 0:
+        if s3_results_push_ret != 0:
             error('could not push results to S3')
     else:
         error('the results bucket was not specified')
@@ -73,12 +73,12 @@ def finish(succeeded, info):
     # for storage
     if info['archives_bucket']:
         zip_ret = call(['tar', '-zcf', '/archive.tar.gz', '/grade/'])
-        if zip_ret is not 0:
+        if zip_ret != 0:
             error('error zipping up archive')
         else:
             s3_archive_file = Template('s3://$bucket/job_$job.tar.gz').substitute(bucket=info['archives_bucket'], job=info['job_id'])
             s3_archive_push_ret = call(['aws', 's3', 'cp', '/archive.tar.gz', s3_archive_file])
-            if s3_archive_push_ret is not 0:
+            if s3_archive_push_ret != 0:
                 error('could not push archive to S3')
     else:
         error('the archives bucket was not specified')
@@ -150,13 +150,13 @@ def main():
     # Load the job archive from S3
     s3_job_file = Template('s3://$bucket/job_$job.tar.gz').substitute(bucket=jobs_bucket, job=job_id)
     s3_fetch_ret = call(['aws', 's3', 'cp', s3_job_file, '/job.tar.gz'])
-    if s3_fetch_ret is not 0:
+    if s3_fetch_ret != 0:
         error('failed to load the job files from S3')
         finish(False, info)
 
     # Unzip the downloaded archive
     unzip_ret = call(['tar', '-xf', '/job.tar.gz', '-C', 'grade'])
-    if unzip_ret is not 0:
+    if unzip_ret != 0:
         error('failed to unzip the job archive')
         finish(False, info)
 
@@ -176,7 +176,7 @@ def main():
             found_init_script = True
             call(['chmod', '+x', file])
             init_ret = call([file])
-            if init_ret is not 0:
+            if init_ret != 0:
                 error(Template('error executing $file').substitute(file=file))
                 finish(False, info)
             break
@@ -187,11 +187,11 @@ def main():
 
     if os.path.isfile(grading_script):
         chmod_ret = call(['chmod', '+x', grading_script])
-        if chmod_ret is not 0:
+        if chmod_ret != 0:
             error(Template('Could not make $file executable').substitute(file=grading_script))
         else:
             run_ret = call([grading_script])
-            if run_ret is not 0:
+            if run_ret != 0:
                 error(Template('error executing $file').substitute(file=grading_script))
                 finish(False, info)
     else:
