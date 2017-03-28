@@ -5,6 +5,7 @@ CREATE OR REPLACE FUNCTION
     authz_assessment (
         IN assessment_id bigint,
         IN authz_data JSONB,
+        IN req_date timestamptz,
         IN display_timezone text,
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
@@ -28,7 +29,7 @@ BEGIN
             (authz_data->>'authn_role')::enum_role,
             (authz_data->'authn_user'->>'user_id')::bigint,
             authz_data->'authn_user'->>'uid',
-            current_timestamp,
+            req_date,
             display_timezone
         );
 
@@ -42,7 +43,7 @@ BEGIN
             (authz_data->>'role')::enum_role,
             (authz_data->'user'->>'user_id')::bigint,
             authz_data->'user'->>'uid',
-            current_timestamp,
+            req_date,
             display_timezone
         );
 

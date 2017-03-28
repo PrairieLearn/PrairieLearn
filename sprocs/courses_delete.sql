@@ -9,7 +9,7 @@ DECLARE
 BEGIN
     UPDATE pl_courses AS c
     SET
-        deleted_at = now()
+        deleted_at = current_timetamp
     WHERE
         c.id = course_id
     RETURNING

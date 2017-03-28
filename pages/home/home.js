@@ -14,6 +14,7 @@ router.get('/', function(req, res, next) {
     var params = {
         user_id: res.locals.authn_user.user_id,
         is_administrator: res.locals.is_administrator,
+        req_date: res.locals.req_date,
     };
     sqldb.queryOneRow(sql.select_home, params, function(err, result) {
         if (ERR(err, next)) return;

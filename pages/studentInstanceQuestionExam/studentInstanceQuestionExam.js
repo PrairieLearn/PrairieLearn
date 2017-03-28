@@ -91,7 +91,10 @@ router.get('/', function(req, res, next) {
         },
         function(callback) {
             res.locals.showSubmissions = false;
-            var params = {variant_id: res.locals.variant.id};
+            var params = {
+                variant_id: res.locals.variant.id,
+                req_date: res.locals.req_date,
+            };
             sqldb.query(sql.select_submissions, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 if (result.rowCount >= 1) {

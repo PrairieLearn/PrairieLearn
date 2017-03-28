@@ -14,6 +14,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 router.get('/', function(req, res, next) {
     var params = {
         user_id: res.locals.authn_user.user_id,
+        req_date: res.locals.req_date,
     };
     sqldb.query(sql.select_course_instances, params, function(err, result) {
         if (ERR(err, next)) return;
@@ -28,6 +29,7 @@ router.post('/', function(req, res, next) {
         var params = {
             course_instance_id: req.body.course_instance_id,
             user_id: res.locals.authn_user.user_id,
+            req_date: res.locals.req_date,
         };
         sqldb.queryOneRow(sql.enroll, params, function(err, result) {
             if (ERR(err, next)) return;
@@ -37,6 +39,7 @@ router.post('/', function(req, res, next) {
         var params = {
             course_instance_id: req.body.course_instance_id,
             user_id: res.locals.authn_user.user_id,
+            req_date: res.locals.req_date,
         };
         sqldb.queryOneRow(sql.unenroll, params, function(err, result) {
             if (ERR(err, next)) return;

@@ -1,8 +1,11 @@
+DROP FUNCTION IF EXISTS authz_course_instance(bigint,bigint,boolean);
+
 CREATE OR REPLACE FUNCTION
     authz_course_instance(
         user_id bigint,
         course_instance_id bigint,
-        is_administrator boolean
+        is_administrator boolean,
+        req_date timestamptz
     ) returns jsonb
 AS $$
 DECLARE
@@ -16,7 +19,7 @@ BEGIN
     WHERE
         u.user_id = authz_course_instance.user_id
         AND e.course_instance_id = authz_course_instance.course_instance_id
-        AND check_course_instance_access(authz_course_instance.course_instance_id, e.role, u.uid, current_timestamp);
+        AND check_course_instance_access(authz_course_instance.course_instance_id, e.role, u.uid, req_date);
 
     IF NOT FOUND THEN
         role := 'None';

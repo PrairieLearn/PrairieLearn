@@ -3,7 +3,7 @@ SELECT
     to_jsonb(ai) AS assessment_instance,
     CASE
         WHEN ai.date_limit IS NULL THEN NULL
-        ELSE floor(extract(epoch from (ai.date_limit - current_timestamp)) * 1000)
+        ELSE floor(extract(epoch from (ai.date_limit - $req_date::timestamptz)) * 1000)
     END AS assessment_instance_remaining_ms,
     CASE
         WHEN ai.date_limit IS NULL THEN NULL
@@ -23,7 +23,7 @@ FROM
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     JOIN users AS u ON (u.user_id = ai.user_id)
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
-    JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, ci.display_timezone) AS aai ON TRUE
+    JOIN LATERAL authz_assessment_instance(ai.id, $authz_data, $req_date, ci.display_timezone) AS aai ON TRUE
 WHERE
     ai.id = $assessment_instance_id
     AND ci.id = $course_instance_id

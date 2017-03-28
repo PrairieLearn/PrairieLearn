@@ -5,6 +5,7 @@ CREATE OR REPLACE FUNCTION
     authz_assessment_instance (
         IN assessment_instance_id bigint,
         IN authz_data JSONB,
+        IN req_date timestamptz,
         IN display_timezone text,
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
@@ -26,7 +27,7 @@ BEGIN
 
     SELECT *
     INTO assessment_result
-    FROM authz_assessment(assessment_instance.assessment_id, authz_data, display_timezone);
+    FROM authz_assessment(assessment_instance.assessment_id, authz_data, req_date, display_timezone);
 
     -- take most data directly from the assessment_result
     credit := assessment_result.credit;
@@ -35,7 +36,7 @@ BEGIN
     access_rules := assessment_result.access_rules;
 
     time_limit_expired := FALSE;
-    IF assessment_instance.date_limit IS NOT NULL AND assessment_instance.date_limit < current_timestamp THEN
+    IF assessment_instance.date_limit IS NOT NULL AND assessment_instance.date_limit < req_date THEN
         time_limit_expired := TRUE;
     END IF;
 

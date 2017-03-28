@@ -60,6 +60,7 @@ app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPref
 app.use(function(req, res, next) {res.locals.navbarType = 'plain'; next();});
 app.use(function(req, res, next) {res.locals.devMode = config.devMode; next();});
 app.use(require('./middlewares/cors'));
+app.use(require('./middlewares/date'));
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.csrfToken
 app.use(require('./middlewares/logRequest'));

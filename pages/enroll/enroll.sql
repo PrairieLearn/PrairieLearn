@@ -14,7 +14,7 @@ FROM
 WHERE
     u.user_id = $user_id
     AND ci.deleted_at IS NULL
-    AND check_course_instance_access(ci.id, COALESCE(e.role, 'Student'), u.uid, current_timestamp)
+    AND check_course_instance_access(ci.id, COALESCE(e.role, 'Student'), u.uid, $req_date)
 ORDER BY
     c.short_name, c.title, c.id, ci.number DESC, ci.id;
 
@@ -28,7 +28,7 @@ INSERT INTO enrollments AS e
         users AS u
     WHERE
         u.user_id = $user_id
-        AND check_course_instance_access($course_instance_id, 'Student', u.uid, current_timestamp)
+        AND check_course_instance_access($course_instance_id, 'Student', u.uid, $req_date)
 )
 RETURNING e.id;
 
@@ -40,5 +40,5 @@ WHERE
     u.user_id = $user_id
     AND e.user_id = $user_id
     AND e.course_instance_id = $course_instance_id
-    AND check_course_instance_access($course_instance_id, e.role, u.uid, current_timestamp)
+    AND check_course_instance_access($course_instance_id, e.role, u.uid, $req_date)
 RETURNING e.id;
