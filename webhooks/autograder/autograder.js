@@ -14,14 +14,6 @@ var assessments = require('../../assessments');
 
 router.post('/', function(req, res, next) {
 
-    if (!req.body.secret) {
-        return next(new Error('No secret specified'));
-    }
-
-    if (req.body.secret !== config.autograderWebhookSecret) {
-        return next(new Error('Invalid secret'));
-    }
-
     if (req.body.event === 'autograder_result') {
         validate(req.body, 'schemas/webhookAutograderResult.json', (err, data) => {
             if (ERR(err, next)) return;
