@@ -91,6 +91,10 @@
         "autograderWebhookSecret": {
             "description": "A secret key that should be sent back with each callback to the autograder webhook.",
             "type": "string"
+        },
+        "autograderWebhookUrl": {
+            "description": "The endpoint that should be hit when a grading result is updated. Should be null when running locally.",
+            "type": "string"
         }
     }
 }
