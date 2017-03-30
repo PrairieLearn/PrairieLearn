@@ -16,7 +16,7 @@ config.serverPort = 3007;
 var server = require('../server');
 
 var logger = require('./dummyLogger');
-var testHelperDb = require('./testHelperDb');
+var helperDb = require('./helperDb');
 
 var courseDir = 'exampleCourse';
 
@@ -26,7 +26,7 @@ module.exports = {
         async.series([
             function(callback) {
                 // pass "this" explicitly to enable this.timeout() calls
-                testHelperDb.before.call(that, function(err) {
+                helperDb.before.call(that, function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -58,7 +58,7 @@ module.exports = {
     after: function(callback) {
         async.series([
             function(callback) {
-                testHelperDb.after(function(err) {
+                helperDb.after(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });

@@ -5,14 +5,14 @@ var request = require('request');
 var cheerio = require('cheerio');
 
 var config = require('../lib/config');
-var testHelperServer = require('./testHelperServer');
+var helperServer = require('./helperServer');
 
 var baseUrl = 'http://localhost:' + config.serverPort + '/pl';
 
 describe('GET /pl', function() {
 
-    before("set up testing server", testHelperServer.before);
-    after("shut down testing server", testHelperServer.after);
+    before("set up testing server", helperServer.before);
+    after("shut down testing server", helperServer.after);
 
     var page, $;
     

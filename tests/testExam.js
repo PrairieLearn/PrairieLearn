@@ -10,7 +10,7 @@ var sqldb = require('../lib/sqldb');
 var sqlLoader = require('../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-var testHelperServer = require('./testHelperServer');
+var helperServer = require('./helperServer');
 
 var siteUrl = 'http://localhost:' + config.serverPort;
 var baseUrl = siteUrl + '/pl';
@@ -20,8 +20,8 @@ var assessmentUrl, assessmentInstanceUrl, q1Url, q2Url;
 
 describe('Exam assessment', function() {
 
-    before("set up testing server", testHelperServer.before);
-    after("shut down testing server", testHelperServer.after);
+    before("set up testing server", helperServer.before);
+    after("shut down testing server", helperServer.after);
 
     var res, page, $, elemList;
     var assessment_id, assessment_instance, instance_questions, variant, submission;
