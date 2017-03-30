@@ -26,7 +26,9 @@
 
       <div class="navbar-right">
 
-        <% if (is_administrator) { %>
+        <% if (!authn_user) { %>
+        <p class="navbar-text">(No user)</p>
+        <% } else if (is_administrator) { %>
         <p class="navbar-text"><%= authn_user.name %> (Administrator)</p>
         <% } else { // is_administrator %>
         <p class="navbar-text"><%= authn_user.name %></p>
