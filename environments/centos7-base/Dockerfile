@@ -8,7 +8,7 @@ RUN yum -y update \
     && yum install -y sudo \
     && yum install -y https://centos7.iuscommunity.org/ius-release.rpm \
     && yum install -y python35u python35u-pip \
-    && pip3.5 install awscli
+    && python3.5 -m pip install awscli requests
 
 RUN useradd ag
 
@@ -16,4 +16,4 @@ RUN mkdir /grade
 
 ADD main.py /
 
-ENTRYPOINT ["python", "main.py"]
+ENTRYPOINT ["python3.5", "main.py"]

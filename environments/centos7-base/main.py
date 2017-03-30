@@ -1,10 +1,10 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python3.5
 
 import os
 import sys
 import stat
 import json
-import urllib2
+import requests
 
 from datetime import datetime
 from subprocess import call
@@ -49,7 +49,8 @@ def finish(succeeded, info):
             pass
 
     results = {}
-    results['data'] = data
+    results['results'] = data
+    results['job_id'] = info['job_id']
     results['start_time'] = info['start_time']
     results['end_time'] = datetime.utcnow().isoformat()
 
@@ -85,10 +86,19 @@ def finish(succeeded, info):
 
     # Finally, notify the webhook (if specified) that this grading job is done
     if info['webhook_url']:
-        req = urllib2.Request(webhook_url)
-        req.add_header('Content-Type', 'application/json')
+        headers = {'Content-Type': 'application/json'}
+        if info['csrf_token']:
+            log('CSRF Token: %s' % info['csrf_token'])
+            headers['x-csrf-token'] = info['csrf_token']
 
-        # response = urllib2.urlopen(req, )
+        # Wrap the results inside one more level of json
+        # This makes the data field optional; job_id on the outer object is still mandatory
+        final_data = {}
+        final_data['data'] = results
+        final_data['event'] = 'autograder_result'
+        final_data['job_id'] = info['job_id']
+
+        r = requests.post(info['webhook_url'], data=json.dumps(final_data), headers=headers)
 
     # We're all done now.
     sys.exit(0 if succeeded else 1)
@@ -138,6 +148,12 @@ def main():
         info['webhook_url'] = None
     else:
         info['webhook_url'] = os.environ['WEBHOOK_URL']
+
+    if 'CSRF_TOKEN' not in os.environ:
+        warn('a csrf token was not specified in the CSRF_TOKEN environment variable')
+        info['csrf_token'] = None
+    else:
+        info['csrf_token'] = os.environ['CSRF_TOKEN']
 
     if environ_error:
         finish(False, info)
