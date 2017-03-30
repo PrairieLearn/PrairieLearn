@@ -20,6 +20,12 @@ module.exports = function(req, res, next) {
 
     if (req.path === '/pl/webhooks/autograder') {
       // Webhook callbacks should not be authenticated
+      // We still have to make sure these fields exist so that things further
+      // down the middleware chain don't fail
+      res.locals.authn_user = {
+        user_id: null,
+        uid: null,
+      }
       next();
       return;
     }

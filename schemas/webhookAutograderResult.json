@@ -8,12 +8,16 @@
             "description": "The event type of this webhook callback; should be 'autograder_result'.",
             "type": "string",
             "pattern": "^autograder_result$",
-            "required": true,
+            "required": true
         },
         "job_id": {
-            "description": "A unique identifier for this particular job",
+            "description": "A unique identifier for this particular job.",
             "type": "integer",
             "required": true
+        },
+        "data": {
+            "description": "The results of the autograder run. If not specified, the results should be fetched from S3.",
+            "type": "object"
         }
     }
 }
