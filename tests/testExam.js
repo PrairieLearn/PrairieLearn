@@ -56,8 +56,8 @@ describe('Exam assessment', function() {
             $ = cheerio.load(page);
         });
         it('should contain E1', function() {
-            elemList = $('td a:contains("E1")');
-            assert.ok(elemList.length);
+            elemList = $('td a:contains("Exam for automatic test suite")');
+            assert.lengthOf(elemList, 1);
         });
         it('should have the correct link for E1', function() {
             assessmentUrl = siteUrl + elemList[0].attribs.href;
@@ -84,15 +84,15 @@ describe('Exam assessment', function() {
         });
         it('should contain "Please wait"', function() {
             elemList = $('p.lead:contains("Please wait")');
-            assert.ok(elemList.length);
+            assert.lengthOf(elemList, 1);
         });
         it('should contain "Exam 1"', function() {
             elemList = $('p.lead strong:contains("Exam 1")');
-            assert.ok(elemList.length);
+            assert.lengthOf(elemList, 1);
         });
         it('should contain "TPL 101"', function() {
             elemList = $('p.lead strong:contains("TPL 101")');
-            assert.ok(elemList.length);
+            assert.lengthOf(elemList, 1);
         });
         it('should have a CSRF token', function() {
             elemList = $('form input[name="csrfToken"]');

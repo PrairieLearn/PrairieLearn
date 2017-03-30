@@ -30,6 +30,12 @@ function serverMode(req) {
             } catch (e) {} // do nothing, so stay in 'Public' mode
         }
     }
+
+    // allow mode override in dev mode
+    if (config.authType == 'none' && req.cookies.pl_requested_mode) {
+        mode = req.cookies.pl_requested_mode;
+    }
+
     return mode;
 };
 

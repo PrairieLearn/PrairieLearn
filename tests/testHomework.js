@@ -55,8 +55,8 @@ describe('Homework assessment', function() {
             $ = cheerio.load(page);
         });
         it('should contain HW1', function() {
-            elemList = $('td a:contains("HW1")');
-            assert.ok(elemList.length);
+            elemList = $('td a:contains("Homework for automatic test suite")');
+            assert.lengthOf(elemList, 1);
         });
         it('should have the correct link for HW1', function() {
             assessmentUrl = siteUrl + elemList[0].attribs.href;
