@@ -479,4 +479,162 @@ describe('Access control as a student', function() {
             instance_question_2_id = instance_questions[1].id;
         });
     });
+
+    describe('GET to assessment_instance URL as student', function() {
+        it('should return 500', function(callback) {
+            var cookies = makeCookies();
+            request({url: assessmentInstanceUrl, jar: cookies}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 500) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                callback(null);
+            })
+        });
+    });
+
+    describe('GET to assessment_instance URL as student in Exam mode in 2015', function() {
+        it('should return 500', function(callback) {
+            var cookies = makeCookies();
+            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
+            cookies.setCookie(request.cookie('pl_requested_date=2015-06-13T13:12:00Z'), siteUrl);
+            request({url: assessmentInstanceUrl, jar: cookies}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 500) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                callback(null);
+            })
+        });
+    });
+
+    describe('GET to assessment_instance URL as student in Exam mode in 2250', function() {
+        it('should return 500', function(callback) {
+            var cookies = makeCookies();
+            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
+            cookies.setCookie(request.cookie('pl_requested_date=2250-06-13T13:12:00Z'), siteUrl);
+            request({url: assessmentInstanceUrl, jar: cookies}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 500) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                callback(null);
+            })
+        });
+    });
+
+    describe('GET to assessment_instance URL as student in Exam mode', function() {
+        it('should load successfully', function(callback) {
+            var cookies = makeCookies();
+            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
+            request({url: assessmentInstanceUrl, jar: cookies}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                res = response;
+                page = body;
+                callback(null);
+            })
+        });
+        it('should parse', function() {
+            $ = cheerio.load(page);
+        });
+        it('should have a CSRF token', function() {
+            elemList = $('form[name="grade-form"] input[name="csrfToken"]');
+            assert.lengthOf(elemList, 1);
+            assert.deepProperty(elemList[0], 'attribs.value');
+            csrfToken = elemList[0].attribs.value;
+            assert.isString(csrfToken);
+        });
+    });
+
+    describe('POST to assessment_instance URL as student', function() {
+        it('should return 500', function(callback) {
+            var form = {
+                postAction: 'grade',
+                csrfToken: csrfToken,
+            };
+            var cookies = makeCookies();
+            request.post({url: assessmentInstanceUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 500) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                callback(null);
+            })
+        });
+    });
+
+    describe('POST to assessment_instance URL as student in Exam mode in 2015', function() {
+        it('should return 500', function(callback) {
+            var form = {
+                postAction: 'grade',
+                csrfToken: csrfToken,
+            };
+            var cookies = makeCookies();
+            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
+            cookies.setCookie(request.cookie('pl_requested_date=2015-06-13T13:12:00Z'), siteUrl);
+            request.post({url: assessmentInstanceUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 500) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                callback(null);
+            })
+        });
+    });
+
+    describe('POST to assessment_instance URL as student in Exam mode in 2250', function() {
+        it('should return 500', function(callback) {
+            var form = {
+                postAction: 'grade',
+                csrfToken: csrfToken,
+            };
+            var cookies = makeCookies();
+            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
+            cookies.setCookie(request.cookie('pl_requested_date=2250-06-13T13:12:00Z'), siteUrl);
+            request.post({url: assessmentInstanceUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 500) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                callback(null);
+            })
+        });
+    });
+
+    describe('POST to assessment_instance URL as student in Exam mode', function() {
+        it('should load successfully', function(callback) {
+            var form = {
+                postAction: 'grade',
+                csrfToken: csrfToken,
+            };
+            var cookies = makeCookies();
+            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
+            request.post({url: assessmentInstanceUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                callback(null);
+            })
+        });
+    });
 });
