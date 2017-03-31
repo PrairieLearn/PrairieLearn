@@ -48,7 +48,7 @@ You'll need to create S3 buckets to hold jobs, results, and archives. If you're 
 }
 ```
 
-## Setting up an IAM role
+## Setting up IAM roles
 
 You'll need to configure an IAM role that will be provided to the containers running on Batch; this will let the containers use AWS resources. Currently, that role only needs one policy attached to it: `AmazonS3FullAccess`. This will allow the jobs to read to and write from S3. These permissions should be kept at a minimum to minimize the amount of damage a student could cause if they somehow managed to execute AWS commands inside the containers.
 
