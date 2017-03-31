@@ -3,6 +3,8 @@
 
 * __2.4.0__ - unreleased
 
+  * Fix duration calculations to be from assessment start to last submission.
+
   * Show all submissions in downloaded CSV files when running in dev mode.
 
   * Fix `Manual` grading type (Jake Bailey).
@@ -63,7 +65,8 @@
 
 * __2.1.0__ - 2017-02-13
 
-  * Fix division-by-zero error in homeworks when `max_points` is zero (Jake Bailey).
+  * Fix division-by-zero error in homeworks when `max_points` is zero
+    (Jake Bailey).
 
   * Fix typos in documentation (Andre Schleife).
 

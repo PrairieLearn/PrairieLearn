@@ -1,5 +1,13 @@
 CREATE OR REPLACE VIEW assessment_instance_durations AS
 WITH
+dates_from_assessment_instances AS (
+    SELECT
+        ai.id,
+        ai.date AS min_date,
+        ai.date AS max_date
+    FROM
+        assessment_instances AS ai
+),
 dates_from_variant_view_logs AS (
     SELECT
         ai.id,
@@ -26,24 +34,12 @@ dates_from_submissions AS (
     WHERE u.user_id = s.auth_user_id
     GROUP BY ai.id
 ),
--- # TEMPORARILY DISABLE due to "Instructor finish" incorrectly setting the auth_user_id to the user_id
--- dates_from_assessment_scores AS (
---     SELECT
---         ai.id,
---         min(tsc.date) AS min_date,
---         max(tsc.date) AS max_date
---     FROM assessment_scores AS tsc
---     JOIN assessment_instances AS ai ON (ai.id = tsc.assessment_instance_id)
---     JOIN users AS u ON (u.user_id = ai.user_id)
---     WHERE u.user_id = tsc.auth_user_id
---     GROUP BY ai.id
--- ),
 all_dates AS (
+    SELECT * FROM dates_from_assessment_instances
+    UNION ALL
     SELECT * FROM dates_from_variant_view_logs
     UNION ALL
     SELECT * FROM dates_from_submissions
---     UNION ALL
---     SELECT * FROM dates_from_assessment_scores
 )
 SELECT
     id,
