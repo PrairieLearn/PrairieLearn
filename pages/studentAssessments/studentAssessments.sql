@@ -107,7 +107,7 @@ SELECT
         WHEN assessment_instance_id IS NULL THEN '/assessment/' || assessment_id || '/'
         ELSE '/assessment_instance/' || assessment_instance_id || '/'
     END AS link,
-    (lag(assessment_set_id) OVER (PARTITION BY assessment_set_id ORDER BY assessment_number, assessment_id, assessment_instance_number NULLS FIRST) IS NULL) AS start_new_set
+    (lag(assessment_set_id) OVER (PARTITION BY assessment_set_id ORDER BY assessment_order_by, assessment_id, assessment_instance_number NULLS FIRST) IS NULL) AS start_new_set
 FROM
     all_rows
 WHERE

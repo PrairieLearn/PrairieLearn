@@ -3,6 +3,8 @@
 
 * __2.4.0__ - unreleased
 
+  * Fix ordering of assessment set headers in assessment lists.
+
   * Fix duration calculations to be from assessment start to last submission.
 
   * Show all submissions in downloaded CSV files when running in dev mode.

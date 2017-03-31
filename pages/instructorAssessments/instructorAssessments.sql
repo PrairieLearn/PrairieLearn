@@ -27,7 +27,7 @@ SELECT
     aset.heading,
     aset.color,
     (aset.abbreviation || a.number) as label,
-    (lag(aset.id) OVER (PARTITION BY aset.id ORDER BY a.number, a.id) IS NULL) AS start_new_set
+    (lag(aset.id) OVER (PARTITION BY aset.id ORDER BY a.order_by, a.id) IS NULL) AS start_new_set
 FROM
     assessments AS a
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
