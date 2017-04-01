@@ -1,7 +1,6 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
-var assert = require('assert');
-var should = require('should');
+var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
 
@@ -10,7 +9,7 @@ var sqldb = require('../lib/sqldb');
 var sqlLoader = require('../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-var testHelperServer = require('./testHelperServer');
+var helperServer = require('./helperServer');
 
 var siteUrl = 'http://localhost:' + config.serverPort;
 var baseUrl = siteUrl + '/pl';
@@ -20,8 +19,8 @@ var assessmentUrl, assessmentInstanceUrl, q1Url, q2Url;
 
 describe('Homework assessment', function() {
 
-    before("set up testing server", testHelperServer.before);
-    after("shut down testing server", testHelperServer.after);
+    before("set up testing server", helperServer.before);
+    after("shut down testing server", helperServer.after);
 
     var res, page, $, elemList;
     var assessment_id, assessment_instance, instance_questions, variant, submission;
@@ -56,8 +55,8 @@ describe('Homework assessment', function() {
             $ = cheerio.load(page);
         });
         it('should contain HW1', function() {
-            elemList = $('td a:contains("HW1")');
-            assert.ok(elemList.length);
+            elemList = $('td a:contains("Homework for automatic test suite")');
+            assert.lengthOf(elemList, 1);
         });
         it('should have the correct link for HW1', function() {
             assessmentUrl = siteUrl + elemList[0].attribs.href;
@@ -135,13 +134,13 @@ describe('Homework assessment', function() {
         });
         it('should link to addVectors question', function() {
             elemList = $('td a:contains("Addition of vectors in Cartesian coordinates")');
-            elemList.length.should.equal(1);
+            assert.lengthOf(elemList, 1);
             q1Url = siteUrl + elemList[0].attribs.href;
             assert.equal(q1Url, courseInstanceBaseUrl + '/instance_question/' + instance_questions[0].id + '/');
         });
         it('should link to fossilFuelsRadio question', function() {
             elemList = $('td a:contains("Advantages of fossil fuels (radio)")');
-            elemList.length.should.equal(1);
+            assert.lengthOf(elemList, 1);
             q2Url = siteUrl + elemList[0].attribs.href;
             assert.equal(q2Url, courseInstanceBaseUrl + '/instance_question/' + instance_questions[1].id + '/');
         });
@@ -168,22 +167,21 @@ describe('Homework assessment', function() {
             });
             it('should contain question-data', function() {
                 elemList = $('.question-data');
-                elemList.length.should.equal(1);
+                assert.lengthOf(elemList, 1);
             });
             it('question-data should contain base64 data', function() {
-                should.exist(elemList[0].children);
-                should.exist(elemList[0].children[0]);
-                should.exist(elemList[0].children[0].data);
+                assert.deepProperty(elemList[0], 'children.0.data');
+                assert.lengthOf(elemList[0].children, 1);
+                assert.property(elemList[0].children[0], 'data');
             });
             it('base64 data should parse to JSON', function() {
                 questionData = JSON.parse(new Buffer(elemList[0].children[0].data, 'base64').toString());
             });
             it('should have a variant_id in the questionData', function() {
-                questionData.should.have.property('variant');
-                variant = questionData.variant;
-                variant.should.have.property('id');
+                assert.deepProperty(questionData, 'variant.id');
             });
             it('should have the variant in the DB', function(callback) {
+                variant = questionData.variant;
                 var params = {
                     variant_id: variant.id,
                     instance_question_id: variant.instance_question_id,
@@ -199,12 +197,10 @@ describe('Homework assessment', function() {
             });
             it('should have a CSRF token', function() {
                 elemList = $('.question-form input[name="csrfToken"]');
-                elemList.length.should.equal(1);
-                elemList[0].should.have.property('attribs');
-                elemList[0].attribs.should.have.property('value');
+                assert.lengthOf(elemList, 1);
+                assert.deepProperty(elemList[0], 'attribs.value');
                 csrfToken = elemList[0].attribs.value;
-                csrfToken.should.be.a.String();
-                csrfToken.length.should.be.above(10);
+                assert.isString(csrfToken);
             });
         });
         describe('POST to instance_question URL', function() {
@@ -264,10 +260,10 @@ describe('Homework assessment', function() {
                 });
             });
             it('should update instance_question points', function() {
-                instance_question.points.should.equal(locals.expectedResult.instance_question_points);
+                assert.approximately(instance_question.points, locals.expectedResult.instance_question_points, 1e-6);
             });
             it('should update instance_question score_perc', function() {
-                instance_question.score_perc.should.be.approximately(locals.expectedResult.instance_question_score_perc, 1e-6);
+                assert.approximately(instance_question.score_perc, locals.expectedResult.instance_question_score_perc, 1e-6);
             });
             it('should still have the assessment_instance', function(callback) {
                 var params = {
@@ -280,10 +276,10 @@ describe('Homework assessment', function() {
                 });
             });
             it('should update assessment_instance points', function() {
-                assessment_instance.points.should.equal(locals.expectedResult.assessment_instance_points);
+                assert.approximately(assessment_instance.points, locals.expectedResult.assessment_instance_points, 1e-6);
             });
             it('should update assessment_instance score_perc', function() {
-                assessment_instance.score_perc.should.be.approximately(locals.expectedResult.assessment_instance_score_perc, 1e-6);
+                assert.approximately(assessment_instance.score_perc, locals.expectedResult.assessment_instance_score_perc, 1e-6);
             });
         });
     };

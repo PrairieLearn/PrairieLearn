@@ -1,3 +1,4 @@
+DROP FUNCTION IF EXISTS check_assessment_access(bigint,enum_mode,enum_role,text,timestamp with time zone);
 DROP FUNCTION IF EXISTS check_assessment_access(bigint,enum_mode,enum_role,text,timestamp with time zone,text);
 
 CREATE OR REPLACE FUNCTION
@@ -5,6 +6,7 @@ CREATE OR REPLACE FUNCTION
         IN assessment_id bigint,
         IN mode enum_mode,
         IN role enum_role,
+        IN user_id bigint,
         IN uid text,
         IN date TIMESTAMP WITH TIME ZONE,
         IN display_timezone text,
@@ -42,7 +44,7 @@ BEGIN
     FROM
         assessment_access_rules AS aar
         JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.mode, check_assessment_access.role,
-            check_assessment_access.uid, check_assessment_access.date, TRUE) AS caar ON TRUE
+            check_assessment_access.user_id, check_assessment_access.uid, check_assessment_access.date, TRUE) AS caar ON TRUE
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
         AND caar.authorized
@@ -83,9 +85,9 @@ BEGIN
     FROM
         assessment_access_rules AS aar
         JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.mode, check_assessment_access.role,
-            check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
+            check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
         AND caar.authorized;
 END;
-$$ LANGUAGE plpgsql STABLE;
+$$ LANGUAGE plpgsql VOLATILE;

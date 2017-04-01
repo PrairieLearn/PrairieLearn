@@ -29,9 +29,14 @@ module.exports = {
             // top-level tables
             'users.sql',
             'administrators.sql',
-            'courses.sql',
+            'pl_courses.sql',
             'course_permissions.sql',
 
+            // PrairieSchedule proxy tables
+            'courses.sql',
+            'exams.sql',
+            'reservations.sql',
+            
             // tables synced from git repo
             'course_instances.sql',
             'course_instance_access_rules.sql',

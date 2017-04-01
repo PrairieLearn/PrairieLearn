@@ -1,6 +1,6 @@
 -- BLOCK select_authz_data
 SELECT
-    authz_course_instance($authn_user_id, ci.id, $is_administrator) AS permissions_course_instance,
+    authz_course_instance($authn_user_id, ci.id, $is_administrator, $req_date) AS permissions_course_instance,
     authz_course($authn_user_id, c.id, $is_administrator) AS permissions_course,
     to_jsonb(c.*) AS course,
     to_jsonb(ci.*) AS course_instance
@@ -32,7 +32,11 @@ WITH effective_data AS (
         CASE
             WHEN $authn_role::enum_role >= 'TA' THEN $requested_mode::enum_mode
             ELSE $server_mode::enum_mode
-        END AS mode
+        END AS mode,
+        CASE
+            WHEN $authn_role::enum_role >= 'Instructor' THEN $requested_date::timestamptz
+            ELSE $req_date
+        END AS req_date
     FROM
         users AS authn_u,
         users AS u
@@ -49,4 +53,4 @@ FROM
     effective_data AS ed
 WHERE
     ed.role IS NOT NULL
-    AND check_course_instance_access($course_instance_id, ed.role, ed.user->>'uid', current_timestamp);
+    AND check_course_instance_access($course_instance_id, ed.role, ed.user->>'uid', ed.req_date);

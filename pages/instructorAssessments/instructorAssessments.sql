@@ -34,7 +34,7 @@ FROM
     LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     LEFT JOIN assessment_stats AS tstats ON (tstats.id = a.id)
     LEFT JOIN assessment_duration_stats AS dstats ON (dstats.id = a.id)
-    LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, ci.display_timezone) AS aa ON TRUE
+    LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
 WHERE
     ci.id = $course_instance_id
     AND a.deleted_at IS NULL

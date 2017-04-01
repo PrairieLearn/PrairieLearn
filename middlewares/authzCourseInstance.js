@@ -30,6 +30,12 @@ function serverMode(req) {
             } catch (e) {} // do nothing, so stay in 'Public' mode
         }
     }
+
+    // allow mode override in dev mode
+    if (config.authType == 'none' && req.cookies.pl_requested_mode) {
+        mode = req.cookies.pl_requested_mode;
+    }
+
     return mode;
 };
 
@@ -39,6 +45,7 @@ module.exports = function(req, res, next) {
         authn_user_id: res.locals.authn_user.user_id,
         course_instance_id: req.params.course_instance_id,
         is_administrator: res.locals.is_administrator,
+        req_date: res.locals.req_date,
     };
     sqldb.queryZeroOrOneRow(sql.select_authz_data, params, function(err, result) {
         if (ERR(err, next)) return;
@@ -46,10 +53,6 @@ module.exports = function(req, res, next) {
 
         res.locals.course = result.rows[0].course;
         res.locals.course_instance = result.rows[0].course_instance;
-
-        var authn_role = result.rows[0].authn_role;
-        var authn_has_instructor_view = result.rows[0].authn_has_instructor_view;
-        var authn_has_instructor_edit = result.rows[0].authn_has_instructor_edit;
 
         var permissions_course_instance = result.rows[0].permissions_course_instance;
         var permissions_course = result.rows[0].permissions_course;
@@ -81,7 +84,7 @@ module.exports = function(req, res, next) {
         logger.debug('Preliminary authz_data', res.locals.authz_data);
 
         // check whether we are requesting user data override
-        if (!req.cookies.pl_requested_uid && !req.cookies.pl_requested_role && !req.cookies.pl_requested_mode) {
+        if (!req.cookies.pl_requested_uid && !req.cookies.pl_requested_role && !req.cookies.pl_requested_mode && !req.cookies.pl_requested_date) {
             // no user data override, just continue
             return next();
         }
@@ -101,16 +104,19 @@ module.exports = function(req, res, next) {
                 authn_user_id: res.locals.authn_user.user_id,
                 authn_role: res.locals.authz_data.authn_role,
                 server_mode: res.locals.authz_data.authn_mode,
+                req_date: res.locals.req_date,
                 course_instance_id: req.params.course_instance_id,
                 requested_uid: (req.cookies.pl_requested_uid ? req.cookies.pl_requested_uid : res.locals.authz_data.user.uid),
                 requested_role: (req.cookies.pl_requested_role ? req.cookies.pl_requested_role : res.locals.authz_data.role),
                 requested_mode: (req.cookies.pl_requested_mode ? req.cookies.pl_requested_mode : res.locals.authz_data.mode),
+                requested_date: (req.cookies.pl_requested_date ? req.cookies.pl_requested_date : res.locals.req_date),
             };
             sqldb.queryZeroOrOneRow(sql.select_effective_authz_data, params, function(err, result) {
                 if (ERR(err, next)) return;
                 if (result.rowCount == 0) return next(error.make(403, 'Access denied'));
 
                 _.assign(res.locals.authz_data, result.rows[0]);
+                res.locals.req_date = result.rows[0].req_date;
                 // remove all course permissions if we are emulating another user
                 res.locals.authz_data.course_role = 'None';
                 res.locals.authz_data.has_course_permission_view = false;

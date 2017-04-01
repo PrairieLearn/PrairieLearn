@@ -41,8 +41,6 @@ module.exports = {
             'random_unique.sql',
             'question_order.sql',
             'exam_question_status.sql',
-            'auth_instructor_course_instance.sql',
-            'auth_instructor_assessment_instance.sql',
             'authz_assessment.sql',
             'authz_assessment_instance.sql',
             'select_assessment_questions.sql',

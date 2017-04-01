@@ -40,7 +40,7 @@ SELECT
     s.*,
     format_date_full_compact(s.date, ci.display_timezone) AS formatted_date,
     CASE
-        WHEN s.grading_requested_at IS NOT NULL THEN format_interval(now() - s.grading_requested_at)
+        WHEN s.grading_requested_at IS NOT NULL THEN format_interval($req_date - s.grading_requested_at)
         ELSE NULL
     END AS elapsed_grading_time
 FROM

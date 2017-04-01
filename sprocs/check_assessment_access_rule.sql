@@ -1,8 +1,11 @@
+DROP FUNCTION IF EXISTS check_assessment_access_rule(assessment_access_rules,enum_mode,enum_role,text,timestamp with time zone,boolean);
+
 CREATE OR REPLACE FUNCTION
     check_assessment_access_rule (
         IN assessment_access_rule assessment_access_rules,
         IN mode enum_mode,
         IN role enum_role,
+        IN user_id bigint,
         IN uid text,
         IN date TIMESTAMP WITH TIME ZONE,
         IN use_date_check BOOLEAN, -- use a separate flag for safety, rather than having 'date = NULL' indicate this
@@ -44,5 +47,49 @@ BEGIN
             authorized := FALSE;
         END IF;
     END IF;
+
+    << schedule_access >> -- check access with PrairieSchedule
+    DECLARE
+        ps_course_id bigint;
+        reservation record;
+    BEGIN
+        -- only needed for Exams when we care about the date
+        EXIT schedule_access WHEN assessment_access_rule.mode != 'Exam';
+        EXIT schedule_access WHEN NOT use_date_check;
+
+        -- is there a corresponding PrairieSchedule course?
+        SELECT ps_c.course_id
+        INTO ps_course_id
+        FROM
+            assessments AS a
+            JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+            JOIN pl_courses AS pl_c ON (pl_c.id = ci.course_id)
+            JOIN courses as ps_c ON (ps_c.pl_course_id = pl_c.id)
+        WHERE
+            a.id = assessment_access_rule.assessment_id;
+        EXIT schedule_access WHEN NOT FOUND; -- no linked PS course, skip this check
+
+        -- get the reservation
+        SELECT r.*
+        INTO reservation
+        FROM
+            reservations AS r
+            JOIN exams AS e USING (exam_id)
+        WHERE
+            e.course_id = ps_course_id
+            AND r.user_id = check_assessment_access_rule.user_id;
+
+        IF NOT FOUND THEN
+            -- no reservation, so block access
+            authorized := FALSE;
+            EXIT schedule_access;
+        END IF;
+
+        -- check the times
+        IF reservation.access_start > date OR reservation.access_end < date THEN
+            authorized := FALSE;
+            EXIT schedule_access;
+        END IF;
+    END schedule_access;
 END;
-$$ LANGUAGE plpgsql STABLE;
+$$ LANGUAGE plpgsql VOLATILE;

@@ -7,8 +7,12 @@ digraph partmc_modules {
 
     users [style=filled, fillcolor=mistyrose1]
     administrators [style=filled, fillcolor=mistyrose1]
-    courses [label="courses*", style=filled, fillcolor=mistyrose1]
+    pl_courses [label="pl_courses*", style=filled, fillcolor=mistyrose1]
     course_permissions [style=filled, fillcolor=mistyrose1]
+
+    courses [style=filled, fillcolor=lemonchiffon]
+    exams [style=filled, fillcolor=lemonchiffon]
+    reservations [style=filled, fillcolor=lemonchiffon]
 
     course_instances [label="course_instances*", style=filled, fillcolor=honeydew1]
     course_instance_access_rules [style=filled, fillcolor=honeydew1]
@@ -39,18 +43,22 @@ digraph partmc_modules {
     assessment_view_logs [style=filled, fillcolor=white]
 
     administrators -> { users }
-    course_permissions -> { users; courses }
+    course_permissions -> { users; pl_courses }
+
+    courses -> { pl_courses }
+    exams -> { courses }
+    reservations -> { users; exams }
 
     assessment_access_rules -> { assessments }
-    course_instances -> { courses }
+    course_instances -> { pl_courses }
     course_instance_access_rules -> { course_instances }
-    questions -> { courses; topics }
+    questions -> { pl_courses; topics }
     question_tags -> { questions; tags }
-    tags -> { courses }
+    tags -> { pl_courses }
     assessments -> { course_instances; assessment_sets }
     assessment_questions -> { assessments; alternative_groups; questions }
-    assessment_sets -> { courses }
-    topics -> { courses }
+    assessment_sets -> { pl_courses }
+    topics -> { pl_courses }
     zones -> { assessments }
     alternative_groups -> { zones }
 
@@ -59,7 +67,7 @@ digraph partmc_modules {
     instance_questions -> { assessment_questions; assessment_instances }
     variants -> { instance_questions }
     submissions -> { variants }
-    job_sequences -> { courses; users }
+    job_sequences -> { pl_courses; users }
     jobs -> { job_sequences }
 
     assessment_state_logs -> { assessment_instances }
@@ -74,6 +82,9 @@ digraph partmc_modules {
         labelloc=b;
         label="Legend";
 
+        k5 [shape=plaintext, style=solid, label="PrairieSchedule tables.\l"];
+        kc5[label=" ", style=filled, fillcolor=lemonchiffon];
+
         k4 [shape=plaintext, style=solid, label="Logging objects.\lNot needed for operation.\lCannot be deleted.\l"];
         kc4[label=" ", style=filled, fillcolor=white];
 
@@ -86,9 +97,11 @@ digraph partmc_modules {
         k1 [shape=plaintext, style=solid, label="Made by superuser.\l'*' means soft deletes.\l"];
         kc1[label=" ", style=filled, fillcolor=mistyrose1];
 
+        kc5 -> kc4 [style=invis];
         kc4 -> kc3 [style=invis];
         kc3 -> kc2 [style=invis];
         kc2 -> kc1 [style=invis];
+        k5 -> k4 [style=invis];
         k4 -> k3 [style=invis];
         k3 -> k2 [style=invis];
         k2 -> k1 [style=invis];

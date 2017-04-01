@@ -23,6 +23,12 @@ module.exports = function(req, res, next) {
         authUid = 'dev@example.com';
         authName = 'Dev User';
         authUin = '123456789';
+
+        if (req.cookies.pl_test_user == 'test_student') {
+            authUid = 'student@example.com';
+            authName = 'Student User';
+            authUin = '314156295';
+        }
     } else if (config.authType == 'x-trust-auth') {
 
         // first try for trusted data

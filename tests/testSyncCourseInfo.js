@@ -4,7 +4,7 @@ var assert = require('assert');
 
 var courseDB = require('../lib/course-db');
 var sqldb = require('../lib/sqldb');
-var testHelperDb = require('./testHelperDb');
+var helperDb = require('./helperDb');
 var syncCourseInfo = require('../sync/fromDisk/courseInfo');
 var sqlLoader = require('../lib/sql-loader');
 
@@ -25,8 +25,8 @@ describe('sync/fromDisk/courseInfo', function() {
         });
     });
 
-    before("set up testing DB", testHelperDb.before);
-    after("shut down testing DB", testHelperDb.after);
+    before("set up testing DB", helperDb.before);
+    after("shut down testing DB", helperDb.after);
 
     describe('sprocs/select_or_insert_course_by_path', function() {
         it('should use id 1 for exampleCourse', function(callback) {

@@ -25,7 +25,7 @@ WITH
             assessments AS a
             JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
             JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-            LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, ci.display_timezone) AS aa ON TRUE
+            LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
         WHERE
             ci.id = $course_instance_id
             AND a.multiple_instance
@@ -86,7 +86,7 @@ WITH
             JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
             JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
             LEFT JOIN assessment_instances AS ai ON (ai.assessment_id = a.id AND ai.user_id = $user_id)
-            LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, ci.display_timezone) AS aa ON TRUE
+            LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
         WHERE
             ci.id = $course_instance_id
             AND NOT a.multiple_instance

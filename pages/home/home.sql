@@ -51,7 +51,7 @@ course_instances_list AS (
             $is_administrator
             OR (
                 e.id IS NOT NULL
-                AND check_course_instance_access(ci.id, e.role, e.uid, current_timestamp)
+                AND check_course_instance_access(ci.id, e.role, e.uid, $req_date)
             )
         )
 )

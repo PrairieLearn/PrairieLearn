@@ -1,3 +1,5 @@
+DROP FUNCTION IF EXISTS courses_insert(text,text,text,text,bigint);
+
 CREATE OR REPLACE FUNCTION
     courses_insert(
         short_name text,
