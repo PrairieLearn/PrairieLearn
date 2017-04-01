@@ -23,19 +23,18 @@ WHERE
     AND aset.abbreviation = 'E'
     AND a.number = '1';
 
--- BLOCK select_assessment_instances
-SELECT
-    ai.*
-FROM
-    assessment_instances AS ai;
+-- BLOCK insert_ps_course_link
+WITH
+insert_course_result AS (
+    INSERT INTO courses
+            (course_id, pl_course_id)
+    VALUES (1, 1)
+)
+INSERT INTO exams
+        (exam_id, course_id)
+VALUES (1, 1);
 
--- BLOCK select_instance_questions
-SELECT
-    iq.*,
-    q.qid
-FROM
-    instance_questions AS iq
-    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-    JOIN questions AS q ON (q.id = aq.question_id)
-ORDER BY
-    q.qid;
+-- BLOCK insert_ps_reservation
+INSERT INTO reservations
+        (exam_id, user_id, access_start, access_end)
+VALUES (1, $user_id, '2000-01-13 14:02:41', '2200-09-04 08:01:43');
