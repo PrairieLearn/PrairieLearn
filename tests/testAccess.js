@@ -17,15 +17,44 @@ var courseInstanceBaseUrl = baseUrl + '/course_instance/1';
 var assessmentsUrl = courseInstanceBaseUrl + '/assessments';
 var assessmentUrl, assessmentInstanceUrl, q1Url, q2Url;
 
-describe('Access control as a student', function() {
+describe('Access control', function() {
 
     before("set up testing server", helperServer.before);
     after("shut down testing server", helperServer.after);
 
-    var makeCookies = function() {
+    var cookiesStudent = function() {
         var cookies = request.jar();
-        var cookie = request.cookie('pl_test_user=test_student');
-        cookies.setCookie(cookie, siteUrl);
+        cookies.setCookie(request.cookie('pl_test_user=test_student'), siteUrl);
+        return cookies;
+    };
+
+    var cookiesStudentExam = function() {
+        var cookies = cookiesStudent();
+        cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
+        return cookies;
+    };
+
+    var cookiesStudentExamBefore = function() {
+        var cookies = cookiesStudentExam();
+        cookies.setCookie(request.cookie('pl_requested_date=2015-06-13T13:12:00Z'), siteUrl);
+        return cookies;
+    };
+
+    var cookiesStudentExamAfter = function() {
+        var cookies = cookiesStudentExam();
+        cookies.setCookie(request.cookie('pl_requested_date=2250-06-13T13:12:00Z'), siteUrl);
+        return cookies;
+    };
+
+    var cookiesStudentBeforeCourseInstance = function() {
+        var cookies = cookiesStudent();
+        cookies.setCookie(request.cookie('pl_requested_date=2014-06-13T13:12:00Z'), siteUrl);
+        return cookies;
+    };
+
+    var cookiesStudentAfterCourseInstance = function() {
+        var cookies = cookiesStudent();
+        cookies.setCookie(request.cookie('pl_requested_date=2400-06-13T13:12:00Z'), siteUrl);
         return cookies;
     };
 
@@ -33,27 +62,32 @@ describe('Access control as a student', function() {
     var assessment_id, assessment_instance, instance_questions;
     var csrfToken, instance_question_1_id, instance_question_2_id;
 
-    describe('GET /pl as student', function() {
-        it('should load successfully', function(callback) {
-            var cookies = makeCookies();
-            request({url: baseUrl, jar: cookies}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                res = response;
-                page = body;
-                callback(null);
-            })
+    /**********************************************************************/
+
+    var getPl = function(cookies, shouldContainTPL101, callback) {
+        request({url: baseUrl, jar: cookies}, function (error, response, body) {
+            if (error) {
+                return callback(error);
+            }
+            if (response.statusCode != 200) {
+                return callback(new Error('bad status: ' + response.statusCode));
+            }
+            res = response;
+            page = body;
+            try {
+                $ = cheerio.load(page);
+                elemList = $('#content td a:contains("TPL 101")');
+                assert.lengthOf(elemList, shouldContainTPL101 ? 1 : 0);
+            } catch (err) {
+                return callback(err);
+            }
+            callback(null);
         });
-        it('should parse', function() {
-            $ = cheerio.load(page);
-        });
-        it('should not contain any courses', function() {
-            elemList = $('#content td a');
-            assert.lengthOf(elemList, 0);
+    };
+    
+    describe('GET /pl', function() {
+        it('as student should not contain TPL 101', function(callback) {
+            getPl(cookiesStudent(), false, callback);
         });
     });
 
@@ -77,83 +111,19 @@ describe('Access control as a student', function() {
         });
     });
 
-    describe('GET /pl as student', function() {
-        it('should load successfully', function(callback) {
-            var cookies = makeCookies();
-            request({url: baseUrl, jar: cookies}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                res = response;
-                page = body;
-                callback(null);
-            })
+    describe('GET /pl', function() {
+        it('as student should contain TPL 101', function(callback) {
+            getPl(cookiesStudent(), true, callback);
         });
-        it('should parse', function() {
-            $ = cheerio.load(page);
+        it('as student in Exam mode before course instance time period should contain TPL 101', function(callback) {
+            getPl(cookiesStudentBeforeCourseInstance(), false, callback);
         });
-        it('should contain TPL 101', function() {
-            elemList = $('#content td a:contains("TPL 101")');
-            assert.lengthOf(elemList, 1);
-            
-        });
-        it('should have the correct link for TPL 101', function() {
-            assert.deepPropertyVal(elemList[0], 'attribs.href', '/pl/course_instance/1');
+        it('as student in Exam mode after course instance time period should contain TPL 101', function(callback) {
+            getPl(cookiesStudentAfterCourseInstance(), false, callback);
         });
     });
 
-    describe('GET /pl as student in 2014', function() {
-        it('should load successfully', function(callback) {
-            var cookies = makeCookies();
-            cookies.setCookie(request.cookie('pl_requested_date=2014-06-13T13:12:00Z'), siteUrl);
-            request({url: baseUrl, jar: cookies}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                res = response;
-                page = body;
-                callback(null);
-            })
-        });
-        it('should parse', function() {
-            $ = cheerio.load(page);
-        });
-        it('should not contain any courses', function() {
-            elemList = $('#content td a');
-            assert.lengthOf(elemList, 0);
-        });
-    });
-
-    describe('GET /pl as student in 2400', function() {
-        it('should load successfully', function(callback) {
-            var cookies = makeCookies();
-            cookies.setCookie(request.cookie('pl_requested_date=2400-06-13T13:12:00Z'), siteUrl);
-            request({url: baseUrl, jar: cookies}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                res = response;
-                page = body;
-                callback(null);
-            })
-        });
-        it('should parse', function() {
-            $ = cheerio.load(page);
-        });
-        it('should not contain any courses', function() {
-            elemList = $('#content td a');
-            assert.lengthOf(elemList, 0);
-        });
-    });
+    /**********************************************************************/
 
     describe('database', function() {
         it('should contain E1', function(callback) {
@@ -165,175 +135,77 @@ describe('Access control as a student', function() {
         });
     });
 
-    describe('GET /pl/assessments as student', function() {
-        it('should load successfully', function(callback) {
-            var cookies = makeCookies();
-            request({url: assessmentsUrl, jar: cookies}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                res = response;
-                page = body;
-                callback(null);
-            })
-        });
-        it('should parse', function() {
-            $ = cheerio.load(page);
-        });
-        it('should not contain E1', function() {
-            elemList = $('td a:contains("Exam for automatic test suite")');
-            assert.lengthOf(elemList, 0);
-        });
-    });
+    /**********************************************************************/
 
-    describe('GET /pl/assessments as student in Exam mode', function() {
-        it('should load successfully', function(callback) {
-            var cookies = makeCookies();
-            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
-            request({url: assessmentsUrl, jar: cookies}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                res = response;
-                page = body;
-                callback(null);
-            })
+    var getAssessments = function(cookies, shouldContainE1, callback) {
+        request({url: assessmentsUrl, jar: cookies}, function (error, response, body) {
+            if (error) {
+                return callback(error);
+            }
+            if (response.statusCode != 200) {
+                return callback(new Error('bad status: ' + response.statusCode));
+            }
+            res = response;
+            page = body;
+            try {
+                $ = cheerio.load(page);
+                elemList = $('td a:contains("Exam for automatic test suite")');
+                assert.lengthOf(elemList, shouldContainE1 ? 1 : 0);
+            } catch (err) {
+                return callback(err);
+            }
+            callback(null);
         });
-        it('should parse', function() {
-            $ = cheerio.load(page);
+    };
+
+    describe('GET /pl/assessments', function() {
+        it('as student should not contain E1', function(callback) {
+            getAssessments(cookiesStudent(), false, callback);
         });
-        it('should contain E1', function() {
-            elemList = $('td a:contains("Exam for automatic test suite")');
-            assert.lengthOf(elemList, 1);
+        it('as student in Exam mode before time period should not contain E1', function(callback) {
+            getAssessments(cookiesStudentExamBefore(), false, callback);
+        });
+        it('as student in Exam mode after time period should not contain E1', function(callback) {
+            getAssessments(cookiesStudentExamAfter(), false, callback);
+        });
+        it('as student in Exam mode should contain E1', function(callback) {
+            getAssessments(cookiesStudentExam(), true, callback);
         });
         it('should have the correct link for E1', function() {
+            assert.deepProperty(elemList[0], 'attribs.href');
             assessmentUrl = siteUrl + elemList[0].attribs.href;
             assert.equal(assessmentUrl, courseInstanceBaseUrl + '/assessment/' + assessment_id + '/');
         });
     });
 
-    describe('GET /pl/assessments as student in Exam mode in 2015', function() {
-        it('should load successfully', function(callback) {
-            var cookies = makeCookies();
-            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
-            cookies.setCookie(request.cookie('pl_requested_date=2015-06-13T13:12:00Z'), siteUrl);
-            request({url: assessmentsUrl, jar: cookies}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                res = response;
-                page = body;
-                callback(null);
-            })
-        });
-        it('should parse', function() {
-            $ = cheerio.load(page);
-        });
-        it('should not contain E1', function() {
-            elemList = $('td a:contains("Exam for automatic test suite")');
-            assert.lengthOf(elemList, 0);
-        });
-    });
+    /**********************************************************************/
 
-    describe('GET /pl/assessments as student in Exam mode in 2250', function() {
-        it('should load successfully', function(callback) {
-            var cookies = makeCookies();
-            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
-            cookies.setCookie(request.cookie('pl_requested_date=2250-06-13T13:12:00Z'), siteUrl);
-            request({url: assessmentsUrl, jar: cookies}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                res = response;
-                page = body;
-                callback(null);
-            })
+    var getAssessment = function(cookies, expectedStatusCode, callback) {
+        request({url: assessmentUrl, jar: cookies}, function (error, response, body) {
+            if (error) {
+                return callback(error);
+            }
+            if (response.statusCode != expectedStatusCode) {
+                return callback(new Error('bad status: ' + response.statusCode));
+            }
+            res = response;
+            page = body;
+            callback(null);
         });
-        it('should parse', function() {
-            $ = cheerio.load(page);
+    };
+    
+    describe('GET to assessment URL', function() {
+        it('as student should return 500', function(callback) {
+            getAssessment(cookiesStudent(), 500, callback);
         });
-        it('should not contain E1', function() {
-            elemList = $('td a:contains("Exam for automatic test suite")');
-            assert.lengthOf(elemList, 0);
+        it('as student in Exam mode before time period should return 500', function(callback) {
+            getAssessment(cookiesStudentExamBefore(), 500, callback);
         });
-    });
-
-    describe('GET to assessment URL as student', function() {
-        it('should return 500', function(callback) {
-            var cookies = makeCookies();
-            request({url: assessmentUrl, jar: cookies}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 500) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                callback(null);
-            })
+        it('as student in Exam mode after time period should return 500', function(callback) {
+            getAssessment(cookiesStudentExamAfter(), 500, callback);
         });
-    });
-
-    describe('GET to assessment URL as student in Exam mode in 2015', function() {
-        it('should return 500', function(callback) {
-            var cookies = makeCookies();
-            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
-            cookies.setCookie(request.cookie('pl_requested_date=2015-06-13T13:12:00Z'), siteUrl);
-            request({url: assessmentUrl, jar: cookies}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 500) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                callback(null);
-            })
-        });
-    });
-
-    describe('GET to assessment URL as student in Exam mode in 2250', function() {
-        it('should return 500', function(callback) {
-            var cookies = makeCookies();
-            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
-            cookies.setCookie(request.cookie('pl_requested_date=2250-06-13T13:12:00Z'), siteUrl);
-            request({url: assessmentUrl, jar: cookies}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 500) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                callback(null);
-            })
-        });
-    });
-
-    describe('GET to assessment URL as student in Exam mode', function() {
-        it('should load successfully', function(callback) {
-            var cookies = makeCookies();
-            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
-            request({url: assessmentUrl, jar: cookies}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                res = response;
-                page = body;
-                callback(null);
-            })
+        it('as student in Exam mode should load successfully', function(callback) {
+            getAssessment(cookiesStudentExam(), 200, callback);
         });
         it('should parse', function() {
             $ = cheerio.load(page);
@@ -359,86 +231,38 @@ describe('Access control as a student', function() {
         });
     });
 
-    describe('POST to assessment URL as student', function() {
-        it('should return 500', function(callback) {
-            var form = {
-                postAction: 'newInstance',
-                csrfToken: csrfToken,
-            };
-            var cookies = makeCookies();
-            request.post({url: assessmentUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 500) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                callback(null);
-            })
+    /**********************************************************************/
+    
+    var postAssessment = function(cookies, expectedStatusCode, callback) {
+        var form = {
+            postAction: 'newInstance',
+            csrfToken: csrfToken,
+        };
+        request.post({url: assessmentUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
+            if (error) {
+                return callback(error);
+            }
+            if (response.statusCode != expectedStatusCode) {
+                return callback(new Error('bad status: ' + response.statusCode));
+            }
+            res = response;
+            page = body;
+            callback(null);
         });
-    });
-
-    describe('POST to assessment URL as student in Exam mode in 2015', function() {
-        it('should return 500', function(callback) {
-            var form = {
-                postAction: 'newInstance',
-                csrfToken: csrfToken,
-            };
-            var cookies = makeCookies();
-            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
-            cookies.setCookie(request.cookie('pl_requested_date=2015-06-13T13:12:00Z'), siteUrl);
-            request.post({url: assessmentUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 500) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                callback(null);
-            })
+    };
+    
+    describe('POST to assessment URL', function() {
+        it('as student should return 500', function(callback) {
+            postAssessment(cookiesStudent(), 500, callback);
         });
-    });
-
-    describe('POST to assessment URL as student in Exam mode in 2250', function() {
-        it('should return 500', function(callback) {
-            var form = {
-                postAction: 'newInstance',
-                csrfToken: csrfToken,
-            };
-            var cookies = makeCookies();
-            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
-            cookies.setCookie(request.cookie('pl_requested_date=2250-06-13T13:12:00Z'), siteUrl);
-            request.post({url: assessmentUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 500) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                callback(null);
-            })
+        it('as student in Exam mode before time period should return 500', function(callback) {
+            postAssessment(cookiesStudentExamBefore(), 500, callback);
         });
-    });
-
-    describe('POST to assessment URL as student in Exam mode', function() {
-        it('should load successfully', function(callback) {
-            var form = {
-                postAction: 'newInstance',
-                csrfToken: csrfToken,
-            };
-            var cookies = makeCookies();
-            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
-            request.post({url: assessmentUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                res = response;
-                page = body;
-                callback(null);
-            })
+        it('in Exam mode after time period should return 500', function(callback) {
+            postAssessment(cookiesStudentExamAfter(), 500, callback);
+        });
+        it('as student in Exam mode should load successfully', function(callback) {
+            postAssessment(cookiesStudentExam(), 200, callback);
         });
         it('should parse', function() {
             $ = cheerio.load(page);
@@ -480,70 +304,34 @@ describe('Access control as a student', function() {
         });
     });
 
-    describe('GET to assessment_instance URL as student', function() {
-        it('should return 500', function(callback) {
-            var cookies = makeCookies();
-            request({url: assessmentInstanceUrl, jar: cookies}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 500) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                callback(null);
-            })
+    /**********************************************************************/
+    
+    var getAssessmentInstance = function(cookies, expectedStatusCode, callback) {
+        request({url: assessmentInstanceUrl, jar: cookies}, function (error, response, body) {
+            if (error) {
+                return callback(error);
+            }
+            if (response.statusCode != expectedStatusCode) {
+                return callback(new Error('bad status: ' + response.statusCode));
+            }
+            res = response;
+            page = body;
+            callback(null);
         });
-    });
+    };
 
-    describe('GET to assessment_instance URL as student in Exam mode in 2015', function() {
-        it('should return 500', function(callback) {
-            var cookies = makeCookies();
-            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
-            cookies.setCookie(request.cookie('pl_requested_date=2015-06-13T13:12:00Z'), siteUrl);
-            request({url: assessmentInstanceUrl, jar: cookies}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 500) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                callback(null);
-            })
+    describe('GET to assessment_instance URL', function() {
+        it('as student should return 500', function(callback) {
+            getAssessmentInstance(cookiesStudent(), 500, callback);
         });
-    });
-
-    describe('GET to assessment_instance URL as student in Exam mode in 2250', function() {
-        it('should return 500', function(callback) {
-            var cookies = makeCookies();
-            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
-            cookies.setCookie(request.cookie('pl_requested_date=2250-06-13T13:12:00Z'), siteUrl);
-            request({url: assessmentInstanceUrl, jar: cookies}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 500) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                callback(null);
-            })
+        it('as student in Exam mode before time period should return 500', function(callback) {
+            getAssessmentInstance(cookiesStudentExamBefore(), 500, callback);
         });
-    });
-
-    describe('GET to assessment_instance URL as student in Exam mode', function() {
-        it('should load successfully', function(callback) {
-            var cookies = makeCookies();
-            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
-            request({url: assessmentInstanceUrl, jar: cookies}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                res = response;
-                page = body;
-                callback(null);
-            })
+        it('as student in Exam mode after time period should return 500', function(callback) {
+            getAssessmentInstance(cookiesStudentExamAfter(), 500, callback);
+        });
+        it('as student in Exam mode should load successfully', function(callback) {
+            getAssessmentInstance(cookiesStudentExam(), 200, callback);
         });
         it('should parse', function() {
             $ = cheerio.load(page);
@@ -557,84 +345,39 @@ describe('Access control as a student', function() {
         });
     });
 
-    describe('POST to assessment_instance URL as student', function() {
-        it('should return 500', function(callback) {
-            var form = {
-                postAction: 'grade',
-                csrfToken: csrfToken,
-            };
-            var cookies = makeCookies();
-            request.post({url: assessmentInstanceUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 500) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                callback(null);
-            })
+    /**********************************************************************/
+    
+    var postAssessmentInstance = function(cookies, expectedStatusCode, callback) {
+        var form = {
+            postAction: 'grade',
+            csrfToken: csrfToken,
+        };
+        request.post({url: assessmentInstanceUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
+            if (error) {
+                return callback(error);
+            }
+            if (response.statusCode != expectedStatusCode) {
+                return callback(new Error('bad status: ' + response.statusCode));
+            }
+            callback(null);
+        });
+    };
+    
+    describe('POST to assessment_instance URL', function() {
+        it('as student should return 500', function(callback) {
+            postAssessmentInstance(cookiesStudent(), 500, callback);
+        });
+        it('as student in Exam mode before time period should return 500', function(callback) {
+            postAssessmentInstance(cookiesStudentExamBefore(), 500, callback);
+        });
+        it('as student in Exam mode after time period should return 500', function(callback) {
+            postAssessmentInstance(cookiesStudentExamAfter(), 500, callback);
+        });
+        it('as student in Exam mode should load successfully', function(callback) {
+            postAssessmentInstance(cookiesStudentExam(), 200, callback);
         });
     });
 
-    describe('POST to assessment_instance URL as student in Exam mode in 2015', function() {
-        it('should return 500', function(callback) {
-            var form = {
-                postAction: 'grade',
-                csrfToken: csrfToken,
-            };
-            var cookies = makeCookies();
-            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
-            cookies.setCookie(request.cookie('pl_requested_date=2015-06-13T13:12:00Z'), siteUrl);
-            request.post({url: assessmentInstanceUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 500) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                callback(null);
-            })
-        });
-    });
-
-    describe('POST to assessment_instance URL as student in Exam mode in 2250', function() {
-        it('should return 500', function(callback) {
-            var form = {
-                postAction: 'grade',
-                csrfToken: csrfToken,
-            };
-            var cookies = makeCookies();
-            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
-            cookies.setCookie(request.cookie('pl_requested_date=2250-06-13T13:12:00Z'), siteUrl);
-            request.post({url: assessmentInstanceUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 500) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                callback(null);
-            })
-        });
-    });
-
-    describe('POST to assessment_instance URL as student in Exam mode', function() {
-        it('should load successfully', function(callback) {
-            var form = {
-                postAction: 'grade',
-                csrfToken: csrfToken,
-            };
-            var cookies = makeCookies();
-            cookies.setCookie(request.cookie('pl_requested_mode=Exam'), siteUrl);
-            request.post({url: assessmentInstanceUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                callback(null);
-            })
-        });
-    });
+    /**********************************************************************/
+    
 });
