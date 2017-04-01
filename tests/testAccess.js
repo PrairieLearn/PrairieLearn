@@ -15,7 +15,7 @@ var siteUrl = 'http://localhost:' + config.serverPort;
 var baseUrl = siteUrl + '/pl';
 var courseInstanceBaseUrl = baseUrl + '/course_instance/1';
 var assessmentsUrl = courseInstanceBaseUrl + '/assessments';
-var assessmentUrl, assessmentInstanceUrl, q1Url, q2Url;
+var assessmentInstanceUrl = courseInstanceBaseUrl + '/assessment_instance/1';
 
 describe('Access control', function() {
 
@@ -61,6 +61,7 @@ describe('Access control', function() {
     var user, res, page, $, elemList;
     var assessment_id, assessment_instance, instance_questions;
     var csrfToken, instance_question_1_id, instance_question_2_id;
+    var assessmentUrl, q1Url, questionData, variant;
 
     /**********************************************************************/
 
@@ -115,10 +116,10 @@ describe('Access control', function() {
         it('as student should contain TPL 101', function(callback) {
             getPl(cookiesStudent(), true, callback);
         });
-        it('as student in Exam mode before course instance time period should contain TPL 101', function(callback) {
+        it('as student in Exam mode before course instance time period should not contain TPL 101', function(callback) {
             getPl(cookiesStudentBeforeCourseInstance(), false, callback);
         });
-        it('as student in Exam mode after course instance time period should contain TPL 101', function(callback) {
+        it('as student in Exam mode after course instance time period should not contain TPL 101', function(callback) {
             getPl(cookiesStudentAfterCourseInstance(), false, callback);
         });
     });
@@ -210,18 +211,6 @@ describe('Access control', function() {
         it('should parse', function() {
             $ = cheerio.load(page);
         });
-        it('should contain "Please wait"', function() {
-            elemList = $('p.lead:contains("Please wait")');
-            assert.lengthOf(elemList, 1);
-        });
-        it('should contain "Exam 1"', function() {
-            elemList = $('p.lead strong:contains("Exam 1")');
-            assert.lengthOf(elemList, 1);
-        });
-        it('should contain "TPL 101"', function() {
-            elemList = $('p.lead strong:contains("TPL 101")');
-            assert.lengthOf(elemList, 1);
-        });
         it('should have a CSRF token', function() {
             elemList = $('form input[name="csrfToken"]');
             assert.lengthOf(elemList, 1);
@@ -264,44 +253,6 @@ describe('Access control', function() {
         it('as student in Exam mode should load successfully', function(callback) {
             postAssessment(cookiesStudentExam(), 200, callback);
         });
-        it('should parse', function() {
-            $ = cheerio.load(page);
-        });
-        it('should redirect to the correct path', function() {
-            assessmentInstanceUrl = siteUrl + res.req.path;
-            assert.equal(res.req.path, '/pl/course_instance/1/assessment_instance/1');
-        });
-        it('should create one assessment_instance', function(callback) {
-            sqldb.query(sql.select_assessment_instances, [], function(err, result) {
-                if (ERR(err, callback)) return;
-                if (result.rowCount != 1) {
-                    return callback(new Error('expected one assessment_instance, got: ' + result.rowCount));
-                }
-                assessment_instance = result.rows[0];
-                callback(null);
-            });
-        });
-        it('should have the correct assessment_instance.assessment_id', function() {
-            assert.equal(assessment_instance.assessment_id, assessment_id);
-        });
-        it('should create two instance_questions', function(callback) {
-            sqldb.query(sql.select_instance_questions, [], function(err, result) {
-                if (ERR(err, callback)) return;
-                if (result.rowCount != 2) {
-                    return callback(new Error('expected two instance_questions, got: ' + result.rowCount));
-                }
-                instance_questions = result.rows;
-                callback(null);
-            });
-        });
-        it('should have the correct first question', function() {
-            assert.equal(instance_questions[0].qid, 'addVectors');
-            instance_question_1_id = instance_questions[0].id;
-        });
-        it('should have the correct second question', function() {
-            assert.equal(instance_questions[1].qid, 'fossilFuelsRadio');
-            instance_question_2_id = instance_questions[1].id;
-        });
     });
 
     /**********************************************************************/
@@ -343,6 +294,12 @@ describe('Access control', function() {
             csrfToken = elemList[0].attribs.value;
             assert.isString(csrfToken);
         });
+        it('should link to addVectors question', function() {
+            elemList = $('td a:contains("Addition of vectors in Cartesian coordinates")');
+            assert.lengthOf(elemList, 1);
+            assert.deepProperty(elemList[0], 'attribs.href');
+            q1Url = siteUrl + elemList[0].attribs.href;
+        });
     });
 
     /**********************************************************************/
@@ -375,6 +332,101 @@ describe('Access control', function() {
         });
         it('as student in Exam mode should load successfully', function(callback) {
             postAssessmentInstance(cookiesStudentExam(), 200, callback);
+        });
+    });
+
+    /**********************************************************************/
+    
+    var getInstanceQuestion = function(cookies, expectedStatusCode, callback) {
+        request({url: q1Url, jar: cookies}, function (error, response, body) {
+            if (error) {
+                return callback(error);
+            }
+            if (response.statusCode != expectedStatusCode) {
+                return callback(new Error('bad status: ' + response.statusCode));
+            }
+            res = response;
+            page = body;
+            callback(null);
+        });
+    };
+
+    describe('GET to instance_question URL', function() {
+        it('as student should return 500', function(callback) {
+            getInstanceQuestion(cookiesStudent(), 500, callback);
+        });
+        it('as student in Exam mode before time period should return 500', function(callback) {
+            getInstanceQuestion(cookiesStudentExamBefore(), 500, callback);
+        });
+        it('as student in Exam mode after time period should return 500', function(callback) {
+            getInstanceQuestion(cookiesStudentExamAfter(), 500, callback);
+        });
+        it('as student in Exam mode should load successfully', function(callback) {
+            getInstanceQuestion(cookiesStudentExam(), 200, callback);
+        });
+        it('should parse', function() {
+            $ = cheerio.load(page);
+        });
+        it('should contain question-data', function() {
+            elemList = $('.question-data');
+            assert.lengthOf(elemList, 1);
+        });
+        it('question-data should contain base64 data', function() {
+            assert.deepProperty(elemList[0], 'children.0.data');
+            assert.lengthOf(elemList[0].children, 1);
+            assert.property(elemList[0].children[0], 'data');
+        });
+        it('base64 data should parse to JSON', function() {
+            questionData = JSON.parse(new Buffer(elemList[0].children[0].data, 'base64').toString());
+        });
+        it('should have a variant_id in the questionData', function() {
+            assert.deepProperty(questionData, 'variant.id');
+            variant = questionData.variant;
+        });
+        it('should have a CSRF token', function() {
+            elemList = $('.question-form input[name="csrfToken"]');
+            assert.lengthOf(elemList, 1);
+            assert.deepProperty(elemList[0], 'attribs.value');
+            csrfToken = elemList[0].attribs.value;
+            assert.isString(csrfToken);
+        });
+    });
+
+    /**********************************************************************/
+    
+    var postInstanceQuestion = function(cookies, expectedStatusCode, callback) {
+        var submittedAnswer = {
+            wx: 0,
+            wy: 0,
+        };
+        var form = {
+            postAction: 'submitQuestionAnswer',
+            csrfToken: csrfToken,
+            postData: JSON.stringify({variant, submittedAnswer}),
+        };
+        request.post({url: q1Url, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
+            if (error) {
+                return callback(error);
+            }
+            if (response.statusCode != expectedStatusCode) {
+                return callback(new Error('bad status: ' + response.statusCode));
+            }
+            callback(null);
+        });
+    };
+    
+    describe('POST to instance_question URL', function() {
+        it('as student should return 500', function(callback) {
+            postInstanceQuestion(cookiesStudent(), 500, callback);
+        });
+        it('as student in Exam mode before time period should return 500', function(callback) {
+            postInstanceQuestion(cookiesStudentExamBefore(), 500, callback);
+        });
+        it('as student in Exam mode after time period should return 500', function(callback) {
+            postInstanceQuestion(cookiesStudentExamAfter(), 500, callback);
+        });
+        it('as student in Exam mode should load successfully', function(callback) {
+            postInstanceQuestion(cookiesStudentExam(), 200, callback);
         });
     });
 
