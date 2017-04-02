@@ -36,5 +36,13 @@ VALUES (1, 1);
 
 -- BLOCK insert_ps_reservation
 INSERT INTO reservations
-        (exam_id, user_id, access_start, access_end)
-VALUES (1, $user_id, '2000-01-13 14:02:41', '2200-09-04 08:01:43');
+        (exam_id, user_id)
+VALUES (1, $user_id);
+
+-- BLOCK update_ps_reservation_to_checked_in
+UPDATE reservations
+SET
+    access_start = '2000-01-01 00:00:01',
+    access_end = '2200-01-01 00:00:01'
+WHERE
+    reservation_id = 1;

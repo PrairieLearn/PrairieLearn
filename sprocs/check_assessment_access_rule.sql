@@ -86,7 +86,9 @@ BEGIN
         END IF;
 
         -- check the times
-        IF reservation.access_start > date OR reservation.access_end < date THEN
+        -- we want this check to fail if we are outside the interval or if either
+        -- access_{start,end} = NULL, so we need to be careful with the boolean comparison
+        IF (reservation.access_start < date AND date < reservation.access_end) IS NOT TRUE THEN
             authorized := FALSE;
             EXIT schedule_access;
         END IF;

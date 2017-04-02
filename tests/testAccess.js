@@ -485,6 +485,24 @@ describe('Access control', function() {
                 callback(null);
             });
         });
+        it('should block access to the assessment_instance', function(callback) {
+            getAssessmentInstance(cookiesStudentExam(), 500, callback);
+        });
+        it('should block access to the assessment_instance before the reservation', function(callback) {
+            getAssessmentInstance(cookiesStudentExamBeforeReservation(), 500, callback);
+        });
+        it('should block access to the assessment_instance after the reservation', function(callback) {
+            getAssessmentInstance(cookiesStudentExamAfterReservation(), 500, callback);
+        });
+    });
+
+    describe('check in PrairieSchedule reservation', function() {
+        it('should succeed', function(callback) {
+            sqldb.query(sql.update_ps_reservation_to_checked_in, [], function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        });
         it('should enable access to the assessment_instance', function(callback) {
             getAssessmentInstance(cookiesStudentExam(), 200, callback);
         });
@@ -495,6 +513,7 @@ describe('Access control', function() {
             getAssessmentInstance(cookiesStudentExamAfterReservation(), 500, callback);
         });
     });
+
     /**********************************************************************/
     
 });
