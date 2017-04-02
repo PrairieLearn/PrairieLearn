@@ -51,7 +51,7 @@ BEGIN
     << schedule_access >> -- check access with PrairieSchedule
     DECLARE
         ps_course_id bigint;
-        reservation record;
+        reservation reservations;
     BEGIN
         -- only needed for Exams when we care about the date
         EXIT schedule_access WHEN assessment_access_rule.mode != 'Exam';
@@ -77,7 +77,8 @@ BEGIN
             JOIN exams AS e USING (exam_id)
         WHERE
             e.course_id = ps_course_id
-            AND r.user_id = check_assessment_access_rule.user_id;
+            AND r.user_id = check_assessment_access_rule.user_id
+            AND r.delete_date IS NULL;
 
         IF NOT FOUND THEN
             -- no reservation, so block access
