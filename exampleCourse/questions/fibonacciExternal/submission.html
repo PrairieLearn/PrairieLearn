@@ -1,3 +1,20 @@
-<pre>
-{{submittedAnswer.code}}
-</pre>
+<h3>Submitted Files</h3>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <code style="padding: 0; color: black; background: none;">fib.py</code>
+  </div>
+  <div class="panel-body">
+    <pre style="padding: 0; margin: 0; border: none; background: none;">{{submittedAnswer.code}}</pre>
+  </div>
+</div>
+
+<% if (!feedback) { %>
+<p>No feedback available</p>
+<% } else { %>
+<h3>Test results</h3>
+<% if (feedback.tests) { %>
+<% feedback.tests.forEach(function(test) { %>
+  <p><%= test.name %> [<%= test.point %>/<%= test.maxPoints %>]</p>
+<% }); %>
+<% } %>
+<% } %>
