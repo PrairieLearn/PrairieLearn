@@ -1,12 +1,16 @@
+<% if (submittedAnswer.files) { %>
 <h3>Submitted Files</h3>
+<% submittedAnswer.files.forEach(function (file) { %>
 <div class="panel panel-default">
   <div class="panel-heading">
-    <code style="padding: 0; color: black; background: none;">fib.py</code>
+    <code style="padding: 0; color: black; background: none;"><%= file.name %></code>
   </div>
   <div class="panel-body">
-    <pre style="padding: 0; margin: 0; border: none; background: none;">{{submittedAnswer.code}}</pre>
+    <pre style="padding: 0; margin: 0; border: none; background: none;"><%= file.contents %></pre>
   </div>
 </div>
+<% }); %>
+<% } %>
 
 <% if (!feedback) { %>
 <p>No feedback available</p>
