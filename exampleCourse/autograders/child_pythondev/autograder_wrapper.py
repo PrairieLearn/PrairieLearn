@@ -8,12 +8,12 @@ import os
 import json
 
 
-def main(job_id):
+def main():
     # Call the autograder, we expect it to write to results.txt
     output = ag.main()
 
     # Start generating the grading results json
-    grading_result = {'job_id': job_id}
+    grading_result = {}
 
     grading_result['output'] = output
     lines = output.split("\n")
@@ -33,7 +33,7 @@ def main(job_id):
             test = {}
             test['name'] = lines[line_num].rstrip('\n')
             test['id'] = i
-            test['point'] = lines[line_num + 1].rstrip('\n')
+            test['points'] = lines[line_num + 1].rstrip('\n')
             earned_points += int(lines[line_num + 1].rstrip('\n'))
             test['maxPoints'] = lines[line_num + 2].rstrip('\n')
             total_points += int(lines[line_num + 2].rstrip('\n'))
@@ -51,11 +51,11 @@ def main(job_id):
 
     elif len(lines) == 1:
         # Compiler error in autograder
-        grading_result['testedCompleted'] = 'false'
+        grading_result['testingCompleted'] = 'false'
 
     else:
         # No tests ran or something bad happened
-        grading_result['testedCompleted'] = 'false'
+        grading_result['testingCompleted'] = 'false'
 
     # Remove the results file
     # os.remove('results.txt')
@@ -63,5 +63,4 @@ def main(job_id):
     # Write the grading results to stdout
     print(json.dumps(grading_result))
 if __name__ == '__main__':
-    # Pass in a dummy job id
-    main(49)
+    main()

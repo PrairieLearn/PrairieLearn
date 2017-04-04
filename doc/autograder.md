@@ -74,18 +74,21 @@ If `autogradingEnabled` does not exist, autograding will be turned off by defaul
 
 ## Grading Result
 
-The autograder must write a grading result to `/grade/results/results.json` in the following format:
+Your autograder must write a grading result to `/grade/results/results.json`. The result only has 2 mandatory fields: `testingCompleted` and `score`. `testingCompleted` indicates if the tests were able to run successfully, or if they failed due to a compiler or other error. `score` is the score, and should be a floating point number in the range [0.0, 1.0].
+
+If you are using the example question, you can also add additional fields to give more feedback to students. An example `results.json` showing both the two mandatory fields and the additional fields is shown below.
 
 ```json
 {
-   "testedCompleted": "true",
+   "testingCompleted": "true",
    "score": 1,
+   "message": "Tests completed successfully."
    "output": "Test 1 passed\nTest 2 passed\n...",
    "tests": [
       {
          "name": "test 1",
          "id": 0,
-         "point": "1",
+         "points": "1",
          "maxPoints": "1",
          "output": "Test 1 passed\n",
          "message": "No errors!"
