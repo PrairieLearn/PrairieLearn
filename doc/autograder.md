@@ -76,23 +76,31 @@ If `autogradingEnabled` does not exist, autograding will be turned off by defaul
 
 Your autograder must write a grading result to `/grade/results/results.json`. The result only has 2 mandatory fields: `testingCompleted` and `score`. `testingCompleted` indicates if the tests were able to run successfully, or if they failed due to a compiler or other error. `score` is the score, and should be a floating point number in the range [0.0, 1.0].
 
-If you are using the example question, you can also add additional fields to give more feedback to students. An example `results.json` showing both the two mandatory fields and the additional fields is shown below.
+If you are using the example question, you can also add additional fields to give more feedback to students; this additional information will be nicely rendered on the client to provide detailed feedback. Additional fields are optional, and they will be rendered if found. An example `results.json` showing both the two mandatory fields and the additional fields is shown below.
 
 ```json
 {
-   "testingCompleted": "true",
-   "score": 1,
-   "message": "Tests completed successfully."
-   "output": "Test 1 passed\nTest 2 passed\n...",
+   "testingCompleted": true,
+   "score": 0.25,
+   "message": "Tests completed successfully.",
+   "output": "Running tests...\nTest 1 passed\nTest 2 failed!\n...",
    "tests": [
       {
-         "name": "test 1",
-         "id": 0,
-         "points": "1",
-         "maxPoints": "1",
-         "output": "Test 1 passed\n",
-         "message": "No errors!"
+         "name": "Test 1",
+         "description": "Tests that a thing does a thing.",
+         "points": 1,
+         "maxPoints": 1,
+         "message": "No errors!",
+         "output": "Running test...\nYour output matched the expected output.",
       },
+      {
+         "name": "Test 2",
+         "description": "Like Test 1, but harder, you'll probably fail it.",
+         "points": 0,
+         "maxPoints": 3,
+         "message": "Make sure that the thing is doing the thing correctly.",
+         "output": "Running test...\nYour output did not match the expected output."
+      }
       ...
    ]
 }
@@ -102,38 +110,13 @@ If you are using the example question, you can also add additional fields to giv
 
 Autograding is handled by a service separate from PrairieLearn. In production, that service will be running on an EC2 instance, and potentially replicated across multiple EC2 instances. To make local development possible, PrairieLearn will replace AWS services with other solutions when running locally:
 
-* Instead of using an SQS queue, PrairieLearn communicates with the autograder via a bidirectional socket; we've chosen to use port 3007 for this purpose.
-* Instead of S3 storage, job files will be stored in `/jobs`. This directory should exist before running PrairieLearn or the autograder.
+* Instead of using AWS Batch to execute jobs, they will be run locally and directly with Docker. We achieve this by mounting the Docker socket from the host into the Docker container running PrairieLearn; this allows us to run 'sibling' containers
+* Instead of S3 storage, job files will be stored in `/jobs` on the host machine. This directory should exist before running PrairieLearn or the autograder.
 
-For this to work correctly, you have to launch the PrairieLearn docker container in a slightly different way than the default. First, you must mount `/jobs` as a volume. This will allow PrairieLearn to easily share files with the autograder. Second, you have to forward port 3007 from the container back to your machine. This allows PrairieLearn to pass messages to and from the autograder. So, your run command should look something like this:
-
-```
-docker run --rm -p 3000:3000 -p 3007:3007 -v /path/to/PrairieLearn:/PrairieLearn -v /jobs:/jobs prairielearn/prairielearn
-```
-
-After starting PrairieLearn, you should start the autograder. From the root of PrairieLearn:
+So, the command to run PrairieLearn locally will now look something like this:
 
 ```
-$ cd autograder/mastergrader
-$ node grader.js
+docker run --rm -p 3000:3000 -p -v /path/to/PrairieLearn:/PrairieLearn -v /jobs:/jobs -v /var/run/docker.sock:/var/run/docker.sock prairielearn/prairielearn
 ```
 
-The autograder will currently dump a bunch of messages and diagnostic output to the console; this is normal. If a grading run completes successfully, you'll see the `results.json` that the autograder generated being printed to the console.
-
-The autograder currently builds a new image every time a new job is run; this is inefficent. In production, any new images should be built on top of an existing, saved image.
-
-If you kill the autograder with SIGINT/SIGTERM, it will kill all running docker containers. This is undesirable behavior but was added to make developing the autograder easier. This will be changed in the future.
-
-## Grading Job
-
-NOTE: This is for documenting internal PrairieLearn behavior. This does not affect how autograders are run or developed, and will likely change.
-
-The following format must be followed to send student files to the autograder:
-
-```json
-{
-   "jobId": 49,
-   "directory": "absolute/directory/to/top/level/directory",
-   "courseName": "CS 251"
-}
-```
+TODO: document how this works on Windows.

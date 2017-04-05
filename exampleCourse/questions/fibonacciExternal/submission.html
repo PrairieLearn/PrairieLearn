@@ -12,9 +12,7 @@
 <% }); %>
 <% } %>
 
-<% if (!feedback) { %>
-<p>No feedback available</p>
-<% } else { %>
+<% if (feedback) { %>
 <h3>Test results</h3>
 <% if (feedback.tests) { %>
 <% feedback.tests.forEach(function(test) { %>

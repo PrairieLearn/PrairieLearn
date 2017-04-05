@@ -61,44 +61,45 @@ def finish(succeeded, info):
     with open('grade/results.json', 'w+') as results_file:
         json.dump(results, results_file)
 
-    # Now we can upload this results file to AWS
-    if info['results_bucket']:
-        s3_results_file = Template('s3://$bucket/job_$job.json').substitute(bucket=info['results_bucket'], job=info['job_id'])
-        s3_results_push_ret = call(['aws', 's3', 'cp', '/grade/results.json', s3_results_file])
-        if s3_results_push_ret != 0:
-            error('could not push results to S3')
-    else:
-        error('the results bucket was not specified')
-
-    # Now let's make an archive of the /grade directory and send it back to S3
-    # for storage
-    if info['archives_bucket']:
-        zip_ret = call(['tar', '-zcf', '/archive.tar.gz', '/grade/'])
-        if zip_ret != 0:
-            error('error zipping up archive')
+    if not info['dev_mode']:
+        # Now we can upload this results file to AWS
+        if info['results_bucket']:
+            s3_results_file = Template('s3://$bucket/job_$job.json').substitute(bucket=info['results_bucket'], job=info['job_id'])
+            s3_results_push_ret = call(['aws', 's3', 'cp', '/grade/results.json', s3_results_file])
+            if s3_results_push_ret != 0:
+                error('could not push results to S3')
         else:
-            s3_archive_file = Template('s3://$bucket/job_$job.tar.gz').substitute(bucket=info['archives_bucket'], job=info['job_id'])
-            s3_archive_push_ret = call(['aws', 's3', 'cp', '/archive.tar.gz', s3_archive_file])
-            if s3_archive_push_ret != 0:
-                error('could not push archive to S3')
-    else:
-        error('the archives bucket was not specified')
+            error('the results bucket was not specified')
 
-    # Finally, notify the webhook (if specified) that this grading job is done
-    if info['webhook_url']:
-        headers = {'Content-Type': 'application/json'}
-        if info['csrf_token']:
-            log('CSRF Token: %s' % info['csrf_token'])
-            headers['x-csrf-token'] = info['csrf_token']
+        # Now let's make an archive of the /grade directory and send it back to S3
+        # for storage
+        if info['archives_bucket']:
+            zip_ret = call(['tar', '-zcf', '/archive.tar.gz', '/grade/'])
+            if zip_ret != 0:
+                error('error zipping up archive')
+            else:
+                s3_archive_file = Template('s3://$bucket/job_$job.tar.gz').substitute(bucket=info['archives_bucket'], job=info['job_id'])
+                s3_archive_push_ret = call(['aws', 's3', 'cp', '/archive.tar.gz', s3_archive_file])
+                if s3_archive_push_ret != 0:
+                    error('could not push archive to S3')
+        else:
+            error('the archives bucket was not specified')
 
-        # Wrap the results inside one more level of json
-        # This makes the data field optional; job_id on the outer object is still mandatory
-        final_data = {}
-        final_data['data'] = results
-        final_data['event'] = 'autograder_result'
-        final_data['job_id'] = info['job_id']
+        # Finally, notify the webhook (if specified) that this grading job is done
+        if info['webhook_url']:
+            headers = {'Content-Type': 'application/json'}
+            if info['csrf_token']:
+                log('CSRF Token: %s' % info['csrf_token'])
+                headers['x-csrf-token'] = info['csrf_token']
 
-        r = requests.post(info['webhook_url'], data=json.dumps(final_data), headers=headers)
+            # Wrap the results inside one more level of json
+            # This makes the data field optional; job_id on the outer object is still mandatory
+            final_data = {}
+            final_data['data'] = results
+            final_data['event'] = 'autograder_result'
+            final_data['job_id'] = info['job_id']
+
+            r = requests.post(info['webhook_url'], data=json.dumps(final_data), headers=headers)
 
     # We're all done now.
     sys.exit(0 if succeeded else 1)
@@ -114,67 +115,82 @@ def main():
     info['start_time'] = datetime.utcnow().isoformat()
 
     environ_error = False
+    dev_mode = False
+
+    if 'DEV_MODE' in os.environ and os.environ['DEV_MODE']:
+        info['dev_mode'] = True
+        dev_mode = True
+    else:
+        info['dev_mode'] = False
+        dev_mode = False
 
     if 'JOB_ID' not in os.environ:
         error('job ID was not specified in the JOB_ID environment variable')
         info['job_id'] = None
         environ_error = True
     else:
-        info['job_id'] = os.environ['JOB_ID']
+        try:
+            info['job_id'] = int(os.environ['JOB_ID'])
+        except:
+            error('could not parse JOB_ID environment variable to an int')
+            environ_error = True
 
-    if 'S3_JOBS_BUCKET' not in os.environ:
-        error('the S3 jobs bucket was not specified in the S3_JOBS_BUCKET environment variable')
-        info['jobs_bucket'] = None
-        environ_error = True
-    else:
-        info['jobs_bucket'] = os.environ['S3_JOBS_BUCKET']
+    # These will only be present and useful when running on AWS infrastructure
+    if not dev_mode:
+        if 'S3_JOBS_BUCKET' not in os.environ:
+            error('the S3 jobs bucket was not specified in the S3_JOBS_BUCKET environment variable')
+            info['jobs_bucket'] = None
+            environ_error = True
+        else:
+            info['jobs_bucket'] = os.environ['S3_JOBS_BUCKET']
 
-    if 'S3_RESULTS_BUCKET' not in os.environ:
-        error('the S3 results bucket was not specified in the S3_RESULTS_BUCKET environment variable')
-        info['results_bucket'] = None
-        environ_error = True
-    else:
-        info['results_bucket'] = os.environ['S3_RESULTS_BUCKET']
+        if 'S3_RESULTS_BUCKET' not in os.environ:
+            error('the S3 results bucket was not specified in the S3_RESULTS_BUCKET environment variable')
+            info['results_bucket'] = None
+            environ_error = True
+        else:
+            info['results_bucket'] = os.environ['S3_RESULTS_BUCKET']
 
-    if 'S3_ARCHIVES_BUCKET' not in os.environ:
-        error('the S3 archives bucket was not specified in the S3_ARCHIVES_BUCKET environment variable')
-        info['archives_bucket'] = None
-        environ_error = True
-    else:
-        info['archives_bucket'] = os.environ['S3_ARCHIVES_BUCKET']
+        if 'S3_ARCHIVES_BUCKET' not in os.environ:
+            error('the S3 archives bucket was not specified in the S3_ARCHIVES_BUCKET environment variable')
+            info['archives_bucket'] = None
+            environ_error = True
+        else:
+            info['archives_bucket'] = os.environ['S3_ARCHIVES_BUCKET']
 
-    if 'WEBHOOK_URL' not in os.environ:
-        warn('the webhook callback url was not specified in the WEBHOOK_URL environment variable')
-        info['webhook_url'] = None
-    else:
-        info['webhook_url'] = os.environ['WEBHOOK_URL']
+        if 'WEBHOOK_URL' not in os.environ:
+            warn('the webhook callback url was not specified in the WEBHOOK_URL environment variable')
+            info['webhook_url'] = None
+        else:
+            info['webhook_url'] = os.environ['WEBHOOK_URL']
 
-    if 'CSRF_TOKEN' not in os.environ:
-        warn('a csrf token was not specified in the CSRF_TOKEN environment variable')
-        info['csrf_token'] = None
-    else:
-        info['csrf_token'] = os.environ['CSRF_TOKEN']
+        if 'CSRF_TOKEN' not in os.environ:
+            warn('a csrf token was not specified in the CSRF_TOKEN environment variable')
+            info['csrf_token'] = None
+        else:
+            info['csrf_token'] = os.environ['CSRF_TOKEN']
 
     if environ_error:
         finish(False, info)
 
     job_id = info['job_id']
-    jobs_bucket =info['jobs_bucket']
 
     log(Template('running job $job').substitute(job=job_id))
 
-    # Load the job archive from S3
-    s3_job_file = Template('s3://$bucket/job_$job.tar.gz').substitute(bucket=jobs_bucket, job=job_id)
-    s3_fetch_ret = call(['aws', 's3', 'cp', s3_job_file, '/job.tar.gz'])
-    if s3_fetch_ret != 0:
-        error('failed to load the job files from S3')
-        finish(False, info)
+    if not dev_mode:
+        # Load the job archive from S3
+        jobs_bucket =info['jobs_bucket']
+        s3_job_file = Template('s3://$bucket/job_$job.tar.gz').substitute(bucket=jobs_bucket, job=job_id)
+        s3_fetch_ret = call(['aws', 's3', 'cp', s3_job_file, '/job.tar.gz'])
+        if s3_fetch_ret != 0:
+            error('failed to load the job files from S3')
+            finish(False, info)
 
-    # Unzip the downloaded archive
-    unzip_ret = call(['tar', '-xf', '/job.tar.gz', '-C', 'grade'])
-    if unzip_ret != 0:
-        error('failed to unzip the job archive')
-        finish(False, info)
+        # Unzip the downloaded archive
+        unzip_ret = call(['tar', '-xf', '/job.tar.gz', '-C', 'grade'])
+        if unzip_ret != 0:
+            error('failed to unzip the job archive')
+            finish(False, info)
 
     # Users can specify init.sh scripts in several locations:
     # 1. in a question's /tests directory (ends up in /grade/tests/)
@@ -184,6 +200,7 @@ def main():
     # to run others from the one that we call. Which one we run is determined by the
     # above ordering: if we find /grade/tests/init.sh, we'll run that, otherwise
     # if we find /grade/shared/init.sh, we'll run that, and so on.
+    #
 
     init_files = ['/grade/tests/init.sh', '/grade/shared/init.sh', '/grade/init.sh']
     found_init_script = False
@@ -218,7 +235,6 @@ def main():
     finish(True, info)
 
     log('finishing')
-
 
 if __name__ == '__main__':
     main()
