@@ -200,7 +200,6 @@ def main():
     # to run others from the one that we call. Which one we run is determined by the
     # above ordering: if we find /grade/tests/init.sh, we'll run that, otherwise
     # if we find /grade/shared/init.sh, we'll run that, and so on.
-    #
 
     init_files = ['/grade/tests/init.sh', '/grade/shared/init.sh', '/grade/init.sh']
     found_init_script = False
@@ -228,7 +227,7 @@ def main():
                 error(Template('error executing $file').substitute(file=grading_script))
                 finish(False, info)
     else:
-        error(Template('$file not found').substitute(grading_script))
+        error(Template('$file not found').substitute(file=grading_script))
         finish(False, info)
 
     # If we got this far, we (probably) succeeded!
