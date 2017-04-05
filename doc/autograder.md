@@ -110,13 +110,27 @@ If you are using the example question, you can also add additional fields to giv
 
 Autograding is handled by a service separate from PrairieLearn. In production, that service will be running on an EC2 instance, and potentially replicated across multiple EC2 instances. To make local development possible, PrairieLearn will replace AWS services with other solutions when running locally:
 
-* Instead of using AWS Batch to execute jobs, they will be run locally and directly with Docker. We achieve this by mounting the Docker socket from the host into the Docker container running PrairieLearn; this allows us to run 'sibling' containers
-* Instead of S3 storage, job files will be stored in `/jobs` on the host machine. This directory should exist before running PrairieLearn or the autograder.
+* Instead of using AWS Batch to execute jobs, they will be run locally and directly with Docker on the host machine.
+* Instead of sending jobs to the grading containers with S3, we write them to a directory on the host machine and then mount that directory directly into the grading container as `/grade`. Note that this requires the main script of the grading image to know that it should not attempt to push to or pull from S3; we signify this by adding an environment variable to the grading container: `DEV_MODE=1`.
+* Instead of receiving a webhook callback when results are available, PrairieLearn will simply wait for the grading container to die, and then attempt to read `results.json` from the root of the folder that was mounted in as `/grade`.
+
+PrairieLearn supports two ways of running: natively, and inside a Docker container. We support running external autograders for each way. If the `HOST_JOBS_DIR` environment variable is set (more on that later), PrairieLearn will assume it's running in a conatiner; otherwise, it assumes it's running natively.
+
+#### Running locally (on Docker)
+
+We have to do a couple interesting things to run external autograders inside Docker:
+
+* We need a way of starting up Docker containers on the host machine from within another Docker container. We achieve this by mounting the Docker socket from the host into the Docker container running PrairieLearn; this allows us to run 'sibling' containers.
+* We need to get job files from inside the Docker container running PrairieLearn to the host machine so that Docker can mount them to `/grade` on the grading machine. We achieve this by mounting a directory on the host machine to `/jobs` on the grading machine, and setting an environment variable `HOST_JOBS_DIR` containing the absolute path of that directory on the host machine.
 
 So, the command to run PrairieLearn locally will now look something like this:
 
 ```
-docker run --rm -p 3000:3000 -p -v /path/to/PrairieLearn:/PrairieLearn -v /jobs:/jobs -v /var/run/docker.sock:/var/run/docker.sock prairielearn/prairielearn
+docker run --rm -p 3000:3000 -p -v /path/to/PrairieLearn:/PrairieLearn -v /home/nathan/pl_ag_jobs:/jobs -e HOST_JOBS_DIR=/home/nathan/pl_ag_jobs -v /var/run/docker.sock:/var/run/docker.sock prairielearn/prairielearn
 ```
+
+#### Running locally (native, not on Docker)
+
+When not running in Docker, things are easier. The Docker socket can be used normally, and we're able to store job files automatically. By default, they are stored in `$HOME/pl_ag_jobs` on Unix-based systems and `$USERPROFILE/pl_ag_jobs` on Windows. However, if you run PrairieLearn with a an environment variable `JOBS_DIR=/abs/path/to/my/custom/directory/`, that directory will be used instead. Note that this environment variable has no effect when running on Docker.
 
 TODO: document how this works on Windows.
