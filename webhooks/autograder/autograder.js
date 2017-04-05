@@ -14,7 +14,7 @@ var assessments = require('../../assessments');
 
 function processResults(data) {
     const gradingResult = {
-        gradingId: parseInt(data.job_id),
+        gradingId: data.job_id,
         grading: {
           score: data.results.score,
           feedback: data.results

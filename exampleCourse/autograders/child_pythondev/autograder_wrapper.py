@@ -23,7 +23,7 @@ def main():
 
     if len(lines) > 1 and (len(lines)) % 4 == 0:
         # Tests ran successfully
-        grading_result['testedCompleted'] = 'true'
+        grading_result['testedCompleted'] = True
         tests = []
 
         # Traverse through all the lines, storing the results
@@ -32,13 +32,12 @@ def main():
         for i in range(0, int(len(lines) / 4)):
             test = {}
             test['name'] = lines[line_num].rstrip('\n')
-            test['id'] = i
-            test['points'] = lines[line_num + 1].rstrip('\n')
+            test['description'] = 'Test ' + str(i)
+            test['points'] = int(lines[line_num + 1].rstrip('\n'))
             earned_points += int(lines[line_num + 1].rstrip('\n'))
-            test['maxPoints'] = lines[line_num + 2].rstrip('\n')
+            test['maxPoints'] = int(lines[line_num + 2].rstrip('\n'))
             total_points += int(lines[line_num + 2].rstrip('\n'))
             test['output'] = lines[line_num + 3].rstrip('\n')
-            test['message'] = ''
             line_num += 4
             tests.append(test)
 
@@ -51,11 +50,11 @@ def main():
 
     elif len(lines) == 1:
         # Compiler error in autograder
-        grading_result['testingCompleted'] = 'false'
+        grading_result['testingCompleted'] = False
 
     else:
         # No tests ran or something bad happened
-        grading_result['testingCompleted'] = 'false'
+        grading_result['testingCompleted'] = False
 
     # Remove the results file
     # os.remove('results.txt')
