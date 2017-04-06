@@ -13,10 +13,41 @@
 <% } %>
 
 <% if (feedback) { %>
+<h3>Summary</h3>
+<p>Score: TBD</p>
 <h3>Test results</h3>
 <% if (feedback.tests) { %>
-<% feedback.tests.forEach(function(test) { %>
-  <p><%= test.name %> [<%= test.points %>/<%= test.maxPoints %>]</p>
+<% feedback.tests.forEach(function(test, index) { %>
+<div class="panel-group">
+  <div class="panel panel-default">
+    <div class="panel-heading" data-toggle="collapse" data-target="#panel<%= index %>" style="cursor: pointer;">
+      <div class="pull-left"><%= test.name %></div>
+      <div class="pull-right">[<%= test.points %>/<%= test.maxPoints %>]</div>
+      <div style="clear: both;" ></div>
+    </div>
+    <div id="panel<%= index %>" class="panel-collapse collapse">
+      <div class="panel-body">
+        <% if (test.description) { %>
+        <div style="color: rgb(119, 119, 119);">Description: <%= test.description %></div>
+        <% } %>
+        <div>Max points: <%= test.maxPoints %></div>
+        <div>Earned points: <%= test.points %></div>
+        <% if (test.output) { %>
+          <div>Output</div>
+          <pre style="background: black; white-space: pre-wrap; overflow-y: auto; overflow-x: hidden; height: 200px;">
+<code style="color: white; font-family: monospace;"><%= test.output %></code>
+          </pre>
+        <% } %>
+        <% if (test.message) { %>
+          <div>Message</div>
+          <pre style="background: black; white-space: pre-wrap; overflow-y: auto; overflow-x: hidden; height: 200px;">
+<code style="color: white; font-family: monospace;"><%= test.message %></code>
+          </pre>
+        <% } %>
+      </div>
+    </div>
+  </div>
+</div>
 <% }); %>
 <% } %>
 <% } %>

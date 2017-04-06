@@ -1,7 +1,7 @@
 
 define(["SimpleClient", "text!./question.html", "text!./answer.html", "text!./submission.html", "ace/ace", "underscore"], function(SimpleClient, questionTemplate, answerTemplate, submissionTemplate, ace, _) {
 
-    var client = new SimpleClient.SimpleClient({questionTemplate: questionTemplate, answerTemplate: answerTemplate, submissionTemplate: submissionTemplate});
+    var client = new SimpleClient.SimpleClient({questionTemplate: questionTemplate, submissionTemplate: submissionTemplate});
 
     client.on('renderQuestionFinished', function() {
         client.addAnswer('files');
