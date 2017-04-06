@@ -23,7 +23,7 @@ def main():
 
     if len(lines) > 1 and (len(lines)) % 4 == 0:
         # Tests ran successfully
-        grading_result['testedCompleted'] = True
+        grading_result['testingCompleted'] = True
         tests = []
 
         # Traverse through all the lines, storing the results
@@ -32,12 +32,13 @@ def main():
         for i in range(0, int(len(lines) / 4)):
             test = {}
             test['name'] = lines[line_num].rstrip('\n')
-            test['description'] = 'Test ' + str(i)
+            test['description'] = 'Test ' + str(i + 1)
             test['points'] = int(lines[line_num + 1].rstrip('\n'))
             earned_points += int(lines[line_num + 1].rstrip('\n'))
             test['maxPoints'] = int(lines[line_num + 2].rstrip('\n'))
             total_points += int(lines[line_num + 2].rstrip('\n'))
             test['output'] = lines[line_num + 3].rstrip('\n')
+            test['message'] = 'This is an example message.\nIt is multiple lines long.'
             line_num += 4
             tests.append(test)
 
