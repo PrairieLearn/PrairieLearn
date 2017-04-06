@@ -41,17 +41,13 @@
         <% if (test.message) { %>
           <li class="list-group-item">
             <div><strong>Message</strong></div>
-            <pre style="background: black; white-space: pre-wrap; overflow-y: auto; overflow-x: hidden; height: 200px;">
-<code style="color: white; font-family: monospace;"><%= test.message %></code>
-            </pre>
+            <pre style="background: black; white-space: pre-wrap; overflow-y: auto; overflow-x: hidden;"><code style="color: white; font-family: monospace;"><%= test.message %></code></pre>
           </li>
         <% } %>
         <% if (test.output) { %>
           <li class="list-group-item">
             <div><strong>Output</strong></div>
-            <pre style="background: black; white-space: pre-wrap; overflow-y: auto; overflow-x: hidden; height: 200px;">
-  <code style="color: white; font-family: monospace;"><%= test.output %></code>
-            </pre>
+            <pre style="background: black; white-space: pre-wrap; overflow-y: auto; overflow-x: hidden; height: 200px;"><code style="color: white; font-family: monospace;"><%= test.output %></code></pre>
           </li>
         <% } %>
       </ul>

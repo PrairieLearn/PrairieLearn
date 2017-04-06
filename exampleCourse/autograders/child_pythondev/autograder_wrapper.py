@@ -32,7 +32,7 @@ def main():
         for i in range(0, int(len(lines) / 4)):
             test = {}
             test['name'] = lines[line_num].rstrip('\n')
-            test['description'] = 'Test ' + str(i + 1)
+            test['description'] = 'This is a description of test ' + str(i + 1)
             test['points'] = int(lines[line_num + 1].rstrip('\n'))
             earned_points += int(lines[line_num + 1].rstrip('\n'))
             test['maxPoints'] = int(lines[line_num + 2].rstrip('\n'))
