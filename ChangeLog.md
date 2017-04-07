@@ -1,7 +1,7 @@
 
 # ChangeLog
 
-* __2.4.0__ - unreleased
+* __2.4.0__ - 2017-04-07
 
   * Add connection to PrairieSchedule to enforce Exam reservations.
 
