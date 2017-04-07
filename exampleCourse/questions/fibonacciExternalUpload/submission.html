@@ -1,0 +1,73 @@
+<% if (feedback) { %>
+<% if (feedback.tests) { %>
+<% var points = 0, maxPoints = 0; %>
+<% feedback.tests.forEach(function(test) {points += test.points; maxPoints  += test.maxPoints;}); %>
+<h3 style="margin-top: 0px;"> Score:
+  <% if (points === maxPoints) { %>
+  <span style="color: #4CAF50;">
+  <% } else { %>
+  <span style="color: #F44336;">
+  <% } %>
+    <strong>[<%= points %>/<%= maxPoints %>]</strong>
+  </span>
+</h3>
+<h3>Test Results</h3>
+<% feedback.tests.forEach(function(test, index) { %>
+<% var passed = (test.points === test.maxPoints) %>
+<% var testColor = passed ? '#4CAF50' : '#F44336'; %>
+<div class="panel-group">
+  <div class="panel panel-default">
+    <div class="panel-heading" data-toggle="collapse" data-target="#panel<%= index %>" style="cursor: pointer; color: <%= testColor %>">
+      <div class="pull-left">
+        <% if (passed) { %>
+          <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+        <% } else { %>
+          <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+        <% } %>
+        <span style="padding-left: 4px;"><%= test.name %></span>
+      </div>
+      <div class="pull-right">
+        <strong>[<%= test.points %>/<%= test.maxPoints %>]</strong>
+      </div>
+      <div style="clear: both;" ></div>
+    </div>
+    <div id="panel<%= index %>" class="panel-collapse collapse">
+      <ul class="list-group">
+        <% if (test.description) { %>
+        <li class="list-group-item"><strong>Description:</strong> <%= test.description %></li>
+        <% } %>
+        <li class="list-group-item"><strong>Max points:</strong> <%= test.maxPoints %></li>
+        <li class="list-group-item"><strong>Earned points:</strong> <%= test.points %></li>
+        <% if (test.message) { %>
+          <li class="list-group-item">
+            <div><strong>Message</strong></div>
+            <pre style="background: black; white-space: pre-wrap; overflow-y: auto; overflow-x: hidden;"><code style="color: white; font-family: monospace;"><%= test.message %></code></pre>
+          </li>
+        <% } %>
+        <% if (test.output) { %>
+          <li class="list-group-item">
+            <div><strong>Output</strong></div>
+            <pre style="background: black; white-space: pre-wrap; overflow-y: auto; overflow-x: hidden; height: 200px;"><code style="color: white; font-family: monospace;"><%= test.output %></code></pre>
+          </li>
+        <% } %>
+      </ul>
+    </div>
+  </div>
+</div>
+<% }); %>
+<% } %>
+<% } %>
+
+<% if (submittedAnswer.files) { %>
+<h3>Submitted Files</h3>
+<% submittedAnswer.files.forEach(function (file) { %>
+<div class="panel panel-default">
+  <div class="panel-heading">
+    <code style="padding: 0; color: black; background: none;"><%= file.name %></code>
+  </div>
+  <div class="panel-body">
+    <pre style="padding: 0; margin: 0; border: none; background: none;"><%= file.contents %></pre>
+  </div>
+</div>
+<% }); %>
+<% } %>
