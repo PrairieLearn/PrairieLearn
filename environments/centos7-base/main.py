@@ -43,7 +43,7 @@ def finish(succeeded, info):
         try:
             with open('/grade/results/results.json') as json_data:
                 data = json.load(json_data)
-        except JSONDecodeError:
+        except ValueError:
             pass
         except Exception:
             pass
