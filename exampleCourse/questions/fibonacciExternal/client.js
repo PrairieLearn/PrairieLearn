@@ -1,5 +1,5 @@
 
-define(["SimpleClient", "text!./question.html", "text!./answer.html", "text!./submission.html", "ace/ace", "underscore"], function(SimpleClient, questionTemplate, answerTemplate, submissionTemplate, ace, _) {
+define(["SimpleClient", "text!./question.html", "text!./answer.html", "text!clientCode/externally_graded_submission.html", "ace/ace", "underscore"], function(SimpleClient, questionTemplate, answerTemplate, submissionTemplate, ace, _) {
 
     var client = new SimpleClient.SimpleClient({questionTemplate: questionTemplate, submissionTemplate: submissionTemplate});
 
