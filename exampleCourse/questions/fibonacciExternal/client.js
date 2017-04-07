@@ -18,7 +18,7 @@ define(["SimpleClient", "text!./question.html", "text!./answer.html", "text!clie
         });
 
         if (client.submittedAnswer.has('files')) {
-            var files = client.submittedAnswer.get('code')
+            var files = client.submittedAnswer.get('files')
             _.each(files, function(file) {
                 if (file.name === 'fib.py') {
                     editor.setValue(file.contents);
