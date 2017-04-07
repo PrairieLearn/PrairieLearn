@@ -35,12 +35,15 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
         }
 
         function uploadStatus() {
-            var $uploadStatus = $('<ul></ul>');
+            var $uploadStatusPanel = $('<div class="panel panel-default"></div>');
+            var $uploadStatusPanelHeading = $('<div class="panel-heading">Files</div>');
+            $uploadStatusPanel.append($uploadStatusPanelHeading);
+            var $uploadStatus = $('<ul class="list-group"></ul>');
             var requiredFiles = simpleClient.params.get('requiredFiles');
 
             _.each(requiredFiles, function(file) {
                 console.log(file)
-                var $item = $('<li></li>');
+                var $item = $('<li class="list-group-item"></li>');
                 $uploadStatus.append($item);
                 $item.append('<code>' + encodeURIComponent(file) + '</code> - ');
                 var fileData = getSubmittedFileContents(file);
@@ -61,7 +64,9 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
                 }
             });
 
-            return $uploadStatus;
+            $uploadStatusPanel.append($uploadStatus);
+
+            return $uploadStatusPanel;
         }
 
         function initializeTemplate() {
