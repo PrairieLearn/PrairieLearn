@@ -333,6 +333,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
 
     SimpleClient.prototype.renderSubmission = function(submissionDivID, questionDataModel, appModel, submittedAnswer, feedback, submissionIndex) {
         var that = this;
+        feedback = feedback || {};
         this.submissionViews[submissionIndex] = new SubmissionView({el: submissionDivID, template: this.options.submissionTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, submittedAnswer: submittedAnswer, feedback: feedback, templateTwice: this.options.templateTwice});
         this.submissionViews[submissionIndex].render();
     }

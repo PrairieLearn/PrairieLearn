@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __2.3.2__ - 2017-04-08
+
+  * Set question `feedback` to the empty object when missing.
+
 * __2.3.1__ - 2017-03-23
 
   * Don't display deleted courses on the enroll (add/remove courses) page.
