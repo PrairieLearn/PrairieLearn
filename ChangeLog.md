@@ -1,6 +1,14 @@
 
 # ChangeLog
 
+* __2.4.1__ - 2017-04-08
+
+  * Set question `feedback` to the empty object when missing.
+
+* __2.3.2__ - 2017-04-08
+
+  * Set question `feedback` to the empty object when missing.
+
 * __2.4.0__ - 2017-04-07
 
   * Add connection to PrairieSchedule to enforce Exam reservations.
