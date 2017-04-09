@@ -17,7 +17,7 @@ function processResults(data) {
         gradingId: data.job_id,
         grading: {
           score: data.results.score,
-          feedback: data.results
+          feedback: data
         }
     }
 
