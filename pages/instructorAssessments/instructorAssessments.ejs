@@ -78,20 +78,9 @@
         </table>
 
         <div class="panel-footer">
-          <p>
+          <p class="no-bottom-margin">
             Download <a href="<%= urlPrefix %>/assessments/<%= csvFilename %>"><%= csvFilename %></a>
             (includes more statistics columns than displayed above)
-          <p>
-          <p class="no-bottom-margin">
-            Permanent URL of this course instance for students:
-            <a id="perm_url"></a>
-            <script>
-              var url = window.location.protocol
-                        + '//' + window.location.host
-                        + '<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>';
-              $('#perm_url').attr('href', url);
-              $('#perm_url').text(url);
-            </script>
           </p>
         </div>
 
