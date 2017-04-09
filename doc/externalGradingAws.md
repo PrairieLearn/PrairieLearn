@@ -1,4 +1,4 @@
-# Setting up the Autograder on AWS
+# Setting up AWS to support External Grading
 
 ## Setting up PrairieLearn
 
@@ -60,11 +60,11 @@ Once that role has been configured, get its `Role ARN` and add it to `PrairieLea
 }
 ```
 
-## Submitting an answer to an autograded question
+## Submitting an answer to an externally graded question
 
 You must be in student mode for this to work. You also have to make at least one modification to the file if you're using the in-browser ACE editor; otherwise, a blank file will be submitted. This should be fixed in the future.
 
-Support for autograded file upload questions will be added soon.
+Support for externally graded file upload questions will be added soon.
 
 ## Running locally
 
