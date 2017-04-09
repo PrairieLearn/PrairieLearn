@@ -14,5 +14,8 @@ CREATE TABLE IF NOT EXISTS job_sequences (
     UNIQUE (course_id, number)
 );
 
+CREATE INDEX IF NOT EXISTS job_sequences_assessment_id_idx ON job_sequences (assessment_id);
+CREATE INDEX IF NOT EXISTS job_sequences_course_id_idx ON job_sequences (course_id);
+
 ALTER TABLE job_sequences ADD COLUMN IF NOT EXISTS course_instance_id BIGINT REFERENCES course_instances ON DELETE CASCADE ON UPDATE CASCADE;
 ALTER TABLE job_sequences ADD COLUMN IF NOT EXISTS assessment_id BIGINT REFERENCES assessments ON DELETE CASCADE ON UPDATE CASCADE;
