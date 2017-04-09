@@ -216,11 +216,13 @@ SELECT
         WHEN ai.open THEN 'Open'
         ELSE 'Closed'
     END AS time_remaining,
+    format_date_iso8601(ai.date, ci.display_timezone) AS date_formatted,
     format_interval(ai.duration) AS duration,
     EXTRACT(EPOCH FROM ai.duration) AS duration_secs,
     EXTRACT(EPOCH FROM ai.duration) / 60 AS duration_mins
 FROM
     assessments AS a
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
     JOIN users AS u ON (u.user_id = ai.user_id)

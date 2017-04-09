@@ -19,9 +19,10 @@ ORDER BY v.date DESC
 LIMIT 1;
 
 -- BLOCK make_variant
-INSERT INTO variants AS v (instance_question_id, number, variant_seed, params, true_answer, options)
+INSERT INTO variants AS v (authn_user_id, instance_question_id, number, variant_seed, params, true_answer, options)
 (
     SELECT
+        $authn_user_id,
         $instance_question_id,
         coalesce(max(other_v.number) + 1, 1),
         $variant_seed,

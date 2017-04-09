@@ -214,7 +214,23 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. The `CREATE TABLE` statements in the `models/` directory should always be up-to-date, so they will create the current state of the DB.
 
-1. 
+1. To add a foreign key to a table, the migration queries need to be wrapped like:
+
+    ```sql
+    ALTER TABLE variants ADD COLUMN IF NOT EXISTS authn_user_id bigint;
+    
+    DO $$
+    BEGIN
+        IF NOT EXISTS (
+                SELECT 1 FROM information_schema.table_constraints
+                WHERE constraint_name = 'variants_authn_user_id_fkey'
+            )
+            THEN
+            ALTER TABLE variants ADD FOREIGN KEY (authn_user_id) REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE;
+        END IF;
+    END;
+    $$;
+    ```
 
 ## Database access
 

@@ -49,10 +49,10 @@ BEGIN
 
     WITH new_instance_questions AS (
         INSERT INTO instance_questions AS iq
-                (current_value, assessment_instance_id, assessment_question_id)
+                (authn_user_id, current_value, assessment_instance_id, assessment_question_id)
         (
             SELECT
-                aq.init_points, assessment_instance_id, aq.assessment_question_id
+                authn_user_id, aq.init_points, assessment_instance_id, aq.assessment_question_id
             FROM
                 select_assessment_questions(assessment_id, assessment_instance_id) AS aq
         )

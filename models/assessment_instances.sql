@@ -45,4 +45,4 @@ BEGIN
         ALTER TABLE assessment_instances ADD UNIQUE (assessment_id, user_id, number);
     END IF;
 END;
-$$
+$$;

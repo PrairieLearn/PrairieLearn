@@ -22,6 +22,7 @@ function makeAssessmentInstance(req, res, callback) {
         async.series([
             function(callback) {
                 var params = {
+                    authn_user_id: res.locals.authn_user.user_id,
                     assessment_id: res.locals.assessment.id,
                     user_id: res.locals.user.user_id,
                     mode: res.locals.authz_data.mode,
@@ -48,6 +49,7 @@ function makeAssessmentInstance(req, res, callback) {
             function(callback) {
                 async.each(new_questions, function(new_question, callback) {
                     var params = {
+                        authn_user_id: res.locals.authn_user.user_id,
                         assessment_question_id: new_question.assessment_question_id,
                         assessment_instance_id: assessment_instance_id,
                     };
@@ -58,6 +60,7 @@ function makeAssessmentInstance(req, res, callback) {
                         questionServers.makeVariant(new_question.question, res.locals.course, {}, function(err, variant) {
                             if (ERR(err, callback)) return;
                             var params = {
+                                authn_user_id: res.locals.authn_user.user_id,
                                 instance_question_id: instanceQuestionId,
                                 variant_seed: variant.variant_seed,
                                 question_params: variant.params,

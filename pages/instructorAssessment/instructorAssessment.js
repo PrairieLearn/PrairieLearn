@@ -182,7 +182,7 @@ router.get('/:filename', function(req, res, next) {
             if (ERR(err, next)) return;
             var durationStat = result.rows[0];
             var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Assessment', 'Title', 'TID',
-                              'Median duration (min)', 'Min duration (min)', 'Max duration (min)', 'Mean duration (min)'];
+                              'Mean duration (min)', 'Median duration (min)', 'Min duration (min)', 'Max duration (min)'];
             var csvData = [
                 res.locals.course.short_name,
                 res.locals.course_instance.short_name,
@@ -191,10 +191,10 @@ router.get('/:filename', function(req, res, next) {
                 res.locals.assessment_set.abbreviation + res.locals.assessment.number,
                 res.locals.assessment.title,
                 res.locals.assessment.tid,
+                durationStat.mean_mins,
                 durationStat.median_mins,
                 durationStat.min_mins,
                 durationStat.max_mins,
-                durationStat.mean_mins,
             ];
             _(durationStat.threshold_seconds).each(function(count, i) {
                 csvHeaders.push("Hist boundary " + (i + 1) + " (s)");
@@ -221,6 +221,8 @@ router.get('/:filename', function(req, res, next) {
                 ['Role', 'role'],
                 ['Assessment', 'assessment_label'],
                 ['Instance', 'number'],
+                ['Started', 'date_formatted'],
+                ['Remaining', 'time_remaining'],
                 ['Score (%)', 'score_perc'],
                 ['Duration (min)', 'duration_mins'],
             ];

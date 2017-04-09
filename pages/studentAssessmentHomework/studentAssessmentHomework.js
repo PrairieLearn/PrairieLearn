@@ -14,6 +14,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 function makeAssessmentInstance(req, res, callback) {
     var params = {
+        authn_user_id: res.locals.authn_user.user_id,
         assessment_id: res.locals.assessment.id,
         user_id: res.locals.user.user_id,
         mode: res.locals.authz_data.mode,
