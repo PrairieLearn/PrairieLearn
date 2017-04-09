@@ -26,7 +26,7 @@ function processResults(data) {
 
 router.post('/', function(req, res, next) {
 
-    if (req.body.event === 'autograder_result') {
+    if (req.body.event === 'grading_result') {
         validate(req.body, 'schemas/webhookAutograderResult.json', (err, data) => {
             if (ERR(err, next)) return;
 

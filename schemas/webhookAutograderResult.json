@@ -5,9 +5,9 @@
     "type": "object",
     "properties": {
         "event": {
-            "description": "The event type of this webhook callback; should be 'autograder_result'.",
+            "description": "The event type of this webhook callback; should be 'grading_result'.",
             "type": "string",
-            "pattern": "^autograder_result$",
+            "pattern": "^grading_result$",
             "required": true
         },
         "job_id": {

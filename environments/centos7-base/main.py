@@ -99,7 +99,7 @@ def finish(succeeded, info):
             # This makes the data field optional; job_id on the outer object is still mandatory
             final_data = {}
             final_data['data'] = results
-            final_data['event'] = 'autograder_result'
+            final_data['event'] = 'grading_result'
             final_data['job_id'] = info['job_id']
 
             r = requests.post(info['webhook_url'], data=json.dumps(final_data), headers=headers)
