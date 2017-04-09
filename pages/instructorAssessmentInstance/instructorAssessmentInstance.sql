@@ -183,7 +183,8 @@ WITH event_log AS (
 )
 SELECT
     el.*,
-    format_date_full_compact(el.date, ci.display_timezone) AS formatted_date
+    format_date_full_compact(el.date, ci.display_timezone) AS formatted_date,
+    format_date_iso8601(el.date, ci.display_timezone) AS date_iso8601
 FROM
     event_log AS el,
     assessment_instances AS ai
