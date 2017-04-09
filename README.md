@@ -21,6 +21,7 @@ PrairieLearn is an online problem-driven learning system for creating homeworks 
 * [Configuring the Autograder](doc/autograder.md)
 * [Regrading assessments and handling broken questions](doc/regrading.md)
 * [PrairieDraw graphics](doc/PrairieDraw.md)
+* [Externally graded questions](doc/externalGrading.md)
 * [What to tell students about PrairieLearn](doc/whatToTellStudents.md)
 
 ## Developer Documentation
@@ -29,6 +30,7 @@ PrairieLearn is an online problem-driven learning system for creating homeworks 
 * [DB ER diagram](doc/models.pdf)
 * [DB table list](models/)
 * [Docker packaging](doc/docker.md)
+* [Setting up AWS for external grading](doc/externalGradingAws.md)
 * [Contributing to PL development](doc/contributing.md)
 * [Good blog post on how to contribute via GitHub](http://blog.davidecoppola.com/2016/11/howto-contribute-to-open-source-project-on-github/)
 
