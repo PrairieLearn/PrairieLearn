@@ -16,7 +16,7 @@ questions
 |
 `-- addVectors        # second question, id is "addVectors"
     |
-    +-- tests/        # autograder files (see other doc)
+    +-- tests/        # external grading files (see other doc)
     |   `-- ...
     |-- info.json     # files for the addVectors question
     |-- server.js
@@ -173,7 +173,7 @@ A `File` question gives the student a file to download, and then requires an upl
 }
 ```
 
-Note that a file can also have autograding enabled! See the [Autograder Doc](autograder.md).
+Note that a file question can also utilize external grading! See the [External grading docs](externalGrading.md).
 
 ## `Calculation` questions
 

@@ -41,7 +41,7 @@ Once our script has downloaded and unzipped the files from your job, it will do 
 * Run the first of the following scripts that it finds: `/grade/tests/init.sh`, `/grade/shared/init.sh`, `/grade/init.sh`. These correspond to scripts from `tests`, `autograder`, and `environment`, respectively. These scripts can do things like copy files into their correct locations, set up users, and do additional configuration. Crucially, your init script should ensure that `/grade/run.sh` exists.
 * Run `/grade/run.sh`; this script should run your grading process.
 
-Your grading scripts are responsible for writing the results of your tests into the file `/grade/results.json`; the format of that file is specified below. The contents of that file will be transmitted back to PrairieLearn to be saved and shown to the student.
+Your grading scripts are responsible for writing the results of your tests into the file `/grade/results/results.json`; the format of that file is specified below. The contents of that file will be transmitted back to PrairieLearn to be saved and shown to the student.
 
 ## Directory layout
 
