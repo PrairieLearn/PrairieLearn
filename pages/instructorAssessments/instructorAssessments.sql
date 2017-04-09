@@ -18,7 +18,7 @@ SELECT
     tstats.n_zero_perc,
     n_hundred_perc,
     tstats.score_hist,
-    dstats.mean AS mean_duration,
+    format_interval(dstats.mean) AS mean_duration,
     format_interval(dstats.median) AS median_duration,
     dstats.min AS min_duration,
     dstats.max AS max_duration,
@@ -32,8 +32,8 @@ FROM
     assessments AS a
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-    LEFT JOIN assessment_stats AS tstats ON (tstats.id = a.id)
-    LEFT JOIN assessment_duration_stats AS dstats ON (dstats.id = a.id)
+    LEFT JOIN LATERAL assessments_stats(a.id) AS tstats ON TRUE
+    LEFT JOIN LATERAL assessments_duration_stats(a.id) AS dstats ON TRUE
     LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
 WHERE
     ci.id = $course_instance_id

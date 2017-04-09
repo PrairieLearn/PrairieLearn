@@ -166,13 +166,13 @@
         <table class="table table-condensed table-hover">
           <tbody>
             <tr><td>Number of students</td><td><%= assessment_stat.number %></td></tr>
-            <tr><td>Median score</td><td><%= assessment_stat.median %>%</td></tr>
-            <tr><td>Minimum score</td><td><%= assessment_stat.min %>%</td></tr>
-            <tr><td>Maximum score</td><td><%= assessment_stat.max %>%</td></tr>
-            <tr><td>Number of 0%</td><td><%= assessment_stat.n_zero %> (<%= assessment_stat.n_zero_perc %>% of class)</td></tr>
-            <tr><td>Number of 100%</td><td><%= assessment_stat.n_hundred %> (<%= assessment_stat.n_hundred_perc %>% of class)</td></tr>
-            <tr><td>Mean score</td><td><%= assessment_stat.mean %>%</td></tr>
-            <tr><td>Standard deviation</td><td><%= assessment_stat.std %>%</td></tr>
+            <tr><td>Mean score</td><td><%= Math.round(assessment_stat.mean) %>%</td></tr>
+            <tr><td>Standard deviation</td><td><%= Math.round(assessment_stat.std) %>%</td></tr>
+            <tr><td>Median score</td><td><%= Math.round(assessment_stat.median) %>%</td></tr>
+            <tr><td>Minimum score</td><td><%= Math.round(assessment_stat.min) %>%</td></tr>
+            <tr><td>Maximum score</td><td><%= Math.round(assessment_stat.max) %>%</td></tr>
+            <tr><td>Number of 0%</td><td><%= assessment_stat.n_zero %> (<%= Math.round(assessment_stat.n_zero_perc) %>% of class)</td></tr>
+            <tr><td>Number of 100%</td><td><%= assessment_stat.n_hundred %> (<%= Math.round(assessment_stat.n_hundred_perc) %>% of class)</td></tr>
           </tbody>
         </table>
         <div class="panel-footer">
@@ -218,10 +218,10 @@
 
         <table class="table table-condensed table-hover">
           <tbody>
+            <tr><td>Mean duration</td><td><%= duration_stat.mean %></td></tr>
             <tr><td>Median duration</td><td><%= duration_stat.median %></td></tr>
             <tr><td>Minimum duration</td><td><%= duration_stat.min %></td></tr>
             <tr><td>Maximum duration</td><td><%= duration_stat.max %></td></tr>
-            <tr><td>Mean duration</td><td><%= duration_stat.mean %></td></tr>
           </tbody>
         </table>
         <div class="panel-footer">

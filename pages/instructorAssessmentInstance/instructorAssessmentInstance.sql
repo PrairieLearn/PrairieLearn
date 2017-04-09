@@ -1,9 +1,8 @@
 -- BLOCK select_data
 SELECT
-    format_interval(aid.duration) AS assessment_instance_duration
+    format_interval(ai.duration) AS assessment_instance_duration
 FROM
     assessment_instances AS ai
-    LEFT JOIN assessment_instance_durations AS aid ON (aid.id = ai.id)
 WHERE
     ai.id = $assessment_instance_id;
 

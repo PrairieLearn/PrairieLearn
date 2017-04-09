@@ -8,7 +8,6 @@ var error = require('../lib/error');
 var config = require('../lib/config');
 var sqldb = require('../lib/sqldb');
 
-var userAssessmentDurations = require('./userAssessmentDurations');
 var autoFinishExams = require('./autoFinishExams');
 var errorAbandonedJobs = require('./errorAbandonedJobs');
 
@@ -24,7 +23,6 @@ module.exports = {
         var that = module.exports;
         logger.verbose('cron jobs starting');
         async.eachSeries([
-            ['userAssessmentDurations', userAssessmentDurations],
             ['autoFinishExams', autoFinishExams],
             ['errorAbandonedJobs', errorAbandonedJobs],
         ], function(item, callback) {

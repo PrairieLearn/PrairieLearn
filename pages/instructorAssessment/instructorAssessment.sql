@@ -188,7 +188,7 @@ ORDER BY
     ai_by_user_and_date.date;
 
 -- BLOCK assessment_stats
-SELECT * FROM assessment_stats WHERE id = $assessment_id;
+SELECT * FROM assessments_stats($assessment_id);
 
 -- BLOCK assessment_duration_stats
 SELECT
@@ -203,8 +203,7 @@ SELECT
     threshold_seconds,
     threshold_labels,
     hist
-FROM assessment_duration_stats AS ads
-WHERE id = $assessment_id;
+FROM assessments_duration_stats($assessment_id) AS ads;
 
 -- BLOCK assessment_instance_data
 SELECT
