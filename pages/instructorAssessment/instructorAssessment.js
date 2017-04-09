@@ -5,6 +5,7 @@ var path = require('path');
 var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
+var debug = require('debug')('prairielearn:instructorAssessment')
 
 var error = require('../../lib/error');
 var logger = require('../../lib/logger');
@@ -46,12 +47,15 @@ var filenames = function(locals) {
 };
 
 router.get('/', function(req, res, next) {
+    debug('GET /');
     async.series([
         function(callback) {
+            debug('set filenames');
             _.assign(res.locals, filenames(res.locals));
             callback(null);
         },
         function(callback) {
+            debug('query questions');
             var params = {assessment_id: res.locals.assessment.id};
             sqldb.query(sql.questions, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -60,6 +64,7 @@ router.get('/', function(req, res, next) {
             });
         },
         function(callback) {
+            debug('query assessment_access_rules');
             var params = {assessment_id: res.locals.assessment.id};
             sqldb.query(sql.assessment_access_rules, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -68,6 +73,7 @@ router.get('/', function(req, res, next) {
             });
         },
         function(callback) {
+            debug('query question_stats');
             var params = {assessment_id: res.locals.assessment.id};
             sqldb.query(sql.question_stats, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -76,6 +82,7 @@ router.get('/', function(req, res, next) {
             });
         },
         function(callback) {
+            debug('query assessment_stats');
             var params = {assessment_id: res.locals.assessment.id};
             sqldb.queryOneRow(sql.assessment_stats, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -84,6 +91,7 @@ router.get('/', function(req, res, next) {
            });
         },
         function(callback) {
+            debug('query assessment_score_histogram_by_date');
             var params = {assessment_id: res.locals.assessment.id};
             sqldb.query(sql.assessment_score_histogram_by_date, params, function(err, result) {
                 if (ERR(err, next)) return;
@@ -92,6 +100,7 @@ router.get('/', function(req, res, next) {
             });
         }, 
         function(callback) {
+            debug('query assessment_duration_stats');
             // FIXME: change to assessment_instance_duration_stats and show all instances
             var params = {assessment_id: res.locals.assessment.id};
             sqldb.queryOneRow(sql.assessment_duration_stats, params, function(err, result) {
@@ -101,6 +110,7 @@ router.get('/', function(req, res, next) {
             });
         },
         function(callback) {
+            debug('query select_regrading_job_sequences');
             var params = {
                 assessment_id: res.locals.assessment.id,
             };
@@ -111,6 +121,7 @@ router.get('/', function(req, res, next) {
             });
         },
         function(callback) {
+            debug('query assessment_instance_data');
             var params = {assessment_id: res.locals.assessment.id};
             sqldb.query(sql.assessment_instance_data, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -120,6 +131,7 @@ router.get('/', function(req, res, next) {
         },
     ], function(err) {
         if (ERR(err, next)) return;
+        debug('render page');
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });

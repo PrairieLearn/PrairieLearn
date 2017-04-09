@@ -217,16 +217,15 @@ SELECT
         WHEN ai.open THEN 'Open'
         ELSE 'Closed'
     END AS time_remaining,
-    format_interval(aid.duration) AS duration,
-    EXTRACT(EPOCH FROM aid.duration) AS duration_secs,
-    EXTRACT(EPOCH FROM aid.duration) / 60 AS duration_mins
+    format_interval(ai.duration) AS duration,
+    EXTRACT(EPOCH FROM ai.duration) AS duration_secs,
+    EXTRACT(EPOCH FROM ai.duration) / 60 AS duration_mins
 FROM
     assessments AS a
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
     JOIN users AS u ON (u.user_id = ai.user_id)
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
-    LEFT JOIN assessment_instance_durations AS aid ON (aid.id = ai.id)
 WHERE
     a.id = $assessment_id
 ORDER BY
