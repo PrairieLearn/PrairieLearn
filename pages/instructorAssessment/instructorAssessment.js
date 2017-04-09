@@ -389,6 +389,19 @@ router.get('/:filename', function(req, res, next) {
             var numGroups = scoresByDay[0].histogram.length;
 
             var csvData = [];
+
+            var groupData = ['Number'];
+            for (var day = 0; day < numDays; day++) {
+                groupData.push(scoresByDay[day].number);
+            }
+            csvData.push(groupData);
+            
+            var groupData = ['Mean score perc'];
+            for (var day = 0; day < numDays; day++) {
+                groupData.push(scoresByDay[day].mean_score_perc);
+            }
+            csvData.push(groupData);
+            
             for (var group = 0; group < numGroups; group++) {
                 var groupData = [(group * 10) + "% to " + ((group + 1) * 10) + "%"];
                 for (var day = 0; day < numDays; day++) {

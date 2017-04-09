@@ -95,6 +95,7 @@ function parallel_histograms(selector, data, options) {
 
     for (var index = 0; index < data.length; index++) {
         var histogram = data[index].histogram;
+        var mean = data[index].mean;
 
         var widthForBucketFunction = function(i) {
             return histogram[i] / max * width_per_day;
@@ -113,6 +114,13 @@ function parallel_histograms(selector, data, options) {
             .attr("y", function(d, i) { return heightWithPadding - yLinear(i + 1); })
             .attr("width", function(d, i) { return widthForBucketFunction(i); })
             .attr("height", function(d, i) { return height_per_bucket;});
+
+        g.append("line")
+            .attr("class", "parallelHistMean")
+            .attr("x1", function(d) {return -width_per_day / 2;})
+            .attr("x2", function(d) {return width_per_day / 2;})
+            .attr("y1", function(d) {return heightWithPadding - yLinear(Math.min(100, mean) / 100 * numBuckets);})
+            .attr("y2", function(d) {return heightWithPadding - yLinear(Math.min(100, mean) / 100 * numBuckets);});
     }
 
     var yAxis = d3.svg.axis()

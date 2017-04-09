@@ -189,6 +189,11 @@ line.axis {
     stroke-width: 3px;
 }
 
+.parallelHistMean {
+    stroke: #000;
+    stroke-width: 3px;
+}
+
 .statsPlot .label {
     font-size: 14px;
     font-weight: normal;
