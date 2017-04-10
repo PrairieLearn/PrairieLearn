@@ -1,6 +1,30 @@
 
 # ChangeLog
 
+* __2.5.0__ - XXXX-XX-XX
+
+  * Speed up rendering of instructor pages with assessment statistics.
+
+  * Speed up calculation of assessment durations.
+
+  * Speed up pages with job sequences.
+
+  * Add per-day mean scores to the by-day score plot.
+
+  * Fix assessment duration estimation for homeworks (1-hour gap maximum).
+
+  * Fix CSV link on gradebook page.
+
+  * Fix sorting of assessment on gradebook page.
+
+  * Fix CSV download on instructor assessments overview page.
+
+  * Fix date format in activity log CSV.
+
+  * Fix links to questions on activity log pages.
+
+  * Remove "permanent URL" on instructor assessments overview page.
+
 * __2.4.1__ - 2017-04-08
 
   * Set question `feedback` to the empty object when missing.
