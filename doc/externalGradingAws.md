@@ -25,10 +25,10 @@ Edit `PrairieLearn/config.json` to set:
 
 1. Visit [https://console.aws.amazon.com/batch/home?region=us-east-1#/wizard](https://console.aws.amazon.com/batch/home?region=us-east-1#/wizard)
 2. Select "Using Amazon EC2" for "How would you like to run your job?"
-3. Select "Create new job definition" and name it `autograder-job-definition`
+3. Select "Create new job definition" and name it `grading-job-definition`
 4. TODO: Select a job role that will give our containers permissions to use AWS APIs
 5. Click "Next"
-6. Accept all the defaults on the next page, but change the "Job queue name" at the bottom of the page to `autograder-job-queue`. If you choose not to use that default name, make sure to specify the one you choose in `PrairieLearn/config.json`:
+6. Accept all the defaults on the next page, but change the "Job queue name" at the bottom of the page to `grading-job-queue`. If you choose not to use that default name, make sure to specify the one you choose in `PrairieLearn/config.json`:
 
 ```json
 {
@@ -56,7 +56,7 @@ Once that role has been configured, get its `Role ARN` and add it to `PrairieLea
 
 ```json
 {
-    "externalGradingJobRole": "arn:aws:iam::123456789:role/AutograderContainer"
+    "externalGradingJobRole": "arn:aws:iam::123456789:role/GradingContainer"
 }
 ```
 
