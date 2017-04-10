@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS variants (
     true_answer JSONB,
     options JSONB,
     duration INTERVAL DEFAULT INTERVAL '0 seconds',
-    first_duration INTERVAL DEFAULT INTERVAL '0 seconds',
+    first_duration INTERVAL,
     UNIQUE (instance_question_id, number)
 );
 
@@ -44,4 +44,4 @@ END;
 $$;
 
 ALTER TABLE variants ADD COLUMN IF NOT EXISTS duration INTERVAL DEFAULT INTERVAL '0 seconds';
-ALTER TABLE variants ADD COLUMN IF NOT EXISTS first_duration INTERVAL DEFAULT INTERVAL '0 seconds';
+ALTER TABLE variants ADD COLUMN IF NOT EXISTS first_duration INTERVAL;

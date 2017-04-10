@@ -10,9 +10,16 @@ CREATE OR REPLACE FUNCTION
         OUT submission_id bigint
     )
 AS $$
+<<main>>
 DECLARE
     variant variants%rowtype;
+    user_id bigint;
+    last_access timestamptz;
+    delta interval;
 BEGIN
+    -- ######################################################################
+    -- get the variant
+
     IF variant_id IS NULL THEN
         SELECT v.*
         INTO variant
@@ -37,17 +44,60 @@ BEGIN
         RAISE EXCEPTION 'variant is not available';
     END IF;
 
+    -- ######################################################################
+    -- figure out the elapsed time since the last access
+
+    SELECT ai.user_id INTO user_id
+    FROM
+        assessment_instances AS ai
+        JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
+    WHERE iq.id = instance_question_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'instance_question not found'; END IF;
+
+    SELECT la.last_access
+    INTO last_access
+    FROM last_accesses AS la
+    WHERE la.user_id = main.user_id;
+
+    delta := coalesce(current_timestamp - last_access, interval '0 seconds');
+    IF delta > interval '1 hour' THEN
+        delta := interval '0 seconds';
+    END IF;
+
+    UPDATE last_accesses AS la
+    SET last_access = current_timestamp
+    WHERE la.user_id = main.user_id;
+
+    -- ######################################################################
+    -- actually insert the submission
+
     INSERT INTO submissions
-            (variant_id, auth_user_id,  submitted_answer, type, credit, mode)
-    VALUES  (variant_id, authn_user_id, submitted_answer, type, credit, mode)
+            (variant_id, auth_user_id,  submitted_answer, type, credit, mode, duration)
+    VALUES  (variant_id, authn_user_id, submitted_answer, type, credit, mode, delta)
     RETURNING id
     INTO submission_id;
 
-    UPDATE instance_questions AS iq
-    SET status = 'saved'
-    FROM variants AS v
+    -- ######################################################################
+    -- update durations for parent objects
+
+    UPDATE variants
+    SET
+        duration = duration + delta,
+        first_duration = CASE WHEN first_duration IS NULL THEN delta ELSE first_duration END
+    WHERE id = variant_id;
+
+    UPDATE instance_questions
+    SET
+        status = 'saved',
+        duration = duration + delta,
+        first_duration = CASE WHEN first_duration IS NULL THEN delta ELSE first_duration END
+    WHERE id = instance_question_id;
+
+    UPDATE assessment_instances AS ai
+    SET duration = ai.duration + delta
+    FROM instance_questions AS iq
     WHERE
-        iq.id = v.instance_question_id
-        AND v.id = variant_id;
+        iq.id = instance_question_id
+        AND ai.id = iq.assessment_instance_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
