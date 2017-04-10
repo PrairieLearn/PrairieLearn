@@ -6,7 +6,10 @@
     "clientFiles": ["client.js", "question.html", "answer.html", "submission.html"],
     "type": "Calculation",
     "gradingMethod": "External",
-    "autogradingEnabled": true,
-    "autograder": "child_cppdev",
-    "environment": "cpp-main"
+    "externalGradingOptions": {
+        "enabled": true,
+        "autograder": "child_cppdev",
+        "environment": "python-main",
+        "image": "prairielearn/centos7-base"
+    }
 }

@@ -55,10 +55,10 @@ module.exports = {
                         course_id: courseInfo.courseId,
                         topic: q.topic,
                         grading_method: q.gradingMethod || 'Internal',
-                        autograding_enabled: q.autogradingEnabled,
-                        autograder: q.autograder,
-                        environment: q.environment,
-                        autograder_image: q.autograderImage,
+                        external_grading_enabled: (q.externalGradingOptions && q.externalGradingOptions.enabled),
+                        external_grading_autograder: (q.externalGradingOptions && q.externalGradingOptions.autograder),
+                        external_grading_environment: (q.externalGradingOptions && q.externalGradingOptions.environment),
+                        external_grading_image: (q.externalGradingOptions && q.externalGradingOptions.image),
                     };
                     sqldb.queryOneRow(sql.insert_question, params, function(err, result) {
                         if (ERR(err, callback)) return;
