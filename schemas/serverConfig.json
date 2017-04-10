@@ -68,27 +68,27 @@
             "description": "Time after last activity when exams are auto-closed (minutes).",
             "type": "integer"
         },
-        "externalGraderUseAws": {
+        "externalGradingUseAws": {
             "description": "If the external grader should use AWS (production) or not (local dev).",
             "type": "boolean"
         },
-        "externalGraderS3Bucket": {
+        "externalGradingS3Bucket": {
             "description": "The S3 bucket that externally graded jobs should be stored in.",
             "type": "string"
         },
-        "externalGraderResultsS3Bucket": {
+        "externalGradingResultsS3Bucket": {
             "description": "The S3 bucket where externally graded job results will be stored.",
             "type": "string"
         },
-        "externalGraderJobQueue": {
+        "externalGradingJobQueue": {
             "description": "The name of the job queue where externally graded jobs will be submitted.",
             "type": "string"
         },
-        "externalGraderJobRole": {
+        "externalGradingJobRole": {
             "description": "The ARN of the role that should be provided to external grading containers for resource access.",
             "type": "string"
         },
-        "externalGraderWebhookUrl": {
+        "externalGradingWebhookUrl": {
             "description": "The endpoint that should be hit when a grading result is updated. Should be null when running locally.",
             "type": "string"
         }

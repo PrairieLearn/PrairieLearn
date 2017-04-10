@@ -43,7 +43,7 @@ router.post('/', function(req, res, next) {
         } else {
             // We should fetch it from S3, and then process it
             const params = {
-                Bucket: config.externalGraderResultsS3Bucket,
+                Bucket: config.externalGradingResultsS3Bucket,
                 Key: `job_${data.job_id}.json`,
                 ResponseContentType: 'application/json',
             }
