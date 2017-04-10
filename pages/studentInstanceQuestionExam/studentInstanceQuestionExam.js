@@ -30,23 +30,15 @@ function processSubmission(req, res, callback) {
             callback(null);
         },
         function(callback) {
-            var params = {instance_question_id: res.locals.instance_question.id};
-            sqldb.queryOneRow(sql.get_variant, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                res.locals.variant = result.rows[0];
-                callback(null);
-            });
-        },
-        function(callback) {
-            var params = {
-                variant_id: res.locals.variant.id,
-                auth_user_id: res.locals.user.user_id,
-                submitted_answer: postData.submittedAnswer,
-                type: postData.type,
-                credit: res.locals.authz_result.credit,
-                mode: res.locals.authz_data.mode,
-            };
-            sqldb.query(sql.new_submission, params, function(err, result) {
+            var params = [
+                res.locals.instance_question.id,
+                res.locals.authn_user.user_id,
+                postData.submittedAnswer,
+                postData.type,
+                res.locals.authz_result.credit,
+                res.locals.authz_data.mode,
+            ];
+            sqldb.call('submissions_insert', params, function(err, result) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

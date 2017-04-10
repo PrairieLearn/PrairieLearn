@@ -68,6 +68,7 @@ module.exports = {
             'instance_questions_points_exam.sql',
             'instance_questions_points.sql',
             'instance_questions_grade.sql',
+            'submissions_insert.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
