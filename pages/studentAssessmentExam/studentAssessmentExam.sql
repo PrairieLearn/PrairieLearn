@@ -8,33 +8,6 @@ WHERE
     AND ai.number = 1
     AND ai.user_id = $user_id;
 
--- BLOCK insert_assessment_instance
-INSERT INTO assessment_instances AS ai
-    (auth_user_id, assessment_id, user_id, mode, open, auto_close, tmp_upgraded_iq_status, date_limit, number)
-SELECT
-    $authn_user_id, $assessment_id, $user_id, $mode, TRUE, $auto_close, TRUE,
-    CASE
-        WHEN $time_limit_min::integer IS NULL THEN NULL
-        ELSE $date::timestamptz + make_interval(mins => $time_limit_min::integer)
-    END AS date_limit,
-    CASE
-        WHEN a.multiple_instance THEN (
-            SELECT
-                coalesce(max(ai.number) + 1, 1)
-            FROM
-                assessment_instances AS ai
-            WHERE
-                ai.assessment_id = $assessment_id
-                AND ai.user_id = $user_id
-        )
-        ELSE 1
-    END AS number
-FROM
-    assessments AS a
-WHERE
-    a.id = $assessment_id
-RETURNING ai.id;
-
 -- BLOCK select_new_questions
 SELECT * FROM select_assessment_questions($assessment_id);
 

@@ -59,6 +59,7 @@ module.exports = {
             'submissions.sql',
             'job_sequences.sql',
             'jobs.sql',
+            'last_accesses.sql',
 
             // tables for logging
             'assessment_state_logs.sql',

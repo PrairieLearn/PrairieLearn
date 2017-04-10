@@ -27,6 +27,7 @@ module.exports = {
             'check_course_instance_access.sql',
             'check_assessment_access_rule.sql',
             'check_assessment_access.sql',
+            'assessment_instances_insert.sql',
             'assessment_instances_duration.sql',
             'assessments_duration_stats.sql',
             'assessments_stats.sql',

@@ -13,6 +13,8 @@ CREATE TABLE IF NOT EXISTS instance_questions (
     number_attempts INTEGER DEFAULT 0,
     points_list DOUBLE PRECISION[],
     status enum_instance_question_status DEFAULT 'unanswered'::enum_instance_question_status,
+    duration INTERVAL DEFAULT INTERVAL '0 seconds',
+    first_duration INTERVAL DEFAULT INTERVAL '0 seconds',
     assessment_instance_id BIGINT NOT NULL REFERENCES assessment_instances ON DELETE CASCADE ON UPDATE CASCADE,
     assessment_question_id BIGINT NOT NULL REFERENCES assessment_questions ON DELETE CASCADE ON UPDATE CASCADE,
     UNIQUE (assessment_question_id, assessment_instance_id)
@@ -34,4 +36,7 @@ BEGIN
         ALTER TABLE instance_questions ADD FOREIGN KEY (authn_user_id) REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE;
     END IF;
 END;
-$$
+$$;
+
+ALTER TABLE instance_questions ADD COLUMN IF NOT EXISTS duration INTERVAL DEFAULT INTERVAL '0 seconds';
+ALTER TABLE instance_questions ADD COLUMN IF NOT EXISTS first_duration INTERVAL DEFAULT INTERVAL '0 seconds';

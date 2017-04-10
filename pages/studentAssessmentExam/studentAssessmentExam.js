@@ -21,18 +21,17 @@ function makeAssessmentInstance(req, res, callback) {
         var assessment_instance_id, new_questions;
         async.series([
             function(callback) {
-                var params = {
-                    authn_user_id: res.locals.authn_user.user_id,
-                    assessment_id: res.locals.assessment.id,
-                    user_id: res.locals.user.user_id,
-                    mode: res.locals.authz_data.mode,
-                    date: res.locals.authz_data.date,
-                    time_limit_min: res.locals.authz_result.time_limit_min,
-                    auto_close: res.locals.assessment.auto_close,
-                };
-                sqldb.queryWithClientOneRow(client, sql.insert_assessment_instance, params, function(err, result) {
+                var params = [
+                    res.locals.assessment.id,
+                    res.locals.user.user_id,
+                    res.locals.authn_user.user_id,
+                    res.locals.authz_data.mode,
+                    res.locals.authz_result.time_limit_min,
+                    res.locals.authz_data.date,
+                ];
+                sqldb.callWithClientOneRow(client, 'assessment_instances_insert', params, function(err, result) {
                     if (ERR(err, callback)) return;
-                    assessment_instance_id = result.rows[0].id;
+                    assessment_instance_id = result.rows[0].assessment_instance_id;
                     callback(null);
                 });
             },
