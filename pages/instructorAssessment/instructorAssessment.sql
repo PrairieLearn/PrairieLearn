@@ -171,14 +171,19 @@ WITH assessment_instances_by_user_and_date AS (
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+        JOIN users AS u ON (u.user_id = ai.user_id)
+        JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
     WHERE
         ai.assessment_id = $assessment_id
+        AND e.role = 'Student'
     GROUP BY
         ai.user_id, date_trunc('day', date AT TIME ZONE ci.display_timezone)
 )
 SELECT
     ai_by_user_and_date.date,
     to_char(ai_by_user_and_date.date, 'DD Mon') AS date_formatted,
+    count(score_perc) AS number,
+    avg(score_perc) AS mean_score_perc,
     histogram(score_perc, 0, 100, 10)
 FROM
     assessment_instances_by_user_and_date AS ai_by_user_and_date
@@ -188,7 +193,7 @@ ORDER BY
     ai_by_user_and_date.date;
 
 -- BLOCK assessment_stats
-SELECT * FROM assessment_stats WHERE id = $assessment_id;
+SELECT * FROM assessments_stats($assessment_id);
 
 -- BLOCK assessment_duration_stats
 SELECT
@@ -203,8 +208,7 @@ SELECT
     threshold_seconds,
     threshold_labels,
     hist
-FROM assessment_duration_stats AS ads
-WHERE id = $assessment_id;
+FROM assessments_duration_stats($assessment_id) AS ads;
 
 -- BLOCK assessment_instance_data
 SELECT
@@ -217,16 +221,17 @@ SELECT
         WHEN ai.open THEN 'Open'
         ELSE 'Closed'
     END AS time_remaining,
-    format_interval(aid.duration) AS duration,
-    EXTRACT(EPOCH FROM aid.duration) AS duration_secs,
-    EXTRACT(EPOCH FROM aid.duration) / 60 AS duration_mins
+    format_date_iso8601(ai.date, ci.display_timezone) AS date_formatted,
+    format_interval(ai.duration) AS duration,
+    EXTRACT(EPOCH FROM ai.duration) AS duration_secs,
+    EXTRACT(EPOCH FROM ai.duration) / 60 AS duration_mins
 FROM
     assessments AS a
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
     JOIN users AS u ON (u.user_id = ai.user_id)
     LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = a.course_instance_id)
-    LEFT JOIN assessment_instance_durations AS aid ON (aid.id = ai.id)
 WHERE
     a.id = $assessment_id
 ORDER BY

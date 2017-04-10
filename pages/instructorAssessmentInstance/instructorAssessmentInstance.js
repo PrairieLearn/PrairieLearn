@@ -53,7 +53,7 @@ router.get('/:filename', function(req, res, next) {
             var csvHeaders = ['Time', 'Auth user', 'Event', 'Question', 'Variant', 'Data'];
             var csvData = _.map(log, function(row) {
                 return [
-                    row.date,
+                    row.date_iso8601,
                     row.auth_user_uid,
                     row.event_name,
                     row.qid,

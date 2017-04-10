@@ -1,9 +1,8 @@
 -- BLOCK select_data
 SELECT
-    format_interval(aid.duration) AS assessment_instance_duration
+    format_interval(ai.duration) AS assessment_instance_duration
 FROM
     assessment_instances AS ai
-    LEFT JOIN assessment_instance_durations AS aid ON (aid.id = ai.id)
 WHERE
     ai.id = $assessment_instance_id;
 
@@ -15,8 +14,8 @@ WITH event_log AS (
             'Begin'::TEXT AS event_name,
             'gray3'::TEXT AS event_color,
             ai.date,
-            NULL::integer AS auth_user_id,
-            NULL::TEXT AS auth_user_uid,
+            u.user_id AS auth_user_id,
+            u.uid AS auth_user_uid,
             NULL::TEXT as qid,
             NULL::INTEGER as question_id,
             NULL::INTEGER as variant_id,
@@ -24,6 +23,7 @@ WITH event_log AS (
             NULL::JSONB as data
         FROM
             assessment_instances AS ai
+            LEFT JOIN users AS u ON (u.user_id = ai.auth_user_id)
         WHERE
             ai.id = $assessment_instance_id
     )
@@ -34,8 +34,8 @@ WITH event_log AS (
             'New variant'::TEXT AS event_name,
             'gray1'::TEXT AS event_color,
             v.date,
-            NULL::integer AS auth_user_id,
-            NULL::TEXT AS auth_user_uid,
+            u.user_id AS auth_user_id,
+            u.uid AS auth_user_uid,
             q.qid as qid,
             q.id as question_id,
             v.id AS variant_id,
@@ -51,6 +51,7 @@ WITH event_log AS (
             JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
             JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
             JOIN questions AS q ON (q.id = aq.question_id)
+            LEFT JOIN users AS u ON (u.user_id = v.authn_user_id)
         WHERE
             iq.assessment_instance_id = $assessment_instance_id
     )
@@ -61,8 +62,8 @@ WITH event_log AS (
             'Submission'::TEXT AS event_name,
             'blue3'::TEXT AS event_color,
             s.date,
-            NULL::integer AS auth_user_id,
-            NULL::TEXT AS auth_user_uid,
+            u.user_id AS auth_user_id,
+            u.uid AS auth_user_uid,
             q.qid,
             q.id AS question_id,
             v.id as variant_id,
@@ -74,6 +75,7 @@ WITH event_log AS (
             JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
             JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
             JOIN questions AS q ON (q.id = aq.question_id)
+            LEFT JOIN users AS u ON (u.user_id = s.auth_user_id)
         WHERE
             iq.assessment_instance_id = $assessment_instance_id
     )
@@ -184,7 +186,8 @@ WITH event_log AS (
 )
 SELECT
     el.*,
-    format_date_full_compact(el.date, ci.display_timezone) AS formatted_date
+    format_date_full_compact(el.date, ci.display_timezone) AS formatted_date,
+    format_date_iso8601(el.date, ci.display_timezone) AS date_iso8601
 FROM
     event_log AS el,
     assessment_instances AS ai

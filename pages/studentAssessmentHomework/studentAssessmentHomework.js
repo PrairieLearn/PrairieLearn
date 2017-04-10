@@ -13,14 +13,15 @@ var sqlLoader = require('../../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 function makeAssessmentInstance(req, res, callback) {
-    var params = {
-        assessment_id: res.locals.assessment.id,
-        user_id: res.locals.user.user_id,
-        mode: res.locals.authz_data.mode,
-    };
-    sqldb.queryOneRow(sql.new_assessment_instance, params, function(err, result) {
+    var params = [
+        res.locals.assessment.id,
+        res.locals.user.user_id,
+        res.locals.authn_user.user_id,
+        res.locals.authz_data.mode,
+    ];
+    sqldb.callOneRow('assessment_instances_insert', params, function(err, result) {
         if (ERR(err, callback)) return;
-        callback(null, result.rows[0].id);
+        callback(null, result.rows[0].assessment_instance_id);
     });
 };
 

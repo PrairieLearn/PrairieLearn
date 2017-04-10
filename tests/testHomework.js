@@ -26,6 +26,7 @@ describe('Homework assessment', function() {
     var assessment_id, assessment_instance, instance_questions, variant, submission;
     var csrfToken, instance_question, instance_question_1_id, instance_question_2_id;
     var locals = {};
+    var preStartTime, postStartTime, preEndTime, postEndTime, assessment_instance_duration;
 
     describe('database', function() {
         it('should contain HW1', function(callback) {
@@ -66,10 +67,12 @@ describe('Homework assessment', function() {
 
     describe('GET to assessment URL', function() {
         it('should load successfully', function(callback) {
+            preStartTime = Date.now();
             request(assessmentUrl, function (error, response, body) {
                 if (error) {
                     return callback(error);
                 }
+                postStartTime = Date.now();
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
@@ -203,6 +206,7 @@ describe('Homework assessment', function() {
                 assert.isString(csrfToken);
             });
         });
+
         describe('POST to instance_question URL', function() {
             it('should generate the submittedAnswer', function() {
                 submittedAnswer = locals.getSubmittedAnswer(variant);
@@ -214,10 +218,12 @@ describe('Homework assessment', function() {
                     csrfToken: csrfToken,
                     postData: JSON.stringify({variant, submittedAnswer}),
                 };
+                preEndTime = Date.now();
                 request.post({url: instanceQuestionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
                         return callback(error);
                     }
+                    postEndTime = Date.now();
                     if (response.statusCode != 200) {
                         return callback(new Error('bad status: ' + response.statusCode));
                     }
@@ -280,6 +286,22 @@ describe('Homework assessment', function() {
             });
             it('should update assessment_instance score_perc', function() {
                 assert.approximately(assessment_instance.score_perc, locals.expectedResult.assessment_instance_score_perc, 1e-6);
+            });
+            it('should select the assessment_instance duration from the DB', function(callback) {
+                sqldb.query(sql.select_assessment_instance_durations, [], function(err, result) {
+                    if (ERR(err, callback)) return;
+                    if (result.rowCount != 1) {
+                        return callback(new Error('expected one row, got: ' + result.rowCount));
+                    }
+                    assessment_instance_duration = result.rows[0].duration;
+                    callback(null);
+                });
+            });
+            it('should have the correct assessment_instance duration', function() {
+                var min_duration = (preEndTime - postStartTime) / 1000;
+                var max_duration = (postEndTime - preStartTime) / 1000;
+                assert.isAbove(assessment_instance_duration, min_duration);
+                assert.isBelow(assessment_instance_duration, max_duration);
             });
         });
     };

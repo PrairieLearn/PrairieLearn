@@ -15,6 +15,12 @@ SELECT
 FROM
     assessment_instances AS ai;
 
+-- BLOCK select_assessment_instance_durations
+SELECT
+    extract (epoch FROM ai.duration) AS duration
+FROM
+    assessment_instances AS ai;
+
 -- BLOCK select_instance_questions
 SELECT
     iq.*,

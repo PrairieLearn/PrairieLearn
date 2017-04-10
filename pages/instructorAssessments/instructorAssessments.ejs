@@ -22,8 +22,8 @@
               <th>TID</th>
               <th class="cell-center">Students</th>
               <th class="cell-center">Scores</th>
-              <th class="cell-center">Median Score</th>
-              <th class="cell-center">Median Duration</th>
+              <th class="cell-center">Mean Score</th>
+              <th class="cell-center">Mean Duration</th>
             </tr>
           </thead>
           <tbody>
@@ -61,13 +61,13 @@
               <% } %>
 
               <% if (row.number > 0) { %>
-              <td class="cell-center"><%- include('../partials/scorebar', {score: row.median}); %></td>
+              <td class="cell-center"><%- include('../partials/scorebar', {score: Math.round(row.mean)}); %></td>
               <% } else { %>
               <td class="cell-center"></td>
               <% } %>
 
               <% if (row.number > 0) { %>
-              <td class="cell-center"><%= row.median_duration %></td>
+              <td class="cell-center"><%= row.mean_duration %></td>
               <% } else { %>
               <td class="cell-center"></td>
               <% } %>
@@ -78,20 +78,9 @@
         </table>
 
         <div class="panel-footer">
-          <p>
+          <p class="no-bottom-margin">
             Download <a href="<%= urlPrefix %>/assessments/<%= csvFilename %>"><%= csvFilename %></a>
             (includes more statistics columns than displayed above)
-          <p>
-          <p class="no-bottom-margin">
-            Permanent URL of this course instance for students:
-            <a id="perm_url"></a>
-            <script>
-              var url = window.location.protocol
-                        + '//' + window.location.host
-                        + '<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>';
-              $('#perm_url').attr('href', url);
-              $('#perm_url').text(url);
-            </script>
           </p>
         </div>
 

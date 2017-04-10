@@ -15,6 +15,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
     var params = {
+        authn_user_id: res.locals.authn_user.user_id,
         assessment_instance_id: res.locals.assessment_instance.id,
         assessment_id: res.locals.assessment.id,
     };

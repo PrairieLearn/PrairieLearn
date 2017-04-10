@@ -5,6 +5,7 @@ var path = require('path');
 var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
+var debug = require('debug')('prairielearn:instructorAssessment')
 
 var error = require('../../lib/error');
 var logger = require('../../lib/logger');
@@ -46,12 +47,15 @@ var filenames = function(locals) {
 };
 
 router.get('/', function(req, res, next) {
+    debug('GET /');
     async.series([
         function(callback) {
+            debug('set filenames');
             _.assign(res.locals, filenames(res.locals));
             callback(null);
         },
         function(callback) {
+            debug('query questions');
             var params = {assessment_id: res.locals.assessment.id};
             sqldb.query(sql.questions, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -60,6 +64,7 @@ router.get('/', function(req, res, next) {
             });
         },
         function(callback) {
+            debug('query assessment_access_rules');
             var params = {assessment_id: res.locals.assessment.id};
             sqldb.query(sql.assessment_access_rules, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -68,6 +73,7 @@ router.get('/', function(req, res, next) {
             });
         },
         function(callback) {
+            debug('query question_stats');
             var params = {assessment_id: res.locals.assessment.id};
             sqldb.query(sql.question_stats, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -76,6 +82,7 @@ router.get('/', function(req, res, next) {
             });
         },
         function(callback) {
+            debug('query assessment_stats');
             var params = {assessment_id: res.locals.assessment.id};
             sqldb.queryOneRow(sql.assessment_stats, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -84,6 +91,7 @@ router.get('/', function(req, res, next) {
            });
         },
         function(callback) {
+            debug('query assessment_score_histogram_by_date');
             var params = {assessment_id: res.locals.assessment.id};
             sqldb.query(sql.assessment_score_histogram_by_date, params, function(err, result) {
                 if (ERR(err, next)) return;
@@ -92,6 +100,7 @@ router.get('/', function(req, res, next) {
             });
         }, 
         function(callback) {
+            debug('query assessment_duration_stats');
             // FIXME: change to assessment_instance_duration_stats and show all instances
             var params = {assessment_id: res.locals.assessment.id};
             sqldb.queryOneRow(sql.assessment_duration_stats, params, function(err, result) {
@@ -101,6 +110,7 @@ router.get('/', function(req, res, next) {
             });
         },
         function(callback) {
+            debug('query select_regrading_job_sequences');
             var params = {
                 assessment_id: res.locals.assessment.id,
             };
@@ -111,6 +121,7 @@ router.get('/', function(req, res, next) {
             });
         },
         function(callback) {
+            debug('query assessment_instance_data');
             var params = {assessment_id: res.locals.assessment.id};
             sqldb.query(sql.assessment_instance_data, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -120,6 +131,7 @@ router.get('/', function(req, res, next) {
         },
     ], function(err) {
         if (ERR(err, next)) return;
+        debug('render page');
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
@@ -170,7 +182,7 @@ router.get('/:filename', function(req, res, next) {
             if (ERR(err, next)) return;
             var durationStat = result.rows[0];
             var csvHeaders = ['Course', 'Instance', 'Set', 'Number', 'Assessment', 'Title', 'TID',
-                              'Median duration (min)', 'Min duration (min)', 'Max duration (min)', 'Mean duration (min)'];
+                              'Mean duration (min)', 'Median duration (min)', 'Min duration (min)', 'Max duration (min)'];
             var csvData = [
                 res.locals.course.short_name,
                 res.locals.course_instance.short_name,
@@ -179,10 +191,10 @@ router.get('/:filename', function(req, res, next) {
                 res.locals.assessment_set.abbreviation + res.locals.assessment.number,
                 res.locals.assessment.title,
                 res.locals.assessment.tid,
+                durationStat.mean_mins,
                 durationStat.median_mins,
                 durationStat.min_mins,
                 durationStat.max_mins,
-                durationStat.mean_mins,
             ];
             _(durationStat.threshold_seconds).each(function(count, i) {
                 csvHeaders.push("Hist boundary " + (i + 1) + " (s)");
@@ -209,6 +221,8 @@ router.get('/:filename', function(req, res, next) {
                 ['Role', 'role'],
                 ['Assessment', 'assessment_label'],
                 ['Instance', 'number'],
+                ['Started', 'date_formatted'],
+                ['Remaining', 'time_remaining'],
                 ['Score (%)', 'score_perc'],
                 ['Duration (min)', 'duration_mins'],
             ];
@@ -375,6 +389,19 @@ router.get('/:filename', function(req, res, next) {
             var numGroups = scoresByDay[0].histogram.length;
 
             var csvData = [];
+
+            var groupData = ['Number'];
+            for (var day = 0; day < numDays; day++) {
+                groupData.push(scoresByDay[day].number);
+            }
+            csvData.push(groupData);
+            
+            var groupData = ['Mean score perc'];
+            for (var day = 0; day < numDays; day++) {
+                groupData.push(scoresByDay[day].mean_score_perc);
+            }
+            csvData.push(groupData);
+            
             for (var group = 0; group < numGroups; group++) {
                 var groupData = [(group * 10) + "% to " + ((group + 1) * 10) + "%"];
                 for (var day = 0; day < numDays; day++) {

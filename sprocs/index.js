@@ -27,12 +27,10 @@ module.exports = {
             'check_course_instance_access.sql',
             'check_assessment_access_rule.sql',
             'check_assessment_access.sql',
-            'assessment_instance_durations.sql',
-            'user_assessment_durations.sql',
-            'assessment_duration_stats.sql',
-            'user_assessment_scores.sql',
-            'student_assessment_scores.sql',
-            'assessment_stats.sql',
+            'assessment_instances_insert.sql',
+            'assessment_instances_duration.sql',
+            'assessments_duration_stats.sql',
+            'assessments_stats.sql',
             'assessments_for_question.sql',
             'tags_for_question.sql',
             'assessment_points_homework.sql',
@@ -70,6 +68,7 @@ module.exports = {
             'instance_questions_points_exam.sql',
             'instance_questions_points.sql',
             'instance_questions_grade.sql',
+            'submissions_insert.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

@@ -74,12 +74,3 @@ FROM
 WHERE
     iq.id = $instance_question_id
     AND aq.id = iq.assessment_question_id;
-
--- BLOCK new_submission
-INSERT INTO submissions AS s
-    (date,               variant_id,  auth_user_id,  submitted_answer,
-     type,  credit,  mode)
-VALUES
-    (current_timestamp, $variant_id, $auth_user_id, $submitted_answer,
-    $type, $credit, $mode)
-RETURNING s.id;

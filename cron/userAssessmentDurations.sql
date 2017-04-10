@@ -1,1 +1,0 @@
-REFRESH MATERIALIZED VIEW user_assessment_durations;

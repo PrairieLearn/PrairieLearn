@@ -27,19 +27,3 @@ WHERE
     v.id = $variant_id
 ORDER BY
     s.date DESC;
-
--- BLOCK new_submission
-WITH submission_result AS (
-    INSERT INTO submissions AS s
-        ( variant_id,  auth_user_id,  submitted_answer,  type,  credit,  mode)
-    VALUES
-        ($variant_id, $auth_user_id, $submitted_answer, $type, $credit, $mode)
-)
-UPDATE instance_questions AS iq
-SET
-    status = 'saved'
-FROM
-    variants AS v
-WHERE
-    iq.id = v.instance_question_id
-    AND v.id = $variant_id;

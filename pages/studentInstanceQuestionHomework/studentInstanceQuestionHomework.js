@@ -29,6 +29,7 @@ function ensureVariant(locals, callback) {
         questionServers.makeVariant(locals.question, locals.course, {}, function(err, variant) {
             if (ERR(err, callback)) return;
             var params = {
+                authn_user_id: locals.authn_user.user_id,
                 instance_question_id: locals.instance_question.id,
                 variant_seed: variant.variant_seed,
                 question_params: variant.params,

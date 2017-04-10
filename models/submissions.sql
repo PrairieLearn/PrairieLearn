@@ -14,8 +14,11 @@ CREATE TABLE IF NOT EXISTS submissions (
     graded_at TIMESTAMP WITH TIME ZONE,
     score DOUBLE PRECISION,
     correct BOOLEAN,
-    feedback JSONB
+    feedback JSONB,
+    duration INTERVAL DEFAULT INTERVAL '0 seconds'
 );
 
 CREATE INDEX IF NOT EXISTS submissions_variant_id_idx ON submissions (variant_id);
 ALTER TABLE submissions ADD COLUMN IF NOT EXISTS grading_method enum_grading_method;
+
+ALTER TABLE submissions ADD COLUMN IF NOT EXISTS duration INTERVAL DEFAULT INTERVAL '0 seconds';
