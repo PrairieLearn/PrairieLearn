@@ -1,7 +1,7 @@
 
 # ChangeLog
 
-* __2.5.0__ - XXXX-XX-XX
+* __2.5.0__ - 2017-04-11
 
   * Speed up rendering of instructor pages with assessment statistics.
 
