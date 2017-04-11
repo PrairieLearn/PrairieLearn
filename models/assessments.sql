@@ -20,6 +20,3 @@ CREATE TABLE IF NOT EXISTS assessments (
 
 CREATE INDEX IF NOT EXISTS assessments_course_instance_id_idx ON assessments (course_instance_id);
 CREATE INDEX IF NOT EXISTS assessments_assessment_set_id_idx ON assessments (assessment_set_id);
-
-ALTER TABLE assessments ADD COLUMN IF NOT EXISTS order_by integer;
-ALTER TABLE assessments ADD COLUMN IF NOT EXISTS auto_close boolean DEFAULT true;

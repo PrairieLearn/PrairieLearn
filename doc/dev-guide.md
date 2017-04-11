@@ -19,38 +19,40 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. Top-level files and directories are:
 
-        PrairieLearn/v2
-        +-- autograder         # files needed to autograde code on a seperate server
-        |   `-- ...            # various scripts and docker images
-        +-- config.json        # server configuration file (optional)
-        +-- cron               # jobs to be periodically executed, one file per job
-        |   +-- index.js       # entry point for all cron jobs
-        |   `-- ...            # one JS file per cron job, executed by index.js
-        +-- doc                # documentation
-        +-- exampleCourse      # example content for a course
-        +-- lib                # miscellaneous helper code
-        +-- middlewares        # Express.js middleware, one per file
-        +-- models             # DB table creation, one file per table
-        |   +-- index.js       # entry point for all model initialization
-        |   `-- ...            # one JS file per table, executed by index.js
-        +-- package.json       # npm configuration file
-        +-- pages              # one sub-dir per web page
-        |   +-- partials       # EJS helper sub-templates
-        |   +-- instructorHome # all the code for the instructorHome page
-        |   +-- userHome       # all the code for the userHome page
-        |   `-- ...            # other "instructor" and "user" pages
-        +-- public             # all accessible without access control
-        |   +-- javascripts    # external packages only, no modificiations
-        |   +-- localscripts   # all local site-wide JS
-        |   `-- stylesheets    # all CSS, both external and local
-        +-- question-servers   # one file per question type
-        +-- schemas            # JSON schemas for input file formats
-        +-- server.js          # top-level program
-        +-- sprocs             # DB stored procedures, one per file
-        |   +-- index.js       # entry point for all sproc initialization
-        |   `-- ...            # one JS file per sproc, executed by index.js
-        +-- sync               # code to load on-disk course config into DB
-        `-- tests              # unit tests, currently unused
+    ```text
+    PrairieLearn/v2
+    +-- autograder         # files needed to autograde code on a seperate server
+    |   `-- ...            # various scripts and docker images
+    +-- config.json        # server configuration file (optional)
+    +-- cron               # jobs to be periodically executed, one file per job
+    |   +-- index.js       # entry point for all cron jobs
+    |   `-- ...            # one JS file per cron job, executed by index.js
+    +-- doc                # documentation
+    +-- exampleCourse      # example content for a course
+    +-- lib                # miscellaneous helper code
+    +-- middlewares        # Express.js middleware, one per file
+    +-- models             # DB table creation, one file per table
+    |   +-- index.js       # entry point for all model initialization
+    |   `-- ...            # one JS file per table, executed by index.js
+    +-- package.json       # npm configuration file
+    +-- pages              # one sub-dir per web page
+    |   +-- partials       # EJS helper sub-templates
+    |   +-- instructorHome # all the code for the instructorHome page
+    |   +-- userHome       # all the code for the userHome page
+    |   `-- ...            # other "instructor" and "user" pages
+    +-- public             # all accessible without access control
+    |   +-- javascripts    # external packages only, no modificiations
+    |   +-- localscripts   # all local site-wide JS
+    |   `-- stylesheets    # all CSS, both external and local
+    +-- question-servers   # one file per question type
+    +-- schemas            # JSON schemas for input file formats
+    +-- server.js          # top-level program
+    +-- sprocs             # DB stored procedures, one per file
+    |   +-- index.js       # entry point for all sproc initialization
+    |   `-- ...            # one JS file per sproc, executed by index.js
+    +-- sync               # code to load on-disk course config into DB
+    `-- tests              # unit tests, currently unused
+    ```
 
 
 ## Page generation
@@ -61,11 +63,13 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 1. Each web page typically has all its files in a single directory, with the directory, the files, and the URL all named the same. Not all pages need all files. For example:
 
-        pages/instructorGradebook
-        +-- instructorGradebook.js         # main entry point, calls the SQL and renders the template
-        +-- instructorGradebook.sql        # all SQL code specific to this page
-        +-- instructorGradebook.ejs        # the EJS template for the page
-        `-- instructorGradebookClient.js   # any client-side JS needed
+    ```text
+    pages/instructorGradebook
+    +-- instructorGradebook.js         # main entry point, calls the SQL and renders the template
+    +-- instructorGradebook.sql        # all SQL code specific to this page
+    +-- instructorGradebook.ejs        # the EJS template for the page
+    `-- instructorGradebookClient.js   # any client-side JS needed
+    ```
 
 1. The above `instructorGradebook` page is loaded from the top-level `server.js` with:
 
@@ -210,9 +214,27 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 ## DB schema migrations
 
-1. We don't use an automated system for schema migrations.
+1. We use a split system for DB creation/migration consisting of the `models/` and `migrations/` directories:
 
-1. The `CREATE TABLE` statements in the `models/` directory should always be up-to-date, so they will create the current state of the DB.
+    1. The `models/` directory contains `CREATE` statements will create the current up-to-date state of the DB. These are useful as a reference for the current state of the DB.
+
+    1. The `migrations/` directory contains statements that will upgrade a DB to the current state. Files matching `*.sql` in this directory will be run in alphabetic order.
+
+1. All statements in `models/` and `migrations/` must be [idempotent](https://en.wikipedia.org/wiki/Idempotence). On server start, first all SQL files in `models/` are executed, and then all files in `migrations/`.
+
+1. Migration statements start with PrairieLearn version 2.0.0.
+
+1. The filenames in `migrations/` are of the form `<nnn>_<description>.sql` where `<nnn>` is a number to ensure ordering. There is no need for files to have distinct leading numbers if their order is unimportant. A suggested form for the `<description>` is `<table name>__<column name>__<operation>` if only a single column is being changed. It's fine to put multiple logically-related migration statements in the same file.
+
+1. Some useful migration statements follow.
+
+1. To add a column to a table:
+
+    ```sql
+    ALTER TABLE assessments ADD COLUMN IF NOT EXISTS auto_close boolean DEFAULT true;
+    ```
+
+1. Do not put constraints (like `UNIQUE` or `REFERENCES`) on an `ADD COLUMN` statement, otherwise it will add a new index every time it runs, even if the statement has `IF NOT EXISTS`. See below for how to add a foreign keys or other constraints without using the `ADD COLUMN` statement.
 
 1. To add a foreign key to a table, the migration queries need to be wrapped like:
 
@@ -231,6 +253,29 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
     END;
     $$;
     ```
+
+1. To remove a constraint use:
+
+    ```sql
+    ALTER TABLE alternative_groups DROP CONSTRAINT IF EXISTS alternative_groups_number_assessment_id_key;
+    ```
+
+1. To add a constraint use:
+
+    ```sql
+    DO $$
+    BEGIN
+        IF NOT EXISTS (
+                SELECT 1 FROM information_schema.table_constraints
+                WHERE constraint_name = 'alternative_groups_assessment_id_number_key'
+            )
+            THEN
+            ALTER TABLE alternative_groups ADD UNIQUE (assessment_id, number);
+        END IF;
+    END;
+    $$;
+    ```
+
 
 ## Database access
 

@@ -6,6 +6,7 @@ var pg = require('pg');
 var config = require('../lib/config');
 var sqldb = require('../lib/sqldb');
 var models = require('../models');
+var migrations = require('../migrations');
 var sprocs = require('../sprocs');
 var cron = require('../cron');
 var courseDB = require('../lib/course-db');
@@ -63,6 +64,12 @@ module.exports = {
             },
             function(callback) {
                 models.init(function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            function(callback) {
+                migrations.init(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });

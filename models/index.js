@@ -17,7 +17,6 @@ module.exports = {
             'enum_mode.sql',
             'enum_question_type.sql',
             'enum_role.sql',
-            'enum_role_add_none.sql',
             'enum_course_role.sql',
             'enum_submission_type.sql',
             'enum_assessment_type.sql',

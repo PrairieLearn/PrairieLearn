@@ -13,6 +13,8 @@
 
   * Add `points` and `max_points` output to assessment_instances CSV.
 
+  * Add `migrations/` directory for ordered DB schema changes.
+
   * Fix assessment duration estimation for homeworks (1-hour gap maximum).
 
   * Fix CSV link on gradebook page.

@@ -17,6 +17,7 @@ var messageQueue = require('./lib/messageQueue');
 var assessments = require('./assessments');
 var sqldb = require('./lib/sqldb');
 var models = require('./models');
+var migrations = require('./migrations');
 var sprocs = require('./sprocs');
 var cron = require('./cron');
 var socketServer = require('./lib/socket-server');
@@ -345,6 +346,12 @@ if (config.startServer) {
         },
         function(callback) {
             models.init(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        function(callback) {
+            migrations.init(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
