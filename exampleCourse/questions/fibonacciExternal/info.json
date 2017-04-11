@@ -1,5 +1,5 @@
 {
-    "uuid": "50d9888d-891d-41c9-a3f9-cbbdecc82211",
+    "uuid": "e04f3972-1657-11e7-93ae-92361f002671",
     "title": "Fibonacci function in editor, external grading",
     "topic": "Functions",
     "tags": ["code"],
@@ -8,5 +8,6 @@
     "gradingMethod": "External",
     "autogradingEnabled": true,
     "autograder": "child_pythondev",
-    "environment": "python-main"
+    "environment": "python-main",
+    "autograderImage": "prairielearn/centos7-base"
 }

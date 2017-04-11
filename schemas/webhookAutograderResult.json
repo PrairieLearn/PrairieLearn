@@ -1,0 +1,23 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Webhook: Autograder Results",
+    "description": "The format of a webhook callback containing autograder results.",
+    "type": "object",
+    "properties": {
+        "event": {
+            "description": "The event type of this webhook callback; should be 'autograder_result'.",
+            "type": "string",
+            "pattern": "^autograder_result$",
+            "required": true
+        },
+        "job_id": {
+            "description": "A unique identifier for this particular job.",
+            "type": "integer",
+            "required": true
+        },
+        "data": {
+            "description": "The results of the autograder run. If not specified, the results should be fetched from S3.",
+            "type": "object"
+        }
+    }
+}

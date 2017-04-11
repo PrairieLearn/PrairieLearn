@@ -67,6 +67,30 @@
         "autoFinishAgeMins": {
             "description": "Time after last activity when exams are auto-closed (minutes).",
             "type": "integer"
+        },
+        "autograderUseAws": {
+            "description": "If the autograder should use AWS (production) or not (local dev).",
+            "type": "boolean"
+        },
+        "autograderJobsS3Bucket": {
+            "description": "The S3 bucket that autograder jobs should be stored in.",
+            "type": "string"
+        },
+        "autograderResultsS3Bucket": {
+            "description": "The S3 bucket where autograder job results will be stored.",
+            "type": "string"
+        },
+        "autograderJobQueue": {
+            "description": "The name of the job queue where autograder jobs will be submitted.",
+            "type": "string"
+        },
+        "autograderJobRole": {
+            "description": "The ARN of the role that should be provided to autograder containers for resource access.",
+            "type": "string"
+        },
+        "autograderWebhookUrl": {
+            "description": "The endpoint that should be hit when a grading result is updated. Should be null when running locally.",
+            "type": "string"
         }
     }
 }

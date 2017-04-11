@@ -258,6 +258,12 @@ app.use('/pl/administrator/overview', require('./pages/administratorOverview/adm
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
+// Webhooks //////////////////////////////////////////////////////////
+app.use('/pl/webhooks/autograder', require('./webhooks/autograder/autograder'));
+
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////
 // Error handling ////////////////////////////////////////////////////
 
 app.use(require('./middlewares/notFound')); // if no earlier routes matched, this will match and generate a 404 error
@@ -362,12 +368,7 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            var ampqConfig = {
-                amqpAddress: config.amqpAddress,
-                amqpResultQueue: config.amqpResultQueue,
-                amqpStartQueue: config.amqpStartQueue,
-            };
-            messageQueue.init(ampqConfig, assessments.processGradingResult, function(err) {
+            messageQueue.init(assessments.processGradingResult, function(err) {
                 if (err) err = error.newMessage(err, 'Unable to connect to message queue');
                 if (ERR(err, callback)) return;
                 callback(null);
