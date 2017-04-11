@@ -224,6 +224,8 @@ router.get('/:filename', function(req, res, next) {
                 ['Started', 'date_formatted'],
                 ['Remaining', 'time_remaining'],
                 ['Score (%)', 'score_perc'],
+                ['Points', 'points'],
+                ['Max points', 'max_points'],
                 ['Duration (min)', 'duration_mins'],
             ];
             csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {

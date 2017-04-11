@@ -11,6 +11,8 @@
 
   * Add per-day mean scores to the by-day score plot.
 
+  * Add `points` and `max_points` output to assessment_instances CSV.
+
   * Fix assessment duration estimation for homeworks (1-hour gap maximum).
 
   * Fix CSV link on gradebook page.

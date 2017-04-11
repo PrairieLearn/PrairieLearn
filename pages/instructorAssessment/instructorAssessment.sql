@@ -214,6 +214,7 @@ FROM assessments_duration_stats($assessment_id) AS ads;
 SELECT
     (aset.name || ' ' || a.number) AS assessment_label,
     u.user_id, u.uid, u.name, e.role, ai.score_perc,
+    ai.points, ai.max_points,
     ai.number,ai.id AS assessment_instance_id,ai.open,
     CASE
         WHEN ai.open AND ai.date_limit IS NOT NULL
