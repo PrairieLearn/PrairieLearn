@@ -17,19 +17,21 @@ define(["SimpleClient", "text!./question.html", "text!./answer.html", "text!clie
             fontSize: "10pt",
         });
 
+        // We have to decode from base-64
         if (client.submittedAnswer.has('files')) {
             var files = client.submittedAnswer.get('files')
             _.each(files, function(file) {
                 if (file.name === 'fib.py') {
-                    editor.setValue(file.contents);
+                    editor.setValue(atob(file.contents));
                 }
             });
         }
 
+        // Note: file is base-64 encoded!
         editor.getSession().on('change', function(e) {
             var files = [{
                 name: 'fib.py',
-                contents: editor.getValue(),
+                contents: btoa(editor.getValue()),
             }];
             client.submittedAnswer.set('files', files);
         });

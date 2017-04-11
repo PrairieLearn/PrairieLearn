@@ -4,6 +4,7 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
     return function(questionTemplate, submissionTemplate) {
         var simpleClient = new SimpleClient.SimpleClient({questionTemplate: questionTemplate, submissionTemplate: submissionTemplate});
 
+        // Returns the raw (base-64 encoded) file contents
         function getSubmittedFileContents(name) {
             var files = simpleClient.submittedAnswer.get('files') || [];
             console.log(files)
@@ -16,6 +17,7 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
             return contents;
         }
 
+        // contents should be base-64 encoded
         function saveSubmittedFile(name, contents) {
             var files = simpleClient.submittedAnswer.get('files') || [];
             var idx = _.findIndex(files, function(file) {
@@ -32,6 +34,16 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
                 files[idx].contents = contents;
             }
             simpleClient.submittedAnswer.set('files', files);
+        }
+
+        // Uses the same method as Git to check if a file is binary or text:
+        // If the first 8000 bytes contain a NUL character ('\0'), we consider
+        // the file to be binary.
+        // http://stackoverflow.com/questions/6119956/how-to-determine-if-git-handles-a-file-as-binary-or-as-text
+        function isBinary(decodedFileContents) {
+            var nulIdx = decodedFileContents.indexOf('\0');
+            var fileLength = decodedFileContents.length;
+            return nulIdx != -1 || nullIdx <= (fileLength <= 8000 ? fileLength : 8000);
         }
 
         function uploadStatus() {
@@ -51,7 +63,17 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
                     $item.append('not uploaded');
                 } else {
                     var $preview = $('<pre><code></code></pre>');
-                    $preview.find('code').text(fileData);
+                    try {
+                        var fileContents = atob(fileData);
+                        if (!isBinary(fileContents)) {
+                            $preview.find('code').text(fileContents);
+                        } else {
+                            $preview.find('code').text('Binary file not previewed.');
+                        }
+                    } catch (e) {
+                        console.log(e);
+                        $preview.find('code').text('Unable to decode file.');
+                    }
                     $preview.hide();
                     var $toggler = $('<a href="#">view</a>');
                     $toggler.on('click', function(e) {
@@ -102,19 +124,17 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
                     console.log("reading!")
                     var reader = new FileReader();
                     reader.onload = function(e) {
-                        // TODO: add support for base64 strings
-                        /*var dataUrl = e.target.result;
+                        var dataUrl = e.target.result;
 
                         var commaSplitIdx = dataUrl.indexOf(',');
 
-                        // Store the data as base64 encoded data
+                        // Store the file as base-64 encoded data
                         var base64FileData = dataUrl.substring(commaSplitIdx + 1);
-                        simpleClient.submittedAnswer.set(key(file.name), base64FileData);*/
-                        saveSubmittedFile(file.name, e.target.result);
+                        saveSubmittedFile(file.name, base64FileData);
 
                     };
 
-                    reader.readAsText(file);
+                    reader.readAsDataURL(file);
                 },
             });
 
