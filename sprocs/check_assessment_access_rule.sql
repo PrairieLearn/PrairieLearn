@@ -69,7 +69,7 @@ BEGIN
             a.id = assessment_access_rule.assessment_id;
         EXIT schedule_access WHEN NOT FOUND; -- no linked PS course, skip this check
 
-        -- get the reservation
+        -- is there a current checked-in reservation?
         SELECT r.*
         INTO reservation
         FROM
@@ -78,18 +78,14 @@ BEGIN
         WHERE
             e.course_id = ps_course_id
             AND r.user_id = check_assessment_access_rule.user_id
-            AND r.delete_date IS NULL;
+            AND r.delete_date IS NULL
+            AND r.access_start < date
+            AND date < r.access_end
+        ORDER BY r.access_end DESC -- choose the longest-lasting if more than one
+        LIMIT 1;
 
         IF NOT FOUND THEN
             -- no reservation, so block access
-            authorized := FALSE;
-            EXIT schedule_access;
-        END IF;
-
-        -- check the times
-        -- we want this check to fail if we are outside the interval or if either
-        -- access_{start,end} = NULL, so we need to be careful with the boolean comparison
-        IF (reservation.access_start < date AND date < reservation.access_end) IS NOT TRUE THEN
             authorized := FALSE;
             EXIT schedule_access;
         END IF;
