@@ -210,7 +210,7 @@ def main():
         if os.path.isfile(file):
             found_init_script = True
             call(['chmod', '+x', file])
-            init_ret = call([file])
+            init_ret = call([file], shell=True)
             if init_ret != 0:
                 error(Template('error executing $file').substitute(file=file))
                 finish(False, info)
@@ -225,7 +225,7 @@ def main():
         if chmod_ret != 0:
             error(Template('Could not make $file executable').substitute(file=grading_script))
         else:
-            run_ret = call([grading_script])
+            run_ret = call([grading_script], shell=True)
             if run_ret != 0:
                 error(Template('error executing $file').substitute(file=grading_script))
                 finish(False, info)
