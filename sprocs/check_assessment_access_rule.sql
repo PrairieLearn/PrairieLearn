@@ -79,8 +79,7 @@ BEGIN
             e.course_id = ps_course_id
             AND r.user_id = check_assessment_access_rule.user_id
             AND r.delete_date IS NULL
-            AND r.access_start < date
-            AND date < r.access_end
+            AND date BETWEEN r.access_start AND r.access_end
         ORDER BY r.access_end DESC -- choose the longest-lasting if more than one
         LIMIT 1;
 

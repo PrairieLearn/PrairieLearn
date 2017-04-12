@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __2.5.1__ - 2017-04-12
+
+  * Fix Exam reservation enforcement when multiple reservations exist.
+
 * __2.5.0__ - 2017-04-11
 
   * Speed up rendering of instructor pages with assessment statistics.
