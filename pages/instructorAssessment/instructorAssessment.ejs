@@ -601,7 +601,7 @@
               of <span class="modal-score-perc"></span>%?
             </div>
             <div class="modal-footer">
-              <form name="finish-form" method="POST">
+              <form name="delete-form" method="POST">
                 <input type="hidden" name="postAction" value="delete">
                 <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
                 <input type="hidden" name="assessment_instance_id" class="modal-assessment-instance-id" value="">
@@ -643,7 +643,7 @@
               undone.
             </div>
             <div class="modal-footer">
-              <form name="finish-form" method="POST">
+              <form name="delete-all-form" method="POST">
                 <input type="hidden" name="postAction" value="delete_all">
                 <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
                 <input type="hidden" name="assessment_id" value="<%= assessment.id %>">
@@ -668,7 +668,7 @@
               undone.
             </div>
             <div class="modal-footer">
-              <form name="finish-form" method="POST">
+              <form name="regrade-all-form" method="POST">
                 <input type="hidden" name="postAction" value="regrade_all">
                 <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
                 <input type="hidden" name="assessment_id" value="<%= assessment.id %>">
@@ -754,7 +754,7 @@
                        tabindex="0" data-toggle="popover" data-trigger="focus" data-container="body"
                        data-html="true" data-placement="auto" title="Confirm close"
                        data-content="
-                                     <form name=&quot;open-form&quot; method=&quot;POST&quot;>
+                                     <form name=&quot;close-form&quot; method=&quot;POST&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;postAction&quot; value=&quot;close&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;csrfToken&quot; value=&quot;<%= csrfToken %>&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
@@ -769,7 +769,7 @@
                        tabindex="0" data-toggle="popover" data-trigger="focus" data-container="body"
                        data-html="true" data-placement="auto" title="Confirm regrade"
                        data-content="
-                                     <form name=&quot;open-form&quot; method=&quot;POST&quot;>
+                                     <form name=&quot;regrade-form&quot; method=&quot;POST&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;postAction&quot; value=&quot;regrade&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;csrfToken&quot; value=&quot;<%= csrfToken %>&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>

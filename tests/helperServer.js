@@ -9,6 +9,8 @@ var models = require('../models');
 var sprocs = require('../sprocs');
 var cron = require('../cron');
 var courseDB = require('../lib/course-db');
+var socketServer = require('../lib/socket-server');
+var serverJobs = require('../lib/server-jobs');
 var syncFromDisk = require('../sync/syncFromDisk');
 
 config.startServer = false;
@@ -45,6 +47,18 @@ module.exports = {
             },
             function(callback) {
                 server.startServer(function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            function(callback) {
+                socketServer.init(server, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            function(callback) {
+                serverJobs.init(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });

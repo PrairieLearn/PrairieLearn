@@ -87,3 +87,16 @@ ORDER BY
     s.date DESC
 LIMIT
     1;
+
+-- BLOCK update_question1_force_max_points
+UPDATE assessment_questions AS aq
+SET
+    force_max_points = TRUE
+FROM
+    assessments AS a,
+    questions AS q
+WHERE
+    a.id = aq.assessment_id
+    AND q.id = aq.question_id
+    AND a.tid = 'exam1'
+    AND q.qid = 'addVectors';

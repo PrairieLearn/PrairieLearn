@@ -15,7 +15,7 @@ var siteUrl = 'http://localhost:' + config.serverPort;
 var baseUrl = siteUrl + '/pl';
 var courseInstanceBaseUrl = baseUrl + '/course_instance/1';
 var assessmentsUrl = courseInstanceBaseUrl + '/assessments';
-var assessmentUrl, assessmentInstanceUrl, q1Url, q2Url;
+var assessmentUrl, assessmentInstanceUrl, q1Url, q2Url, instructorAssessmentUrl;
 
 describe('Exam assessment', function() {
 
@@ -932,5 +932,101 @@ describe('Exam assessment', function() {
             });
         });
         postFinishAssessmentInstanceAndFail();
+    });
+
+    describe('18. regrading', function() {
+        describe('set forceMaxPoints = true for question 1', function() {
+            it('should succeed', function(callback) {
+                sqldb.query(sql.update_question1_force_max_points, [], function(err, result) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            });
+        });
+        describe('GET to instructorAssessment URL', function() {
+            it('should succeed', function(callback) {
+                instructorAssessmentUrl = courseInstanceBaseUrl + '/instructor/assessment/' + assessment_id + '/';
+                request({url: instructorAssessmentUrl}, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    res = response;
+                    page = body;
+                    callback(null);
+                });
+            });
+            it('should parse', function() {
+                $ = cheerio.load(page);
+            });
+            it('should have a CSRF token', function() {
+                elemList = $('form[name="regrade-all-form"] input[name="csrfToken"]');
+                assert.lengthOf(elemList, 1);
+                assert.deepProperty(elemList[0], 'attribs.value');
+                csrfToken = elemList[0].attribs.value;
+                assert.isString(csrfToken);
+            });
+        });
+        describe('POST to instructorAssessment URL for regrading', function() {
+            it('should succeed', function(callback) {
+                var form = {
+                    postAction: 'regrade_all',
+                    assessment_id: assessment_id,
+                    csrfToken: csrfToken,
+                };
+                request.post({url: instructorAssessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    callback(null);
+                });
+            });
+        });
+        describe('check the regrading succeeded', function() {
+            describe('setting up the expected question 1 results', function() {
+                it('should succeed', function() {
+                    locals = {
+                        instance_question_id: instance_questions[0].id,
+                        expectedResult: {
+                            submission_score: 0,
+                            submission_correct: false,
+                            instance_question_points: 10,
+                            instance_question_score_perc: 10/10 * 100,
+                        },
+                    };
+                });
+            });
+            checkQuestionScore();
+            describe('setting up the expected question 2 results', function() {
+                it('should succeed', function() {
+                    locals = {
+                        instance_question_id: instance_questions[1].id,
+                        expectedResult: {
+                            submission_score: 1,
+                            submission_correct: true,
+                            instance_question_points: 5,
+                            instance_question_score_perc: 5/10 * 100,
+                        },
+                    };
+                });
+            });
+            checkQuestionScore();
+            describe('setting up the expected assessment results', function() {
+                it('should succeed', function() {
+                    locals = {
+                        expectedResult: {
+                            assessment_instance_points: 15,
+                            assessment_instance_score_perc: 15/20 * 100,
+                        },
+                    };
+                });
+            });
+            checkAssessmentScore();
+        });
     });
 });
