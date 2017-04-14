@@ -4,6 +4,22 @@
   <h3>UNIDENTIFIED ERROR</h3>
 <% } else if (feedback.results) { %>
 <% var results = feedback.results; %>
+<% if (results.message || results.output) { %>
+  <ul class="list-group">
+    <% if (results.message) { %>
+      <li class="list-group-item">
+        <div><strong>Message</strong></div>
+        <pre style="background: black; white-space: pre-wrap; overflow-y: auto; overflow-x: hidden; max-height: 200px"><code style="color: white; font-family: monospace;"><%= results.message %></code></pre>
+      </li>
+    <% } %>
+    <% if (results.output) { %>
+      <li class="list-group-item">
+        <div><strong>Output</strong></div>
+        <pre style="background: black; white-space: pre-wrap; overflow-y: auto; overflow-x: hidden; max-height: 200px;"><code style="color: white; font-family: monospace;"><%= results.output %></code></pre>
+      </li>
+    <% } %>
+  </ul>
+<% } %>
 <% if (!results.tests) { %>
   <h3>Score: <%= (results.score * 100).toFixed(0) %>%</h3>
   <p>No detailed test results available</p>
@@ -25,16 +41,16 @@
 <% var testColor = passed ? '#4CAF50' : '#F44336'; %>
 <div class="panel-group">
   <div class="panel panel-default">
-    <div class="panel-heading" data-toggle="collapse" data-target="#panel<%= index %>" style="cursor: pointer; color: <%= testColor %>">
+    <div class="panel-heading" data-toggle="collapse" data-target="#panel<%= index %>" style="cursor: pointer;">
       <div class="pull-left">
         <% if (passed) { %>
-          <span class="glyphicon glyphicon-ok" aria-hidden="true"></span>
+          <span class="glyphicon glyphicon-ok" aria-hidden="true" style="color: <%= testColor %>"></span>
         <% } else { %>
-          <span class="glyphicon glyphicon-remove" aria-hidden="true"></span>
+          <span class="glyphicon glyphicon-remove" aria-hidden="true" style="color: <%= testColor %>"></span>
         <% } %>
         <span style="padding-left: 4px;"><%= test.name %></span>
       </div>
-      <div class="pull-right">
+      <div class="pull-right" style="color: <%= testColor %>">
         <strong>[<%= test.points %>/<%= test.max_points %>]</strong>
       </div>
       <div style="clear: both;" ></div>

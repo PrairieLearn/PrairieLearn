@@ -43,7 +43,7 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
         function isBinary(decodedFileContents) {
             var nulIdx = decodedFileContents.indexOf('\0');
             var fileLength = decodedFileContents.length;
-            return nulIdx != -1 || nullIdx <= (fileLength <= 8000 ? fileLength : 8000);
+            return nulIdx != -1 || nulIdx <= (fileLength <= 8000 ? fileLength : 8000);
         }
 
         function uploadStatus() {
