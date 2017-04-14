@@ -9,8 +9,6 @@ define([], function() {
 
         var trueAnswer = {};
 
-        console.log(params)
-
         return {
             params: params,
             trueAnswer: trueAnswer,
