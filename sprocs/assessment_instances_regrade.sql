@@ -63,10 +63,12 @@ BEGIN
     ),
     log_result AS (
         INSERT INTO question_score_logs
-            (instance_question_id, auth_user_id,  points, max_points, score_perc)
+            (instance_question_id, auth_user_id,
+                points, max_points, score_perc)
         (
             SELECT
-                id,                    authn_user_id, points, max_points, score_perc
+                id,                assessment_instances_regrade.authn_user_id,
+                points, max_points, score_perc
             FROM updated_instance_questions
         )
     )

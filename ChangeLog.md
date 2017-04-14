@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __2.5.2__ - 2017-04-14
+
+  * Fix regrading support.
+
 * __2.5.1__ - 2017-04-12
 
   * Fix Exam reservation enforcement when multiple reservations exist.
