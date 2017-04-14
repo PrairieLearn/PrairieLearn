@@ -8,7 +8,6 @@
         "archiver": "1.3.x",
         "async": "2.1.x",
         "async-stacktrace": "0.0.x",
-        "aws-sdk": "^2.23.0",
         "aws-sdk": "2.23.x",
         "backbone": "1.3.x",
         "body-parser": "1.15.x",
