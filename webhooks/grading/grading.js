@@ -11,6 +11,8 @@ var logger = require('../../lib/logger');
 var filePaths = require('../../lib/file-paths');
 var assessments = require('../../assessments');
 
+// FIXME move this to assessments.js for better code reuse; pull the nice
+// error-handling logic from messageQueue.js into this function as well
 function processResults(data) {
     const gradingResult = {
         gradingId: data.job_id,
@@ -48,7 +50,7 @@ router.post('/', function(req, res, next) {
                 ResponseContentType: 'application/json',
             }
             new AWS.S3().getObject(params, (err, data) => {
-                if (ERR(err, next)) return;
+                if (ERR(err, (err) => logger.error(err))) return;
                 processResults(JSON.parse(data.Body))
             });
         }
