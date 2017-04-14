@@ -18,3 +18,10 @@ fi
 
 cd environments/$1/
 docker build . -t prairielearn/$1:latest
+
+echo "IMPORTANT: This build script should only be used to verify that your \
+image will build successfully; this image is not pushed to your container \
+respository. When running locally, PrairieLearn will always pull the image \
+specified in your question from your container repository. This is to mirror \
+the behavior in production. To push your image to DockerHub, use \
+'release-image.sh' instead."
