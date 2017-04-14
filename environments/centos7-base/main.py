@@ -43,9 +43,6 @@ def finish(succeeded, info):
         try:
             with open('/grade/results/results.json') as json_data:
                 data = json.load(json_data)
-        except ValueError:
-            succeeded = false
-            pass
         except Exception:
             succeeded = false
             pass
@@ -106,7 +103,6 @@ def finish(succeeded, info):
 
     # We're all done now.
     sys.exit(0 if succeeded else 1)
-
 
 def main():
     log('started')
@@ -234,9 +230,8 @@ def main():
         finish(False, info)
 
     # If we got this far, we (probably) succeeded!
-    finish(True, info)
-
     log('finishing')
+    finish(True, info)
 
 if __name__ == '__main__':
     main()
