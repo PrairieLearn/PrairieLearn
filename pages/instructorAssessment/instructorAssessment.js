@@ -542,8 +542,9 @@ var regradeAllAssessmentInstances = function(assessment_id, locals, callback) {
                         sqldb.callOneRow('assessment_instances_regrade', params, function(err, result) {
                             var msg;
                             if (ERR(err, function() {})) {
+                                logger.error('error while regrading', {jobOptions, row, err});
                                 error_count++;
-                                msg = 'ERROR updating ' + assessment_instance_label + ' for ' + user_uid;
+                                msg = 'ERROR updating ' + row.assessment_instance_label + ' for ' + row.user_uid;
                             } else {
                                 var regrade = result.rows[0];
                                 msg = 'Regraded ' + row.assessment_instance_label + ' for ' + row.user_uid + ': ';
