@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __2.5.3__ - 2017-04-14
+
+  * Fix docker build with `migrations/` directory.
+
 * __2.5.2__ - 2017-04-14
 
   * Fix regrading support.
