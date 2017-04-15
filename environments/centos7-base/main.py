@@ -44,7 +44,7 @@ def finish(succeeded, info):
             with open('/grade/results/results.json') as json_data:
                 data = json.load(json_data)
         except Exception:
-            succeeded = false
+            succeeded = False
             pass
 
     results = {}
