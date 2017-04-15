@@ -2,40 +2,25 @@
 
 # run the autograder as non-root
 # THIS IS IMPORTANT
-# for testing purposes we do the piping ourselves
-#mkdir student
-#cp * ./student
-#rm ./student/autograder_wrapper.py
-# we have a student, we want to copy in all of shared and then maybe delete our stuff
 
-cd ..
+# this file is in /grade/run/autograder.sh, and its working directory will be the root (or either way we can be safe and cd to use anyways)
+cd /grade/run/
 
-echo "[ag]: cded"
-
-cp shared/* student/
-cp /shared/autograder_wrapper.py .
-echo "[ag]: copied"
-rm student/autograder_wrapper.py
-rm student/autograder.sh
-rm student/bootstrap.sh
-echo "[ag]: removed"
-
-# TODO remove this when we get permissions working!
-# PLEASE DON'T DO THIS 
-# /grade/shared
-sudo chown ag .
-sudo chown ag student
+# give the ag user the ownership of it's small bin folder
+sudo chown ag bin
 
 echo "[ag] chown"
 
-sudo chmod -R +rw student/
+sudo chmod -R +rw bin/
 
 echo "[ag] chmod"
 
-cd student
+#cd bin
 
-echo "[ag] cded"
+#echo "[ag] cded"
 
-sudo -H -u ag bash -c 'python ../autograder_wrapper.py'
+# we do the capturing ourselves, so that only the stdout of the autograder is used and that we aren't relying on any files that the student code could easily create
+# we are also running the autograder as a limited user called ag
+sudo -H -u ag bash -c 'python autograder_wrapper.py' > results.json
 
 echo "[ag] done"

@@ -4,27 +4,24 @@
     "description": "Info files for questions.",
     "type": "object",
     "additionalProperties": false,
+    "required": ["uuid", "type", "title", "topic"],
     "properties": {
         "uuid": {
             "description": "Unique identifier (UUID v4).",
             "type": "string",
-            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-            "required": true
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
         },
         "type": {
             "description": "Type of the test.",
-            "enum": ["Calculation", "ShortAnswer", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse"],
-            "required": true
+            "enum": ["Calculation", "ShortAnswer", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse"]
         },
         "title": {
             "description": "The title of the question (e.g., 'Addition of vectors in Cartesian coordinates').",
-            "type": "string",
-            "required": true
+            "type": "string"
         },
         "topic": {
             "description": "The category of question (e.g., 'Vectors', 'Energy').",
-            "type": "string",
-            "required": true
+            "type": "string"
         },
         "secondaryTopics": {
             "description": "Other topics also covered by the question (e.g., 'Vectors', 'Energy').",
@@ -70,17 +67,29 @@
             "description": "Options that define how the question will work, specific to the individual question type.",
             "type": "object"
         },
-        "autogradingEnabled": {
-            "description": "Whether the autograder is currently enabled. Useful if it is breaking for example.",
-            "type": "boolean"
-        },
-        "autograder": {
-            "description": "The name of the autograder. Searches in currentClass/autograders/",
-            "type": "string"
-        },
-        "environment":{
-            "description": "Which environment to set up. Will look in currentClass/environments/",
-            "type": "string"
+        "externalGradingOptions": {
+            "description": "Options for externally graded questions.",
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["enabled", "environment", "image"],
+            "properties": {
+                "enabled": {
+                    "description": "Whether the external grader is currently enabled. Useful if it is breaking, for example.",
+                    "type": "boolean"
+                },
+                "autograder": {
+                    "description": "The name of the autograder to use for this question. Searches in currentCourse/autograders/",
+                    "type": "string"
+                },
+                "environment": {
+                    "description": "The name of the environment to use for this question. Will look in currentCourse/environments/",
+                    "type": "string"
+                },
+                "image": {
+                    "description": "The Docker image that will be used to grade this question. Should be specified as Dockerhub image.",
+                    "type": "string"
+                }
+            }
         }
     }
 }

@@ -13,9 +13,10 @@ CREATE TABLE IF NOT EXISTS questions (
     course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,
     topic_id BIGINT REFERENCES topics ON DELETE SET NULL ON UPDATE CASCADE,
     deleted_at TIMESTAMP WITH TIME ZONE,
-    autograding_enabled BOOLEAN DEFAULT FALSE,
-    autograder text,
-    environment text,
+    external_grading_enabled BOOLEAN DEFAULT FALSE,
+    external_grading_autograder text,
+    external_grading_environment text,
+    external_grading_image text,
     UNIQUE (course_id, number)
 );
 

@@ -1,0 +1,15 @@
+{
+    "uuid": "565dc854-18b5-11e7-93ae-92361f002671",
+    "title": "C++ External Grading Question",
+    "topic": "Functions",
+    "tags": ["code"],
+    "clientFiles": ["client.js", "question.html", "answer.html", "submission.html"],
+    "type": "Calculation",
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+        "enabled": true,
+        "autograder": "child_cppdev",
+        "environment": "python-main",
+        "image": "prairielearn/centos7-base"
+    }
+}

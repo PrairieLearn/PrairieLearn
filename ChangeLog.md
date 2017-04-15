@@ -1,6 +1,11 @@
 
 # ChangeLog
 
+* __2.6.0__ - XXXX-XX-XX
+
+  * Add full external autograder support with AWS and local docker support
+    (Nathan Walters, Jordi Paris Ferrer).
+
 * __2.5.3__ - 2017-04-14
 
   * Fix docker build with `migrations/` directory.

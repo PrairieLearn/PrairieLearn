@@ -18,6 +18,12 @@ module.exports = function(req, res, next) {
         return;
     }
 
+    if (req.path === '/pl/webhooks/grading') {
+      // Webhook callbacks should not be authenticated
+      next();
+      return;
+    }
+
     // bypass auth for local /pl/ serving
     if (config.authType === 'none') {
         authUid = 'dev@example.com';

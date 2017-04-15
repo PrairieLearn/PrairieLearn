@@ -1,12 +1,15 @@
 {
-    "uuid": "50d9888d-891d-41c9-a3f9-cbbdecc82211",
+    "uuid": "e04f3972-1657-11e7-93ae-92361f002671",
     "title": "Fibonacci function in editor, external grading",
     "topic": "Functions",
     "tags": ["code"],
     "clientFiles": ["client.js", "question.html", "answer.html", "submission.html"],
     "type": "Calculation",
     "gradingMethod": "External",
-    "autogradingEnabled": true,
-    "autograder": "child_pythondev",
-    "environment": "python-main"
+    "externalGradingOptions": {
+          "enabled": true,
+          "autograder": "child_pythondev",
+          "environment": "python-main",
+          "image": "prairielearn/centos7-base"
+    }
 }

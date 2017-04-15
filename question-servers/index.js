@@ -122,7 +122,7 @@ module.exports = {
                     });
                 }, function(err) {
                     if (ERR(err, callback)) return;
-                    
+
                     var params = {
                         submission_id: submission_id,
                         auth_user_id: auth_user_id,
@@ -164,10 +164,8 @@ module.exports = {
             var question = result.rows[0].question;
             var course = result.rows[0].course;
 
-            messageQueue.sendToGradingQueue(grading_log, submission, variant, question, course, function(err) {
-                if (ERR(err, callback)) return;
-                callback(null, grading_log);
-            });
+            messageQueue.sendToGradingQueue(grading_log, submission, variant, question, course);
+            callback(null, grading_log);
         });
     },
 

@@ -52,6 +52,8 @@ module.exports.updateExternalGrading = function(grading_log_id, grading, callbac
                             score: grading.score,
                             correct: grading.correct,
                             feedback: grading.feedback,
+                            grading_started_at: grading.startTime,
+                            grading_finished_at: grading.endTime
                         };
                         logger.debug('exam.updateExternalGrading(): calling update_grading_log_and_submission',
                                      {grading_log_id: grading_log_id, params: params});
@@ -120,7 +122,7 @@ module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_u
         if (ERR(err, callback)) return;
         logger.debug('exam.gradeAssessmentInstance(): finished beginTransaction()',
                      {assessment_instance_id: assessment_instance_id});
-    
+
         var workList, external_grading_log_ids = [];
         async.series([
             function(callback) {
