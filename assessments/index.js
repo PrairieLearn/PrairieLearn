@@ -107,6 +107,8 @@ module.exports.processGradingResult = function(content) {
                 score: content.grading.score,
                 correct: (content.grading.score >= 0.5),
                 feedback: content.grading.feedback || null,
+                startTime: content.grading.startTime || null,
+                endTime: content.grading.endTime || null
             };
             module.exports.updateExternalGrading(assessment_type, grading_log_id, grading, function(err) {
                 if (ERR(err, callback)) return;

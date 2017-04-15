@@ -35,6 +35,8 @@ WITH updated_grading_log AS (
     UPDATE grading_logs AS gl
     SET
         graded_at = CURRENT_TIMESTAMP,
+        grading_started_at = $grading_started_at,
+        grading_finished_at = $grading_finished_at,
         score = $score,
         correct = $correct,
         feedback = $feedback

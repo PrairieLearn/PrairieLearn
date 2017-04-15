@@ -17,8 +17,10 @@ function processResults(data) {
     const gradingResult = {
         gradingId: data.job_id,
         grading: {
-          score: data.results.score,
-          feedback: data
+            startTime: data.start_time || null,
+            endTime: data.end_time || null,
+            score: data.results.score,
+            feedback: data
         }
     }
 
