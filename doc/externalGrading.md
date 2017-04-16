@@ -113,7 +113,7 @@ If you are using code from the example question, you can also add additional fie
          "name": "Test 1",
          "description": "Tests that a thing does a thing.",
          "points": 1,
-         "maxPoints": 1,
+         "max_points": 1,
          "message": "No errors!",
          "output": "Running test...\nYour output matched the expected output.",
       },
@@ -121,7 +121,7 @@ If you are using code from the example question, you can also add additional fie
          "name": "Test 2",
          "description": "Like Test 1, but harder, you'll probably fail it.",
          "points": 0,
-         "maxPoints": 3,
+         "max_points": 3,
          "message": "Make sure that the thing is doing the thing correctly.",
          "output": "Running test...\nYour output did not match the expected output."
       }
