@@ -80,7 +80,7 @@ course
     +-- env2
 ```
 
-## Enabling External Graing for a Question
+## Enabling External Grading for a Question
 
 The following fields must be added to each question's `info.json`:
 
