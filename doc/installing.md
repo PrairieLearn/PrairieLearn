@@ -5,7 +5,7 @@
 
 This is the easiest way to get started.
 
-1. Install [Docker](https://www.docker.com). Note that on Windows there are several versions of Docker available, depending on which Windows version you have. You might also need to enable virtualization in the BIOS.
+1. Install [Docker](https://www.docker.com). On Linux and MacOS this is straightforward. On Windows the best version is "Docker for Windows", which require Windows 10 Pro/Edu. You should install this if at all possible because it is much better than the older "Docker Toolbox".
 
 1. Run PrairieLearn with:
 
@@ -27,7 +27,7 @@ This is the easiest way to get started.
 
     If you are using Docker for Windows then you will need to first give Docker permission to access the C: drive (or whichever drive your course directory is on). This can be done by right-clicking on the Docker "whale" icon in the taskbar, choosing "Settings", and granting shared access to the C: drive.
 
-    If you're in the root of your course directory already, you can substitute `%cd%` (on Windows) or `$PWD` (everything else) for `/path/to/course`.
+    If you're in the root of your course directory already, you can substitute `%cd%` (on Windows) or `$PWD` (Linux and MacOS) for `/path/to/course`.
 
 ### Upgrading PrairieLearn with Docker
 
@@ -36,6 +36,16 @@ To obtain the latest version of PrairieLearn at any time, run:
     docker pull prairielearn/prairielearn
 
 After this, run PrairieLearn using the same commands as above.
+
+### Running a specific older version of PrairieLearn
+
+The commands above will always run the very latest version of PrairieLearn, which might be an unreleased development version.
+
+The list of available versions is viewable on the [hub.docker build page](https://hub.docker.com/r/prairielearn/prairielearn/builds/).
+
+To run a specific older version (e.g., version 1.2.3) then you can do:
+
+    docker run [args] prairielearn/prairielearn:1.2.3
 
 ### Running Commands in Docker
 
@@ -52,6 +62,11 @@ If you want to do development of PrairieLearn itself (not just question writing)
 1. Clone PrairieLearn from the main repository:
 
         git clone https://github.com/PrairieLearn/PrairieLearn.git
+
+1. Install the Node.js packages:
+
+        cd PrairieLearn
+        npm install
 
 1. Run it with:
 
