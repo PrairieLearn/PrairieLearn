@@ -1,7 +1,7 @@
 
 # ChangeLog
 
-* __2.6.0__ - XXXX-XX-XX
+* __2.6.0__ - 2017-04-16
 
   * Add full external autograder support with AWS and local docker support
     (Nathan Walters, Jordi Paris Ferrer).
