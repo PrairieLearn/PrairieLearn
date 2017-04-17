@@ -119,7 +119,7 @@ def main():
     if 'DEV_MODE' in os.environ and os.environ['DEV_MODE']:
         info['dev_mode'] = True
         dev_mode = True
-		del os.environ["DEV_MODE"]
+        del os.environ["DEV_MODE"]
     else:
         info['dev_mode'] = False
         dev_mode = False
@@ -131,7 +131,7 @@ def main():
     else:
         try:
             info['job_id'] = int(os.environ['JOB_ID'])
-			del os.environ["DEV_MODE"]
+            del os.environ["JOB_ID"]
         except:
             error('could not parse JOB_ID environment variable to an int')
             environ_error = True
@@ -144,7 +144,7 @@ def main():
             environ_error = True
         else:
             info['jobs_bucket'] = os.environ['S3_JOBS_BUCKET']
-			del os.environ["S3_JOBS_BUCKET"]
+        del os.environ["S3_JOBS_BUCKET"]
 
         if 'S3_RESULTS_BUCKET' not in os.environ:
             error('the S3 results bucket was not specified in the S3_RESULTS_BUCKET environment variable')
@@ -152,7 +152,7 @@ def main():
             environ_error = True
         else:
             info['results_bucket'] = os.environ['S3_RESULTS_BUCKET']
-			del os.environ["S3_RESULTS_BUCKET"]
+            del os.environ["S3_RESULTS_BUCKET"]
 
         if 'S3_ARCHIVES_BUCKET' not in os.environ:
             error('the S3 archives bucket was not specified in the S3_ARCHIVES_BUCKET environment variable')
@@ -160,21 +160,21 @@ def main():
             environ_error = True
         else:
             info['archives_bucket'] = os.environ['S3_ARCHIVES_BUCKET']
-			del os.environ["S3_ARCHIVES_BUCKET"]
+            del os.environ["S3_ARCHIVES_BUCKET"]
 
         if 'WEBHOOK_URL' not in os.environ:
             warn('the webhook callback url was not specified in the WEBHOOK_URL environment variable')
             info['webhook_url'] = None
         else:
             info['webhook_url'] = os.environ['WEBHOOK_URL']
-			del os.environ["S3_WEBHOOK_URL"]
+            del os.environ["S3_WEBHOOK_URL"]
 
         if 'CSRF_TOKEN' not in os.environ:
             warn('a csrf token was not specified in the CSRF_TOKEN environment variable')
             info['csrf_token'] = None
         else:
             info['csrf_token'] = os.environ['CSRF_TOKEN']
-			del os.environ["CSRF_TOKEN"]
+            del os.environ["CSRF_TOKEN"]
 
     if environ_error:
         finish(False, info)
