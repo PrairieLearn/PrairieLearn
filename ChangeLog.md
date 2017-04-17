@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __2.6.1__ - XXXX-XX-XX
+
+  * Fix rendering of table row lines in student question lists.
+
 * __2.6.0__ - 2017-04-16
 
   * Add full external autograder support with AWS and local docker support
