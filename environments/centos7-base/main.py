@@ -167,7 +167,7 @@ def main():
             info['webhook_url'] = None
         else:
             info['webhook_url'] = os.environ['WEBHOOK_URL']
-            del os.environ["S3_WEBHOOK_URL"]
+            del os.environ["WEBHOOK_URL"]
 
         if 'CSRF_TOKEN' not in os.environ:
             warn('a csrf token was not specified in the CSRF_TOKEN environment variable')
