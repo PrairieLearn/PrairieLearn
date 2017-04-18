@@ -123,23 +123,25 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
                 templatedHTML = PrairieTemplate.template(templatedHTML, {}, this.questionDataModel, this.appModel);
             }
             this.$el.html(templatedHTML);
-            this.rivetsView = rivets.bind(this.$el, {
-                model: this.model,
-                params: this.params,
-                submittedAnswer: this.submittedAnswer,
-                trueAnswer: this.trueAnswer,
-                feedback: this.feedback,
-            });
-            this.rivetsBindingsActive = true;
-            var that = this;
-            _.each(_.uniq(_.pluck(_.filter(this.rivetsView.bindings,
-                                           function (binding) {return binding.key === "submittedAnswer" && binding.type === "checkedoptional";}),
-                                  "keypath")),
-                   function (kp) {if (!that.submittedAnswer.has(kp)) that.submittedAnswer.set(kp, false);});
-            _.each(_.uniq(_.pluck(_.filter(this.rivetsView.bindings,
-                                           function (binding) {return binding.key === "submittedAnswer";}),
-                                  "keypath")),
-                   this.addAnswer.bind(this));
+            if (!this.options.skipRivets) {
+                this.rivetsView = rivets.bind(this.$el, {
+                    model: this.model,
+                    params: this.params,
+                    submittedAnswer: this.submittedAnswer,
+                    trueAnswer: this.trueAnswer,
+                    feedback: this.feedback,
+                });
+                this.rivetsBindingsActive = true;
+                var that = this;
+                _.each(_.uniq(_.pluck(_.filter(this.rivetsView.bindings,
+                                               function (binding) {return binding.key === "submittedAnswer" && binding.type === "checkedoptional";}),
+                                      "keypath")),
+                       function (kp) {if (!that.submittedAnswer.has(kp)) that.submittedAnswer.set(kp, false);});
+                _.each(_.uniq(_.pluck(_.filter(this.rivetsView.bindings,
+                                               function (binding) {return binding.key === "submittedAnswer";}),
+                                      "keypath")),
+                       this.addAnswer.bind(this));
+            }
             this.checkSubmittable();
             if (window.MathJax)
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
@@ -228,14 +230,16 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
                 templatedHTML = PrairieTemplate.template(templatedHTML, {}, this.questionDataModel, this.appModel);
             }
             this.$el.html(templatedHTML);
-            this.rivetsView = rivets.bind(this.$el, {
-                model: this.model,
-                params: this.params,
-                submittedAnswer: this.submittedAnswer,
-                trueAnswer: this.trueAnswer,
-                feedback: this.feedback,
-            });
-            this.rivetsBindingsActive = true;
+            if (!this.options.skipRivets) {
+                this.rivetsView = rivets.bind(this.$el, {
+                    model: this.model,
+                    params: this.params,
+                    submittedAnswer: this.submittedAnswer,
+                    trueAnswer: this.trueAnswer,
+                    feedback: this.feedback,
+                });
+                this.rivetsBindingsActive = true;
+            }
             if (window.MathJax)
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
             this.trigger("renderFinished");
@@ -277,13 +281,15 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
             this.$el.html(templatedHTML);
             this.submittedAnswerObject = new Backbone.Model(this.submittedAnswer);
             this.feedbackObject = new Backbone.Model(this.feedback);
-            this.rivetsView = rivets.bind(this.$el, {
-                model: this.model,
-                params: this.params,
-                submittedAnswer: this.submittedAnswerObject,
-                feedback: this.feedbackObject,
-            });
-            //this.rivetsBindingsActive = true;
+            if (!this.options.skipRivets) {
+                this.rivetsView = rivets.bind(this.$el, {
+                    model: this.model,
+                    params: this.params,
+                    submittedAnswer: this.submittedAnswerObject,
+                    feedback: this.feedbackObject,
+                });
+                //this.rivetsBindingsActive = true;
+            }
             if (window.MathJax)
                 MathJax.Hub.Queue(["Typeset", MathJax.Hub]);
             //this.trigger("renderFinished");
@@ -303,6 +309,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
             answerTemplate: "",
             submissionTemplate: "Not shown for this question.",
             templateTwice: false,
+            skipRivets: false,
         });
     }
     _.extend(SimpleClient.prototype, Backbone.Events);
@@ -319,14 +326,14 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
     SimpleClient.prototype.renderQuestion = function(questionDivID, changeCallback, questionDataModel, appModel) {
         var that = this;
         //this.listenTo(this.model, "answerChanged", changeCallback);
-        this.questionView = new QuestionView({el: questionDivID, template: this.options.questionTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback, templateTwice: this.options.templateTwice});
+        this.questionView = new QuestionView({el: questionDivID, template: this.options.questionTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback, templateTwice: this.options.templateTwice, skipRivets: this.options.skipRivets});
         this.listenTo(this.questionView, "renderFinished", function() {that.trigger("renderQuestionFinished");});
         this.questionView.render();
     };
 
     SimpleClient.prototype.renderAnswer = function(answerDivID, questionDataModel, appModel) {
         var that = this;
-        this.answerView = new AnswerView({el: answerDivID, template: this.options.answerTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback, templateTwice: this.options.templateTwice});
+        this.answerView = new AnswerView({el: answerDivID, template: this.options.answerTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, submittedAnswer: this.submittedAnswer, trueAnswer: this.trueAnswer, feedback: this.feedback, templateTwice: this.options.templateTwice, skipRivets: this.options.skipRivets});
         this.answerView.render();
         this.listenTo(this.answerView, "renderFinished", function() {that.trigger("renderAnswerFinished");});
     };
@@ -334,7 +341,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
     SimpleClient.prototype.renderSubmission = function(submissionDivID, questionDataModel, appModel, submittedAnswer, feedback, submissionIndex) {
         var that = this;
         feedback = feedback || {};
-        this.submissionViews[submissionIndex] = new SubmissionView({el: submissionDivID, template: this.options.submissionTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, submittedAnswer: submittedAnswer, feedback: feedback, templateTwice: this.options.templateTwice});
+        this.submissionViews[submissionIndex] = new SubmissionView({el: submissionDivID, template: this.options.submissionTemplate, model: this.model, questionDataModel: questionDataModel, appModel: appModel, params: this.params, submittedAnswer: submittedAnswer, feedback: feedback, templateTwice: this.options.templateTwice, skipRivets: this.options.skipRivets});
         this.submissionViews[submissionIndex].render();
     }
 

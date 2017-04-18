@@ -2,7 +2,7 @@ var httpDownloadPrefix = 'data:text/plain;base64,';
 
 define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleClient, _, Dropzone) {
     return function(questionTemplate, submissionTemplate) {
-        var simpleClient = new SimpleClient.SimpleClient({questionTemplate: questionTemplate, submissionTemplate: submissionTemplate});
+        var simpleClient = new SimpleClient.SimpleClient({questionTemplate: questionTemplate, submissionTemplate: submissionTemplate, skipRivets: true});
 
         // Returns the raw (base-64 encoded) file contents
         function getSubmittedFileContents(name) {
