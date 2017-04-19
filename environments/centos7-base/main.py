@@ -124,7 +124,7 @@ def main():
         dev_mode = False
 
     if 'JOB_ID' not in os.environ:
-        error('job ID was not specified in the JOB_ID environment variable')
+        error('job id was not specified in the JOB_ID environment variable')
         info['job_id'] = None
         environ_error = True
     else:
@@ -133,6 +133,13 @@ def main():
         except:
             error('could not parse JOB_ID environment variable to an int')
             environ_error = True
+
+    if 'ENTRYPOINT' not in os.environ:
+        error('entrypoint was not specified in the ENTRYPOINT environment variable')
+        info['entrypoint'] = None
+        environ_error = True
+    else:
+        info['entrypoint'] = os.environ['ENTRYPOINT']
 
     # These will only be present and useful when running on AWS infrastructure
     if not dev_mode:
@@ -178,7 +185,7 @@ def main():
 
     if not dev_mode:
         # Load the job archive from S3
-        jobs_bucket =info['jobs_bucket']
+        jobs_bucket = info['jobs_bucket']
         s3_job_file = Template('s3://$bucket/job_$job.tar.gz').substitute(bucket=jobs_bucket, job=job_id)
         s3_fetch_ret = call(['aws', 's3', 'cp', s3_job_file, '/job.tar.gz'])
         if s3_fetch_ret != 0:
@@ -191,42 +198,19 @@ def main():
             error('failed to unzip the job archive')
             finish(False, info)
 
-    # Users can specify init.sh scripts in several locations:
-    # 1. in a question's /tests directory (ends up in /grade/tests/)
-    # 2. in an autograder (ends up in /grade/shared/)
-    # 3. in an environment (ends up in /grade/)
-    # We'll only ever run one script; people writing init.sh scripts can choose
-    # to run others from the one that we call. Which one we run is determined by the
-    # above ordering: if we find /grade/tests/init.sh, we'll run that, otherwise
-    # if we find /grade/shared/init.sh, we'll run that, and so on.
+    entrypoint = info['entrypoint']
 
-    init_files = ['/grade/tests/init.sh', '/grade/shared/init.sh', '/grade/init.sh']
-    found_init_script = False
-    for file in init_files:
-        if os.path.isfile(file):
-            found_init_script = True
-            call(['chmod', '+x', file])
-            init_ret = call([file], shell=True)
-            if init_ret != 0:
-                error(Template('error executing $file').substitute(file=file))
-                finish(False, info)
-            break
-
-    # If we get this far, we've run the init script!
-    # Let's run the grading script now
-    grading_script = '/grade/run.sh'
-
-    if os.path.isfile(grading_script):
-        chmod_ret = call(['chmod', '+x', grading_script])
+    if os.path.isfile(entrypoint):
+        chmod_ret = call(['chmod', '+x', entrypoint])
         if chmod_ret != 0:
-            error(Template('Could not make $file executable').substitute(file=grading_script))
+            error(Template('Could not make $file executable').substitute(file=entrypoint))
         else:
-            run_ret = call([grading_script], shell=True)
+            run_ret = call([entrypoint], shell=True)
             if run_ret != 0:
-                error(Template('error executing $file').substitute(file=grading_script))
+                error(Template('error executing $file').substitute(file=entrypoint))
                 finish(False, info)
     else:
-        error(Template('$file not found').substitute(file=grading_script))
+        error(Template('$file not found').substitute(file=entrypoint))
         finish(False, info)
 
     # If we got this far, we (probably) succeeded!
