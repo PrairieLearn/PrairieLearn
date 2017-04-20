@@ -20,6 +20,7 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
         // contents should be base-64 encoded
         function saveSubmittedFile(name, contents) {
             var files = simpleClient.submittedAnswer.get('files') || [];
+            files = JSON.parse(JSON.stringify(files)); // deep clone needed to avoid changing backbone object
             var idx = _.findIndex(files, function(file) {
                 if (file.name === name) {
                     return true;
