@@ -7,7 +7,6 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
         // Returns the raw (base-64 encoded) file contents
         function getSubmittedFileContents(name) {
             var files = simpleClient.submittedAnswer.get('files') || [];
-            console.log(files)
             var contents = null;
             _.each(files, function(file) {
                 if (file.name === name) {
@@ -55,7 +54,6 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
             var requiredFiles = simpleClient.params.get('requiredFiles');
 
             _.each(requiredFiles, function(file) {
-                console.log(file)
                 var $item = $('<li class="list-group-item"></li>');
                 $uploadStatus.append($item);
                 $item.append('<code>' + encodeURIComponent(file) + '</code> - ');
@@ -118,11 +116,9 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
                     done('invalid file');
                 },
                 addedfile: function(file) {
-                    console.log("adding file...")
                     if (!_.contains(requiredFiles, file.name)) {
                         return;
                     }
-                    console.log("reading!")
                     var reader = new FileReader();
                     reader.onload = function(e) {
                         var dataUrl = e.target.result;
