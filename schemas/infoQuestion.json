@@ -63,6 +63,10 @@
             "description": "The grading method used for this question.",
             "enum": ["Internal", "External", "Manual"]
         },
+        "singleVariant": {
+            "description": "Whether the question is not randomized and only generates a single variant (defaults to \"false\").",
+            "type": "boolean"
+        },
         "options": {
             "description": "Options that define how the question will work, specific to the individual question type.",
             "type": "object"

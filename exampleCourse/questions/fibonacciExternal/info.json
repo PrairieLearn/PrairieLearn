@@ -5,6 +5,7 @@
     "tags": ["code"],
     "clientFiles": ["client.js", "question.html", "answer.html", "submission.html"],
     "type": "Calculation",
+    "singleVariant": true,
     "gradingMethod": "External",
     "externalGradingOptions": {
           "enabled": true,
