@@ -20,10 +20,4 @@ CREATE TABLE IF NOT EXISTS questions (
     UNIQUE (course_id, number)
 );
 
-ALTER TABLE questions DROP COLUMN IF EXISTS external_grading_autograder;
-ALTER TABLE questions DROP COLUMN IF EXISTS external_grading_environment;
-
-ALTER TABLE questions ADD COLUMN IF NOT EXISTS external_grading_files TEXT[] DEFAULT ARRAY[]::TEXT[];
-ALTER TABLE questions ADD COLUMN IF NOT EXISTS external_grading_entrypoint text;
-
 CREATE INDEX IF NOT EXISTS questions_topic_id_idx ON questions (topic_id);
