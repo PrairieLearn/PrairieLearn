@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS questions (
     client_files TEXT[] DEFAULT ARRAY[]::TEXT[],
     number INTEGER,
     grading_method enum_grading_method NOT NULL DEFAULT 'Internal',
+    single_variant BOOLEAN DEFAULT FALSE,
     course_id BIGINT NOT NULL REFERENCES pl_courses ON DELETE CASCADE ON UPDATE CASCADE,
     topic_id BIGINT REFERENCES topics ON DELETE SET NULL ON UPDATE CASCADE,
     deleted_at TIMESTAMP WITH TIME ZONE,

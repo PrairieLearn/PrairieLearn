@@ -34,10 +34,8 @@
         {
             "questions": [
                 {"id": "addVectors",                 "points": 1, "maxPoints": 5},
-                {"id": "fibonacci",                  "points": 1, "maxPoints": 5},
                 {"id": "fibonacciEditor",            "points": 1, "maxPoints": 5},
-                {"id": "fibonacciExternal",          "points": 1, "maxPoints": 5},
-                {"id": "fibonacciExternalUpload",    "points": 1, "maxPoints": 5},
+                {"id": "fibonacciUpload",            "points": 1, "maxPoints": 5},
                 {"id": "cppExternal",                "points": 1, "maxPoints": 5},
                 {"id": "particleMotion",             "points": 1, "maxPoints": 5},
                 {"id": "randomZip",                  "points": 1, "maxPoints": 5},

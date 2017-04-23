@@ -2,12 +2,11 @@ var httpDownloadPrefix = 'data:text/plain;base64,';
 
 define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleClient, _, Dropzone) {
     return function(questionTemplate, submissionTemplate) {
-        var simpleClient = new SimpleClient.SimpleClient({questionTemplate: questionTemplate, submissionTemplate: submissionTemplate});
+        var simpleClient = new SimpleClient.SimpleClient({questionTemplate: questionTemplate, submissionTemplate: submissionTemplate, skipRivets: true});
 
         // Returns the raw (base-64 encoded) file contents
         function getSubmittedFileContents(name) {
             var files = simpleClient.submittedAnswer.get('files') || [];
-            console.log(files)
             var contents = null;
             _.each(files, function(file) {
                 if (file.name === name) {
@@ -20,6 +19,7 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
         // contents should be base-64 encoded
         function saveSubmittedFile(name, contents) {
             var files = simpleClient.submittedAnswer.get('files') || [];
+            files = JSON.parse(JSON.stringify(files)); // deep clone needed to avoid changing backbone object
             var idx = _.findIndex(files, function(file) {
                 if (file.name === name) {
                     return true;
@@ -54,7 +54,6 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
             var requiredFiles = simpleClient.params.get('requiredFiles');
 
             _.each(requiredFiles, function(file) {
-                console.log(file)
                 var $item = $('<li class="list-group-item"></li>');
                 $uploadStatus.append($item);
                 $item.append('<code>' + encodeURIComponent(file) + '</code> - ');
@@ -117,11 +116,9 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
                     done('invalid file');
                 },
                 addedfile: function(file) {
-                    console.log("adding file...")
                     if (!_.contains(requiredFiles, file.name)) {
                         return;
                     }
-                    console.log("reading!")
                     var reader = new FileReader();
                     reader.onload = function(e) {
                         var dataUrl = e.target.result;

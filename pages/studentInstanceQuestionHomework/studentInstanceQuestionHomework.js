@@ -116,6 +116,14 @@ function processGet(req, res, variant_id, callback) {
             });
         },
         function(callback) {
+            if (res.locals.question.single_variant) {
+                res.locals.showSubmitButton = true;
+                res.locals.showNewVariantButton = false;
+                res.locals.showTrueAnswer = false;
+            }
+            callback(null);
+        },
+        function(callback) {
             questionServers.getModule(res.locals.question.type, function(err, qm) {
                 if (ERR(err, callback)) return;
                 questionModule = qm;

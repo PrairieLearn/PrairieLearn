@@ -8,6 +8,7 @@
     "options": {
         "requiredFiles": ["fib.py"]
     },
+    "singleVariant": true,
     "gradingMethod": "External",
     "externalGradingOptions": {
         "enabled": true,
