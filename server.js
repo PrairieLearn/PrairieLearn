@@ -71,8 +71,6 @@ if (config.devMode) {
     app.use(require('./middlewares/undefCourseCode'));
 }
 
-app.get('/ping', function(req, res, next) {res.send('.');})
-
 // redirect / to /pl
 app.use(/^\/?$/, function(req, res, next) {res.redirect('/pl');});
 
@@ -262,6 +260,7 @@ app.use('/pl/administrator/overview', require('./pages/administratorOverview/adm
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 // Webhooks //////////////////////////////////////////////////////////
+app.get('/pl/webhooks/ping', function(req, res, next) {res.send('.');})
 app.use('/pl/webhooks/grading', require('./webhooks/grading/grading'));
 
 //////////////////////////////////////////////////////////////////////

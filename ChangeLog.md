@@ -1,6 +1,8 @@
 
 # ChangeLog
 
+  * Add `/pl/webhooks/ping` endpoint for automated health checks.
+
 * __2.6.1__ - XXXX-XX-XX
 
   * Fix rendering of table row lines in student question lists.
