@@ -22,6 +22,24 @@ def log(message):
     print(Template('[main] $message').substitute(message=message))
     sys.stdout.flush()
 
+def setup_firewall():
+    log("Setting up firewall")
+
+    #RUN sudo systemctl unmask firewalld
+    #RUN sudo systemctl enable firewalld
+    #RUN sudo systemctl start firewalld
+    #RUN firewall-cmd --permanent --direct --add-rule ipv4 filter OUTPUT 0 -o ! lo -m owner --uid-owner ! 0
+    #RUN firewall-cmd --permanent --direct --add-rule ipv6 filter OUTPUT 0 -o ! lo -m owner --uid-owner ! 0
+    #RUN firewall-cmd --reload
+    os.system("systemctl unmask firewalld")
+    os.system("systemctl enable firewalld")
+    os.system("systemctl start firewalld")
+    os.system("firewall-cmd --permanent --direct --add-rule ipv4 filter OUTPUT 0 ! -o lo -m owner ! --uid-owner root -j DROP")
+    os.system("firewall-cmd --permanent --direct --add-rule ipv6 filter OUTPUT 0 ! -o lo -m owner ! --uid-owner root -j DROP")
+    os.system("firewall-cmd --reload")
+
+    log("Done setting up firewall")
+    pass
 
 def finish(succeeded, info):
     """
@@ -197,6 +215,8 @@ def main():
         if unzip_ret != 0:
             error('failed to unzip the job archive')
             finish(False, info)
+
+    setup_firewall()
 
     # Users can specify init.sh scripts in several locations:
     # 1. in a question's /tests directory (ends up in /grade/tests/)
