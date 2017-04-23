@@ -27,6 +27,7 @@ digraph partmc_modules {
     alternative_groups [style=filled, fillcolor=honeydew1]
     zones [style=filled, fillcolor=honeydew1]
 
+    errors [style=filled, fillcolor=lavender]
     enrollments [style=filled, fillcolor=lavender]
     assessment_instances [style=filled, fillcolor=lavender]
     instance_questions [style=filled, fillcolor=lavender]
@@ -62,6 +63,7 @@ digraph partmc_modules {
     zones -> { assessments }
     alternative_groups -> { zones }
 
+    errors -> { pl_courses; course_instances; questions; assessments; users }
     enrollments -> { users; course_instances }
     assessment_instances -> { assessments; users }
     instance_questions -> { assessment_questions; assessment_instances }

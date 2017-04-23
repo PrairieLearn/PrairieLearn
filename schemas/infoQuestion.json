@@ -13,7 +13,7 @@
         },
         "type": {
             "description": "Type of the test.",
-            "enum": ["Calculation", "ShortAnswer", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse"]
+            "enum": ["Calculation", "ShortAnswer", "MultipleChoice", "Checkbox", "File", "MultipleTrueFalse", "Freeform"]
         },
         "title": {
             "description": "The title of the question (e.g., 'Addition of vectors in Cartesian coordinates').",
