@@ -20,6 +20,7 @@
         "express": "4.14.x",
         "fs-extra": "2.0.x",
         "googleapis": "19.0.x",
+        "handlebars": "4.0.x",
         "is-my-json-valid": "2.15.x",
         "javascript-natural-sort": "0.7.x",
         "jju": "1.3.x",

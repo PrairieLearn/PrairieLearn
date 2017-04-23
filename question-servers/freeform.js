@@ -3,6 +3,7 @@ var _ = require('lodash');
 var fs = require('fs');
 var path = require('path');
 var child_process = require('child_process');
+var handlebars = require('handlebars');
 
 var error = require('../lib/error');
 var logger = require('../lib/logger');
@@ -91,6 +92,39 @@ module.exports = {
         child.stdin.end();
     },
 
+    makeHandlebars: function() {
+        var hb = handlebars.create();
+        
+    },
+
+    execTemplateGetData: function(question_data, question, course, callback) {
+        console.log('in execTemplateGetData()');
+        var question_dir = path.join(course.path, 'questions', question.directory);
+        var question_html = path.join(question_dir, 'question.html');
+        fs.readFile(question_html, {encoding: 'utf8'}, (err, data) => {
+            if (ERR(err, callback)) return;
+            try {
+                var hb = this.makeHandlebars();
+                var template = hb.compile(data);
+                console.log('completed compile');
+            } catch (e) {
+                var err = new Error('Error compiling question.html template');
+                err.data = {compileMsg: e.message, question_data, question, course};
+                return ERR(err, callback);
+            }
+            try {
+                var html = template(question_data); // just want the side effects on question_data, not the html
+                console.log('completed template');
+                console.log('html', html);
+            } catch (e) {
+                var err = new Error('Error templating question.html');
+                err.data = {templateMsg: e.message, question_data, question, course};
+                return ERR(err, callback);
+            }
+            callback(null, question_data);
+        });
+    },
+
     getData: function(question, course, variant_seed, callback) {
         var question_dir = path.join(course.path, 'questions', question.directory);
 
@@ -101,8 +135,12 @@ module.exports = {
         };
         this.execPythonServer('get_data', pythonArgs, question, course, (err, result) => {
             if (ERR(err, callback)) return;
-            _.defaults(result.options, course.options, question.options);
-            callback(null, result);
+            var question_data = result.question_data;
+            _.defaults(question_data.options, course.options, question.options);
+            this.execTemplateGetData(question_data, question, course, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null, question_data);
+            });
         });
     },
 

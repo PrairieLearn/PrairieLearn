@@ -1,13 +1,14 @@
-Which of the following is an advantage of fossil fuels relative to renewable energy sources?
+{{#question}}
+<p>
+  Which of the following is an advantage of fossil fuels relative to renewable energy sources?
+</p>
 
 <img src="{{clientFilesQuestion}}/power-station.jpg" width="400px" class="img-responsive center-block" />
 
 {{#multiple_choice number_answers=5}}
-
 {{#correct_answer}}Cheap{{/correct_answer}}
 {{#correct_answer}}High energy density{{/correct_answer}}
 {{#correct_answer}}Provide energy on deman{{/correct_answer}}
-
 {{#incorrect_answer}}Non-polluting{{/incorrect_answer}}
 {{#incorrect_answer}}Low energy density{{/incorrect_answer}}
 {{#incorrect_answer}}Low production of carbon dioxide{{/incorrect_answer}}
@@ -15,5 +16,29 @@ Which of the following is an advantage of fossil fuels relative to renewable ene
 {{#incorrect_answer}}Secure{{/incorrect_answer}}
 {{#incorrect_answer}}Sustainable{{/incorrect_answer}}
 {{#incorrect_answer}}Low energy return{{/incorrect_answer}}
-
 {{/multiple_choice}}
+
+<p>
+  Define the distances $x = {{params.x}}\rm\ m$ and $y = {{params.y}}\rm\ m$ and let
+  \[
+  z = x + y.
+  \]
+  What is $z$?
+</p>
+
+<p>
+  $z = $ {{#input_number submitted_answer.z}}$\rm\ m$
+</p>
+{{/question}}
+
+
+  
+{{#submission}}
+$z = {{submitted_answer.z}}\rm\ m$
+{{/submission}}
+
+
+
+{{#answer}}
+$z = {{true_answer.z}}\rm\ m$
+{{/answer}}
