@@ -22,6 +22,24 @@ def log(message):
     print(Template('[main] $message').substitute(message=message))
     sys.stdout.flush()
 
+def setup_firewall():
+    log("Setting up firewall")
+
+    #RUN sudo systemctl unmask firewalld
+    #RUN sudo systemctl enable firewalld
+    #RUN sudo systemctl start firewalld
+    #RUN firewall-cmd --permanent --direct --add-rule ipv4 filter OUTPUT 0 -o ! lo -m owner --uid-owner ! 0
+    #RUN firewall-cmd --permanent --direct --add-rule ipv6 filter OUTPUT 0 -o ! lo -m owner --uid-owner ! 0
+    #RUN firewall-cmd --reload
+    os.system("systemctl unmask firewalld")
+    os.system("systemctl enable firewalld")
+    os.system("systemctl start firewalld")
+    os.system("firewall-cmd --permanent --direct --add-rule ipv4 filter OUTPUT 0 ! -o lo -m owner ! --uid-owner root -j DROP")
+    os.system("firewall-cmd --permanent --direct --add-rule ipv6 filter OUTPUT 0 ! -o lo -m owner ! --uid-owner root -j DROP")
+    os.system("firewall-cmd --reload")
+
+    log("Done setting up firewall")
+    pass
 
 def finish(succeeded, info):
     """
@@ -119,6 +137,7 @@ def main():
     if 'DEV_MODE' in os.environ and os.environ['DEV_MODE']:
         info['dev_mode'] = True
         dev_mode = True
+        del os.environ["DEV_MODE"]
     else:
         info['dev_mode'] = False
         dev_mode = False
@@ -130,6 +149,7 @@ def main():
     else:
         try:
             info['job_id'] = int(os.environ['JOB_ID'])
+            del os.environ["JOB_ID"]
         except:
             error('could not parse JOB_ID environment variable to an int')
             environ_error = True
@@ -142,6 +162,7 @@ def main():
             environ_error = True
         else:
             info['jobs_bucket'] = os.environ['S3_JOBS_BUCKET']
+        del os.environ["S3_JOBS_BUCKET"]
 
         if 'S3_RESULTS_BUCKET' not in os.environ:
             error('the S3 results bucket was not specified in the S3_RESULTS_BUCKET environment variable')
@@ -149,6 +170,7 @@ def main():
             environ_error = True
         else:
             info['results_bucket'] = os.environ['S3_RESULTS_BUCKET']
+            del os.environ["S3_RESULTS_BUCKET"]
 
         if 'S3_ARCHIVES_BUCKET' not in os.environ:
             error('the S3 archives bucket was not specified in the S3_ARCHIVES_BUCKET environment variable')
@@ -156,18 +178,21 @@ def main():
             environ_error = True
         else:
             info['archives_bucket'] = os.environ['S3_ARCHIVES_BUCKET']
+            del os.environ["S3_ARCHIVES_BUCKET"]
 
         if 'WEBHOOK_URL' not in os.environ:
             warn('the webhook callback url was not specified in the WEBHOOK_URL environment variable')
             info['webhook_url'] = None
         else:
             info['webhook_url'] = os.environ['WEBHOOK_URL']
+            del os.environ["WEBHOOK_URL"]
 
         if 'CSRF_TOKEN' not in os.environ:
             warn('a csrf token was not specified in the CSRF_TOKEN environment variable')
             info['csrf_token'] = None
         else:
             info['csrf_token'] = os.environ['CSRF_TOKEN']
+            del os.environ["CSRF_TOKEN"]
 
     if environ_error:
         finish(False, info)
@@ -190,6 +215,8 @@ def main():
         if unzip_ret != 0:
             error('failed to unzip the job archive')
             finish(False, info)
+
+    setup_firewall()
 
     # Users can specify init.sh scripts in several locations:
     # 1. in a question's /tests directory (ends up in /grade/tests/)
