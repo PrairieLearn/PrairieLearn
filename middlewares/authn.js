@@ -18,7 +18,7 @@ module.exports = function(req, res, next) {
         return;
     }
 
-    if (req.path === '/pl/webhooks/grading') {
+    if (/^\/pl\/webhooks\//.test(req.path)) {
       // Webhook callbacks should not be authenticated
       next();
       return;
