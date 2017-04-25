@@ -1,8 +1,8 @@
 -- BLOCK insert_question
 INSERT INTO questions
     (uuid,  qid, directory, type,                      title,  options,         client_files,
-    course_id,            grading_method,                      deleted_at,
-    template_directory,
+        course_id,            grading_method,                       single_variant,
+    deleted_at,                      template_directory,
     topic_id,
     external_grading_enabled,
     external_grading_autograder,
@@ -10,8 +10,8 @@ INSERT INTO questions
     external_grading_image)
 (SELECT
     $uuid, $qid, $qid,     $type::enum_question_type, $title, $options::JSONB, $client_files::TEXT[],
-    $course_id::integer, $grading_method::enum_grading_method, NULL::timestamp with time zone,
-    $template_directory,
+    $course_id::integer, $grading_method::enum_grading_method, $single_variant,
+    NULL::timestamp with time zone, $template_directory,
     COALESCE((SELECT id FROM topics WHERE name = $topic AND course_id = $course_id), NULL),
     $external_grading_enabled, $external_grading_autograder, $external_grading_environment, $external_grading_image
 )
@@ -24,6 +24,7 @@ SET
     options = EXCLUDED.options,
     client_files = EXCLUDED.client_files,
     grading_method = EXCLUDED.grading_method,
+    single_variant = EXCLUDED.single_variant,
     template_directory = EXCLUDED.template_directory,
     topic_id = EXCLUDED.topic_id,
     deleted_at = EXCLUDED.deleted_at,

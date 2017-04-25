@@ -55,6 +55,7 @@ module.exports = {
                         course_id: courseInfo.courseId,
                         topic: q.topic,
                         grading_method: q.gradingMethod || 'Internal',
+                        single_variant: !!q.singleVariant,
                         external_grading_enabled: (q.externalGradingOptions && q.externalGradingOptions.enabled),
                         external_grading_autograder: (q.externalGradingOptions && q.externalGradingOptions.autograder),
                         external_grading_environment: (q.externalGradingOptions && q.externalGradingOptions.environment),

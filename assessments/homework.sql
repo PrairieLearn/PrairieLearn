@@ -61,9 +61,14 @@ WHERE
 -- BLOCK update_variant
 UPDATE variants AS v
 SET
-    available = false
-WHERE
-    v.id = $variant_id;
+    available = CASE WHEN q.single_variant THEN true ELSE false END
+FROM
+    instance_questions AS iq
+    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+    JOIN questions AS q ON (q.id = aq.question_id)
+ WHERE
+    v.id = $variant_id
+    AND iq.id = v.instance_question_id;
 
 -- BLOCK update_instance_question_in_grading
 UPDATE instance_questions AS iq

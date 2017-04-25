@@ -1,9 +1,16 @@
 {
-    "uuid": "0a75399b-31c4-4ceb-b382-7c7d542639a1",
-    "title": "Write a Fibonacci function in an editor",
+    "uuid": "e04f3972-1657-11e7-93ae-92361f002671",
+    "title": "Fibonacci function with in-browser editor, external grading",
     "topic": "Functions",
     "tags": ["code"],
-    "clientFiles": ["client.js", "question.html", "answer.html"],
+    "clientFiles": ["client.js", "question.html", "answer.html", "submission.html"],
     "type": "Calculation",
-    "gradingMethod": "External"
+    "singleVariant": true,
+    "gradingMethod": "External",
+    "externalGradingOptions": {
+          "enabled": true,
+          "autograder": "child_pythondev",
+          "environment": "python-main",
+          "image": "prairielearn/centos7-base"
+    }
 }

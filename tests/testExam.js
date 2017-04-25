@@ -535,7 +535,7 @@ describe('Exam assessment', function() {
     };
 
     var checkAssessmentScore = function() {
-        describe('check question score', function() {
+        describe('check assessment score', function() {
             it('should still have the assessment_instance', function(callback) {
                 var params = {
                     assessment_instance_id: assessment_instance.id,
