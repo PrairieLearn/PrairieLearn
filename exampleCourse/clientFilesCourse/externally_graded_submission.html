@@ -1,9 +1,24 @@
 <% if (feedback) { %>
 <% console.log(feedback) %>
-<% if (!feedback.succeeded) { %>
+<% if (feedback.succeeded != undefined && !feedback.succeeded) { %>
   <h3>UNIDENTIFIED ERROR</h3>
 <% } else if (feedback.results) { %>
 <% var results = feedback.results; %>
+<% if (!results.tests) { %>
+  <h3>Score: <%= (results.score * 100).toFixed(0) %>%</h3>
+<% } else { %>
+<% var points = 0, max_points = 0; %>
+<% results.tests.forEach(function(test) {points += test.points; max_points  += test.max_points;}); %>
+<h3 style="margin-top: 0px;"> Score:
+  <% if (points === max_points) { %>
+  <span style="color: #4CAF50;">
+  <% } else { %>
+  <span style="color: #F44336;">
+  <% } %>
+    <strong>[<%= points %>/<%= max_points %>]</strong> (<%= ((points / max_points) * 100).toFixed(0) %>%)
+  </span>
+</h3>
+<% } %>
 <% if (results.message || results.output) { %>
   <ul class="list-group">
     <% if (results.message) { %>
@@ -15,27 +30,15 @@
     <% if (results.output) { %>
       <li class="list-group-item">
         <div><strong>Output</strong></div>
-        <pre style="background: black; white-space: pre-wrap; overflow-y: auto; overflow-x: hidden; max-height: 200px;"><code style="color: white; font-family: monospace;"><%= results.output %></code></pre>
+        <pre style="background: black; white-space: pre-wrap; overflow-y: auto; overflow-x: hidden; max-height: 500px;"><code style="color: white; font-family: monospace;"><%= results.output %></code></pre>
       </li>
     <% } %>
   </ul>
 <% } %>
-<% if (!results.tests) { %>
-  <h3>Score: <%= (results.score * 100).toFixed(0) %>%</h3>
-  <p>No detailed test results available</p>
-<% } else { %>
-<% var points = 0, max_points = 0; %>
-<% results.tests.forEach(function(test) {points += test.points; max_points  += test.max_points;}); %>
-<h3 style="margin-top: 0px;"> Score:
-  <% if (points === max_points) { %>
-  <span style="color: #4CAF50;">
-  <% } else { %>
-  <span style="color: #F44336;">
-  <% } %>
-    <strong>[<%= points %>/<%= max_points %>]</strong> (<%= (results.score * 100).toFixed(0) %>%)
-  </span>
-</h3>
 <h3>Test Results</h3>
+<% if (!results.tests) { %>
+<p>No detailed test results available.</p>
+<% } else { %>
 <% results.tests.forEach(function(test, index) { %>
 <% var passed = (test.points === test.max_points) %>
 <% var testColor = passed ? '#4CAF50' : '#F44336'; %>
