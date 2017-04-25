@@ -27,7 +27,7 @@ Property | Type | Description
 PrairieLearn stores several types of objects in the database to keep track of a particular question variant and the student submitted answers.
 
 Object | Type | Description
---- | ---
+--- | --- | ---
 `options` | object | Union of the `course.options` and `question.options`, used to control high-level behavior like tolerances for defining a correct answer.
 `variant_seed` | integer | A system-generated random value that is used to produce a question `variant`.
 `variant` | object | All the information associated with a single parameterized version of a question. This will typically (although not necessarily) have a single correct answer.
