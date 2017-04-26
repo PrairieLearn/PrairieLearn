@@ -30,23 +30,26 @@ cp $TEST_DIR* $MERGE_DIR
 # There is already one in the /run directory, but we need one in the /run/bin directory as well
 echo "" > $BIN_DIR/__init__.py
 
+
 ##########################
 # RUN
 ##########################
 
-# the name of the course script; in our case this is a shell script that will start our python autograder
-AG_SCRIPT='autograder.sh'
-
 RESULTS_FILE='/grade/results/results.json'
 
-# run the script
-echo "[run] starting up"
-chmod +x $MERGE_DIR$AG_SCRIPT
-echo "[run]: chmod"
-cd $MERGE_DIR
-echo "[run] cd"
-./$AG_SCRIPT
-echo "[run] run"
+cd $JOB_DIR'run/'
+
+# give the ag user the ownership of it's small bin folder
+sudo chown ag $BIN_DIR
+sudo chmod -R +rw $BIN_DIR
+
+echo "[run] starting autograder"
+
+# we do the capturing ourselves, so that only the stdout of the autograder is used and that we aren't relying on any files that the student code could easily create
+# we are also running the autograder as a limited user called ag
+sudo -H -u ag bash -c 'python autograder_wrapper.py' > results.json
+
+echo "[run] autograder completed"
 
 # get the results from the file
 cp $MERGE_DIR/results.json $RESULTS_FILE
