@@ -1,11 +1,19 @@
 
 # ChangeLog
 
+* __2.7.0__ - 2017-04-26
+
   * Add `/pl/webhooks/ping` endpoint for automated health checks.
 
   * Add `singleVariant` flag for non-randomized questions.
 
-* __2.6.1__ - XXXX-XX-XX
+  * Document and improve external autograder file layout (Nathan Walters).
+
+  * Improve env var security in autograder containers (Jordi Paris Ferrer).
+
+  * Improve external autograder output display (Nathan Walters).
+
+  * Fix home directory detection for external autograder jobs.
 
   * Fix rendering of table row lines in student question lists.
 
