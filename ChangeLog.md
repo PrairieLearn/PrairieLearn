@@ -7,11 +7,14 @@
 
   * Add `singleVariant` flag for non-randomized questions.
 
-  * Document and improve external autograder file layout (Nathan Walters).
+  * Add documentation and improve layout for external autograder files
+    (Nathan Walters).
 
-  * Improve env var security in autograder containers (Jordi Paris Ferrer).
+  * Add link to detailed instances CSV file on instructor assessment page.
 
-  * Improve external autograder output display (Nathan Walters).
+  * Fix env var security in autograder containers (Jordi Paris Ferrer).
+
+  * Fix external autograder output display (Nathan Walters).
 
   * Fix home directory detection for external autograder jobs.
 
