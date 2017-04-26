@@ -225,6 +225,7 @@ table.two-column-description tr th {
 
 .panel.pastsubmission-block .panel-heading {
     display: flex;
+    align-items: center;
 }
 
 .panel.pastsubmission-block .panel-heading > * {
