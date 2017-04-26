@@ -5,8 +5,7 @@
     <% } else { %>
         <% if (submission.grading_method == 'External') { %>
             <span class="label label-default">waiting for grading (<%= submission.elapsed_grading_time %>)</span>
-            <!-- FIXME: we hack color:white below because bootstrap doesn't correctly override -->
-            <a href="<%= reloadUrl %>" class="btn btn-xs btn-primary" style="color: white;">Reload to check</a>
+            <a href="<%= reloadUrl %>" class="btn btn-xs btn-primary">Reload to check</a>
         <% } else if (submission.grading_method == 'Manual') { %>
             <span class="label label-default">waiting for manual grading</span>
         <% } else { %>
