@@ -14,6 +14,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
+    // FIXME: replace the following query with a call to assessment_instances_update_homework
     var params = {
         authn_user_id: res.locals.authn_user.user_id,
         assessment_instance_id: res.locals.assessment_instance.id,
