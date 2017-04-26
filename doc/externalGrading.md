@@ -24,9 +24,9 @@ Your Docker image should use one of our base images (see `PrairieLearn/environme
 
 * `prairielearn/centos7-base`
 
-Similar to the way that files in `clientFilesCourse` can be shared among multiple questions, you can specify shared resources inside the `externalGradingFilesCourse` directory of a course; the resources to include are specified in the `files` array, similar to the `clientFiles` array in a question. Note that externally graded questions allow you to specify whole directories, not just individual files as with `clientFiles`. Typically, this directory would hold files to be shared between a large number of questions, such as testing frameworks or libraries.
+If you have resources like unit testing frameworks or special libraries that should be shared between many questions, you can avoid duplicating them in all questions by placing them in `serverFilesCourse`. Inside a question's `info.json`, you can use the `files` array (similar to the `clientFiles` array) to specify which of those resources should be available for grading jobs. Note that externally graded questions allow you to specify whole directories, not just individual files as with `clientFiles`.
 
-Each externally graded question can contain a directory called `tests` that contains any files that are specific to that test. If you include a testing framework from `externalGradingFilesCourse`, the `tests` directory would then hold test cases that can be run with that framework.
+Each externally graded question can contain a directory called `tests` that contains any files that are specific to that test. If you include a testing framework from `serverFilesCourse`, the `tests` directory would then hold test cases that can be run with that framework.
 
 When we receive a new submission for an externally graded question, we will package up all of the resources you specify and send your grading job to be executed on AWS infrastructure. Our Docker image contains a "driver" script that will coordinate fetching the files for your job, running your script, and sending results back to PrairieLearn. That script will set up the directory structure on the Docker container as follows:
 
@@ -36,14 +36,14 @@ When we receive a new submission for an externally graded question, we will pack
 |   
 +-- shared                   # any shared files specified with the "files" property
 |   +-- testing_framework    # these can be directories, as well as individual files
-|   |   `-- tester.c
-|   `-- myscript.sh
+|       +-- tester.c
+|       `-- myscript.sh
 |
 `-- student                  # files that the student submitted
     `-- q_file.py            # files are names as specified by the client in the submission
 ```
 
-You must specify an entrypoint script in the `entrypoint` property. This should be an absolute path to something that is executable via `chmod +x /path/to/entrypoint && /path/to/entrypoint`; this could take the form of a shell script, a python script, a compiled executable, or anything else that can be run like that. The absolute path can be determined by looking at the directory structure above. A common case would be to put an entrypoint in `externalGradingFilesCourse`, as above; in that case, you'd specify your entrypoint as `/grade/shared/myscript.sh`.
+You must specify an entrypoint script in the `entrypoint` property. This should be an absolute path to something that is executable via `chmod +x /path/to/entrypoint && /path/to/entrypoint`; this could take the form of a shell script, a python script, a compiled executable, or anything else that can be run like that. The absolute path can be determined by looking at the directory structure above. A common case would be to put an entry script in a directory in `serverFilesCourse`, as above; in that case, you'd specify your entrypoint as `/grade/shared/testing_framework/myscript.sh`.
 
 Once the driver script has extracted all your files to the correct locations, it will execute your entrypoint script. By the time your script returns, results should have been written into the file `/grade/results/results.json`; the format of that file is specified below. The contents of that file will be transmitted back to PrairieLearn to be saved and shown to the student.
 
@@ -65,7 +65,7 @@ course
 |           +-- ag.py           # testing files
 |           `-- soln_out.txt
 |
-+-- externalGradingFilesCourse         # external grading files that will be shared between questions
++-- serverFilesCourse                  # files that will be shared between questions
 |   +-- my_testing_framework           # related files can be grouped into directories
 |   |   +-- file1
 |   |   `-- file2
