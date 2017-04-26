@@ -75,20 +75,20 @@ course
 
 ## Enabling External Grading for a Question
 
-The following fields must be added to each question's `info.json`:
+The following fields can be added to each question's `info.json`:
 
 ```json
 "externalGradingOptions": {
-    "enabled": true,                                         // required
-    "image": "prairielearn/centos7-base:dev",                // required
-    "files": ["python_autograder/"],                         // optional
-    "entrypoint": "/grade/shared/python_autograder/run.sh"   // optional
+    "enabled": true,
+    "image": "prairielearn/centos7-base:dev",
+    "entrypoint": "/grade/shared/python_autograder/run.sh",
+    "files": ["python_autograder/"]
 }
 ```
 
-`image` should correspond to a docker image on a container repository, and will be passed directly to AWS Batch as the `image` field in a job definition. See [here](http://docs.aws.amazon.com/batch/latest/userguide/job_definition_parameters.html) for more information.
+`image` and `entrypoint` are required, `enabled` and `files` are optional. Note that `enabled` will default to `false` if not present. `enabled` can be used as a killswitch if things start going terribly wrong.
 
-If `enabled` does not exist, external grading will be turned off by default. If a question is misbehaving while deployed, switching this to `false` will immediately prevent any future grading jobs from being submitted.
+`image` should correspond to a docker image on a container repository, and will be passed directly to AWS Batch as the `image` field in a job definition. See [here](http://docs.aws.amazon.com/batch/latest/userguide/job_definition_parameters.html) for more information.
 
 ## Grading Result
 
