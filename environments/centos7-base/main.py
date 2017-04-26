@@ -140,6 +140,7 @@ def main():
         environ_error = True
     else:
         info['entrypoint'] = os.environ['ENTRYPOINT']
+        del os.environ['ENTRYPOINT']
 
     # These will only be present and useful when running on AWS infrastructure
     if not dev_mode:
