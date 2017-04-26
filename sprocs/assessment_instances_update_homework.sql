@@ -106,7 +106,7 @@ BEGIN
             'update', jsonb_build_object('max_points', old_assessment_instance_max_points),
             jsonb_build_object('max_points', new_assessment_instance_max_points);
 
-        -- FIXME: also call assessment_points_homework and update ai.score_perc, etc
+        -- FIXME: also call assessment_instances_points_homework and update ai.score_perc, etc
         -- and log it
     END IF;
 END;

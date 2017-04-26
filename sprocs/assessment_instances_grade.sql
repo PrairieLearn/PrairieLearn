@@ -22,7 +22,7 @@ BEGIN
 
     SELECT *
     INTO new_values
-    FROM assessment_points(assessment_instance_id, credit);
+    FROM assessment_instances_points(assessment_instance_id, credit);
 
     UPDATE assessment_instances AS ai
     SET
