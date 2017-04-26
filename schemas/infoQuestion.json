@@ -75,23 +75,27 @@
             "description": "Options for externally graded questions.",
             "type": "object",
             "additionalProperties": false,
-            "required": ["enabled", "environment", "image"],
+            "required": ["image", "entrypoint"],
             "properties": {
                 "enabled": {
                     "description": "Whether the external grader is currently enabled. Useful if it is breaking, for example.",
                     "type": "boolean"
                 },
-                "autograder": {
-                    "description": "The name of the autograder to use for this question. Searches in currentCourse/autograders/",
-                    "type": "string"
-                },
-                "environment": {
-                    "description": "The name of the environment to use for this question. Will look in currentCourse/environments/",
-                    "type": "string"
-                },
                 "image": {
                     "description": "The Docker image that will be used to grade this question. Should be specified as Dockerhub image.",
                     "type": "string"
+                },
+                "entrypoint": {
+                    "description": "Program to run as the entrypoint to your grader. Must be runnable as 'chmod +x script && ./script'.",
+                    "type": "string"
+                },
+                "files": {
+                    "description": "The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/",
+                    "type": "array",
+                    "items": {
+                        "description": "A single file or directory that will be copied to the external grader.",
+                        "type": "string"
+                    }
                 }
             }
         }

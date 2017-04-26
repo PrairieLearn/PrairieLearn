@@ -15,9 +15,9 @@ CREATE TABLE IF NOT EXISTS questions (
     topic_id BIGINT REFERENCES topics ON DELETE SET NULL ON UPDATE CASCADE,
     deleted_at TIMESTAMP WITH TIME ZONE,
     external_grading_enabled BOOLEAN DEFAULT FALSE,
-    external_grading_autograder text,
-    external_grading_environment text,
     external_grading_image text,
+    external_grading_files TEXT[] DEFAULT ARRAY[]::TEXT[],
+    external_grading_entrypoint text,
     UNIQUE (course_id, number)
 );
 

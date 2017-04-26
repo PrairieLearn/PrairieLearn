@@ -4,97 +4,91 @@ PrairieLearn allows you to securely run custom grading scripts in environments t
 
 ## High-level Overview
 
-You can define a number of things for the external grading process:
-* Custom environments (in the form of Docker images)
-* Autograder code that is shared between questions
+You can define a number of resources for the external grading process:
+* A Docker image to execute your tests in
+* An script to serve as an entrypoint to your grading process
+* Files that are shared between questions
 * Tests for individual questions
 
 When a student clicks "Submit" on an externally-graded question, PrairieLearn will assemble all of those resources that you've defined into an archive. That archive will be submitted to be run as a job on AWS infrasctructure inside the environment that you specify. Results are then sent back to PrairieLearn; once they are processed, the student can refresh the page to see their score, individual test cases, `stdout`/`stderr`, and more.
 
 ## The Grading Process
 
-PrairieLearn external grading is set up to enable courses to use their existing grading infrastructure. All external grading jobs will be run in self-contained Docker containers (basically a lightweight VM) that they will be able to configure to their course's specifications.
+PrairieLearn external grading is set up to enable courses to use their existing grading infrastructure. All external grading jobs will be run in self-contained Docker containers (you can think of them as lightweight VMs) which can be configured to a course's specifications.
 
-External grading configuration is split into three components: environments, autograders, and tests. All of these are specified via files to follow the PrairieLearn pattern of configuration via directories and files named by convention.
+External grading configuration is split into three components: an image, an entrypoint script, shared files, and tests. All of these are specified inside the `externalGradingOptions` object of a question's `info.json` as follows.
 
-~~An environment specifies the environment in which your grading job is run, and is specified with a [Dockerfile](https://docs.docker.com/engine/reference/builder/). That Dockerfile can specify additional dependencies, compilers, etc. that your grading job may require to run. We will use that Dockerfile to build a Docker image, which we will then use to execute your test cases.~~
-
-In the future PrairieLearn will be able to automatically build your environments into Docker images. For now, however, you'll have to build the images yourself. You can specify the image to be used via the `autograderImage` property in a question's `info.json`. Note that this image should be hosted on a service like Dockerhub so that AWS Batch will be able to pull down the image when running your job. See **Enabling External Grading for a Question** below for more details on this.
-
-An autograder is a set of files that can be included in a question's test. If you have an autograder suite (for instance, CS 225's Monad) that relies on a large number of unchanging files, you can specify those in an autograder to avoid having to duplicate them in each externally graded question. An autograder could also contain precompiled executables, or any resources that could be shared between many questions.
-
-Each externally graded question should contain a directory called `tests` that contains any files that are specific to that test. If you specify an autograder for a question, you don't need to duplicate those files in your `tests` directory.
-
-When we recieve a new submission for an externally graded question, we will set up a temporary directory. That directory will then contain three subdirectories: `shared`, `tests`, and `student`. We will then do the following to populate that directory:
-* We will copy the contents of the directory corresponding to the `environment` you specified into the root of this temporary directory. **Note:** When PrairieLearn supports automatically building images in the future, this will change.
-* If an autograder is specified, we will copy the contents of the directory corresponding to said `autograder` into `shared`.
-* We will copy files in your question's `tests` directory to `tests` in the temporary directory.
-* Any code that the student submits will be placed into `student`.
-When we launch a container for your grading job, a copy of this temporary directory will be mounted as `/grade`.
-
-~~Your Dockerfile should specify a command that will be run to run your tests; typically, this will be a shell script that will copy files, set up users, do any additional configuration, and finally run your test suite. For instance, in the example course, the `python-main` environment has the script `init.sh`. As part of the build process, it copies that file into the root of the image and then specifies the command `CMD /init.sh`; that script then runs another script that is specified in the python autograder.~~
+You must specify an image to be used for your question with the `image` property. Note that this image should be hosted on a service like Dockerhub so that AWS Batch will be able to pull down the image when running your job. See **Enabling External Grading for a Question** below for more details on this.
 
 Your Docker image should use one of our base images (see `PrairieLearn/environments`) in its `FROM` directive. This is crucial, as our base image contains a Python script that will load the job files from S3, unzip them, run your specified scripts, upload the results back to S3, and notify PrairieLearn that the results are available. If you really don't wish to extend from our image, you'll have to duplicate the actions of our script in your own image. The following base images are available on Dockerhub:
+
 * `prairielearn/centos7-base`
 
-Once our script has downloaded and unzipped the files from your job, it will do the following:
-* Run the first of the following scripts that it finds: `/grade/tests/init.sh`, `/grade/shared/init.sh`, `/grade/init.sh`. These correspond to scripts from `tests`, `autograder`, and `environment`, respectively. These scripts can do things like copy files into their correct locations, set up users, and do additional configuration. Crucially, your init script should ensure that `/grade/run.sh` exists.
-* Run `/grade/run.sh`; this script should run your grading process.
+If you have resources like unit testing frameworks or special libraries that should be shared between many questions, you can avoid duplicating them in all questions by placing them in `serverFilesCourse`. Inside a question's `info.json`, you can use the `files` array (similar to the `clientFiles` array) to specify which of those resources should be available for grading jobs. Note that externally graded questions allow you to specify whole directories, not just individual files as with `clientFiles`.
 
-Your grading scripts are responsible for writing the results of your tests into the file `/grade/results/results.json`; the format of that file is specified below. The contents of that file will be transmitted back to PrairieLearn to be saved and shown to the student.
+Each externally graded question can contain a directory called `tests` that contains any files that are specific to that test. If you include a testing framework from `serverFilesCourse`, the `tests` directory would then hold test cases that can be run with that framework.
+
+When we receive a new submission for an externally graded question, we will package up all of the resources you specify and send your grading job to be executed on AWS infrastructure. Our Docker image contains a "driver" script that will coordinate fetching the files for your job, running your script, and sending results back to PrairieLearn. That script will set up the directory structure on the Docker container as follows:
+
+```
+/grade
++-- tests                    # an exact copy of the question's `tests` directory, if present
+|   
++-- shared                   # any shared files specified with the "files" property
+|   +-- testing_framework    # these can be directories, as well as individual files
+|       +-- tester.c
+|       `-- myscript.sh
+|
+`-- student                  # files that the student submitted
+    `-- q_file.py            # files are names as specified by the client in the submission
+```
+
+You must specify an entrypoint script in the `entrypoint` property. This should be an absolute path to something that is executable via `chmod +x /path/to/entrypoint && /path/to/entrypoint`; this could take the form of a shell script, a python script, a compiled executable, or anything else that can be run like that. The absolute path can be determined by looking at the directory structure above. A common case would be to put an entry script in a directory in `serverFilesCourse`, as above; in that case, you'd specify your entrypoint as `/grade/shared/testing_framework/myscript.sh`.
+
+Once the driver script has extracted all your files to the correct locations, it will execute your entrypoint script. By the time your script returns, results should have been written into the file `/grade/results/results.json`; the format of that file is specified below. The contents of that file will be transmitted back to PrairieLearn to be saved and shown to the student.
 
 ## Directory layout
 
 To utilize external grading, you'll need the following:
 
-* `tests` for each question
-* `autograders` that the course will use
-* `environment` folder ~~that contains `DockerFiles` to setup the environment~~
 * `info.json` for each question must enable external grading
 
 The following is an example of a well-structured course layout:
 
 ```
 course
-+-- questions           # all questions for the course (see other doc)
-|   +-- addVector
-|       `-- info.json           # required configuration goes here (see below)
-|       `-- ...                 # some other question files
-|       +-- tests               # folder of test cases
-|           `-- ag.py       
-            `-- soln_out.txt    # testing files
-|        
-|   
-+-- autograders         # all autograders for the course
-|   +-- ag1             # each set of autograder will be identified by its directory name
-|       `-- file1       # some autograder files
-|       `-- file2
-|   +-- ag2
-|       `-- ...
++-- questions           # all questions for the course
+|   `-- addVector
+|       +-- info.json           # required configuration goes here (see below)
+|       |-- ...                 # some other question files
+|       `-- tests               # folder of test cases
+|           +-- ag.py           # testing files
+|           `-- soln_out.txt
 |
-`-- environments        # files needed to configure the grading environment
-    +-- env1            # each environment will be identified by its directory name
-    |   `-- Dockerfile
-    |   `-- .dockerignore
-    |   `-- init.sh          # This will be executed to perform initial setup when the grading job is started
-    +-- env2
++-- serverFilesCourse                  # files that will be shared between questions
+|   +-- my_testing_framework           # related files can be grouped into directories
+|   |   +-- file1
+|   |   `-- file2
+|   `-- my_library
+|       `-- ...
 ```
 
 ## Enabling External Grading for a Question
 
-The following fields must be added to each question's `info.json`:
+The following fields can be added to each question's `info.json`:
 
 ```json
-"autrogradingEnabled": true,
-"environment": "env1",
-"autograderImage": "prairielearn/centos7-base"
+"externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/centos7-base:dev",
+    "entrypoint": "/grade/shared/python_autograder/run.sh",
+    "files": ["python_autograder/"]
+}
 ```
 
-`autograderImage` should correspond to a docker image on a container repository, and will be passed directly to AWS Batch as the `image` field in a job definition. See [here](http://docs.aws.amazon.com/batch/latest/userguide/job_definition_parameters.html) for more information. In the future, PrairieLearn will be able to automatically build and deploy images for the environments in your `environments/` directory, at which point `autograderImage` won't be necessary.
+`image` and `entrypoint` are required, `enabled` and `files` are optional. Note that `enabled` will default to `false` if not present. `enabled` can be used as a killswitch if things start going terribly wrong.
 
-Additionally, you can specify an autograder with `"autograder": "ag1"`. If you specify an autograder `placeholder`, the files from `[course]/autograders/placeholder` will be present in `/grade/shared/` when your job is run.
-
-If `autogradingEnabled` does not exist, external grading will be turned off by default.
+`image` should correspond to a docker image on a container repository, and will be passed directly to AWS Batch as the `image` field in a job definition. See [here](http://docs.aws.amazon.com/batch/latest/userguide/job_definition_parameters.html) for more information.
 
 ## Grading Result
 
@@ -122,7 +116,7 @@ If you are using code from the example question, you can also add additional fie
          "description": "Like Test 1, but harder, you'll probably fail it.",
          "points": 0,
          "max_points": 3,
-         "message": "Make sure that the thing is doing the thing correctly.",
+         "message": "Make sure that your thing is doing the thing correctly.",
          "output": "Running test...\nYour output did not match the expected output."
       }
       ...
@@ -132,10 +126,10 @@ If you are using code from the example question, you can also add additional fie
 
 ## Building a client for an externally-graded question
 
-Your question client in `client.js` will have to submit user files in a specific format. Files are submitted using the usual `submittedAnswer` object. PrairieLearn expects all files to be stored in the `_files` answer as an array of objects:
+Your question client in `client.js` will have to submit user files in a specific format. Files are submitted using the usual `submittedAnswer` object. PrairieLearn expects all files to be stored in the `files` answer as an array of objects:
 
 ```json
-[
+"files": [
     {
         "name": "fib.py",
         "contents": "ZGVmIGZpYihuKToNCiAgaWYgKG4gPT0gMCk6DQogICAgICByZXR1cm4gMA0KICBlbGlmIChuID09IDEpOg0KICAgICAgcmV0dXJuIDENCiAgZWxzZToNCiAgICAgIHJldHVybiBmaWIobiAtIDEpICsgZmliKG4gLSAyKQ=="

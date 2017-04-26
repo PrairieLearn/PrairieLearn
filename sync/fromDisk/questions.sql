@@ -5,15 +5,18 @@ INSERT INTO questions
     deleted_at,                      template_directory,
     topic_id,
     external_grading_enabled,
-    external_grading_autograder,
-    external_grading_environment,
-    external_grading_image)
+    external_grading_image,
+    external_grading_files,
+    external_grading_entrypoint)
 (SELECT
     $uuid, $qid, $qid,     $type::enum_question_type, $title, $options::JSONB, $client_files::TEXT[],
     $course_id::integer, $grading_method::enum_grading_method, $single_variant,
     NULL::timestamp with time zone, $template_directory,
     COALESCE((SELECT id FROM topics WHERE name = $topic AND course_id = $course_id), NULL),
-    $external_grading_enabled, $external_grading_autograder, $external_grading_environment, $external_grading_image
+    $external_grading_enabled,
+    $external_grading_image,
+    $external_grading_files,
+    $external_grading_entrypoint
 )
 ON CONFLICT (uuid) DO UPDATE
 SET
@@ -29,9 +32,9 @@ SET
     topic_id = EXCLUDED.topic_id,
     deleted_at = EXCLUDED.deleted_at,
     external_grading_enabled = EXCLUDED.external_grading_enabled,
-    external_grading_autograder = EXCLUDED.external_grading_autograder,
-    external_grading_environment = EXCLUDED.external_grading_environment,
-    external_grading_image = EXCLUDED.external_grading_image
+    external_grading_image = EXCLUDED.external_grading_image,
+    external_grading_files = EXCLUDED.external_grading_files,
+    external_grading_entrypoint = EXCLUDED.external_grading_entrypoint
 WHERE
     questions.course_id = $course_id
 RETURNING id;

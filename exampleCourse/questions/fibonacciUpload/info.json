@@ -12,8 +12,8 @@
     "gradingMethod": "External",
     "externalGradingOptions": {
         "enabled": true,
-        "autograder": "child_pythondev",
-        "environment": "python-main",
-        "image": "prairielearn/centos7-base"
+        "image": "prairielearn/centos7-base:dev",
+        "files": ["python_autograder/"],
+        "entrypoint": "/grade/shared/python_autograder/run.sh"
     }
 }

@@ -57,9 +57,9 @@ module.exports = {
                         grading_method: q.gradingMethod || 'Internal',
                         single_variant: !!q.singleVariant,
                         external_grading_enabled: (q.externalGradingOptions && q.externalGradingOptions.enabled),
-                        external_grading_autograder: (q.externalGradingOptions && q.externalGradingOptions.autograder),
-                        external_grading_environment: (q.externalGradingOptions && q.externalGradingOptions.environment),
                         external_grading_image: (q.externalGradingOptions && q.externalGradingOptions.image),
+                        external_grading_files: (q.externalGradingOptions && q.externalGradingOptions.files),
+                        external_grading_entrypoint: (q.externalGradingOptions && q.externalGradingOptions.entrypoint),
                     };
                     sqldb.queryOneRow(sql.insert_question, params, function(err, result) {
                         if (ERR(err, callback)) return;

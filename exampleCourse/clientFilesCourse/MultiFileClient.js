@@ -6,7 +6,7 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
 
         // Returns the raw (base-64 encoded) file contents
         function getSubmittedFileContents(name) {
-            var files = simpleClient.submittedAnswer.get('files') || [];
+            var files = simpleClient.submittedAnswer.get('_files') || [];
             var contents = null;
             _.each(files, function(file) {
                 if (file.name === name) {
@@ -18,7 +18,7 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
 
         // contents should be base-64 encoded
         function saveSubmittedFile(name, contents) {
-            var files = simpleClient.submittedAnswer.get('files') || [];
+            var files = simpleClient.submittedAnswer.get('_files') || [];
             files = JSON.parse(JSON.stringify(files)); // deep clone needed to avoid changing backbone object
             var idx = _.findIndex(files, function(file) {
                 if (file.name === name) {
@@ -33,7 +33,7 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
             } else {
                 files[idx].contents = contents;
             }
-            simpleClient.submittedAnswer.set('files', files);
+            simpleClient.submittedAnswer.set('_files', files);
         }
 
         // Uses the same method as Git to check if a file is binary or text:
@@ -152,7 +152,7 @@ define(["SimpleClient", "underscore", "clientCode/dropzone"], function(SimpleCli
                 updateTemplate();
             });
 
-            simpleClient.addOptionalAnswer('files');
+            simpleClient.addOptionalAnswer('_files');
 
             initializeTemplate();
         });
