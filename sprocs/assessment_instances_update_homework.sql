@@ -76,7 +76,7 @@ BEGIN
     updated := FOUND; -- did we process any rows above?
 
     -- determine the correct max_points
-    new_assessment_instance_max_points = assessment_max_points;
+    new_assessment_instance_max_points := assessment_max_points;
     IF new_assessment_instance_max_points IS NULL THEN
         SELECT
             sum(aq.max_points)
@@ -91,7 +91,7 @@ BEGIN
     END IF;
 
     -- update max_points if necessary and log it
-    IF new_assessment_instance_max_points != old_assessment_instance_max_points THEN
+    IF new_assessment_instance_max_points IS DISTINCT FROM old_assessment_instance_max_points THEN
         UPDATE assessment_instances AS ai
         SET
             max_points = new_assessment_instance_max_points
