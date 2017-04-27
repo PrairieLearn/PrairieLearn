@@ -12,6 +12,8 @@
 
   * Add link to detailed instances CSV file on instructor assessment page.
 
+  * Allow development use of non-master git branches for courses.
+
   * Fix env var security in autograder containers (Jordi Paris Ferrer).
 
   * Fix external autograder output display (Nathan Walters).

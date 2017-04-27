@@ -68,7 +68,7 @@ var pullAndUpdate = function(locals, callback) {
                 type: 'pull_from_git',
                 description: 'Pull from remote git repository',
                 command: 'git',
-                arguments: ['pull', '--force', 'origin', 'master'],
+                arguments: ['pull', '--force'],
                 working_directory: locals.course.path,
                 on_success: syncStage2,
             };
