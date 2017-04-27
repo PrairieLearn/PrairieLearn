@@ -1,5 +1,7 @@
+DROP FUNCTION IF EXISTS assessment_points(bigint,integer);
+
 CREATE OR REPLACE FUNCTION
-    assessment_points(
+    assessment_instances_points(
         IN assessment_instance_id bigint,
         IN credit INTEGER,
         OUT points DOUBLE PRECISION,
@@ -27,10 +29,10 @@ BEGIN
     CASE type
         WHEN 'Exam' THEN
             SELECT * INTO points, points_in_grading, score_perc, score_perc_in_grading
-            FROM assessment_points_exam(assessment_instance_id, credit);
+            FROM assessment_instances_points_exam(assessment_instance_id, credit);
         WHEN 'Homework' THEN
             SELECT * INTO points, points_in_grading, score_perc, score_perc_in_grading
-            FROM assessment_points_homework(assessment_instance_id, credit);
+            FROM assessment_instances_points_homework(assessment_instance_id, credit);
         ELSE
             RAISE EXCEPTION 'Unknown assessment type: %', type;
     END CASE;
