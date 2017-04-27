@@ -13,7 +13,7 @@ var assessments = require('../../assessments');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
-var externalGradingSocket = require('../../external-grading-socket');
+var externalGradingSocket = require('../../lib/external-grading-socket');
 
 // FIXME move this to assessments.js for better code reuse; pull the nice
 // error-handling logic from messageQueue.js into this function as well
