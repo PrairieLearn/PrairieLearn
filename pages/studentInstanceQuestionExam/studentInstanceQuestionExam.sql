@@ -12,6 +12,7 @@ LIMIT 1;
 SELECT
     s.*,
     gl.id AS grading_log_id,
+    grading_log_status(gl.id) AS grading_log_status,
     format_date_full_compact(s.date, ci.display_timezone) AS formatted_date,
     CASE
         WHEN s.grading_requested_at IS NOT NULL THEN format_interval($req_date - s.grading_requested_at)
