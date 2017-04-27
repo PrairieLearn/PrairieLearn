@@ -1,3 +1,20 @@
+<% if (submission.grading_method == 'External') { %>
+    <script>
+        if (io) {
+            console.log('connection to socket to receive updates');
+            var socket = io('/external-grading');
+
+            socket.on('change:status', function(msg) {console.log(msg)});
+
+            socket.emit('getStatus', {job_id: <%= submission.grading_log_id %>}, function (msg) {
+                console.log(msg);
+            });
+        } else {
+            console.log('socket.io not present on this webpage');
+        }
+    </script>
+<% } %>
+
 <% if (submission.graded_at == null) { %>
 
     <% if (submission.grading_requested_at == null) { %>

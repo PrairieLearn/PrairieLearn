@@ -9,4 +9,4 @@ SELECT
 FROM
     grading_logs
 WHERE
-    id = $job_id
+    id = $grading_log_id
