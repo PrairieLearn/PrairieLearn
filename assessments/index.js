@@ -9,6 +9,8 @@ var logger = require('../lib/logger');
 var messageQueue = require('../lib/messageQueue');
 var sqldb = require('../lib/sqldb');
 var sqlLoader = require('../lib/sql-loader');
+var externalGradingSocket = require('../lib/external-grading-socket');
+
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -120,6 +122,6 @@ module.exports.processGradingResult = function(content) {
             logger.error('processGradingResult: error',
                          {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
         }
-        //return messageQueue.mqChannel.ack(msg);
+        externalGradingSocket.gradingJobStatusUpdated(content.gradingId);
     });
 };
