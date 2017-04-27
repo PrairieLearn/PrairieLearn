@@ -40,7 +40,8 @@ router.post('/', function(req, res, next) {
         }
 
         const params = {
-            grading_log_id: job_id,
+            grading_log_id: data.job_id,
+            start_time: data.data.start_time,
         };
 
         sql.queryOneRow(sql.update_grading_start_time, params, (err, result) => {
