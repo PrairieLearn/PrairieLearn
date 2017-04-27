@@ -14,6 +14,7 @@ var logger = require('./lib/logger');
 var error = require('./lib/error');
 var config = require('./lib/config');
 var messageQueue = require('./lib/messageQueue');
+var externalGradingSocket = require('./lib/external-grading-socket');
 var assessments = require('./assessments');
 var sqldb = require('./lib/sqldb');
 var models = require('./models');
@@ -381,7 +382,6 @@ if (config.startServer) {
         },
         function(callback) {
             messageQueue.init(assessments.processGradingResult, function(err) {
-                if (err) err = error.newMessage(err, 'Unable to connect to message queue');
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -405,6 +405,12 @@ if (config.startServer) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
+        },
+        function(callback) {
+            externalGradingSocket.init(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            })
         },
         function(callback) {
             serverJobs.init(function(err) {
