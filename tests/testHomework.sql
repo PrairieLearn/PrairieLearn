@@ -75,3 +75,10 @@ WHERE
     v.id = $variant_id
 ORDER BY
     s.date;
+
+-- BLOCK update_max_points
+UPDATE assessments
+SET
+    max_points = 13
+WHERE
+    tid = 'homework1';

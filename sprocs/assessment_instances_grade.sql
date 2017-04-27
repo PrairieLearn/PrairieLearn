@@ -2,7 +2,7 @@ CREATE OR REPLACE FUNCTION
     assessment_instances_grade(
         IN assessment_instance_id bigint,
         IN authn_user_id bigint,
-        IN credit integer,
+        IN credit integer DEFAULT NULL,
         IN only_log_if_score_updated boolean DEFAULT FALSE,
         OUT updated boolean,
         OUT new_points double precision,
@@ -14,15 +14,33 @@ DECLARE
     new_values record;
     new_assessment_instance assessment_instances%ROWTYPE;
     log_update boolean;
+    use_credit integer;
 BEGIN
     SELECT points, points_in_grading, score_perc, score_perc_in_grading
     INTO old_values
     FROM assessment_instances
     WHERE id = assessment_instance_id;
 
+    IF credit IS NOT NULL THEN
+        use_credit := credit;
+    ELSE
+        -- determine credit from the last submission, if any
+        SELECT s.credit
+        INTO use_credit
+        FROM
+            submissions AS s
+            JOIN variants AS v ON (v.id = s.variant_id)
+            JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+        WHERE iq.assessment_instance_id = assessment_instances_grade.assessment_instance_id
+        ORDER BY s.date DESC
+        LIMIT 1;
+
+        use_credit := coalesce(use_credit, 0);
+    END IF;
+
     SELECT *
     INTO new_values
-    FROM assessment_points(assessment_instance_id, credit);
+    FROM assessment_instances_points(assessment_instance_id, use_credit);
 
     UPDATE assessment_instances AS ai
     SET

@@ -33,9 +33,9 @@ module.exports = {
             'assessments_stats.sql',
             'assessments_for_question.sql',
             'tags_for_question.sql',
-            'assessment_points_homework.sql',
-            'assessment_points_exam.sql',
-            'assessment_points.sql',
+            'assessment_instances_points_homework.sql',
+            'assessment_instances_points_exam.sql',
+            'assessment_instances_points.sql',
             'random_unique.sql',
             'question_order.sql',
             'exam_question_status.sql',
@@ -69,6 +69,8 @@ module.exports = {
             'instance_questions_points.sql',
             'instance_questions_grade.sql',
             'submissions_insert.sql',
+            'assessment_instances_update.sql',
+            'assessment_instances_update_homework.sql',
             'grading_log_status.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);

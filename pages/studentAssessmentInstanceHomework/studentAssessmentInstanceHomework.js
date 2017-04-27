@@ -12,36 +12,55 @@ var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
+var ensureUpToDate = (locals, callback) => {
+    const params = [
+        locals.assessment_instance.id,
+        locals.authn_user.user_id,
+    ];
+    sqldb.callOneRow('assessment_instances_update_homework', params, (err, result) => {
+        if (ERR(err, callback)) return;
+
+        if (!result.rows[0].updated) {
+            return callback(null);
+        }
+
+        // we updated the assessment_instance, so now regrade and reload it
+
+        const params = [
+            locals.assessment_instance.id,
+            locals.authn_user.user_id,
+            null, // credit
+            true, // only_log_if_score_updated
+        ];
+        sqldb.callOneRow('assessment_instances_grade', params, (err, result) => {
+            if (ERR(err, callback)) return;
+
+            const params = {assessment_instance_id: locals.assessment_instance.id};
+            sqldb.queryOneRow(sql.select_assessment_instance, params, (err, result) => {
+                if (ERR(err, callback)) return;
+                locals.assessment_instance = result.rows[0];
+                callback(null);
+            });
+        });
+    });
+};
+
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
-    var params = {
-        authn_user_id: res.locals.authn_user.user_id,
-        assessment_instance_id: res.locals.assessment_instance.id,
-        assessment_id: res.locals.assessment.id,
-    };
-    sqldb.query(sql.update_question_list, params, function(err, result) {
+
+    ensureUpToDate(res.locals, (err) => {
         if (ERR(err, next)) return;
 
-        // FIXME: replace the following query with a call to assessment_instances_update_homework
-        var params = {
-            assessment_instance_id: res.locals.assessment_instance.id,
-            assessment_max_points: res.locals.assessment.max_points,
-        };
-        sqldb.queryOneRow(sql.update_max_points, params, function(err, result) {
+        var params = {assessment_instance_id: res.locals.assessment_instance.id};
+        sqldb.query(sql.get_questions, params, function(err, result) {
             if (ERR(err, next)) return;
-            res.locals.assessment_instance.max_points = result.rows[0].max_points;
+            res.locals.questions = result.rows;
 
-            var params = {assessment_instance_id: res.locals.assessment_instance.id};
-            sqldb.query(sql.get_questions, params, function(err, result) {
+            assessments.renderText(res.locals.assessment, res.locals.urlPrefix, function(err, assessment_text_templated) {
                 if (ERR(err, next)) return;
-                res.locals.questions = result.rows;
+                res.locals.assessment_text_templated = assessment_text_templated;
 
-                assessments.renderText(res.locals.assessment, res.locals.urlPrefix, function(err, assessment_text_templated) {
-                    if (ERR(err, next)) return;
-                    res.locals.assessment_text_templated = assessment_text_templated;
-
-                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                });
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
         });
     });

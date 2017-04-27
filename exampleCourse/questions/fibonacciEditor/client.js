@@ -4,7 +4,7 @@ define(["SimpleClient", "text!./question.html", "text!./answer.html", "text!clie
     var client = new SimpleClient.SimpleClient({questionTemplate: questionTemplate, submissionTemplate: submissionTemplate, skipRivets: true});
 
     client.on('renderQuestionFinished', function() {
-        client.addAnswer('files');
+        client.addAnswer('_files');
 
         ace.config.set("packaged", true)
         ace.config.set("basePath", require.toUrl("ace"))
@@ -18,8 +18,8 @@ define(["SimpleClient", "text!./question.html", "text!./answer.html", "text!clie
         });
 
         // We have to decode from base-64
-        if (client.submittedAnswer.has('files')) {
-            var files = client.submittedAnswer.get('files')
+        if (client.submittedAnswer.has('_files')) {
+            var files = client.submittedAnswer.get('_files')
             _.each(files, function(file) {
                 if (file.name === 'fib.py') {
                     editor.setValue(atob(file.contents));
@@ -33,7 +33,7 @@ define(["SimpleClient", "text!./question.html", "text!./answer.html", "text!clie
                 name: 'fib.py',
                 contents: btoa(editor.getValue()),
             }];
-            client.submittedAnswer.set('files', files);
+            client.submittedAnswer.set('_files', files);
         });
     });
 

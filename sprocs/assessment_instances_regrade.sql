@@ -15,9 +15,11 @@ DECLARE
     course_id bigint;
     course_instance_id bigint;
     user_id bigint;
-    credit INTEGER;
     assessment_instance_updated boolean;
 BEGIN
+    -- first update the assessment instance
+    updated := assessment_instances_update(assessment_instance_id, authn_user_id);
+
     -- lock the assessment instance for updating and store old points/score_perc
     SELECT
         ai.points,
@@ -81,31 +83,12 @@ BEGIN
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id);
 
-    updated := (cardinality(updated_question_names) > 0);
-
-    -- determine credit from the last submission, if any
-    SELECT
-        s.credit
-    INTO
-        credit
-    FROM
-        submissions AS s
-        JOIN variants AS v ON (v.id = s.variant_id)
-        JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-    WHERE
-        iq.assessment_instance_id = assessment_instances_regrade.assessment_instance_id
-    ORDER BY
-        s.date DESC
-    LIMIT 1;
-
-    IF credit IS NULL THEN
-        credit := 0;
-    END IF;
+    updated := updated OR (cardinality(updated_question_names) > 0);
 
     -- regrade the assessment instance
     SELECT *
     INTO assessment_instance_updated, new_points, new_score_perc
-    FROM assessment_instances_grade(assessment_instance_id, authn_user_id, credit, TRUE);
+    FROM assessment_instances_grade(assessment_instance_id, authn_user_id, NULL, TRUE);
 
     updated := updated OR assessment_instance_updated;
 END;
