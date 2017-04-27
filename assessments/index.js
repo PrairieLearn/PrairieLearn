@@ -122,6 +122,6 @@ module.exports.processGradingResult = function(content) {
             logger.error('processGradingResult: error',
                          {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
         }
-        externalGradingSocket.gradingJobStatusUpdated(content.gradingId);
+        externalGradingSocket.gradingLogStatusUpdated(content.gradingId);
     });
 };
