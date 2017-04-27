@@ -113,6 +113,24 @@ def main():
     # serialize datetimes to json values by default
     info['start_time'] = datetime.utcnow().isoformat()
 
+    # Notify PL that grading has been started
+    if info['webhook_url']:
+        headers = {'Content-Type': 'application/json'}
+        if info['csrf_token']:
+            log('CSRF Token: %s' % info['csrf_token'])
+            headers['x-csrf-token'] = info['csrf_token']
+
+        data = {}
+        data['start_time'] = info['start_time']
+
+        final_data = {}
+        final_data['data'] = data
+        final_data['event'] = 'grading_start'
+        final_data['job_id'] = info['job_id']
+
+        r = requests.post(info['webhook_url'], data=json.dumps(final_data), headers=headers)
+
+
     environ_error = False
     dev_mode = False
 
