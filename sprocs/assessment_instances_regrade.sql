@@ -18,9 +18,7 @@ DECLARE
     assessment_instance_updated boolean;
 BEGIN
     -- first update the assessment instance
-    SELECT *
-    INTO updated
-    FROM assessment_instances_update(assessment_instance_id, authn_user_id);
+    updated := assessment_instances_update(assessment_instance_id, authn_user_id);
 
     -- lock the assessment instance for updating and store old points/score_perc
     SELECT

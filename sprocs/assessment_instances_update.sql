@@ -24,9 +24,7 @@ BEGIN
         WHEN 'Exam' THEN
             updated := FALSE;
         WHEN 'Homework' THEN
-            SELECT *
-            INTO updated
-            FROM assessment_instances_update_homework(assessment_instance_id, authn_user_id);
+            updated := assessment_instances_update_homework(assessment_instance_id, authn_user_id);
         ELSE
             RAISE EXCEPTION 'Unknown assessment type: %', type;
     END CASE;

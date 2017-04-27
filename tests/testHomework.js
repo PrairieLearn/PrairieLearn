@@ -306,6 +306,48 @@ describe('Homework assessment', function() {
         });
     };
 
+    var checkQuestionScore = function() {
+        describe('check question score', function() {
+            it('should still have the instance_question', function(callback) {
+                var params = {
+                    instance_question_id: locals.instance_question_id,
+                };
+                sqldb.queryOneRow(sql.select_instance_question, params, function(err, result) {
+                    if (ERR(err, callback)) return;
+                    instance_question = result.rows[0];
+                    callback(null);
+                });
+            });
+            it('should have the correct instance_question points', function() {
+                assert.approximately(instance_question.points, locals.expectedResult.instance_question_points, 1e-6);
+            });
+            it('should have the correct instance_question score_perc', function() {
+                assert.approximately(instance_question.score_perc, locals.expectedResult.instance_question_score_perc, 1e-6);
+            });
+        });
+    };
+
+    var checkAssessmentScore = function() {
+        describe('check assessment score', function() {
+            it('should still have the assessment_instance', function(callback) {
+                var params = {
+                    assessment_instance_id: assessment_instance.id,
+                };
+                sqldb.queryOneRow(sql.select_assessment_instance, params, function(err, result) {
+                    if (ERR(err, callback)) return;
+                    assessment_instance = result.rows[0];
+                    callback(null);
+                });
+            });
+            it('should have the correct assessment_instance points', function() {
+                assert.approximately(assessment_instance.points, locals.expectedResult.assessment_instance_points, 1e-6);
+            });
+            it('should have the correct assessment_instance score_perc', function() {
+                assert.approximately(assessment_instance.score_perc, locals.expectedResult.assessment_instance_score_perc, 1e-6);
+            });
+        });
+    };
+
     describe('1. submit correct answer to question 1', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
@@ -455,7 +497,32 @@ describe('Homework assessment', function() {
         doSubmission();
     });
 
-    describe('7. submit correct answer to question 2', function() {
+    describe('7. submit correct answer to question 1', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals = {
+                    instance_question_id: instance_questions[0].id,
+                    expectedResult: {
+                        submission_score: 1,
+                        submission_correct: true,
+                        instance_question_points: 5,
+                        instance_question_score_perc: 5/5 * 100,
+                        assessment_instance_points: 7,
+                        assessment_instance_score_perc: 7/15 * 100,
+                    },
+                    getSubmittedAnswer: function(variant) {
+                        return {
+                            wx: variant.true_answer.wx,
+                            wy: variant.true_answer.wy,
+                        };
+                    },
+                };
+            });
+        });
+        doSubmission();
+    });
+
+    describe('8. submit correct answer to question 2', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -479,7 +546,7 @@ describe('Homework assessment', function() {
         doSubmission();
     });
 
-    describe('8. submit incorrect answer to question 2', function() {
+    describe('9. submit incorrect answer to question 2', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -503,7 +570,7 @@ describe('Homework assessment', function() {
         doSubmission();
     });
 
-    describe('9. submit correct answer to question 2', function() {
+    describe('10. submit correct answer to question 2', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals = {
@@ -527,51 +594,95 @@ describe('Homework assessment', function() {
         doSubmission();
     });
 
-    describe('10. submit correct answer to question 2', function() {
-        describe('setting up the submission data', function() {
-            it('should succeed', function() {
-                locals = {
-                    instance_question_id: instance_questions[1].id,
-                    expectedResult: {
-                        submission_score: 1,
-                        submission_correct: true,
-                        instance_question_points: 10,
-                        instance_question_score_perc: 10/10 * 100,
-                        assessment_instance_points: 15,
-                        assessment_instance_score_perc: 15/15 * 100,
-                    },
-                    getSubmittedAnswer: function(variant) {
-                        return {
-                            key: variant.true_answer.key,
-                        };
-                    },
-                };
+    describe('11. regrading', function() {
+        describe('change max_points', function() {
+            it('should succeed', function(callback) {
+                sqldb.query(sql.update_max_points, [], function(err, result) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
             });
         });
-        doSubmission();
-    });
-
-    describe('11. submit correct answer to question 2', function() {
-        describe('setting up the submission data', function() {
-            it('should succeed', function() {
-                locals = {
-                    instance_question_id: instance_questions[1].id,
-                    expectedResult: {
-                        submission_score: 1,
-                        submission_correct: true,
-                        instance_question_points: 10,
-                        instance_question_score_perc: 10/10 * 100,
-                        assessment_instance_points: 15,
-                        assessment_instance_score_perc: 15/15 * 100,
-                    },
-                    getSubmittedAnswer: function(variant) {
-                        return {
-                            key: variant.true_answer.key,
-                        };
-                    },
-                };
+        describe('GET to instructorAssessment URL', function() {
+            it('should succeed', function(callback) {
+                instructorAssessmentUrl = courseInstanceBaseUrl + '/instructor/assessment/' + assessment_id + '/';
+                request({url: instructorAssessmentUrl}, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    res = response;
+                    page = body;
+                    callback(null);
+                });
+            });
+            it('should parse', function() {
+                $ = cheerio.load(page);
+            });
+            it('should have a CSRF token', function() {
+                elemList = $('form[name="regrade-all-form"] input[name="csrfToken"]');
+                assert.lengthOf(elemList, 1);
+                assert.deepProperty(elemList[0], 'attribs.value');
+                csrfToken = elemList[0].attribs.value;
+                assert.isString(csrfToken);
             });
         });
-        doSubmission();
+        describe('POST to instructorAssessment URL for regrading', function() {
+            it('should succeed', function(callback) {
+                var form = {
+                    postAction: 'regrade_all',
+                    assessment_id: assessment_id,
+                    csrfToken: csrfToken,
+                };
+                request.post({url: instructorAssessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    callback(null);
+                });
+            });
+        });
+        describe('check the regrading succeeded', function() {
+            describe('setting up the expected question 1 results', function() {
+                it('should succeed', function() {
+                    locals = {
+                        instance_question_id: instance_questions[0].id,
+                        expectedResult: {
+                            instance_question_points: 5,
+                            instance_question_score_perc: 5/5 * 100,
+                        },
+                    };
+                });
+            });
+            checkQuestionScore();
+            describe('setting up the expected question 2 results', function() {
+                it('should succeed', function() {
+                    locals = {
+                        instance_question_id: instance_questions[1].id,
+                        expectedResult: {
+                            instance_question_points: 8,
+                            instance_question_score_perc: 8/10 * 100,
+                        },
+                    };
+                });
+            });
+            checkQuestionScore();
+            describe('setting up the expected assessment results', function() {
+                it('should succeed', function() {
+                    locals = {
+                        expectedResult: {
+                            assessment_instance_points: 13,
+                            assessment_instance_score_perc: 13/13 * 100,
+                        },
+                    };
+                });
+            });
+            checkAssessmentScore();
+        });
     });
 });

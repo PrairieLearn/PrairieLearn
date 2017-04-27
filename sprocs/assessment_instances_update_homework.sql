@@ -5,6 +5,8 @@ CREATE OR REPLACE FUNCTION
         OUT updated boolean
     )
 AS $$
+-- prefer column references over variables, needed for ON CONFLICT
+#variable_conflict use_column
 DECLARE
     course_id bigint;
     user_id bigint;
@@ -16,7 +18,7 @@ DECLARE
     new_assessment_instance_max_points double precision;
 BEGIN
     -- lock the assessment instance for update
-    SELECT ai.id
+    PERFORM ai.id
     FROM assessment_instances AS ai
     WHERE ai.id = assessment_instance_id
     FOR UPDATE OF ai;
@@ -30,7 +32,7 @@ BEGIN
         assessment_max_points, old_assessment_instance_max_points
     FROM
         assessment_instances AS ai
-        JOIN assesssments AS a ON (a.id = ai.assessment_id)
+        JOIN assessments AS a ON (a.id = ai.assessment_id)
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
         JOIN pl_courses AS c ON (c.id = ci.course_id)
         JOIN users AS u ON (u.user_id = ai.user_id)
@@ -69,11 +71,9 @@ BEGIN
         'instance_questions', iq.id,
         'insert', to_jsonb(iq.*)
     FROM
-        new_instance_questions AS iq
-    RETURNING count(iq.id)
-    INTO new_instance_questions_count;
+        new_instance_questions AS iq;
 
-    updated := (new_instance_questions_count > 0);
+    updated := FOUND; -- did we process any rows above?
 
     -- determine the correct max_points
     new_assessment_instance_max_points = assessment_max_points;
