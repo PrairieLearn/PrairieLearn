@@ -210,11 +210,12 @@ SELECT
     hist
 FROM assessments_duration_stats($assessment_id) AS ads;
 
--- BLOCK assessment_instance_data
+-- BLOCK select_assessment_instances
 SELECT
     (aset.name || ' ' || a.number) AS assessment_label,
-    u.user_id, u.uid, u.name, e.role, ai.score_perc,
-    ai.points, ai.max_points,
+    u.user_id, u.uid, u.name, e.role,
+    substring(u.uid from '^[^@]+') AS username,
+    ai.score_perc, ai.points, ai.max_points,
     ai.number,ai.id AS assessment_instance_id,ai.open,
     CASE
         WHEN ai.open AND ai.date_limit IS NOT NULL
@@ -225,7 +226,8 @@ SELECT
     format_date_iso8601(ai.date, ci.display_timezone) AS date_formatted,
     format_interval(ai.duration) AS duration,
     EXTRACT(EPOCH FROM ai.duration) AS duration_secs,
-    EXTRACT(EPOCH FROM ai.duration) / 60 AS duration_mins
+    EXTRACT(EPOCH FROM ai.duration) / 60 AS duration_mins,
+    (row_number() OVER (PARTITION BY u.user_id ORDER BY score_perc DESC, ai.number DESC, ai.id DESC)) = 1 AS highest_score
 FROM
     assessments AS a
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -236,54 +238,7 @@ FROM
 WHERE
     a.id = $assessment_id
 ORDER BY
-    e.role DESC NULLS FIRST, u.uid, u.user_id, ai.number;
-
-
--- BLOCK assessment_instance_scores
-SELECT
-    u.uid,
-    max(ai.score_perc) AS score_perc
-FROM
-    assessments AS a
-    JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-    JOIN users AS u ON (u.user_id = ai.user_id)
-WHERE
-    a.id = $assessment_id
-GROUP BY
-    u.user_id
-ORDER BY
-    u.uid, u.user_id;
-
-
--- BLOCK assessment_instance_scores_by_username
-SELECT
-    regexp_replace(u.uid, '@.*', '') AS username,
-    max(ai.score_perc) AS score_perc
-FROM
-    assessments AS a
-    JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-    JOIN users AS u ON (u.user_id = ai.user_id)
-WHERE
-    a.id = $assessment_id
-GROUP BY
-    u.user_id
-ORDER BY
-    u.uid, u.user_id;
-
-
--- BLOCK assessment_instance_scores_all
-SELECT
-    u.uid,
-    ai.number,
-    ai.score_perc
-FROM
-    assessments AS a
-    JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-    JOIN users AS u ON (u.user_id = ai.user_id)
-WHERE
-    a.id = $assessment_id
-ORDER BY
-    u.uid, u.user_id, ai.number;
+    e.role DESC NULLS FIRST, u.uid, u.user_id, ai.number, ai.id;
 
 
 -- BLOCK select_regrading_job_sequences

@@ -445,6 +445,16 @@
           <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Downloads</h3>
         </div>
 
+        <% if (assessment.multiple_instance) { %>
+        <div class="panel-body">
+          <p>
+            <small>
+              This is a <strong>multiple instance</strong> assessment, so each student may have more than one assessment instance. The CSV files are available in plain and <strong><tt>_all</tt></strong> versions. The plain versions contain one record per student, which is taken to be the assessment instance for that student with the maximum percentage score. The <strong><tt>_all</tt></strong> CSV files contain one record per assessment instance, possibly including more than one record per student.
+            </small>
+          </p>
+        </div>
+        <% } // assessment.multiple_instance %>
+
         <table class="table table-condensed table-hover">
           <thead>
             <tr>
@@ -458,44 +468,110 @@
                 <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= scoresCsvFilename %>"><%= scoresCsvFilename %></a>
               </td>
               <td>
-                Total percentage scores for all students. Scores range
-                from 0 to 100 (or higher if bonus credit was
-                given). For assessments with multiple instances per
-                student, the maximum assessment instance score for the
-                student is returned.
+                Total percentage score for each student. Scores range
+                from 0 to 100 (or higher if bonus credit was given).
               </td>
             </tr>
+            <% if (assessment.multiple_instance) { %>
+            <tr>
+              <td>
+                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= scoresAllCsvFilename %>"><%= scoresAllCsvFilename %></a>
+              </td>
+              <td>
+                Total percentage score for each assessment
+                instance. Scores range from 0 to 100 (or higher if
+                bonus credit was given).
+              </td>
+            </tr>
+            <% } // assessment.multiple_instance %>
             <tr>
               <td>
                 <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= scoresByUsernameCsvFilename %>"><%= scoresByUsernameCsvFilename %></a>
               </td>
               <td>
-                Total percentage scores for all students, formatted
-                for upload into LMS gradebooks. Scores range from 0 to
-                100 (or higher if bonus credit was given). For
-                assessments with multiple instances per student, the
-                maximum assessment instance score for the student is
-                returned.
+                Total percentage score for each student, formatted by
+                username for upload into LMS gradebooks. Scores range
+                from 0 to 100 (or higher if bonus credit was given).
               </td>
             </tr>
+            <% if (assessment.multiple_instance) { %>
             <tr>
               <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= allInstanceScoresCsvFilename %>"><%= allInstanceScoresCsvFilename %></a>
+                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= scoresByUsernameAllCsvFilename %>"><%= scoresByUsernameAllCsvFilename %></a>
               </td>
               <td>
-                Total percentage scores for all students and for all
-                assessment instances. Scores range from 0 to 100 (or
-                higher if bonus credit was given).
+                Total percentage score for each assessment instance,
+                formatted by username for upload into LMS
+                gradebooks. Scores range from 0 to 100 (or higher if
+                bonus credit was given).
               </td>
             </tr>
+            <% } // assessment.multiple_instance %>
+            <tr>
+              <td>
+                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= pointsCsvFilename %>"><%= pointsCsvFilename %></a>
+              </td>
+              <td>
+                Total points for each student. Points range
+                from 0 to the maximum for this assessment.
+              </td>
+            </tr>
+            <% if (assessment.multiple_instance) { %>
+            <tr>
+              <td>
+                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= pointsAllCsvFilename %>"><%= pointsAllCsvFilename %></a>
+              </td>
+              <td>
+                Total points for each assessment instance. Points
+                range from 0 to the maximum for this assessment.
+              </td>
+            </tr>
+            <% } // assessment.multiple_instance %>
+            <tr>
+              <td>
+                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= pointsByUsernameCsvFilename %>"><%= pointsByUsernameCsvFilename %></a>
+              </td>
+              <td>
+                Total points for each student, formatted by username
+                for upload into LMS gradebooks. Points range from 0 to
+                100 (or higher if bonus credit was given).
+              </td>
+            </tr>
+            <% if (assessment.multiple_instance) { %>
+            <tr>
+              <td>
+                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= pointsByUsernameAllCsvFilename %>"><%= pointsByUsernameAllCsvFilename %></a>
+              </td>
+              <td>
+                Total points for each assessment instance, formatted
+                by username for upload into LMS gradebooks. Points
+                range from 0 to 100 (or higher if bonus credit was
+                given).
+              </td>
+            </tr>
+            <% } // assessment.multiple_instance %>
             <tr>
               <td>
                 <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= instancesCsvFilename %>"><%= instancesCsvFilename %></a>
               </td>
               <td>
-                Detailed data about all assessment instances. Includes points, percentage scores, durations, and other information.
+                Detailed data for each student. Includes points,
+                maximum points, percentage score, duration, and other
+                information.
               </td>
             </tr>
+            <% if (assessment.multiple_instance) { %>
+            <tr>
+              <td>
+                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= instancesAllCsvFilename %>"><%= instancesAllCsvFilename %></a>
+              </td>
+              <td>
+                Detailed data for each assessment instance. Includes
+                points, maximum points, percentage score, duration,
+                and other information.
+              </td>
+            </tr>
+            <% } // assessment.multiple_instance %>
             <tr>
               <td>
                 <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= allSubmissionsCsvFilename %>"><%= allSubmissionsCsvFilename %></a>

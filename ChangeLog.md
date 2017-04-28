@@ -1,7 +1,7 @@
 
 # ChangeLog
 
-* __2.7.0__ - 2017-04-26
+* __2.7.0__ - 2017-04-28
 
   * Add `/pl/webhooks/ping` endpoint for automated health checks.
 
@@ -11,6 +11,8 @@
     (Nathan Walters).
 
   * Add link to detailed instances CSV file on instructor assessment page.
+
+  * Add more assessment CSV download options.
 
   * Allow development use of non-master git branches for courses.
 
