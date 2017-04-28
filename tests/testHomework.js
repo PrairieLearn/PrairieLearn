@@ -315,14 +315,17 @@ describe('Homework assessment', function() {
                 sqldb.queryOneRow(sql.select_instance_question, params, function(err, result) {
                     if (ERR(err, callback)) return;
                     instance_question = result.rows[0];
+                    console.log('checkQuestionScore: instance_question', instance_question);
                     callback(null);
                 });
             });
             it('should have the correct instance_question points', function() {
                 assert.approximately(instance_question.points, locals.expectedResult.instance_question_points, 1e-6);
+                console.log('checkQuestionScore: finished instance_question points');
             });
             it('should have the correct instance_question score_perc', function() {
                 assert.approximately(instance_question.score_perc, locals.expectedResult.instance_question_score_perc, 1e-6);
+                console.log('checkQuestionScore: finished instance_question score_perc');
             });
         });
     };
@@ -336,14 +339,17 @@ describe('Homework assessment', function() {
                 sqldb.queryOneRow(sql.select_assessment_instance, params, function(err, result) {
                     if (ERR(err, callback)) return;
                     assessment_instance = result.rows[0];
+                    console.log('checkAssessmentScore: assessment_instance', assessment_instance);
                     callback(null);
                 });
             });
             it('should have the correct assessment_instance points', function() {
                 assert.approximately(assessment_instance.points, locals.expectedResult.assessment_instance_points, 1e-6);
+                console.log('checkAssessmentScore: finished assessment_instance points');
             });
             it('should have the correct assessment_instance score_perc', function() {
                 assert.approximately(assessment_instance.score_perc, locals.expectedResult.assessment_instance_score_perc, 1e-6);
+                console.log('checkAssessmentScore: finished assessment_instance score_perc');
             });
         });
     };
@@ -636,6 +642,7 @@ describe('Homework assessment', function() {
                     assessment_id: assessment_id,
                     csrfToken: csrfToken,
                 };
+                console.log('about to POST to instructorAssessment URL for regrading');
                 request.post({url: instructorAssessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
                         return callback(error);
@@ -643,6 +650,7 @@ describe('Homework assessment', function() {
                     if (response.statusCode != 200) {
                         return callback(new Error('bad status: ' + response.statusCode));
                     }
+                    console.log('finished POST to instructorAssessment URL for regrading');
                     callback(null);
                 });
             });
@@ -657,6 +665,7 @@ describe('Homework assessment', function() {
                             instance_question_score_perc: 5/5 * 100,
                         },
                     };
+                    console.log('finished setting locals for question 1 results');
                 });
             });
             checkQuestionScore();
@@ -669,6 +678,7 @@ describe('Homework assessment', function() {
                             instance_question_score_perc: 8/10 * 100,
                         },
                     };
+                    console.log('finished setting locals for question 2 results');
                 });
             });
             checkQuestionScore();
@@ -680,6 +690,7 @@ describe('Homework assessment', function() {
                             assessment_instance_score_perc: 13/13 * 100,
                         },
                     };
+                    console.log('finished setting locals for assessment results');
                 });
             });
             checkAssessmentScore();

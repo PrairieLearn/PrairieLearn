@@ -18,6 +18,7 @@ var initConString = 'postgres://localhost/postgres';
 
 module.exports = {
     before: function(callback) {
+        console.log('helperDb.before: start');
         // long timeout because DROP DATABASE might take a long time to error
         // if other processes have an open connection to that database
         this.timeout(10000);
@@ -88,11 +89,13 @@ module.exports = {
             },
         ], function(err) {
             if (ERR(err, callback)) return;
+            console.log('helperDb.before: end');
             callback(null);
         });
     },
 
     after: function(callback) {
+        console.log('helperDb.after: start');
         var client;
         async.series([
             function(callback) {
@@ -120,6 +123,7 @@ module.exports = {
             },
         ], function(err) {
             if (ERR(err, callback)) return;
+            console.log('helperDb.after: end');
             callback(null);
         });
     },
