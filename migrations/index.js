@@ -99,7 +99,7 @@ module.exports.init = function(callback) {
                     callback(null);
                 }
             );
-        }
+        },
     ], (err) => {
         if (ERR(err, callback)) return;
         logger.verbose('Successfully completed DB schema migration');
