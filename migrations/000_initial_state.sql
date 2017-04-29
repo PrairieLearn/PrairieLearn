@@ -103,7 +103,7 @@ CREATE TABLE IF NOT EXISTS administrators (
     user_id BIGINT NOT NULL UNIQUE REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE
 );
 
--- courses
+-- pl_courses
 CREATE TABLE IF NOT EXISTS pl_courses (
     id BIGSERIAL PRIMARY KEY,
     short_name text,
