@@ -17,7 +17,6 @@ var messageQueue = require('./lib/messageQueue');
 var externalGradingSocket = require('./lib/external-grading-socket');
 var assessments = require('./assessments');
 var sqldb = require('./lib/sqldb');
-var models = require('./models');
 var migrations = require('./migrations');
 var sprocs = require('./sprocs');
 var cron = require('./cron');
@@ -353,12 +352,6 @@ if (config.startServer) {
             sqldb.init(pgConfig, idleErrorHandler, function(err) {
                 if (ERR(err, callback)) return;
                 logger.verbose('Successfully connected to database');
-                callback(null);
-            });
-        },
-        function(callback) {
-            models.init(function(err) {
-                if (ERR(err, callback)) return;
                 callback(null);
             });
         },
