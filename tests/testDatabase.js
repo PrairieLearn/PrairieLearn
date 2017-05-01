@@ -1,4 +1,10 @@
-require('should');
+var ERR = require('async-stacktrace');
+var async = require('async');
+var pg = require('pg');
+var assert = require('chai').assert;
+
+var models = require('../models');
+var migrations = require('../migrations');
 var sqldb = require('../lib/sqldb');
 var sqlLoader = require('../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
@@ -8,39 +14,56 @@ var postgresqlUser = 'postgres';
 var postgresqlHost = 'localhost';
 var initConString = 'postgres://localhost/postgres';
 
-describe('database schemas', () => {
-    it('should be the same when constructed from models or migrations', (callback) => {
+describe('database schemas', function() {
+    it('tables should be the same when constructed from models or migrations', function(callback) {
+        this.timeout(10000);
         let modelsTables, migrationsTables, modelsSchemas, migrationsSchemas;
         async.series([
-            (callback) => setupNamedDatabase('models_test', callback),
+            (callback) => setupNamedDatabaseWithInit('models_test', models, callback),
             (callback) => {
                 sqldb.query(sql.get_tables, [], function(err, result) {
                     if (ERR(err, callback)) return;
-                    modelsTables = result.rows;
+                    modelsTables = result.rows.map(row => row.table_name);
                     callback(null);
                 });
             },
             (callback) => tearDownNamedDatabase('models_test', callback),
-            (callback) => setupNamedDatabase('migrations_test', callback),
+            (callback) => setupNamedDatabaseWithInit('migrations_test', migrations, callback),
             (callback) => {
                 sqldb.query(sql.get_tables, [], function(err, result) {
                     if (ERR(err, callback)) return;
-                    migrationsTables = result.rows;
+                    migrationsTables = result.rows.map(row => row.table_name);
                     callback(null);
                 });
             },
             (callback) => tearDownNamedDatabase('migrations_test', callback),
         ], (err) => {
             if (ERR(err, callback)) return;
-            console.log(modelsTables);
-            console.log(migrationsTables);
-            callback(null);
+
+            let missingFromModels = migrationsTables.filter(table => modelsTables.indexOf(table) < 0);
+            let missingFromMigrations = modelsTables.filter(table => migrationsTables.indexOf(table) < 0);
+
+            if (missingFromModels.length == 0 && missingFromMigrations.length == 0) {
+                callback(null);
+            } else {
+                let err = 'Error:\n';
+                if (missingFromModels.length > 0) {
+                    err += 'The following tables are missing from the database constructed with models:\n';
+                    missingFromModels.forEach(table => err += `${table}\n`)
+                }
+                if (missingFromMigrations.length > 0) {
+                    err += 'The following tables are missing from the database constructed with migrations:\n';
+                    missingFromMigrations.forEach(table => err += `${table}\n`)
+                }
+                callback(err);
+            }
         })
     });
 });
 
-function setupNamedDatabase(databaseName, callback) {
-    this.timeout(10000);
+function setupNamedDatabaseWithInit(databaseName, init, callback) {
+    if (!init || !init.init || typeof init.init !== 'function') callback(new Error('invalid init object!'));
+
     var client;
     async.series([
         function(callback) {
@@ -69,7 +92,7 @@ function setupNamedDatabase(databaseName, callback) {
         function(callback) {
             var pgConfig = {
                 user: postgresqlUser,
-                database: postgresqlDatabase,
+                database: databaseName,
                 host: postgresqlHost,
                 max: 10,
                 idleTimeoutMillis: 30000,
@@ -83,13 +106,7 @@ function setupNamedDatabase(databaseName, callback) {
             });
         },
         function(callback) {
-            models.init(function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
-            migrations.init(function(err) {
+            init.init(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
