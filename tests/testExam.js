@@ -28,6 +28,7 @@ describe('Exam assessment', function() {
     var locals = {}, savedVariant, questionSavedCsrfToken;
     var assessmentGradeSavedCsrfToken, assessmentFinishSavedCsrfToken;
     var preStartTime, postStartTime, preEndTime, postEndTime, assessment_instance_duration;
+    var job_sequence_id, job_sequence_status;
 
     describe('database', function() {
         it('should contain E1', function(callback) {
@@ -985,6 +986,33 @@ describe('Exam assessment', function() {
                     }
                     callback(null);
                 });
+            });
+        });
+        describe('The regrading job sequence', function() {
+            it('should have an id', function(callback) {
+                sqldb.queryOneRow(sql.select_last_job_sequence, [], (err, result) => {
+                    if (ERR(err, callback)) return;
+                    job_sequence_id = result.rows[0].id;
+                    callback(null);
+                });
+            });
+            it('should complete', function(callback) {
+                var checkComplete = function() {
+                    params = {job_sequence_id};
+                    sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
+                        if (ERR(err, callback)) return;
+                        job_sequence_status = result.rows[0].status;
+                        if (job_sequence_status == 'Running') {
+                            setTimeout(checkComplete, 10);
+                        } else {
+                            callback(null);
+                        }
+                    });
+                };
+                setTimeout(checkComplete, 10);
+            });
+            it('should be successful', function() {
+                assert.equal(job_sequence_status, 'Success');
             });
         });
         describe('check the regrading succeeded', function() {
