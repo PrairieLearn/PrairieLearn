@@ -24,7 +24,6 @@ var courseDir = 'exampleCourse';
 
 module.exports = {
     before: function(callback) {
-        console.log('helperServer.before: start');
         var that = this;
         async.series([
             function(callback) {
@@ -66,13 +65,11 @@ module.exports = {
             },
         ], function(err) {
             if (ERR(err, callback)) return;
-            console.log('helperServer.before: end');
             callback(null);
         });
     },
 
     after: function(callback) {
-        console.log('helperServer.after: start');
         async.series([
             function(callback) {
                 helperDb.after(function(err) {
@@ -88,7 +85,6 @@ module.exports = {
             },
         ], function(err) {
             if (ERR(err, callback)) return;
-            console.log('helperServer.after: end');
             callback(null);
         });
     },

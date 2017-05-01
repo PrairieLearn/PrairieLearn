@@ -1,6 +1,8 @@
 
 # ChangeLog
 
+  * Fix async handling in regrading unit tests.
+
 * __2.7.0__ - 2017-04-28
 
   * Add `/pl/webhooks/ping` endpoint for automated health checks.

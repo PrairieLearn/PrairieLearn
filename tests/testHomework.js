@@ -27,6 +27,7 @@ describe('Homework assessment', function() {
     var csrfToken, instance_question, instance_question_1_id, instance_question_2_id;
     var locals = {};
     var preStartTime, postStartTime, preEndTime, postEndTime, assessment_instance_duration;
+    var job_sequence_id, job_sequence_status;
 
     describe('database', function() {
         it('should contain HW1', function(callback) {
@@ -315,17 +316,14 @@ describe('Homework assessment', function() {
                 sqldb.queryOneRow(sql.select_instance_question, params, function(err, result) {
                     if (ERR(err, callback)) return;
                     instance_question = result.rows[0];
-                    console.log('checkQuestionScore: instance_question', instance_question);
                     callback(null);
                 });
             });
             it('should have the correct instance_question points', function() {
                 assert.approximately(instance_question.points, locals.expectedResult.instance_question_points, 1e-6);
-                console.log('checkQuestionScore: finished instance_question points');
             });
             it('should have the correct instance_question score_perc', function() {
                 assert.approximately(instance_question.score_perc, locals.expectedResult.instance_question_score_perc, 1e-6);
-                console.log('checkQuestionScore: finished instance_question score_perc');
             });
         });
     };
@@ -339,17 +337,14 @@ describe('Homework assessment', function() {
                 sqldb.queryOneRow(sql.select_assessment_instance, params, function(err, result) {
                     if (ERR(err, callback)) return;
                     assessment_instance = result.rows[0];
-                    console.log('checkAssessmentScore: assessment_instance', assessment_instance);
                     callback(null);
                 });
             });
             it('should have the correct assessment_instance points', function() {
                 assert.approximately(assessment_instance.points, locals.expectedResult.assessment_instance_points, 1e-6);
-                console.log('checkAssessmentScore: finished assessment_instance points');
             });
             it('should have the correct assessment_instance score_perc', function() {
                 assert.approximately(assessment_instance.score_perc, locals.expectedResult.assessment_instance_score_perc, 1e-6);
-                console.log('checkAssessmentScore: finished assessment_instance score_perc');
             });
         });
     };
@@ -642,7 +637,6 @@ describe('Homework assessment', function() {
                     assessment_id: assessment_id,
                     csrfToken: csrfToken,
                 };
-                console.log('about to POST to instructorAssessment URL for regrading');
                 request.post({url: instructorAssessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
                         return callback(error);
@@ -650,9 +644,35 @@ describe('Homework assessment', function() {
                     if (response.statusCode != 200) {
                         return callback(new Error('bad status: ' + response.statusCode));
                     }
-                    console.log('finished POST to instructorAssessment URL for regrading');
                     callback(null);
                 });
+            });
+        });
+        describe('The regrading job sequence', function() {
+            it('should have an id', function(callback) {
+                sqldb.queryOneRow(sql.select_last_job_sequence, [], (err, result) => {
+                    if (ERR(err, callback)) return;
+                    job_sequence_id = result.rows[0].id;
+                    callback(null);
+                });
+            });
+            it('should complete', function(callback) {
+                var checkComplete = function() {
+                    params = {job_sequence_id};
+                    sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
+                        if (ERR(err, callback)) return;
+                        job_sequence_status = result.rows[0].status;
+                        if (job_sequence_status == 'Running') {
+                            setTimeout(checkComplete, 10);
+                        } else {
+                            callback(null);
+                        }
+                    });
+                };
+                setTimeout(checkComplete, 10);
+            });
+            it('should be successful', function() {
+                assert.equal(job_sequence_status, 'Success');
             });
         });
         describe('check the regrading succeeded', function() {
@@ -665,7 +685,6 @@ describe('Homework assessment', function() {
                             instance_question_score_perc: 5/5 * 100,
                         },
                     };
-                    console.log('finished setting locals for question 1 results');
                 });
             });
             checkQuestionScore();
@@ -678,7 +697,6 @@ describe('Homework assessment', function() {
                             instance_question_score_perc: 8/10 * 100,
                         },
                     };
-                    console.log('finished setting locals for question 2 results');
                 });
             });
             checkQuestionScore();
@@ -690,7 +708,6 @@ describe('Homework assessment', function() {
                             assessment_instance_score_perc: 13/13 * 100,
                         },
                     };
-                    console.log('finished setting locals for assessment results');
                 });
             });
             checkAssessmentScore();
