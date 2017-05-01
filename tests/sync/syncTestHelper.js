@@ -5,6 +5,7 @@ var config = require('../../config'); // we will use the default PrairieLearn/ex
 config.sdbAddress = 'postgres://localhost/pltestdb';
 var sqldb = require('../../sqldb');
 var models = require('../../models');
+var migrations = require('../../migrations');
 
 module.exports = {
     syncSemesters: require('../../sync/fromDisk/semesters'),
@@ -24,7 +25,7 @@ module.exports = {
                 client.query('CREATE DATABASE ' + testDB + ';', function(err, result) {
                     if (err) return done(err);
                     client.end();
-                    models.init();
+                    migrations.init();
                     sqldb.init(function(err) {
                         if (err) return done(err);
                         done();

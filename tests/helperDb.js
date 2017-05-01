@@ -5,7 +5,6 @@ var pg = require('pg');
 
 var config = require('../lib/config');
 var sqldb = require('../lib/sqldb');
-var models = require('../models');
 var migrations = require('../migrations');
 var sprocs = require('../sprocs');
 var cron = require('../cron');
@@ -14,7 +13,7 @@ var courseDB = require('../lib/course-db');
 var postgresqlUser = 'postgres';
 var postgresqlDatabase = 'pltest';
 var postgresqlHost = 'localhost';
-var initConString = 'postgres://localhost/postgres';
+var initConString = 'postgres://postgres@localhost/postgres';
 
 module.exports = {
     before: function(callback) {
@@ -58,12 +57,6 @@ module.exports = {
                     throw Error('idle client error', err);
                 };
                 sqldb.init(pgConfig, idleErrorHandler, function(err) {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            },
-            function(callback) {
-                models.init(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });

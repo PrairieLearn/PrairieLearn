@@ -13,6 +13,9 @@ module.exports = {
     init: function(callback) {
         logger.verbose('Starting DB model initialization');
         async.eachSeries([
+            // tracking migrations
+            'migrations.sql',
+
             // types
             'enum_mode.sql',
             'enum_question_type.sql',
@@ -35,7 +38,7 @@ module.exports = {
             'courses.sql',
             'exams.sql',
             'reservations.sql',
-            
+
             // tables synced from git repo
             'course_instances.sql',
             'course_instance_access_rules.sql',

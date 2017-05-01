@@ -33,7 +33,6 @@ module.exports.init = function(callback) {
             });
         },
         (last_migration, callback) => {
-            console.log("Type: " + typeof callback)
             fs.readdir(__dirname, (err, files) => {
                 if (ERR(err, callback)) return;
 
@@ -42,12 +41,10 @@ module.exports.init = function(callback) {
                     .filter(file => regex.test(file))
                     .map(file => {
                         const index = Number.parseInt(regex.exec(file)[1]);
-                        const res = {
+                        return {
                             index: index,
                             filename: file,
                         };
-                        console.log(res);
-                        return res;
                     })
                     .filter(file => file.index > last_migration)
                     .sort((a, b) => {
@@ -57,7 +54,6 @@ module.exports.init = function(callback) {
             });
         },
         (files, callback) => {
-            console.log(files);
             async.eachSeries(
                 files,
                 (file, callback) => {
@@ -70,7 +66,6 @@ module.exports.init = function(callback) {
                             })
                         },
                         (sql, callback) => {
-                            console.log(sql);
                             // Perform the migration
                             sqldb.query(sql, [], (err) => {
                                 if (err) error.addData(err, {sqlFile: file.filename});
