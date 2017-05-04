@@ -74,6 +74,46 @@
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
+      <!-- Exam mode networks ---------------------------------------------------------->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Exam-mode networks</h3>
+        </div>
+
+        <table class="table table-condensed table-hover table-striped">
+          <thead>
+            <tr>
+              <th>CIDR</th>
+              <th>Start date</th>
+              <th>End date</th>
+              <th>Location</th>
+              <th>Purpose</th>
+          </thead>
+          <tbody>
+            <% networks.forEach(function(network, i) { %>
+            <tr>
+              <td><%= network.network %></td>
+              <td><%= network.start_date %></td>
+              <td><%= network.end_date %></td>
+              <td><%= network.location %></td>
+              <td><%= network.purpose %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+
+        <div class="panel-footer">
+          <small>
+            To add new networks for exam-mode access, insert directly
+            into the <strong><tt>exam_mode_networks</tt></strong> table.
+          </small>
+        </div>
+      </div>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
       <!-- Courses --------------------------------------------------------------------->
 
       <div class="panel panel-primary">
