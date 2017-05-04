@@ -30,6 +30,7 @@ module.exports = {
             'administrators.sql',
             'pl_courses.sql',
             'course_permissions.sql',
+            'exam_mode_networks.sql',
 
             // PrairieSchedule proxy tables
             'courses.sql',
