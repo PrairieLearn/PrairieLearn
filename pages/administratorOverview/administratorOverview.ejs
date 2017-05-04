@@ -13,6 +13,39 @@
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
+      <!-- Config ---------------------------------------------------------------------->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Server configuration</h3>
+        </div>
+
+        <table class="table table-condensed table-hover table-striped">
+          <thead>
+            <tr>
+              <th>Key</th>
+              <th>Value</th>
+          </thead>
+          <tbody>
+            <% configs.forEach(function(config, i) { %>
+            <tr>
+              <td><%= config.key %></td>
+              <td><%= config.value %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+
+        <div class="panel-footer">
+          <small>
+            Edit values in the <strong><tt>config</tt></strong> table.
+          </small>
+        </div>
+      </div>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
       <!-- Administrators -------------------------------------------------------------->
 
       <div class="panel panel-primary">
@@ -67,6 +100,46 @@
             instance. They are automatically Owners of every course
             and Instructors of every course instance. They can add and
             remove other administrators.
+          </small>
+        </div>
+      </div>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Exam mode networks ---------------------------------------------------------->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Exam-mode networks</h3>
+        </div>
+
+        <table class="table table-condensed table-hover table-striped">
+          <thead>
+            <tr>
+              <th>CIDR</th>
+              <th>Start date</th>
+              <th>End date</th>
+              <th>Location</th>
+              <th>Purpose</th>
+          </thead>
+          <tbody>
+            <% networks.forEach(function(network, i) { %>
+            <tr>
+              <td><%= network.network %></td>
+              <td><%= network.start_date %></td>
+              <td><%= network.end_date %></td>
+              <td><%= network.location %></td>
+              <td><%= network.purpose %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+
+        <div class="panel-footer">
+          <small>
+            To add new networks for exam-mode access, insert directly
+            into the <strong><tt>exam_mode_networks</tt></strong> table.
           </small>
         </div>
       </div>

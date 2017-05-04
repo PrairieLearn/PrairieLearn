@@ -1,5 +1,6 @@
 -- BLOCK select_authz_data
 SELECT
+    coalesce($force_mode, ip_to_mode($ip, $req_date)) AS mode,
     authz_course_instance($authn_user_id, ci.id, $is_administrator, $req_date) AS permissions_course_instance,
     authz_course($authn_user_id, c.id, $is_administrator) AS permissions_course,
     to_jsonb(c.*) AS course,

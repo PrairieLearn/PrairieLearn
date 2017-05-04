@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+  * Add DB storage of exam mode networks.
+
+  * Add `config` table to DB with system `display_timezone`.
+
   * Fix async handling in regrading unit tests.
 
 * __2.7.0__ - 2017-04-28

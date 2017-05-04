@@ -26,10 +26,12 @@ module.exports = {
             'enum_instance_question_status.sql',
 
             // top-level tables
+            'config.sql',
             'users.sql',
             'administrators.sql',
             'pl_courses.sql',
             'course_permissions.sql',
+            'exam_mode_networks.sql',
 
             // PrairieSchedule proxy tables
             'courses.sql',
