@@ -94,7 +94,27 @@ module.exports = {
 
     makeHandlebars: function() {
         var hb = handlebars.create();
-        
+        hb.registerHelper('question', options => {
+            console.log('question start', 'options', options);
+            return '';
+        });
+        hb.registerHelper('submission', options => {
+            console.log('submission start', 'options', options);
+            return '';
+        });
+        hb.registerHelper('true_answer', options => {
+            console.log('true_answer start', 'options', options);
+            return '';
+        });
+        hb.registerHelper('multiple_choice', options => {
+            console.log('multiple_choice start', 'options', options);
+            return '';
+        });
+        hb.registerHelper('input_number', options => {
+            console.log('input_number start', 'options', options);
+            return '';
+        });
+        return hb;
     },
 
     execTemplateGetData: function(question_data, question, course, callback) {
@@ -107,18 +127,16 @@ module.exports = {
                 var hb = this.makeHandlebars();
                 var template = hb.compile(data);
                 console.log('completed compile');
-            } catch (e) {
-                var err = new Error('Error compiling question.html template');
-                err.data = {compileMsg: e.message, question_data, question, course};
+            } catch (err) {
+                err.data = {question_data, question, course};
                 return ERR(err, callback);
             }
             try {
                 var html = template(question_data); // just want the side effects on question_data, not the html
                 console.log('completed template');
                 console.log('html', html);
-            } catch (e) {
-                var err = new Error('Error templating question.html');
-                err.data = {templateMsg: e.message, question_data, question, course};
+            } catch (err) {
+                err.data = {question_data, question, course};
                 return ERR(err, callback);
             }
             callback(null, question_data);

@@ -27,7 +27,7 @@
 </p>
 
 <p>
-  $z = $ {{#input_number submitted_answer.z}}$\rm\ m$
+  $z = $ {{input_number submitted_answer.z}}$\rm\ m$
 </p>
 {{/question}}
 
@@ -39,6 +39,6 @@ $z = {{submitted_answer.z}}\rm\ m$
 
 
 
-{{#answer}}
+{{#true_answer}}
 $z = {{true_answer.z}}\rm\ m$
-{{/answer}}
+{{/true_answer}}
