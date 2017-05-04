@@ -26,6 +26,7 @@ module.exports = {
             'enum_instance_question_status.sql',
 
             // top-level tables
+            'config.sql',
             'users.sql',
             'administrators.sql',
             'pl_courses.sql',

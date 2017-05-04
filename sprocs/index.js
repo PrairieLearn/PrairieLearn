@@ -72,6 +72,7 @@ module.exports = {
             'assessment_instances_update.sql',
             'assessment_instances_update_homework.sql',
             'ip_to_mode.sql',
+            'config_select.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
