@@ -5,7 +5,7 @@ CREATE OR REPLACE FUNCTION
         display_timezone text
     ) RETURNS text AS $$
 BEGIN
-    EXECUTE 'SET LOCAL timezone TO ' || quote_literal(display_timezone);
+    EXECUTE 'SET LOCAL timezone TO ' || quote_literal(coalesce(display_timezone, 'UTC'));
     RETURN to_char(d, 'YYYY-MM-DD HH24:MI:SSOF (TZ)');
 END;
 $$ LANGUAGE plpgsql VOLATILE;

@@ -35,15 +35,26 @@ select_networks AS (
         ) AS networks
     FROM
         exam_mode_networks AS n
+),
+select_config AS (
+    SELECT
+        coalesce(
+            jsonb_agg(to_json(c) ORDER BY c.key),
+            '[]'::jsonb
+        ) AS configs
+    FROM
+        config AS c
 )
 SELECT
     administrator_users,
     courses,
-    networks
+    networks,
+    configs
 FROM
     select_administrator_users,
     select_courses,
-    select_networks;
+    select_networks,
+    select_config;
 
 -- BLOCK select_course
 SELECT * FROM pl_courses WHERE id = $course_id;
