@@ -26,9 +26,9 @@ databaseDescribe.describe(options, (err, description) => {
 
     _.forEach(sortedKeys, (tableName) => {
         var columns = description.tables[tableName];
-        console.log(`${tableName}`.underline.bold);
+        console.log(`==== ${tableName} ====`.bold);
         console.log(columns);
-        console.log();
+        console.log('\n');
     })
     process.exit(0);
 })

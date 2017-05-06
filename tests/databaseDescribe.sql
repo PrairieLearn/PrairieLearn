@@ -23,3 +23,28 @@ WHERE a.attrelid = $oid
     AND NOT a.attisdropped
     AND a.attnum > 0
 ORDER BY a.attnum;
+
+-- BLOCK get_indexes_for_table
+SELECT c2.relname AS name,
+    i.indisprimary AS isprimary,
+    i.indisunique AS isunique,
+    pg_catalog.pg_get_indexdef(i.indexrelid, 0, true) AS indexdef,
+    pg_catalog.pg_get_constraintdef(con.oid, true) AS constraintdef,
+    contype
+FROM pg_catalog.pg_class c, pg_catalog.pg_class c2, pg_catalog.pg_index i
+    LEFT JOIN pg_catalog.pg_constraint con ON (conrelid = i.indrelid AND conindid = i.indexrelid AND contype IN ('p','u'))
+WHERE c.oid = $oid
+    AND c.oid = i.indrelid
+    AND i.indexrelid = c2.oid
+ORDER BY i.indisprimary DESC,
+    i.indisunique DESC,
+    c2.relname;
+
+-- BLOCK get_references_for_table
+SELECT conname AS name,
+    conrelid::pg_catalog.regclass AS table,
+    pg_catalog.pg_get_constraintdef(c.oid, true) as condef
+FROM pg_catalog.pg_constraint c
+WHERE c.confrelid = $oid
+    AND c.contype = 'f'
+ORDER BY conname;

@@ -73,41 +73,103 @@ module.exports.describe = function(options, callback) {
             sqldb.query(sql.get_tables, [], (err, results) => {
                 if (ERR(err, callback)) return;
                 tables = results.rows;
+
+                // Initialize output with names of tables
+                if (options.outputFormat === 'string') {
+                    tables.forEach((table) => output.tables[table.name] = '');
+                } else {
+                    tables.forEach((table) => output.tables[table.name] = {});
+                }
+
                 callback(null);
             });
         },
         (callback) => {
             // Get column info for each table
             async.each(tables, (table, callback) => {
-                const params = {
-                    oid: table.oid
-                };
-                sqldb.query(sql.get_columns_for_table, params, (err, results) => {
-                    if (ERR(err, callback)) return;
+                async.series([
+                    (callback) => {
+                        const params = {
+                            oid: table.oid,
+                        };
+                        sqldb.query(sql.get_columns_for_table, params, (err, results) => {
+                            if (ERR(err, callback)) return;
 
-                    // Transform table info into a string, if needed
-                    if (options.outputFormat === 'string') {
-                        output.tables[table.name] = results.rows.map((row) => {
-                            var rowText = formatText(`${row.name}`, colors.bold);
-                            rowText += ': ' + formatText(`${row.type}`, colors.green);
-                            if (row.notnull) {
-                                rowText += formatText(' not null', colors.gray);
+                            // Transform table info into a string, if needed
+                            if (options.outputFormat === 'string') {
+                                output.tables[table.name] += formatText('columns\n', colors.underline);
+                                output.tables[table.name] += results.rows.map((row) => {
+                                    var rowText = formatText(`    ${row.name}`, colors.bold);
+                                    rowText += ': ' + formatText(`${row.type}`, colors.green);
+                                    if (row.notnull) {
+                                        rowText += formatText(' not null', colors.gray);
+                                    }
+                                    if (row.default) {
+                                        rowText += formatText(` default ${row.default}`, colors.gray);
+                                    }
+                                    return rowText;
+                                }).join('\n');
+                            } else {
+                                output.tables[table.name].columns = results.rows;
                             }
-                            if (row.default) {
-                                rowText += formatText(` default ${row.default}`, colors.gray);
+                            callback(null);
+                        });
+                    },
+                    (callback) => {
+                        const params = {
+                            oid: table.oid,
+                        };
+                        sqldb.query(sql.get_indexes_for_table, params, (err, results) => {
+                            if (ERR(err, callback)) return;
+
+                            if (options.outputFormat === 'string') {
+                                if (output.tables[table.name].length != 0) {
+                                    output.tables[table.name] += '\n\n';
+                                }
+                                output.tables[table.name] += formatText('indexes\n', colors.underline);
+                                output.tables[table.name] += results.rows.map((row) => {
+                                    var rowText = formatText(`    ${row.name}`, colors.bold);
+                                    rowText += formatText(`: ${row.constraintdef}`, colors.green);
+                                    return rowText;
+                                }).join('\n');
+                            } else {
+                                output.tables[table.name].indexes = results.rows;
                             }
-                            return rowText;
-                        }).join('\n');
-                    } else {
-                        output.tables[table.name] = results.rows;
+                            callback(null);
+                        });
+                    },
+                    (callback) => {
+                        const params = {
+                            oid: table.oid,
+                        };
+                        sqldb.query(sql.get_references_for_table, params, (err, results) => {
+                            if (ERR(err, callback)) return;
+
+                            if (options.outputFormat === 'string') {
+                                if (output.tables[table.name].length != 0) {
+                                    output.tables[table.name] += '\n\n';
+                                }
+                                output.tables[table.name] += formatText('referenced by\n', colors.underline);
+                                output.tables[table.name] += results.rows.map((row) => {
+                                    var rowText = formatText(`    ${row.table}:`, colors.bold);
+                                    rowText += formatText(` ${row.condef}`, colors.green);
+                                    return rowText;
+                                }).join('\n');
+                            } else {
+                                output.tables[table.name].references = results.rows;
+                            }
+                            callback(null);
+                        });
                     }
+                ], (err) => {
+                    if (ERR(err, callback)) return;
                     callback(null);
                 })
             }, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             })
-        }
+        },
     ], (err) => {
         if (ERR(err, callback)) return;
         callback(null, output);
