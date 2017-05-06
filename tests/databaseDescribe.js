@@ -95,6 +95,10 @@ module.exports.describe = function(options, callback) {
                         sqldb.query(sql.get_columns_for_table, params, (err, results) => {
                             if (ERR(err, callback)) return;
 
+                            if (results.rows.length == 0) {
+                                return callback(null);
+                            }
+
                             // Transform table info into a string, if needed
                             if (options.outputFormat === 'string') {
                                 output.tables[table.name] += formatText('columns\n', colors.underline);
@@ -122,6 +126,10 @@ module.exports.describe = function(options, callback) {
                         sqldb.query(sql.get_indexes_for_table, params, (err, results) => {
                             if (ERR(err, callback)) return;
 
+                            if (results.rows.length == 0) {
+                                return callback(null);
+                            }
+
                             if (options.outputFormat === 'string') {
                                 if (output.tables[table.name].length != 0) {
                                     output.tables[table.name] += '\n\n';
@@ -144,6 +152,10 @@ module.exports.describe = function(options, callback) {
                         };
                         sqldb.query(sql.get_references_for_table, params, (err, results) => {
                             if (ERR(err, callback)) return;
+
+                            if (results.rows.length == 0) {
+                                return callback(null);
+                            }
 
                             if (options.outputFormat === 'string') {
                                 if (output.tables[table.name].length != 0) {

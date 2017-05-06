@@ -13,10 +13,20 @@ if (process.argv.length != 3) {
 
 var args = process.argv.slice(2);
 
+// Disable color if we're not attached to a tty
+var coloredOutput = process.stdout.isTTY;
+
 const options = {
     databaseName: args[0],
     outputFormat: 'string',
-    coloredOutput: true
+    coloredOutput: coloredOutput
+};
+
+var formatText = function(text, formatter) {
+    if (coloredOutput) {
+        return formatter(text);
+    }
+    return text;
 };
 
 databaseDescribe.describe(options, (err, description) => {
@@ -26,9 +36,9 @@ databaseDescribe.describe(options, (err, description) => {
 
     _.forEach(sortedKeys, (tableName) => {
         var columns = description.tables[tableName];
-        console.log(`==== ${tableName} ====`.bold);
-        console.log(columns);
-        console.log('\n');
+        process.stdout.write(formatText(`==== ${tableName} ====\n`, colors.bold));
+        process.stdout.write(columns);
+        process.stdout.write('\n\n\n');
     })
     process.exit(0);
 })
