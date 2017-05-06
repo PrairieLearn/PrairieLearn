@@ -225,7 +225,7 @@ describe('Exam assessment', function() {
                 assert.property(elemList[0].children[0], 'data');
             });
             it('base64 data should parse to JSON', function() {
-                questionData = JSON.parse(new Buffer(elemList[0].children[0].data, 'base64').toString());
+                questionData = JSON.parse(decodeURIComponent(new Buffer(elemList[0].children[0].data, 'base64').toString()));
             });
             it('should have a variant_id in the questionData', function() {
                 assert.deepProperty(questionData, 'variant.id');
