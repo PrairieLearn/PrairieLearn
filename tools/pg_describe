@@ -1,0 +1,42 @@
+#!/usr/bin/env node
+
+var colors = require('colors');
+var _ = require('lodash');
+var ERR = require('async-stacktrace');
+
+var databaseDescribe = require('../tests/databaseDescribe');
+
+if (process.argv.length != 3) {
+    process.stderr.write(`Usage: ${process.argv0} <database name>\n`);
+    process.exit(1);
+}
+
+var args = process.argv.slice(2);
+
+const options = {
+    databaseName: args[0],
+    outputFormat: 'object',
+};
+
+databaseDescribe.describe(options, (err, description) => {
+    if (ERR(err, (err) => console.log(err))) return process.exit(1);
+
+    const sortedKeys = _.sortBy(_.keys(description.tables));
+
+    _.forEach(sortedKeys, (tableName) => {
+        var columns = description.tables[tableName];
+        console.log(`${tableName}`.underline);
+        columns.forEach((row) => {
+            var rowText = `${row.name}`.bold + `: ${row.type}`.green;
+            if (row.notnull) {
+                rowText += ' not null'.gray;
+            }
+            if (row.default) {
+                rowText += ` default ${row.default}`.gray;
+            }
+            console.log(rowText);
+        });
+        console.log();
+    })
+    process.exit(0);
+})
