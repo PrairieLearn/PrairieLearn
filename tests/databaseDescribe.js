@@ -100,7 +100,7 @@ module.exports.describe = function(options, callback) {
                                 output.tables[table.name] += formatText('columns\n', colors.underline);
                                 output.tables[table.name] += results.rows.map((row) => {
                                     var rowText = formatText(`    ${row.name}`, colors.bold);
-                                    rowText += ': ' + formatText(`${row.type}`, colors.green);
+                                    rowText += ':' + formatText(` ${row.type}`, colors.green);
                                     if (row.notnull) {
                                         rowText += formatText(' not null', colors.gray);
                                     }
@@ -129,7 +129,7 @@ module.exports.describe = function(options, callback) {
                                 output.tables[table.name] += formatText('indexes\n', colors.underline);
                                 output.tables[table.name] += results.rows.map((row) => {
                                     var rowText = formatText(`    ${row.name}`, colors.bold);
-                                    rowText += formatText(`: ${row.constraintdef}`, colors.green);
+                                    rowText += ':' + formatText(` ${row.constraintdef}`, colors.green);
                                     return rowText;
                                 }).join('\n');
                             } else {
