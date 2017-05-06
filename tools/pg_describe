@@ -15,7 +15,8 @@ var args = process.argv.slice(2);
 
 const options = {
     databaseName: args[0],
-    outputFormat: 'object',
+    outputFormat: 'string',
+    coloredOutput: true
 };
 
 databaseDescribe.describe(options, (err, description) => {
@@ -25,17 +26,8 @@ databaseDescribe.describe(options, (err, description) => {
 
     _.forEach(sortedKeys, (tableName) => {
         var columns = description.tables[tableName];
-        console.log(`${tableName}`.underline);
-        columns.forEach((row) => {
-            var rowText = `${row.name}`.bold + `: ${row.type}`.green;
-            if (row.notnull) {
-                rowText += ' not null'.gray;
-            }
-            if (row.default) {
-                rowText += ` default ${row.default}`.gray;
-            }
-            console.log(rowText);
-        });
+        console.log(`${tableName}`.underline.bold);
+        console.log(columns);
         console.log();
     })
     process.exit(0);
