@@ -4,7 +4,7 @@ $(function() {
 
     var initialize = function(questionContainer, callback) {
         var questionData = null;
-        questionContainer.find(".question-data").each(function(i, x) {questionData = JSON.parse(atob(x.innerHTML));});
+        questionContainer.find(".question-data").each(function(i, x) {questionData = JSON.parse(decodeURIComponent(atob(x.innerHTML)));});
         var client = new document.questionClients[questionData.effectiveQuestionType];
         clients[questionContainer.attr('id')] = client;
         client.initialize(questionData, callback);
@@ -14,7 +14,7 @@ $(function() {
         var client = clients[questionContainer.attr('id')];
 
         var questionData = null;
-        questionContainer.find(".question-data").each(function(i, x) {questionData = JSON.parse(atob(x.innerHTML));});
+        questionContainer.find(".question-data").each(function(i, x) {questionData = JSON.parse(decodeURIComponent(atob(x.innerHTML)));});
 
         questionContainer.find(".question-body").each(function(i, x) {client.renderQuestion(x, questionData);});
         questionContainer.find(".submission-body").each(function(i, x) {client.renderSubmission(x, questionData, i);});
@@ -26,7 +26,7 @@ $(function() {
         var client = clients[questionContainer.attr('id')];
 
         var questionData = null;
-        questionContainer.find(".question-data").each(function(i, x) {questionData = JSON.parse(atob(x.innerHTML));});
+        questionContainer.find(".question-data").each(function(i, x) {questionData = JSON.parse(decodeURIComponent(atob(x.innerHTML)));});
 
         var clientContainer = questionContainer.find(".question-body");
         var submittedAnswer = client.getSubmittedAnswer(clientContainer, questionData);

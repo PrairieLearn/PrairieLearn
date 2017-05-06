@@ -3,6 +3,8 @@
 
   * Shift documentation to Read the Docs.
 
+  * Fix handling of Unicode characters in question data.
+
 * __2.8.0__ - 2017-05-04
 
   * Add DB storage of exam mode networks.

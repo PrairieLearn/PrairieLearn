@@ -90,7 +90,8 @@ var render = function(req, res, next, variant, submission, submissionHtml, answe
                             trueAnswer: submission ? variant.true_answer : null,
                             submissions: submission ? res.locals.submissions : null,
                         });
-                        res.locals.questionJsonBase64 = (new Buffer(questionJson)).toString('base64');
+                        var encodedJson = encodeURIComponent(questionJson);
+                        res.locals.questionJsonBase64 = (new Buffer(encodedJson)).toString('base64');
                         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
                     });
                 });
