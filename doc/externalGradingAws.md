@@ -85,7 +85,7 @@ When the job completes, you'll be able to refresh the RequestBin page and see th
 
 Using a tool like `curl`, you can then perform the callback yourself, taking care to substitute `TOKEN` and `JOB_ID` with their appropriate values:
 
-```
+```sh
 curl -k -H "Content-Type: application/json" -H "X-CSRF-Token: TOKEN" -X POST -d '{"event": "grading_result", "job_id": JOB_ID}' http://localhost:3000/pl/webhooks/grading
 ```
 
