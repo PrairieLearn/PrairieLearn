@@ -19,7 +19,7 @@ Note that instructors for a course instance automatically have access to all ass
 
 The general format of `allowAccess` is:
 
-```
+```json
 "allowAccess": [
     { <accessRule1> },
     { <accessRule2> },
@@ -54,7 +54,7 @@ If multiple access rules are satisfied then the highest `credit` value is taken 
 
 All dates are specified in the format "YYYY-MM-DDTHH:MM:SS" using 24-hour times (this is the [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) profile of [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601)). All times are in Central Time (either CST or CDT as appropriate).
 
-If you want to include full days, then it is generally best to start at 1 second after midnight, and end at 1 second before midnight. This avoids any confusion around the meaning of times exactly at midnight.
+If you want to include full days, then it is generally best to start at 1 second after midnight, and end at 1 second before midnight. This avoids any confusion around the meaning of times exactly at midnight. For example, start at `2015-04-05T00:00:01` and end at `2015-04-07T23:59:59` for the 3-day window from April 5th to April 7th inclusive.
 
 ## Server modes
 
@@ -74,17 +74,17 @@ When the available credit is more than 100%, then the percentage score is calcul
 ## Course instance example
 
 ```json
-    "allowAccess": [
-        {
-            "role": "TA",
-            "startDate": "2015-01-10T00:00:01",
-            "endDate": "2015-06-01T23:59:59"
-        },
-        {
-            "startDate": "2015-01-19T00:00:01",
-            "endDate": "2015-05-13T23:59:59"
-        }
-    ]
+"allowAccess": [
+    {
+        "role": "TA",
+        "startDate": "2015-01-10T00:00:01",
+        "endDate": "2015-06-01T23:59:59"
+    },
+    {
+        "startDate": "2015-01-19T00:00:01",
+        "endDate": "2015-05-13T23:59:59"
+    }
+]
 ```
 
 The above `allowAccess` rules are appropriate for a `infoCourseInstance.json` file. They say that TAs should have access from Jan 10ty through Jun 1st, while general access (no role restriction) is in the period Jan 19th through May 13th.
@@ -92,66 +92,68 @@ The above `allowAccess` rules are appropriate for a `infoCourseInstance.json` fi
 ## Exam example
 
 ```json
-    "allowAccess": [
-        {
-            "mode": "Public",
-            "role": "TA",
-            "credit": 100,
-            "startDate": "2014-08-20T00:00:01",
-            "endDate": "2014-12-15T23:59:59"
-        },
-        {
-            "mode": "Exam",
-            "credit": 100,
-            "startDate": "2014-09-07T00:00:01",
-            "endDate": "2014-09-10T23:59:59"
-        },
-        {
-            "mode": "Exam",
-            "uids": ["student1@illinois.edu", "student2@illinois.edu"],
-            "credit": 100,
-            "startDate": "2014-09-12T00:00:01",
-            "endDate": "2014-09-12T23:59:59"
-        }
-    ],
+"allowAccess": [
+    {
+        "mode": "Public",
+        "role": "TA",
+        "credit": 100,
+        "startDate": "2014-08-20T00:00:01",
+        "endDate": "2014-12-15T23:59:59"
+    },
+    {
+        "mode": "Exam",
+        "credit": 100,
+        "startDate": "2014-09-07T00:00:01",
+        "endDate": "2014-09-10T23:59:59"
+    },
+    {
+        "mode": "Exam",
+        "uids": ["student1@illinois.edu", "student2@illinois.edu"],
+        "credit": 100,
+        "startDate": "2014-09-12T00:00:01",
+        "endDate": "2014-09-12T23:59:59"
+    }
+],
 ```
 
 The above `allowAccess` directive is appropriate for an `Exam` assessment, and means that this assessment is available under three different circumstances and always for full credit. First, users who are at least a `TA` can access the assessment in `Public` mode during the whole of Fall semester. Second, any user can access this assessment in `Exam` mode from Sept 7th to Sept 10th. Third, there are two specific students who have access to take the exam on Sept 12th.
 
 ## Homework example
 
-    "allowAccess": [
-        {
-            "mode": "Public",
-            "role": "TA",
-            "credit": 100,
-            "startDate": "2014-08-20T00:00:01",
-            "endDate": "2014-12-15T23:59:59"
-        },
-        {
-            "mode": "Public",
-            "credit": 110,
-            "startDate": "2014-10-12T00:00:01",
-            "endDate": "2014-10-15T23:59:59"
-        },
-        {
-            "mode": "Public",
-            "credit": 100,
-            "startDate": "2014-10-12T00:00:01",
-            "endDate": "2014-10-18T23:59:59"
-        },
-        {
-            "mode": "Public",
-            "credit": 80,
-            "startDate": "2014-10-12T00:00:01",
-            "endDate": "2014-10-25T23:59:59"
-        },
-        {
-            "mode": "Public",
-            "startDate": "2014-10-12T00:00:01",
-            "endDate": "2014-12-15T23:59:59"
-        }
-    ],
+```json
+"allowAccess": [
+    {
+        "mode": "Public",
+        "role": "TA",
+        "credit": 100,
+        "startDate": "2014-08-20T00:00:01",
+        "endDate": "2014-12-15T23:59:59"
+    },
+    {
+        "mode": "Public",
+        "credit": 110,
+        "startDate": "2014-10-12T00:00:01",
+        "endDate": "2014-10-15T23:59:59"
+    },
+    {
+        "mode": "Public",
+        "credit": 100,
+        "startDate": "2014-10-12T00:00:01",
+        "endDate": "2014-10-18T23:59:59"
+    },
+    {
+        "mode": "Public",
+        "credit": 80,
+        "startDate": "2014-10-12T00:00:01",
+        "endDate": "2014-10-25T23:59:59"
+    },
+    {
+        "mode": "Public",
+        "startDate": "2014-10-12T00:00:01",
+        "endDate": "2014-12-15T23:59:59"
+    }
+],
+```
 
 This `allowAccess` directive is suitable for a `Homework` assessment. It gives TAs access for the entire semester. Students can see the homework starting on Oct 12th, and the homework for them goes through four different stages: (1) they will earn a bonus 10% if they complete the homework before Oct 15th, (2) they get full credit until the due date of Oct 18th, (3) they can complete the homework up to a week late (Oct 25th) for 80% credit, and (4) they will be able to see the homework but not earn more points until the end of semester (Dec 15th).
 

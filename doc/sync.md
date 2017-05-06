@@ -3,13 +3,13 @@
 
 The model that PrairieLearn uses for course content is that it is developed on your own local copy of PrairieLearn (see the [Installing page](installing.md)) and then pushed to the live website via GitHub.
 
-<img width="500" src="high-level.png" />
+![High level system structure](high-level.png)
 
 The two steps are:
 
 1. On your local computer, sync or push your course content to GitHub.
 
-2. On the live website at http://prairielearn.engr.illinois.edu, go to your course, select the "Sync" page in the menu bar, and then click the "Pull from remote git repository” button.
+2. On the live website at [https://prairielearn.engr.illinois.edu](https://prairielearn.engr.illinois.edu), go to your course, select the "Sync" page in the menu bar, and then click the "Pull from remote git repository” button.
 
 ## Sync permissions
 

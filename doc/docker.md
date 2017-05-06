@@ -38,27 +38,39 @@ Most of these should be run from the root of your course directory.
 
 - List running containers:
 
-        docker ps
+```sh
+docker ps
+```
 
 - Run a specific command in the container:
 
-        docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE COMMAND
+```sh
+docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE COMMAND
+```
 
-    E.g.,
+E.g.,
 
-        docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE ls -lah /course
+```sh
+docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE ls -lah /course
+```
 
 - Start an interactive shell session:
 
-        docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE /bin/bash
+```sh
+docker run -it --rm -p 3000:3000 -v /path/to/course:/course IMAGE /bin/bash
+```
 
 - Run a command in an existing container:
 
-        docker exec -it CONTAINER_NAME COMMAND
+```sh
+docker exec -it CONTAINER_NAME COMMAND
+```
 
-    E.g., to start a shell in a container started with `--name pl`:
+E.g., to start a shell in a container started with `--name pl`:
 
-        docker exec -it pl /bin/bash
+```sh
+docker exec -it pl /bin/bash
+```
 
 ## Docker Hub
 
@@ -71,26 +83,38 @@ If you need to publish a local build, here's how:
 
 List images:
 
-    docker images
+```sh
+docker images
+```
 
 Tag the correct one by ID:
 
-    docker tag 7d9495d03763 prairielearn/prairielearn:latest
+```sh
+docker tag 7d9495d03763 prairielearn/prairielearn:latest
+```
 
 Login to Docker Hub:
 
-    docker login
+```sh
+docker login
+```
 
 Push the image:
 
-    docker push prairielearn/prairielearn
+```sh
+docker push prairielearn/prairielearn
+```
 
 ### Checking a push was successful
 
 Delete all local versions:
 
-    docker rmi -f 7d9495d03763
+```sh
+docker rmi -f 7d9495d03763
+```
 
 Pull and run the new version:
 
-    docker run -it -p 3000:3000 -v ~/git/pl-tam212:/course prairielearn/prairielearn
+```sh
+docker run -it -p 3000:3000 -v ~/git/pl-tam212:/course prairielearn/prairielearn
+```

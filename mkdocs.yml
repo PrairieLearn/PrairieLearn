@@ -1,0 +1,27 @@
+site_name: PrairieLearn
+site_url: https://github.com/PrairieLearn/PrairieLearn
+repo_url: https://github.com/PrairieLearn/PrairieLearn
+theme: readthedocs
+docs_dir: doc
+
+pages:
+- Main: 'index.md'
+- User Guide:
+  - 'Installing and running PrairieLearn': 'installing.md'
+  - 'Syncing course content': 'sync.md'
+  - 'Course configuration': 'course.md'
+  - 'Course instance configuration': 'courseInstance.md'
+  - 'Assessment configuration': 'assessment.md'
+  - 'Question configuration': 'question.md'
+  - 'Access control': 'accessControl.md'
+  - 'clientFiles and serverFiles': 'clientServerFiles.md'
+  - 'UUIDs in JSON files': 'uuid.md'
+  - 'Regrading assessments': 'regrading.md'
+  - 'PrairieDraw graphics': 'PrairieDraw.md'
+  - 'Externally graded questions': 'externalGrading.md'
+  - 'What to tell students': 'whatToTellStudents.md'
+- Developer Guide:
+  - 'Developer guide': 'dev-guide.md'
+  - 'Docker packaging': 'docker.md'
+  - 'Setting up AWS for external grading': 'externalGradingAws.md'
+  - 'Contributing to PL development': 'contributing.md'

@@ -1,11 +1,11 @@
 
 # Questions
 
-**NOTE:** Any time you edit a question `info.json` file, you need to click “Load from disk” to reload the changes. Edits to HTML or JavaScript files can be picked up by reloading the page. You might need to generate a new variant of a question to run new JavaScript code.
+**NOTE:** Any time you edit a question `info.json` file on a local copy of PrairieLearn, you need to click “Load from disk” to reload the changes. Edits to HTML or JavaScript files can be picked up by reloading the page. You might need to generate a new variant of a question to run new JavaScript code.
 
 Questions are all stored inside the main `questions` directory for a course. Each question is a single directory that contains all the files for that question. The name of the question directory is the question ID label (the `id`) for that question. For example, here are two different questions:
 
-```
+```text
 questions
 |
 |-- fossilFuelsRadio  # first question, id is "fossilFuelsRadio"
@@ -53,16 +53,21 @@ The `info.json` file for each question defines properties of the question. For e
 - `clientFiles` (optional) lists the files that the client (student's webbrowser) can access. Anything in here should be considered viewable by the student.
 - `type` specifies the question format.
 
-Type             | Example                                                                                                       | Required Files                              | Options format                                                                                                                                                          | Description
----              | ---                                                                                                           | ---                                         | ---                                                                                                                                                                     | ---
-`MultipleChoice` | [`fossilFuelsRadio`](../exampleCourse/questions/fossilFuelsRadio) | `info.json`                                 | [`MultipleChoice` options](../schemas/questionOptionsMultipleChoice.json)                                 | A multiple choice question (radio button). One correct answer and several incorrect answers are selected from lists of correct and incorrect answers, and the order is randomized.
-`MultipleTrueFalse` | [`fossilFuelsTrueFalse`](../exampleCourse/questions/fossilFuelsTrueFalse) | `info.json`                                 | [`MultipleTrueFalse` options](../schemas/questionOptionsMultipleTrueFalse.json)                                 | A multiple choice question (radio button). One correct answer and several incorrect answers are selected from lists of correct and incorrect answers, and the order is randomized.
-`Checkbox`       | [`fossilFuelsCheckbox`](../exampleCourse/questions/fossilFuelsCheckbox) | `info.json`                                 | [`Checkbox` options](../schemas/questionOptionsCheckbox.json)                                 | A multiple choice question (checkbox). Multiple correct and incorrect answers are selected from lists of correct and incorrect answers, and the order is randomized.
-`File`           | [`fibonacci`](../exampleCourse/questions/fibonacci)     | `info.json`, `question.html`, `answer.html` |  [`File` options](../schemas/questionOptionsFile.json)                                                    | A file is provided to the student for download, and they have to upload an edited file for grading.
-`Calculation`    | [`addVectors`](../exampleCourse/questions/addVectors)   | `info.json`, `client.js`, `server.js`       | [`Calculation` options](../schemas/questionOptionsCalculation.json)                                       | A very general question type that allows server-side and client-side code to generate and grade questions.
+Question type | Description
+--- | ---
+`MultipleChoice` | A multiple choice question (radio button). One correct answer and several incorrect answers are selected from lists of correct and incorrect answers, and the order is randomized.
+`MultipleTrueFalse` | A multiple choice question (radio button). One correct answer and several incorrect answers are selected from lists of correct and incorrect answers, and the order is randomized.
+`Checkbox` | A multiple choice question (checkbox). Multiple correct and incorrect answers are selected from lists of correct and incorrect answers, and the order is randomized.
+`File` | A file is provided to the student for download, and they have to upload an edited file for grading.
+`Calculation` | A very general question type that allows server-side and client-side code to generate and grade questions.
 
+See below for detailed information about each question type.
 
-## `MultipleChoice` questions
+## `MultipleChoice` question type
+
+* Example: [`fossilFuelsRadio`](../exampleCourse/questions/fossilFuelsRadio)
+* Required files: `info.json`
+* Options schema: [`MultipleChoice` options](../schemas/questionOptionsMultipleChoice.json)
 
 A `MultipleChoice` question has an `info.json` that provides the question text, one or more correct answers, and one or more incorrect answers. One correct answer is randomly chosen, and enough incorrect answers to make `numberAnswers` total answers, which are then displayed to the student in a random order. For example:
 
@@ -94,7 +99,11 @@ A `MultipleChoice` question has an `info.json` that provides the question text, 
 ```
 
 
-## `MultipleTrueFalse` questions
+## `MultipleTrueFalse` question type
+
+* Example: [`fossilFuelsTrueFalse`](../exampleCourse/questions/fossilFuelsTrueFalse)
+* Required files: `info.json`
+* Options schema: [`MultipleTrueFalse` options](../schemas/questionOptionsMultipleTrueFalse.json)
 
 A `MultipleTrueFalse` question has an `info.json` that provides the question text, zero or more true statements, and zero or more false statements. All the given statements are used, and are displayed to the students in a random order. For example:
 
@@ -122,7 +131,11 @@ A `MultipleTrueFalse` question has an `info.json` that provides the question tex
 ```
 
 
-## `Checkbox` questions
+## `Checkbox` question type
+
+* Example: [`fossilFuelsCheckbox`](../exampleCourse/questions/fossilFuelsCheckbox)
+* Required files: `info.json`
+* Options schema: [`Checkbox` options](../schemas/questionOptionsCheckbox.json)
 
 A `Checkbox` question has an `info.json` that provides the question text, one or more correct answers, and one or more incorrect answers. Several correct answers are randomly chosen (between `minCorrectAnswers` and `maxCorrectAnswers`, inclusive), and enough incorrect answers to make `numberAnswers` total answers, which are then displayed to the student in a random order. Depending on the values of `minCorrectAnswers` and `maxCorrectAnswers` it is possible to have all or none of the possible answers be correct. For example:
 
@@ -156,7 +169,11 @@ A `Checkbox` question has an `info.json` that provides the question text, one or
 ```
 
 
-## `File` questions
+## `File` question type
+
+* Example: [`fibonacci`](../exampleCourse/questions/fibonacci)
+* Required files: `info.json`, `question.html`, `answer.html`
+* Options schema: [`File` options](../schemas/questionOptionsFile.json)
 
 A `File` question gives the student a file to download, and then requires an uploaded file for the answer. The downloaded file is specified in the `info.json` like:
 
@@ -175,7 +192,11 @@ A `File` question gives the student a file to download, and then requires an upl
 
 Note that a file question can also utilize external grading! See the [External grading docs](externalGrading.md).
 
-## `Calculation` questions
+## `Calculation` question type
+
+* Example: [`addVectors`](../exampleCourse/questions/addVectors)
+* Required files: `info.json`, `client.js`, `server.js`
+* Options schema: [`Calculation` options](../schemas/questionOptionsCalculation.json)
 
 A `Calculation` question is the most general type of question, allowing arbitrary code to generate and grade the question instance on the server, and arbitrary client code to interact with the student (e.g., for interactive drawing).
 
