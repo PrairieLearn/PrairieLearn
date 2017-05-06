@@ -2,6 +2,7 @@ var ERR = require('async-stacktrace');
 var async = require('async');
 var pg = require('pg');
 var assert = require('chai').assert;
+var colors = require('colors');
 
 var models = require('../models');
 var migrations = require('../migrations');
@@ -32,14 +33,21 @@ module.exports = {};
 module.exports.describe = function(options, callback) {
     if (!options) return callback(new Error('options must not be null'));
     if (!options.databaseName) return callback(new Error('you must specify a database name with dbName'));
+    if (options.outputFormat && !(options.outputFormat !== 'string' || options.outputFormat !== 'object')) {
+        return callback(new Error(`'${options.outputFormat}' is not a valid output format`));
+    }
 
-    var tableNames;
     var tables;
-
-    var columns = {};
 
     var output = {
         tables: {},
+    };
+
+    var formatText = function(text, formatter) {
+        if (options.coloredOutput) {
+            return formatter(text);
+        }
+        return text;
     };
 
     async.series([
@@ -65,7 +73,6 @@ module.exports.describe = function(options, callback) {
             sqldb.query(sql.get_tables, [], (err, results) => {
                 if (ERR(err, callback)) return;
                 tables = results.rows;
-                tableNames = results.rows.map(row => row.name);
                 callback(null);
             });
         },
@@ -81,12 +88,13 @@ module.exports.describe = function(options, callback) {
                     // Transform table info into a string, if needed
                     if (options.outputFormat === 'string') {
                         output.tables[table.name] = results.rows.map((row) => {
-                            var rowText = `${row.name}: ${row.type}`;
+                            var rowText = formatText(`${row.name}`, colors.bold);
+                            rowText += ': ' + formatText(`${row.type}`, colors.green);
                             if (row.notnull) {
-                                rowText += ' not null';
+                                rowText += formatText(' not null', colors.gray);
                             }
                             if (row.default) {
-                                rowText += ` default ${row.default}`;
+                                rowText += formatText(` default ${row.default}`, colors.gray);
                             }
                             return rowText;
                         }).join('\n');
