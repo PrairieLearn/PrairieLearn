@@ -1,0 +1,11 @@
+columns
+    id: bigint not null default nextval('question_score_logs_id_seq'::regclass)
+    date: timestamp with time zone default now()
+    instance_question_id: bigint not null
+    auth_user_id: bigint
+    points: double precision
+    max_points: double precision
+    score_perc: double precision
+
+indexes
+    question_score_logs_pkey: PRIMARY KEY (id)

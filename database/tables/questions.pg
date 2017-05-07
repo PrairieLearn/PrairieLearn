@@ -1,0 +1,30 @@
+columns
+    id: bigint not null default nextval('questions_id_seq'::regclass)
+    uuid: uuid not null
+    qid: text
+    directory: text
+    template_directory: text
+    type: enum_question_type
+    title: text
+    config: jsonb
+    options: jsonb
+    client_files: text[] default ARRAY[]::text[]
+    number: integer
+    grading_method: enum_grading_method not null default 'Internal'::enum_grading_method
+    course_id: bigint not null
+    topic_id: bigint
+    deleted_at: timestamp with time zone
+    external_grading_enabled: boolean default false
+    external_grading_image: text
+    single_variant: boolean default false
+    external_grading_files: text[] default ARRAY[]::text[]
+    external_grading_entrypoint: text
+
+indexes
+    questions_pkey: PRIMARY KEY (id)
+    questions_course_id_number_key: UNIQUE (course_id, number)
+    questions_uuid_key: UNIQUE (uuid)
+
+referenced by
+    assessment_questions: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    question_tags: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE

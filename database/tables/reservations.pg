@@ -1,0 +1,10 @@
+columns
+    reservation_id: bigint not null default nextval('reservations_reservation_id_seq'::regclass)
+    exam_id: bigint
+    user_id: bigint
+    delete_date: timestamp with time zone
+    access_start: timestamp with time zone
+    access_end: timestamp with time zone
+
+indexes
+    reservations_pkey: PRIMARY KEY (reservation_id)

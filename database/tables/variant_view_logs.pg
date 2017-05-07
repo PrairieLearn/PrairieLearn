@@ -1,0 +1,10 @@
+columns
+    id: bigint not null default nextval('variant_view_logs_id_seq'::regclass)
+    variant_id: bigint not null
+    access_log_id: bigint not null
+    open: boolean
+    credit: integer
+
+indexes
+    variant_view_logs_pkey: PRIMARY KEY (id)
+    variant_view_logs_access_log_id_key: UNIQUE (access_log_id)
