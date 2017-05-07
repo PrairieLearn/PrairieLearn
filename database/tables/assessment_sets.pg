@@ -1,0 +1,15 @@
+columns
+    id: bigint not null default nextval('assessment_sets_id_seq'::regclass)
+    abbreviation: text
+    name: text
+    heading: text
+    color: text
+    number: integer
+    course_id: bigint not null
+
+indexes
+    assessment_sets_pkey: PRIMARY KEY (id)
+    assessment_sets_course_id_name_key: UNIQUE (course_id, name)
+
+referenced by
+    assessments: FOREIGN KEY (assessment_set_id) REFERENCES assessment_sets(id) ON UPDATE CASCADE ON DELETE SET NULL

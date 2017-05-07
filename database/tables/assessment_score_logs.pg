@@ -1,0 +1,13 @@
+columns
+    id: bigint not null default nextval('assessment_score_logs_id_seq'::regclass)
+    date: timestamp with time zone default now()
+    points: double precision
+    points_in_grading: double precision
+    max_points: double precision
+    score_perc: double precision
+    score_perc_in_grading: double precision
+    assessment_instance_id: bigint not null
+    auth_user_id: bigint
+
+indexes
+    assessment_score_logs_pkey: PRIMARY KEY (id)

@@ -1,0 +1,13 @@
+columns
+    id: bigint not null default nextval('alternative_groups_id_seq'::regclass)
+    number: integer
+    number_choose: integer
+    zone_id: bigint not null
+    assessment_id: bigint not null
+
+indexes
+    alternative_groups_pkey: PRIMARY KEY (id)
+    alternative_groups_assessment_id_number_key: UNIQUE (assessment_id, number)
+
+referenced by
+    assessment_questions: FOREIGN KEY (alternative_group_id) REFERENCES alternative_groups(id) ON UPDATE CASCADE ON DELETE SET NULL

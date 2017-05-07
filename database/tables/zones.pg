@@ -1,0 +1,13 @@
+columns
+    id: bigint not null default nextval('zones_id_seq'::regclass)
+    title: text
+    number: integer
+    number_choose: integer
+    assessment_id: bigint not null
+
+indexes
+    zones_pkey: PRIMARY KEY (id)
+    zones_assessment_id_number_key: UNIQUE (assessment_id, number)
+
+referenced by
+    alternative_groups: FOREIGN KEY (zone_id) REFERENCES zones(id) ON UPDATE CASCADE ON DELETE CASCADE

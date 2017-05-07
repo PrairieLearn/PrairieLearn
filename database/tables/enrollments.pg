@@ -1,0 +1,9 @@
+columns
+    id: bigint not null default nextval('enrollments_id_seq'::regclass)
+    user_id: bigint not null
+    course_instance_id: bigint not null
+    role: enum_role
+
+indexes
+    enrollments_pkey: PRIMARY KEY (id)
+    enrollments_user_id_course_instance_id_key: UNIQUE (user_id, course_instance_id)

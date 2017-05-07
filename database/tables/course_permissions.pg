@@ -1,0 +1,9 @@
+columns
+    id: bigint not null default nextval('course_permissions_id_seq'::regclass)
+    user_id: bigint not null
+    course_id: bigint not null
+    course_role: enum_course_role
+
+indexes
+    course_permissions_pkey: PRIMARY KEY (id)
+    course_permissions_user_id_course_id_key: UNIQUE (user_id, course_id)

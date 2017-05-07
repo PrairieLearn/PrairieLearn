@@ -1,0 +1,19 @@
+columns
+    id: bigint not null default nextval('assessment_questions_id_seq'::regclass)
+    number: integer
+    max_points: double precision
+    points_list: double precision[]
+    init_points: double precision
+    assessment_id: bigint not null
+    alternative_group_id: bigint
+    number_in_alternative_group: integer
+    question_id: bigint not null
+    deleted_at: timestamp with time zone
+    force_max_points: boolean default false
+
+indexes
+    assessment_questions_pkey: PRIMARY KEY (id)
+    assessment_questions_question_id_assessment_id_key: UNIQUE (question_id, assessment_id)
+
+referenced by
+    instance_questions: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE

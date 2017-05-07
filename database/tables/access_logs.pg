@@ -1,0 +1,22 @@
+columns
+    id: bigint not null default nextval('access_logs_id_seq'::regclass)
+    mongo_id: text
+    date: timestamp with time zone
+    mode: enum_mode
+    ip: inet
+    forwarded_ip: inet
+    auth_uid: text
+    auth_role: enum_role
+    user_uid: text
+    user_role: enum_role
+    method: text
+    path: text
+    params: jsonb
+    body: jsonb
+
+indexes
+    access_logs_pkey: PRIMARY KEY (id)
+    access_logs_mongo_id_key: UNIQUE (mongo_id)
+
+referenced by
+    variant_view_logs: FOREIGN KEY (access_log_id) REFERENCES access_logs(id) ON UPDATE CASCADE ON DELETE CASCADE

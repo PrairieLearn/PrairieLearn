@@ -1,0 +1,23 @@
+columns
+    id: bigint not null default nextval('variants_id_seq'::regclass)
+    qiid: text
+    date: timestamp with time zone default now()
+    instance_question_id: bigint not null
+    available: boolean default true
+    number: integer
+    variant_seed: text
+    params: jsonb
+    true_answer: jsonb
+    options: jsonb
+    authn_user_id: bigint
+    duration: interval default '00:00:00'::interval
+    first_duration: interval
+
+indexes
+    variants_pkey: PRIMARY KEY (id)
+    variants_instance_question_id_number_key: UNIQUE (instance_question_id, number)
+    variants_qiid_key: UNIQUE (qiid)
+
+referenced by
+    submissions: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
+    variant_view_logs: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
