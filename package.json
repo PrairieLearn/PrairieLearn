@@ -39,7 +39,8 @@
         "cheerio": "0.22.x",
         "colors": "1.1.x",
         "mocha": "3.2.x",
-        "request": "2.79.x"
+        "request": "2.79.x",
+        "yargs": "8.0.1"
     },
     "scripts": {
         "test": "node_modules/mocha/bin/mocha tests/index.js"

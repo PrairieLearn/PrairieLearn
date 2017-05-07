@@ -1,29 +1,40 @@
 #!/usr/bin/env node
 
-var colors = require('colors');
-var _ = require('lodash');
-var ERR = require('async-stacktrace');
+const async = require('async');
+const ERR = require('async-stacktrace');
+const colors = require('colors');
+const fs = require('fs-extra');
+const _ = require('lodash');
+const path = require('path');
 
-var databaseDescribe = require('../tests/databaseDescribe');
+const databaseDescribe = require('../tests/databaseDescribe');
 
-if (process.argv.length != 3) {
-    process.stderr.write(`Usage: ${process.argv0} <database name>\n`);
+const yargs = require('yargs')
+    .usage('Usage: $0 <database name> [options]')
+    .alias('o', 'output')
+    .nargs('o', 1)
+    .describe('o', 'Specify a directory to output files to')
+    .help('h')
+    .alias('h', 'help');
+
+if (yargs.argv._.length != 1) {
+    yargs.showHelp();
     process.exit(1);
 }
 
-var args = process.argv.slice(2);
+const argv = yargs.argv;
 
 // Disable color if we're not attached to a tty
-var coloredOutput = process.stdout.isTTY;
+const coloredOutput = !argv.o && process.stdout.isTTY;
 
 const options = {
-    databaseName: args[0],
+    databaseName: argv._[0],
     outputFormat: 'string',
     coloredOutput: coloredOutput
 };
 
-var formatText = function(text, formatter) {
-    if (coloredOutput) {
+function formatText(text, formatter) {
+    if (!argv.o && coloredOutput) {
         return formatter(text);
     }
     return text;
@@ -32,13 +43,53 @@ var formatText = function(text, formatter) {
 databaseDescribe.describe(options, (err, description) => {
     if (ERR(err, (err) => console.log(err))) return process.exit(1);
 
-    const sortedKeys = _.sortBy(_.keys(description.tables));
+    if (argv.o) {
+        writeDescriptionToDisk(description, argv.o);
+    } else {
+        printDescription(description);
+    }
+});
 
+function printDescription(description) {
+    const sortedKeys = _.sortBy(_.keys(description.tables));
     _.forEach(sortedKeys, (tableName) => {
         var columns = description.tables[tableName];
         process.stdout.write(formatText(`==== ${tableName} ====\n`, colors.bold));
         process.stdout.write(columns);
         process.stdout.write('\n\n\n');
-    })
+    });
     process.exit(0);
-})
+}
+
+function writeDescriptionToDisk(description, dir) {
+    async.series([
+        (callback) => {
+            fs.emptyDir(dir, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            fs.mkdir(path.join(dir, 'tables'), (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            })
+        },
+        (callback) => {
+            async.eachOf(description.tables, (value, key, callback) => {
+                fs.writeFile(path.join(dir, 'tables', `${key}.pg`), value, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                })
+            },
+            (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        }
+    ],
+    (err) => {
+        if (ERR(err, (err) => console.log(err))) return process.exit(1);
+        process.exit(0);
+    });
+}
