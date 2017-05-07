@@ -1,18 +1,15 @@
-var ERR = require('async-stacktrace');
-var async = require('async');
-var pg = require('pg');
-var assert = require('chai').assert;
-var colors = require('colors');
+const ERR = require('async-stacktrace');
+const async = require('async');
+const pg = require('pg');
+const pgArray = require('pg').types.arrayParser;
+const assert = require('chai').assert;
+const colors = require('colors');
 
-var models = require('../models');
-var migrations = require('../migrations');
-var sqldb = require('../lib/sqldb');
-var sqlLoader = require('../lib/sql-loader');
-var sql = sqlLoader.loadSqlEquiv(__filename);
-
-var postgresqlUser = 'postgres';
-var postgresqlHost = 'localhost';
-var initConString = 'postgres://localhost/postgres';
+const models = require('../models');
+const migrations = require('../migrations');
+const sqldb = require('../lib/sqldb');
+const sqlLoader = require('../lib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = {};
 
@@ -41,6 +38,7 @@ module.exports.describe = function(options, callback) {
 
     var output = {
         tables: {},
+        enums: {}
     };
 
     var formatText = function(text, formatter) {
@@ -182,6 +180,27 @@ module.exports.describe = function(options, callback) {
                 callback(null);
             })
         },
+        (callback) => {
+            // Get all enums
+            sqldb.query(sql.get_enums, [], (err, results) => {
+                if (ERR(err, callback)) return;
+
+                if (results.rows.length == 0) {
+                    return callback(null);
+                }
+
+                results.rows.forEach((row) => {
+                    if (options.outputFormat == 'string') {
+                        const values = pgArray.create(row.values, String).parse();
+                        output.enums[row.name] = formatText(values.join(', '), colors.gray);
+                    } else {
+                        output.enums[row.name] = pgArray.create(row.values, String).parse();
+                    }
+                });
+
+                callback(null);
+            });
+        }
     ], (err) => {
         if (ERR(err, callback)) return;
         callback(null, output);

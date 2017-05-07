@@ -48,3 +48,16 @@ FROM pg_catalog.pg_constraint c
 WHERE c.confrelid = $oid
     AND c.contype = 'f'
 ORDER BY conname;
+
+-- BLOCK get_enums
+SELECT t.typname AS name,
+    ARRAY(
+        SELECT e.enumlabel
+        FROM pg_catalog.pg_enum e
+        WHERE e.enumtypid = t.oid
+        ORDER BY e.enumlabel
+    ) AS values
+FROM pg_type t
+    JOIN pg_enum e ON t.oid = e.enumtypid
+    JOIN pg_catalog.pg_namespace n ON n.oid = t.typnamespace
+GROUP BY n.nspname, t.typname, t.oid;

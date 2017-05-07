@@ -51,13 +51,18 @@ databaseDescribe.describe(options, (err, description) => {
 });
 
 function printDescription(description) {
-    const sortedKeys = _.sortBy(_.keys(description.tables));
-    _.forEach(sortedKeys, (tableName) => {
-        var columns = description.tables[tableName];
-        process.stdout.write(formatText(`==== ${tableName} ====\n`, colors.bold));
-        process.stdout.write(columns);
+    _.forEach(_.sortBy(_.keys(description.tables)), (tableName) => {
+        process.stdout.write(formatText(`[table] ${tableName}\n`, colors.bold));
+        process.stdout.write(description.tables[tableName]);
         process.stdout.write('\n\n\n');
     });
+
+    _.forEach(_.sortBy(_.keys(description.enums)), (enumName) => {
+        process.stdout.write(formatText(`[enum] ${enumName}\n`, colors.bold));
+        process.stdout.write(description.enums[enumName]);
+        process.stdout.write('\n\n\n');
+    });
+
     process.exit(0);
 }
 
@@ -76,11 +81,29 @@ function writeDescriptionToDisk(description, dir) {
             })
         },
         (callback) => {
+            fs.mkdir(path.join(dir, 'enums'), (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            })
+        },
+        (callback) => {
             async.eachOf(description.tables, (value, key, callback) => {
                 fs.writeFile(path.join(dir, 'tables', `${key}.pg`), value, (err) => {
                     if (ERR(err, callback)) return;
                     callback(null);
-                })
+                });
+            },
+            (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            async.eachOf(description.enums, (value, key, callback) => {
+                fs.writeFile(path.join(dir, 'enums', `${key}.pg`), value, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
             },
             (err) => {
                 if (ERR(err, callback)) return;
