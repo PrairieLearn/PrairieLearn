@@ -5,8 +5,6 @@ const pgArray = require('pg').types.arrayParser;
 const assert = require('chai').assert;
 const colors = require('colors');
 
-const models = require('../models');
-const migrations = require('../migrations');
 const sqldb = require('../lib/sqldb');
 const sqlLoader = require('../lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
@@ -29,7 +27,7 @@ module.exports = {};
  */
 module.exports.describe = function(options, callback) {
     if (!options) return callback(new Error('options must not be null'));
-    if (!options.databaseName) return callback(new Error('you must specify a database name with dbName'));
+    if (!options.databaseName) return callback(new Error('you must specify a database name with databaseName'));
     if (options.outputFormat && !(options.outputFormat !== 'string' || options.outputFormat !== 'object')) {
         return callback(new Error(`'${options.outputFormat}' is not a valid output format`));
     }
