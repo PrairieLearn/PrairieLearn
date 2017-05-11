@@ -225,6 +225,12 @@ module.exports.describe = function(options, callback) {
 
                 callback(null);
             });
+        },
+        (callback) => {
+            sqldb.close((err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            })
         }
     ], (err) => {
         if (ERR(err, callback)) return;
