@@ -31,18 +31,24 @@ var filenames = function(locals) {
         + sanitizeName(locals.assessment.number)
         + '_';
     return {
-        scoreStatsCsvFilename:        prefix + 'score_stats.csv',
-        durationStatsCsvFilename:     prefix + 'duration_stats.csv',
-        instancesCsvFilename:         prefix + 'instances.csv',
-        scoresCsvFilename:            prefix + 'scores.csv',
-        scoresByUsernameCsvFilename:  prefix + 'scores_by_username.csv',
-        allInstanceScoresCsvFilename: prefix + 'all_instance_scores.csv',
-        finalSubmissionsCsvFilename:  prefix + 'final_submissions.csv',
-        allSubmissionsCsvFilename:    prefix + 'all_submissions.csv',
-        finalFilesZipFilename:        prefix + 'final_files.zip',
-        allFilesZipFilename:          prefix + 'all_files.zip',
-        questionStatsCsvFilename:     prefix + 'question_stats.csv',
-        statsByDateCsvFilename:       prefix + 'scores_by_date.csv',
+        scoreStatsCsvFilename:          prefix + 'score_stats.csv',
+        durationStatsCsvFilename:       prefix + 'duration_stats.csv',
+        scoresCsvFilename:              prefix + 'scores.csv',
+        scoresAllCsvFilename:           prefix + 'scores_all.csv',
+        scoresByUsernameCsvFilename:    prefix + 'scores_by_username.csv',
+        scoresByUsernameAllCsvFilename: prefix + 'scores_by_username_all.csv',
+        pointsCsvFilename:              prefix + 'points.csv',
+        pointsAllCsvFilename:           prefix + 'points_all.csv',
+        pointsByUsernameCsvFilename:    prefix + 'points_by_username.csv',
+        pointsByUsernameAllCsvFilename: prefix + 'points_by_username_all.csv',
+        instancesCsvFilename:           prefix + 'instances.csv',
+        instancesAllCsvFilename:        prefix + 'instances_all.csv',
+        finalSubmissionsCsvFilename:    prefix + 'final_submissions.csv',
+        allSubmissionsCsvFilename:      prefix + 'all_submissions.csv',
+        finalFilesZipFilename:          prefix + 'final_files.zip',
+        allFilesZipFilename:            prefix + 'all_files.zip',
+        questionStatsCsvFilename:       prefix + 'question_stats.csv',
+        statsByDateCsvFilename:         prefix + 'scores_by_date.csv',
     };
 };
 
@@ -123,7 +129,7 @@ router.get('/', function(req, res, next) {
         function(callback) {
             debug('query assessment_instance_data');
             var params = {assessment_id: res.locals.assessment.id};
-            sqldb.query(sql.assessment_instance_data, params, function(err, result) {
+            sqldb.query(sql.select_assessment_instances, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.user_scores = result.rows;
                 callback(null);
@@ -136,8 +142,59 @@ router.get('/', function(req, res, next) {
     });
 });
 
+var sendInstancesCsv = function(res, req, columns, options, callback) {
+    var params = {assessment_id: res.locals.assessment.id};
+    sqldb.query(sql.select_assessment_instances, params, function(err, result) {
+        if (ERR(err, callback)) return;
+
+        var rows = result.rows;
+        if (options.only_highest) {
+            rows = _.filter(rows, 'highest_score');
+        }
+        
+        csvMaker.rowsToCsv(rows, columns, function(err, csv) {
+            if (ERR(err, callback)) return;
+            res.attachment(req.params.filename);
+            res.send(csv);
+        });
+    });
+};
+
 router.get('/:filename', function(req, res, next) {
     _.assign(res.locals, filenames(res.locals));
+
+    var assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
+    var scoresColumns = [
+        ['UID', 'uid'],
+        [assessmentName, 'score_perc'],
+    ];
+    var scoresByUsernameColumns = [
+        ['Username', 'username'],
+        [assessmentName, 'score_perc'],
+    ];
+    var pointsColumns = [
+        ['UID', 'uid'],
+        [assessmentName, 'points'],
+    ];
+    var pointsByUsernameColumns = [
+        ['Username', 'username'],
+        [assessmentName, 'points'],
+    ];
+    var instancesColumns = [
+        ['UID', 'uid'],
+        ['Username', 'username'],
+        ['Name', 'name'],
+        ['Role', 'role'],
+        ['Assessment', 'assessment_label'],
+        ['Instance', 'number'],
+        ['Started', 'date_formatted'],
+        ['Remaining', 'time_remaining'],
+        ['Score (%)', 'score_perc'],
+        ['Points', 'points'],
+        ['Max points', 'max_points'],
+        ['Duration (min)', 'duration_mins'],
+        ['Hightest score', 'highest_score'],
+    ];
 
     if (req.params.filename == res.locals.scoreStatsCsvFilename) {
         var params = {assessment_id: res.locals.assessment.id};
@@ -211,74 +268,45 @@ router.get('/:filename', function(req, res, next) {
                 res.send(csv);
             });
         });
-    } else if (req.params.filename == res.locals.instancesCsvFilename) {
-        var params = {assessment_id: res.locals.assessment.id};
-        sqldb.query(sql.assessment_instance_data, params, function(err, result) {
-            if (ERR(err, next)) return;
-            var columns = [
-                ['UID', 'uid'],
-                ['Name', 'name'],
-                ['Role', 'role'],
-                ['Assessment', 'assessment_label'],
-                ['Instance', 'number'],
-                ['Started', 'date_formatted'],
-                ['Remaining', 'time_remaining'],
-                ['Score (%)', 'score_perc'],
-                ['Points', 'points'],
-                ['Max points', 'max_points'],
-                ['Duration (min)', 'duration_mins'],
-            ];
-            csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
-                if (ERR(err, next)) return;
-                res.attachment(req.params.filename);
-                res.send(csv);
-            });
-        });
     } else if (req.params.filename == res.locals.scoresCsvFilename) {
-        var params = {assessment_id: res.locals.assessment.id};
-        sqldb.query(sql.assessment_instance_scores, params, function(err, result) {
+        sendInstancesCsv(res, req, scoresColumns, {only_highest: true}, (err) => {
             if (ERR(err, next)) return;
-            var assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
-            var columns = [
-                ['UID', 'uid'],
-                [assessmentName, 'score_perc'],
-            ];
-            csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
-                if (ERR(err, next)) return;
-                res.attachment(req.params.filename);
-                res.send(csv);
-            });
+        });
+    } else if (req.params.filename == res.locals.scoresAllCsvFilename) {
+        sendInstancesCsv(res, req, scoresColumns, {only_highest: false}, (err) => {
+            if (ERR(err, next)) return;
         });
     } else if (req.params.filename == res.locals.scoresByUsernameCsvFilename) {
-        var params = {assessment_id: res.locals.assessment.id};
-        sqldb.query(sql.assessment_instance_scores_by_username, params, function(err, result) {
+        sendInstancesCsv(res, req, scoresByUsernameColumns, {only_highest: true}, (err) => {
             if (ERR(err, next)) return;
-            var assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
-            var columns = [
-                ['Username', 'username'],
-                [assessmentName, 'score_perc'],
-            ];
-            csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
-                if (ERR(err, next)) return;
-                res.attachment(req.params.filename);
-                res.send(csv);
-            });
         });
-    } else if (req.params.filename == res.locals.allInstanceScoresCsvFilename) {
-        var params = {assessment_id: res.locals.assessment.id};
-        sqldb.query(sql.assessment_instance_scores_all, params, function(err, result) {
+    } else if (req.params.filename == res.locals.scoresByUsernameAllCsvFilename) {
+        sendInstancesCsv(res, req, scoresByUsernameColumns, {only_highest: false}, (err) => {
             if (ERR(err, next)) return;
-            var assessmentName = res.locals.assessment_set.name + ' ' + res.locals.assessment.number;
-            var columns = [
-                ['UID', 'uid'],
-                ['Instance', 'number'],
-                [assessmentName, 'score_perc'],
-            ];
-            csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
-                if (ERR(err, next)) return;
-                res.attachment(req.params.filename);
-                res.send(csv);
-            });
+        });
+    } else if (req.params.filename == res.locals.pointsCsvFilename) {
+        sendInstancesCsv(res, req, pointsColumns, {only_highest: true}, (err) => {
+            if (ERR(err, next)) return;
+        });
+    } else if (req.params.filename == res.locals.pointsAllCsvFilename) {
+        sendInstancesCsv(res, req, pointsColumns, {only_highest: false}, (err) => {
+            if (ERR(err, next)) return;
+        });
+    } else if (req.params.filename == res.locals.pointsByUsernameCsvFilename) {
+        sendInstancesCsv(res, req, pointsByUsernameColumns, {only_highest: true}, (err) => {
+            if (ERR(err, next)) return;
+        });
+    } else if (req.params.filename == res.locals.pointsByUsernameAllCsvFilename) {
+        sendInstancesCsv(res, req, pointsByUsernameColumns, {only_highest: false}, (err) => {
+            if (ERR(err, next)) return;
+        });
+    } else if (req.params.filename == res.locals.instancesCsvFilename) {
+        sendInstancesCsv(res, req, instancesColumns, {only_highest: true}, (err) => {
+            if (ERR(err, next)) return;
+        });
+    } else if (req.params.filename == res.locals.instancesAllCsvFilename) {
+        sendInstancesCsv(res, req, instancesColumns, {only_highest: false}, (err) => {
+            if (ERR(err, next)) return;
         });
     } else if (req.params.filename == res.locals.allSubmissionsCsvFilename
                || req.params.filename == res.locals.finalSubmissionsCsvFilename) {

@@ -1,14 +1,18 @@
 
 # Contributing to PrairieLearn
 
-## GitHub: distributed model (for contributors)
+* [Good blog post on how to contribute via GitHub](http://blog.davidecoppola.com/2016/11/howto-contribute-to-open-source-project-on-github/)
+
+## GitHub: distributed model
 
 **Getting started as a collaborator:** Everyone should fork the main repository on GitHub. The full name of this repository is `PrairieLearn/PrairieLearn` (`"organization_name/repo_name"`); when you fork it, GitHub will create a repo named `user_name/PrairieLearn`. If you're not sure you to fork the repo, see [Github's instructions](https://help.github.com/articles/fork-a-repo/).
 
 Next, clone your forked repository to your local machine and set up the main repository as an "upstream" repository:
 
-        git clone git@github.com/$user_name/PrairieLearn.git
-        git remote add upstream git@github.com/PrairieLearn/PrairieLearn.git
+```sh
+git clone git@github.com/$user_name/PrairieLearn.git
+git remote add upstream git@github.com/PrairieLearn/PrairieLearn.git
+```
 
 This means that you now have three key repositories to keep track of:
 
@@ -20,23 +24,29 @@ This means that you now have three key repositories to keep track of:
 
 **Updating your fork from upstream:** Getting new changes from upstream is a two-step process. First you pull from upstream to your local repository, then you push the new changes back to your origin. (There is no direct communication between upstream and your forked origin repository.) Note that for this to work it is critical that you have never committed anything to your master branch. The procedure to pull and then push is:
 
-        git checkout master      # make sure you are on the master branch
-        git pull upstream master # pull new changes from upstream
-        git push origin master   # push the new changes back up to your fork (origin)
+```sh
+git checkout master      # make sure you are on the master branch
+git pull upstream master # pull new changes from upstream
+git push origin master   # push the new changes back up to your fork (origin)
+```
 
 See also the GitHub Help pages on [Syncing a fork](https://help.github.com/articles/syncing-a-fork/) and [Pushing to a remote](https://help.github.com/articles/pushing-to-a-remote/).
 
 **Editing, committing, and pushing your code:** You should only ever commit and push code on a branch (never on `master`). To start a new branch, do:
 
-        git checkout -b branch_name
+```sh
+git checkout -b branch_name
+```
 
 Later, you can do:
 
-        git checkout branch_name    # make sure you are on the right branch
-        # ... edit code
-        git add "FILE.js"
-        git commit -m "MESSAGE"
-        git push origin branch_name # this should be the same as the branch you checked out
+```sh
+git checkout branch_name    # make sure you are on the right branch
+# ... edit code
+git add "FILE.js"
+git commit -m "MESSAGE"
+git push origin branch_name # this should be the same as the branch you checked out
+```
 
 This makes local code changes and then pushes them up to your forked repository (origin). See also [Pushing to a remote](https://help.github.com/articles/pushing-to-a-remote/) on the GitHub Help pages.
 
@@ -65,18 +75,24 @@ Tags:
 
 Main repository topology:
 
-        *  master branch
-        | *  2.1 branch, 2.1.4 tag
-        | *  2.1.3 tag
-        | *  2.1.2 tag
-        | *  2.1.1 tag
-        | *  2.1.0 tag
-        |/  
-        *  2.0.0 tag
-        | *  1.2 branch, 1.2.1 tag
-        |/  
-        *  1.2.0 tag
-        | *  1.1 branch, 1.1.1 tag
-        | *  1.1.0 tag
-        |/  
-        *  1.0.0 tag
+```text
+*  master branch
+|
+| *  2.1.4 tag, 2.1 branch
+| *  2.1.3 tag
+| *  2.1.2 tag
+| *  2.1.1 tag
+|/
+*  2.1.0 tag
+|
+*  2.0.0 tag, 2.0 branch
+|
+| *  1.2.1 tag, 1.2 branch
+|/
+*  1.2.0 tag
+|
+| *  1.1.1 tag, 1.1 branch
+| *  1.1.0 tag
+|/
+*  1.0.0 tag
+```

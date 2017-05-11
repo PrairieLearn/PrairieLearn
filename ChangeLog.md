@@ -1,7 +1,19 @@
 
 # ChangeLog
 
-* __2.7.0__ - 2017-04-26
+  * Shift documentation to Read the Docs.
+
+  * Fix handling of Unicode characters in question data.
+
+* __2.8.0__ - 2017-05-04
+
+  * Add DB storage of exam mode networks.
+
+  * Add `config` table to DB with system `display_timezone`.
+
+  * Fix async handling in regrading unit tests.
+
+* __2.7.0__ - 2017-04-28
 
   * Add `/pl/webhooks/ping` endpoint for automated health checks.
 
@@ -11,6 +23,8 @@
     (Nathan Walters).
 
   * Add link to detailed instances CSV file on instructor assessment page.
+
+  * Add more assessment CSV download options.
 
   * Allow development use of non-master git branches for courses.
 

@@ -1,7 +1,7 @@
 
 # Assessments
 
-**NOTE:** *Any time you edit or add an `infoAssessment.json` file, you need to click the “Load from disk” button in the header so that the PrairieLearn server reloads the changes.
+**NOTE:** Any time you edit or add an `infoAssessment.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the header so that the local PrairieLearn server reloads the changes.
 
 ## Overview
 
@@ -44,7 +44,7 @@ Type        | Randomized | Description
 
 An assessment is broken down in to a list of zones, like this:
 
-```
+```json
 "zones": [
     {
         "title": "Easy questions",

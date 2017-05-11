@@ -1,7 +1,7 @@
 
 # `clientFiles` and `serverFiles`
 
-There are multiple locations within each course where files can be stored from access from the client or server. These can be used for code libraries used in questions, images embedded within questions, formula sheets available during exams, or online textbooks for reference during exams.
+There are multiple locations within each course where files can be stored for access from the client or server. These can be used for code libraries used in questions, images embedded within questions, formula sheets available during exams, or online textbooks for reference during exams.
 
 `ClientFiles` directories contain files that are accessible from the client webbrowser. This is appropriate for code libraries used on the client, or for files that a student should have access to, such as an image, reference webpages, or formula sheets.
 
@@ -11,7 +11,7 @@ There are multiple locations within each course where files can be stored from a
 
 The `clientFiles` and `serverFiles` subdirectories can be associated with the course, a question, a course instance, or an assessment, as shown below.
 
-```
+```text
 exampleCourse
 +-- clientFilesCourse                     # client files for the entire course
 |   +-- library.js
@@ -45,7 +45,7 @@ Each different `clientFiles` or `serverFiles` directory is accessible under the 
 
 From within HTML, `clientFiles` directories can be templated with the patterns:
 
-```
+```text
 <%= clientFilesCourse %>/filename.ext
 <%= clientFilesCourseInstance %>/filename.ext
 <%= clientFilesAssessment %>/filename.ext
@@ -58,26 +58,30 @@ These library files are separated into *client* and *server* libraries. Client l
 
 The basic form of a `library.js` file is:
 
-    define([<DEPENDENT-LIBRARIES-PATHS>], function(<DEPENDENT-LIBRARY-VARS>) {
-    
-        var library = {};
-    
-        library.add = function(arg1, arg2) {
-            return arg1 + arg2;
-        };
+```javascript
+define([<DEPENDENT-LIBRARIES-PATHS>], function(<DEPENDENT-LIBRARY-VARS>) {
 
-        // more library functions go here
+    var library = {};
 
-        return library;
-    });
+    library.add = function(arg1, arg2) {
+        return arg1 + arg2;
+    };
+
+    // more library functions go here
+
+    return library;
+});
+```
 
 To use this `library.js` file inside a question's `client.js` or `server.js` file:
 
-    define([<OTHER-LIBRARY-PATHS>, 'clientCode/library'], function(<OTHER-LIBRARY-VARS>, library) {
-    
-        var sum = library.add(3, 5); // sets sum to 8
-    
-    });
+```javascript
+define([<OTHER-LIBRARY-PATHS>, 'clientCode/library'], function(<OTHER-LIBRARY-VARS>, library) {
+
+    var sum = library.add(3, 5); // sets sum to 8
+
+});
+```
 
 
 ## Deprecated access modes

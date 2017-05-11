@@ -1,13 +1,13 @@
 
 # Course configuration
 
-**NOTE:** *Any time you edit the `infoCourse.json` file, you need to click the “Load from disk” button in the header so that the PrairieLearn server reloads the changes.
+**NOTE:** Any time you edit the `infoCourse.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the page header so that the local PrairieLearn server reloads the changes.
 
 ## Directory layout
 
 A course is specified by a single directory, with the following structure:
 
-```
+```text
 exampleCourse
 +-- infoCourse.json     # course specification (see below)
 +-- questions           # all questions for the course (see other doc)
@@ -180,7 +180,7 @@ You can add more tags to your course by listing them in the `infoCourse.json` fi
 
 The possible colors for assessment sets, topic, and tags are:
 
-<img width="1890" src="colors.png" />
+![Colors](colors.png)
 
 
 ## Timezone

@@ -5,8 +5,9 @@ PrairieLearn allows you to securely run custom grading scripts in environments t
 ## High-level Overview
 
 You can define a number of resources for the external grading process:
+
 * A Docker image to execute your tests in
-* An script to serve as an entrypoint to your grading process
+* A script to serve as an entrypoint to your grading process
 * Files that are shared between questions
 * Tests for individual questions
 
@@ -30,7 +31,7 @@ Each externally graded question can contain a directory called `tests` that cont
 
 When we receive a new submission for an externally graded question, we will package up all of the resources you specify and send your grading job to be executed on AWS infrastructure. Our Docker image contains a "driver" script that will coordinate fetching the files for your job, running your script, and sending results back to PrairieLearn. That script will set up the directory structure on the Docker container as follows:
 
-```
+```text
 /grade
 +-- tests                    # an exact copy of the question's `tests` directory, if present
 |   
@@ -55,7 +56,7 @@ To utilize external grading, you'll need the following:
 
 The following is an example of a well-structured course layout:
 
-```
+```text
 course
 +-- questions           # all questions for the course
 |   `-- addVector
@@ -163,7 +164,7 @@ We have to do a couple interesting things to run external grading jobs when Prai
 
 So, the command to run PrairieLearn locally will now look something like this:
 
-```
+```sh
 docker run --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn -v /home/nathan/pl_ag_jobs:/jobs -e HOST_JOBS_DIR=/home/nathan/pl_ag_jobs -v /var/run/docker.sock:/var/run/docker.sock prairielearn/prairielearn
 ```
 

@@ -177,7 +177,8 @@ router.get('/', function(req, res, next) {
                 trueAnswer: res.locals.showTrueAnswer ? res.locals.variant.true_answer : null,
                 submissions : res.locals.showSubmissions ? res.locals.submissions : null,
             });
-            res.locals.questionJsonBase64 = (new Buffer(questionJson)).toString('base64');
+            var encodedJson = encodeURIComponent(questionJson);
+            res.locals.questionJsonBase64 = (new Buffer(encodedJson)).toString('base64');
             res.locals.video = null;
             callback(null);
         },

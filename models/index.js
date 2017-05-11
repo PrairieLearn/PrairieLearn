@@ -29,10 +29,12 @@ module.exports = {
             'enum_instance_question_status.sql',
 
             // top-level tables
+            'config.sql',
             'users.sql',
             'administrators.sql',
             'pl_courses.sql',
             'course_permissions.sql',
+            'exam_mode_networks.sql',
 
             // PrairieSchedule proxy tables
             'courses.sql',
@@ -74,6 +76,7 @@ module.exports = {
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
+                if (ERR(err, callback)) return;
                 sqldb.query(sql, [], function(err) {
                     if (err) error.addData(err, {sqlFile: filename});
                     if (ERR(err, callback)) return;

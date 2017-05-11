@@ -27,6 +27,7 @@ describe('Homework assessment', function() {
     var csrfToken, instance_question, instance_question_1_id, instance_question_2_id;
     var locals = {};
     var preStartTime, postStartTime, preEndTime, postEndTime, assessment_instance_duration;
+    var job_sequence_id, job_sequence_status;
 
     describe('database', function() {
         it('should contain HW1', function(callback) {
@@ -178,7 +179,7 @@ describe('Homework assessment', function() {
                 assert.property(elemList[0].children[0], 'data');
             });
             it('base64 data should parse to JSON', function() {
-                questionData = JSON.parse(new Buffer(elemList[0].children[0].data, 'base64').toString());
+                questionData = JSON.parse(decodeURIComponent(new Buffer(elemList[0].children[0].data, 'base64').toString()));
             });
             it('should have a variant_id in the questionData', function() {
                 assert.deepProperty(questionData, 'variant.id');
@@ -645,6 +646,33 @@ describe('Homework assessment', function() {
                     }
                     callback(null);
                 });
+            });
+        });
+        describe('The regrading job sequence', function() {
+            it('should have an id', function(callback) {
+                sqldb.queryOneRow(sql.select_last_job_sequence, [], (err, result) => {
+                    if (ERR(err, callback)) return;
+                    job_sequence_id = result.rows[0].id;
+                    callback(null);
+                });
+            });
+            it('should complete', function(callback) {
+                var checkComplete = function() {
+                    params = {job_sequence_id};
+                    sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
+                        if (ERR(err, callback)) return;
+                        job_sequence_status = result.rows[0].status;
+                        if (job_sequence_status == 'Running') {
+                            setTimeout(checkComplete, 10);
+                        } else {
+                            callback(null);
+                        }
+                    });
+                };
+                setTimeout(checkComplete, 10);
+            });
+            it('should be successful', function() {
+                assert.equal(job_sequence_status, 'Success');
             });
         });
         describe('check the regrading succeeded', function() {
