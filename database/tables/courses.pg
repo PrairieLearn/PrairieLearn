@@ -5,5 +5,8 @@ columns
 indexes
     courses_pkey: PRIMARY KEY (course_id)
 
+foreign-key constraints
+    courses_pl_course_id_fkey: FOREIGN KEY (pl_course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE SET NULL
+
 referenced by
     exams: FOREIGN KEY (course_id) REFERENCES courses(course_id)

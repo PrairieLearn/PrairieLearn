@@ -19,3 +19,9 @@ columns
 indexes
     grading_logs_pkey: PRIMARY KEY (id)
     grading_logs_submission_id_idx: null
+
+foreign-key constraints
+    grading_logs_auth_user_id_fkey: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    grading_logs_graded_by_fkey: FOREIGN KEY (graded_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    grading_logs_grading_request_canceled_by_fkey: FOREIGN KEY (grading_request_canceled_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    grading_logs_submission_id_fkey: FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE CASCADE

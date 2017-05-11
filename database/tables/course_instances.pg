@@ -13,6 +13,9 @@ indexes
     course_instances_uuid_key: UNIQUE (uuid)
     course_instances_course_id_idx: null
 
+foreign-key constraints
+    course_instances_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+
 referenced by
     assessments: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     course_instance_access_rules: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
