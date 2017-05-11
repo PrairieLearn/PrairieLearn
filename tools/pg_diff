@@ -29,9 +29,9 @@ const options = {
 if (args.db && !_.isArray(args.db) && args.dir && !_.isArray(args.dir)) {
     databaseDiff.diffDatabaseAndDirectory(args.db, args.dir, options, handleResults);
 } else if (args.db && _.isArray(args.db) && args.db.length == 2 && !args.dir) {
-    databaseDiff.diffDatabaseAndDirectory(args.db[0], args.db[1], options, handleResults);
+    databaseDiff.diffDatabases(args.db[0], args.db[1], options, handleResults);
 } else if (args.dir && _.isArray(args.dir) && args.dir.length == 2 && !args.db) {
-    databaseDiff.diffDatabaseAndDirectory(args.dir[0], args.dir[1], options, handleResults);
+    databaseDiff.diffDirectories(args.dir[0], args.dir[1], options, handleResults);
 } else {
     yargs.showHelp();
     process.exit(1);
