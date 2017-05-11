@@ -14,6 +14,7 @@
         "cookie-parser": "1.4.x",
         "crypto-js": "3.1.x",
         "csv": "1.1.x",
+        "diff": "3.2.x",
         "dockerode": "2.4.x",
         "ejs": "2.5.x",
         "express": "4.14.x",

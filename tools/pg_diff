@@ -21,18 +21,24 @@ const yargs = require('yargs')
 
 const args = yargs.argv;
 
+const options = {
+    outputFormat: 'string',
+    coloredOutput: process.stdout.isTTY,
+};
+
 if (args.db && !_.isArray(args.db) && args.dir && !_.isArray(args.dir)) {
-    databaseDiff.diffDatabaseAndDirectory(args.db, args.dir, handleResults);
+    databaseDiff.diffDatabaseAndDirectory(args.db, args.dir, options, handleResults);
 } else if (args.db && _.isArray(args.db) && args.db.length == 2 && !args.dir) {
-    databaseDiff.diffDatabaseAndDirectory(args.db[0], args.db[1], handleResults);
+    databaseDiff.diffDatabaseAndDirectory(args.db[0], args.db[1], options, handleResults);
 } else if (args.dir && _.isArray(args.dir) && args.dir.length == 2 && !args.db) {
-    databaseDiff.diffDatabaseAndDirectory(args.dir[0], args.dir[1], handleResults);
+    databaseDiff.diffDatabaseAndDirectory(args.dir[0], args.dir[1], options, handleResults);
 } else {
     yargs.showHelp();
     process.exit(1);
 }
 
 function handleResults(err, results) {
-    if (ERR(err, results)) return;
-    console.log(results);
+    if (ERR(err, (err) => console.log(err))) process.exit(1);
+    process.stdout.write(results);
+    process.exit(0)
 }
