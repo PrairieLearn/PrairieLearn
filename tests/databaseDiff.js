@@ -130,13 +130,7 @@ function loadDescriptionFromDisk(dirPath, callback) {
     async.waterfall([
         (callback) => {
             fs.readdir(path.join(dirPath, 'tables'), (err, entries) => {
-                if (err) {
-                    if (err.code == 'ENOENT') {
-                        return callback(null);
-                    } else {
-                        return ERR(err, callback);
-                    }
-                }
+                if (ERR(err, callback)) return;
                 callback(null, entries);
             });
         },
