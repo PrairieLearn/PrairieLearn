@@ -28,9 +28,11 @@ const options = {
 
 if (args.db && !_.isArray(args.db) && args.dir && !_.isArray(args.dir)) {
     // Ensure correct ordering for the sake of diffs
-    if (process.argv.indexOf('db') < process.argv.indexOf('dir')) {
+    if (process.argv.indexOf('--db') < process.argv.indexOf('--dir')) {
+        console.log('a');
         databaseDiff.diffDatabaseAndDirectory(args.db, args.dir, options, handleResults);
     } else {
+        console.log('b');
         databaseDiff.diffDirectoryAndDatabase(args.dir, args.db, options, handleResults);
     }
 } else if (args.db && _.isArray(args.db) && args.db.length == 2 && !args.dir) {
