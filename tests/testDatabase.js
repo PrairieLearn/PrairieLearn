@@ -23,9 +23,9 @@ function DatabaseError(message) {
 DatabaseError.prototype = Object.create(Error.prototype);
 DatabaseError.prototype.constructor = DatabaseError;
 
-describe('databases', function() {
+describe('database', function() {
 
-    it('should have the same tables when constructed from models or migrations', function(done) {
+    it('should match the database described in /database', function(done) {
         this.timeout(10000);
         let results = '';
         let errMsg = '';
