@@ -1,7 +1,7 @@
 columns
     id: bigint not null default nextval('last_accesses_id_seq'::regclass)
-    user_id: bigint not null
     last_access: timestamp with time zone
+    user_id: bigint not null
 
 indexes
     last_accesses_pkey: PRIMARY KEY (id)

@@ -1,29 +1,29 @@
 columns
-    id: bigint not null default nextval('jobs_id_seq'::regclass)
-    start_date: timestamp with time zone default now()
-    finish_date: timestamp with time zone
-    course_id: bigint
-    number: integer
-    job_sequence_id: bigint
-    number_in_sequence: integer
-    last_in_sequence: boolean
-    user_id: bigint
-    authn_user_id: bigint
-    type: text
-    description: text
-    status: enum_job_status
-    stdin: text
-    stdout: text
-    stderr: text
-    output: text
-    command: text
     arguments: text[]
-    working_directory: text
+    assessment_id: bigint
+    authn_user_id: bigint
+    command: text
+    course_id: bigint
+    course_instance_id: bigint
+    description: text
+    error_message: text
     exit_code: integer
     exit_signal: text
-    error_message: text
-    course_instance_id: bigint
-    assessment_id: bigint
+    finish_date: timestamp with time zone
+    id: bigint not null default nextval('jobs_id_seq'::regclass)
+    job_sequence_id: bigint
+    last_in_sequence: boolean
+    number: integer
+    number_in_sequence: integer
+    output: text
+    start_date: timestamp with time zone default now()
+    status: enum_job_status
+    stderr: text
+    stdin: text
+    stdout: text
+    type: text
+    user_id: bigint
+    working_directory: text
 
 indexes
     jobs_pkey: PRIMARY KEY (id)

@@ -1,14 +1,14 @@
 columns
-    id: bigint not null default nextval('assessment_access_rules_id_seq'::regclass)
     assessment_id: bigint not null
-    number: integer
-    mode: enum_mode
-    role: enum_role
-    uids: text[]
-    start_date: timestamp with time zone
-    end_date: timestamp with time zone
     credit: integer
+    end_date: timestamp with time zone
+    id: bigint not null default nextval('assessment_access_rules_id_seq'::regclass)
+    mode: enum_mode
+    number: integer
+    role: enum_role
+    start_date: timestamp with time zone
     time_limit_min: integer
+    uids: text[]
 
 indexes
     assessment_access_rules_pkey: PRIMARY KEY (id)

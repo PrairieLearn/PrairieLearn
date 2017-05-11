@@ -1,25 +1,27 @@
 columns
-    id: bigint not null default nextval('assessments_id_seq'::regclass)
-    uuid: uuid not null
-    tid: text
-    course_instance_id: bigint not null
-    type: enum_assessment_type
-    number: text
-    order_by: integer
-    title: text
-    config: jsonb
-    text: text
-    multiple_instance: boolean
-    shuffle_questions: boolean default false
-    max_points: double precision
     assessment_set_id: bigint
-    deleted_at: timestamp with time zone
-    obj: jsonb
     auto_close: boolean default true
+    config: jsonb
+    course_instance_id: bigint not null
+    deleted_at: timestamp with time zone
+    id: bigint not null default nextval('assessments_id_seq'::regclass)
+    max_points: double precision
+    multiple_instance: boolean
+    number: text
+    obj: jsonb
+    order_by: integer
+    shuffle_questions: boolean default false
+    text: text
+    tid: text
+    title: text
+    type: enum_assessment_type
+    uuid: uuid not null
 
 indexes
     assessments_pkey: PRIMARY KEY (id)
     assessments_uuid_key: UNIQUE (uuid)
+    assessments_assessment_set_id_idx: null
+    assessments_course_instance_id_idx: null
 
 referenced by
     alternative_groups: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

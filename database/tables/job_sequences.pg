@@ -1,20 +1,22 @@
 columns
-    id: bigint not null default nextval('job_sequences_id_seq'::regclass)
-    start_date: timestamp with time zone default now()
-    finish_date: timestamp with time zone
-    course_id: bigint
-    number: integer
-    user_id: bigint
-    authn_user_id: bigint
-    type: text
-    description: text
-    status: enum_job_status default 'Running'::enum_job_status
-    course_instance_id: bigint
     assessment_id: bigint
+    authn_user_id: bigint
+    course_id: bigint
+    course_instance_id: bigint
+    description: text
+    finish_date: timestamp with time zone
+    id: bigint not null default nextval('job_sequences_id_seq'::regclass)
+    number: integer
+    start_date: timestamp with time zone default now()
+    status: enum_job_status default 'Running'::enum_job_status
+    type: text
+    user_id: bigint
 
 indexes
     job_sequences_pkey: PRIMARY KEY (id)
     job_sequences_course_id_number_key: UNIQUE (course_id, number)
+    job_sequences_assessment_id_idx: null
+    job_sequences_course_id_idx: null
 
 referenced by
     jobs: FOREIGN KEY (job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE CASCADE

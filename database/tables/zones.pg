@@ -1,9 +1,9 @@
 columns
+    assessment_id: bigint not null
     id: bigint not null default nextval('zones_id_seq'::regclass)
-    title: text
     number: integer
     number_choose: integer
-    assessment_id: bigint not null
+    title: text
 
 indexes
     zones_pkey: PRIMARY KEY (id)

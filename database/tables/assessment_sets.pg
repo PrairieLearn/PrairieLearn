@@ -1,11 +1,11 @@
 columns
-    id: bigint not null default nextval('assessment_sets_id_seq'::regclass)
     abbreviation: text
-    name: text
-    heading: text
     color: text
-    number: integer
     course_id: bigint not null
+    heading: text
+    id: bigint not null default nextval('assessment_sets_id_seq'::regclass)
+    name: text
+    number: integer
 
 indexes
     assessment_sets_pkey: PRIMARY KEY (id)

@@ -1,8 +1,8 @@
 columns
-    user_id: bigint not null default nextval('users_user_id_seq'::regclass)
+    name: text
     uid: text not null
     uin: character(9)
-    name: text
+    user_id: bigint not null default nextval('users_user_id_seq'::regclass)
 
 indexes
     users_pkey: PRIMARY KEY (user_id)

@@ -1,16 +1,17 @@
 columns
-    id: bigint not null default nextval('course_instances_id_seq'::regclass)
-    uuid: uuid not null
     course_id: bigint not null
-    short_name: text
+    deleted_at: timestamp with time zone
+    display_timezone: text
+    id: bigint not null default nextval('course_instances_id_seq'::regclass)
     long_name: text
     number: integer
-    display_timezone: text
-    deleted_at: timestamp with time zone
+    short_name: text
+    uuid: uuid not null
 
 indexes
     course_instances_pkey: PRIMARY KEY (id)
     course_instances_uuid_key: UNIQUE (uuid)
+    course_instances_course_id_idx: null
 
 referenced by
     assessments: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

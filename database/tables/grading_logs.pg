@@ -1,20 +1,21 @@
 columns
-    id: bigint not null default nextval('grading_logs_id_seq'::regclass)
+    auth_user_id: bigint
+    correct: boolean
     date: timestamp with time zone default now()
-    submission_id: bigint not null
-    grading_method: enum_grading_method
-    grading_requested_at: timestamp with time zone
-    grading_request_canceled_at: timestamp with time zone
-    grading_request_canceled_by: bigint
+    feedback: jsonb
     graded_at: timestamp with time zone
     graded_by: bigint
-    score: double precision
-    correct: boolean
-    feedback: jsonb
-    auth_user_id: bigint
-    grading_submitted_at: timestamp with time zone
-    grading_started_at: timestamp with time zone
     grading_finished_at: timestamp with time zone
+    grading_method: enum_grading_method
+    grading_request_canceled_at: timestamp with time zone
+    grading_request_canceled_by: bigint
+    grading_requested_at: timestamp with time zone
+    grading_started_at: timestamp with time zone
+    grading_submitted_at: timestamp with time zone
+    id: bigint not null default nextval('grading_logs_id_seq'::regclass)
+    score: double precision
+    submission_id: bigint not null
 
 indexes
     grading_logs_pkey: PRIMARY KEY (id)
+    grading_logs_submission_id_idx: null

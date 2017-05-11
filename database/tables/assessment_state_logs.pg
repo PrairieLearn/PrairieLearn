@@ -1,9 +1,10 @@
 columns
-    id: bigint not null default nextval('assessment_state_logs_id_seq'::regclass)
-    date: timestamp with time zone default now()
-    open: boolean
     assessment_instance_id: bigint not null
     auth_user_id: bigint
+    date: timestamp with time zone default now()
+    id: bigint not null default nextval('assessment_state_logs_id_seq'::regclass)
+    open: boolean
 
 indexes
     assessment_state_logs_pkey: PRIMARY KEY (id)
+    assessment_state_logs_assessment_instance_id_idx: null
