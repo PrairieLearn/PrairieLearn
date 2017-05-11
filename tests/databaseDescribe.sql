@@ -22,7 +22,7 @@ FROM pg_catalog.pg_attribute a
 WHERE a.attrelid = $oid
     AND NOT a.attisdropped
     AND a.attnum > 0
-ORDER BY a.attnum;
+ORDER BY a.attname;
 
 -- BLOCK get_indexes_for_table
 SELECT c2.relname AS name,
