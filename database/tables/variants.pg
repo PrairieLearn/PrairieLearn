@@ -1,17 +1,17 @@
 columns
-    id: bigint not null default nextval('variants_id_seq'::regclass)
-    qiid: text
-    date: timestamp with time zone default now()
-    instance_question_id: bigint not null
-    available: boolean default true
-    number: integer
-    variant_seed: text
-    params: jsonb
-    true_answer: jsonb
-    options: jsonb
     authn_user_id: bigint
+    available: boolean default true
+    date: timestamp with time zone default now()
     duration: interval default '00:00:00'::interval
     first_duration: interval
+    id: bigint not null default nextval('variants_id_seq'::regclass)
+    instance_question_id: bigint not null
+    number: integer
+    options: jsonb
+    params: jsonb
+    qiid: text
+    true_answer: jsonb
+    variant_seed: text
 
 indexes
     variants_pkey: PRIMARY KEY (id)

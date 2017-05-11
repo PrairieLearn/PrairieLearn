@@ -1,26 +1,27 @@
 columns
-    id: bigint not null default nextval('instance_questions_id_seq'::regclass)
+    assessment_instance_id: bigint not null
+    assessment_question_id: bigint not null
+    authn_user_id: bigint
     created_at: timestamp with time zone default now()
-    open: boolean default true
+    current_value: double precision
+    duration: interval default '00:00:00'::interval
+    first_duration: interval
+    id: bigint not null default nextval('instance_questions_id_seq'::regclass)
     number: integer
+    number_attempts: integer default 0
+    open: boolean default true
     order_by: integer default floor((random() * (1000000)::double precision))
     points: double precision default 0
     points_in_grading: double precision default 0
+    points_list: double precision[]
     score_perc: double precision default 0
     score_perc_in_grading: double precision default 0
-    current_value: double precision
-    number_attempts: integer default 0
-    points_list: double precision[]
-    assessment_instance_id: bigint not null
-    assessment_question_id: bigint not null
     status: enum_instance_question_status default 'unanswered'::enum_instance_question_status
-    authn_user_id: bigint
-    duration: interval default '00:00:00'::interval
-    first_duration: interval
 
 indexes
     instance_questions_pkey: PRIMARY KEY (id)
     instance_questions_assessment_question_id_assessment_instan_key: UNIQUE (assessment_question_id, assessment_instance_id)
+    instance_questions_assessment_instance_id_idx: null
 
 referenced by
     question_score_logs: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE

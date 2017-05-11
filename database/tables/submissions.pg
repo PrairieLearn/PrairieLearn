@@ -1,25 +1,26 @@
 columns
-    id: bigint not null default nextval('submissions_id_seq'::regclass)
-    sid: text
-    date: timestamp with time zone default now()
-    variant_id: bigint not null
     auth_user_id: bigint
+    correct: boolean
+    credit: integer
+    date: timestamp with time zone default now()
+    duration: interval default '00:00:00'::interval
+    feedback: jsonb
+    graded_at: timestamp with time zone
+    grading_method: enum_grading_method
+    grading_requested_at: timestamp with time zone
+    id: bigint not null default nextval('submissions_id_seq'::regclass)
+    mode: enum_mode
+    override_score: double precision
+    score: double precision
+    sid: text
     submitted_answer: jsonb
     type: enum_submission_type
-    override_score: double precision
-    credit: integer
-    mode: enum_mode
-    grading_requested_at: timestamp with time zone
-    graded_at: timestamp with time zone
-    score: double precision
-    correct: boolean
-    feedback: jsonb
-    grading_method: enum_grading_method
-    duration: interval default '00:00:00'::interval
+    variant_id: bigint not null
 
 indexes
     submissions_pkey: PRIMARY KEY (id)
     submissions_sid_key: UNIQUE (sid)
+    submissions_variant_id_idx: null
 
 referenced by
     grading_logs: FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE CASCADE

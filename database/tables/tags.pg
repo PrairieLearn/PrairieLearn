@@ -1,10 +1,10 @@
 columns
+    color: text
+    course_id: bigint not null
+    description: text
     id: bigint not null default nextval('tags_id_seq'::regclass)
     name: text
     number: integer
-    color: text
-    description: text
-    course_id: bigint not null
 
 indexes
     tags_pkey: PRIMARY KEY (id)

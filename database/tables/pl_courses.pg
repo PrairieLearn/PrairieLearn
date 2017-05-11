@@ -1,12 +1,12 @@
 columns
-    id: bigint not null default nextval('pl_courses_id_seq'::regclass)
-    short_name: text
-    title: text
+    deleted_at: timestamp with time zone
     display_timezone: text
     grading_queue: text
+    id: bigint not null default nextval('pl_courses_id_seq'::regclass)
     path: text
     repository: text
-    deleted_at: timestamp with time zone
+    short_name: text
+    title: text
 
 indexes
     pl_courses_pkey: PRIMARY KEY (id)

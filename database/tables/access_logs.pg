@@ -1,18 +1,18 @@
 columns
-    id: bigint not null default nextval('access_logs_id_seq'::regclass)
-    mongo_id: text
-    date: timestamp with time zone
-    mode: enum_mode
-    ip: inet
-    forwarded_ip: inet
-    auth_uid: text
     auth_role: enum_role
-    user_uid: text
-    user_role: enum_role
-    method: text
-    path: text
-    params: jsonb
+    auth_uid: text
     body: jsonb
+    date: timestamp with time zone
+    forwarded_ip: inet
+    id: bigint not null default nextval('access_logs_id_seq'::regclass)
+    ip: inet
+    method: text
+    mode: enum_mode
+    mongo_id: text
+    params: jsonb
+    path: text
+    user_role: enum_role
+    user_uid: text
 
 indexes
     access_logs_pkey: PRIMARY KEY (id)

@@ -1,9 +1,9 @@
 columns
+    assessment_id: bigint not null
     id: bigint not null default nextval('alternative_groups_id_seq'::regclass)
     number: integer
     number_choose: integer
     zone_id: bigint not null
-    assessment_id: bigint not null
 
 indexes
     alternative_groups_pkey: PRIMARY KEY (id)
