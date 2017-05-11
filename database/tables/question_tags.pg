@@ -8,3 +8,7 @@ indexes
     question_tags_pkey: PRIMARY KEY (id)
     question_tags_question_id_tag_id_key: UNIQUE (question_id, tag_id)
     question_tags_tag_id_idx: null
+
+foreign-key constraints
+    question_tags_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    question_tags_tag_id_fkey: FOREIGN KEY (tag_id) REFERENCES tags(id) ON UPDATE CASCADE ON DELETE CASCADE

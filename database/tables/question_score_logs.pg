@@ -10,3 +10,7 @@ columns
 indexes
     question_score_logs_pkey: PRIMARY KEY (id)
     question_score_logs_instance_question_id_idx: null
+
+foreign-key constraints
+    question_score_logs_auth_user_id_fkey: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    question_score_logs_instance_question_id_fkey: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE

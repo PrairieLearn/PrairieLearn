@@ -5,5 +5,8 @@ columns
 indexes
     exams_pkey: PRIMARY KEY (exam_id)
 
+foreign-key constraints
+    exams_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(course_id)
+
 referenced by
     reservations: FOREIGN KEY (exam_id) REFERENCES exams(exam_id)

@@ -146,6 +146,33 @@ module.exports.describe = function(options, callback) {
                         const params = {
                             oid: table.oid,
                         };
+                        sqldb.query(sql.get_foreign_key_constraints_for_table, params, (err, results) => {
+                            if (ERR(err, callback)) return;
+
+                            if (results.rows.length == 0) {
+                                return callback(null);
+                            }
+
+                            if (options.outputFormat === 'string') {
+                                if (output.tables[table.name].length != 0) {
+                                    output.tables[table.name] += '\n\n';
+                                }
+                                output.tables[table.name] += formatText('foreign-key constraints\n', colors.underline);
+                                output.tables[table.name] += results.rows.map((row) => {
+                                    var rowText = formatText(`    ${row.name}:`, colors.bold);
+                                    rowText += formatText(` ${row.def}`, colors.green);
+                                    return rowText;
+                                }).join('\n');
+                            } else {
+                                output.tables[table.name].foreignKeyConstraings = results.rows;
+                            }
+                            callback(null);
+                        });
+                    },
+                    (callback) => {
+                        const params = {
+                            oid: table.oid,
+                        };
                         sqldb.query(sql.get_references_for_table, params, (err, results) => {
                             if (ERR(err, callback)) return;
 

@@ -17,5 +17,10 @@ indexes
     assessment_questions_alternative_group_id_idx: null
     assessment_questions_assessment_id_idx: null
 
+foreign-key constraints
+    assessment_questions_alternative_group_id_fkey: FOREIGN KEY (alternative_group_id) REFERENCES alternative_groups(id) ON UPDATE CASCADE ON DELETE SET NULL
+    assessment_questions_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_questions_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+
 referenced by
     instance_questions: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE

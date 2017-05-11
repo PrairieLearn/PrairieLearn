@@ -49,6 +49,15 @@ WHERE c.confrelid = $oid
     AND c.contype = 'f'
 ORDER BY conname;
 
+-- BLOCK get_foreign_key_constraints_for_table
+SELECT conname AS name,
+    pg_catalog.pg_get_constraintdef(r.oid, true) as def
+FROM pg_catalog.pg_constraint r
+WHERE r.conrelid = $oid
+    AND r.contype = 'f'
+ORDER BY 1;
+
+
 -- BLOCK get_enums
 SELECT t.typname AS name,
     ARRAY(

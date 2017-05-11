@@ -9,3 +9,7 @@ indexes
     variant_view_logs_pkey: PRIMARY KEY (id)
     variant_view_logs_access_log_id_key: UNIQUE (access_log_id)
     variant_view_logs_variant_id_idx: null
+
+foreign-key constraints
+    variant_view_logs_access_log_id_fkey: FOREIGN KEY (access_log_id) REFERENCES access_logs(id) ON UPDATE CASCADE ON DELETE CASCADE
+    variant_view_logs_variant_id_fkey: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
