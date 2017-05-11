@@ -232,7 +232,7 @@ module.exports.diffDirectories = function(directory1, directory2, options, callb
 
     const db2 = {
         type: 'directory',
-        path: directory1
+        path: directory2
     };
 
     diff(db1, db2, options, callback);
