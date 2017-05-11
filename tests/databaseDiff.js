@@ -224,6 +224,20 @@ module.exports.diffDatabaseAndDirectory = function(database, directory, options,
     diff(db1, db2, options, callback);
 };
 
+module.exports.diffDirectoryAndDatabase = function(directory, database, options, callback) {
+    const db1 = {
+        type: 'directory',
+        path: directory
+    };
+
+    const db2 = {
+        type: 'database',
+        name: database
+    };
+
+    diff(db1, db2, options, callback);
+};
+
 module.exports.diffDirectories = function(directory1, directory2, options, callback) {
     const db1 = {
         type: 'directory',

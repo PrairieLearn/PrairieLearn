@@ -27,7 +27,12 @@ const options = {
 };
 
 if (args.db && !_.isArray(args.db) && args.dir && !_.isArray(args.dir)) {
-    databaseDiff.diffDatabaseAndDirectory(args.db, args.dir, options, handleResults);
+    // Ensure correct ordering for the sake of diffs
+    if (process.argv.indexOf('db') < process.argv.indexOf('dir')) {
+        databaseDiff.diffDatabaseAndDirectory(args.db, args.dir, options, handleResults);
+    } else {
+        databaseDiff.diffDirectoryAndDatabase(args.dir, args.db, options, handleResults);
+    }
 } else if (args.db && _.isArray(args.db) && args.db.length == 2 && !args.dir) {
     databaseDiff.diffDatabases(args.db[0], args.db[1], options, handleResults);
 } else if (args.dir && _.isArray(args.dir) && args.dir.length == 2 && !args.db) {
