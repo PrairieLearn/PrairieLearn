@@ -13,7 +13,7 @@ var courseDB = require('../lib/course-db');
 var postgresqlUser = 'postgres';
 var postgresqlDatabase = 'pltest';
 var postgresqlHost = 'localhost';
-var initConString = 'postgres://postgres@localhost/postgres';
+var initConString = 'postgres://localhost/postgres';
 
 module.exports = {
     before: function(callback) {
