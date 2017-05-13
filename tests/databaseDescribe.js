@@ -4,6 +4,7 @@ const pg = require('pg');
 const pgArray = require('pg').types.arrayParser;
 const assert = require('chai').assert;
 const colors = require('colors');
+const _ = require('lodash');
 
 const sqldb = require('../lib/sqldb');
 const sqlLoader = require('../lib/sql-loader');
@@ -20,7 +21,8 @@ module.exports = {};
  * 'options' object:
  *
  * databaseName [REQUIRED]: the name of the database to describe
- * outputFormat [default: 'string']: determines how the description is formatted.s
+ * outputFormat [default: 'string']: determines how the description is formatted
+ * coloredOutput [default: false]: if the output should be colored for better readability
  *
  * @param  {Object}   options  Options for this function
  * @param  {Function} callback Will receive results of an error when complete
@@ -33,6 +35,7 @@ module.exports.describe = function(options, callback) {
     }
 
     var tables;
+    var ignoreColumns = {};
 
     var output = {
         tables: {},
@@ -70,6 +73,12 @@ module.exports.describe = function(options, callback) {
                 if (ERR(err, callback)) return;
                 tables = results.rows;
 
+                // Filter out ignored tables
+                if (options.ignoreTables && _.isArray(options.ignoreTables)) {
+                    tables = _.filter(tables, table => options.ignoreTables.indexOf(table.name) == -1);
+                    console.log(tables);
+                }
+
                 // Initialize output with names of tables
                 if (options.outputFormat === 'string') {
                     tables.forEach((table) => output.tables[table.name] = '');
@@ -79,6 +88,23 @@ module.exports.describe = function(options, callback) {
 
                 callback(null);
             });
+        },
+        (callback) => {
+            // Transform ignored columns into a map from table names to arrays
+            // of column names
+            if (options.ignoreColumns && _.isArray(options.ignoreColumns)) {
+                ignoreColumns = _.filter(options.ignoreColumns, ignore => {
+                    return /^[^\s\.]*\.[^\s\.]*$/.test(ignore)
+                });
+                ignoreColumns = _.reduce(ignoreColumns, (result, value) => {
+                    var res = /^(([^\s\.]*)\.([^\s\.]*))$/.exec(value);
+                    var table = res[2];
+                    var column = res[3];
+                    (result[table] || (result[table] = [])).push(column);
+                    return result;
+                }, {});
+            }
+            callback(null);
         },
         (callback) => {
             // Get column info for each table
@@ -91,14 +117,18 @@ module.exports.describe = function(options, callback) {
                         sqldb.query(sql.get_columns_for_table, params, (err, results) => {
                             if (ERR(err, callback)) return;
 
-                            if (results.rows.length == 0) {
+                            const rows = _.filter(results.rows, row => {
+                                return (ignoreColumns[table.name] || []).indexOf(row.name) == -1;
+                            });
+
+                            if (rows.length == 0) {
                                 return callback(null);
                             }
 
                             // Transform table info into a string, if needed
                             if (options.outputFormat === 'string') {
                                 output.tables[table.name] += formatText('columns\n', colors.underline);
-                                output.tables[table.name] += results.rows.map((row) => {
+                                output.tables[table.name] += rows.map((row) => {
                                     var rowText = formatText(`    ${row.name}`, colors.bold);
                                     rowText += ':' + formatText(` ${row.type}`, colors.green);
                                     if (row.notnull) {
@@ -110,7 +140,7 @@ module.exports.describe = function(options, callback) {
                                     return rowText;
                                 }).join('\n');
                             } else {
-                                output.tables[table.name].columns = results.rows;
+                                output.tables[table.name].columns = rows;
                             }
                             callback(null);
                         });
