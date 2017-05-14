@@ -4,7 +4,7 @@ var hmacSha256 = require('crypto-js/hmac-sha256');
 var config = require('../lib/config');
 var error = require('../lib/error');
 var csrf = require('../lib/csrf');
-var config = require('../lib/config');
+var logger = require('../lib/logger');
 var sqldb = require('../lib/sqldb');
 var sqlLoader = require('../lib/sql-loader');
 
@@ -58,5 +58,6 @@ module.exports = function(req, res, next) {
         if (result.rowCount == 0) return next(new Error('user not found with user_id ' + authnData.user_id));
         res.locals.authn_user = result.rows[0].user;
         res.locals.is_administrator = result.rows[0].is_administrator;
+        next();
     });
 };

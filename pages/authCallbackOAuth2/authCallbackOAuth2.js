@@ -1,6 +1,7 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var path = require('path');
+var assert = require('assert');
 var express = require('express');
 var router = express.Router();
 
@@ -44,15 +45,15 @@ router.get('/', function(req, res, next) {
             return;
         }
         var params = [
-            email,    // uid
-            email,    // name
-            null,     // uin
-            'google', //provider
+            identity.email, // uid
+            identity.email, // name
+            null,           // uin
+            'google',       // provider
         ];
         sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, next)) return;
             var tokenData = {
-                user_id: result.user_id
+                user_id: result.rows[0].user_id
             }
             var pl_authn = csrf.generateToken(tokenData, config.secretKey);
             res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});
