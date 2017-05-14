@@ -11,7 +11,9 @@ var csrf = require('../../lib/csrf');
 var sqldb = require('../../lib/sqldb');
 
 router.get('/', function(req, res, next) {
-    var authUid = null. authName = null, authUin = null;
+    var authUid = null;
+    var authName = null;
+    var authUin = null;
     if (req.headers['x-trust-auth-uid']) authUid = req.headers['x-trust-auth-uid'];
     if (req.headers['x-trust-auth-name']) authName = req.headers['x-trust-auth-name'];
     if (req.headers['x-trust-auth-uin']) authUin = req.headers['x-trust-auth-uin'];
