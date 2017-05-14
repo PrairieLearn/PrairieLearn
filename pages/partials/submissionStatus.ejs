@@ -1,8 +1,8 @@
 <% if (submission.grading_method == 'External' && submission.graded_at == null) { %>
     <script>
-        // Expects a status string from sprocs/grading_log_status.sql
+        // Expects a status string from sprocs/grading_job_status.sql
         function updateStatus(status) {
-            var display = $('#grading-<%= submission.grading_log_id %>');
+            var display = $('#grading-<%= submission.grading_job_id %>');
             var label;
             switch (status) {
                 case 'requested':
@@ -12,7 +12,7 @@
                     label = 'Queued for grading';
                     break;
                 case 'grading':
-                    label = 'Grading in process';
+                    label = 'Grading in progress';
                     break;
                 case 'processing':
                     label = 'Processing results';
@@ -25,7 +25,7 @@
                     break;
             }
             display.html(label);
-            var reload = $('#grading-<%= submission.grading_log_id %>-reload');
+            var reload = $('#grading-<%= submission.grading_job_id %>-reload');
             status == 'graded' ? reload.show() : reload.hide();
         }
 
@@ -36,7 +36,7 @@
                 updateStatus(msg.status);
             });
 
-            socket.emit('getStatus', {job_id: <%= submission.grading_log_id %>}, function (msg) {
+            socket.emit('getStatus', {job_id: <%= submission.grading_job_id %>}, function (msg) {
                 updateStatus(msg.status);
             });
         } else {
@@ -45,7 +45,7 @@
 
         // Immediately render with status known from the server; this will be
         // updated as soon as new data comes in via the socket
-        updateStatus('<%= submission.grading_log_status %>')
+        updateStatus('<%= submission.grading_job_status %>')
     </script>
 <% } %>
 
@@ -55,9 +55,9 @@
         <span class="label label-primary">saved, not graded</span>
     <% } else { %>
         <% if (submission.grading_method == 'External') { %>
-            <span id="grading-<%= submission.grading_log_id %>" class="label label-default"></span>
+            <span id="grading-<%= submission.grading_job_id %>" class="label label-default"></span>
             <!-- FIXME: add in elapsed time? waiting for grading (<%= submission.elapsed_grading_time %>) -->
-            <a id="grading-<%= submission.grading_log_id %>-reload" href="<%= reloadUrl %>" class="btn btn-xs btn-primary" style="display: none;">Reload for results</a>
+            <a id="grading-<%= submission.grading_job_id %>-reload" href="<%= reloadUrl %>" class="btn btn-xs btn-primary" style="display: none;">Reload for results</a>
         <% } else if (submission.grading_method == 'Manual') { %>
             <span class="label label-default">waiting for manual grading</span>
         <% } else { %>

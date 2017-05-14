@@ -93,20 +93,20 @@ WITH event_log AS (
             v.id as variant_id,
             v.number as variant_number,
             jsonb_build_object(
-                'correct', gl.correct,
-                'score', gl.score,
-                'feedback', gl.feedback,
+                'correct', gj.correct,
+                'score', gj.score,
+                'feedback', gj.feedback,
                 'submitted_answer', s.submitted_answer,
                 'true_answer', v.true_answer
             ) AS data
         FROM
-            grading_logs AS gl
-            JOIN submissions AS s ON (s.id = gl.submission_id)
+            grading_jobs AS gj
+            JOIN submissions AS s ON (s.id = gj.submission_id)
             JOIN variants AS v ON (v.id = s.variant_id)
             JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
             JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
             JOIN questions AS q ON (q.id = aq.question_id)
-            LEFT JOIN users AS u ON (u.user_id = gl.auth_user_id)
+            LEFT JOIN users AS u ON (u.user_id = gj.auth_user_id)
         WHERE
             iq.assessment_instance_id = $assessment_instance_id
             AND s.graded_at IS NOT NULL
