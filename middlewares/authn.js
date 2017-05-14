@@ -36,7 +36,19 @@ module.exports = function(req, res, next) {
             authName = 'Student User';
             authUin = '314156295';
         }
-        return next();
+        var params = {
+            uid: authUid,
+            name: authName,
+            uin: authUin,
+            provider: 'dev',
+        };
+        sqldb.queryOneRow(sql.insert_user, params, (err, result) => {
+            if (ERR(err, next)) return;
+            res.locals.authn_user = result.rows[0].user;
+            res.locals.is_administrator = result.rows[0].is_administrator;
+            next();
+        });
+        return;
     }
 
     // otherwise look for auth cookies

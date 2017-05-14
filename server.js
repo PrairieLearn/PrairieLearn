@@ -80,9 +80,10 @@ app.use(/^\/?$/, function(req, res, next) {res.redirect('/pl');});
 // clear cookies on the homepage to reset any stale session state
 app.use(/^\/pl\/?/, require('./middlewares/clearCookies'));
 
-// course selection pages don't need authorization
+// some pages don't need authorization
 app.use('/pl', require('./pages/home/home'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
+app.use('/pl/logout', require('./pages/authLogout/authLogout'));
 
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
 if (config.devMode) {

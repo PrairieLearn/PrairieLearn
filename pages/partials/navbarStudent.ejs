@@ -75,11 +75,7 @@
         <a class="btn btn-success navbar-btn" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a>
         <% } %>
 
-        <% if (devMode) { %>
-        <a class="btn btn-default navbar-btn" href="">Log out</a>
-        <% } else { %>
-        <a class="btn btn-default navbar-btn" href="https://prairielearn.engr.illinois.edu/Shibboleth.sso/Logout">Log out</a>
-        <% } %>
+        <a class="btn btn-default navbar-btn" href="<%= plainUrlPrefix %>/logout">Log out</a>
       </div>
     </div>
   </div>
