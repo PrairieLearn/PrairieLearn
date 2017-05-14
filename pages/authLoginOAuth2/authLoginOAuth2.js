@@ -6,7 +6,7 @@ var router = express.Router();
 
 var error = require('../../lib/error');
 var logger = require('../../lib/logger');
-var error = require('../../lib/config');
+var config = require('../../lib/config');
 var csrf = require('../../lib/csrf');
 
 var google = require('googleapis');
@@ -17,7 +17,7 @@ router.get('/', function(req, res, next) {
         var oauth2Client = new OAuth2(
             config.googleClientId,
             config.googleClientSecret,
-            config.googleRedirectUrl,
+            config.googleRedirectUrl
         );
         var scopes = [
             'openid',
