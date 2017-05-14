@@ -76,7 +76,6 @@ module.exports.describe = function(options, callback) {
                 // Filter out ignored tables
                 if (options.ignoreTables && _.isArray(options.ignoreTables)) {
                     tables = _.filter(tables, table => options.ignoreTables.indexOf(table.name) == -1);
-                    console.log(tables);
                 }
 
                 // Initialize output with names of tables

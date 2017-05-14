@@ -7,6 +7,6 @@ SELECT
     grading_started_at,
     grading_finished_at
 FROM
-    grading_logs
+    grading_jobs
 WHERE
-    id = $grading_log_id
+    id = $grading_job_id

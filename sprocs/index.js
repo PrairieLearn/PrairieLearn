@@ -71,7 +71,7 @@ module.exports = {
             'submissions_insert.sql',
             'assessment_instances_update.sql',
             'assessment_instances_update_homework.sql',
-            'grading_log_status.sql',
+            'grading_job_status.sql',
             'ip_to_mode.sql',
             'config_select.sql',
         ], function(filename, callback) {
