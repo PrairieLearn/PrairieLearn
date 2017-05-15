@@ -1,6 +1,8 @@
 
 # ChangeLog
 
+  * Add support for Google OAuth2 authentication.
+
   * Shift documentation to Read the Docs.
 
   * Fix handling of Unicode characters in question data.
