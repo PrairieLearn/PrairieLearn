@@ -5,7 +5,7 @@ SELECT
 FROM
     users AS u
 WHERE
-    u.uid = 'student@example.com';
+    u.uid = 'student@illinois.edu';
 
 -- BLOCK insert_student_enrollment
 INSERT INTO enrollments
