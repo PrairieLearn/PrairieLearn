@@ -62,6 +62,9 @@ app.use(function(req, res, next) {res.locals.navbarType = 'plain'; next();});
 app.use(function(req, res, next) {res.locals.devMode = config.devMode; next();});
 app.use(require('./middlewares/cors'));
 app.use(require('./middlewares/date'));
+app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));
+app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
+app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.csrfToken
 app.use(require('./middlewares/logRequest'));
@@ -77,9 +80,10 @@ app.use(/^\/?$/, function(req, res, next) {res.redirect('/pl');});
 // clear cookies on the homepage to reset any stale session state
 app.use(/^\/pl\/?/, require('./middlewares/clearCookies'));
 
-// course selection pages don't need authorization
+// some pages don't need authorization
 app.use('/pl', require('./pages/home/home'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
+app.use('/pl/logout', require('./pages/authLogout/authLogout'));
 
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
 if (config.devMode) {

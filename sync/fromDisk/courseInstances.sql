@@ -34,11 +34,13 @@ WHERE NOT EXISTS (
 INSERT INTO course_instance_access_rules
     (course_instance_id,  number,  role,  uids,
     start_date,
-    end_date)
+    end_date,
+    institution)
 SELECT
     $course_instance_id, $number, $role, $uids::TEXT[],
     input_date($start_date, ci.display_timezone),
-    input_date($end_date, ci.display_timezone)
+    input_date($end_date, ci.display_timezone),
+    $institution
 FROM
     course_instances AS ci
 WHERE
@@ -48,7 +50,8 @@ SET
     role = EXCLUDED.role,
     uids = EXCLUDED.uids,
     start_date = EXCLUDED.start_date,
-    end_date = EXCLUDED.end_date;
+    end_date = EXCLUDED.end_date,
+    institution = EXCLUDED.institution;
 
 -- BLOCK delete_excess_course_instance_access_rules
 DELETE FROM course_instance_access_rules
