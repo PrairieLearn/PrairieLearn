@@ -36,6 +36,10 @@ router.get('/', function(req, res, next) {
         try {
             logger.verbose('Got Google auth tokens: ' + JSON.stringify(tokens));
             oauth2Client.setCredentials(tokens);
+            // tokens.id_token is a JWT (JSON Web Token)
+            // http://openid.net/specs/draft-jones-json-web-token-07.html
+            // A JWT has the form HEADER.PAYLOAD.SIGNATURE
+            // We get the PAYLOAD, un-base64, parse to JSON:
             var parts = tokens.id_token.split('.');
             var identity = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
             logger.verbose('Got Google auth identity: ' + JSON.stringify(identity));
