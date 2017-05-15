@@ -32,6 +32,14 @@ BEGIN
         END IF;
     END IF;
 
+    IF course_instance_access_rule.institution IS NOT NULL THEN
+        IF course_instance_access_rule.institution = 'UIUC' THEN
+            IF uid !~ '^.+@illinois\.edu' THEN
+                available := FALSE;
+            END IF;
+        END IF;
+    END IF;
+
     RETURN available;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;

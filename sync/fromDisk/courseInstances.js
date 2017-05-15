@@ -120,6 +120,7 @@ module.exports = {
                 uids: _(dbRule).has('uids') ? dbRule.uids : null,
                 start_date: _(dbRule).has('startDate') ? dbRule.startDate : null,
                 end_date: _(dbRule).has('endDate') ? dbRule.endDate : null,
+                institution: _(dbRule).has('institution') ? dbRule.institution : 'UIUC',
             };
             sqldb.query(sql.insert_course_instance_access_rule, params, function(err) {
                 if (ERR(err, callback)) return;

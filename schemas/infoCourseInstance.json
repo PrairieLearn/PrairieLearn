@@ -59,6 +59,10 @@
                     "endDate" : {
                         "description": "The latest date on which access is permitted.",
                         "type": "string"
+                    },
+                    "institution" : {
+                        "description": "The institution from which access is permitted (default: UIUC).",
+                        "enum": ["UIUC", "Any"]
                     }
                 }
             }
