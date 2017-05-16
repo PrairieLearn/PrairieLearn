@@ -11,7 +11,9 @@ RUN yum -y update \
     && python3.5 -m pip install awscli requests \
     && python3.5 -m pip install numpy \
     && python3.5 -m pip install scipy \
-    && python3.5 -m pip install matplotlib
+    && python3.5 -m pip install matplotlib \
+    && python3.5 -m pip install pandas \
+    && python3.5 -m pip install sympy
 
 RUN useradd ag
 
