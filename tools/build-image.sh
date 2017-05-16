@@ -1,7 +1,7 @@
 #!/bin/bash
 
 if [ "$#" -ne 1 ]; then
-  echo: "USAGE: $0 environment_name" >& 2
+  echo "USAGE: $0 environment_name" >& 2
   echo "environment_name should correspond to directory environments/environment_name"
   exit 1
 fi
