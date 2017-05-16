@@ -9,7 +9,7 @@
     "gradingMethod": "External",
     "externalGradingOptions": {
         "enabled": true,
-        "image": "prairielearn/centos7-base:dev",
+        "image": "prairielearn/centos7-base",
         "files": ["python_autograder/"],
         "entrypoint": "/grade/shared/python_autograder/run.sh"
     }
