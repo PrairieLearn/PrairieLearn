@@ -1,6 +1,13 @@
 
 # ChangeLog
 
+  * Add Python modules for autograders: `numpy`, `scipy`, `matplotlib`,
+    `sympy`, and `pandas` (Jordi Paris Ferrer).
+
+  * Use Python 3.5 for autograders in `exampleCourse` (Nathan Walters).
+
+  * Fix docker build script usage help.
+
 * __2.9.0__ - 2017-05-14
 
   * Add support for Google OAuth2 authentication.
