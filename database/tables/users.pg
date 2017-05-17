@@ -1,5 +1,6 @@
 columns
     name: text
+    provider: text default 'shibboleth'::text
     uid: text not null
     uin: character(9)
     user_id: bigint not null default nextval('users_user_id_seq'::regclass)
