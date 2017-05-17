@@ -31,9 +31,9 @@ PrairieLearn/v2
 +-- exampleCourse      # example content for a course
 +-- lib                # miscellaneous helper code
 +-- middlewares        # Express.js middleware, one per file
-+-- models             # DB table creation, one file per table
-|   +-- index.js       # entry point for all model initialization
-|   `-- ...            # one JS file per table, executed by index.js
++-- migrations         # DB migrations
+|   +-- index.js       # entry point for migrations
+|   `-- ...            # one PGSQL file per migration, executed in order by index.js
 +-- package.json       # npm configuration file
 +-- pages              # one sub-dir per web page
 |   +-- partials       # EJS helper sub-templates
@@ -192,7 +192,7 @@ FROM
 
 ## DB schema
 
-* See the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/models/), with the ER (entity relationship) diagram below ([PDF ER diagram](models.pdf)).
+* See the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables), with the ER (entity relationship) diagram below ([PDF ER diagram](models.pdf)).
 
 ![DB Schema](models.png)
 
@@ -212,19 +212,19 @@ WHERE
 
 * We (almost) never delete student data from the DB. To avoid having rows with broken or missing foreign keys, course configuration tables (e.g. `assessments`) can't be actually deleted. Instead they are "soft-deleted" by setting the `deleted_at` column to non-NULL. This means that when using any soft-deletable table we need to have a `WHERE deleted_at IS NULL` to get only the active rows.
 
-## DB schema migrations
+## DB schema modification
 
-* We use a split system for DB creation/migration consisting of the `models/` and `migrations/` directories:
+* The database is built with a series of consecutive "migrations". A migration is a modification to table schema and is represented as a file in `migrations/`.
 
-    * The `models/` directory contains `CREATE` statements will create the current up-to-date state of the DB. These are useful as a reference for the current state of the DB.
+* The filenames in `migrations/` are of the form `<nnn>_<description>.sql` where `<nnn>` is a number to ensure ordering. The leading number must be unique among all migrations. A suggested form for the `<description>` is `<table name>__<column name>__<operation>` if only a single column is being changed.
 
-    * The `migrations/` directory contains statements that will upgrade a DB to the current state. Files matching `*.sql` in this directory will be run in alphabetic order.
+* It's fine to put multiple logically-related migration statements in the same file.
 
-* All statements in `models/` and `migrations/` must be [idempotent](https://en.wikipedia.org/wiki/Idempotence). On server start, first all SQL files in `models/` are executed, and then all files in `migrations/`.
+* The database has a special `migrations` table that tracks which migrations have already been applied. This ensures that migrations are always applied exactly once.
 
 * Migration statements start with PrairieLearn version 2.0.0.
 
-* The filenames in `migrations/` are of the form `<nnn>_<description>.sql` where `<nnn>` is a number to ensure ordering. There is no need for files to have distinct leading numbers if their order is unimportant. A suggested form for the `<description>` is `<table name>__<column name>__<operation>` if only a single column is being changed. It's fine to put multiple logically-related migration statements in the same file.
+* _Historical note_: prior to PrairieLearn version 2.10.0, the schema was maintained with separate `models` and `migrations`, which had to be kept in sync. When that was switched to solely `migrations`, the state of `models` was captured in `000_initial_state.sql`, and all future migrations are applied on top of that.
 
 * Some useful migration statements follow.
 
@@ -256,9 +256,9 @@ $$;
 
 * To remove a constraint use:
 
-    ```sql
-    ALTER TABLE alternative_groups DROP CONSTRAINT IF EXISTS alternative_groups_number_assessment_id_key;
-    ```
+```sql
+ALTER TABLE alternative_groups DROP CONSTRAINT IF EXISTS alternative_groups_number_assessment_id_key;
+```
 
 * To add a constraint use:
 
