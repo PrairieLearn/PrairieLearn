@@ -5,7 +5,6 @@ var pg = require('pg');
 
 var config = require('../lib/config');
 var sqldb = require('../lib/sqldb');
-var models = require('../models');
 var sprocs = require('../sprocs');
 var cron = require('../cron');
 var courseDB = require('../lib/course-db');
