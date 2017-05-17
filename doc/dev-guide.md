@@ -222,58 +222,33 @@ WHERE
 
 * The database has a special `migrations` table that tracks which migrations have already been applied. This ensures that migrations are always applied exactly once.
 
-* Migration statements start with PrairieLearn version 2.0.0.
-
-* _Historical note_: prior to PrairieLearn version 2.10.0, the schema was maintained with separate `models` and `migrations`, which had to be kept in sync. When that was switched to solely `migrations`, the state of `models` was captured in `000_initial_state.sql`, and all future migrations are applied on top of that.
+* _Historical node_: Migration statements started with PrairieLearn version 2.0.0. Starting with 2.0.0, the schema was maintained with separate `models` and `migrations` directories, which had to be kept in sync. In version 2.0.10, that was switched to solely `migrations`, and the state of `models` as of 2.0.0 was captured in `migrations/000_initial_state.sql`. All future migrations are applied on top of that.
 
 * Some useful migration statements follow.
 
 * To add a column to a table:
 
 ```sql
-ALTER TABLE assessments ADD COLUMN IF NOT EXISTS auto_close boolean DEFAULT true;
+ALTER TABLE assessments ADD COLUMN auto_close boolean DEFAULT true;
 ```
 
-* Do not put constraints (like `UNIQUE` or `REFERENCES`) on an `ADD COLUMN` statement, otherwise it will add a new index every time it runs, even if the statement has `IF NOT EXISTS`. See below for how to add a foreign keys or other constraints without using the `ADD COLUMN` statement.
-
-* To add a foreign key to a table, the migration queries need to be wrapped like:
+* To add a foreign key to a table:
 
 ```sql
-ALTER TABLE variants ADD COLUMN IF NOT EXISTS authn_user_id bigint;
-
-DO $$
-BEGIN
-    IF NOT EXISTS (
-            SELECT 1 FROM information_schema.table_constraints
-            WHERE constraint_name = 'variants_authn_user_id_fkey'
-        )
-        THEN
-        ALTER TABLE variants ADD FOREIGN KEY (authn_user_id) REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE;
-    END IF;
-END;
-$$;
+ALTER TABLE variants ADD COLUMN authn_user_id bigint;
+ALTER TABLE variants ADD FOREIGN KEY (authn_user_id) REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE;
 ```
 
-* To remove a constraint use:
+* To remove a constraint:
 
 ```sql
-ALTER TABLE alternative_groups DROP CONSTRAINT IF EXISTS alternative_groups_number_assessment_id_key;
+ALTER TABLE alternative_groups DROP CONSTRAINT alternative_groups_number_assessment_id_key;
 ```
 
-* To add a constraint use:
+* To add a constraint:
 
 ```sql
-DO $$
-BEGIN
-    IF NOT EXISTS (
-            SELECT 1 FROM information_schema.table_constraints
-            WHERE constraint_name = 'alternative_groups_assessment_id_number_key'
-        )
-        THEN
-        ALTER TABLE alternative_groups ADD UNIQUE (assessment_id, number);
-    END IF;
-END;
-$$;
+ALTER TABLE alternative_groups ADD UNIQUE (assessment_id, number);
 ```
 
 
