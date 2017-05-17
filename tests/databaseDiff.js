@@ -48,17 +48,16 @@ function diff(db1, db2, options, callback) {
             // Determine if both databases have the same tables
             let missingFrom1 = _.difference(_.keys(description2.tables), _.keys(description1.tables));
             let missingFrom2 = _.difference(_.keys(description1.tables), _.keys(description2.tables));
+            let db2NameBold = formatText(db2Name, colors.bold);
 
             if (missingFrom1.length > 0) {
-                let db1NameBold = formatText(db1Name, colors.bold);
-                result += formatText(`Tables missing from ${db1NameBold} (${db1.type})\n`, colors.underline);
-                result += missingFrom1.map(table => `    ${table}`).join('\n') + '\n\n';
+                result += formatText(`Tables added to ${db2NameBold} (${db2.type})\n`, colors.underline);
+                result += formatText(missingFrom1.map(table => `+ ${table}`).join('\n') + '\n\n', colors.green);
             }
 
             if (missingFrom2.length > 0) {
-                let db2NameBold = formatText(db2Name, colors.bold);
                 result += formatText(`Tables missing from ${db2NameBold} (${db2.type})\n`, colors.underline);
-                result += missingFrom2.map(table => `    ${table}`).join('\n') + '\n\n';
+                result += formatText(missingFrom2.map(table => `- ${table}`).join('\n') + '\n\n', colors.red);
             }
 
             callback(null);
@@ -70,14 +69,14 @@ function diff(db1, db2, options, callback) {
 
             if (missingFrom1.length > 0) {
                 let db1NameBold = formatText(db1Name, colors.bold);
-                result += formatText(`Enums missing from ${db1NameBold} (${db1.type})\n`, colors.underline);
-                result += missingFrom1.map(enumName => `    ${enumName}`).join('\n') + '\n\n';
+                result += formatText(`Enums added to ${db2NameBold} (${db1.type})\n`, colors.underline);
+                result += formatText(missingFrom1.map(enumName => `+ ${enumName}`).join('\n') + '\n\n', colors.green);
             }
 
             if (missingFrom2.length > 0) {
                 let db2NameBold = formatText(db2Name, colors.bold);
                 result += formatText(`Enums missing from ${db2NameBold} (${db2.type})\n`, colors.underline);
-                result += missingFrom2.map(enumName => `    ${enumName}`).join('\n') + '\n\n';
+                result += formatText(missingFrom2.map(enumName => `- ${enumName}`).join('\n') + '\n\n', collors.red);
             }
 
             callback(null);
@@ -92,8 +91,26 @@ function diff(db1, db2, options, callback) {
 
                 const boldTable = formatText(table, colors.bold);
                 result += formatText(`Differences in ${boldTable} table\n`, colors.underline);
-                _.forEach(diff, (part) => {
-                    result += formatText(part.value, part.added ? colors.green : part.removed ? colors.red : null);
+
+                // Shift around the newlines so that we can cleanly show +/- symbols
+                for (let i = 1; i < diff.length; i++) {
+                    let prev = diff[i - 1].value;
+                    if (prev[prev.length - 1] == '\n') {
+                        diff[i - 1].value = prev.slice(0, -1);
+                        diff[i].value = '\n' + diff[i].value;
+                    }
+                }
+
+                _.forEach(diff, (part, index) => {
+                    if (index == 0) {
+                        part.value = '\n' + part.value;
+                    }
+                    const mark = part.added ? '+ ' : part.removed ? '- ' : '  ';
+                    let change = part.value.split('\n').join(`\n${mark}`);
+                    if (index == 0) {
+                        change = change.slice(1, part.value.length);
+                    }
+                    result += formatText(change, part.added ? colors.green : part.removed ? colors.red : null);
                 });
                 result += '\n\n';
             });
@@ -103,15 +120,15 @@ function diff(db1, db2, options, callback) {
             // Determine if the values of any enums differ
             let intersection = _.intersection(_.keys(description1.enums), _.keys(description2.enums));
             _.forEach(intersection, (enumName) => {
-                const diff = jsdiff.diffWords(description1.enums[enumName].trim(), description2.enums[enumName].trim());
-                if (diff.length == 1) return;
-
-                const boldEnum = formatText(enumName, colors.bold);
-                result += formatText(`Differences in ${boldEnum} enum\n`);
-                _.forEach(diff, (part) => {
-                    result += formatText(part.value, part.added ? colors.green : part.removed ? colors.red : null);
-                });
-                result += '\n\n';
+                // We don't need to do a particularly fancy diff here, since
+                // enums are just represented here as strings
+                if (description1.enums[enumName].trim() !== description2.enums[enumName].trim()) {
+                    const boldEnum = formatText(enumName, colors.bold);
+                    result += formatText(`Differences in ${boldEnum} enum\n`);
+                    result += formatText(`- ${description1.enums[enumName].trim()}\n`, colors.red);
+                    result += formatText(`+ ${description2.enums[enumName].trim()}\n`, colors.green);
+                    result += '\n\n';
+                }
             });
             callback(null);
         }
