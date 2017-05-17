@@ -272,6 +272,14 @@ module.exports.describe = function(options, callback) {
             });
         },
         (callback) => {
+            // We need to tack on a newline to everything if we're in string mode
+            if (options.outputFormat == 'string') {
+                output.tables = _.mapValues(output.tables, item => item + '\n');
+                output.enums = _.mapValues(output.enums, item => item + '\n');
+            }
+            callback(null);
+        },
+        (callback) => {
             sqldb.close((err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
