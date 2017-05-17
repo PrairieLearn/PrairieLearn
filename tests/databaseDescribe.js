@@ -30,7 +30,7 @@ module.exports = {};
 module.exports.describe = function(options, callback) {
     if (!options) return callback(new Error('options must not be null'));
     if (!options.databaseName) return callback(new Error('you must specify a database name with databaseName'));
-    if (options.outputFormat && !(options.outputFormat !== 'string' || options.outputFormat !== 'object')) {
+    if (options.outputFormat && !(options.outputFormat == 'string' || options.outputFormat == 'object')) {
         return callback(new Error(`'${options.outputFormat}' is not a valid output format`));
     }
 
@@ -205,7 +205,15 @@ module.exports.describe = function(options, callback) {
                         sqldb.query(sql.get_references_for_table, params, (err, results) => {
                             if (ERR(err, callback)) return;
 
-                            if (results.rows.length == 0) {
+                            // Filter out references from ignored tables
+                            let rows = results.rows;
+                            if (options.ignoreTables && _.isArray(options.ignoreTables)) {
+                                rows = _.filter(results.rows, row => {
+                                    return options.ignoreTables.indexOf(row.table) == -1;
+                                });
+                            }
+
+                            if (rows.length == 0) {
                                 return callback(null);
                             }
 
@@ -214,13 +222,13 @@ module.exports.describe = function(options, callback) {
                                     output.tables[table.name] += '\n\n';
                                 }
                                 output.tables[table.name] += formatText('referenced by\n', colors.underline);
-                                output.tables[table.name] += results.rows.map((row) => {
+                                output.tables[table.name] += rows.map((row) => {
                                     var rowText = formatText(`    ${row.table}:`, colors.bold);
                                     rowText += formatText(` ${row.condef}`, colors.green);
                                     return rowText;
                                 }).join('\n');
                             } else {
-                                output.tables[table.name].references = results.rows;
+                                output.tables[table.name].references = rows;
                             }
                             callback(null);
                         });
