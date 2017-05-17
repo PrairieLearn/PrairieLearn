@@ -247,11 +247,19 @@ module.exports.describe = function(options, callback) {
             sqldb.query(sql.get_enums, [], (err, results) => {
                 if (ERR(err, callback)) return;
 
-                if (results.rows.length == 0) {
+                // Filter ignored enums
+                let rows = results.rows;
+                if (options.ignoreEnums && _.isArray(options.ignoreEnums)) {
+                    rows = _.filter(results.rows, row => {
+                        return options.ignoreEnums.indexOf(row.name) == -1;
+                    });
+                }
+
+                if (rows.length == 0) {
                     return callback(null);
                 }
 
-                results.rows.forEach((row) => {
+                rows.forEach((row) => {
                     if (options.outputFormat == 'string') {
                         const values = pgArray.create(row.values, String).parse();
                         output.enums[row.name] = formatText(values.join(', '), colors.gray);

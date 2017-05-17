@@ -45,18 +45,6 @@ function diff(db1, db2, options, callback) {
             });
         },
         (callback) => {
-            // Remove ignored tables and enums
-            if (options.ignoreTables && _.isArray(options.ignoreTables)) {
-                description1.tables = _.pickBy(description1.tables, (value, key) => options.ignoreTables.indexOf(key) == -1);
-                description2.tables = _.pickBy(description2.tables, (value, key) => options.ignoreTables.indexOf(key) == -1);
-            }
-            if (options.ignoreEnums && _.isArray(options.ignoreEnums)) {
-                description1.tables = _.pickBy(description1.tables, (value, key) => options.ignoreEnums.indexOf(key) == -1);
-                description2.tables = _.pickBy(description2.tables, (value, key) => options.ignoreEnums.indexOf(key) == -1);
-            }
-            callback(null);
-        },
-        (callback) => {
             // Determine if both databases have the same tables
             let missingFrom1 = _.difference(_.keys(description2.tables), _.keys(description1.tables));
             let missingFrom2 = _.difference(_.keys(description1.tables), _.keys(description2.tables));
