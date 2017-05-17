@@ -17,7 +17,8 @@ const yargs = require('yargs')
     .help('h')
     .alias('h', 'help')
     .example('$0 --db postgres --dir db_dump')
-    .example('$0 --db postgres --db old_restore');
+    .example('$0 --db postgres --db old_restore')
+    .strict();
 
 const args = yargs.argv;
 
