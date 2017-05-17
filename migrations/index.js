@@ -54,7 +54,6 @@ module.exports.init = function(callback) {
             });
         },
         (files, callback) => {
-          console.log(files);
             async.eachSeries(
                 files,
                 (file, callback) => {
