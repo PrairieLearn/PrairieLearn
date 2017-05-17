@@ -8,6 +8,8 @@
 
   * Fix docker build script usage help.
 
+  * Fix base64 encoding of uploaded files.
+
 * __2.9.0__ - 2017-05-14
 
   * Add support for Google OAuth2 authentication.
