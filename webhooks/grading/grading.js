@@ -14,13 +14,26 @@ var assessments = require('../../assessments');
 // FIXME move this to assessments.js for better code reuse; pull the nice
 // error-handling logic from messageQueue.js into this function as well
 function processResults(data) {
-    const gradingResult = {
-        gradingId: data.job_id,
-        grading: {
-            startTime: data.start_time || null,
-            endTime: data.end_time || null,
-            score: data.results.score,
-            feedback: data
+    let gradingResult;
+    if (!data.succeeded || !data.results) {
+        gradingResult = {
+            gradingId: data.job_id,
+            grading: {
+                startTime: data.start_time || null,
+                endTime: data.end_time || null,
+                score: 0,
+                feedback: data
+            }
+        }
+    } else {
+        gradingResult = {
+            gradingId: data.job_id,
+            grading: {
+                startTime: data.start_time || null,
+                endTime: data.end_time || null,
+                score: data.results.score,
+                feedback: data
+            }
         }
     }
 
