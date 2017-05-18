@@ -10,6 +10,10 @@
 
   * Fix base64 encoding of uploaded files.
 
+* __2.9.1__ - 2017-05-17
+
+  * Fix handling of failed grading jobs (Nathan Walters).
+
 * __2.9.0__ - 2017-05-14
 
   * Add support for Google OAuth2 authentication.
