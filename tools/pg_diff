@@ -7,8 +7,7 @@ const fs = require('fs-extra');
 const _ = require('lodash');
 const path = require('path');
 
-const databaseDescribe = require('../tests/databaseDescribe');
-const databaseDiff = require('../tests/databaseDiff');
+const databaseDiff = require('../lib/databaseDiff');
 
 const yargs = require('yargs')
     .usage('Usage: $0 [options]')
