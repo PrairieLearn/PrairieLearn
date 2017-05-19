@@ -1,20 +1,20 @@
--- BLOCK lock_with_grading_log_id
+-- BLOCK lock_with_grading_job_id
 SELECT
-    gl.auth_user_id,
-    ((gl.graded_at IS NOT NULL) OR (gl.grading_request_canceled_at IS NOT NULL)) AS grading_not_needed,
+    gj.auth_user_id,
+    ((gj.graded_at IS NOT NULL) OR (gj.grading_request_canceled_at IS NOT NULL)) AS grading_not_needed,
     v.id AS variant_id,
     iq.id AS instance_question_id,
     ai.id AS assessment_instance_id,
     s.credit
 FROM
-    grading_logs AS gl
-    JOIN submissions AS s ON (s.id = gl.submission_id)
+    grading_jobs AS gj
+    JOIN submissions AS s ON (s.id = gj.submission_id)
     JOIN variants AS v ON (v.id = s.variant_id)
     JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
 WHERE
-    gl.id = $grading_log_id
-FOR UPDATE OF ai;;
+    gj.id = $grading_job_id
+FOR UPDATE OF ai;
 
 --BLOCK lock_with_variant_id
 SELECT
@@ -30,9 +30,9 @@ WHERE
     AND v.available -- ensure the variant is still available
 FOR UPDATE OF ai;
 
--- BLOCK update_grading_log_and_submission
-WITH updated_grading_log AS (
-    UPDATE grading_logs AS gl
+-- BLOCK update_grading_job_and_submission
+WITH updated_grading_job AS (
+    UPDATE grading_jobs AS gj
     SET
         graded_at = CURRENT_TIMESTAMP,
         grading_started_at = $grading_started_at,
@@ -41,22 +41,22 @@ WITH updated_grading_log AS (
         correct = $correct,
         feedback = $feedback
     WHERE
-        gl.id = $grading_log_id
-        AND gl.graded_at IS NULL
-        AND gl.grading_request_canceled_at IS NULL
+        gj.id = $grading_job_id
+        AND gj.graded_at IS NULL
+        AND gj.grading_request_canceled_at IS NULL
     RETURNING
-        gl.*
+        gj.*
 )
 UPDATE submissions AS s
 SET
-    graded_at = gl.graded_at,
-    score = gl.score,
-    correct = gl.correct,
-    feedback = gl.feedback
+    graded_at = gj.graded_at,
+    score = gj.score,
+    correct = gj.correct,
+    feedback = gj.feedback
 FROM
-    updated_grading_log AS gl
+    updated_grading_job AS gj
 WHERE
-    s.id = gl.submission_id;
+    s.id = gj.submission_id;
 
 -- BLOCK update_variant
 UPDATE variants AS v

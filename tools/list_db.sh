@@ -16,7 +16,7 @@ psql postgres <<EOF
 \d course_instances
 \d course_permissions
 \d enrollments
-\d grading_logs
+\d grading_jobs
 \d instance_questions
 \d job_sequences
 \d jobs

@@ -19,7 +19,7 @@ WITH results AS (
         s.id = $submission_id
     RETURNING s.*
 )
-INSERT INTO grading_logs AS gl
+INSERT INTO grading_jobs AS gj
         (submission_id, score, correct, feedback,  auth_user_id,  grading_method)
 (
     SELECT
@@ -27,7 +27,7 @@ INSERT INTO grading_logs AS gl
     FROM
         results
 )
-RETURNING gl.*;
+RETURNING gj.*;
 
 -- BLOCK cancel_outstanding_grading_requests
 WITH
@@ -46,7 +46,7 @@ cancel_submission_results AS (
         AND s.graded_at IS NULL
         AND s.grading_requested_at IS NOT NULL
 )
-UPDATE grading_logs AS gl
+UPDATE grading_jobs AS gj
 SET
     grading_request_canceled_at = CURRENT_TIMESTAMP,
     grading_request_canceled_by = $auth_user_id
@@ -58,18 +58,18 @@ FROM
     JOIN submissions AS s ON (s.variant_id = v.id)
 WHERE
     this_s.id = $submission_id
-    AND gl.submission_id = s.id
-    AND gl.graded_at IS NULL
-    AND gl.grading_requested_at IS NOT NULL
-    AND gl.grading_request_canceled_at IS NULL
+    AND gj.submission_id = s.id
+    AND gj.graded_at IS NULL
+    AND gj.grading_requested_at IS NOT NULL
+    AND gj.grading_request_canceled_at IS NULL
 RETURNING
-    gl.id;
-    
--- BLOCK insert_grading_log_for_external_grading
-INSERT INTO grading_logs AS gl
+    gj.id;
+
+-- BLOCK insert_grading_job_for_external_grading
+INSERT INTO grading_jobs AS gj
         (submission_id,  auth_user_id,  grading_method)
 (VALUES ($submission_id, $auth_user_id, $grading_method))
-RETURNING gl.*;
+RETURNING gj.*;
 
 -- BLOCK update_submission_for_manual_grading
 WITH submission_results AS (
@@ -81,7 +81,7 @@ WITH submission_results AS (
         s.id = $submission_id
     RETURNING s.*
 )
-INSERT INTO grading_logs AS gl
+INSERT INTO grading_jobs AS gj
         (submission_id, grading_requested_at, auth_user_id,  grading_method)
 (
     SELECT
@@ -89,38 +89,38 @@ INSERT INTO grading_logs AS gl
     FROM
         submission_results
 )
-RETURNING gl.*;
+RETURNING gj.*;
 
 -- BLOCK update_for_external_grading_job_submission
 WITH
-grading_log_results AS (
-    UPDATE grading_logs AS gl
+grading_job_results AS (
+    UPDATE grading_jobs AS gj
     SET
         grading_requested_at = CURRENT_TIMESTAMP
     WHERE
-        id = $grading_log_id
-    RETURNING gl.*
+        id = $grading_job_id
+    RETURNING gj.*
 ),
 submission_results AS (
     UPDATE submissions AS s
     SET
-        grading_requested_at = gl.grading_requested_at,
-        grading_method = gl.grading_method
+        grading_requested_at = gj.grading_requested_at,
+        grading_method = gj.grading_method
     FROM
-        grading_log_results AS gl
+        grading_job_results AS gj
     WHERE
-        s.id = gl.submission_id
+        s.id = gj.submission_id
     RETURNING s.*
 )
 SELECT
-    to_jsonb(gl.*) AS grading_log,
+    to_jsonb(gj.*) AS grading_job,
     to_jsonb(s.*) AS submission,
     to_jsonb(v.*) AS variant,
     to_jsonb(q.*) AS question,
     to_jsonb(c.*) AS course
 FROM
-    grading_log_results AS gl
-    JOIN submission_results AS s ON (s.id = gl.submission_id)
+    grading_job_results AS gj
+    JOIN submission_results AS s ON (s.id = gj.submission_id)
     JOIN variants AS v ON (v.id = s.variant_id)
     JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)

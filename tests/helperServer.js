@@ -5,7 +5,6 @@ var pg = require('pg');
 
 var config = require('../lib/config');
 var sqldb = require('../lib/sqldb');
-var models = require('../models');
 var sprocs = require('../sprocs');
 var cron = require('../cron');
 var courseDB = require('../lib/course-db');
@@ -70,9 +69,10 @@ module.exports = {
     },
 
     after: function(callback) {
+        var that = this;
         async.series([
             function(callback) {
-                helperDb.after(function(err) {
+                helperDb.after.call(that, function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });

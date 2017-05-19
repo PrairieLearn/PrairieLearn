@@ -102,8 +102,8 @@ module.exports = {
                     };
                     sqldb.queryWithClientOneRow(client, sql.update_submission, params, function(err, result) {
                         if (ERR(err, callback)) return;
-                        var grading_log = result.rows[0];
-                        callback(null, grading_log);
+                        var grading_job = result.rows[0];
+                        callback(null, grading_job);
                     });
                 });
             });
@@ -128,10 +128,10 @@ module.exports = {
                         auth_user_id: auth_user_id,
                         grading_method: question.grading_method,
                     };
-                    sqldb.queryWithClientOneRow(client, sql.insert_grading_log_for_external_grading, params, function(err, result) {
+                    sqldb.queryWithClientOneRow(client, sql.insert_grading_job_for_external_grading, params, function(err, result) {
                         if (ERR(err, callback)) return;
-                        var grading_log = result.rows[0];
-                        callback(null, grading_log);
+                        var grading_job = result.rows[0];
+                        callback(null, grading_job);
                     });
                 });
             });
@@ -143,35 +143,35 @@ module.exports = {
             };
             sqldb.queryWithClientOneRow(client, sql.update_submission_for_manual_grading, params, function(err, result) {
                 if (ERR(err, callback)) return;
-                var grading_log = result.rows[0];
-                callback(null, grading_log);
+                var grading_job = result.rows[0];
+                callback(null, grading_job);
             });
         } else {
             callback(new Error('Unknown grading_method', {grading_method: question.grading_method}));
         }
     },
 
-    submitExternalGradingJob: function(grading_log_id, auth_user_id, callback) {
+    submitExternalGradingJob: function(grading_job_id, auth_user_id, callback) {
         var params = {
-            grading_log_id: grading_log_id,
+            grading_job_id: grading_job_id,
             auth_user_id: auth_user_id,
         };
         sqldb.query(sql.update_for_external_grading_job_submission, params, function(err, result) {
             if (ERR(err, callback)) return;
-            var grading_log = result.rows[0].grading_log;
+            var grading_job = result.rows[0].grading_job;
             var submission = result.rows[0].submission;
             var variant = result.rows[0].variant;
             var question = result.rows[0].question;
             var course = result.rows[0].course;
 
-            messageQueue.sendToGradingQueue(grading_log, submission, variant, question, course);
-            callback(null, grading_log);
+            messageQueue.sendToGradingQueue(grading_job, submission, variant, question, course);
+            callback(null, grading_job);
         });
     },
 
-    submitExternalGradingJobs: function(grading_log_ids, auth_user_id, callback) {
-        async.each(grading_log_ids, function(grading_log_id, callback) {
-            module.exports.submitExternalGradingJob(grading_log_id, auth_user_id, function(err) {
+    submitExternalGradingJobs: function(grading_job_ids, auth_user_id, callback) {
+        async.each(grading_job_ids, function(grading_job_id, callback) {
+            module.exports.submitExternalGradingJob(grading_job_id, auth_user_id, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

@@ -1,0 +1,18 @@
+columns
+    assessment_id: bigint not null
+    credit: integer
+    end_date: timestamp with time zone
+    id: bigint not null default nextval('assessment_access_rules_id_seq'::regclass)
+    mode: enum_mode
+    number: integer
+    role: enum_role
+    start_date: timestamp with time zone
+    time_limit_min: integer
+    uids: text[]
+
+indexes
+    assessment_access_rules_pkey: PRIMARY KEY (id)
+    assessment_access_rules_assessment_id_number_key: UNIQUE (assessment_id, number)
+
+foreign-key constraints
+    assessment_access_rules_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

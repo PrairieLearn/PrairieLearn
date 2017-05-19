@@ -222,3 +222,16 @@ table.two-column-description tr th {
     text-overflow: ellipsis;
     width: 5%;
 }
+
+.panel.pastsubmission-block .panel-heading {
+    display: flex;
+    align-items: center;
+}
+
+.panel.pastsubmission-block .panel-heading > * {
+    margin-right: 15px;
+}
+
+.panel.pastsubmission-block .panel-title {
+    display: inline-block;
+}

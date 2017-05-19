@@ -32,11 +32,11 @@ digraph partmc_modules {
     instance_questions [style=filled, fillcolor=lavender]
     variants [style=filled, fillcolor=lavender]
     submissions [style=filled, fillcolor=lavender]
+    grading_jobs [style=filled, fillcolor=lavender]
     job_sequences [style=filled, fillcolor=lavender]
     jobs [style=filled, fillcolor=lavender]
 
     assessment_state_logs [style=filled, fillcolor=white]
-    grading_logs [style=filled, fillcolor=white]
     assessment_score_logs [style=filled, fillcolor=white]
     question_score_logs [style=filled, fillcolor=white]
     variant_view_logs [style=filled, fillcolor=white]
@@ -71,7 +71,7 @@ digraph partmc_modules {
     jobs -> { job_sequences }
 
     assessment_state_logs -> { assessment_instances }
-    grading_logs -> { submissions }
+    grading_jobs -> { submissions }
     assessment_score_logs -> { assessment_instances }
     question_score_logs -> { instance_questions }
     variant_view_logs -> { variants }
