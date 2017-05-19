@@ -4,8 +4,9 @@ var pg = require('pg');
 var assert = require('chai').assert;
 var colors = require('colors');
 
-var databaseDiff = require('./databaseDiff');
+var databaseDiff = require('../lib/databaseDiff');
 var migrations = require('../migrations');
+var helperDb = require('./helperDb');
 var sqldb = require('../lib/sqldb');
 var sqlLoader = require('../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
@@ -15,7 +16,7 @@ var postgresqlHost = 'localhost';
 var initConString = 'postgres://localhost/postgres';
 
 
-// Custom error type so we can handle this specially
+// Custom error type so we can display our own message and omit a stacktrace
 function DatabaseError(message) {
   this.name = 'DatabaseError';
   this.message = message;
@@ -25,125 +26,20 @@ DatabaseError.prototype.constructor = DatabaseError;
 
 describe('database', function() {
 
+    before('set up testing database', helperDb.beforeOnlyCreate);
+    after('tear down testing database', helperDb.after);
+
     it('should match the database described in /database', function(done) {
         this.timeout(10000);
         let results = '';
         let errMsg = '';
-        async.series([
-            (callback) => setupNamedDatabase('migrations_test', callback),
-            (callback) => {
-                const options = {
-                    outputFormat: 'string',
-                    coloredOutput: process.stdout.isTTY,
-                };
-                databaseDiff.diffDirectoryAndDatabase('database', 'migrations_test', options, (err, data) => {
-                    if (ERR(err, callback)) return;
-                    errMsg = data;
-                    callback(null);
-                });
-            },
-            (callback) => tearDownNamedDatabase('migrations_test', callback),
-        ], (err) => {
+        const options = {
+            outputFormat: 'string',
+            coloredOutput: process.stdout.isTTY,
+        };
+        databaseDiff.diffDirectoryAndDatabase('database', 'pltest', options, (err, data) => {
             if (ERR(err, done)) return;
-            if (errMsg) {
-                // We add a newline with red ANSI codes so that mocha's default
-                // red coloring doesn't mess up our diff rendering
-                done(new DatabaseError('\n'.red + errMsg));
-            } else {
-                done(null);
-            }
+            data ? done(new DatabaseError('\n'.red + data)) : done(null);
         });
     });
 });
-
-function setupNamedDatabase(databaseName, callback) {
-    var client;
-    async.series([
-        function(callback) {
-            client = new pg.Client(initConString);
-            client.connect(function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
-            client.query('DROP DATABASE IF EXISTS ' + databaseName + ';', function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
-            client.query('CREATE DATABASE ' + databaseName + ';', function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
-            client.end();
-            callback(null);
-        },
-        function(callback) {
-            var pgConfig = {
-                user: postgresqlUser,
-                database: databaseName,
-                host: postgresqlHost,
-                max: 10,
-                idleTimeoutMillis: 30000,
-            };
-            var idleErrorHandler = function(err) {
-                throw Error('idle client error', err);
-            };
-            sqldb.init(pgConfig, idleErrorHandler, function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
-            migrations.init(function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
-            sqldb.close(function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        }
-    ], function(err) {
-        if (ERR(err, callback)) return;
-        callback(null);
-    });
-}
-
-function tearDownNamedDatabase(databaseName, callback) {
-    var client;
-    async.series([
-        function(callback) {
-            sqldb.close(function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
-            client = new pg.Client(initConString);
-            client.connect(function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
-            client.query('DROP DATABASE IF EXISTS ' + databaseName + ';', function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
-            client.end();
-            callback(null);
-        },
-    ], function(err) {
-        if (ERR(err, callback)) return;
-        callback(null);
-    });
-}

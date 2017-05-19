@@ -69,9 +69,10 @@ module.exports = {
     },
 
     after: function(callback) {
+        var that = this;
         async.series([
             function(callback) {
-                helperDb.after(function(err) {
+                helperDb.after.call(that, function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
