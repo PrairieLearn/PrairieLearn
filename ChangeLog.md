@@ -6,6 +6,8 @@
 
   * Add documentation on the new authentication flow.
 
+  * Add export of full database in CSV, optionally anonymized.
+
   * Use Python 3.5 for autograders in `exampleCourse` (Nathan Walters).
 
   * Fix docker build script usage help.
