@@ -36,7 +36,7 @@
                 updateStatus(msg.status);
             });
 
-            socket.emit('getStatus', {job_id: <%= submission.grading_job_id %>}, function (msg) {
+            socket.emit('getStatus', {grading_job_id: <%= submission.grading_job_id %>}, function (msg) {
                 updateStatus(msg.status);
             });
         } else {
