@@ -1,51 +1,53 @@
 <% if (submission.grading_method == 'External' && submission.graded_at == null) { %>
     <script>
-        // Expects a status string from sprocs/grading_job_status.sql
-        function updateStatus(status) {
-            var display = $('#grading-<%= submission.grading_job_id %>');
-            var label;
-            switch (status) {
-                case 'requested':
-                    label = 'Grading requested';
-                    break;
-                case 'queued':
-                    label = 'Queued for grading';
-                    break;
-                case 'grading':
-                    label = 'Grading in progress';
-                    break;
-                case 'processing':
-                    label = 'Processing results';
-                    break;
-                case 'graded':
-                    label = 'Graded!'
-                    break;
-                default:
-                    label = 'UNKNOWN STATUS';
-                    break;
+        $(document).ready(function() {
+            // Expects a status string from sprocs/grading_job_status.sql
+            function updateStatus(status) {
+                var display = $('#grading-<%= submission.grading_job_id %>');
+                var label;
+                switch (status) {
+                    case 'requested':
+                        label = 'Grading requested';
+                        break;
+                    case 'queued':
+                        label = 'Queued for grading';
+                        break;
+                    case 'grading':
+                        label = 'Grading in progress';
+                        break;
+                    case 'processing':
+                        label = 'Processing results';
+                        break;
+                    case 'graded':
+                        label = 'Graded!'
+                        break;
+                    default:
+                        label = 'UNKNOWN STATUS';
+                        break;
+                }
+                display.html(label);
+                var reload = $('#grading-<%= submission.grading_job_id %>-reload');
+                status == 'graded' ? reload.show() : reload.hide();
             }
-            display.html(label);
-            var reload = $('#grading-<%= submission.grading_job_id %>-reload');
-            status == 'graded' ? reload.show() : reload.hide();
-        }
 
-        if (io) {
-            var socket = io('/external-grading');
+            if (io) {
+                var socket = io('/external-grading');
 
-            socket.on('change:status', function(msg) {
-                updateStatus(msg.status);
-            });
+                socket.on('change:status', function(msg) {
+                    updateStatus(msg.status);
+                });
 
-            socket.emit('getStatus', {grading_job_id: <%= submission.grading_job_id %>}, function (msg) {
-                updateStatus(msg.status);
-            });
-        } else {
-            console.log('socket.io not present on this webpage');
-        }
+                socket.emit('getStatus', {grading_job_id: <%= submission.grading_job_id %>}, function (msg) {
+                    updateStatus(msg.status);
+                });
+            } else {
+                console.log('socket.io not present on this webpage');
+            }
 
-        // Immediately render with status known from the server; this will be
-        // updated as soon as new data comes in via the socket
-        updateStatus('<%= submission.grading_job_status %>')
+            // Immediately render with status known from the server; this will be
+            // updated as soon as new data comes in via the socket
+            updateStatus('<%= submission.grading_job_status %>');
+        });
     </script>
 <% } %>
 
