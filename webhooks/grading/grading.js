@@ -47,7 +47,7 @@ function processResults(data) {
 router.post('/', function(req, res, next) {
 
     const data = req.body;
-    if (data.event === 'grading_started') {
+    if (data.event === 'grading_start') {
         if (!Number.isInteger(data.job_id)) {
             return next(new Error('Grading start event does not contain a valid grading job id.'));
         }
