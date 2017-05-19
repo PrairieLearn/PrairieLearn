@@ -190,11 +190,43 @@ FROM
     second_preliminary_table AS spt;
 ```
 
-## DB schema
+## DB schema (simplified overview)
+
+* The most important tables in the database are shown in the diagram below (also as a [PDF image](simplified-models.pdf)).
+
+![Simplified DB Schema](simplified-models.png)
+
+* Detailed descriptions of the format of each table are in the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/models/).
+
+* Each table has an `id` number that is used for cross-referencing. For example, each row in the `questions` table has an `id` and other tables will refer to this as a `question_id`. The only exceptions are the `pl_courses` table that other tables refer to with `course_id` and `users` which has a `user_id`. These are both for reasons of interoperability with PrairieSchedule.
+
+* Each student is stored as a single row in the `users` table.
+
+* The `pl_courses` table has one row for each course, like `TAM 212`.
+
+* The `course_instances` table has one row for each semester (“instance”) of each course, with the `course_id` indicating which course it belongs to.
+
+* Every question is a row in the `questions` table, and the `course_id` shows which course it belongs to. All the questions for a course can be thought of as the “question pool” for that course. This same pool is used for all semesters (all course instances).
+
+* Assessments are stored in the `assessments` table and each assessment row has a `course_instance_id` to indicate which course instance (and hence which course) it belongs to. An assessment is something like “Homework 1” or “Exam 3”. To determine this we can use the `asssessment_set_id` and `number` of each assessment row.
+
+* Each assessment has a list of questions associated with it. This list is stored in the `assessment_questions` table, where each row has a `assessment_id` and `question_id` to indicate which questions belong to which assessment. For example, there might be 20 different questions that are on “Exam 1”, and it might be the case that each student gets 5 of these questions randomly selected.
+
+* Each student will have their own copy of an assessment, stored in the `assessment_instances` table with each row having a `user_id` and `assessment_id`. This is where the student's score for that assessment is stored.
+
+* The selection of questions that each student is given on each assessment is in the `instance_questions` table. Here each row has an `assessment_question_id` and an `assessment_instance_id` to indicate that the corresponding question is on that assessment instance. This row will also store the student's score on this particular question.
+
+* Questions can randomize their parameters, so there are many possible variants of each question. These are stored in the `variants` table with an `instance_question_id` indicating which instance question the variant belongs to.
+
+* For each variant of a question that a student sees they will have submitted zero or more `submissions` with a `variant_id` to show what it belongs to. The submissions row also contains information the submitted answer and whether it was correct.
+
+## DB schema (full data)
 
 * See the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/models/), with the ER (entity relationship) diagram below ([PDF ER diagram](models.pdf)).
 
 ![DB Schema](models.png)
+
+## DB schema conventions
 
 * Tables have plural names (e.g. `assessments`) and always have a primary key called `id`. The foreign keys pointing to this table are non-plural, like `assessment_id`. When referring to this use an abbreviation of the first letters of each word, like `ai` in this case. The only exceptions are `aset` for `assessment_sets` (to avoid conflicting with the SQL `AS` keyword), `top` for `topics`, and `tag` for `tags` (to avoid conflicts). This gives code like:
 
