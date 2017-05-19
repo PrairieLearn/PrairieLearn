@@ -76,7 +76,7 @@ function diff(db1, db2, options, callback) {
             if (missingFrom2.length > 0) {
                 let db2NameBold = formatText(db2Name, colors.bold);
                 result += formatText(`Enums missing from ${db2NameBold} (${db2.type})\n`, colors.underline);
-                result += formatText(missingFrom2.map(enumName => `- ${enumName}`).join('\n') + '\n\n', collors.red);
+                result += formatText(missingFrom2.map(enumName => `- ${enumName}`).join('\n') + '\n\n', colors.red);
             }
 
             callback(null);
