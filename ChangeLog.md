@@ -4,6 +4,8 @@
   * Add Python modules for autograders: `numpy`, `scipy`, `matplotlib`,
     `sympy`, and `pandas` (Jordi Paris Ferrer).
 
+  * Add documentation on the new authentication flow.
+
   * Use Python 3.5 for autograders in `exampleCourse` (Nathan Walters).
 
   * Fix docker build script usage help.
