@@ -1,0 +1,39 @@
+columns
+    arguments: text[]
+    assessment_id: bigint
+    authn_user_id: bigint
+    command: text
+    course_id: bigint
+    course_instance_id: bigint
+    description: text
+    error_message: text
+    exit_code: integer
+    exit_signal: text
+    finish_date: timestamp with time zone
+    id: bigint not null default nextval('jobs_id_seq'::regclass)
+    job_sequence_id: bigint
+    last_in_sequence: boolean
+    number: integer
+    number_in_sequence: integer
+    output: text
+    start_date: timestamp with time zone default now()
+    status: enum_job_status
+    stderr: text
+    stdin: text
+    stdout: text
+    type: text
+    user_id: bigint
+    working_directory: text
+
+indexes
+    jobs_pkey: PRIMARY KEY (id)
+    jobs_course_id_number_key: UNIQUE (course_id, number)
+    jobs_job_sequence_id_number_in_sequence_key: UNIQUE (job_sequence_id, number_in_sequence)
+
+foreign-key constraints
+    jobs_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    jobs_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    jobs_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    jobs_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    jobs_job_sequence_id_fkey: FOREIGN KEY (job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE CASCADE
+    jobs_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

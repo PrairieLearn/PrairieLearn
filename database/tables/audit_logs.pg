@@ -1,0 +1,17 @@
+columns
+    action: text
+    authn_user_id: bigint
+    column_name: text
+    course_id: bigint
+    course_instance_id: bigint
+    date: timestamp with time zone default now()
+    id: bigint not null default nextval('audit_logs_id_seq'::regclass)
+    new_state: jsonb
+    old_state: jsonb
+    parameters: jsonb
+    row_id: bigint
+    table_name: text
+    user_id: bigint
+
+indexes
+    audit_logs_pkey: PRIMARY KEY (id)

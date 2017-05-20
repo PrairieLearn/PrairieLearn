@@ -6,6 +6,7 @@
     <script type="text/javascript" src="/MathJax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
     <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
     <script type="text/javascript" src="/localscripts/question.js"></script>
+    <script type="text/javascript" src="/javascripts/socket.io.js"></script>
     <%- extraHeaders %>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
@@ -64,11 +65,9 @@
                     <% if (submissions.length > 1) { %>
                     <%= submissions.length - iSubmission %>
                     <% } %>
-                    &nbsp;&nbsp;&nbsp;
-                    <%- include('../partials/submissionStatus', {submission: submission, reloadUrl: urlPrefix + '/instance_question/' + instance_question.id + '/?variant_id=' + variant.id}); %>
-                    &nbsp;
-                    <small>Submitted at <%- submission.formatted_date %></small>
                   </h3>
+                  <%- include('../partials/submissionStatus', {submission: submission, reloadUrl: urlPrefix + '/instance_question/' + instance_question.id + '/?variant_id=' + variant.id}); %>
+                  <small>Submitted at <%- submission.formatted_date %></small>
                 </div>
                 <div class="panel-body submission-body" id="submission-<%= iSubmission %>-body">
                   <%- submissionHtmls[iSubmission] %>

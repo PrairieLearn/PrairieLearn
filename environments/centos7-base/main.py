@@ -189,6 +189,24 @@ def main():
 
     job_id = info['job_id']
 
+    # Notify PL that grading has been started
+    # force
+    if info['webhook_url']:
+        headers = {'Content-Type': 'application/json'}
+        if info['csrf_token']:
+            log('CSRF Token: %s' % info['csrf_token'])
+            headers['x-csrf-token'] = info['csrf_token']
+
+        data = {}
+        data['start_time'] = info['start_time']
+
+        final_data = {}
+        final_data['data'] = data
+        final_data['event'] = 'grading_start'
+        final_data['job_id'] = info['job_id']
+
+        r = requests.post(info['webhook_url'], data=json.dumps(final_data), headers=headers)
+
     log(Template('running job $job').substitute(job=job_id))
 
     if not dev_mode:

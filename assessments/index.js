@@ -9,6 +9,8 @@ var logger = require('../lib/logger');
 var messageQueue = require('../lib/messageQueue');
 var sqldb = require('../lib/sqldb');
 var sqlLoader = require('../lib/sql-loader');
+var externalGradingSocket = require('../lib/external-grading-socket');
+
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -26,10 +28,10 @@ module.exports = {
         }
     },
 
-    updateExternalGrading: function(assessment_type, grading_log_id, grading, callback) {
+    updateExternalGrading: function(assessment_type, grading_job_id, grading, callback) {
         this.getModule(assessment_type, function(err, assessmentModule) {
             if (ERR(err, callback)) return;
-            assessmentModule.updateExternalGrading(grading_log_id, grading, function(err) {
+            assessmentModule.updateExternalGrading(grading_job_id, grading, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -79,7 +81,7 @@ module.exports.processGradingResult = function(content) {
         function(callback) {
             if (!_(content.gradingId).isInteger()) return callback(new Error('invalid gradingId'));
             var params = {
-                grading_log_id: content.gradingId,
+                grading_job_id: content.gradingId,
             };
             sqldb.queryOneRow(sql.select_assessment_info, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -102,7 +104,7 @@ module.exports.processGradingResult = function(content) {
             if (_(content.grading).has('feedback') && !_(content.grading.feedback).isObject()) {
                 return callback(error.makeWithData('invalid grading.feedback', {content: content}));
             }
-            var grading_log_id = content.gradingId;
+            var grading_job_id = content.gradingId;
             var grading = {
                 score: content.grading.score,
                 correct: (content.grading.score >= 0.5),
@@ -110,7 +112,7 @@ module.exports.processGradingResult = function(content) {
                 startTime: content.grading.startTime || null,
                 endTime: content.grading.endTime || null
             };
-            module.exports.updateExternalGrading(assessment_type, grading_log_id, grading, function(err) {
+            module.exports.updateExternalGrading(assessment_type, grading_job_id, grading, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -120,6 +122,6 @@ module.exports.processGradingResult = function(content) {
             logger.error('processGradingResult: error',
                          {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
         }
-        //return messageQueue.mqChannel.ack(msg);
+        externalGradingSocket.gradingLogStatusUpdated(content.gradingId);
     });
 };

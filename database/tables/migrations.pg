@@ -1,0 +1,9 @@
+columns
+    applied_at: timestamp with time zone
+    filename: text
+    id: bigint not null default nextval('migrations_id_seq'::regclass)
+    index: integer
+
+indexes
+    migrations_pkey: PRIMARY KEY (id)
+    migrations_index_key: UNIQUE (index)

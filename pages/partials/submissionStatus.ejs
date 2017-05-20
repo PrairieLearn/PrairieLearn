@@ -1,12 +1,65 @@
+<% if (submission.grading_method == 'External' && submission.graded_at == null) { %>
+    <script>
+        $(document).ready(function() {
+            // Expects a status string from sprocs/grading_job_status.sql
+            function updateStatus(status) {
+                var display = $('#grading-<%= submission.grading_job_id %>');
+                var label;
+                switch (status) {
+                    case 'requested':
+                        label = 'Grading requested';
+                        break;
+                    case 'queued':
+                        label = 'Queued for grading';
+                        break;
+                    case 'grading':
+                        label = 'Grading in progress';
+                        break;
+                    case 'processing':
+                        label = 'Processing results';
+                        break;
+                    case 'graded':
+                        label = 'Graded!'
+                        break;
+                    default:
+                        label = 'UNKNOWN STATUS';
+                        break;
+                }
+                display.html(label);
+                var reload = $('#grading-<%= submission.grading_job_id %>-reload');
+                status == 'graded' ? reload.show() : reload.hide();
+            }
+
+            if (io) {
+                var socket = io('/external-grading');
+
+                socket.on('change:status', function(msg) {
+                    updateStatus(msg.status);
+                });
+
+                socket.emit('getStatus', {grading_job_id: <%= submission.grading_job_id %>}, function (msg) {
+                    updateStatus(msg.status);
+                });
+            } else {
+                console.log('socket.io not present on this webpage');
+            }
+
+            // Immediately render with status known from the server; this will be
+            // updated as soon as new data comes in via the socket
+            updateStatus('<%= submission.grading_job_status %>');
+        });
+    </script>
+<% } %>
+
 <% if (submission.graded_at == null) { %>
 
     <% if (submission.grading_requested_at == null) { %>
         <span class="label label-primary">saved, not graded</span>
     <% } else { %>
         <% if (submission.grading_method == 'External') { %>
-            <span class="label label-default">waiting for grading (<%= submission.elapsed_grading_time %>)</span>
-            <!-- FIXME: we hack color:white below because bootstrap doesn't correctly override -->
-            <a href="<%= reloadUrl %>" class="btn btn-xs btn-primary" style="color: white;">Reload to check</a>
+            <span id="grading-<%= submission.grading_job_id %>" class="label label-default"></span>
+            <!-- FIXME: add in elapsed time? waiting for grading (<%= submission.elapsed_grading_time %>) -->
+            <a id="grading-<%= submission.grading_job_id %>-reload" href="<%= reloadUrl %>" class="btn btn-xs btn-primary" style="display: none;">Reload for results</a>
         <% } else if (submission.grading_method == 'Manual') { %>
             <span class="label label-default">waiting for manual grading</span>
         <% } else { %>

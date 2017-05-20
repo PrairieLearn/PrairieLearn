@@ -1,0 +1,14 @@
+columns
+    course_id: bigint not null
+    course_role: enum_course_role
+    id: bigint not null default nextval('course_permissions_id_seq'::regclass)
+    user_id: bigint not null
+
+indexes
+    course_permissions_pkey: PRIMARY KEY (id)
+    course_permissions_user_id_course_id_key: UNIQUE (user_id, course_id)
+    course_permissions_course_id_idx: null
+
+foreign-key constraints
+    course_permissions_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_permissions_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

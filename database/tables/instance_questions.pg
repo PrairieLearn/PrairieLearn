@@ -1,0 +1,33 @@
+columns
+    assessment_instance_id: bigint not null
+    assessment_question_id: bigint not null
+    authn_user_id: bigint
+    created_at: timestamp with time zone default now()
+    current_value: double precision
+    duration: interval default '00:00:00'::interval
+    first_duration: interval
+    id: bigint not null default nextval('instance_questions_id_seq'::regclass)
+    number: integer
+    number_attempts: integer default 0
+    open: boolean default true
+    order_by: integer default floor((random() * (1000000)::double precision))
+    points: double precision default 0
+    points_in_grading: double precision default 0
+    points_list: double precision[]
+    score_perc: double precision default 0
+    score_perc_in_grading: double precision default 0
+    status: enum_instance_question_status default 'unanswered'::enum_instance_question_status
+
+indexes
+    instance_questions_pkey: PRIMARY KEY (id)
+    instance_questions_assessment_question_id_assessment_instan_key: UNIQUE (assessment_question_id, assessment_instance_id)
+    instance_questions_assessment_instance_id_idx: null
+
+foreign-key constraints
+    instance_questions_assessment_instance_id_fkey: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+    instance_questions_assessment_question_id_fkey: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    instance_questions_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    question_score_logs: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    variants: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -4,10 +4,8 @@ while getopts ":t:" o; do
     case "${o}" in
     t)
         t=${OPTARG}
-        echo "found!"
         ;;
     *)
-        echo "not found!"
         usage
         ;;
     esac
@@ -44,11 +42,12 @@ if [ -z "${t}" ]; then
 fi
 
 cd environments/$1/
-docker build . -t prairielearn/$1
+docker build -t prairielearn/$1 .
 
 if [ $? -ne 0 ]; then
   echo "ERR: building image failed. skipping upload." >& 2
   exit 4
 fi
 
+docker tag prairielearn/$1 prairielearn/$1:${t}
 docker push prairielearn/$1:${t}
