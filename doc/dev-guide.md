@@ -196,7 +196,7 @@ FROM
 
 ![Simplified DB Schema](simplified-models.png)
 
-* Detailed descriptions of the format of each table are in the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/models/).
+* Detailed descriptions of the format of each table are in the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/).
 
 * Each table has an `id` number that is used for cross-referencing. For example, each row in the `questions` table has an `id` and other tables will refer to this as a `question_id`. The only exceptions are the `pl_courses` table that other tables refer to with `course_id` and `users` which has a `user_id`. These are both for reasons of interoperability with PrairieSchedule.
 
@@ -222,7 +222,7 @@ FROM
 
 ## DB schema (full data)
 
-* See the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables), with the ER (entity relationship) diagram below ([PDF ER diagram](models.pdf)).
+* See the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/), with the ER (entity relationship) diagram below ([PDF ER diagram](models.pdf)).
 
 ![DB Schema](models.png)
 
