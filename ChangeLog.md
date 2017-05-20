@@ -1,10 +1,22 @@
 
 # ChangeLog
 
+* __2.10.0__ - 2017-05-20
+
+  * Add real-time grading job status with websockets (Nathan Walters).
+
+  * Add full DB schema migration system (Nathan Walters).
+
+  * Add unit tests for DB migrations (Nathan Walters).
+
   * Add Python modules for autograders: `numpy`, `scipy`, `matplotlib`,
     `sympy`, and `pandas` (Jordi Paris Ferrer).
 
+  * Add `scipy` and `numpy` to the PL docker image.
+
   * Add documentation on the new authentication flow.
+
+  * Add more developer documentation on the database schema.
 
   * Add export of full database in CSV, optionally anonymized.
 
