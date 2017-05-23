@@ -40,11 +40,13 @@
         "chai": "3.5.x",
         "cheerio": "0.22.x",
         "colors": "1.1.x",
+        "eslint": "3.19.x",
         "mocha": "3.2.x",
         "request": "2.79.x",
         "yargs": "8.0.1"
     },
     "scripts": {
-        "test": "node_modules/mocha/bin/mocha tests/index.js"
+        "test": "node_modules/mocha/bin/mocha tests/index.js",
+        "lint": "node_modules/.bin/eslint --ext js \"*/**/*.js\""
     }
 }
