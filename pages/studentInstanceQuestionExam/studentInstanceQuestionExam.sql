@@ -25,7 +25,7 @@ FROM
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     JOIN assessments AS a ON (a.id = ai.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-    JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
+    LEFT JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
 WHERE
     v.id = $variant_id
 ORDER BY

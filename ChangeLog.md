@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __2.10.1__ - 2017-05-24
+
+  * Fix display of saved submissions for Exam assessments.
+
 * __2.10.0__ - 2017-05-20
 
   * Add real-time grading job status with websockets (Nathan Walters).

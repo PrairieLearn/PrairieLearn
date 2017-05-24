@@ -5,6 +5,10 @@ CREATE OR REPLACE FUNCTION
 DECLARE
     job grading_jobs;
 BEGIN
+    IF grading_job_id IS NULL THEN
+        RETURN 'none';
+    END IF;
+
     SELECT gj.* INTO job
     FROM
         grading_jobs AS gj
