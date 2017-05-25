@@ -1,5 +1,3 @@
-var config = require('../lib/config');
-var error = require('../lib/error');
 var logger = require('../lib/logger');
 
 module.exports = function(req, res, next) {
@@ -29,7 +27,7 @@ module.exports = function(req, res, next) {
                 question_directory: (res.locals && res.locals.question) ? res.locals.question.directory : null,
                 instance_question_id: (res.locals && res.locals.instance_question) ? res.locals.instance_question.id : null,
             };
-            logger.verbose("response", access);
+            logger.verbose('response', access);
         });
     }
     next();

@@ -1,8 +1,6 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
 
-var logger = require('../lib/logger');
-var config = require('../lib/config');
 var error = require('../lib/error');
 var sqldb = require('../lib/sqldb');
 var sqlLoader = require('../lib/sql-loader');

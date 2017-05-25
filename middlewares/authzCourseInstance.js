@@ -67,7 +67,7 @@ module.exports = function(req, res, next) {
             user_id: res.locals.authn_user.user_id,
             role: res.locals.authz_data.authn_role,
         };
-        sqldb.query(sql.ensure_enrollment, params, function(err, result) {
+        sqldb.query(sql.ensure_enrollment, params, function(err) {
             if (ERR(err, next)) return;
 
             // now do the actual override
