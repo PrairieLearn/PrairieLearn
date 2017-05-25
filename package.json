@@ -46,7 +46,7 @@
         "yargs": "8.0.1"
     },
     "scripts": {
-        "test": "node_modules/mocha/bin/mocha tests/index.js",
-        "lint": "node_modules/.bin/eslint --ext js \"**/*.js\""
+        "test": "mocha tests/index.js",
+        "lint": "eslint --ext js \"**/*.js\""
     }
 }
