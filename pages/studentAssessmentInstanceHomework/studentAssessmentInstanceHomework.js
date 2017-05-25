@@ -28,7 +28,7 @@ var ensureUpToDate = (locals, callback) => {
             null, // credit
             true, // only_log_if_score_updated
         ];
-        sqldb.callOneRow('assessment_instances_grade', params, (err) => {
+        sqldb.callOneRow('assessment_instances_grade', params, (err, _result) => {
             if (ERR(err, callback)) return;
 
             const params = {assessment_instance_id: locals.assessment_instance.id};

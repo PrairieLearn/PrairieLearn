@@ -937,7 +937,7 @@ describe('Exam assessment', function() {
     describe('18. regrading', function() {
         describe('set forceMaxPoints = true for question 1', function() {
             it('should succeed', function(callback) {
-                sqldb.query(sql.update_question1_force_max_points, [], function(err) {
+                sqldb.query(sql.update_question1_force_max_points, [], function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });

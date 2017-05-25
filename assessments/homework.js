@@ -80,7 +80,7 @@ module.exports.updateExternalGrading = function(grading_job_id, grading, callbac
                         ];
                         logger.debug('homework.updateExternalGrading(): calling instance_questions_grade',
                                      {grading_job_id: grading_job_id, params: params});
-                        sqldb.callWithClient(client, 'instance_questions_grade', params, function(err) {
+                        sqldb.callWithClient(client, 'instance_questions_grade', params, function(err, _result) {
                             if (ERR(err, callback)) return;
                             logger.debug('homework.updateExternalGrading(): finished instance_questions_grade',
                                          {grading_job_id: grading_job_id});
@@ -95,7 +95,7 @@ module.exports.updateExternalGrading = function(grading_job_id, grading, callbac
                         ];
                         logger.debug('homework.updateExternalGrading(): calling assessment_instances_grade',
                                      {grading_job_id: grading_job_id, params: params});
-                        sqldb.callWithClient(client, 'assessment_instances_grade', params, function(err) {
+                        sqldb.callWithClient(client, 'assessment_instances_grade', params, function(err, _result) {
                             if (ERR(err, callback)) return;
                             logger.debug('homework.updateExternalGrading(): finished assessment_instances_grade',
                                          {grading_job_id: grading_job_id});
@@ -189,7 +189,7 @@ module.exports.submitAndGrade = function(submission, instance_question_id, quest
                         ];
                         logger.debug('homework.submitAndGrade(): calling instance_questions_grade',
                                      {instance_question_id: instance_question_id, params: params});
-                        sqldb.callWithClient(client, 'instance_questions_grade', params, function(err) {
+                        sqldb.callWithClient(client, 'instance_questions_grade', params, function(err, _result) {
                             if (ERR(err, callback)) return;
                             logger.debug('homework.submitAndGrade(): finished instance_questions_grade',
                                          {instance_question_id: instance_question_id});
@@ -249,7 +249,7 @@ module.exports.submitAndGrade = function(submission, instance_question_id, quest
                 ];
                 logger.debug('homework.submitAndGrade(): calling assessment_instances_grade',
                              {instance_question_id: instance_question_id, params: params});
-                sqldb.callWithClient(client, 'assessment_instances_grade', params, function(err) {
+                sqldb.callWithClient(client, 'assessment_instances_grade', params, function(err, _result) {
                     if (ERR(err, callback)) return;
                     logger.debug('homework.submitAndGrade(): finished assessment_instances_grade',
                                  {instance_question_id: instance_question_id});

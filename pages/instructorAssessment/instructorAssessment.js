@@ -650,7 +650,7 @@ router.post('/', function(req, res, next) {
             req.body.assessment_instance_id,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('assessment_instances_delete', params, function(err) {
+        sqldb.call('assessment_instances_delete', params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
@@ -659,7 +659,7 @@ router.post('/', function(req, res, next) {
             req.body.assessment_id,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('assessment_instances_delete_all', params, function(err) {
+        sqldb.call('assessment_instances_delete_all', params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });

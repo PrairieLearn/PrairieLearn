@@ -34,7 +34,7 @@ function processSubmission(req, res, callback) {
                 res.locals.authz_result.credit,
                 res.locals.authz_data.mode,
             ];
-            sqldb.call('submissions_insert', params, function(err) {
+            sqldb.call('submissions_insert', params, function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
