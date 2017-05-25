@@ -3,7 +3,7 @@ var path = require('path');
 
 var logger = require('../../lib/logger');
 
-module.exports = function(err, req, res) {
+module.exports = function(err, req, res, _next) {
     // clear all cookies in case something was misconfigured
     _(req.cookies).each(function(value, key) {
         res.clearCookie(key);
