@@ -31,3 +31,6 @@
 
 # Backup Files
 **/*~
+
+# NPM log file
+npm-debug.log
