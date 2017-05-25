@@ -47,6 +47,6 @@
     },
     "scripts": {
         "test": "node_modules/mocha/bin/mocha tests/index.js",
-        "lint": "node_modules/.bin/eslint --ext js \"*/**/*.js\""
+        "lint": "node_modules/.bin/eslint --ext js \"**/*.js\""
     }
 }

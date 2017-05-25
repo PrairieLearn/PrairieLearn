@@ -11,7 +11,6 @@ var http = require('http');
 var https = require('https');
 
 var logger = require('./lib/logger');
-var error = require('./lib/error');
 var config = require('./lib/config');
 var messageQueue = require('./lib/messageQueue');
 var externalGradingSocket = require('./lib/external-grading-socket');
@@ -22,12 +21,11 @@ var sprocs = require('./sprocs');
 var cron = require('./cron');
 var socketServer = require('./lib/socket-server');
 var serverJobs = require('./lib/server-jobs');
-var syncFromDisk = require('./sync/syncFromDisk');
 
 if (config.startServer) {
     logger.info('PrairieLearn server start');
 
-    configFilename = 'config.json';
+    var configFilename = 'config.json';
     if (process.argv.length > 2) {
         configFilename = process.argv[2];
     }
@@ -54,7 +52,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // Middleware for all requests
 // response_id is logged on request, response, and error to link them together
-var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 app.use(function(req, res, next) {res.locals.response_id = _.times(12, function() {return _.sample(chars);}).join(''); next();});
 app.use(require('./middlewares/logResponse')); // defers to end of response
 app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPrefix = '/pl'; next();});
@@ -75,7 +73,7 @@ if (config.devMode) {
 }
 
 // redirect / to /pl
-app.use(/^\/?$/, function(req, res, next) {res.redirect('/pl');});
+app.use(/^\/?$/, function(req, res) {res.redirect('/pl');});
 
 // clear cookies on the homepage to reset any stale session state
 app.use(/^\/pl\/?/, require('./middlewares/clearCookies'));
@@ -99,7 +97,7 @@ app.use('/pl/course_instance/:course_instance_id', function(req, res, next) {res
 // Redirect plain course page to Instructor or Student assessments page.
 // We have to do this after initial authz so we know whether we are an Instructor,
 // but before instructor authz so we still get a chance to enforce that.
-app.use(/^\/pl\/course_instance\/[0-9]+\/?$/, function(req, res, next) {
+app.use(/^\/pl\/course_instance\/[0-9]+\/?$/, function(req, res) {
     if (res.locals.authz_data.has_instructor_view) {
         res.redirect(res.locals.urlPrefix + '/instructor/assessments');
     } else {
@@ -246,7 +244,7 @@ app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_que
 app.use('/pl/course/:course_id', require('./middlewares/authzCourse')); // set res.locals.course
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();});
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType = 'course'; next();});
-app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, next) {res.redirect(res.locals.urlPrefix + '/overview');}); // redirect plain course URL to overview page
+app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res) {res.redirect(res.locals.urlPrefix + '/overview');}); // redirect plain course URL to overview page
 app.use('/pl/course/:course_id/overview', require('./pages/courseOverview/courseOverview'));
 app.use('/pl/course/:course_id/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
 app.use('/pl/course/:course_id/syncs', require('./pages/courseSyncs/courseSyncs'));
@@ -264,7 +262,7 @@ app.use('/pl/administrator/overview', require('./pages/administratorOverview/adm
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 // Webhooks //////////////////////////////////////////////////////////
-app.get('/pl/webhooks/ping', function(req, res, next) {res.send('.');})
+app.get('/pl/webhooks/ping', function(req, res) {res.send('.');});
 app.use('/pl/webhooks/grading', require('./webhooks/grading/grading'));
 
 //////////////////////////////////////////////////////////////////////
@@ -314,18 +312,18 @@ module.exports.stopServer = function(callback) {
 module.exports.insertDevUser = function(callback) {
     // add dev user as Administrator
     var sql
-        = "INSERT INTO users (uid, name)"
-        + " VALUES ('dev@example.com', 'Dev User')"
-        + " ON CONFLICT (uid) DO UPDATE"
-        + " SET name = EXCLUDED.name"
-        + " RETURNING user_id;";
+        = 'INSERT INTO users (uid, name)'
+        + ' VALUES (\'dev@example.com\', \'Dev User\')'
+        + ' ON CONFLICT (uid) DO UPDATE'
+        + ' SET name = EXCLUDED.name'
+        + ' RETURNING user_id;';
     sqldb.queryOneRow(sql, [], function(err, result) {
         if (ERR(err, callback)) return;
         var user_id = result.rows[0].user_id;
         var sql
-            = "INSERT INTO administrators (user_id)"
-            + " VALUES ($user_id)"
-            + " ON CONFLICT (user_id) DO NOTHING;";
+            = 'INSERT INTO administrators (user_id)'
+            + ' VALUES ($user_id)'
+            + ' ON CONFLICT (user_id) DO NOTHING;';
         var params = {user_id};
         sqldb.query(sql, params, function(err) {
             if (ERR(err, callback)) return;
@@ -403,7 +401,7 @@ if (config.startServer) {
             externalGradingSocket.init(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
-            })
+            });
         },
         function(callback) {
             serverJobs.init(function(err) {
