@@ -2,3 +2,5 @@ node_modules/*
 public/*
 v1/*
 exampleCourse/*
+tests/sync/*
+sync/*

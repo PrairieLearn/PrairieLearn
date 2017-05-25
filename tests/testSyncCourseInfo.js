@@ -1,6 +1,4 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var assert = require('assert');
 
 var courseDB = require('../lib/course-db');
 var sqldb = require('../lib/sqldb');
@@ -17,7 +15,7 @@ var course_id = 1;
 describe('sync/fromDisk/courseInfo', function() {
 
     var course;
-    before("load course from disk", function(callback) {
+    before('load course from disk', function(callback) {
         courseDB.loadFullCourse(courseDir, logger, function(err, c) {
             if (ERR(err, callback)) return;
             course = c;
@@ -25,8 +23,8 @@ describe('sync/fromDisk/courseInfo', function() {
         });
     });
 
-    before("set up testing DB", helperDb.before);
-    after("shut down testing DB", helperDb.after);
+    before('set up testing DB', helperDb.before);
+    after('shut down testing DB', helperDb.after);
 
     describe('sprocs/select_or_insert_course_by_path', function() {
         it('should use id 1 for exampleCourse', function(callback) {

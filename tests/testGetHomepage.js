@@ -1,5 +1,3 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var assert = require('assert');
 var request = require('request');
 var cheerio = require('cheerio');
@@ -11,11 +9,11 @@ var baseUrl = 'http://localhost:' + config.serverPort + '/pl';
 
 describe('GET /pl', function() {
 
-    before("set up testing server", helperServer.before);
-    after("shut down testing server", helperServer.after);
+    before('set up testing server', helperServer.before);
+    after('shut down testing server', helperServer.after);
 
     var page, $;
-    
+
     it('should load successfully', function(callback) {
         request(baseUrl, function (error, response, body) {
             if (error) {
@@ -26,12 +24,12 @@ describe('GET /pl', function() {
             }
             page = body;
             callback(null);
-        })
+        });
     });
     it('should parse', function() {
         $ = cheerio.load(page);
     });
     it('should contain TPL 101', function() {
-        assert.ok($('td a:contains("TPL 101")').length)
+        assert.ok($('td a:contains("TPL 101")').length);
     });
 });

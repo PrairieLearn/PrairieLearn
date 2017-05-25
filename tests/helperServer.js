@@ -1,13 +1,7 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var async = require('async');
-var pg = require('pg');
 
 var config = require('../lib/config');
-var sqldb = require('../lib/sqldb');
-var sprocs = require('../sprocs');
-var cron = require('../cron');
-var courseDB = require('../lib/course-db');
 var socketServer = require('../lib/socket-server');
 var serverJobs = require('../lib/server-jobs');
 var syncFromDisk = require('../sync/syncFromDisk');

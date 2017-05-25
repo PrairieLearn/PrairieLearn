@@ -1,5 +1,4 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
@@ -19,8 +18,8 @@ var assessmentInstanceUrl = courseInstanceBaseUrl + '/assessment_instance/1';
 
 describe('Access control', function() {
 
-    before("set up testing server", helperServer.before);
-    after("shut down testing server", helperServer.after);
+    before('set up testing server', helperServer.before);
+    after('shut down testing server', helperServer.after);
 
     /*
       There are three nested time periods:
@@ -91,9 +90,9 @@ describe('Access control', function() {
         return cookies;
     };
 
-    var user, res, page, $, elemList;
-    var assessment_id, assessment_instance, instance_questions;
-    var csrfToken, instance_question_1_id, instance_question_2_id;
+    var user, page, $, elemList;
+    var assessment_id;
+    var csrfToken;
     var assessmentUrl, q1Url, questionData, variant;
 
     /**********************************************************************/
@@ -106,7 +105,6 @@ describe('Access control', function() {
             if (response.statusCode != 200) {
                 return callback(new Error('bad status: ' + response.statusCode));
             }
-            res = response;
             page = body;
             try {
                 $ = cheerio.load(page);
@@ -118,7 +116,7 @@ describe('Access control', function() {
             callback(null);
         });
     };
-    
+
     describe('GET /pl', function() {
         it('as student should not contain TPL 101', function(callback) {
             getPl(cookiesStudent(), false, callback);
@@ -138,7 +136,7 @@ describe('Access control', function() {
     describe('Enroll student user into exampleCourse', function() {
         it('should succeed', function(callback) {
             var params = {user_id: user.user_id};
-            sqldb.query(sql.insert_student_enrollment, params, function(err, result) {
+            sqldb.query(sql.insert_student_enrollment, params, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -179,7 +177,6 @@ describe('Access control', function() {
             if (response.statusCode != 200) {
                 return callback(new Error('bad status: ' + response.statusCode));
             }
-            res = response;
             page = body;
             try {
                 $ = cheerio.load(page);
@@ -222,12 +219,11 @@ describe('Access control', function() {
             if (response.statusCode != expectedStatusCode) {
                 return callback(new Error('bad status: ' + response.statusCode));
             }
-            res = response;
             page = body;
             callback(null);
         });
     };
-    
+
     describe('GET to assessment URL', function() {
         it('as student should return 500', function(callback) {
             getAssessment(cookiesStudent(), 500, callback);
@@ -254,7 +250,7 @@ describe('Access control', function() {
     });
 
     /**********************************************************************/
-    
+
     var postAssessment = function(cookies, expectedStatusCode, callback) {
         var form = {
             postAction: 'newInstance',
@@ -267,12 +263,11 @@ describe('Access control', function() {
             if (response.statusCode != expectedStatusCode) {
                 return callback(new Error('bad status: ' + response.statusCode));
             }
-            res = response;
             page = body;
             callback(null);
         });
     };
-    
+
     describe('POST to assessment URL', function() {
         it('as student should return 500', function(callback) {
             postAssessment(cookiesStudent(), 500, callback);
@@ -289,7 +284,7 @@ describe('Access control', function() {
     });
 
     /**********************************************************************/
-    
+
     var getAssessmentInstance = function(cookies, expectedStatusCode, callback) {
         request({url: assessmentInstanceUrl, jar: cookies}, function (error, response, body) {
             if (error) {
@@ -298,7 +293,6 @@ describe('Access control', function() {
             if (response.statusCode != expectedStatusCode) {
                 return callback(new Error('bad status: ' + response.statusCode));
             }
-            res = response;
             page = body;
             callback(null);
         });
@@ -336,13 +330,13 @@ describe('Access control', function() {
     });
 
     /**********************************************************************/
-    
+
     var postAssessmentInstance = function(cookies, expectedStatusCode, callback) {
         var form = {
             postAction: 'grade',
             csrfToken: csrfToken,
         };
-        request.post({url: assessmentInstanceUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
+        request.post({url: assessmentInstanceUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response) {
             if (error) {
                 return callback(error);
             }
@@ -352,7 +346,7 @@ describe('Access control', function() {
             callback(null);
         });
     };
-    
+
     describe('POST to assessment_instance URL', function() {
         it('as student should return 500', function(callback) {
             postAssessmentInstance(cookiesStudent(), 500, callback);
@@ -369,7 +363,7 @@ describe('Access control', function() {
     });
 
     /**********************************************************************/
-    
+
     var getInstanceQuestion = function(cookies, expectedStatusCode, callback) {
         request({url: q1Url, jar: cookies}, function (error, response, body) {
             if (error) {
@@ -378,7 +372,6 @@ describe('Access control', function() {
             if (response.statusCode != expectedStatusCode) {
                 return callback(new Error('bad status: ' + response.statusCode));
             }
-            res = response;
             page = body;
             callback(null);
         });
@@ -426,7 +419,7 @@ describe('Access control', function() {
     });
 
     /**********************************************************************/
-    
+
     var postInstanceQuestion = function(cookies, expectedStatusCode, callback) {
         var submittedAnswer = {
             wx: 0,
@@ -437,7 +430,7 @@ describe('Access control', function() {
             csrfToken: csrfToken,
             postData: JSON.stringify({variant, submittedAnswer}),
         };
-        request.post({url: q1Url, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
+        request.post({url: q1Url, form: form, jar: cookies, followAllRedirects: true}, function (error, response) {
             if (error) {
                 return callback(error);
             }
@@ -447,7 +440,7 @@ describe('Access control', function() {
             callback(null);
         });
     };
-    
+
     describe('POST to instance_question URL', function() {
         it('as student should return 500', function(callback) {
             postInstanceQuestion(cookiesStudent(), 500, callback);
@@ -515,5 +508,5 @@ describe('Access control', function() {
     });
 
     /**********************************************************************/
-    
+
 });
