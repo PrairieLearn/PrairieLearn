@@ -24,7 +24,7 @@ function processResults(data) {
                 score: 0,
                 feedback: data
             }
-        }
+        };
     } else {
         gradingResult = {
             gradingId: data.job_id,
@@ -34,7 +34,7 @@ function processResults(data) {
                 score: data.results.score,
                 feedback: data
             }
-        }
+        };
     }
 
     assessments.processGradingResult(gradingResult);
@@ -71,7 +71,7 @@ router.post('/', function(req, res, next) {
 
         if (data.data) {
             // We have the data!
-            processResults(data.data)
+            processResults(data.data);
 
         } else {
             // We should fetch it from S3, and then process it
@@ -79,10 +79,10 @@ router.post('/', function(req, res, next) {
                 Bucket: config.externalGradingResultsS3Bucket,
                 Key: `job_${data.job_id}.json`,
                 ResponseContentType: 'application/json',
-            }
+            };
             new AWS.S3().getObject(params, (err, data) => {
                 if (ERR(err, (err) => logger.error(err))) return;
-                processResults(JSON.parse(data.Body))
+                processResults(JSON.parse(data.Body));
             });
         }
 
