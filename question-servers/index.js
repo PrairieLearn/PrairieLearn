@@ -14,7 +14,6 @@ var sqlLoader = require('../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var questionModules = {
-    'ShortAnswer':       require('./shortAnswer'),
     'Calculation':       require('./calculation'),
     'File':              require('./calculation'),
     'Checkbox':          require('./calculation'),
@@ -23,7 +22,6 @@ var questionModules = {
 };
 
 var effectiveQuestionTypes = {
-    'ShortAnswer':       'ShortAnswer',
     'Calculation':       'Calculation',
     'File':              'Calculation',
     'Checkbox':          'Calculation',
