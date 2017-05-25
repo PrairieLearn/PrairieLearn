@@ -1,9 +1,7 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var fs = require('fs');
 var path = require('path');
 var async = require('async');
-var pg = require('pg');
 
 var error = require('../lib/error');
 var logger = require('../lib/logger');
