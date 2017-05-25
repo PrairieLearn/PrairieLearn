@@ -90,7 +90,7 @@ module.exports = {
                     course_id: courseInfo.courseId,
                     keep_course_instance_ids: courseInstanceIds,
                 };
-                sqldb.query(sql.soft_delete_unused_course_instances, params, function(err) {
+                sqldb.query(sql.soft_delete_unused_course_instances, params, function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -98,7 +98,7 @@ module.exports = {
             function(callback) {
                 // delete access rules from DB that don't correspond to assessments
                 logger.debug('Deleting unused course_instance_access_rules');
-                sqldb.query(sql.delete_unused_course_instance_access_rules, [], function(err) {
+                sqldb.query(sql.delete_unused_course_instance_access_rules, [], function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -122,7 +122,7 @@ module.exports = {
                 end_date: _(dbRule).has('endDate') ? dbRule.endDate : null,
                 institution: _(dbRule).has('institution') ? dbRule.institution : 'UIUC',
             };
-            sqldb.query(sql.insert_course_instance_access_rule, params, function(err) {
+            sqldb.query(sql.insert_course_instance_access_rule, params, function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -135,7 +135,7 @@ module.exports = {
                 course_instance_id: courseInstance.courseInstanceId,
                 last_number: allowAccess.length,
             };
-            sqldb.query(sql.delete_excess_course_instance_access_rules, params, function(err) {
+            sqldb.query(sql.delete_excess_course_instance_access_rules, params, function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

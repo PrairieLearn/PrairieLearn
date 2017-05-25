@@ -54,7 +54,7 @@ module.exports.updateExternalGrading = function(grading_job_id, grading, callbac
                         };
                         logger.debug('homework.updateExternalGrading(): calling update_grading_job_and_submission',
                                      {grading_job_id: grading_job_id, params: params});
-                        sqldb.queryWithClient(client, sql.update_grading_job_and_submission, params, function(err) {
+                        sqldb.queryWithClient(client, sql.update_grading_job_and_submission, params, function(err, _result) {
                             if (ERR(err, callback)) return;
                             logger.debug('homework.updateExternalGrading(): finished update_grading_job_and_submission',
                                          {grading_job_id: grading_job_id});
@@ -65,7 +65,7 @@ module.exports.updateExternalGrading = function(grading_job_id, grading, callbac
                         var params = {variant_id: variant_id};
                         logger.debug('homework.updateExternalGrading(): calling update_variant',
                                      {grading_job_id: grading_job_id, params: params});
-                        sqldb.queryWithClient(client, sql.update_variant, params, function(err) {
+                        sqldb.queryWithClient(client, sql.update_variant, params, function(err, _result) {
                             if (ERR(err, callback)) return;
                             logger.debug('homework.updateExternalGrading(): finished update_variant',
                                          {grading_job_id: grading_job_id});
@@ -206,7 +206,7 @@ module.exports.submitAndGrade = function(submission, instance_question_id, quest
                         };
                         logger.debug('homework.submitAndGrade(): calling update_instance_question_in_grading',
                                      {instance_question_id: instance_question_id, params: params});
-                        sqldb.queryWithClient(client, sql.update_instance_question_in_grading, params, function(err) {
+                        sqldb.queryWithClient(client, sql.update_instance_question_in_grading, params, function(err, _result) {
                             if (ERR(err, callback)) return;
                             logger.debug('homework.submitAndGrade(): finished update_instance_question_in_grading',
                                          {instance_question_id: instance_question_id});
@@ -219,7 +219,7 @@ module.exports.submitAndGrade = function(submission, instance_question_id, quest
                         };
                         logger.debug('homework.submitAndGrade(): calling update_instance_question_in_grading',
                                      {instance_question_id: instance_question_id, params: params});
-                        sqldb.queryWithClient(client, sql.update_instance_question_in_grading, params, function(err) {
+                        sqldb.queryWithClient(client, sql.update_instance_question_in_grading, params, function(err, _result) {
                             if (ERR(err, callback)) return;
                             logger.debug('homework.submitAndGrade(): finished update_instance_question_in_grading',
                                          {instance_question_id: instance_question_id});
@@ -234,7 +234,7 @@ module.exports.submitAndGrade = function(submission, instance_question_id, quest
                 var params = {variant_id: submission.variant_id};
                 logger.debug('homework.submitAndGrade(): calling update_variant',
                              {instance_question_id: instance_question_id, params: params});
-                sqldb.queryWithClient(client, sql.update_variant, params, function(err) {
+                sqldb.queryWithClient(client, sql.update_variant, params, function(err, _result) {
                     if (ERR(err, callback)) return;
                     logger.debug('homework.submitAndGrade(): finished update_variant',
                                  {instance_question_id: instance_question_id});

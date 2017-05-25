@@ -29,7 +29,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
         },
         routine: function(el, value) {
             var _ref;
-            
+
             el = $(el);
             if ((value != null ? value.toString() : void 0) !== ((_ref = el.val()) != null ? _ref.toString() : void 0)) {
                 return el.val(value != null ? value : '');
@@ -189,7 +189,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
             this.model.trigger("answerChanged");
         },
 
-        getSubmittedAnswer: function() {
+        getSubmittedAnswer: function(_variant) {
             var i, answerData = {};
             for (i = 0; i < this.answerAttributes.length; i++) {
                 if (this.submittedAnswer.has(this.answerAttributes[i].name)) {

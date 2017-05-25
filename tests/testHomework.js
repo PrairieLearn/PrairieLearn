@@ -409,7 +409,7 @@ describe('Homework assessment', function() {
                         assessment_instance_points: 3,
                         assessment_instance_score_perc: 3/15 * 100,
                     },
-                    getSubmittedAnswer: function() {
+                    getSubmittedAnswer: function(_variant) {
                         return {
                             wx: 400,
                             wy: -700,

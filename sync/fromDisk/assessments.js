@@ -95,7 +95,7 @@ module.exports = {
                     course_instance_id: courseInstance.courseInstanceId,
                     keep_assessment_ids: assessmentIds,
                 };
-                sqldb.query(sql.soft_delete_unused_assessments, params, function(err) {
+                sqldb.query(sql.soft_delete_unused_assessments, params, function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -106,21 +106,21 @@ module.exports = {
                     course_instance_id: courseInstance.courseInstanceId,
                     keep_assessment_ids: assessmentIds,
                 };
-                sqldb.query(sql.soft_delete_unused_assessment_questions, params, function(err) {
+                sqldb.query(sql.soft_delete_unused_assessment_questions, params, function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
             },
             function(callback) {
                 logger.debug('Deleting unused assessment access rules');
-                sqldb.query(sql.delete_unused_assessment_access_rules, [], function(err) {
+                sqldb.query(sql.delete_unused_assessment_access_rules, [], function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
             },
             function(callback) {
                 logger.debug('Deleting unused zones');
-                sqldb.query(sql.delete_unused_zones, [], function(err) {
+                sqldb.query(sql.delete_unused_zones, [], function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -146,7 +146,7 @@ module.exports = {
                 credit: _(dbRule).has('credit') ? dbRule.credit : null,
                 time_limit_min: _(dbRule).has('timeLimitMin') ? dbRule.timeLimitMin : null,
             };
-            sqldb.query(sql.insert_assessment_access_rule, params, function(err) {
+            sqldb.query(sql.insert_assessment_access_rule, params, function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -158,7 +158,7 @@ module.exports = {
                 assessment_id: assessmentId,
                 last_number: allowAccess.length,
             };
-            sqldb.query(sql.delete_excess_assessment_access_rules, params, function(err) {
+            sqldb.query(sql.delete_excess_assessment_access_rules, params, function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -188,7 +188,7 @@ module.exports = {
                 assessment_id: assessmentId,
                 last_number: zoneList.length,
             };
-            sqldb.query(sql.delete_excess_zones, params, function(err) {
+            sqldb.query(sql.delete_excess_zones, params, function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -308,7 +308,7 @@ module.exports = {
                     assessment_id: assessmentId,
                     keep_assessment_question_ids: assessmentQuestionIds,
                 };
-                sqldb.query(sql.soft_delete_unused_assessment_questions_in_assessment, params, function(err) {
+                sqldb.query(sql.soft_delete_unused_assessment_questions_in_assessment, params, function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });

@@ -49,7 +49,7 @@ describe('sync/fromDisk/courseInfo', function() {
 
     describe('the "pl_courses" table', function() {
         it('should contain TPL 101', function(callback) {
-            sqldb.queryOneRow(sql.select_course, [], function(err) {
+            sqldb.queryOneRow(sql.select_course, [], function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

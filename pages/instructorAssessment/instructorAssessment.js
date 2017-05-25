@@ -625,7 +625,7 @@ router.post('/', function(req, res, next) {
             assessment_instance_id: req.body.assessment_instance_id,
             authn_user_id: res.locals.authz_data.authn_user.user_id,
         };
-        sqldb.queryOneRow(sql.open, params, function(err) {
+        sqldb.queryOneRow(sql.open, params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });

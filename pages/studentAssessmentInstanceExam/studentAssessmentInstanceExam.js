@@ -39,11 +39,11 @@ var tmp_upgrade = function(locals, callback) {
         return callback(null);
     } else {
         var params = {assessment_instance_id: locals.assessment_instance.id};
-        sqldb.query(sql.tmp_upgrade_iq_status, params, function(err) {
+        sqldb.query(sql.tmp_upgrade_iq_status, params, function(err, _result) {
             if (ERR(err, callback)) return;
 
             var params = {assessment_instance_id: locals.assessment_instance.id};
-            sqldb.query(sql.tmp_set_upgraded, params, function(err) {
+            sqldb.query(sql.tmp_set_upgraded, params, function(err, _result) {
                 if (ERR(err, callback)) return;
                 return callback(null);
             });

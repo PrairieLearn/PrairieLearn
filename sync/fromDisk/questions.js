@@ -79,14 +79,14 @@ module.exports = {
                     course_id: courseInfo.courseId,
                     keep_question_ids: questionIds,
                 };
-                sqldb.query(sql.soft_delete_unused_questions, params, function(err) {
+                sqldb.query(sql.soft_delete_unused_questions, params, function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
             },
             function(callback) {
                 var params = {course_id: courseInfo.courseId};
-                sqldb.query(sql.ensure_numbers, params, function(err) {
+                sqldb.query(sql.ensure_numbers, params, function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });

@@ -136,7 +136,7 @@ describe('Access control', function() {
     describe('Enroll student user into exampleCourse', function() {
         it('should succeed', function(callback) {
             var params = {user_id: user.user_id};
-            sqldb.query(sql.insert_student_enrollment, params, function(err) {
+            sqldb.query(sql.insert_student_enrollment, params, function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -460,7 +460,7 @@ describe('Access control', function() {
 
     describe('insert PrairieSchedule course link', function() {
         it('should succeed', function(callback) {
-            sqldb.query(sql.insert_ps_course_link, [], function(err) {
+            sqldb.query(sql.insert_ps_course_link, [], function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -473,7 +473,7 @@ describe('Access control', function() {
     describe('insert PrairieSchedule reservation', function() {
         it('should succeed', function(callback) {
             var params = {user_id: user.user_id};
-            sqldb.query(sql.insert_ps_reservation, params, function(err) {
+            sqldb.query(sql.insert_ps_reservation, params, function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -491,7 +491,7 @@ describe('Access control', function() {
 
     describe('check in PrairieSchedule reservation', function() {
         it('should succeed', function(callback) {
-            sqldb.query(sql.update_ps_reservation_to_checked_in, [], function(err) {
+            sqldb.query(sql.update_ps_reservation_to_checked_in, [], function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

@@ -244,7 +244,7 @@ app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_que
 app.use('/pl/course/:course_id', require('./middlewares/authzCourse')); // set res.locals.course
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();});
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType = 'course'; next();});
-app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, next) {res.redirect(res.locals.urlPrefix + '/overview');}); // redirect plain course URL to overview page
+app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, _next) {res.redirect(res.locals.urlPrefix + '/overview');}); // redirect plain course URL to overview page
 app.use('/pl/course/:course_id/overview', require('./pages/courseOverview/courseOverview'));
 app.use('/pl/course/:course_id/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
 app.use('/pl/course/:course_id/syncs', require('./pages/courseSyncs/courseSyncs'));
@@ -262,7 +262,7 @@ app.use('/pl/administrator/overview', require('./pages/administratorOverview/adm
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 // Webhooks //////////////////////////////////////////////////////////
-app.get('/pl/webhooks/ping', function(req, res, next) {res.send('.');});
+app.get('/pl/webhooks/ping', function(req, res, _next) {res.send('.');});
 app.use('/pl/webhooks/grading', require('./webhooks/grading/grading'));
 
 //////////////////////////////////////////////////////////////////////
@@ -325,7 +325,7 @@ module.exports.insertDevUser = function(callback) {
             + ' VALUES ($user_id)'
             + ' ON CONFLICT (user_id) DO NOTHING;';
         var params = {user_id};
-        sqldb.query(sql, params, function(err) {
+        sqldb.query(sql, params, function(err, _result) {
             if (ERR(err, callback)) return;
             callback(null);
         });

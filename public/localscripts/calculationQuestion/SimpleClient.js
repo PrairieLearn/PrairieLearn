@@ -188,7 +188,7 @@ define(["jquery", "underscore", "backbone", "rivets", "PrairieTemplate"], functi
             this.model.trigger("answerChanged");
         },
 
-        getSubmittedAnswer: function() {
+        getSubmittedAnswer: function(_variant) {
             var i, answerData = {};
             for (i = 0; i < this.answerAttributes.length; i++) {
                 if (this.submittedAnswer.has(this.answerAttributes[i].name)) {

@@ -38,7 +38,7 @@ module.exports = {
                         course_id: courseInfo.courseId,
                         keep_tag_ids: tagIds,
                     };
-                    sqldb.query(sql.delete_unused_tags, params, function(err) {
+                    sqldb.query(sql.delete_unused_tags, params, function(err, _result) {
                         if (ERR(err, callback)) return;
                         callback(null);
                     });
@@ -74,7 +74,7 @@ module.exports = {
                             question_id: q.id,
                             keep_question_tag_ids: questionTagIds,
                         };
-                        sqldb.query(sql.delete_unused_question_tags, params, function(err) {
+                        sqldb.query(sql.delete_unused_question_tags, params, function(err, _result) {
                             if (ERR(err, callback)) return;
                             callback(null);
                         });

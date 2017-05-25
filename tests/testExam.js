@@ -578,7 +578,7 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals = {
                     instance_question_id: instance_questions[0].id,
-                    getSubmittedAnswer: function() {
+                    getSubmittedAnswer: function(_variant) {
                         return {
                             wx: -500,
                             wy: 700,
@@ -757,7 +757,7 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals = {
                     instance_question_id: instance_questions[0].id,
-                    getSubmittedAnswer: function() {
+                    getSubmittedAnswer: function(_variant) {
                         return {
                             wx: 2000,
                             wy: -3000,

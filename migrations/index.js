@@ -18,7 +18,7 @@ module.exports.init = function(callback) {
     async.waterfall([
         (callback) => {
             // Create the migrations table if needed
-            sqldb.query(sql.create_migrations_table, [], (err) => {
+            sqldb.query(sql.create_migrations_table, [], (err, _result) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -65,7 +65,7 @@ module.exports.init = function(callback) {
                         },
                         (sql, callback) => {
                             // Perform the migration
-                            sqldb.query(sql, [], (err) => {
+                            sqldb.query(sql, [], (err, _result) => {
                                 if (err) error.addData(err, {sqlFile: file.filename});
                                 if (ERR(err, callback)) return;
                                 callback(null);
@@ -77,7 +77,7 @@ module.exports.init = function(callback) {
                                 filename: file.filename,
                                 index: file.index
                             };
-                            sqldb.query(sql.insert_migration, params, (err) => {
+                            sqldb.query(sql.insert_migration, params, (err, _result) => {
                                 if (ERR(err, callback)) return;
                                 callback(null);
                             });

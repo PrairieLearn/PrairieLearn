@@ -28,7 +28,7 @@ router.post('/', function(req, res, next) {
             user_id: res.locals.authn_user.user_id,
             req_date: res.locals.req_date,
         };
-        sqldb.queryOneRow(sql.enroll, params, function(err) {
+        sqldb.queryOneRow(sql.enroll, params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
@@ -38,7 +38,7 @@ router.post('/', function(req, res, next) {
             user_id: res.locals.authn_user.user_id,
             req_date: res.locals.req_date,
         };
-        sqldb.queryOneRow(sql.unenroll, params, function(err) {
+        sqldb.queryOneRow(sql.unenroll, params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });

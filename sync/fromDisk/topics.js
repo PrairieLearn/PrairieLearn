@@ -36,7 +36,7 @@ module.exports = {
                 course_id: courseInfo.courseId,
                 keep_topic_ids: topicIds,
             };
-            sqldb.query(sql.delete_unused_topics, params, function(err) {
+            sqldb.query(sql.delete_unused_topics, params, function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
