@@ -1,12 +1,7 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
-var fs = require('fs');
 var async = require('async');
-var path = require('path');
-var numeric = require('numeric');
 
-var logger = require('../lib/logger');
-var filePaths = require('../lib/file-paths');
 var messageQueue = require('../lib/messageQueue');
 var sqldb = require('../lib/sqldb');
 var sqlLoader = require('../lib/sql-loader');
@@ -82,7 +77,7 @@ module.exports = {
     // must be called from within a transaction that has an update lock on the assessment_instance
     gradeSavedSubmission: function(client, submission_id, auth_user_id, variant, question, course, callback) {
         if (question.grading_method == 'Internal') {
-            var params = {submission_id: submission_id};
+            let params = {submission_id: submission_id};
             sqldb.queryWithClientOneRow(client, sql.select_submission, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 var submission = result.rows[0];
@@ -90,7 +85,7 @@ module.exports = {
                 module.exports.gradeSubmission(submission, variant, question, course, {}, function(err, grading) {
                     if (ERR(err, callback)) return;
 
-                    var params = {
+                    let params = {
                         submission_id: submission_id,
                         auth_user_id: auth_user_id,
                         grading_method: question.grading_method,
@@ -106,7 +101,7 @@ module.exports = {
                 });
             });
         } else if (question.grading_method == 'External') {
-            var params = {
+            let params = {
                 submission_id: submission_id,
                 auth_user_id: auth_user_id,
             };
@@ -134,7 +129,7 @@ module.exports = {
                 });
             });
         } else if (question.grading_method == 'Manual') {
-            var params = {
+            let params = {
                 submission_id: submission_id,
                 auth_user_id: auth_user_id,
                 grading_method: question.grading_method,
