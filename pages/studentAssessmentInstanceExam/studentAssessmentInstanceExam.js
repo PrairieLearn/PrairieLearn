@@ -1,13 +1,8 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var async = require('async');
-var path = require('path');
-var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
 var error = require('../../lib/error');
-var logger = require('../../lib/logger');
 var assessments = require('../../assessments');
 var assessmentsExam = require('../../assessments/exam');
 var sqldb = require('../../lib/sqldb');
@@ -44,13 +39,12 @@ var tmp_upgrade = function(locals, callback) {
         return callback(null);
     } else {
         var params = {assessment_instance_id: locals.assessment_instance.id};
-        sqldb.query(sql.tmp_upgrade_iq_status, params, function(err, result) {
+        sqldb.query(sql.tmp_upgrade_iq_status, params, function(err) {
             if (ERR(err, callback)) return;
 
             var params = {assessment_instance_id: locals.assessment_instance.id};
-            sqldb.query(sql.tmp_set_upgraded, params, function(err, result) {
+            sqldb.query(sql.tmp_set_upgraded, params, function(err) {
                 if (ERR(err, callback)) return;
-                
                 return callback(null);
             });
         });
@@ -62,7 +56,7 @@ router.get('/', function(req, res, next) {
 
     tmp_upgrade(res.locals, function(err) {
         if (ERR(err, next)) return;
-        
+
         var params = {assessment_instance_id: res.locals.assessment_instance.id};
         sqldb.query(sql.get_questions, params, function(err, result) {
             if (ERR(err, next)) return;

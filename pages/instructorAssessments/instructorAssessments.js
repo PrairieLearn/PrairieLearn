@@ -1,11 +1,9 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
-var path = require('path');
 var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var logger = require('../../lib/logger');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
@@ -28,7 +26,7 @@ router.get('/', function(req, res, next) {
     };
     sqldb.query(sql.select_assessments, params, function(err, result) {
         if (ERR(err, next)) return;
-        
+
         res.locals.rows = result.rows;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
@@ -75,13 +73,13 @@ router.get('/:filename', function(req, res, next) {
             });
             csvData.splice(0, 0, csvHeaders);
             csvStringify(csvData, function(err, csv) {
-                if (err) throw Error("Error formatting CSV", err);
+                if (err) throw Error('Error formatting CSV', err);
                 res.attachment(req.params.filename);
                 res.send(csv);
             });
         });
     } else {
-        next(new Error("Unknown filename: " + req.params.filename));
+        next(new Error('Unknown filename: ' + req.params.filename));
     }
 });
 

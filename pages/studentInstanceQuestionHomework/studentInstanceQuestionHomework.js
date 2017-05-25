@@ -1,15 +1,11 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var path = require('path');
 var async = require('async');
-var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
 var error = require('../../lib/error');
 var questionServers = require('../../question-servers');
 var assessmentsHomework = require('../../assessments/homework');
-var logger = require('../../lib/logger');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
@@ -64,7 +60,7 @@ function processSubmission(req, res, callback) {
         if (ERR(err, callback)) return;
         callback(null, submission.variant_id);
     });
-};
+}
 
 function processGet(req, res, variant_id, callback) {
     var questionModule;
@@ -175,8 +171,8 @@ function processGet(req, res, variant_id, callback) {
         },
         function(callback) {
             var questionJson = JSON.stringify({
-                questionFilePath: res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id + "/file",
-                questionGeneratedFilePath: res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id + "/generatedFilesQuestion/variant/" + res.locals.variant.id,
+                questionFilePath: res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id + '/file',
+                questionGeneratedFilePath: res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id + '/generatedFilesQuestion/variant/' + res.locals.variant.id,
                 question: res.locals.question,
                 effectiveQuestionType: res.locals.effectiveQuestionType,
                 course: res.locals.course,
@@ -207,7 +203,7 @@ router.post('/', function(req, res, next) {
     if (req.body.postAction == 'submitQuestionAnswer') {
         processSubmission(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
-            res.redirect(res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id
+            res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
                          + '/?variant_id=' + variant_id);
         });
     } else {

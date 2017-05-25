@@ -1,11 +1,8 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var path = require('path');
 var assert = require('assert');
 var express = require('express');
 var router = express.Router();
 
-var error = require('../../lib/error');
 var logger = require('../../lib/logger');
 var config = require('../../lib/config');
 var csrf = require('../../lib/csrf');
@@ -58,7 +55,7 @@ router.get('/', function(req, res, next) {
             if (ERR(err, next)) return;
             var tokenData = {
                 user_id: result.rows[0].user_id
-            }
+            };
             var pl_authn = csrf.generateToken(tokenData, config.secretKey);
             res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});
             res.redirect(res.locals.plainUrlPrefix);

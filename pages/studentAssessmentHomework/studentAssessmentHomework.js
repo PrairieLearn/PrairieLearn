@@ -1,11 +1,7 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var path = require('path');
-var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var logger = require('../../lib/logger');
 var error = require('../../lib/error');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
@@ -23,7 +19,7 @@ function makeAssessmentInstance(req, res, callback) {
         if (ERR(err, callback)) return;
         callback(null, result.rows[0].assessment_instance_id);
     });
-};
+}
 
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();

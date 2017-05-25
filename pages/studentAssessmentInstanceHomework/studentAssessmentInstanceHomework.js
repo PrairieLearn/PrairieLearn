@@ -1,11 +1,7 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var path = require('path');
-var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var logger = require('../../lib/logger');
 var assessments = require('../../assessments');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
@@ -32,7 +28,7 @@ var ensureUpToDate = (locals, callback) => {
             null, // credit
             true, // only_log_if_score_updated
         ];
-        sqldb.callOneRow('assessment_instances_grade', params, (err, result) => {
+        sqldb.callOneRow('assessment_instances_grade', params, (err) => {
             if (ERR(err, callback)) return;
 
             const params = {assessment_instance_id: locals.assessment_instance.id};

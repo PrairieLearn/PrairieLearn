@@ -1,11 +1,10 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var async = require('async');
-var path = require('path');
 var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
-var debug = require('debug')('prairielearn:instructorAssessment')
+var debug = require('debug')('prairielearn:instructorAssessment');
 
 var error = require('../../lib/error');
 var logger = require('../../lib/logger');
@@ -104,7 +103,7 @@ router.get('/', function(req, res, next) {
                 res.locals.assessment_score_histogram_by_date = result.rows;
                 callback(null);
             });
-        }, 
+        },
         function(callback) {
             debug('query assessment_duration_stats');
             // FIXME: change to assessment_instance_duration_stats and show all instances
@@ -151,7 +150,7 @@ var sendInstancesCsv = function(res, req, columns, options, callback) {
         if (options.only_highest) {
             rows = _.filter(rows, 'highest_score');
         }
-        
+
         csvMaker.rowsToCsv(rows, columns, function(err, csv) {
             if (ERR(err, callback)) return;
             res.attachment(req.params.filename);
@@ -197,7 +196,7 @@ router.get('/:filename', function(req, res, next) {
     ];
 
     if (req.params.filename == res.locals.scoreStatsCsvFilename) {
-        var params = {assessment_id: res.locals.assessment.id};
+        let params = {assessment_id: res.locals.assessment.id};
         sqldb.queryOneRow(sql.assessment_stats, params, function(err, result) {
             if (ERR(err, next)) return;
             var assessmentStat = result.rows[0];
@@ -223,7 +222,7 @@ router.get('/:filename', function(req, res, next) {
                 assessmentStat.n_hundred_perc,
             ];
             _(assessmentStat.score_hist).each(function(count, i) {
-                csvHeaders.push("Hist " + (i + 1));
+                csvHeaders.push('Hist ' + (i + 1));
                 csvData.push(count);
             });
             csvData = [csvHeaders, csvData];
@@ -234,7 +233,7 @@ router.get('/:filename', function(req, res, next) {
             });
         });
     } else if (req.params.filename == res.locals.durationStatsCsvFilename) {
-        var params = {assessment_id: res.locals.assessment.id};
+        let params = {assessment_id: res.locals.assessment.id};
         sqldb.queryOneRow(sql.assessment_duration_stats, params, function(err, result) {
             if (ERR(err, next)) return;
             var durationStat = result.rows[0];
@@ -254,11 +253,11 @@ router.get('/:filename', function(req, res, next) {
                 durationStat.max_mins,
             ];
             _(durationStat.threshold_seconds).each(function(count, i) {
-                csvHeaders.push("Hist boundary " + (i + 1) + " (s)");
+                csvHeaders.push('Hist boundary ' + (i + 1) + ' (s)');
                 csvData.push(count);
             });
             _(durationStat.hist).each(function(count, i) {
-                csvHeaders.push("Hist" + (i + 1));
+                csvHeaders.push('Hist' + (i + 1));
                 csvData.push(count);
             });
             csvData = [csvHeaders, csvData];
@@ -310,8 +309,8 @@ router.get('/:filename', function(req, res, next) {
         });
     } else if (req.params.filename == res.locals.allSubmissionsCsvFilename
                || req.params.filename == res.locals.finalSubmissionsCsvFilename) {
-        var include_all = (req.params.filename == res.locals.allSubmissionsCsvFilename);
-        var params = {
+        let include_all = (req.params.filename == res.locals.allSubmissionsCsvFilename);
+        let params = {
             assessment_id: res.locals.assessment.id,
             include_all: include_all,
         };
@@ -356,8 +355,8 @@ router.get('/:filename', function(req, res, next) {
         });
     } else if (req.params.filename == res.locals.allFilesZipFilename
                || req.params.filename == res.locals.finalFilesZipFilename) {
-        var include_all = (req.params.filename == res.locals.allFilesZipFilename);
-        var params = {
+        let include_all = (req.params.filename == res.locals.allFilesZipFilename);
+        let params = {
             assessment_id: res.locals.assessment.id,
             include_all: include_all,
         };
@@ -371,20 +370,20 @@ router.get('/:filename', function(req, res, next) {
             });
         });
     } else if (req.params.filename == res.locals.questionStatsCsvFilename) {
-        var params = {assessment_id: res.locals.assessment.id};
+        let params = {assessment_id: res.locals.assessment.id};
         sqldb.query(sql.question_stats, params, function(err, result) {
             if (ERR(err, next)) return;
             var questionStatsList = result.rows;
             var csvData = [];
             var csvHeaders = ['Question number', 'Question title', 'Mean score', 'Discrimination', 'Attempts'];
             for (var i = 0; i < 5; i++) {
-                csvHeaders.push("Hist " + (i + 1));
+                csvHeaders.push('Hist ' + (i + 1));
             }
 
             csvData.push(csvHeaders);
 
             _(questionStatsList).each(function(questionStats) {
-                questionStatsData = [];
+                var questionStatsData = [];
                 questionStatsData.push(questionStats.number);
                 questionStatsData.push(questionStats.title);
                 questionStatsData.push(questionStats.mean_score_per_question);
@@ -405,12 +404,12 @@ router.get('/:filename', function(req, res, next) {
             });
         });
     } else if (req.params.filename == res.locals.statsByDateCsvFilename) {
-        var params = {assessment_id: res.locals.assessment.id};
+        let params = {assessment_id: res.locals.assessment.id};
         sqldb.query(sql.assessment_score_histogram_by_date, params, function(err, result) {
             if (ERR(err, next)) return;
             var scoresByDay = result.rows;
 
-            var csvHeaders = ["Date"];
+            var csvHeaders = ['Date'];
             _(scoresByDay).each(function(day) {
                 csvHeaders.push(day.date_formatted);
             });
@@ -420,20 +419,20 @@ router.get('/:filename', function(req, res, next) {
 
             var csvData = [];
 
-            var groupData = ['Number'];
-            for (var day = 0; day < numDays; day++) {
+            let groupData = ['Number'];
+            for (let day = 0; day < numDays; day++) {
                 groupData.push(scoresByDay[day].number);
             }
             csvData.push(groupData);
-            
-            var groupData = ['Mean score perc'];
-            for (var day = 0; day < numDays; day++) {
+
+            groupData = ['Mean score perc'];
+            for (let day = 0; day < numDays; day++) {
                 groupData.push(scoresByDay[day].mean_score_perc);
             }
             csvData.push(groupData);
-            
+
             for (var group = 0; group < numGroups; group++) {
-                var groupData = [(group * 10) + "% to " + ((group + 1) * 10) + "%"];
+                groupData = [(group * 10) + '% to ' + ((group + 1) * 10) + '%'];
                 for (var day = 0; day < numDays; day++) {
                     groupData.push(scoresByDay[day].histogram[group]);
                 }
@@ -447,7 +446,7 @@ router.get('/:filename', function(req, res, next) {
             });
         });
     } else {
-        next(new Error("Unknown filename: " + req.params.filename));
+        next(new Error('Unknown filename: ' + req.params.filename));
     }
 });
 
@@ -513,7 +512,7 @@ var regradeAssessmentInstance = function(assessment_instance_id, locals, callbac
             });
         });
     });
-}
+};
 
 var regradeAllAssessmentInstances = function(assessment_id, locals, callback) {
     var params = {assessment_id};
@@ -616,22 +615,22 @@ var regradeAllAssessmentInstances = function(assessment_id, locals, callback) {
             });
         });
     });
-}
+};
 
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_edit) return next();
     if (req.body.postAction == 'open') {
-        var params = {
+        let params = {
             assessment_id: res.locals.assessment.id,
             assessment_instance_id: req.body.assessment_instance_id,
             authn_user_id: res.locals.authz_data.authn_user.user_id,
         };
-        sqldb.queryOneRow(sql.open, params, function(err, result) {
+        sqldb.queryOneRow(sql.open, params, function(err) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
     } else if (req.body.postAction == 'close') {
-        var params = {
+        let params = {
             assessment_id: res.locals.assessment.id,
             assessment_instance_id: req.body.assessment_instance_id,
             authz_data: res.locals.authz_data,
@@ -647,20 +646,20 @@ router.post('/', function(req, res, next) {
             });
         });
     } else if (req.body.postAction == 'delete') {
-        var params = [
+        let params = [
             req.body.assessment_instance_id,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('assessment_instances_delete', params, function(err, result) {
+        sqldb.call('assessment_instances_delete', params, function(err) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
     } else if (req.body.postAction == 'delete_all') {
-        var params = [
+        let params = [
             req.body.assessment_id,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('assessment_instances_delete_all', params, function(err, result) {
+        sqldb.call('assessment_instances_delete_all', params, function(err) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });

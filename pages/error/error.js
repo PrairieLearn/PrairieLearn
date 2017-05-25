@@ -1,16 +1,15 @@
 var _ = require('lodash');
 var path = require('path');
-var util = require('util');
 
 var logger = require('../../lib/logger');
 
-module.exports = function(err, req, res, next) {
+module.exports = function(err, req, res) {
     // clear all cookies in case something was misconfigured
     _(req.cookies).each(function(value, key) {
         res.clearCookie(key);
     });
 
-    var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+    var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
     var errorId = _.times(12, function() {return _.sample(chars);}).join('');
 
     res.status(err.status || 500);
