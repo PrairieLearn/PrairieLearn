@@ -1,9 +1,7 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var fs = require('fs');
 var path = require('path');
 var async = require('async');
-var pg = require('pg');
 
 var error = require('../lib/error');
 var logger = require('../lib/logger');
@@ -22,8 +20,8 @@ module.exports.init = function(callback) {
             // Create the migrations table if needed
             sqldb.query(sql.create_migrations_table, [], (err) => {
                 if (ERR(err, callback)) return;
-                callback(null)
-            })
+                callback(null);
+            });
         },
         (callback) => {
             // First, fetch the index of the last applied migration
@@ -48,7 +46,7 @@ module.exports.init = function(callback) {
                     })
                     .filter(file => file.index > last_migration)
                     .sort((a, b) => {
-                        return a.index - b.index
+                        return a.index - b.index;
                     });
                 callback(null, files);
             });
@@ -63,7 +61,7 @@ module.exports.init = function(callback) {
                             fs.readFile(path.join(__dirname, file.filename), 'utf8', (err, sql) => {
                                 if (ERR(err, callback)) return;
                                 callback(null, sql);
-                            })
+                            });
                         },
                         (sql, callback) => {
                             // Perform the migration
@@ -71,7 +69,7 @@ module.exports.init = function(callback) {
                                 if (err) error.addData(err, {sqlFile: file.filename});
                                 if (ERR(err, callback)) return;
                                 callback(null);
-                            })
+                            });
                         },
                         (callback) => {
                             // Record the migration
@@ -100,4 +98,4 @@ module.exports.init = function(callback) {
         logger.verbose('Successfully completed DB schema migration');
         callback(null);
     });
-}
+};
