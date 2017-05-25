@@ -1,12 +1,10 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var async = require('async');
-var path = require('path');
 var ejs = require('ejs');
 
 var error = require('../lib/error');
 var logger = require('../lib/logger');
-var messageQueue = require('../lib/messageQueue');
 var sqldb = require('../lib/sqldb');
 var sqlLoader = require('../lib/sql-loader');
 var externalGradingSocket = require('../lib/external-grading-socket');
@@ -87,7 +85,6 @@ module.exports.processGradingResult = function(content) {
                 if (ERR(err, callback)) return;
 
                 assessment_type = result.rows[0].assessment_type;
-                assessment_instance_id = result.rows[0].assessment_instance_id;
                 callback(null);
             });
         },

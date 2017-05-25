@@ -1,10 +1,6 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var async = require('async');
-var fs = require('fs');
-var path = require('path');
 
-var error = require('../lib/error');
 var logger = require('../lib/logger');
 var questionServers = require('../question-servers');
 var sqldb = require('../lib/sqldb');
@@ -31,7 +27,7 @@ module.exports.updateExternalGrading = function(grading_job_id, grading, callbac
                 sqldb.queryWithClientOneRow(client, sql.lock_with_grading_job_id, params, function(err, result) {
                     if (ERR(err, callback)) return;
                     auth_user_id = result.rows[0].auth_user_id;
-                    grading_not_needed = result.rows[0].grading_not_needed
+                    grading_not_needed = result.rows[0].grading_not_needed;
                     variant_id = result.rows[0].variant_id;
                     instance_question_id = result.rows[0].instance_question_id;
                     assessment_instance_id = result.rows[0].assessment_instance_id;
@@ -185,8 +181,8 @@ module.exports.submitAndGrade = function(submission, instance_question_id, quest
                     logger.debug('homework.submitAndGrade(): finished gradeSavedSubmission()',
                                  {instance_question_id: instance_question_id, grading_job: grading_job});
                     if (grading_job.grading_method == 'Internal') {
-                        if (grading_job.correct == null) return callback(new Error("Invalid 'correct' value"));
-                        var params = [
+                        if (grading_job.correct == null) return callback(new Error('Invalid \'correct\' value'));
+                        let params = [
                             instance_question_id,
                             grading_job.correct,
                             submission.auth_user_id,
@@ -204,7 +200,7 @@ module.exports.submitAndGrade = function(submission, instance_question_id, quest
                         logger.debug('homework.submitAndGrade(): pushed to external_grading_job_ids',
                                      {instance_question_id: instance_question_id,
                                       external_grading_job_ids: external_grading_job_ids});
-                        var params = {
+                        let params = {
                             instance_question_id: instance_question_id,
                             auth_user_id: submission.auth_user_id,
                         };
@@ -217,7 +213,7 @@ module.exports.submitAndGrade = function(submission, instance_question_id, quest
                             callback(null);
                         });
                     } else if (grading_job.grading_method == 'Manual') {
-                        var params = {
+                        let params = {
                             instance_question_id: instance_question_id,
                             auth_user_id: submission.auth_user_id,
                         };
