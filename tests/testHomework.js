@@ -596,7 +596,7 @@ describe('Homework assessment', function() {
     describe('11. regrading', function() {
         describe('change max_points', function() {
             it('should succeed', function(callback) {
-                sqldb.query(sql.update_max_points, [], function(err, result) {
+                sqldb.query(sql.update_max_points, [], function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
