@@ -1,5 +1,4 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 
 var serverJobs = require('../lib/server-jobs');
 
