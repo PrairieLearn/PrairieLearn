@@ -6,11 +6,14 @@ addons:
   postgresql: "9.6"
 services:
   - postgresql
+cache:
+  directories:
+    - node_modules
 branches:
   only:
   - master
   - /^[0-9]+\.[0-9]+$/
-  - testci
+  - code-coverage
 notifications:
   slack:
     secure: DzxZ8DNGFANLnls0j0/hiKjwg6aO/gI3UO8SiRKjqCO/x27uvBCJiDkTqCx834XVzuDBp6LIdHbyUuwRFyaVHyFYTbA0pqE4fe4/DxkK5DuRDj89cw8JgoK7/g9m/J9Y6GvwaOaE4SW0tnHeTwNDVCt7/w8rn1kxDo/tWtS+3cg=
@@ -21,3 +24,6 @@ script:
 
   # Run JS linter
   - npm run lint -s
+
+after_success:
+  cat ./coverage/lcov.info | coveralls

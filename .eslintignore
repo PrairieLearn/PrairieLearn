@@ -1,6 +1,6 @@
-node_modules/*
-public/*
-exampleCourse/*
-tests/sync/*
-sync/*
-question-servers/default-calculation/*
+node_modules/
+public/
+exampleCourse/
+sync/
+question-servers/default-calculation/
+/coverage/

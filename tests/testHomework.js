@@ -151,6 +151,7 @@ describe('Homework assessment', function() {
     var doSubmission = function() {
         describe('GET to instance_question URL', function() {
             it('should load successfully', function(callback) {
+                this.timeout(5000);
                 var instanceQuestionUrl = courseInstanceBaseUrl + '/instance_question/' + locals.instance_question_id;
                 request(instanceQuestionUrl, function (error, response, body) {
                     if (error) {
