@@ -1,8 +1,0 @@
-#!/usr/bin/execlineb -P
-
-define PGDATA /var/lib/postgresql
-export PGDATA ${PGDATA}
-
-define POSTGRES_USER postgres
-
-s6-setuidgid ${POSTGRES_USER} postgres

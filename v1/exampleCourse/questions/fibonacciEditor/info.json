@@ -1,7 +1,0 @@
-{
-    "title": "Write a Fibonacci function in an editor",
-    "topic": "Functions",
-    "tags": ["Code"],
-    "clientFiles": ["client.js", "question.html", "answer.html"],
-    "type": "Calculation"
-}
