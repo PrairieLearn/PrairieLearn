@@ -1,6 +1,11 @@
 
 # ChangeLog
 
+  * Add ESLint for style checking and fix related issues (Nathan Walters).
+
+  * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
+    and `tests/sync/*`) (Nathan Walters).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
