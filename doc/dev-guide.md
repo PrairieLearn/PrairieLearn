@@ -507,4 +507,4 @@ router.post('/', function(req, res, next) {
 app.use(/^\/?$/, function(req, res, _next) {res.redirect('/pl');});
 ```
 
-* To lint the code, use `npm run lint`. This is also run by the CI tests.
+* To lint the code, use `npm run lint -s`. This is also run by the CI tests.
