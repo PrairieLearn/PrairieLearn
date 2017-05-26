@@ -1,12 +1,8 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var fs = require('fs');
 var async = require('async');
 
 var logger = require('../lib/logger');
-var error = require('../lib/error');
 var config = require('../lib/config');
-var sqldb = require('../lib/sqldb');
 
 var autoFinishExams = require('./autoFinishExams');
 var errorAbandonedJobs = require('./errorAbandonedJobs');

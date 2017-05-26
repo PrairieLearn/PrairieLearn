@@ -1,9 +1,7 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var fs = require('fs');
 var path = require('path');
 var async = require('async');
-var pg = require('pg');
 
 var error = require('../lib/error');
 var logger = require('../lib/logger');
@@ -80,7 +78,7 @@ module.exports = {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
                 if (ERR(err, callback)) return;
-                sqldb.query(sql, [], function(err) {
+                sqldb.query(sql, [], function(err, _result) {
                     if (err) error.addData(err, {sqlFile: filename});
                     if (ERR(err, callback)) return;
                     callback(null);

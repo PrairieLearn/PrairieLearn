@@ -1,11 +1,7 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var fs = require('fs');
 var path = require('path');
 
 var error = require('../lib/error');
-var logger = require('../lib/logger');
-var filePaths = require('../lib/file-paths');
 var questionHelper = require('../lib/questionHelper.js');
 
 module.exports = {
@@ -15,15 +11,15 @@ module.exports = {
     },
 
     renderQuestion: function(variant, question, submission, course, locals, callback) {
-        callback(null, "");
+        callback(null, '');
     },
 
     renderSubmission: function(variant, question, submission, course, locals, callback) {
-        callback(null, "");
+        callback(null, '');
     },
 
     renderTrueAnswer: function(variant, question, course, locals, callback) {
-        callback(null, "");
+        callback(null, '');
     },
 
     getData: function(question, course, variant_seed, callback) {
@@ -35,16 +31,15 @@ module.exports = {
                 var vid = variant_seed;
                 var questionData = server.getData(vid, options, questionDir);
             } catch (err) {
-                var data = {
+                let data = {
                     variant_seed: variant_seed,
                     question: question,
                     course: course,
                 };
                 err.status = 500;
-                err = error.addData(err, data);
-                return ERR(err, callback);
+                return ERR(error.addData(err, data), callback);
             }
-            var data = {
+            let data = {
                 params: questionData.params,
                 true_answer: questionData.trueAnswer,
                 options: questionData.options || question.options || {},
@@ -54,7 +49,6 @@ module.exports = {
     },
 
     getFile: function(filename, variant, question, course, callback) {
-        var that = this;
         questionHelper.loadServer(question, course, function(err, server) {
             if (ERR(err, callback)) return;
             var fileData;
@@ -72,15 +66,13 @@ module.exports = {
                     course: course,
                 };
                 err.status = 500;
-                err = error.addData(err, data);
-                return ERR(err, callback);
+                return ERR(error.addData(err, data), callback);
             }
             callback(null, fileData);
         });
     },
 
     gradeSubmission: function(submission, variant, question, course, callback) {
-        var that = this;
         questionHelper.loadServer(question, course, function(err, server) {
             if (ERR(err, callback)) return;
             var grading;
@@ -100,8 +92,7 @@ module.exports = {
                     course: course,
                 };
                 err.status = 500;
-                err = error.addData(err, data);
-                return ERR(err, callback);
+                return ERR(error.addData(err, data), callback);
             }
             callback(null, grading);
         });

@@ -31,7 +31,7 @@ module.exports = {
                 course_id: courseInfo.courseId,
                 last_number: courseInfo.assessmentSets.length,
             };
-            sqldb.query(sql.delete_excess_assessment_sets, params, function(err) {
+            sqldb.query(sql.delete_excess_assessment_sets, params, function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

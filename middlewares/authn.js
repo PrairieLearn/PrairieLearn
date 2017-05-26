@@ -1,8 +1,6 @@
 var ERR = require('async-stacktrace');
-var hmacSha256 = require('crypto-js/hmac-sha256');
 
 var config = require('../lib/config');
-var error = require('../lib/error');
 var csrf = require('../lib/csrf');
 var logger = require('../lib/logger');
 var sqldb = require('../lib/sqldb');
@@ -27,16 +25,16 @@ module.exports = function(req, res, next) {
 
     // bypass auth for local /pl/ serving
     if (config.authType === 'none') {
-        authUid = 'dev@example.com';
-        authName = 'Dev User';
-        authUin = '123456789';
+        var authUid = 'dev@example.com';
+        var authName = 'Dev User';
+        var authUin = '123456789';
 
         if (req.cookies.pl_test_user == 'test_student') {
             authUid = 'student@illinois.edu';
             authName = 'Student User';
             authUin = '314156295';
         }
-        var params = {
+        let params = {
             uid: authUid,
             name: authName,
             uin: authUin,
@@ -66,7 +64,7 @@ module.exports = function(req, res, next) {
         return;
     }
 
-    var params = {
+    let params = {
         user_id: authnData.user_id,
     };
     sqldb.query(sql.select_user, params, (err, result) => {

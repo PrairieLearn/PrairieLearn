@@ -19,12 +19,13 @@ var assessmentUrl, assessmentInstanceUrl, q1Url, q2Url, instructorAssessmentUrl;
 
 describe('Exam assessment', function() {
 
-    before("set up testing server", helperServer.before);
-    after("shut down testing server", helperServer.after);
+    before('set up testing server', helperServer.before);
+    after('shut down testing server', helperServer.after);
 
     var res, page, $, elemList;
     var assessment_id, assessment_instance, instance_questions, variant, submission;
-    var csrfToken, instance_question, instance_question_1_id, instance_question_2_id;
+    var questionData, submittedAnswer;
+    var csrfToken, instance_question;
     var locals = {}, savedVariant, questionSavedCsrfToken;
     var assessmentGradeSavedCsrfToken, assessmentFinishSavedCsrfToken;
     var preStartTime, postStartTime, preEndTime, postEndTime, assessment_instance_duration;
@@ -52,7 +53,7 @@ describe('Exam assessment', function() {
                 res = response;
                 page = body;
                 callback(null);
-            })
+            });
         });
         it('should parse', function() {
             $ = cheerio.load(page);
@@ -79,7 +80,7 @@ describe('Exam assessment', function() {
                 res = response;
                 page = body;
                 callback(null);
-            })
+            });
         });
         it('should parse', function() {
             $ = cheerio.load(page);
@@ -123,7 +124,7 @@ describe('Exam assessment', function() {
                 res = response;
                 page = body;
                 callback(null);
-            })
+            });
         });
         it('should parse', function() {
             $ = cheerio.load(page);
@@ -157,11 +158,9 @@ describe('Exam assessment', function() {
         });
         it('should have the correct first question', function() {
             assert.equal(instance_questions[0].qid, 'addVectors');
-            instance_question_1_id = instance_questions[0].id;
         });
         it('should have the correct second question', function() {
             assert.equal(instance_questions[1].qid, 'fossilFuelsRadio');
-            instance_question_2_id = instance_questions[1].id;
         });
     });
 
@@ -177,7 +176,7 @@ describe('Exam assessment', function() {
                 res = response;
                 page = body;
                 callback(null);
-            })
+            });
         });
         it('should parse', function() {
             $ = cheerio.load(page);
@@ -210,7 +209,7 @@ describe('Exam assessment', function() {
                     res = response;
                     page = body;
                     callback(null);
-                })
+                });
             });
             it('should parse', function() {
                 $ = cheerio.load(page);
@@ -279,7 +278,7 @@ describe('Exam assessment', function() {
                     res = response;
                     page = body;
                     callback(null);
-                })
+                });
             });
             it('should parse', function() {
                 $ = cheerio.load(page);
@@ -343,7 +342,7 @@ describe('Exam assessment', function() {
                     res = response;
                     page = body;
                     callback(null);
-                })
+                });
             });
         });
     };
@@ -361,7 +360,7 @@ describe('Exam assessment', function() {
                     res = response;
                     page = body;
                     callback(null);
-                })
+                });
             });
             it('should parse', function() {
                 $ = cheerio.load(page);
@@ -393,7 +392,7 @@ describe('Exam assessment', function() {
                     res = response;
                     page = body;
                     callback(null);
-                })
+                });
             });
             it('should parse', function() {
                 $ = cheerio.load(page);
@@ -418,7 +417,7 @@ describe('Exam assessment', function() {
                     res = response;
                     page = body;
                     callback(null);
-                })
+                });
             });
         });
     };
@@ -436,7 +435,7 @@ describe('Exam assessment', function() {
                     res = response;
                     page = body;
                     callback(null);
-                })
+                });
             });
             it('should parse', function() {
                 $ = cheerio.load(page);
@@ -468,7 +467,7 @@ describe('Exam assessment', function() {
                     res = response;
                     page = body;
                     callback(null);
-                })
+                });
             });
             it('should parse', function() {
                 $ = cheerio.load(page);
@@ -493,7 +492,7 @@ describe('Exam assessment', function() {
                     res = response;
                     page = body;
                     callback(null);
-                })
+                });
             });
         });
     };
@@ -579,7 +578,7 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals = {
                     instance_question_id: instance_questions[0].id,
-                    getSubmittedAnswer: function(variant) {
+                    getSubmittedAnswer: function(_variant) {
                         return {
                             wx: -500,
                             wy: 700,
@@ -758,7 +757,7 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals = {
                     instance_question_id: instance_questions[0].id,
-                    getSubmittedAnswer: function(variant) {
+                    getSubmittedAnswer: function(_variant) {
                         return {
                             wx: 2000,
                             wy: -3000,
@@ -938,7 +937,7 @@ describe('Exam assessment', function() {
     describe('18. regrading', function() {
         describe('set forceMaxPoints = true for question 1', function() {
             it('should succeed', function(callback) {
-                sqldb.query(sql.update_question1_force_max_points, [], function(err, result) {
+                sqldb.query(sql.update_question1_force_max_points, [], function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -977,7 +976,7 @@ describe('Exam assessment', function() {
                     assessment_id: assessment_id,
                     csrfToken: csrfToken,
                 };
-                request.post({url: instructorAssessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
+                request.post({url: instructorAssessmentUrl, form: form, followAllRedirects: true}, function (error, response) {
                     if (error) {
                         return callback(error);
                     }
@@ -998,7 +997,7 @@ describe('Exam assessment', function() {
             });
             it('should complete', function(callback) {
                 var checkComplete = function() {
-                    params = {job_sequence_id};
+                    var params = {job_sequence_id};
                     sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
                         if (ERR(err, callback)) return;
                         job_sequence_status = result.rows[0].status;

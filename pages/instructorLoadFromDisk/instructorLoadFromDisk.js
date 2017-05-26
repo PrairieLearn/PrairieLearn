@@ -1,5 +1,4 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var async = require('async');
 var fs = require('fs');
 var path = require('path');
@@ -7,7 +6,6 @@ var express = require('express');
 var router = express.Router();
 
 var config = require('../../lib/config');
-var logger = require('../../lib/logger');
 var serverJobs = require('../../lib/server-jobs');
 var syncFromDisk = require('../../sync/syncFromDisk');
 
@@ -19,7 +17,7 @@ var update = function(locals, callback) {
     };
     serverJobs.createJobSequence(options, function(err, job_sequence_id) {
         if (ERR(err, callback)) return;
-        
+
         var jobOptions = {
             course_id: locals.course ? locals.course.id : null,
             type: 'load_from_disk',
@@ -34,7 +32,7 @@ var update = function(locals, callback) {
             // continue executing here to launch the actual job
             async.eachSeries(config.courseDirs || [], function(courseDir, callback) {
                 courseDir = path.resolve(process.cwd(), courseDir);
-                var infoCourseFile = path.join(courseDir, 'infoCourse.json')
+                var infoCourseFile = path.join(courseDir, 'infoCourse.json');
                 fs.access(infoCourseFile, function(err) {
                     if (err) {
                         job.info('File not found: ' + infoCourseFile + ', skipping...');

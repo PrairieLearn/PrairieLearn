@@ -494,3 +494,12 @@ router.post('/', function(req, res, next) {
 ```
 
 * The `res.locals.csrfToken` variable is set and checked by early-stage middleware, so no explicit action is needed on each page.
+
+## Coding style
+[ESLint](http://eslint.org/) is used to enforce a consistent coding style throughout the codebase. We use the [default rule set](http://eslint.org/docs/rules/) , with the following additional rules enforced:
+* Use 4 spaces for indents
+* Always terminate lines with a semicolon
+* For callbacks with standard function signatures (e.g. `Express` route handlers), unused arguments should be included but prefaced with an underscore. For instance:
+```javascript
+app.use(/^\/?$/, function(req, res, _next) {res.redirect('/pl');});
+```

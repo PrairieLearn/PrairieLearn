@@ -1,12 +1,8 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-
-var config = require('../lib/config');
 var error = require('../lib/error');
 
 module.exports = function(req, res, next) {
     if (!res.locals.authz_data.has_course_permission_view) {
-        return next(error.make(403, "Requires course access permission", {locals: res.locals}));
+        return next(error.make(403, 'Requires course access permission', {locals: res.locals}));
     }
     next();
 };

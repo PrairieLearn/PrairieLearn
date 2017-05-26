@@ -1,5 +1,4 @@
 var config = require('../lib/config');
-var error = require('../lib/error');
 
 module.exports = function(req, res, next) {
     res.locals.req_date = new Date();

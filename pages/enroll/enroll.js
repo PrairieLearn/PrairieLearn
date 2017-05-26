@@ -1,11 +1,8 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var path = require('path');
 var express = require('express');
 var router = express.Router();
 
 var error = require('../../lib/error');
-var logger = require('../../lib/logger');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
@@ -31,17 +28,17 @@ router.post('/', function(req, res, next) {
             user_id: res.locals.authn_user.user_id,
             req_date: res.locals.req_date,
         };
-        sqldb.queryOneRow(sql.enroll, params, function(err, result) {
+        sqldb.queryOneRow(sql.enroll, params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
     } else if (req.body.postAction == 'unenroll') {
-        var params = {
+        let params = {
             course_instance_id: req.body.course_instance_id,
             user_id: res.locals.authn_user.user_id,
             req_date: res.locals.req_date,
         };
-        sqldb.queryOneRow(sql.unenroll, params, function(err, result) {
+        sqldb.queryOneRow(sql.unenroll, params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });

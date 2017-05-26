@@ -1,13 +1,9 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
-var path = require('path');
-var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
 var error = require('../../lib/error');
-var logger = require('../../lib/logger');
-var filePaths = require('../../lib/file-paths');
 var questionServers = require('../../question-servers');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
@@ -17,16 +13,16 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 var handle = function(req, res, next) {
     if (req.body.postAction) {
         if (req.body.postAction == 'submitQuestionAnswer') {
-            if (!req.body.postData) return callback(error.make(400, 'No postData', {locals: res.locals, body: req.body}));
+            if (!req.body.postData) return next(error.make(400, 'No postData', {locals: res.locals, body: req.body}));
             var postData;
             try {
                 postData = JSON.parse(req.body.postData);
             } catch (e) {
-                return callback(error.make(400, 'JSON parse failed on body.postData', {locals: res.locals, body: req.body}));
+                return next(error.make(400, 'JSON parse failed on body.postData', {locals: res.locals, body: req.body}));
             }
 
             var variant = postData.variant;
-            submission = {
+            var submission = {
                 submitted_answer: postData.submittedAnswer,
             };
             questionServers.gradeSubmission(submission, variant, res.locals.question, res.locals.course, {}, function(err, grading) {
@@ -76,10 +72,10 @@ var render = function(req, res, next, variant, submission, submissionHtml, answe
                         res.locals.questionHtml = questionHtml;
                         res.locals.submissionHtml = submissionHtml;
                         res.locals.answerHtml = answerHtml;
-                        res.locals.postUrl = res.locals.urlPrefix + "/question/" + res.locals.question.id + "/";
+                        res.locals.postUrl = res.locals.urlPrefix + '/question/' + res.locals.question.id + '/';
                         var questionJson = JSON.stringify({
-                            questionFilePath: res.locals.urlPrefix + "/question/" + res.locals.question.id + "/file",
-                            questionGeneratedFilePath: res.locals.urlPrefix + "/question/" + res.locals.question.id + "/generatedFilesQuestion/variant_seed/" + variant.variant_seed,
+                            questionFilePath: res.locals.urlPrefix + '/question/' + res.locals.question.id + '/file',
+                            questionGeneratedFilePath: res.locals.urlPrefix + '/question/' + res.locals.question.id + '/generatedFilesQuestion/variant_seed/' + variant.variant_seed,
                             question: res.locals.question,
                             effectiveQuestionType: effectiveQuestionType,
                             course: res.locals.course,

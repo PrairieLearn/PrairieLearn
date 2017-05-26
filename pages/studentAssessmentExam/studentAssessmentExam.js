@@ -1,12 +1,8 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var async = require('async');
-var path = require('path');
-var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var logger = require('../../lib/logger');
 var error = require('../../lib/error');
 var questionServers = require('../../question-servers');
 var sqldb = require('../../lib/sqldb');
@@ -17,7 +13,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 function makeAssessmentInstance(req, res, callback) {
     sqldb.beginTransaction(function(err, client, done) {
         if (ERR(err, callback)) return;
-    
+
         var assessment_instance_id, new_questions;
         async.series([
             function(callback) {
@@ -66,7 +62,7 @@ function makeAssessmentInstance(req, res, callback) {
                                 true_answer: variant.true_answer,
                                 options: variant.options,
                             };
-                            sqldb.queryWithClientOneRow(client, sql.make_variant, params, function(err, result) {
+                            sqldb.queryWithClientOneRow(client, sql.make_variant, params, function(err, _result) {
                                 if (ERR(err, callback)) return;
                                 callback(null);
                             });
@@ -79,7 +75,7 @@ function makeAssessmentInstance(req, res, callback) {
             },
             function(callback) {
                 var params = {assessment_instance_id: assessment_instance_id};
-                sqldb.queryWithClient(client, sql.set_max_points, params, function(err) {
+                sqldb.queryWithClient(client, sql.set_max_points, params, function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -91,7 +87,7 @@ function makeAssessmentInstance(req, res, callback) {
             });
         });
     });
-};
+}
 
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();

@@ -1,14 +1,11 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var async = require('async');
 var pg = require('pg');
 
-var config = require('../lib/config');
 var sqldb = require('../lib/sqldb');
 var migrations = require('../migrations');
 var sprocs = require('../sprocs');
 var cron = require('../cron');
-var courseDB = require('../lib/course-db');
 
 var postgresqlUser = 'postgres';
 var postgresqlDatabase = 'pltest';

@@ -1,10 +1,8 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var async = require('async');
 
 var config = require('../lib/config');
 var logger = require('../lib/logger');
-var error = require('../lib/error');
 var assessmentsExam = require('../assessments/exam');
 var sqldb = require('../lib/sqldb');
 
@@ -23,7 +21,7 @@ module.exports.run = function(callback) {
             assessmentsExam.gradeAssessmentInstance(examItem.assessment_instance_id, auth_user_id, examItem.credit, finishExam, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
-            });                
+            });
         }, function(err) {
             if (ERR(err, callback)) return;
             callback(null);

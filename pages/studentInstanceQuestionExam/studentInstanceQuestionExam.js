@@ -1,15 +1,11 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var path = require('path');
 var async = require('async');
-var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
 var error = require('../../lib/error');
 var questionServers = require('../../question-servers');
 var assessmentsExam = require('../../assessments/exam');
-var logger = require('../../lib/logger');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
@@ -18,7 +14,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 function processSubmission(req, res, callback) {
     if (!res.locals.assessment_instance.open) return callback(error.make(400, 'assessment_instance is closed'));
     if (!res.locals.instance_question.open) return callback(error.make(400, 'instance_question is closed'));
-    var postData, grading;
+    var postData;
     async.series([
         function(callback) {
             if (!req.body.postData) return callback(error.make(400, 'No postData', {locals: res.locals, body: req.body}));
@@ -38,13 +34,13 @@ function processSubmission(req, res, callback) {
                 res.locals.authz_result.credit,
                 res.locals.authz_data.mode,
             ];
-            sqldb.call('submissions_insert', params, function(err, result) {
+            sqldb.call('submissions_insert', params, function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
         },
     ], callback);
-};
+}
 
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
@@ -160,10 +156,10 @@ router.get('/', function(req, res, next) {
             });
         },
         function(callback) {
-            res.locals.postUrl = res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id + "/";
+            res.locals.postUrl = res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id + '/';
             var questionJson = JSON.stringify({
-                questionFilePath: res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id + "/file",
-                questionGeneratedFilePath: res.locals.urlPrefix + "/instance_question/" + res.locals.instance_question.id + "/generatedFilesQuestion/variant/" + res.locals.variant.id,
+                questionFilePath: res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id + '/file',
+                questionGeneratedFilePath: res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id + '/generatedFilesQuestion/variant/' + res.locals.variant.id,
                 question: res.locals.question,
                 effectiveQuestionType: res.locals.effectiveQuestionType,
                 course: res.locals.course,

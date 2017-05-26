@@ -1,10 +1,6 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var async = require('async');
-var fs = require('fs');
-var path = require('path');
 
-var error = require('../lib/error');
 var logger = require('../lib/logger');
 var questionServers = require('../question-servers');
 var sqldb = require('../lib/sqldb');
@@ -57,7 +53,7 @@ module.exports.updateExternalGrading = function(grading_job_id, grading, callbac
                         };
                         logger.debug('exam.updateExternalGrading(): calling update_grading_job_and_submission',
                                      {grading_job_id: grading_job_id, params: params});
-                        sqldb.queryWithClient(client, sql.update_grading_job_and_submission, params, function(err) {
+                        sqldb.queryWithClient(client, sql.update_grading_job_and_submission, params, function(err, _result) {
                             if (ERR(err, callback)) return;
                             logger.debug('exam.updateExternalGrading(): finished update_grading_job_and_submission',
                                          {grading_job_id: grading_job_id});
@@ -72,7 +68,7 @@ module.exports.updateExternalGrading = function(grading_job_id, grading, callbac
                         ];
                         logger.debug('exam.updateExternalGrading(): calling instance_questions_grade',
                                      {grading_job_id: grading_job_id, params: params});
-                        sqldb.callWithClient(client, 'instance_questions_grade', params, function(err, result) {
+                        sqldb.callWithClient(client, 'instance_questions_grade', params, function(err, _result) {
                             if (ERR(err, callback)) return;
                             logger.debug('exam.updateExternalGrading(): finished instance_questions_grade',
                                          {grading_job_id: grading_job_id});
@@ -87,7 +83,7 @@ module.exports.updateExternalGrading = function(grading_job_id, grading, callbac
                         ];
                         logger.debug('exam.updateExternalGrading(): calling assessment_instances_grade',
                                      {grading_job_id: grading_job_id, params: params});
-                        sqldb.callWithClient(client, 'assessment_instances_grade', params, function(err, result) {
+                        sqldb.callWithClient(client, 'assessment_instances_grade', params, function(err, _result) {
                             if (ERR(err, callback)) return;
                             logger.debug('exam.updateExternalGrading(): finished assessment_instances_grade',
                                          {grading_job_id: grading_job_id});
@@ -129,7 +125,7 @@ module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_u
                 var params = {assessment_instance_id: assessment_instance_id};
                 logger.debug('exam.gradeAssessmentInstance(): calling lock_with_assessment_instance_id',
                              {assessment_instance_id: assessment_instance_id, params: params});
-                sqldb.queryWithClientOneRow(client, sql.lock_with_assessment_instance_id, params, function(err) {
+                sqldb.queryWithClientOneRow(client, sql.lock_with_assessment_instance_id, params, function(err, _result) {
                     if (ERR(err, callback)) return;
                     logger.debug('exam.gradeAssessmentInstance(): finished lock_with_assessment_instance_id',
                                  {assessment_instance_id: assessment_instance_id});
@@ -159,8 +155,8 @@ module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_u
                                      {assessment_instance_id: assessment_instance_id,
                                       submission_id: workItem.submission_id, grading_job: grading_job});
                         if (grading_job.grading_method == 'Internal') {
-                            if (grading_job.correct == null) return callback(new Error("Invalid 'correct' value"));
-                            var params = [
+                            if (grading_job.correct == null) return callback(new Error('Invalid "correct" value'));
+                            let params = [
                                 workItem.instance_question_id,
                                 grading_job.correct,
                                 auth_user_id,
@@ -168,7 +164,7 @@ module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_u
                             logger.debug('exam.gradeAssessmentInstance(): calling instance_questions_grade',
                                          {assessment_instance_id: assessment_instance_id,
                                           submission_id: workItem.submission_id, params: params});
-                            sqldb.callWithClient(client, 'instance_questions_grade', params, function(err) {
+                            sqldb.callWithClient(client, 'instance_questions_grade', params, function(err, _result) {
                                 if (ERR(err, callback)) return;
                                 logger.debug('exam.gradeAssessmentInstance(): finished instance_question_grade',
                                              {assessment_instance_id: assessment_instance_id,
@@ -180,14 +176,14 @@ module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_u
                             logger.debug('exam.gradeAssessmentInstance(): pushed to external_grading_job_ids',
                                          {assessment_instance_id: assessment_instance_id,
                                           external_grading_job_ids: external_grading_job_ids});
-                            var params = {
+                            let params = {
                                 instance_question_id: workItem.instance_question_id,
                                 auth_user_id: auth_user_id,
                             };
                             logger.debug('exam.gradeAssessmentInstance(): calling update_instance_question_in_grading',
                                          {assessment_instance_id: assessment_instance_id,
                                           submission_id: workItem.submission_id, params: params});
-                            sqldb.queryWithClient(client, sql.update_instance_question_in_grading, params, function(err) {
+                            sqldb.queryWithClient(client, sql.update_instance_question_in_grading, params, function(err, _result) {
                                 if (ERR(err, callback)) return;
                                 logger.debug('exam.gradeAssessmentInstance(): finished update_instance_question_in_grading',
                                              {assessment_instance_id: assessment_instance_id,
@@ -195,14 +191,14 @@ module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_u
                                 callback(null);
                             });
                         } else if (grading_job.grading_method == 'Manual') {
-                            var params = {
+                            let params = {
                                 instance_question_id: workItem.instance_question_id,
                                 auth_user_id: auth_user_id,
                             };
                             logger.debug('exam.gradeAssessmentInstance(): calling update_instance_question_in_grading',
                                          {assessment_instance_id: assessment_instance_id,
                                           submission_id: workItem.submission_id, params: params});
-                            sqldb.queryWithClient(client, sql.update_instance_question_in_grading, params, function(err) {
+                            sqldb.queryWithClient(client, sql.update_instance_question_in_grading, params, function(err, _result) {
                                 if (ERR(err, callback)) return;
                                 logger.debug('exam.gradeAssessmentInstance(): finished update_instance_question_in_grading',
                                              {assessment_instance_id: assessment_instance_id,

@@ -29,7 +29,7 @@ module.exports = {
                     role: role,
                     course_instance_id: courseInstance.courseInstanceId,
                 };
-                sqldb.query(sql.insert_enrollment_one_course_instance, params, function(err) {
+                sqldb.query(sql.insert_enrollment_one_course_instance, params, function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -42,7 +42,7 @@ module.exports = {
                 course_instance_id: courseInstance.courseInstanceId,
                 preserve_user_ids: staffIds,
             };
-            sqldb.query(sql.downgrade_enrollments, params, function(err) {
+            sqldb.query(sql.downgrade_enrollments, params, function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

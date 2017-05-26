@@ -1,5 +1,3 @@
-var config = require('../lib/config');
-var error = require('../lib/error');
 var logger = require('../lib/logger');
 
 module.exports = function(req, res, next) {
@@ -16,7 +14,7 @@ module.exports = function(req, res, next) {
             body: req.body,
             response_id: res.locals.response_id,
         };
-        logger.verbose("request", access);
+        logger.verbose('request', access);
     }
     next();
 };
