@@ -21,3 +21,6 @@ script:
 
   # Run JS linter
   - npm run lint -s
+
+after_success:
+  cat ./coverage/lcov.info | coveralls

@@ -34,3 +34,7 @@
 
 # NPM log file
 npm-debug.log
+
+# Code coverage files
+/coverage/
+/.nyc_output/

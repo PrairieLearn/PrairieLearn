@@ -40,13 +40,15 @@
         "chai": "3.5.x",
         "cheerio": "0.22.x",
         "colors": "1.1.x",
+        "coveralls": "2.13.x",
         "eslint": "3.19.x",
         "mocha": "3.2.x",
+        "nyc": "10.3.x",
         "request": "2.79.x",
         "yargs": "8.0.1"
     },
     "scripts": {
-        "test": "mocha tests/index.js",
+        "test": "nyc --reporter=lcov mocha tests/index.js",
         "lint": "eslint --ext js \"**/*.js\""
     }
 }
