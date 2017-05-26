@@ -254,32 +254,42 @@ WHERE
 
 * The database has a special `migrations` table that tracks which migrations have already been applied. This ensures that migrations are always applied exactly once.
 
+* The current state of the DB schema is stored in a human-readable form in the `database/` directory. This is checked automatically by the unit tests and needs to be manually updated after migrations and the updates should be committed to git along with the migrations. To update `database/`, do something like this:
+
+```sh
+dropdb postgres
+createdb postgres
+nodejs server # allow PL to start to create the DB, then kill it
+tools/pg_describe -o database postgres
+```
+
+If you don't have postgres installed locally, you can run PrairieLearn from docker and then connect to the container and run `pg_describe` from there:
+
+```sh
+# get container name
+docker ps
+
+docker exec -it [container_name] /bin/bash
+cd /PrairieLearn
+tools/pg_describe -o database postgres
+```
+
 * _Historical node_: Migration statements started with PrairieLearn version 2.0.0. Starting with 2.0.0, the schema was maintained with separate `models` and `migrations` directories, which had to be kept in sync. In version 2.0.10, that was switched to solely `migrations`, and the state of `models` as of 2.0.0 was captured in `migrations/000_initial_state.sql`. All future migrations are applied on top of that.
 
 * Some useful migration statements follow.
 
-* To add a column to a table:
-
 ```sql
+-- add a column to a table
 ALTER TABLE assessments ADD COLUMN auto_close boolean DEFAULT true;
-```
 
-* To add a foreign key to a table:
-
-```sql
+-- add a foreign key to a table
 ALTER TABLE variants ADD COLUMN authn_user_id bigint;
 ALTER TABLE variants ADD FOREIGN KEY (authn_user_id) REFERENCES users ON DELETE CASCADE ON UPDATE CASCADE;
-```
 
-* To remove a constraint:
-
-```sql
+-- remove a constraint
 ALTER TABLE alternative_groups DROP CONSTRAINT alternative_groups_number_assessment_id_key;
-```
 
-* To add a constraint:
-
-```sql
+-- add a constraint
 ALTER TABLE alternative_groups ADD UNIQUE (assessment_id, number);
 ```
 

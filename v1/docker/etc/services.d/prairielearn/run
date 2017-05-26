@@ -1,7 +1,0 @@
-#!/usr/bin/execlineb -P
-
-cd /pl
-foreground {
-    loopwhilex -x 0 foreground { psql -U postgres -c "select 1" -d postgres } sleep 1
-}
-s6-setuidgid pl node server.js /config.json
