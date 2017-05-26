@@ -3,6 +3,8 @@
 
   * Add ESLint for style checking and fix related issues (Nathan Walters).
 
+  * Add test coverage reporting with `coverage.io` (Nathan Walters).
+
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
     and `tests/sync/*`) (Nathan Walters).
 
