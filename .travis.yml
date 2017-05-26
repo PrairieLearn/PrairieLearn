@@ -6,6 +6,9 @@ addons:
   postgresql: "9.6"
 services:
   - postgresql
+cache:
+  directories:
+    - node_modules
 branches:
   only:
   - master
