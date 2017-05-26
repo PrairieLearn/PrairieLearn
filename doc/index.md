@@ -11,4 +11,6 @@ Get started with the [Installation instructions](installing.md).
 
 [![Build Status](https://img.shields.io/travis/PrairieLearn/PrairieLearn/master.svg)](https://travis-ci.org/PrairieLearn/PrairieLearn) — see [Developer documentation](dev-guide.md)
 
+[![Coverage Status](https://coveralls.io/repos/github/PrairieLearn/PrairieLearn/badge.svg?branch=master)](https://coveralls.io/github/PrairieLearn/PrairieLearn?branch=master)
+
 [![License](https://img.shields.io/github/license/PrairieLearn/PrairieLearn.svg)](https://github.com/PrairieLearn/PrairieLearn/blob/master/LICENSE.md) — see [License](https://github.com/PrairieLearn/PrairieLearn/blob/master/LICENSE.md)
