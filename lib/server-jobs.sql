@@ -154,3 +154,11 @@ WHERE
     )
 RETURNING
     js.*;
+
+-- BLOCK fail_job_sequence
+UPDATE job_sequences AS js
+SET
+    finish_date = CURRENT_TIMESTAMP,
+    status = 'Error'
+WHERE
+    js.id = $job_sequence_id;

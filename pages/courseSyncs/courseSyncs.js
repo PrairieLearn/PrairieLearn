@@ -4,6 +4,7 @@ var express = require('express');
 var router = express.Router();
 
 var error = require('../../lib/error');
+var logger = require('../../lib/logger');
 var serverJobs = require('../../lib/server-jobs');
 var syncFromDisk = require('../../sync/syncFromDisk');
 var requireFrontend = require('../../lib/require-frontend');
@@ -83,6 +84,11 @@ var pullAndUpdate = function(locals, callback) {
                 on_success: syncStage3,
             };
             serverJobs.createJob(jobOptions, function(err, job) {
+                if (err) {
+                    logger.error('Error in createJob()', err);
+                    serverJobs.failJobSequence(job_sequence_id);
+                    return;
+                }
                 syncFromDisk.syncDiskToSql(locals.course.path, locals.course.id, job, function(err) {
                     if (err) {
                         job.fail(err);
@@ -104,6 +110,11 @@ var pullAndUpdate = function(locals, callback) {
                 last_in_sequence: true,
             };
             serverJobs.createJob(jobOptions, function(err, job) {
+                if (err) {
+                    logger.error('Error in createJob()', err);
+                    serverJobs.failJobSequence(job_sequence_id);
+                    return;
+                }
                 var coursePath = locals.course.path;
                 requireFrontend.undefQuestionServers(coursePath, job, function(err) {
                     if (err) {

@@ -486,6 +486,11 @@ var regradeAssessmentInstance = function(assessment_instance_id, locals, callbac
                 last_in_sequence: true,
             };
             serverJobs.createJob(jobOptions, function(err, job) {
+                if (err) {
+                    logger.error('Error in createJob()', err);
+                    serverJobs.failJobSequence(job_sequence_id);
+                    return;
+                }
                 job.verbose('Regrading ' + assessment_instance_label + ' for ' + user_uid);
                 var params = [
                     assessment_instance_id,
@@ -548,6 +553,11 @@ var regradeAllAssessmentInstances = function(assessment_id, locals, callback) {
                 last_in_sequence: true,
             };
             serverJobs.createJob(jobOptions, function(err, job) {
+                if (err) {
+                    logger.error('Error in createJob()', err);
+                    serverJobs.failJobSequence(job_sequence_id);
+                    return;
+                }
                 job.verbose('Regrading all assessment instances for ' + assessment_label);
 
                 var params = {assessment_id};
