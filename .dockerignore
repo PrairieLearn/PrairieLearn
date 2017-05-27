@@ -14,6 +14,8 @@
 !package.json
 !pages/
 !public/
+public/MathJax
+!public/MathJax/package.json
 !question-servers/
 !server.js
 !schemas/
