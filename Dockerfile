@@ -7,7 +7,14 @@ RUN yum -y install \
     && yum -y install postgresql96-server postgresql96-contrib nodejs scipy sympy \
     && yum clean all \
     && mkdir /var/postgres && chown postgres:postgres /var/postgres \
-    && su postgres -c "/usr/pgsql-9.6/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log"
+    && su postgres -c "/usr/pgsql-9.6/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log" \
+    && yum install -y https://centos7.iuscommunity.org/ius-release.rpm \
+    && yum install -y python35u python35u-pip \
+    && python3.5 -m pip install numpy \
+    && python3.5 -m pip install scipy \
+    && python3.5 -m pip install matplotlib \
+    && python3.5 -m pip install pandas \
+    && python3.5 -m pip install sympy
 
 # NOTE: Modify .dockerignore to whitelist files/directories to copy.
 COPY . /PrairieLearn/
