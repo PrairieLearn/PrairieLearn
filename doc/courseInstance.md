@@ -31,7 +31,7 @@ exampleCourse
             `-- ...                   # files only accessible from the server
 ```
 
-* See an [example course instances directory](../exampleCourse/courseInstances) in PrairieLearn
+* See an [example course instances directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances) in PrairieLearn
 
 * See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourseInstance` and `serverFilesCourseInstance` directories.
 
@@ -58,9 +58,9 @@ This file specifies basic information about the course instance:
 }
 ```
 
-* Example [infoCourseInstance.json](../exampleCourse/courseInstances/Sp15/infoCourseInstance.json)
+* Example [infoCourseInstance.json](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/Sp15/infoCourseInstance.json)
 
-* [Format specification for `infoCourseInstance.json`](../schemas/infoCourseInstance.json)
+* [Format specification for `infoCourseInstance.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/infoCourseInstance.json)
 
 ## User roles
 

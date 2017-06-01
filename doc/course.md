@@ -34,7 +34,7 @@ exampleCourse
     `-- secret1.js
 ```
 
-* See an [example course directory](../exampleCourse) in PrairieLearn
+* See an [example course directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse) in PrairieLearn
 
 * See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourse` and `serverFilesCourse` directories.
 
@@ -62,9 +62,9 @@ This file specifies basic information about the course:
 }
 ```
 
-* Example [infoCourse.json](../exampleCourse/infoCourse.json)
+* Example [infoCourse.json](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/infoCourse.json)
 
-* [Format specification for `infoCourse.json`](../schemas/infoCourse.json)
+* [Format specification for `infoCourse.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/infoCourse.json)
 
 ## Assessment sets
 

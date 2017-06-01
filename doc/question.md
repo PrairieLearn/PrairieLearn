@@ -29,7 +29,7 @@ questions
 
 PrairieLearn assumes independent questions; nothing ties them together. However, each question could have multiple parts (inputs that are validated together).
 
-Example questions are in the [`exampleCourse/questions`](../exampleCourse/questions) directory inside PrairieLearn.
+Example questions are in the [`exampleCourse/questions`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions) directory inside PrairieLearn.
 
 
 ## Question `info.json`
@@ -65,9 +65,9 @@ See below for detailed information about each question type.
 
 ## `MultipleChoice` question type
 
-* Example: [`fossilFuelsRadio`](../exampleCourse/questions/fossilFuelsRadio)
+* Example: [`fossilFuelsRadio`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fossilFuelsRadio)
 * Required files: `info.json`
-* Options schema: [`MultipleChoice` options](../schemas/questionOptionsMultipleChoice.json)
+* Options schema: [`MultipleChoice` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/questionOptionsMultipleChoice.json)
 
 A `MultipleChoice` question has an `info.json` that provides the question text, one or more correct answers, and one or more incorrect answers. One correct answer is randomly chosen, and enough incorrect answers to make `numberAnswers` total answers, which are then displayed to the student in a random order. For example:
 
@@ -101,9 +101,9 @@ A `MultipleChoice` question has an `info.json` that provides the question text, 
 
 ## `MultipleTrueFalse` question type
 
-* Example: [`fossilFuelsTrueFalse`](../exampleCourse/questions/fossilFuelsTrueFalse)
+* Example: [`fossilFuelsTrueFalse`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fossilFuelsTrueFalse)
 * Required files: `info.json`
-* Options schema: [`MultipleTrueFalse` options](../schemas/questionOptionsMultipleTrueFalse.json)
+* Options schema: [`MultipleTrueFalse` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/questionOptionsMultipleTrueFalse.json)
 
 A `MultipleTrueFalse` question has an `info.json` that provides the question text, zero or more true statements, and zero or more false statements. All the given statements are used, and are displayed to the students in a random order. For example:
 
@@ -133,9 +133,9 @@ A `MultipleTrueFalse` question has an `info.json` that provides the question tex
 
 ## `Checkbox` question type
 
-* Example: [`fossilFuelsCheckbox`](../exampleCourse/questions/fossilFuelsCheckbox)
+* Example: [`fossilFuelsCheckbox`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fossilFuelsCheckbox)
 * Required files: `info.json`
-* Options schema: [`Checkbox` options](../schemas/questionOptionsCheckbox.json)
+* Options schema: [`Checkbox` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/questionOptionsCheckbox.json)
 
 A `Checkbox` question has an `info.json` that provides the question text, one or more correct answers, and one or more incorrect answers. Several correct answers are randomly chosen (between `minCorrectAnswers` and `maxCorrectAnswers`, inclusive), and enough incorrect answers to make `numberAnswers` total answers, which are then displayed to the student in a random order. Depending on the values of `minCorrectAnswers` and `maxCorrectAnswers` it is possible to have all or none of the possible answers be correct. For example:
 
@@ -171,9 +171,9 @@ A `Checkbox` question has an `info.json` that provides the question text, one or
 
 ## `File` question type
 
-* Example: [`fibonacci`](../exampleCourse/questions/fibonacci)
+* Example: [`fibonacci`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fibonacci)
 * Required files: `info.json`, `question.html`, `answer.html`
-* Options schema: [`File` options](../schemas/questionOptionsFile.json)
+* Options schema: [`File` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/questionOptionsFile.json)
 
 A `File` question gives the student a file to download, and then requires an uploaded file for the answer. The downloaded file is specified in the `info.json` like:
 
@@ -194,9 +194,9 @@ Note that a file question can also utilize external grading! See the [External g
 
 ## `Calculation` question type
 
-* Example: [`addVectors`](../exampleCourse/questions/addVectors)
+* Example: [`addVectors`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/addVectors)
 * Required files: `info.json`, `client.js`, `server.js`
-* Options schema: [`Calculation` options](../schemas/questionOptionsCalculation.json)
+* Options schema: [`Calculation` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/questionOptionsCalculation.json)
 
 A `Calculation` question is the most general type of question, allowing arbitrary code to generate and grade the question instance on the server, and arbitrary client code to interact with the student (e.g., for interactive drawing).
 
