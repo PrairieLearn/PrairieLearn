@@ -171,7 +171,7 @@ A `Checkbox` question has an `info.json` that provides the question text, one or
 
 ## `File` question type
 
-* Example: [`fibonacci`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fibonacci)
+* Example: [`fibonacciExternal`](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/questions/fibonacciExternal)
 * Required files: `info.json`, `question.html`, `answer.html`
 * Options schema: [`File` options](https://github.com/PrairieLearn/PrairieLearn/blob/master/schemas/questionOptionsFile.json)
 
