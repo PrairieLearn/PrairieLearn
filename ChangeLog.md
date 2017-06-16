@@ -8,6 +8,8 @@
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
     and `tests/sync/*`) (Nathan Walters).
 
+  * Shift most `exampleCourse` to the external `pl-template` repository.
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
