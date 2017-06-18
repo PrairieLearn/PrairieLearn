@@ -1,0 +1,1 @@
+ALTER TABLE question_statistics ADD COLUMN IF NOT EXISTS average_last_submission_score_quintiles DOUBLE PRECISION[][];

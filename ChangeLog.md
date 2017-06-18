@@ -353,6 +353,11 @@
   * Change `popper.js` to version `1.14.0` (Tim Bretl).
 
 * __2.12.0__ - 2018-05-19
+  * Add average rows on instructor question page (Paras Sud)
+
+  * Add predicted scores on instructor assessment page (Paras Sud)
+  
+  * Add exam generator page (Paras Sud)
 
   * Add new issues page style and flexible filtering (Nathan Walters).
 

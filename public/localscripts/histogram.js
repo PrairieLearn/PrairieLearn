@@ -14,6 +14,7 @@ function histogram(selector, data, xgrid, options) {
         rightMargin: 20,
         bottomMargin: 55,
         leftMargin: 70,
+        xOrdinal: false,
     });
 
     var width = 600 - options.leftMargin - options.rightMargin;
@@ -25,6 +26,12 @@ function histogram(selector, data, xgrid, options) {
         .domain([xmin, xmax])
         .range([0, width]);
 
+    var xOrdinalScale = d3.scale.ordinal()
+        .domain(_.range(1, data.length + 1))
+        .rangeBands([0, width]);
+        // .domain([xmin, xmax])
+        // .rangeRoundBands([0, width], 0.0);
+
     var ymin = (options.ymin == "auto" ? _(data).min() : options.ymin);
     var ymax = (options.ymax == "auto" ? _(data).max() : options.ymax);
     var y = d3.scale.linear()
@@ -34,8 +41,15 @@ function histogram(selector, data, xgrid, options) {
 
     var xTickFormat = (options.xTickLabels == "auto" ? null
                        : function(d, i) {return options.xTickLabels[i];});
-    var xAxis = d3.svg.axis()
-        .scale(x)
+    var xAxis = d3.svg.axis();
+
+    if (options.xOrdinal) {
+        xAxis.scale(xOrdinalScale);
+    } else {
+        xAxis.scale(x);
+    }
+
+    xAxis
         .tickValues(xgrid)
         .tickFormat(xTickFormat)
         .orient("bottom");
@@ -43,9 +57,18 @@ function histogram(selector, data, xgrid, options) {
     var yAxis = d3.svg.axis()
         .scale(y)
         .orient("left");
-    
-    var xGrid = d3.svg.axis()
-        .scale(x)
+
+    var xGrid = d3.svg.axis();
+    if (options.xOrdinal) {
+        var xScale = d3.scale.linear()
+            .domain([0, data.length])
+            .range([0, width]);
+        xGrid.scale(xScale);
+    } else {
+        xGrid.scale(x);
+    }
+
+    xGrid
         .tickValues(xgrid)
         .orient("bottom")
         .tickSize(-height)
@@ -73,13 +96,23 @@ function histogram(selector, data, xgrid, options) {
         .attr("class", "y grid")
         .call(yGrid);
 
-    svg.selectAll(".outlineBar")
+    var rects = svg.selectAll(".outlineBar")
         .data(data) // .data(_.times(data.length, _.constant(0)))
         .enter().append("rect")
-        .attr("class", "outlineBar")
-        .attr("x", function(d, i) {return x(xgrid[i]);})
+        .attr("class", "outlineBar");
+
+    if (options.xOrdinal) {
+        rects
+            .attr("x", function(d, i) { return xOrdinalScale(i + 1); })
+            .attr("width", function() { return xOrdinalScale.rangeBand(); });
+    } else {
+        rects
+            .attr("x", function(d, i) { return x(xgrid[i]); })
+            // .attr("x", function(d, i) { console.log("i: " + i + ", d: " + d + ", xgrid[i]: " + xgrid[i]); return x(xgrid[i]); })
+            .attr("width", function(d, i) { return x(xgrid[1]) - x(xgrid[0]); });
+    }
+    rects
         .attr("y", function(d, i) {return y(d);})
-        .attr("width", function(d, i) {return x(xgrid[i+1]) - x(xgrid[i]);})
         .attr("height", function(d, i) {return y(0) - y(d);});
 
     /*

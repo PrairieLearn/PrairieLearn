@@ -1,5 +1,6 @@
 # JetBrains IDE files
 /.idea/
+**.iml
 
 # OS X Finder files
 **/.DS_Store
