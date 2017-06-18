@@ -205,6 +205,33 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessme
     require('./pages/shared/floatFormatters'),
     require('./pages/instructorAssessment/instructorAssessment'),
 ]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment_generator/assessment/:assessment_id', [
+    require('./middlewares/selectAndAuthzAssessment'),
+    require('./pages/shared/assessmentStatDescriptions'),
+    require('./pages/shared/floatFormatters'),
+    require('./pages/assessmentGenerator/assessmentGenerator'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/parameter_selection/assessment/:assessment_id', [
+    require('./middlewares/selectAndAuthzAssessment'),
+    require('./pages/shared/assessmentStatDescriptions'),
+    require('./pages/shared/floatFormatters'),
+    require('./pages/parameterSelection/parameterSelection'),
+]);
+<<<<<<< HEAD
+=======
+app.use('/pl/course_instance/:course_instance_id/instructor/assessment_generator/assessment/:assessment_id', [
+    require('./middlewares/selectAndAuthzAssessment'),
+    require('./pages/shared/assessmentStatDescriptions'),
+    require('./pages/shared/floatFormatters'),
+    require('./pages/assessmentGenerator/assessmentGenerator'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/parameter_selection/assessment/:assessment_id', [
+    require('./middlewares/selectAndAuthzAssessment'),
+    require('./pages/shared/assessmentStatDescriptions'),
+    require('./pages/shared/floatFormatters'),
+    require('./pages/parameterSelection/parameterSelection'),
+]);
+>>>>>>> 20448a0e4... Merge branch 'origin-master' into add-num-sds-page
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
     require('./pages/shared/floatFormatters'),

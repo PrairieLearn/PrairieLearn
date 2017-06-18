@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
+    <script type="text/javascript" src="/javascripts/d3.min.js"></script>
+    <script type="text/javascript" src="/javascripts/jquery.tablesorter.min.js"></script>
+    <script type="text/javascript" src="/javascripts/jquery.tablesorter.widgets.js"></script>
+    <script type="text/javascript" src="/localscripts/histogram.js"></script>
+    <script type="text/javascript" src="/localscripts/scatter.js"></script>
+    <script type="text/javascript" src="/localscripts/histmini.js"></script>
+    <script type="text/javascript" src="/localscripts/parallel_histograms.js"></script>
+    <script type="text/javascript" src="/localscripts/stacked_histogram.js"></script>
+    <script src="//code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="//code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+
+    <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
+    <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/smoothness/jquery-ui.css">
+    <style>
+        .slider_container_div .custom_handle {
+            width: 3em;
+            height: 1.6em;
+            top: 50%;
+            margin-top: -.8em;
+            text-align: center;
+            line-height: 1.6em;
+        }
+        .inline-block {
+            display: inline-block;
+        }
+    </style>
+  </head>
+  <body>
+    <script>
+        $(function () {
+            const num_sds_slider_selector = "#num_sds_slider";
+            const num_sds_slider_handle_selector = "#custom_handle_num_sds";
+
+            const num_buckets_slider_selector = "#num_buckets_slider";
+            const num_buckets_slider_handle_selector = "#custom_handle_num_buckets";
+
+            const update_button_selector = "#update_button";
+            const save_button_selector = "#save_button";
+
+            const update_slider_values = function() {
+                const num_sds_slider = $(num_sds_slider_selector).slider("instance");
+                const num_buckets_slider = $(num_buckets_slider_selector).slider("instance");
+
+                $(num_sds_slider_handle_selector).html(num_sds_slider.value());
+                $(num_buckets_slider_handle_selector).html(num_buckets_slider.value());
+                $(update_button_selector).attr(
+                    'href', "<%= urlPrefix %>/assessment/<%= assessment.id %>/generated_assessment_statistics" +
+                        "?num_sds=" + num_sds_slider.value() +
+                        "&num_buckets=" + num_buckets_slider.value()
+                )
+            }
+
+            const num_sds = <%= num_sds %>;
+            const num_buckets = <%= num_buckets %>;
+
+            $(num_sds_slider_selector).slider({
+                    step: 0.1,
+                    min: 0.1,
+                    max: 2.0,
+                    value: num_sds,
+                    change: update_slider_values
+                }
+            );
+
+            $(num_buckets_slider_selector).slider({
+                    step: 5,
+                    min: 5,
+                    max: 100,
+                    value: num_buckets,
+                    change: update_slider_values
+                }
+            );
+
+            $(save_button_selector).click(function() {
+                const num_sds_slider = $(num_sds_slider_selector).slider("instance");
+                $('#modal_new_num_sds_value').html(num_sds_slider.value());
+                $('#num_sds_input').val(num_sds_slider.value());
+            });
+
+            update_slider_values();
+        });
+    </script>
+    <%- include('../partials/navbar', {navPage: 'assessment', navSubPage: 'generatedAssessmentStatistics'}); %>
+    <div id="content" class="container">
+      <%- include('../partials/instructorAssessmentTabs', {navSubPage: 'generatedAssessmentStatistics'}); %>
+
+      <div class="card mb-4">
+        <div class="card-body">
+          <i class="fas fa-question-circle">
+          </i>
+          What is generated assessment SD reduction? See
+          <a target="_blank" href="/pl/cutoff_algorithm_info">here</a>
+          for a general overview.
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          Saved num-sds cutoff parameter value
+        </div>
+        <div class="card-body">
+          Num-sds =
+          <% if (assessment.num_sds) { %>
+            <%= assessment.num_sds %> SDs
+          <% } else { %>
+            not set
+          <% } %>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          Regenerate and save generated assessment instances
+        </div>
+        <div class="card-body">
+            <% if (generated_assessments_calculation_status) { %>
+                <a class="btn btn-block btn-success disabled" role="button" tabindex="0"
+                   data-toggle="modal" data-target="#refreshGeneratedAssessmentStatsModal">
+                  <i class="fa fa-sync" aria-hidden="true"></i> Calculating...
+                </a>
+            <% } else { %>
+                <a class="btn btn-block btn-success" role="button" tabindex="0"
+                   data-toggle="modal" data-target="#refreshGeneratedAssessmentStatsModal">
+                  <i class="fa fa-sync" aria-hidden="true"></i> Regenerate saved assessment instances
+                </a>
+            <% } %>
+            <span class="mr-2">Last calculated: <%= generated_assessment_stats_last_updated %></span>
+            <br/>
+            <hr/>
+            <h4>What this does:</h4>
+            <ul>
+                <li>Clicking this button will generate and save 1000 assessment instances.</li>
+                <li>The saved assessment instances are used to calculate the predicted statistics and generate the histogram below.</li>
+                <li>The num-sds parameter value can be adjusted without having to regenerate the assessment instances.</li>
+                <li>It will take approximately 10 minutes to run.</li>
+                <li>This should be run whenever the assessment is changed in any significant way (e.g. question added or
+                alternative group changed).</li>
+            </ul>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+            Num SDs cutoff parameter selection
+        </div>
+        <div class="card-body">
+                <form class="form-horizontal">
+                    <div class="form-group col-sm-8">
+                        <label class="control-label col-sm-2" for="num_sds_slider">
+                            Num-sds parameter:
+                        </label>
+                        <div class="col-sm-6 inline-block">
+                            <div id="num_sds_slider" class="w-100 slider_container_div">
+                                <div id="custom_handle_num_sds" class="ui-slider-handle custom_handle"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group col-sm-8">
+                        <label class="control-label col-sm-2" for="num_buckets_slider">
+                            Num buckets:
+                        </label>
+                        <div class="col-sm-6 inline-block">
+                            <div id="num_buckets_slider" class="w-100 slider_container_div">
+                                <div id="custom_handle_num_buckets" class="ui-slider-handle custom_handle"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="col-sm-offset-2 col-sm-8">
+                            <a class="btn btn-sm btn-light" role="button" tabindex="0" id="update_button">
+                                Update predicted results
+                            </a>
+                            <a class="btn btn-sm btn-light" role="button" tabindex="0" data-toggle="modal"
+                               data-target="#saveSettingsModal" id="save_button">
+                                Save settings
+                            </a>
+                        </div>
+                    </div>
+                </form>
+
+                <!-- ###################################################################### -->
+                <!-- ###################################################################### -->
+
+                <div class="modal fade" id="saveSettingsModal" tabindex="-1" role="dialog" aria-labelledby="saveSettingsModal">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h4 class="modal-title" id="saveSettingsModalLabel">
+                                    Change num-sds value
+                                    <script>
+                                    </script>
+                                </h4>
+                            </div>
+                            <div class="modal-body">
+                                Are you sure you want to change the num-sds cutoff parameter value
+                                from [
+                                <% if (assessment.num_sds) { %>
+                                <%= assessment.num_sds %>
+                                <% } else { %>
+                                not set
+                                <% } %>
+                                ] to [
+                                <span id="modal_new_num_sds_value">
+
+                                    </span>
+                                ]
+                                ?
+                            </div>
+                            <div class="modal-footer">
+                                <form name="refresh-stats-form" method="POST">
+                                    <input type="hidden" name="__action" value="update_num_sds_value">
+                                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                                    <input type="hidden" name="assessment_id" value="<%= assessment.id %>">
+                                    <input type="hidden" id="num_sds_input" name="num_sds" value="<%= "" %>">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-danger">Submit</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          Predicted cutoff histogram
+        </div>
+        <div class="card-body">
+            <div class="panel-body">
+                <div class="col-sm-4">
+                    Num exams kept: <%= num_exams_kept %> / <%= num_exams %>
+                </div>
+            </div>
+
+            <div class="panel-body">
+                <div class="col-sm-4">
+                    SD before: <%= formatFloat(sd_before * 100, 3) %> %
+                </div>
+            </div>
+
+            <div class="panel-body">
+                <div class="col-sm-4">
+                    SD after: <%= formatFloat(sd_after * 100, 3) %> %
+                </div>
+            </div>
+
+            <div class="panel-body">
+                <div class="col-sm-4">
+                    SD perc. diff: <%= formatFloat(sd_perc_improvement, 3) %> %
+                </div>
+            </div>
+
+            <div id="scoreHistOverall" class="scoreHistogram"></div>
+
+            <div class="panel">
+                Key:
+                <br>
+                <span class="outlineBarColor">Blue</span> represents assessments that we keep
+                <br>
+                <span class="outlineBarRedColor">Red</span> represents assessments that we filter out
+            </div>
+
+            <script>
+                $(function() {
+                    const numBuckets = <%= num_buckets %>;
+                    const data = [ <%= result.filter(obj => obj.keep)[0].predicted_score_hist %>];
+                    const negativeData = [ <%= result.filter(obj => !obj.keep)[0].predicted_score_hist %>];
+                    const xgrid = _.range(0, 100, 100 / numBuckets);
+                    const options = {
+                        ymin: 0,
+                        xlabel: 'Average Assessment Score / %',
+                        ylabel: 'Num. Assessments in Bucket (out of 1000)',
+                        xmin: 0,
+                        xmax: 100,
+                        xAxisScale: d3.scale.linear().domain([0, 100])
+                    };
+                    stacked_histogram("#scoreHistOverall", data, negativeData, xgrid, options);
+                });
+            </script>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          Predicted assessment statistics (after cutoff algorithm)
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead>
+                <tr>
+                  <th>Quintile</th>
+                  <th>Mean</th>
+                  <th>SD</th>
+                </tr>
+              </thead>
+              <tbody>
+                <% [1,2,3,4,5].forEach(function(quintile) { %>
+                    <% const row = quintile_stats_after.filter(row => row.quintile == quintile)[0] %>
+                    <tr>
+                      <td><%= quintile %></td>
+                      <td>
+                        <% if (row) { %>
+                            <%= (parseFloat(row.quintile_mean_after) * 100).toFixed(2) %> %
+                        <% } else { %>
+                            --
+                        <% } %>
+                      </td>
+                      <td>
+                        <% if (row) { %>
+                          <%= (parseFloat(row.quintile_sd_after) * 100).toFixed(3) %> %
+                        <% } else { %>
+                          --
+                        <% } %>
+                      </td>
+                    </tr>
+                <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          Predicted assessment statistics (before cutoff algorithm)
+        </div>
+         <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-sm table-hover">
+              <thead>
+              <tr>
+                <th>Quintile</th>
+                <th>Mean</th>
+                <th>SD</th>
+              </tr>
+              </thead>
+              <tbody>
+              <% [1,2,3,4,5].forEach(function(quintile) { %>
+                <% const row = quintile_stats_after.filter(row => row.quintile == quintile)[0] %>
+                <tr>
+                  <td><%= quintile %></td>
+                  <td>
+                    <% if (row) { %>
+                      <%= (parseFloat(row.quintile_mean) * 100).toFixed(2) %> %
+                    <% } else { %>
+                      --
+                    <% } %>
+                  </td>
+                  <td>
+                    <% if (row) { %>
+                      <%= (parseFloat(row.quintile_sd) * 100).toFixed(3) %> %
+                    <% } else { %>
+                      --
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal fade" id="refreshGeneratedAssessmentStatsModal" tabindex="-1" role="dialog" aria-labelledby="refreshGeneratedAssessmentStatsModal">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="refreshAssessmentQuestionStatsModalLabel">
+                Refresh generated assessment statistics
+              </h4>
+            </div>
+            <div class="modal-body">
+              Are you sure you want to refresh all generated assessment statistics for
+              <strong>
+                  <%= assessment_set.name %><%= assessment.number %>
+              </strong>
+              ?
+              <br/>
+              <b>Note: </b> this will take approximately 1 minute to run.
+            </div>
+            <div class="modal-footer">
+              <form name="refresh-stats-form" method="POST">
+                <input type="hidden" name="__action" value="refresh_generated_assessment_stats">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <input type="hidden" name="assessment_id" value="<%= assessment.id %>">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger">Submit</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

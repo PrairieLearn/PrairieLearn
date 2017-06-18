@@ -1,0 +1,1 @@
+CREATE INDEX IF NOT EXISTS generated_assessments_calculation_status_assessment_id_calculating ON generated_assessments_calculation_status(assessment_id, calculating);

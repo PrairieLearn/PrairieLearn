@@ -1,0 +1,1 @@
+ALTER TABLE course_instances ADD sd_reduction_status BOOLEAN DEFAULT FALSE;
