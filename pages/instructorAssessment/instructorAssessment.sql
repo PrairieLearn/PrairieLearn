@@ -46,6 +46,7 @@ FROM
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     LEFT JOIN issue_count AS ic ON (ic.question_id = q.id)
     LEFT JOIN question_scores ON (question_scores.question_id = q.id)
+    LEFT JOIN question_statistics AS qs ON (qs.question_id = q.id AND qs.domain = get_domain(a.type, a.mode))
 WHERE
     a.id = $assessment_id
     AND aq.deleted_at IS NULL

@@ -1,0 +1,1 @@
+ALTER TABLE question_statistics ADD COLUMN IF NOT EXISTS number_submissions_hist_with_perfect_submission DOUBLE PRECISION[];

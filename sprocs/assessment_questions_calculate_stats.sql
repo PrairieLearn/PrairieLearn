@@ -97,7 +97,14 @@ aq_stats AS (
         array_var(question_stats_by_user.incremental_submission_points_array)               AS incremental_submission_points_array_variances,
         avg(question_stats_by_user.number_submissions)                                      AS average_number_submissions,
         var_pop(question_stats_by_user.number_submissions)                                  AS number_submissions_variance,
-        histogram(question_stats_by_user.number_submissions, 0, 10, 10)                     AS number_submissions_hist
+        histogram(question_stats_by_user.number_submissions, 0, 10, 10)                     AS number_submissions_hist,
+        histogram(iq_stats_by_user.number_submissions, 0, 10, 10)
+            FILTER (WHERE iq_stats_by_user.max_submission_score = 1)
+            AS number_submissions_hist_with_perfect_submission,
+        histogram(iq_stats_by_user.number_submissions, 0, 10, 10)
+            FILTER (WHERE iq_stats_by_user.max_submission_score != 1)
+            AS number_submissions_hist_with_no_perfect_submission
+
     FROM
         question_stats_by_user
         JOIN assessment_scores_by_user USING (user_id)
@@ -132,10 +139,14 @@ SET
     incremental_submission_points_array_variances = aq_stats.incremental_submission_points_array_variances,
     average_number_submissions                    = aq_stats.average_number_submissions,
     number_submissions_variance                   = aq_stats.number_submissions_variance,
-    number_submissions_hist                       = aq_stats.number_submissions_hist
+    number_submissions_hist                       = aq_stats.number_submissions_hist,
+    number_submissions_hist_with_perfect_submission = aq_stats.number_submissions_hist_with_perfect_submission,
+    number_submissions_hist_with_no_perfect_submission = aq_stats.number_submissions_hist_with_no_perfect_submission
+
 FROM
     quintile_scores_as_array,
     aq_stats
 WHERE
     aq.id = assessment_question_id_param;
 $$ LANGUAGE SQL VOLATILE;
+

@@ -38,8 +38,9 @@
                 <th>Topic</th>
                 <th>Tags</th>
                 <th>Points</th>
-                <th width="100">Mean score</th>
-                <th width="100">Question score</th>
+                <th width="100">Mean score (%)</th>
+                <th width="100">Mean score (%) across assessments</th>
+                <th width="100">Predicted mean score (%)</th>
                 <th>Num. Submissions Histogram</th>
                 <th>Other Assessments</th>
               </tr>
@@ -102,6 +103,11 @@
                 <td>
                     <% if (question.avg_question_score_perc) { %>
                     <%= question.avg_question_score_perc.toFixed(3) %> %
+                    <% } %>
+                </td>
+                <td>
+                    <% if (question.question_length_of_incorrect_streak_hist_with_some_correct_submission) { %>
+                    <%= question.expected_mean_score.toFixed(3) %> %
                     <% } %>
                 </td>
                 <td class="text-center">
@@ -514,7 +520,7 @@
             </div>
             <div class="modal-footer">
               <form name="refresh-stats-form" method="POST">
-                <input type="hidden" name="postAction" value="refresh_stats">
+                <input type="hidden" name="__action" value="refresh_stats">
                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                 <input type="hidden" name="assessment_id" value="<%= assessment.id %>">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
