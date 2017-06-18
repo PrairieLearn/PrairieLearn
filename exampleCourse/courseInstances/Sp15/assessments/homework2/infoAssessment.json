@@ -37,7 +37,7 @@
                 {"id": "fibonacciEditor",            "points": 1, "maxPoints": 5},
                 {"id": "fibonacciUpload",            "points": 1, "maxPoints": 5},
                 {"id": "fossilFuelsRadio",           "points": 2, "maxPoints": 10},
-                {"id": "fossilFuelsRadioNew",        "points": 2, "maxPoints": 10}
+                {"id": "ballToss2",                  "points": 2, "maxPoints": 10}
             ]
         }
     ]
