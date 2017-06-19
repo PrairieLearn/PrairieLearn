@@ -1,0 +1,30 @@
+columns
+    assessment_id: bigint
+    authn_user_id: bigint
+    course_caused: boolean
+    course_data: jsonb
+    course_id: bigint
+    course_instance_id: bigint
+    date: timestamp with time zone
+    display_id: text
+    id: bigint not null default nextval('errors_id_seq'::regclass)
+    message: text
+    question_id: bigint
+    system_data: jsonb
+    user_id: bigint
+
+indexes
+    errors_assessment_id_idx: null
+    errors_authn_user_id_idx: null
+    errors_course_id_idx: null
+    errors_course_instance_id_idx: null
+    errors_question_id_idx: null
+    errors_user_id_idx: null
+
+foreign-key constraints
+    errors_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE SET NULL
+    errors_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
+    errors_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE SET NULL
+    errors_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE SET NULL
+    errors_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE SET NULL
+    errors_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL

@@ -14,6 +14,7 @@ var questionModules = {
     'Checkbox':          require('./calculation'),
     'MultipleChoice':    require('./calculation'),
     'MultipleTrueFalse': require('./calculation'),
+    'Freeform':          require('./freeform'),
 };
 
 var effectiveQuestionTypes = {
@@ -22,6 +23,7 @@ var effectiveQuestionTypes = {
     'Checkbox':          'Calculation',
     'MultipleChoice':    'Calculation',
     'MultipleTrueFalse': 'Calculation',
+    'Freeform':          'Freeform',
 };
 
 module.exports = {
