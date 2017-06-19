@@ -1,14 +1,17 @@
 var ERR = require('async-stacktrace');
+var async = require('async');
 var _ = require('lodash');
 var fs = require('fs');
 var path = require('path');
 var child_process = require('child_process');
 var handlebars = require('handlebars');
+var cheerio = require('cheerio');
 
 var error = require('../lib/error');
 var logger = require('../lib/logger');
 var filePaths = require('../lib/file-paths');
 var questionHelper = require('../lib/questionHelper.js');
+var freeformBlocks = require('./freeformBlocks');
 
 module.exports = {
     renderExtraHeaders: function(question, course, locals, callback) {
@@ -16,14 +19,43 @@ module.exports = {
     },
 
     renderQuestion: function(variant, question, submission, course, locals, callback) {
-        callback(null, "");
+        var question_data = {
+            params: variant.params,
+            true_answer: variant.true_answer,
+            options: variant.options,
+            submitted_answer: submission ? submission.submitted_answer : null,
+            feedback: submission ? submision.feedback : null,
+            clientFilesQuestion: locals.paths.clientFilesQuestion,
+        }
+        this.execTemplate(question_data, question, course, (err, question_data, html, $) => {
+            if (ERR(err, callback)) return;
+
+            let index = 0;
+            async.eachSeries(freeformBlocks.blocks, ([blockName, blockModule], callback) => {
+                async.eachSeries($(blockName).toArray(), (element, callback) => {
+                    blockModule.render($, element, index, question_data, (err, blockHtml) => {
+                        if (ERR(err, callback)) return;
+                        $(element).replaceWith(blockHtml);
+                        callback(null);
+                    });
+                }, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            }, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null, $.html());
+            });
+        });
     },
 
     renderSubmission: function(variant, question, submission, course, locals, callback) {
+        console.log('freeform.renderSubmission()');
         callback(null, "");
     },
 
     renderTrueAnswer: function(variant, question, course, locals, callback) {
+        console.log('freeform.renderTrueAnswer()');
         callback(null, "");
     },
 
@@ -94,31 +126,10 @@ module.exports = {
 
     makeHandlebars: function() {
         var hb = handlebars.create();
-        hb.registerHelper('question', options => {
-            console.log('question start', 'options', options);
-            return '';
-        });
-        hb.registerHelper('submission', options => {
-            console.log('submission start', 'options', options);
-            return '';
-        });
-        hb.registerHelper('true_answer', options => {
-            console.log('true_answer start', 'options', options);
-            return '';
-        });
-        hb.registerHelper('multiple_choice', options => {
-            console.log('multiple_choice start', 'options', options);
-            return '';
-        });
-        hb.registerHelper('input_number', options => {
-            console.log('input_number start', 'options', options);
-            return '';
-        });
         return hb;
     },
 
-    execTemplateGetData: function(question_data, question, course, callback) {
-        console.log('in execTemplateGetData()');
+    execTemplate: function(question_data, question, course, callback) {
         var question_dir = path.join(course.path, 'questions', question.directory);
         var question_html = path.join(question_dir, 'question.html');
         fs.readFile(question_html, {encoding: 'utf8'}, (err, data) => {
@@ -126,20 +137,25 @@ module.exports = {
             try {
                 var hb = this.makeHandlebars();
                 var template = hb.compile(data);
-                console.log('completed compile');
             } catch (err) {
                 err.data = {question_data, question, course};
                 return ERR(err, callback);
             }
+            var html;
             try {
-                var html = template(question_data); // just want the side effects on question_data, not the html
-                console.log('completed template');
-                console.log('html', html);
+                html = template(question_data);
             } catch (err) {
                 err.data = {question_data, question, course};
                 return ERR(err, callback);
             }
-            callback(null, question_data);
+            var $;
+            try {
+                $ = cheerio.load(html);
+            } catch (err) {
+                err.data = {question_data, question, course};
+                return ERR(err, callback);
+            }
+            callback(null, question_data, html, $);
         });
     },
 
@@ -155,9 +171,24 @@ module.exports = {
             if (ERR(err, callback)) return;
             var question_data = result.question_data;
             _.defaults(question_data.options, course.options, question.options);
-            this.execTemplateGetData(question_data, question, course, (err) => {
+            this.execTemplate(question_data, question, course, (err, question_data, html, $) => {
                 if (ERR(err, callback)) return;
-                callback(null, question_data);
+
+                let index = 0;
+                async.eachSeries(freeformBlocks.blocks, ([blockName, blockModule], callback) => {
+                    async.eachSeries($(blockName).toArray(), (element, callback) => {
+                        blockModule.prepare($, element, parseInt(variant_seed, 36), index, question_data, (err) => {
+                            if (ERR(err, callback)) return;
+                            callback(null);
+                        });
+                    }, (err) => {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                }, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null, question_data);
+                });
             });
         });
     },

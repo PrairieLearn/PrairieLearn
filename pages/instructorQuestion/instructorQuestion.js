@@ -1,4 +1,5 @@
 var ERR = require('async-stacktrace');
+var async = require('async');
 var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
@@ -54,45 +55,82 @@ var handle = function(req, res, next) {
 
 var render = function(req, res, next, variant, submission, submissionHtml, answerHtml) {
     var params = [res.locals.question.id, res.locals.course_instance.id];
-    sqldb.queryOneRow(sql.select_question, params, function(err, result) {
-        if (ERR(err, next)) return;
-        questionServers.getEffectiveQuestionType(res.locals.question.type, function(err, effectiveQuestionType) {
-            if (ERR(err, next)) return;
-            questionServers.getModule(res.locals.question.type, function(err, questionModule) {
-                if (ERR(err, next)) return;
-                questionModule.renderExtraHeaders(res.locals.question, res.locals.course, res.locals, function(err, extraHeaders) {
-                    if (ERR(err, next)) return;
-                    questionModule.renderQuestion(variant, res.locals.question, null, res.locals.course, res.locals, function(err, questionHtml) {
-                        if (ERR(err, next)) return;
+    var questionModule;
 
-                        res.locals.result = result.rows[0];
-                        res.locals.effectiveQuestionType = effectiveQuestionType,
-                        res.locals.submission = submission;
-                        res.locals.extraHeaders = extraHeaders;
-                        res.locals.questionHtml = questionHtml;
-                        res.locals.submissionHtml = submissionHtml;
-                        res.locals.answerHtml = answerHtml;
-                        res.locals.postUrl = res.locals.urlPrefix + '/question/' + res.locals.question.id + '/';
-                        var questionJson = JSON.stringify({
-                            questionFilePath: res.locals.urlPrefix + '/question/' + res.locals.question.id + '/file',
-                            questionGeneratedFilePath: res.locals.urlPrefix + '/question/' + res.locals.question.id + '/generatedFilesQuestion/variant_seed/' + variant.variant_seed,
-                            question: res.locals.question,
-                            effectiveQuestionType: effectiveQuestionType,
-                            course: res.locals.course,
-                            courseInstance: res.locals.course_instance,
-                            variant: variant,
-                            submittedAnswer: submission ? submission.submitted_answer : null,
-                            feedback: submission ? submission.feedback : null,
-                            trueAnswer: submission ? variant.true_answer : null,
-                            submissions: submission ? res.locals.submissions : null,
-                        });
-                        var encodedJson = encodeURIComponent(questionJson);
-                        res.locals.questionJsonBase64 = (new Buffer(encodedJson)).toString('base64');
-                        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-                    });
-                });
+
+
+    async.series([
+        (callback) => {
+            sqldb.queryOneRow(sql.select_question, params, (err, result) => {
+                if (ERR(err, callback)) return;
+                res.locals.result = result.rows[0];
+                callback(null);
             });
-        });
+        },
+        (callback) => {
+            questionServers.getEffectiveQuestionType(res.locals.question.type, (err, effectiveQuestionType) => {
+                if (ERR(err, callback)) return;
+                res.locals.effectiveQuestionType = effectiveQuestionType,
+                callback(null);
+            });
+        },
+        (callback) => {
+            questionServers.getModule(res.locals.question.type, (err, qm) => {
+                if (ERR(err, callback)) return;
+                questionModule = qm;
+                callback(null);
+            });
+        },
+        (callback) => {
+            res.locals.paths = {};
+            res.locals.paths.clientFilesQuestion = res.locals.urlPrefix + '/question/' + res.locals.question.id + '/clientFilesQuestion';
+            callback(null);
+        },
+        (callback) => {
+            questionModule.renderExtraHeaders(res.locals.question, res.locals.course, res.locals, (err, extraHeaders) => {
+                if (ERR(err, callback)) return;
+                res.locals.extraHeaders = extraHeaders;
+                callback(null);
+            });
+        },
+        (callback) => {
+            questionModule.renderQuestion(variant, res.locals.question, null, res.locals.course, res.locals, (err, questionHtml) => {
+                if (ERR(err, callback)) return;
+                res.locals.questionHtml = questionHtml;
+                callback(null);
+            });
+        },
+        (callback) => {
+            res.locals.submission = submission;
+            res.locals.submissionHtml = submissionHtml;
+            res.locals.answerHtml = answerHtml;
+            callback(null);
+        },
+        (callback) => {
+            res.locals.postUrl = res.locals.urlPrefix + '/question/' + res.locals.question.id + '/';
+            callback(null);
+        },
+        (callback) => {
+            var questionJson = JSON.stringify({
+                questionFilePath: res.locals.urlPrefix + '/question/' + res.locals.question.id + '/file',
+                questionGeneratedFilePath: res.locals.urlPrefix + '/question/' + res.locals.question.id + '/generatedFilesQuestion/variant_seed/' + variant.variant_seed,
+                question: res.locals.question,
+                effectiveQuestionType: res.locals.effectiveQuestionType,
+                course: res.locals.course,
+                courseInstance: res.locals.course_instance,
+                variant: variant,
+                submittedAnswer: submission ? submission.submitted_answer : null,
+                feedback: submission ? submission.feedback : null,
+                trueAnswer: submission ? variant.true_answer : null,
+                submissions: submission ? res.locals.submissions : null,
+            });
+            var encodedJson = encodeURIComponent(questionJson);
+            res.locals.questionJsonBase64 = (new Buffer(encodedJson)).toString('base64');
+                callback(null);
+        },
+    ], function(err) {
+        if (ERR(err, next)) return;
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 };
 

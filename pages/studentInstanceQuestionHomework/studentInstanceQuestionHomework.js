@@ -134,6 +134,11 @@ function processGet(req, res, variant_id, callback) {
             });
         },
         function(callback) {
+            res.locals.paths = {};
+            res.locals.paths.clientFilesQuestion = res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id + '/clientFilesQuestion';
+            callback(null);
+        },
+        function(callback) {
             questionModule.renderExtraHeaders(res.locals.question, res.locals.course, res.locals, function(err, extraHeaders) {
                 if (ERR(err, callback)) return;
                 res.locals.extraHeaders = extraHeaders;
