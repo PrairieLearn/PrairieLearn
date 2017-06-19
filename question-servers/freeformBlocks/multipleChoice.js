@@ -35,15 +35,18 @@ module.exports.prepare = function($, element, variant_seed, block_index, questio
     let answers = [];
     answers = answers.concat(rand.randNElem(numberCorrect, correctAnswers));
     answers = answers.concat(rand.randNElem(numberIncorrect, incorrectAnswers));
-    let perm = rand.shuffle(answers);
+    // let perm = rand.shuffle(answers);
+    rand.shuffle(answers);
     answers = _.map(answers, (value, index) => {
         return {key: String.fromCharCode('a'.charCodeAt() + index), html: value};
     });
+    /*
     var trueIndex = _.indexOf(perm, 0);
     var trueAnswer = {
         key: answers[trueIndex].key,
         _html: answers[trueIndex].html,
     };
+    */
 
     question_data.params[name] = answers;
     // FIXME

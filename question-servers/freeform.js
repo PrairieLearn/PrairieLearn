@@ -7,10 +7,6 @@ var child_process = require('child_process');
 var handlebars = require('handlebars');
 var cheerio = require('cheerio');
 
-var error = require('../lib/error');
-var logger = require('../lib/logger');
-var filePaths = require('../lib/file-paths');
-var questionHelper = require('../lib/questionHelper.js');
 var freeformBlocks = require('./freeformBlocks');
 
 module.exports = {
@@ -24,9 +20,9 @@ module.exports = {
             true_answer: variant.true_answer,
             options: variant.options,
             submitted_answer: submission ? submission.submitted_answer : null,
-            feedback: submission ? submision.feedback : null,
+            feedback: submission ? submission.feedback : null,
             clientFilesQuestion: locals.paths.clientFilesQuestion,
-        }
+        };
         this.execTemplate(question_data, question, course, (err, question_data, html, $) => {
             if (ERR(err, callback)) return;
 
@@ -50,18 +46,15 @@ module.exports = {
     },
 
     renderSubmission: function(variant, question, submission, course, locals, callback) {
-        console.log('freeform.renderSubmission()');
-        callback(null, "");
+        callback(new Error('not implemented'));
     },
 
     renderTrueAnswer: function(variant, question, course, locals, callback) {
-        console.log('freeform.renderTrueAnswer()');
-        callback(null, "");
+        callback(new Error('not implemented'));
     },
 
     execPythonServer: function(pythonCmd, pythonArgs, question, course, callback) {
         var question_dir = path.join(course.path, 'questions', question.directory);
-        var serverFilename = path.join(question_dir, 'server.py');
 
         var callData = {pythonCmd, pythonArgs, question, course};
 
@@ -99,24 +92,25 @@ module.exports = {
         });
         
         child.on('close', (code) => {
+            let err, output;
             if (code) {
-                var err = new Error('Error in question code execution');
+                err = new Error('Error in question code execution');
                 err.data = {code, callData, outputStdout, outputStderr};
                 return ERR(err, callback);
             }
             try {
-                var output = JSON.parse(outputStdout);
+                output = JSON.parse(outputStdout);
             } catch (e) {
-                var err = new Error('Error decoding question JSON');
+                err = new Error('Error decoding question JSON');
                 err.data = {decodeMsg: e.message, callData, outputStdout, outputStderr};
                 return ERR(err, callback);
             }
             callback(null, output);
         });
         
-        child.on('error', (err) => {
-            var err = new Error('Error executing python question code');
-            err.data = {execMsg: err.message, callData};
+        child.on('error', (error) => {
+            let err = new Error('Error executing python question code');
+            err.data = {execMsg: error.message, callData};
             return ERR(err, callback);
         });
 
