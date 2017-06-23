@@ -75,6 +75,7 @@ module.exports = {
                         assessmentIds.push(assessmentId);
                         logger.debug('Synced ' + tid + ' as assessment_id ' + assessmentId);
                         that.syncAccessRules(assessmentId, dbAssessment, function(err) {
+                            if (ERR(err, callback)) return;
                             that.syncZones(assessmentId, dbAssessment, function(err) {
                                 if (ERR(err, callback)) return;
                                 that.syncAssessmentQuestions(assessmentId, dbAssessment, courseInfo, function(err) {

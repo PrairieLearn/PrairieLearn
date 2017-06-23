@@ -15,7 +15,7 @@ BEGIN
 
     date_parts := regexp_matches(date_string, '([0-9]{4}-[0-9]{2}-[0-9]{2})[ T]([0-9]{2}:[0-9]{2}:[0-9]{2})');
     if date_parts IS NULL THEN
-        RAISE EXCEPTION 'invalid date format: %, must be either "2016-07-24T16:52:48" or "2016-07-24 16:52:48"', date_string;
+        RAISE EXCEPTION 'invalid date format: %, must be like either "2016-07-24T16:52:48" or "2016-07-24 16:52:48"', date_string;
     END IF;
     cleaned_date_string := date_parts[1] || ' ' || date_parts[2];
 
