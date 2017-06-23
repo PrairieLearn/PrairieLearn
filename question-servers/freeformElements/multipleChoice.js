@@ -14,7 +14,7 @@ module.exports.prepare = function($, element, variant_seed, block_index, questio
     let incorrectAnswers = [];
     for (const answer of $(element).find('answer').toArray()) {
         if (!answer.attribs.correct) return callback(new Error('"correct" value not specified for multipleChoice answer'));
-        let html = $(answer).html();
+        const html = $(answer).html();
         if (answer.attribs.correct == 'true') {
             correctAnswers.push(html);
         } else if (answer.attribs.correct == 'false') {

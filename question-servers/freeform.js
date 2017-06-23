@@ -7,7 +7,7 @@ var child_process = require('child_process');
 var handlebars = require('handlebars');
 var cheerio = require('cheerio');
 
-var freeformBlocks = require('./freeformBlocks');
+var elements = require('./freeformElements');
 
 module.exports = {
     renderExtraHeaders: function(question, course, locals, callback) {
@@ -27,11 +27,11 @@ module.exports = {
             if (ERR(err, callback)) return;
 
             let index = 0;
-            async.eachSeries(freeformBlocks.blocks, ([blockName, blockModule], callback) => {
-                async.eachSeries($(blockName).toArray(), (element, callback) => {
-                    blockModule.render($, element, index, question_data, (err, blockHtml) => {
+            async.eachSeries(elements, ([elementName, elementModule], callback) => {
+                async.eachSeries($(elementName).toArray(), (element, callback) => {
+                    elementModule.render($, element, index, question_data, (err, elementHtml) => {
                         if (ERR(err, callback)) return;
-                        $(element).replaceWith(blockHtml);
+                        $(element).replaceWith(elementHtml);
                         callback(null);
                     });
                 }, (err) => {
@@ -169,9 +169,9 @@ module.exports = {
                 if (ERR(err, callback)) return;
 
                 let index = 0;
-                async.eachSeries(freeformBlocks.blocks, ([blockName, blockModule], callback) => {
-                    async.eachSeries($(blockName).toArray(), (element, callback) => {
-                        blockModule.prepare($, element, parseInt(variant_seed, 36), index, question_data, (err) => {
+                async.eachSeries(elements, ([elementName, elementModule], callback) => {
+                    async.eachSeries($(elementName).toArray(), (element, callback) => {
+                        elementModule.prepare($, element, parseInt(variant_seed, 36), index, question_data, (err) => {
                             if (ERR(err, callback)) return;
                             callback(null);
                         });
@@ -192,6 +192,10 @@ module.exports = {
     },
 
     gradeSubmission: function(submission, variant, question, course, callback) {
-        callback(new Error('not implemented'));
+        return {
+            score: 0,
+            correct: false,
+            feedback: {},
+        };
     },
 };
