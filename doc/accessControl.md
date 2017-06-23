@@ -38,7 +38,8 @@ Access restriction | courseInstance | assessment | Meaning | Example
 `institution`      | ✓ |   | Only people from this institution ("UIUC" or "Any").                | `"institution": "UIUC"`
 `mode`             |   | ✓ | Only allow access from this server mode.                            | `"mode": "Exam"`
 `credit`           |   | ✓ | Maximum credit as percentage of full credit (can be more than 100). | `"credit": 100`
-`timeLimitMin`     |   | ✓ | Time limit in minutes to complete an assessment                     | `"timeLimitMin": 60`
+`timeLimitMin`     |   | ✓ | Time limit in minutes to complete an assessment (only for Exams).   | `"timeLimitMin": 60`
+`password`         |   | ✓ | Password required to start an assessment (only for Exams).          | `"password": "mysecret"`
 
 Each access role will only grant access if all of the restrictions are satisfied.
 
@@ -71,6 +72,41 @@ Mode      | When active
 When the available credit is less than 100%, the percentage score is calculated as `min(credit, points / maxPoints * 100)`. However, the student's percentage score will never descrease, so if they've already earned a higher percentage score then they will keep it. For example, if `credit = 80` and `maxPoints = 10`, then when a student has `points = 8` then they will have a percentage score of 80%, and when they have `points = 9` or `points = 10` they will still have a percentage score of 80%.
 
 When the available credit is more than 100%, then the percentage score is calculated as `points / maxPoints * 100` when `points < maxPoints`. However, if `points = maxPoints` then the percentage score is taken to be the credit value. For example, if `credit = 120` then the student will see their percentage score rise towards 100% as their `points` increase towards `maxPoints`, and then when their `points` reaches `maxPoints` their percentage score will suddenly jump to 120%.
+
+## Time limits
+
+For students taking remote exams it can be helpful to have an enforced time limit. This can be done with an access rule like:
+
+```json
+"allowAccess": [
+    {
+        "startDate": "2015-01-19T00:00:01",
+        "endDate": "2015-05-13T23:59:59",
+        "timeLimitMin": 50
+    }
+]
+```
+
+The above example will give students 50 minutes for this exam, and they must start (and complete) within the date limits.
+
+**Note that time limits should not be set for exams in the CBTF (Computer-Based Testing Facility). Instead, such exams should set `"mode": "Exam"` and the time limits will be enforced by the CBTF scheduling software.**
+
+## Passwords
+
+Remote or online exams sometimes use a “proctor password” to control access to Exams. This can be enabled with an access rule like:
+
+```json
+"allowAccess": [
+    {
+        "mode": "Public",
+        "startDate": "2015-01-19T00:00:01",
+        "endDate": "2015-05-13T23:59:59",
+        "password": "mysecret"
+    }
+]
+```
+
+Before a student can do the exam, a proctor will need to type the phrase `mysecret` into the password field on the exam start page.
 
 ## Course instance example
 

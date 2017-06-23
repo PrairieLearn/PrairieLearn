@@ -313,7 +313,7 @@ module.exports.insertDevUser = function(callback) {
     // add dev user as Administrator
     var sql
         = 'INSERT INTO users (uid, name)'
-        + ' VALUES (\'dev@example.com\', \'Dev User\')'
+        + ' VALUES (\'dev@illinois.edu\', \'Dev User\')'
         + ' ON CONFLICT (uid) DO UPDATE'
         + ' SET name = EXCLUDED.name'
         + ' RETURNING user_id;';

@@ -113,6 +113,12 @@ router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
     if (req.body.postAction == 'newInstance') {
+        if (res.locals.authz_result.password != null) {
+            if (req.body.password == null) return next(new Error('Password required for this assessment'));
+            if (req.body.password !== res.locals.authz_result.password) {
+                return next(new Error('Incorrect password'));
+            }
+        }
         makeAssessmentInstance(req, res, function(err, assessment_instance_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
