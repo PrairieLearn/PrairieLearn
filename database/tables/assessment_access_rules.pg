@@ -5,6 +5,7 @@ columns
     id: bigint not null default nextval('assessment_access_rules_id_seq'::regclass)
     mode: enum_mode
     number: integer
+    password: text
     role: enum_role
     start_date: timestamp with time zone
     time_limit_min: integer

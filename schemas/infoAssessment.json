@@ -99,9 +99,13 @@
                     "type": "string"
                 },
                 "timeLimitMin": {
-                    "description": "The time limit to complete the assessment, in minutes.",
+                    "description": "The time limit to complete the assessment, in minutes (only for Exams).",
                     "type": "integer",
                     "minimum": 0
+                },
+                "password": {
+                    "description": "Password to begin the assessment (only for Exams).",
+                    "type": "string"
                 }
             }
         },

@@ -12,6 +12,7 @@ CREATE OR REPLACE FUNCTION
         OUT credit integer,          -- How much credit will they receive?
         OUT credit_date_string TEXT, -- For display to the user.
         OUT time_limit_min integer,  -- The time limit (if any) for this assessment.
+        OUT password text,           -- The password (if any) for this assessment.
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     )
 AS $$
@@ -68,6 +69,7 @@ BEGIN
     credit := user_result.credit;
     credit_date_string := user_result.credit_date_string;
     time_limit_min := user_result.time_limit_min;
+    password := user_result.password;
     access_rules := user_result.access_rules;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

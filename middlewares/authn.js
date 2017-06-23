@@ -25,7 +25,7 @@ module.exports = function(req, res, next) {
 
     // bypass auth for local /pl/ serving
     if (config.authType === 'none') {
-        var authUid = 'dev@example.com';
+        var authUid = 'dev@illinois.edu';
         var authName = 'Dev User';
         var authUin = '123456789';
 

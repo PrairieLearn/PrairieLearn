@@ -14,6 +14,7 @@ CREATE OR REPLACE FUNCTION
         OUT credit integer,          -- How much credit will they receive?
         OUT credit_date_string TEXT, -- For display to the user.
         OUT time_limit_min integer,  -- What is the time limit (if any) for this assessment.
+        OUT password text,           -- What is the password (if any) for this assessment.
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     ) AS $$
 DECLARE
@@ -34,12 +35,14 @@ BEGIN
             ELSE 'None'
         END AS credit_date_string,
         aar.time_limit_min,
+        aar.password,
         aar.id
     INTO
         authorized,
         credit,
         credit_date_string,
         time_limit_min,
+        password,
         active_access_rule_id
     FROM
         assessment_access_rules AS aar
@@ -59,6 +62,7 @@ BEGIN
         credit = 0;
         credit_date_string = 'None';
         time_limit_min = NULL;
+        password = NULL;
     END IF;
 
     -- Override if we are an Instructor
@@ -68,6 +72,7 @@ BEGIN
         credit_date_string = '100% (Instructor override)';
         active_access_rule_id = NULL;
         time_limit_min = NULL;
+        password = NULL;
     END IF;
 
     -- List of all access rules that will grant access to this user/mode/role at some date (past or future),

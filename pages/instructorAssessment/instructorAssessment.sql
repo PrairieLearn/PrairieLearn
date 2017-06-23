@@ -151,7 +151,11 @@ SELECT
     CASE
         WHEN aar.time_limit_min IS NULL THEN '—'
         ELSE aar.time_limit_min::text || ' min'
-    END AS time_limit
+    END AS time_limit,
+    CASE
+        WHEN aar.password IS NULL THEN '—'
+        ELSE aar.password
+    END AS password
 FROM
     assessment_access_rules AS aar
     JOIN assessments AS a ON (a.id = aar.assessment_id)

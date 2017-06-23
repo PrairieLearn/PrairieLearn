@@ -251,11 +251,12 @@ describe('Access control', function() {
 
     /**********************************************************************/
 
-    var postAssessment = function(cookies, expectedStatusCode, callback) {
+    var postAssessment = function(cookies, includePassword, expectedStatusCode, callback) {
         var form = {
             postAction: 'newInstance',
             csrfToken: csrfToken,
         };
+        if (includePassword) form.password = 'secret';
         request.post({url: assessmentUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
             if (error) {
                 return callback(error);
@@ -270,16 +271,19 @@ describe('Access control', function() {
 
     describe('POST to assessment URL', function() {
         it('as student should return 500', function(callback) {
-            postAssessment(cookiesStudent(), 500, callback);
+            postAssessment(cookiesStudent(), true, 500, callback);
         });
         it('as student in Exam mode before time period should return 500', function(callback) {
-            postAssessment(cookiesStudentExamBeforeAssessment(), 500, callback);
+            postAssessment(cookiesStudentExamBeforeAssessment(), true, 500, callback);
         });
         it('in Exam mode after time period should return 500', function(callback) {
-            postAssessment(cookiesStudentExamAfterAssessment(), 500, callback);
+            postAssessment(cookiesStudentExamAfterAssessment(), true, 500, callback);
+        });
+        it('as student in Exam mode without password should return 500', function(callback) {
+            postAssessment(cookiesStudentExam(), false, 500, callback);
         });
         it('as student in Exam mode should load successfully', function(callback) {
-            postAssessment(cookiesStudentExam(), 200, callback);
+            postAssessment(cookiesStudentExam(), true, 200, callback);
         });
     });
 
