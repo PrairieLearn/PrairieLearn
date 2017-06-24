@@ -11,7 +11,7 @@
     </div>
     <div class="collapse navbar-collapse">
       <ul class="nav navbar-nav" id="main-nav">
-        
+
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->
         <!-------------------------------------------------------------------------------->
@@ -36,7 +36,7 @@
         <li <% if (navPage == "gradebook")   { %>class="active"<% } %>><a href="<%= urlPrefix %>/gradebook">Gradebook</a></li>
 
         <% if (authz_data.has_course_permission_view) { %>
-        <li <% if (navPage == "course")      { %>class="active"<% } %>><a href="<%= urlPrefix %>/course">Course</a></li>
+        <li <% if (navPage == "courseOverview")      { %>class="active"<% } %>><a href="<%= urlPrefix %>/course">Course</a></li>
         <% } %>
 
         <% if (!devMode && authz_data.has_course_permission_edit) { %>
