@@ -5,6 +5,8 @@
 
   * Add test coverage reporting with `coverage.io` (Nathan Walters).
 
+  * Add documentation clarification on `"role": "Student"` access.
+
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
     and `tests/sync/*`) (Nathan Walters).
 

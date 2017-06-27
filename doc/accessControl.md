@@ -41,7 +41,7 @@ Access restriction | courseInstance | assessment | Meaning | Example
 `timeLimitMin`     |   | ✓ | Time limit in minutes to complete an assessment (only for Exams).   | `"timeLimitMin": 60`
 `password`         |   | ✓ | Password required to start an assessment (only for Exams).          | `"password": "mysecret"`
 
-Each access role will only grant access if all of the restrictions are satisfied.
+Each access rule will only grant access if all of the restrictions are satisfied.
 
 In summary, `allowAccess` uses the algorithm:
 
@@ -51,6 +51,10 @@ allowAccess is True if (accessRule1 OR accessRule2 OR accessRule3)
 ```
 
 If multiple access rules are satisfied then the highest `credit` value is taken from them. Access rules without an explicit `credit` value have credit of 0, meaning they allow viewing of the assessment but not doing questions for credit.
+
+## Roles
+
+Restricting access to `"role": "Student"` is equivalent to not including a role restriction at all, because every user is equal to or higher than `Student` role.
 
 ## Dates
 

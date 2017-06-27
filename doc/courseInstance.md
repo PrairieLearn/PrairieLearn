@@ -72,7 +72,6 @@ Role         | Description
 `TA`         | A teaching assisstant. They can see the data of all users, but can only edit their own information.
 `Instructor` | A person in charge of the course. Has full permission to see and edit the information of other users.
 
-
 ## Course instance `allowAccess`
 
 See [Access control](accessControl.md) for details.
