@@ -9,14 +9,15 @@ module.exports.prepare = function($, element, variant_seed, block_index, questio
     try {
         const name = elementHelper.getAttrib(element, 'name');
         const true_answer = elementHelper.getAttrib(element, 'true_answer');
-        const tolerance = elementHelper.getAttrib(element, 'tolerance', 1);
+        const sig_figs = elementHelper.getAttrib(element, 'sig_figs', 3);
         const required = elementHelper.getAttrib(element, 'required', true);
 
-        question_data.params[name] = {tolerance, required};
-        // FIXME
-        //question_data.true_answer[name] = trueAnswer;
+        question_data.params[name] = {sig_figs, required};
+        question_data.true_answer[name] = true_answer;
+        console.log('inputNumber.prepare about to callback a');
         callback(null);
     } catch (err) {
+        console.log('inputNumber.prepare about to callback b', err);
         return callback(err);
     }
 };
@@ -26,20 +27,12 @@ module.exports.render = function($, element, block_index, question_data, callbac
         const name = elementHelper.getAttrib(element, 'name');
         if (!question_data.params[name]) throw new Error('unable to find params for ' + name);
         const params = question_data.params[name];
-        
-        let html = '';
-        for (const ans of answers) {
-            html
-                += '<input type="number" name="" step="">\n'
-                + '  <label>\n'
-                + '    <input type="checkbox" name="' + name + '" value="' + ans.key + '" />\n'
-                + '    (' + ans.key + ') ' + ans.html.trim() + '\n'
-                + '  </label>\n'
-                + '</div>\n';
-        }
 
+        let html = '<input name="' + name + '" step="">\n';
+        console.log('inputNumber.render about to callback a');
         callback(null, html);
     } catch (err) {
+        console.log('inputNumber.render about to callback b', err);
         return callback(err);
     }
 };

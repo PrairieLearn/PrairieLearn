@@ -28,26 +28,21 @@ module.exports.prepare = function($, element, variant_seed, block_index, questio
         // FIXME: allow numberAnswers to be passed as an attribute to checkbox
         // var numberIncorrect = options.numberAnswers - numberCorrect;
         // numberIncorrect = Math.min(numberIncorrect, options.incorrectAnswers.length);
-        
+
         let answers = [];
         answers = answers.concat(rand.randNElem(numberCorrect, correctAnswers));
         answers = answers.concat(rand.randNElem(numberIncorrect, incorrectAnswers));
-        // let perm = rand.shuffle(answers);
-        rand.shuffle(answers);
+        const perm = rand.shuffle(answers);
         answers = _.map(answers, (value, index) => {
             return {key: String.fromCharCode('a'.charCodeAt() + index), html: value};
         });
-        /*
-          var trueIndex = _.indexOf(perm, 0);
-          var trueAnswer = {
-          key: answers[trueIndex].key,
-          _html: answers[trueIndex].html,
-          };
-        */
+        const trueIndex = _.indexOf(perm, 0);
+        const trueAnswer = answers[trueIndex].key;
 
-        question_data.params[name] = answers;
-        // FIXME
-        //question_data.true_answer[name] = trueAnswer;
+        question_data.params[name] = {
+            answers: answers,
+        };
+        question_data.true_answer[name] = trueAnswer;
         callback(null);
     } catch (err) {
         return callback(err);
@@ -58,8 +53,8 @@ module.exports.render = function($, element, block_index, question_data, callbac
     try {
         const name = elementHelper.getAttrib(element, 'name');
         if (!question_data.params[name]) throw new Error('unable to find params for ' + name);
-        const answers = question_data.params[name];
-        
+        const answers = question_data.params[name].answers;
+
         let html = '';
         for (const ans of answers) {
             html

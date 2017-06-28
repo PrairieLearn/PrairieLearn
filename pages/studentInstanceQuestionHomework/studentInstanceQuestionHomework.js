@@ -1,4 +1,5 @@
 var ERR = require('async-stacktrace');
+var _ = require('lodash');
 var async = require('async');
 var express = require('express');
 var router = express.Router();
@@ -41,23 +42,34 @@ function ensureVariant(locals, callback) {
 }
 
 function processSubmission(req, res, callback) {
-    if (!req.body.postData) return callback(error.make(400, 'No postData', {locals: res.locals, body: req.body}));
-    var postData;
-    try {
-        postData = JSON.parse(req.body.postData);
-    } catch (e) {
-        return callback(error.make(400, 'JSON parse failed on body.postData', {locals: res.locals, body: req.body}));
+    let variant_id, submitted_answer, type = null;
+    if (res.locals.question.type == 'Freeform') {
+        variant_id = req.body.variant_id;
+        submitted_answer = _.omit(req.body, ['postAction', 'csrfToken', 'variant_id']);
+    } else {
+        if (!req.body.postData) return callback(error.make(400, 'No postData', {locals: res.locals, body: req.body}));
+        let postData;
+        try {
+            postData = JSON.parse(req.body.postData);
+        } catch (e) {
+            return callback(error.make(400, 'JSON parse failed on body.postData', {locals: res.locals, body: req.body}));
+        }
+        variant_id = postData.variant ? postData.variant.id : null;
+        submitted_answer = postData.submittedAnswer;
+        type = postData.type;
     }
-    var submission = {
-        variant_id: postData.variant ? postData.variant.id : null,
+    const submission = {
+        variant_id: variant_id,
         auth_user_id: res.locals.authz_data.authn_user.user_id,
-        submitted_answer: postData.submittedAnswer,
-        type: postData.type,
+        submitted_answer: submitted_answer,
+        type: type,
         credit: res.locals.authz_result.credit,
         mode: res.locals.authz_data.mode,
     };
+    console.log('submission', submission);
     assessmentsHomework.submitAndGrade(submission, res.locals.instance_question.id, res.locals.question, res.locals.course, function(err) {
         if (ERR(err, callback)) return;
+        console.log('d');
         callback(null, submission.variant_id);
     });
 }
@@ -208,6 +220,7 @@ router.post('/', function(req, res, next) {
     if (req.body.postAction == 'submitQuestionAnswer') {
         processSubmission(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
+            console.log('about to redirect');
             res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
                          + '/?variant_id=' + variant_id);
         });
