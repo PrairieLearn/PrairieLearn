@@ -148,7 +148,6 @@ module.exports = {
                 time_limit_min: _(dbRule).has('timeLimitMin') ? dbRule.timeLimitMin : null,
                 password: _(dbRule).has('password') ? dbRule.password : null,
             };
-            console.log('insert_assessment_access_rule', params);
             sqldb.query(sql.insert_assessment_access_rule, params, function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);

@@ -11,7 +11,7 @@ module.exports.prepare = function($, element, variant_seed, block_index, questio
         let correctAnswers = [];
         let incorrectAnswers = [];
         for (const answer of $(element).find('answer').toArray()) {
-            const correct = elementHelper.getBooleanAttrib(element, 'correct', false);
+            const correct = elementHelper.getBooleanAttrib(answer, 'correct', false);
             const html = $(answer).html();
             if (correct) {
                 correctAnswers.push(html);
@@ -36,12 +36,11 @@ module.exports.prepare = function($, element, variant_seed, block_index, questio
         answers = _.map(answers, (value, index) => {
             return {key: String.fromCharCode('a'.charCodeAt() + index), html: value};
         });
-        const trueIndex = _.indexOf(perm, 0);
-        const trueAnswer = answers[trueIndex].key;
+        const trueIndexes = _.map(_.range(numberCorrect), i => perm.indexOf(i));
+        let trueAnswer = _.map(trueIndexes, i => answers[i]);
+        trueAnswer = _.sortBy(trueAnswer, 'key');
 
-        question_data.params[name] = {
-            answers: answers,
-        };
+        question_data.params[name] = answers;
         question_data.true_answer[name] = trueAnswer;
         callback(null);
     } catch (err) {
@@ -53,7 +52,7 @@ module.exports.render = function($, element, block_index, question_data, callbac
     try {
         const name = elementHelper.getAttrib(element, 'name');
         if (!question_data.params[name]) throw new Error('unable to find params for ' + name);
-        const answers = question_data.params[name].answers;
+        const answers = question_data.params[name];
 
         let html = '';
         for (const ans of answers) {

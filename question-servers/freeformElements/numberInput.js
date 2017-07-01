@@ -9,15 +9,14 @@ module.exports.prepare = function($, element, variant_seed, block_index, questio
     try {
         const name = elementHelper.getAttrib(element, 'name');
         const true_answer = elementHelper.getAttrib(element, 'true_answer');
-        const sig_figs = elementHelper.getAttrib(element, 'sig_figs', 3);
+        const sig_figs = elementHelper.getAttrib(element, 'sig_figs', null);
+        const dec_places = elementHelper.getAttrib(element, 'dec_places', null);
         const required = elementHelper.getAttrib(element, 'required', true);
 
-        question_data.params[name] = {sig_figs, required};
+        question_data.params[name] = {sig_figs, dec_places, required};
         question_data.true_answer[name] = true_answer;
-        console.log('inputNumber.prepare about to callback a');
         callback(null);
     } catch (err) {
-        console.log('inputNumber.prepare about to callback b', err);
         return callback(err);
     }
 };
@@ -29,10 +28,8 @@ module.exports.render = function($, element, block_index, question_data, callbac
         const params = question_data.params[name];
 
         let html = '<input name="' + name + '" step="">\n';
-        console.log('inputNumber.render about to callback a');
         callback(null, html);
     } catch (err) {
-        console.log('inputNumber.render about to callback b', err);
         return callback(err);
     }
 };

@@ -66,10 +66,8 @@ function processSubmission(req, res, callback) {
         credit: res.locals.authz_result.credit,
         mode: res.locals.authz_data.mode,
     };
-    console.log('submission', submission);
     assessmentsHomework.submitAndGrade(submission, res.locals.instance_question.id, res.locals.question, res.locals.course, function(err) {
         if (ERR(err, callback)) return;
-        console.log('d');
         callback(null, submission.variant_id);
     });
 }
@@ -220,7 +218,6 @@ router.post('/', function(req, res, next) {
     if (req.body.postAction == 'submitQuestionAnswer') {
         processSubmission(req, res, function(err, variant_id) {
             if (ERR(err, next)) return;
-            console.log('about to redirect');
             res.redirect(res.locals.urlPrefix + '/instance_question/' + res.locals.instance_question.id
                          + '/?variant_id=' + variant_id);
         });
