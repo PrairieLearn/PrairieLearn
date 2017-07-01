@@ -32,6 +32,7 @@ module.exports = {
                     elementModule.render($, element, index, question_data, (err, elementHtml) => {
                         if (ERR(err, callback)) return;
                         $(element).replaceWith(elementHtml);
+                        index++;
                         callback(null);
                     });
                 }, (err) => {
@@ -190,6 +191,7 @@ module.exports = {
                     async.eachSeries($(elementName).toArray(), (element, callback) => {
                         elementModule.prepare($, element, parseInt(variant_seed, 36), index, question_data, (err) => {
                             if (ERR(err, callback)) return;
+                            index++;
                             callback(null);
                         });
                     }, (err) => {

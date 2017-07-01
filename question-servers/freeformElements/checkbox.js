@@ -20,7 +20,7 @@ module.exports.prepare = function($, element, variant_seed, block_index, questio
             }
         }
 
-        var rand = new RandomGenerator(variant_seed + block_index);
+        var rand = new RandomGenerator(variant_seed + block_index * 37);
 
         const numberCorrect = correctAnswers.length;
         const numberIncorrect = incorrectAnswers.length;

@@ -9,7 +9,7 @@ module.exports.prepare = function($, element, variant_seed, block_index, questio
     try {
         const name = elementHelper.getAttrib(element, 'name');
 
-        var rand = new RandomGenerator(variant_seed + block_index);
+        var rand = new RandomGenerator(variant_seed + block_index * 37);
         
         let correctAnswers = [];
         let incorrectAnswers = [];
