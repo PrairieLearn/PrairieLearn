@@ -15,8 +15,8 @@ module.exports.render = function($, element, block_index, question_data, callbac
             return callback(null, 'No true answer for ' + name);
         }
 
-        const trueAnswer = question_data.true_answer[name];
-        if (!_.isArray(trueAnswer)) return callback(null, 'Error: bad format: ' + trueAnswer);
+        let trueAnswer = question_data.true_answer[name];
+        if (!_.isArray(trueAnswer)) return callback(null, 'Invalid true answer');
         if (trueAnswer.length == 0) return callback(null, 'No answers selected');
         const htmlArray = _.map(trueAnswer, ans => '(' + ans.key + ') ' + ans.html.trim());
         const html = htmlArray.join(', ') + '\n';

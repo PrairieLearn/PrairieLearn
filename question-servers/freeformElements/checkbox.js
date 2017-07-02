@@ -8,6 +8,8 @@ module.exports = {};
 module.exports.prepare = function($, element, variant_seed, block_index, question_data, callback) {
     try {
         const name = elementHelper.getAttrib(element, 'name');
+        const weight = elementHelper.getNumberAttrib(element, 'weight', 1);
+
         let correctAnswers = [];
         let incorrectAnswers = [];
         for (const answer of $(element).find('answer').toArray()) {
@@ -41,6 +43,8 @@ module.exports.prepare = function($, element, variant_seed, block_index, questio
         trueAnswer = _.sortBy(trueAnswer, 'key');
 
         question_data.params[name] = answers;
+        question_data.params._gradeSubmission[name] = 'checkbox';
+        question_data.params._weights[name] = weight;
         question_data.true_answer[name] = trueAnswer;
         callback(null);
     } catch (err) {
@@ -68,5 +72,27 @@ module.exports.render = function($, element, block_index, question_data, callbac
         callback(null, html);
     } catch (err) {
         return callback(err);
+    }
+};
+
+module.exports.gradeSubmission = function(name, question_data, question, course, callback) {
+    try {
+        let trueAnswer = _.get(question_data, ['true_answer', name], null);
+        if (trueAnswer == null) return callback(null, {score: 0});
+
+        const trueKeys = _.map(trueAnswer, 'key');
+        let submittedKeys = _.get(question_data, ['submitted_answer', name], []);
+        if (!_.isArray(submittedKeys)) submittedKeys = [submittedKeys];
+
+        let grading = {};
+        if (_.isEqual(trueKeys, submittedKeys)) {
+            grading.score = 1;
+        } else {
+            grading.score = 0;
+        }
+
+        callback(null, grading);
+    } catch (err) {
+        return callback(null, {score: 0, feedback: 'checkbox gradeSubmission error: ' + err});
     }
 };

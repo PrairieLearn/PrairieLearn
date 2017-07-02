@@ -8,6 +8,7 @@ module.exports = {};
 module.exports.prepare = function($, element, variant_seed, block_index, question_data, callback) {
     try {
         const name = elementHelper.getAttrib(element, 'name');
+        const weight = elementHelper.getNumberAttrib(element, 'weight', 1);
 
         var rand = new RandomGenerator(variant_seed + block_index * 37);
         
@@ -35,7 +36,6 @@ module.exports.prepare = function($, element, variant_seed, block_index, questio
         answers = answers.concat(rand.randNElem(numberCorrect, correctAnswers));
         answers = answers.concat(rand.randNElem(numberIncorrect, incorrectAnswers));
         let perm = rand.shuffle(answers);
-        rand.shuffle(answers);
         answers = _.map(answers, (value, index) => {
             return {key: String.fromCharCode('a'.charCodeAt() + index), html: value};
         });
@@ -47,12 +47,14 @@ module.exports.prepare = function($, element, variant_seed, block_index, questio
 
         if (_.has(question_data.params, name)) return callback(new Error('Duplicate use of name for params: "' + name + '"'));
         question_data.params[name] = answers;
+        question_data.params._gradeSubmission[name] = 'multipleChoice';
+        question_data.params._weights[name] = weight;
         if (_.has(question_data.true_answer, name)) return callback(new Error('Duplicate use of name for true_answer: "' + name + '"'));
         question_data.true_answer[name] = trueAnswer;
 
         callback(null);
     } catch (err) {
-        callback(new Error('multipleChoice prepare error: ' + err));
+        return callback(new Error('multipleChoice prepare error: ' + err));
     }
 };
 
@@ -61,7 +63,7 @@ module.exports.render = function($, element, block_index, question_data, callbac
         if (!element.attribs.name) return callback(new Error('"name" not specified for multipleChoice'));
         const name = element.attribs.name;
 
-        if (!question_data.params[name]) return callback(new Error('unable to find params for ' + name));
+        if (!question_data.params[name]) return callback(null, 'No params for ' + name);
         const answers = question_data.params[name];
         
         var html = '';
@@ -77,6 +79,25 @@ module.exports.render = function($, element, block_index, question_data, callbac
 
         callback(null, html);
     } catch (err) {
-        callback(new Error('multipleChoice render error: ' + err));
+        return callback(null, 'multipleChoice render error: ' + err);
+    }
+};
+
+module.exports.gradeSubmission = function(name, question_data, question, course, callback) {
+    try {
+        const submittedKey = _.get(question_data, ['submitted_answer', name], null);
+        const trueKey = _.get(question_data, ['true_answer', name, 'key'], null);
+        if (submittedKey == null || trueKey == null) return callback(null, {score: 0});
+
+        let grading = {};
+        if (trueKey == submittedKey) {
+            grading.score = 1;
+        } else {
+            grading.score = 0;
+        }
+
+        callback(null, grading);
+    } catch (err) {
+        return callback(null, 'multipleChoice gradeSubmission error: ' + err);
     }
 };

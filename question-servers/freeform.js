@@ -182,6 +182,8 @@ module.exports = {
             var question_data = result.question_data;
             _.defaults(question_data.options, course.options, question.options);
             question_data.params = question_data.params || {};
+            question_data.params._gradeSubmission = question_data.params._gradeSubmission || {};
+            question_data.params._weights = question_data.params._weights || {};
             question_data.true_answer = question_data.true_answer || {};
             this.execTemplate('question.html', question_data, question, course, (err, question_data, html, $) => {
                 if (ERR(err, callback)) return;
@@ -211,10 +213,43 @@ module.exports = {
     },
 
     gradeSubmission: function(submission, variant, question, course, callback) {
-        callback(null, {
-            score: 0,
-            correct: false,
-            feedback: {},
+        const question_data = {
+            params: variant.params,
+            true_answer: variant.true_answer,
+            options: variant.options,
+            submitted_answer: submission.submitted_answer,
+        };
+        let component_scores = {}, component_feedbacks = {};
+        async.mapValuesSeries(question_data.params._gradeSubmission, (element, name, callback) => {
+            if (!elements.has(element)) return callback(null, {score: 0, feedback: 'Invalid element name: ' + element});
+            elementModule = elements.get(element);
+            elementModule.gradeSubmission(name, question_data, question, course, (err, elementGrading) => {
+                if (ERR(err, callback)) return;
+                callback(null, elementGrading);
+            });
+        }, (err, elementGradings) => {
+            if (ERR(err, callback)) return;
+            const feedback = {
+                _component_scores: _.mapValues(elementGradings, 'score'),
+                _component_feedbacks: _.mapValues(elementGradings, 'feedback'),
+            }
+            let total_weight = 0, total_weight_score = 0;
+            _.each(feedback._component_scores, (score, key) => {
+                const weight = _.get(question_data, ['params', '_weights', key], 1);
+                total_weight += weight;
+                total_weight_score += weight * score;
+            });
+            const score = total_weight_score / (total_weight == 0 ? 1 : total_weight);
+            const correct = (score >= 1);
+            const grading = {score, feedback, correct};
+
+            // FIXME: compute tentative score/feedback from components
+            // FIXME: call server.gradeSubmission()
+
+            // FIXME: rationalize block/element/component
+            // FIXME: rationalize element attrib/name verus name/type
+        
+            callback(null, grading);
         });
     },
 };

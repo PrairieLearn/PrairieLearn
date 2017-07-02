@@ -11,16 +11,13 @@ module.exports.render = function($, element, block_index, question_data, callbac
     try {
         const name = elementHelper.getAttrib(element, 'name');
 
-        if (!question_data.params[name]) return callback(null, 'No params for ' + name);
-        const params = question_data.params[name];
+        const params = _.get(question_data, ['params', name], null);
+        if (params == null) return callback(null, 'No params for ' + name);
 
-        if (!question_data.true_answer[name]) {
-            return callback(null, 'No true answer for ' + name);
-        }
+        const trueAnswer = _.get(question_data, ['true_answer', name], null);
+        if (trueAnswer == null) return callback(null, 'No true answer for ' + name);
 
-        const trueAnswer = question_data.true_answer[name];
-
-        callback(null, trueAnswer);
+        callback(null, String(trueAnswer));
     } catch (err) {
         return callback(null, 'inputNumberTrueAnswer render error: ' + err);
     }

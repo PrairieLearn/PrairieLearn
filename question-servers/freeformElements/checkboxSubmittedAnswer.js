@@ -18,8 +18,8 @@ module.exports.render = function($, element, block_index, question_data, callbac
             return callback(null, 'No answers selected');
         }
 
-        const submittedKeys = question_data.submitted_answer[name];
-        if (!_.isArray(submittedKeys)) return callback(null, 'Error: bad format: ' + submittedKeys);
+        let submittedKeys = question_data.submitted_answer[name];
+        if (!_.isArray(submittedKeys)) submittedKeys = [submittedKeys];
         if (submittedKeys.length == 0) return callback(null, 'No answers selected');
         let htmlArray = [];
         for (let key of submittedKeys) {
