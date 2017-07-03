@@ -30,6 +30,7 @@
         "mongodb": "2.2.x",
         "numeric": "1.2.x",
         "pg": "6.1.x",
+        "request": "2.81.x",
         "requirejs": "2.3.x",
         "s3-upload-stream": "1.0.x",
         "serve-favicon": "2.3.x",

@@ -6,12 +6,13 @@ var config = require('../lib/config');
 
 var autoFinishExams = require('./autoFinishExams');
 var errorAbandonedJobs = require('./errorAbandonedJobs');
+var sendExternalGraderStats = require('./sendExternalGraderStats');
 
 module.exports = {
     init: function(callback) {
         var that = module.exports;
         logger.verbose('initializing cron', {cronIntervalMS: config.cronIntervalMS});
-        setTimeout(that.runJobs, config.cronIntervalMS);
+        that.runJobs();
         callback(null);
     },
 
@@ -21,9 +22,16 @@ module.exports = {
         async.eachSeries([
             ['autoFinishExams', autoFinishExams],
             ['errorAbandonedJobs', errorAbandonedJobs],
+            ['sendExternalGraderStats', sendExternalGraderStats]
         ], function(item, callback) {
             var title = item[0];
             var cronModule = item[1];
+            if (typeof cronModule.shouldRun === 'function') {
+                if (!cronModule.shouldRun(Date.now(), config.cronIntervalMS)) {
+                    return callback(null);
+                }
+            }
+
             var startTime = new Date();
             cronModule.run(function(err) {
                 var endTime = new Date();
