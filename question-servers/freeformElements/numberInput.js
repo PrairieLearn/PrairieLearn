@@ -1,8 +1,6 @@
 const _ = require('lodash');
 const elementHelper = require('../../lib/element-helper');
 
-const RandomGenerator = require('../../lib/random-generator');
-
 module.exports = {};
 
 module.exports.prepare = function($, element, variant_seed, block_index, question_data, callback) {
@@ -32,7 +30,7 @@ module.exports.render = function($, element, block_index, question_data, callbac
     try {
         const name = elementHelper.getAttrib(element, 'name');
         if (!question_data.params[name]) throw new Error('unable to find params for ' + name);
-        const params = question_data.params[name];
+        //const params = question_data.params[name];
 
         const submittedAnsString = _.get(question_data, ['submitted_answer', name], null);
 
@@ -48,33 +46,28 @@ module.exports.render = function($, element, block_index, question_data, callbac
 };
 
 module.exports.gradeSubmission = function(name, question_data, question, course, callback) {
-    try {
-        const trueAns = _.get(question_data, ['true_answer', name], null);
-        if (trueAns == null) return callback(null, {score: 0});
+    const trueAns = _.get(question_data, ['true_answer', name], null);
+    if (trueAns == null) return callback(null, {score: 0});
 
-        const submittedAnsString = _.get(question_data, ['submitted_answer', name], null);
-        if (submittedAnsString == null) return callback(null, {score: 0});
-        const submittedAns = Number.parseFloat(submittedAnsString);
-        if (!Number.isFinite(submittedAns)) return callback(null, {score: 0, feedback: 'not a number'});
+    const submittedAnsString = _.get(question_data, ['submitted_answer', name], null);
+    if (submittedAnsString == null) return callback(null, {score: 0});
+    const submittedAns = Number.parseFloat(submittedAnsString);
+    if (!Number.isFinite(submittedAns)) return callback(null, {score: 0, feedback: 'not a number'});
 
-        const sig_figs = _.get(question_data, ['params', name, 'sig_figs'], null);
-        const dec_places = _.get(question_data, ['params', name, 'dec_places'], null);
+    const sig_figs = _.get(question_data, ['params', name, 'sig_figs'], null);
+    const dec_places = _.get(question_data, ['params', name, 'dec_places'], null);
 
-        let grading = {score: 0};
-        let absTol;
-        if (sig_figs != null) {
-            absTol = 1.5 * Math.pow(10, Math.floor(Math.log10(trueAns)) - sig_figs + 1);
-        } else if (dec_places != null) {
-            absTol = 1.5 * Math.pow(10, -dec_places);
-        } else {
-            return callback(null, {score: 0, feedback: 'invalid precision specification'});
-        }
-        if (Math.abs(trueAns - submittedAns) < absTol) {
-            grading.score = 1;
-        }
-
-        callback(null, grading);
-    } catch (err) {
-        return callback(null, 'multipleChoice gradeSubmission error: ' + err);
+    let absTol;
+    if (sig_figs != null) {
+        absTol = 1.5 * Math.pow(10, Math.floor(Math.log10(trueAns)) - sig_figs + 1);
+    } else if (dec_places != null) {
+        absTol = 1.5 * Math.pow(10, -dec_places);
+    } else {
+        return callback(null, {score: 0, feedback: 'invalid precision specification'});
     }
+    let grading = {score: 0};
+    if (Math.abs(trueAns - submittedAns) < absTol) {
+        grading.score = 1;
+    }
+    return callback(null, grading);
 };

@@ -16,6 +16,7 @@
   <answer>               E-F</answer>
   <answer>               F-G</answer>
 </checkbox>
+<componentScore name="vpos" />
 
 <hr>
 <p>
@@ -26,6 +27,7 @@
   <answer correct="true">negative</answer>
   <answer correct="false">zero</answer>
 </multipleChoice>
+<componentScore name="acc" />
 
 <hr>
 <p>
@@ -36,12 +38,16 @@
   <answer correct="false">slowing down</answer>
   <answer correct="false">neither speeding up nor slowing down</answer>
 </multipleChoice>
+<componentScore name="speed_change" />
 
 <hr>
 <p>
   4. What is the average velocity of the object during the time interval from $t = 0\rm\ s$ to $t = 5\rm\ s$?
 </p>
-$v_{\rm avg} = $ <numberInput name="v_avg" true_answer="0.8" sig_figs="2" weight="1"/> $\rm\ m/s$
+<p>
+  $v_{\rm avg} = $ <numberInput name="v_avg" true_answer="0.8" sig_figs="2" weight="1"/> $\rm\ m/s$
+</p>
+<componentScore name="v_avg" />
 
 <hr>
 <p>
@@ -52,3 +58,4 @@ $v_{\rm avg} = $ <numberInput name="v_avg" true_answer="0.8" sig_figs="2" weight
   <answer correct="false">$v(B) = v(C)$</answer>
   <answer correct="false">$v(B) < v(C)$</answer>
 </multipleChoice>
+<componentScore name="v_comp" />

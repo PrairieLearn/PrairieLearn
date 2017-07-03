@@ -80,7 +80,7 @@ module.exports.render = function($, element, block_index, question_data, callbac
                 + ((submittedKey == ans.key) ? ' checked ' : '')
                 + ' />\n'
                 + '    (' + ans.key + ') ' + ans.html.trim() + '\n'
-                + '  </label>\n'
+                + '  </label>\n';
             if (!inline) html += '</div>\n';
         }
         if (inline) html += '</p>\n';
@@ -92,20 +92,18 @@ module.exports.render = function($, element, block_index, question_data, callbac
 };
 
 module.exports.gradeSubmission = function(name, question_data, question, course, callback) {
-    try {
-        const submittedKey = _.get(question_data, ['submitted_answer', name], null);
-        const trueKey = _.get(question_data, ['true_answer', name, 'key'], null);
-        if (submittedKey == null || trueKey == null) return callback(null, {score: 0});
-
-        let grading = {};
-        if (trueKey == submittedKey) {
-            grading.score = 1;
-        } else {
-            grading.score = 0;
-        }
-
-        callback(null, grading);
-    } catch (err) {
-        return callback(null, 'multipleChoice gradeSubmission error: ' + err);
+    const submittedKey = _.get(question_data, ['submitted_answer', name], null);
+    const trueKey = _.get(question_data, ['true_answer', name, 'key'], null);
+    if (submittedKey == null || trueKey == null) {
+        return callback(null, {score: 0});
     }
+
+    let grading = {};
+    if (trueKey == submittedKey) {
+        grading.score = 1;
+    } else {
+        grading.score = 0;
+    }
+
+    callback(null, grading);
 };

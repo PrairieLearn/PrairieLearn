@@ -13,14 +13,13 @@ module.exports.render = function($, element, block_index, question_data, callbac
 
         const score = _.get(question_data, ['feedback', '_component_scores', name], null);
         if (score == null) {
-            return callback(null, '<span class="label label-default">No score</span>');
+            return callback(null, '');
         }
         if (!Number.isFinite(score)) {
             return callback(null, '<span class="label label-danger">ERROR: invalid score: ' + score + '</span>');
         }
         const feedback = _.get(question_data, ['feedback', '_component_feedbacks', name], null);
 
-        let labelType;
         if (score >= 1) {
             return callback(null,
                             '<span class="label label-success">'

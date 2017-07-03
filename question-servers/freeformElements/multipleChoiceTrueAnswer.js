@@ -1,4 +1,3 @@
-const _ = require('lodash');
 const elementHelper = require('../../lib/element-helper');
 
 module.exports = {};

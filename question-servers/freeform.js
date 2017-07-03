@@ -220,10 +220,11 @@ module.exports = {
             options: variant.options,
             submitted_answer: submission.submitted_answer,
         };
-        let component_scores = {}, component_feedbacks = {};
         async.mapValuesSeries(question_data.params._gradeSubmission, (element, name, callback) => {
-            if (!elements.has(element)) return callback(null, {score: 0, feedback: 'Invalid element name: ' + element});
-            elementModule = elements.get(element);
+            if (!elements.has(element)) {
+                return callback(null, {score: 0, feedback: 'Invalid element name: ' + element});
+            }
+            const elementModule = elements.get(element);
             elementModule.gradeSubmission(name, question_data, question, course, (err, elementGrading) => {
                 if (ERR(err, callback)) return;
                 callback(null, elementGrading);
@@ -233,7 +234,7 @@ module.exports = {
             const feedback = {
                 _component_scores: _.mapValues(elementGradings, 'score'),
                 _component_feedbacks: _.mapValues(elementGradings, 'feedback'),
-            }
+            };
             let total_weight = 0, total_weight_score = 0;
             _.each(feedback._component_scores, (score, key) => {
                 const weight = _.get(question_data, ['params', '_weights', key], 1);

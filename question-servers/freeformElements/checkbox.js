@@ -86,23 +86,18 @@ module.exports.render = function($, element, block_index, question_data, callbac
 };
 
 module.exports.gradeSubmission = function(name, question_data, question, course, callback) {
-    try {
-        let trueAnswer = _.get(question_data, ['true_answer', name], null);
-        if (trueAnswer == null) return callback(null, {score: 0});
+    let trueAnswer = _.get(question_data, ['true_answer', name], null);
+    if (trueAnswer == null) return callback(null, {score: 0});
 
-        const trueKeys = _.map(trueAnswer, 'key');
-        let submittedKeys = _.get(question_data, ['submitted_answer', name], []);
-        if (!_.isArray(submittedKeys)) submittedKeys = [submittedKeys];
+    const trueKeys = _.map(trueAnswer, 'key');
+    let submittedKeys = _.get(question_data, ['submitted_answer', name], []);
+    if (!_.isArray(submittedKeys)) submittedKeys = [submittedKeys];
 
-        let grading = {};
-        if (_.isEqual(trueKeys, submittedKeys)) {
-            grading.score = 1;
-        } else {
-            grading.score = 0;
-        }
-
-        callback(null, grading);
-    } catch (err) {
-        return callback(null, {score: 0, feedback: 'checkbox gradeSubmission error: ' + err});
+    let grading = {};
+    if (_.isEqual(trueKeys, submittedKeys)) {
+        grading.score = 1;
+    } else {
+        grading.score = 0;
     }
+    return callback(null, grading);
 };
