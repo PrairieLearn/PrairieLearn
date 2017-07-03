@@ -31,7 +31,7 @@
           </tbody>
         </table>
       </div>
-      
+
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
@@ -151,6 +151,45 @@
             <% }); %>
           </tbody>
         </table>
+      </div>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- External Grading ------------------------------------------------------------>
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">External grading</h3>
+        </div>
+        <div class="panel-body">
+          <% if (external_grading_stats_all.total > 0) { %>
+          <div>
+            <ul class="nav nav-pills" role="tablist" style="margin-bottom: 15px;">
+              <li role="presentation" class="active"><a href="#external-day" role="tab" data-toggle="tab">Past day</a></li>
+              <li role="presentation"><a href="#external-week" role="tab" data-toggle="tab">Past week</a></li>
+              <li role="presentation"><a href="#external-all" role="tab" data-toggle="tab">All time</a></li>
+            </ul>
+            <div class="tab-content">
+              <div role="tabpanel" class="tab-pane active" id="external-day">
+                <%- include('../partials/externalGradingOverview', {stats: external_grading_stats_day}); %>
+              </div>
+              <div role="tabpanel" class="tab-pane" id="external-week">
+                <%- include('../partials/externalGradingOverview', {stats: external_grading_stats_week}); %>
+              </div>
+              <div role="tabpanel" class="tab-pane" id="external-all">
+                <%- include('../partials/externalGradingOverview', {stats: external_grading_stats_all}); %>
+              </div>
+            </div>
+          </div>
+          <a class="btn btn-primary pull-right" onclick="alert('External grading dashboard coming soon!')">
+            External grading dashboard <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+          </a>
+          <% } else { %>
+            It looks like your course doesn't have any externally graded questions yet.
+            Why not <a href="http://prairielearn.readthedocs.io/en/latest/externalGrading/">add one now</a>?
+          <% } %>
+        </div>
       </div>
 
       <!-------------------------------------------------------------------------------->
