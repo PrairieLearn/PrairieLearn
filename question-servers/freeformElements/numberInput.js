@@ -34,7 +34,13 @@ module.exports.render = function($, element, block_index, question_data, callbac
         if (!question_data.params[name]) throw new Error('unable to find params for ' + name);
         const params = question_data.params[name];
 
-        let html = '<input name="' + name + '" step="">\n';
+        const submittedAnsString = _.get(question_data, ['submitted_answer', name], null);
+
+        let html
+            = '<input name="' + name + '"'
+            + (question_data.editable ? '' : ' disabled')
+            + (submittedAnsString == null ? '' : (' value="' + submittedAnsString + '"'))
+            + ' >\n';
         callback(null, html);
     } catch (err) {
         return callback(err);

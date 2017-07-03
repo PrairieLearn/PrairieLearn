@@ -57,7 +57,7 @@ var render = function(req, res, next, variant, submission, submissionHtml, answe
     var params = [res.locals.question.id, res.locals.course_instance.id];
     var questionModule;
 
-
+    res.locals.allowAnswerEditing = true;
 
     async.series([
         (callback) => {

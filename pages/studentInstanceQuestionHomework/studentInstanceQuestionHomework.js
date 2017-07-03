@@ -80,6 +80,7 @@ function processGet(req, res, variant_id, callback) {
     res.locals.showFeedback = false;
     res.locals.showTrueAnswer = false;
     res.locals.showGradingRequested = false;
+    res.locals.allowAnswerEditing = true;
     async.series([
         function(callback) {
             if (variant_id) {
@@ -117,6 +118,7 @@ function processGet(req, res, variant_id, callback) {
                     res.locals.showSubmitButton = false;
                     res.locals.showNewVariantButton = true;
                     res.locals.showTrueAnswer = true;
+                    res.locals.allowAnswerEditing = false;
                 }
                 callback(null);
             });
@@ -126,6 +128,7 @@ function processGet(req, res, variant_id, callback) {
                 res.locals.showSubmitButton = true;
                 res.locals.showNewVariantButton = false;
                 res.locals.showTrueAnswer = false;
+                res.locals.allowAnswerEditing = true;
             }
             callback(null);
         },

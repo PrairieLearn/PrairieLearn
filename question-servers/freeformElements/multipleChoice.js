@@ -60,22 +60,30 @@ module.exports.prepare = function($, element, variant_seed, block_index, questio
 
 module.exports.render = function($, element, block_index, question_data, callback) {
     try {
-        if (!element.attribs.name) return callback(new Error('"name" not specified for multipleChoice'));
-        const name = element.attribs.name;
+        const name = elementHelper.getAttrib(element, 'name');
+        const inline = elementHelper.getBooleanAttrib(element, 'inline', false);
 
         if (!question_data.params[name]) return callback(null, 'No params for ' + name);
         const answers = question_data.params[name];
         
+        const submittedKey = _.get(question_data, ['submitted_answer', name], null);
+
         var html = '';
+        if (inline) html += '<p>\n';
         for (const ans of answers) {
+            if (!inline) html += '<div class="radio">\n';
             html
-                += '<div class="radio">\n'
-                + '  <label>\n'
-                + '    <input type="radio" name="' + name + '" value="' + ans.key + '" />\n'
+                += '  <label' + (inline ? ' class="radio-inline"' : '') + '>\n'
+                + '    <input type="radio"'
+                + ' name="' + name + '" value="' + ans.key + '"'
+                + (question_data.editable ? '' : ' disabled')
+                + ((submittedKey == ans.key) ? ' checked ' : '')
+                + ' />\n'
                 + '    (' + ans.key + ') ' + ans.html.trim() + '\n'
                 + '  </label>\n'
-                + '</div>\n';
+            if (!inline) html += '</div>\n';
         }
+        if (inline) html += '</p>\n';
 
         callback(null, html);
     } catch (err) {

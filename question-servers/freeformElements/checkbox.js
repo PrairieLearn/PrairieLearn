@@ -55,19 +55,29 @@ module.exports.prepare = function($, element, variant_seed, block_index, questio
 module.exports.render = function($, element, block_index, question_data, callback) {
     try {
         const name = elementHelper.getAttrib(element, 'name');
+        const inline = elementHelper.getBooleanAttrib(element, 'inline', false);
         if (!question_data.params[name]) throw new Error('unable to find params for ' + name);
         const answers = question_data.params[name];
 
+        let submittedKeys = _.get(question_data, ['submitted_answer', name], []);
+        if (!_.isArray(submittedKeys)) submittedKeys = [submittedKeys];
+
         let html = '';
+        if (inline) html += '<p>\n';
         for (const ans of answers) {
+            if (!inline) html += '<div class="checkbox">\n';
             html
-                += '<div class="checkbox">\n'
-                + '  <label>\n'
-                + '    <input type="checkbox" name="' + name + '" value="' + ans.key + '" />\n'
+                += '  <label' + (inline ? ' class="checkbox-inline"' : '') + '>\n'
+                + '    <input type="checkbox"'
+                + ' name="' + name + '" value="' + ans.key + '"'
+                + (question_data.editable ? '' : ' disabled')
+                + (submittedKeys.includes(ans.key) ? ' checked ' : '')
+                + ' />\n'
                 + '    (' + ans.key + ') ' + ans.html.trim() + '\n'
-                + '  </label>\n'
-                + '</div>\n';
+                + '  </label>\n';
+            if (!inline) html += '</div>\n';
         }
+        if (inline) html += '</p>\n';
 
         callback(null, html);
     } catch (err) {

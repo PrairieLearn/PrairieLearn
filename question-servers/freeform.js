@@ -22,6 +22,7 @@ module.exports = {
             submitted_answer: submission ? submission.submitted_answer : null,
             feedback: submission ? submission.feedback : null,
             clientFilesQuestion: locals.paths.clientFilesQuestion,
+            editable: locals.allowAnswerEditing,
         };
         this.execTemplate(filename, question_data, question, course, (err, question_data, html, $) => {
             if (ERR(err, callback)) return;
