@@ -33,6 +33,8 @@ var handle = function(req, res, next) {
                 submission.graded_at = 'Graded';
                 // localscripts/question.js expects there to be an array of submission objects
                 res.locals.submissions = [submission];
+                res.locals.paths = {};
+                res.locals.paths.clientFilesQuestion = res.locals.urlPrefix + '/question/' + res.locals.question.id + '/clientFilesQuestion';
                 questionServers.getModule(res.locals.question.type, function(err, questionModule) {
                     if (ERR(err, next)) return;
                     questionModule.renderSubmission(variant, res.locals.question, submission, res.locals.course, res.locals, function(err, submissionHtml) {
@@ -57,7 +59,7 @@ var render = function(req, res, next, variant, submission, submissionHtml, answe
     var params = [res.locals.question.id, res.locals.course_instance.id];
     var questionModule;
 
-
+    res.locals.allowAnswerEditing = true;
 
     async.series([
         (callback) => {

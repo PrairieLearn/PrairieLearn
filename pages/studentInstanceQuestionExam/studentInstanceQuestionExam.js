@@ -124,9 +124,11 @@ router.get('/', function(req, res, next) {
             res.locals.showSaveButton = false;
             res.locals.showFeedback = true;
             res.locals.showTrueAnswer = false;
+            res.locals.allowAnswerEditing = false;
             if (res.locals.assessment_instance.open) {
                 if (res.locals.instance_question.open) {
                     res.locals.showSaveButton = true;
+                    res.locals.allowAnswerEditing = true;
                 }
                 callback(null);
             } else {

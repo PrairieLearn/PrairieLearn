@@ -23,6 +23,9 @@
             <div hidden="true" class="question-data"><%= questionJsonBase64 %></div>
 
             <div class="panel panel-primary question-block">
+              <% if (question.type == 'Freeform') { %>
+              <form class="question-form" name="question-form" method="POST">
+              <% } %>
               <div class="panel-heading">
                 <h3 class="panel-title"><%= instance_question_info.question_number %>. <%= question.title %></h3>
               </div>
@@ -31,17 +34,27 @@
               </div>
               <div class="panel-footer">
                 <% if (showSubmitButton) { %>
+                <% if (question.type == 'Freeform') { %>
+                <button class="btn btn-primary freeform-question-submit">Submit</button>
+                <input type="hidden" name="variant_id" value="<%= variant.id %>">
+                <% } else { %>
                 <button class="btn btn-primary question-submit">Submit</button>
                 <form class="question-form" name="question-form" method="POST">
-                  <input type="hidden" name="postAction" value="submitQuestionAnswer">
-                  <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
-                  <input type="hidden" name="postData" class="postData">
+                <% } %>
+                <input type="hidden" name="postAction" value="submitQuestionAnswer">
+                <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+                <% if (question.type != 'Freeform') { %>
+                <input type="hidden" name="postData" class="postData">
                 </form>
+                <% } %>
                 <% } %>
                 <% if (showNewVariantButton) { %>
                 <a href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/" class="btn btn-primary">Try question again</a>
                 <% } %>
               </div>
+              <% if (question.type == 'Freeform') { %>
+              </form>
+              <% } %>
             </div>
 
             <% if (showTrueAnswer) { %>
