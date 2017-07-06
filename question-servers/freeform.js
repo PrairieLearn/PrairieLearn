@@ -7,7 +7,7 @@ var child_process = require('child_process');
 var handlebars = require('handlebars');
 var cheerio = require('cheerio');
 
-var elements = require('./freeformElements');
+var elements = require('./elements');
 
 module.exports = {
     renderExtraHeaders: function(question, course, locals, callback) {
@@ -232,11 +232,11 @@ module.exports = {
         }, (err, elementGradings) => {
             if (ERR(err, callback)) return;
             const feedback = {
-                _component_scores: _.mapValues(elementGradings, 'score'),
-                _component_feedbacks: _.mapValues(elementGradings, 'feedback'),
+                _element_scores: _.mapValues(elementGradings, 'score'),
+                _element_feedbacks: _.mapValues(elementGradings, 'feedback'),
             };
             let total_weight = 0, total_weight_score = 0;
-            _.each(feedback._component_scores, (score, key) => {
+            _.each(feedback._element_scores, (score, key) => {
                 const weight = _.get(question_data, ['params', '_weights', key], 1);
                 total_weight += weight;
                 total_weight_score += weight * score;
@@ -245,10 +245,9 @@ module.exports = {
             const correct = (score >= 1);
             const grading = {score, feedback, correct};
 
-            // FIXME: compute tentative score/feedback from components
+            // FIXME: compute tentative score/feedback from elements
             // FIXME: call server.gradeSubmission()
 
-            // FIXME: rationalize block/element/component
             // FIXME: rationalize element attrib/name verus name/type
         
             callback(null, grading);

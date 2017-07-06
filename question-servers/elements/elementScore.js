@@ -3,22 +3,22 @@ const elementHelper = require('../../lib/element-helper');
 
 module.exports = {};
 
-module.exports.prepare = function($, element, variant_seed, block_index, question_data, callback) {
+module.exports.prepare = function($, element, variant_seed, element_index, question_data, callback) {
     callback(null);
 };
 
-module.exports.render = function($, element, block_index, question_data, callback) {
+module.exports.render = function($, element, element_index, question_data, callback) {
     try {
         const name = elementHelper.getAttrib(element, 'name');
 
-        const score = _.get(question_data, ['feedback', '_component_scores', name], null);
+        const score = _.get(question_data, ['feedback', '_element_scores', name], null);
         if (score == null) {
             return callback(null, '');
         }
         if (!Number.isFinite(score)) {
             return callback(null, '<span class="label label-danger">ERROR: invalid score: ' + score + '</span>');
         }
-        const feedback = _.get(question_data, ['feedback', '_component_feedbacks', name], null);
+        const feedback = _.get(question_data, ['feedback', '_element_feedbacks', name], null);
 
         if (score >= 1) {
             return callback(null,
@@ -43,6 +43,6 @@ module.exports.render = function($, element, block_index, question_data, callbac
                             + '</span>');
         }
     } catch (err) {
-        callback(new Error('componentScore render error: ' + err));
+        callback(new Error('elementScore render error: ' + err));
     }
 };

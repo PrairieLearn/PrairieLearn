@@ -3,7 +3,7 @@ const elementHelper = require('../../lib/element-helper');
 
 module.exports = {};
 
-module.exports.prepare = function($, element, variant_seed, block_index, question_data, callback) {
+module.exports.prepare = function($, element, variant_seed, element_index, question_data, callback) {
     try {
         const name = elementHelper.getAttrib(element, 'name');
         const weight = elementHelper.getNumberAttrib(element, 'weight', 1);
@@ -26,7 +26,7 @@ module.exports.prepare = function($, element, variant_seed, block_index, questio
     }
 };
 
-module.exports.render = function($, element, block_index, question_data, callback) {
+module.exports.render = function($, element, element_index, question_data, callback) {
     try {
         const name = elementHelper.getAttrib(element, 'name');
         if (!question_data.params[name]) throw new Error('unable to find params for ' + name);

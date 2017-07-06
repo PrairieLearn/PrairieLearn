@@ -3,11 +3,11 @@ const elementHelper = require('../../lib/element-helper');
 
 module.exports = {};
 
-module.exports.prepare = function($, element, variant_seed, block_index, question_data, callback) {
+module.exports.prepare = function($, element, variant_seed, element_index, question_data, callback) {
     callback(null);
 };
 
-module.exports.render = function($, element, block_index, question_data, callback) {
+module.exports.render = function($, element, element_index, question_data, callback) {
     try {
         const name = elementHelper.getAttrib(element, 'name');
 
