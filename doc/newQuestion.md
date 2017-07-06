@@ -80,35 +80,14 @@ Grades the `submisison.submitted_answer` to fill in the `submission.score` and o
 The question templates are HTML files with placeholders for randomized parameters. Each template is rendered on the server and then combined into a webpage that is shown to the student.
 
 Name | Guaranteed objects | Optional objects | Required | Purpose
---- | --- | ---
+--- | --- | --- | --- | ---
 `question.html` | `options`, `params` | `submitted_answer`, `feedback` | Yes | The actual question text presented to the student.
 `submission.html` | `options`, `params`, `submitted_answer` | `feedback` | No | The rendering of a student's submitted answer.
 `answer.html` | `options`, `params`, `true_answer` | | No | The true answer to the question.
 
-As an alternative to the three separate files above, a single file called **`package.html`** can contain all three templates, like in the following example:
-
-```html
-{{#question}}
-<p>Given vectors $\vec{x} = {{vector params.x}}\rm\ m$ and $\vec{y} = {{vector params.y}}\rm\ m$, define
-\[
-\vec{z} = \vec{x} + \vec{y}.
-\]
-<p> What is $\vec{z}$?
-<p> $z = $ {{input_vector submitted_answer.z dim=1}} $\rm\ m$
-{{/question}}
-
-{{#submission}}
-$z = {{vector submitted_answer.z}}\rm\ m$
-{{/submission}}
-
-{{#answer}}
-$z = {{vector true_answer.z}}\rm\ m$
-{{/answer}}
-```
-
 ## Subquestions
 
-FIXME
+No support at present for subquestions. This will be added in a future version.
 
 ## Basic question flow
 
