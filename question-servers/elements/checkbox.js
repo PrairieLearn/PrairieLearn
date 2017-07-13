@@ -43,7 +43,7 @@ module.exports.prepare = function($, element, variant_seed, element_index, quest
         trueAnswer = _.sortBy(trueAnswer, 'key');
 
         question_data.params[name] = answers;
-        question_data.params._gradeSubmission[name] = 'checkbox';
+        question_data.params._grade[name] = 'checkbox';
         question_data.params._weights[name] = weight;
         question_data.true_answer[name] = trueAnswer;
         callback(null);
@@ -85,7 +85,7 @@ module.exports.render = function($, element, element_index, question_data, callb
     }
 };
 
-module.exports.gradeSubmission = function(name, question_data, question, course, callback) {
+module.exports.grade = function(name, question_data, question, course, callback) {
     let trueAnswer = _.get(question_data, ['true_answer', name], null);
     if (trueAnswer == null) return callback(null, {score: 0});
 

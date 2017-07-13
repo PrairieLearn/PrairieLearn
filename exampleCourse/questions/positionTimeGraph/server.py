@@ -1,2 +1,2 @@
-def get_data():
+def get_data(*args):
     return {}

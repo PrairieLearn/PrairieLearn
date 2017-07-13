@@ -17,7 +17,7 @@ module.exports.prepare = function($, element, variant_seed, element_index, quest
         if (sig_figs == null && dec_places == null) throw new Error('must specify either sig_figs or dec_places');
 
         question_data.params[name] = {sig_figs, dec_places, required};
-        question_data.params._gradeSubmission[name] = 'numberInput';
+        question_data.params._grade[name] = 'numberInput';
         question_data.params._weights[name] = weight;
         question_data.true_answer[name] = true_answer;
         callback(null);
@@ -45,7 +45,7 @@ module.exports.render = function($, element, element_index, question_data, callb
     }
 };
 
-module.exports.gradeSubmission = function(name, question_data, question, course, callback) {
+module.exports.grade = function(name, question_data, question, course, callback) {
     const trueAns = _.get(question_data, ['true_answer', name], null);
     if (trueAns == null) return callback(null, {score: 0});
 

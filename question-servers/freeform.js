@@ -10,6 +10,55 @@ var cheerio = require('cheerio');
 var elements = require('./elements');
 
 module.exports = {
+    elementFunction: function(fcn, elementName, jsArgs, pythonArgs, callback) {
+        if (!elements.has(elementName)) {
+            return callback(null, 'ERROR: invalid element name: ' + elementName);
+        }
+        const elementModule = elements.get(elementName);
+        if (_.isString(elementModule)) {
+            // python module
+            const pythonFile = elementModule.replace(/\.[pP][yY]$/, '');
+            const pythonCwd = path.join(__dirname, 'elements');
+            this.execPython(pythonFile, fcn, pythonArgs, pythonCwd, (err, ret) => {
+                if (ERR(err, callback)) return;
+                callback(null, ret);
+            });
+        } else {
+            // JS module
+            elementModule[fcn](...jsArgs, (err, ret) => {
+                if (ERR(err, callback)) return;
+                callback(null, ret);
+            });
+        }
+    },
+
+    elementPrepare: function(elementName, $, element, variant_seed, index, question_data, callback) {
+        const jsArgs = [$, element, variant_seed, index, question_data];
+        const pythonArgs = [$(element).html(), index, variant_seed, question_data];
+        this.elementFunction('prepare', elementName, jsArgs, pythonArgs, (err, html) => {
+            if (ERR(err, callback)) return;
+            callback(null, html);
+        });
+    },
+
+    elementRender: function(elementName, $, element, index, question_data, callback) {
+        const jsArgs = [$, element, index, question_data];
+        const pythonArgs = [$(element).html(), index, question_data];
+        this.elementFunction('render', elementName, jsArgs, pythonArgs, (err, html) => {
+            if (ERR(err, callback)) return;
+            callback(null, html);
+        });
+    },
+
+    elementGrade: function(elementName, name, question_data, question, course, callback) {
+        const jsArgs = [name, question_data, question, course];
+        const pythonArgs = [name, question_data, question, course];
+        this.elementFunction('grade', elementName, jsArgs, pythonArgs, (err, html) => {
+            if (ERR(err, callback)) return;
+            callback(null, html);
+        });
+    },
+
     renderExtraHeaders: function(question, course, locals, callback) {
         callback(null, '');
     },
@@ -28,9 +77,9 @@ module.exports = {
             if (ERR(err, callback)) return;
 
             let index = 0;
-            async.eachSeries(elements, ([elementName, elementModule], callback) => {
+            async.eachSeries(elements.keys(), (elementName, callback) => {
                 async.eachSeries($(elementName).toArray(), (element, callback) => {
-                    elementModule.render($, element, index, question_data, (err, elementHtml) => {
+                    this.elementRender(elementName, $, element, index, question_data, (err, elementHtml) => {
                         if (ERR(err, callback)) return;
                         $(element).replaceWith(elementHtml);
                         index++;
@@ -68,69 +117,108 @@ module.exports = {
         });
     },
 
-    execPythonServer: function(pythonCmd, pythonArgs, question, course, callback) {
-        var question_dir = path.join(course.path, 'questions', question.directory);
-
-        var callData = {pythonCmd, pythonArgs, question, course};
-
-        var cmdInput = {
-            cmd: pythonCmd,
-            args: pythonArgs,
-            question_dir: question_dir,
-        };
+    execPython: function(pythonFile, pythonFunction, pythonArgs, pythonCwd, callback) {
+        var cmdInput = {file: pythonFile, fcn: pythonFunction, args: pythonArgs, cwd: pythonCwd};
         try {
             var input = JSON.stringify(cmdInput);
         } catch (e) {
             var err = new Error('Error encoding question JSON');
-            err.data = {endcodeMsg: e.message, callData};
+            err.data = {endcodeMsg: e.message, cmdInput};
             return ERR(err, callback);
         }
         var cmdOptions = {
-            cwd: question_dir,
+            cwd: pythonCwd,
             input: input,
             timeout: 10000, // milliseconds
             killSignal: 'SIGKILL',
+            stdio: ['pipe', 'pipe', 'pipe', 'pipe'], // stdin, stdout, stderr, and an extra one for data
         };
         var cmd = 'python';
         var args = [__dirname + '/python_caller.py'];
         var child = child_process.spawn(cmd, args, cmdOptions);
 
+        child.stderr.setEncoding('utf8');
+        child.stdout.setEncoding('utf8');
+        child.stdio[3].setEncoding('utf8');
+
         var outputStdout = '';
         var outputStderr = '';
+        var outputBoth = '';
+        var outputData = '';
 
         child.stdout.on('data', (data) => {
             outputStdout += data;
+            outputBoth += data;
         });
         
         child.stderr.on('data', (data) => {
             outputStderr += data;
+            outputBoth += data;
         });
-        
+
+        child.stdio[3].on('data', (data) => {
+            outputData += data;
+        });
+
+        var callbackCalled = false;
+
         child.on('close', (code) => {
             let err, output;
             if (code) {
                 err = new Error('Error in question code execution');
-                err.data = {code, callData, outputStdout, outputStderr};
-                return ERR(err, callback);
+                err.data = {code, cmdInput, outputStdout, outputStderr, outputData};
+                if (!callbackCalled) {
+                    callbackCalled = true;
+                    return ERR(err, callback);
+                } else {
+                    // FIXME: silently swallowing the error here
+                    return;
+                }
             }
             try {
-                output = JSON.parse(outputStdout);
+                output = JSON.parse(outputData);
             } catch (e) {
                 err = new Error('Error decoding question JSON');
-                err.data = {decodeMsg: e.message, callData, outputStdout, outputStderr};
-                return ERR(err, callback);
+                err.data = {decodeMsg: e.message, cmdInput, outputStdout, outputStderr, outputData};
+                if (!callbackCalled) {
+                    callbackCalled = true;
+                    return ERR(err, callback);
+                } else {
+                    // FIXME: silently swallowing the error here
+                    return;
+                }
             }
-            callback(null, output);
+            if (!callbackCalled) {
+                callbackCalled = true;
+                callback(null, output);
+            } else {
+                // FIXME: silently swallowing the output here
+                return;
+            }
         });
         
         child.on('error', (error) => {
             let err = new Error('Error executing python question code');
-            err.data = {execMsg: error.message, callData};
-            return ERR(err, callback);
+            err.data = {execMsg: error.message, cmdInput};
+            if (!callbackCalled) {
+                callbackCalled = true;
+                return ERR(err, callback);
+            } else {
+                // FIXME: silently swallowing the error here
+                return;
+            }
         });
 
         child.stdin.write(input);
         child.stdin.end();
+    },
+
+    execPythonServer: function(pythonFunction, pythonArgs, question, course, callback) {
+        var question_dir = path.join(course.path, 'questions', question.directory);
+        this.execPython('server', pythonFunction, pythonArgs, question_dir, (err, output) => {
+            if (ERR(err, callback)) return;
+            callback(null, output);
+        });
     },
 
     makeHandlebars: function() {
@@ -178,21 +266,22 @@ module.exports = {
             options: _.defaults({}, course.options, question.options),
             question_dir: question_dir,
         };
-        this.execPythonServer('get_data', pythonArgs, question, course, (err, result) => {
+        this.execPythonServer('get_data', pythonArgs, question, course, (err, ret_question_data) => {
             if (ERR(err, callback)) return;
-            var question_data = result.question_data;
+            var question_data = ret_question_data;
+            question_data.options = question_data.options || {};
             _.defaults(question_data.options, course.options, question.options);
             question_data.params = question_data.params || {};
-            question_data.params._gradeSubmission = question_data.params._gradeSubmission || {};
+            question_data.params._grade = question_data.params._grade || {};
             question_data.params._weights = question_data.params._weights || {};
             question_data.true_answer = question_data.true_answer || {};
             this.execTemplate('question.html', question_data, question, course, (err, question_data, html, $) => {
                 if (ERR(err, callback)) return;
 
                 let index = 0;
-                async.eachSeries(elements, ([elementName, elementModule], callback) => {
+                async.eachSeries(elements.keys(), (elementName, callback) => {
                     async.eachSeries($(elementName).toArray(), (element, callback) => {
-                        elementModule.prepare($, element, parseInt(variant_seed, 36), index, question_data, (err) => {
+                        this.elementPrepare(elementName, $, element, parseInt(variant_seed, 36), index, question_data, (err) => {
                             if (ERR(err, callback)) return;
                             index++;
                             callback(null);
@@ -220,12 +309,11 @@ module.exports = {
             options: variant.options,
             submitted_answer: submission.submitted_answer,
         };
-        async.mapValuesSeries(question_data.params._gradeSubmission, (element, name, callback) => {
-            if (!elements.has(element)) {
-                return callback(null, {score: 0, feedback: 'Invalid element name: ' + element});
+        async.mapValuesSeries(question_data.params._grade, (elementName, name, callback) => {
+            if (!elements.has(elementName)) {
+                return callback(null, {score: 0, feedback: 'Invalid element name: ' + elementName});
             }
-            const elementModule = elements.get(element);
-            elementModule.gradeSubmission(name, question_data, question, course, (err, elementGrading) => {
+            this.elementGrade(elementName, name, question_data, question, course, (err, elementGrading) => {
                 if (ERR(err, callback)) return;
                 callback(null, elementGrading);
             });
@@ -246,7 +334,7 @@ module.exports = {
             const grading = {score, feedback, correct};
 
             // FIXME: compute tentative score/feedback from elements
-            // FIXME: call server.gradeSubmission()
+            // FIXME: call server.grade()
 
             // FIXME: rationalize element attrib/name verus name/type
         

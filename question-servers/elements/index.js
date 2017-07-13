@@ -12,4 +12,5 @@ module.exports = new Map([
     ['numberInputSubmittedAnswer', require('./numberInputSubmittedAnswer')],
     ['numberInputTrueAnswer', require('./numberInputTrueAnswer')],
     ['elementScore', require('./elementScore')],
+    ['multipleChoicePy', 'multipleChoice.py'],
 ]);

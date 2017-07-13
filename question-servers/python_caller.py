@@ -1,18 +1,18 @@
 
-import sys, os, json
+import sys, os, json, importlib
 
 json_inp = sys.stdin.read()
 inp = json.loads(json_inp)
-question_dir = inp['question_dir']
 
-sys.path[0] = question_dir
+file = inp['file']
+fcn = inp['fcn']
+args = inp['args']
+cwd = inp['cwd']
 
-if os.path.isfile('server.py'):
-    import server
-    if inp['cmd'] == 'get_data':
-        question_data = server.get_data()
-        outp = {"question_data": question_data}
-    else:
-        raise Exception('Unknown cmd: ' + inp['cmd'])
-    json_outp = json.dumps(outp)
-    sys.stdout.write(json_outp)
+sys.path.insert(0, cwd)
+mod = importlib.import_module(file);
+method = getattr(mod, fcn)
+output = method(*args)
+json_outp = json.dumps(output)
+with open(3, 'w', encoding='utf-8') as outf:
+    outf.write(json_outp)
