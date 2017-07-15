@@ -1,6 +1,7 @@
 columns
     authn_user_id: bigint
     available: boolean default true
+    console: text
     date: timestamp with time zone default now()
     duration: interval default '00:00:00'::interval
     first_duration: interval

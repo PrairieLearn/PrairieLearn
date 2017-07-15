@@ -52,13 +52,14 @@ module.exports = {
         }
         this.getModule(question.type, function(err, questionModule) {
             if (ERR(err, callback)) return;
-            questionModule.getData(question, course, variant_seed, function(err, questionData) {
+            questionModule.getData(question, course, variant_seed, function(err, questionData, consoleLog) {
                 if (ERR(err, callback)) return;
                 var variant = {
                     variant_seed: variant_seed,
                     params: questionData.params || {},
                     true_answer: questionData.true_answer || {},
                     options: questionData.options || {},
+                    console: consoleLog || '',
                 };
                 callback(null, variant);
             });

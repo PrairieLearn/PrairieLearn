@@ -19,7 +19,7 @@ ORDER BY v.date DESC
 LIMIT 1;
 
 -- BLOCK make_variant
-INSERT INTO variants AS v (authn_user_id, instance_question_id, number, variant_seed, params, true_answer, options)
+INSERT INTO variants AS v (authn_user_id, instance_question_id, number, variant_seed, params, true_answer, options, console)
 (
     SELECT
         $authn_user_id,
@@ -28,7 +28,8 @@ INSERT INTO variants AS v (authn_user_id, instance_question_id, number, variant_
         $variant_seed,
         $question_params,
         $true_answer,
-        $options
+        $options,
+        $console
     FROM
         variants AS other_v
     WHERE

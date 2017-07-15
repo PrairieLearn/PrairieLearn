@@ -5,11 +5,13 @@ const RandomGenerator = require('../../lib/random-generator');
 
 module.exports = {};
 
-module.exports.prepare = function($, element, variant_seed, block_index, question_data, callback) {
+module.exports.prepare = function($, element, variant_seed, element_index, question_data, callback) {
     try {
         const name = elementHelper.getAttrib(element, 'name');
         const weight = elementHelper.getNumberAttrib(element, 'weight', 1);
 
+        var rand = new RandomGenerator(variant_seed + element_index * 37);
+        
         let correctAnswers = [];
         let incorrectAnswers = [];
         for (const answer of $(element).find('answer').toArray()) {
@@ -21,57 +23,61 @@ module.exports.prepare = function($, element, variant_seed, block_index, questio
                 incorrectAnswers.push(html);
             }
         }
+        if (correctAnswers.length < 1) return callback(new Error('multipleChoice must have a correct answer'));
 
-        var rand = new RandomGenerator(variant_seed + block_index * 37);
-
-        const numberCorrect = correctAnswers.length;
+        const numberCorrect = 1;
         const numberIncorrect = incorrectAnswers.length;
 
-        // FIXME: allow numberAnswers to be passed as an attribute to checkbox
+        // FIXME: allow numberAnswers to be passed as an attribute to multipleChoice
         // var numberIncorrect = options.numberAnswers - numberCorrect;
         // numberIncorrect = Math.min(numberIncorrect, options.incorrectAnswers.length);
-
+        
         let answers = [];
         answers = answers.concat(rand.randNElem(numberCorrect, correctAnswers));
         answers = answers.concat(rand.randNElem(numberIncorrect, incorrectAnswers));
-        const perm = rand.shuffle(answers);
+        let perm = rand.shuffle(answers);
         answers = _.map(answers, (value, index) => {
             return {key: String.fromCharCode('a'.charCodeAt() + index), html: value};
         });
-        const trueIndexes = _.map(_.range(numberCorrect), i => perm.indexOf(i));
-        let trueAnswer = _.map(trueIndexes, i => answers[i]);
-        trueAnswer = _.sortBy(trueAnswer, 'key');
+        var trueIndex = _.indexOf(perm, 0);
+        var trueAnswer = {
+            key: answers[trueIndex].key,
+            html: answers[trueIndex].html,
+        };
 
+        if (_.has(question_data.params, name)) return callback(new Error('Duplicate use of name for params: "' + name + '"'));
         question_data.params[name] = answers;
-        question_data.params._gradeSubmission[name] = 'checkbox';
+        question_data.params._grade[name] = 'multipleChoice';
         question_data.params._weights[name] = weight;
+        if (_.has(question_data.true_answer, name)) return callback(new Error('Duplicate use of name for true_answer: "' + name + '"'));
         question_data.true_answer[name] = trueAnswer;
+
         callback(null);
     } catch (err) {
-        return callback(err);
+        return callback(new Error('multipleChoice prepare error: ' + err));
     }
 };
 
-module.exports.render = function($, element, block_index, question_data, callback) {
+module.exports.render = function($, element, element_index, question_data, callback) {
     try {
         const name = elementHelper.getAttrib(element, 'name');
         const inline = elementHelper.getBooleanAttrib(element, 'inline', false);
-        if (!question_data.params[name]) throw new Error('unable to find params for ' + name);
+
+        if (!question_data.params[name]) return callback(null, 'No params for ' + name);
         const answers = question_data.params[name];
+        
+        const submittedKey = _.get(question_data, ['submitted_answer', name], null);
 
-        let submittedKeys = _.get(question_data, ['submitted_answer', name], []);
-        if (!_.isArray(submittedKeys)) submittedKeys = [submittedKeys];
-
-        let html = '';
+        var html = '';
         if (inline) html += '<p>\n';
         for (const ans of answers) {
-            if (!inline) html += '<div class="checkbox">\n';
+            if (!inline) html += '<div class="radio">\n';
             html
-                += '  <label' + (inline ? ' class="checkbox-inline"' : '') + '>\n'
-                + '    <input type="checkbox"'
+                += '  <label' + (inline ? ' class="radio-inline"' : '') + '>\n'
+                + '    <input type="radio"'
                 + ' name="' + name + '" value="' + ans.key + '"'
                 + (question_data.editable ? '' : ' disabled')
-                + (submittedKeys.includes(ans.key) ? ' checked ' : '')
+                + ((submittedKey == ans.key) ? ' checked ' : '')
                 + ' />\n'
                 + '    (' + ans.key + ') ' + ans.html.trim() + '\n'
                 + '  </label>\n';
@@ -81,23 +87,23 @@ module.exports.render = function($, element, block_index, question_data, callbac
 
         callback(null, html);
     } catch (err) {
-        return callback(err);
+        return callback(null, 'multipleChoice render error: ' + err);
     }
 };
 
-module.exports.gradeSubmission = function(name, question_data, question, course, callback) {
-    let trueAnswer = _.get(question_data, ['true_answer', name], null);
-    if (trueAnswer == null) return callback(null, {score: 0});
-
-    const trueKeys = _.map(trueAnswer, 'key');
-    let submittedKeys = _.get(question_data, ['submitted_answer', name], []);
-    if (!_.isArray(submittedKeys)) submittedKeys = [submittedKeys];
+module.exports.grade = function(name, question_data, question, course, callback) {
+    const submittedKey = _.get(question_data, ['submitted_answer', name], null);
+    const trueKey = _.get(question_data, ['true_answer', name, 'key'], null);
+    if (submittedKey == null || trueKey == null) {
+        return callback(null, {score: 0});
+    }
 
     let grading = {};
-    if (_.isEqual(trueKeys, submittedKeys)) {
+    if (trueKey == submittedKey) {
         grading.score = 1;
     } else {
         grading.score = 0;
     }
-    return callback(null, grading);
+
+    callback(null, grading);
 };

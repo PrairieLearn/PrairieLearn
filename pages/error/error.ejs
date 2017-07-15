@@ -31,13 +31,24 @@
           </p>
 
           <% if (error.status) { %><p><strong>Status:</strong> <%= error.status %></p><% } %>
+
+          <% if (error.data && error.data.outputStderr) { %>
+          <p><strong>Standard error:</strong></p><pre><%= error.data.outputStderr %></pre>
+          <% } %>
+
+          <% if (error.data && error.data.outputStdout) { %>
+          <p><strong>Standard output:</strong></p><pre><%= error.data.outputStdout %></pre>
+          <% } %>
+
           <% if (error.stack) { %><p><strong>Stack trace:</strong></p><pre><%= error.stack %></pre><% } %>
+
           <% if (error.data && error.data.sql) {%>
           <p><strong>SQL query:</strong></p><pre><%= error.data.sql %></pre>
           <% if (error.data && error.data.params) {%>
           <p><strong>SQL params:</strong></p><pre><%= JSON.stringify(error.data.params, null, '    ') %></pre>
           <% } %>
           <% } %>
+
           <% if (error.data) { %><p><strong>Additional data:</strong></p><pre><%= JSON.stringify(error.data, null, '    ') %></pre><% } %>
           
         </div>
