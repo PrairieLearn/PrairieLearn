@@ -345,10 +345,7 @@ module.exports = {
             const correct = (score >= 1);
             const grading = {score, feedback, correct};
 
-            // FIXME: compute tentative score/feedback from elements
             // FIXME: call server.grade()
-
-            // FIXME: rationalize element attrib/name verus name/type
         
             callback(null, grading);
         });
