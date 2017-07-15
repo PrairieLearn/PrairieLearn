@@ -1,6 +1,6 @@
 import random, math
 
-def get_data():
+def get_data(*args):
     params = {};
     
     m = random.choice([3, 1.4, 1.6, 1.8])

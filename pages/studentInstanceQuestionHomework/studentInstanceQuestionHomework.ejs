@@ -22,10 +22,21 @@
           <div id="question-0" class="question-container">
             <div hidden="true" class="question-data"><%= questionJsonBase64 %></div>
 
+            <% if (variant.console) { %>
+            <div class="panel panel-danger">
+              <div class="panel-heading">
+                <h3 class="panel-title">Console output</h3>
+              </div>
+              <div class="panel-body">
+                <pre><%= variant.console %></pre>
+              </div>
+            </div>
+            <% } %>
+            
+            <% if (question.type == 'Freeform') { %>
+            <form class="question-form" name="question-form" method="POST">
+            <% } %>
             <div class="panel panel-primary question-block">
-              <% if (question.type == 'Freeform') { %>
-              <form class="question-form" name="question-form" method="POST">
-              <% } %>
               <div class="panel-heading">
                 <h3 class="panel-title"><%= instance_question_info.question_number %>. <%= question.title %></h3>
               </div>
@@ -52,10 +63,10 @@
                 <a href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/" class="btn btn-primary">Try question again</a>
                 <% } %>
               </div>
-              <% if (question.type == 'Freeform') { %>
-              </form>
-              <% } %>
             </div>
+            <% if (question.type == 'Freeform') { %>
+            </form>
+            <% } %>
 
             <% if (showTrueAnswer) { %>
             <div class="panel panel-info grading-block">

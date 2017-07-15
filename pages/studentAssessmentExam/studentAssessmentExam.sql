@@ -28,8 +28,8 @@ INSERT INTO instance_questions AS iq (authn_user_id, assessment_instance_id, ass
 RETURNING iq.id;
 
 -- BLOCK make_variant
-INSERT INTO variants AS v (authn_user_id, instance_question_id, number, variant_seed, params, true_answer, options)
-VALUES ($authn_user_id, $instance_question_id, 1, $variant_seed, $question_params, $true_answer, $options)
+INSERT INTO variants AS v (authn_user_id, instance_question_id, number, variant_seed, params, true_answer, options, console)
+VALUES ($authn_user_id, $instance_question_id, 1, $variant_seed, $question_params, $true_answer, $options, $console)
 RETURNING v.id;
 
 -- BLOCK set_max_points

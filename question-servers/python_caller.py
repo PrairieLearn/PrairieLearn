@@ -8,7 +8,9 @@ file = inp['file']
 fcn = inp['fcn']
 args = inp['args']
 cwd = inp['cwd']
+pylibdir = inp['pylibdir']
 
+sys.path.insert(0, pylibdir)
 sys.path.insert(0, cwd)
 mod = importlib.import_module(file);
 method = getattr(mod, fcn)

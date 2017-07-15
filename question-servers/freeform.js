@@ -19,43 +19,45 @@ module.exports = {
             // python module
             const pythonFile = elementModule.replace(/\.[pP][yY]$/, '');
             const pythonCwd = path.join(__dirname, 'elements');
-            this.execPython(pythonFile, fcn, pythonArgs, pythonCwd, (err, ret) => {
+            this.execPython(pythonFile, fcn, pythonArgs, pythonCwd, (err, ret, consoleLog) => {
                 if (ERR(err, callback)) return;
-                callback(null, ret);
+                callback(null, ret, consoleLog);
             });
         } else {
             // JS module
             elementModule[fcn](...jsArgs, (err, ret) => {
                 if (ERR(err, callback)) return;
-                callback(null, ret);
+                callback(null, ret, '');
             });
         }
     },
 
     elementPrepare: function(elementName, $, element, variant_seed, index, question_data, callback) {
         const jsArgs = [$, element, variant_seed, index, question_data];
-        const pythonArgs = [$(element).html(), index, variant_seed, question_data];
-        this.elementFunction('prepare', elementName, jsArgs, pythonArgs, (err, html) => {
+        var elementHtml = $(element).wrap('<container/>').parent().html();
+        const pythonArgs = [elementHtml, index, variant_seed, question_data];
+        this.elementFunction('prepare', elementName, jsArgs, pythonArgs, (err, new_question_data, consoleLog) => {
             if (ERR(err, callback)) return;
-            callback(null, html);
+            callback(null, new_question_data, consoleLog);
         });
     },
 
     elementRender: function(elementName, $, element, index, question_data, callback) {
         const jsArgs = [$, element, index, question_data];
-        const pythonArgs = [$(element).html(), index, question_data];
-        this.elementFunction('render', elementName, jsArgs, pythonArgs, (err, html) => {
+        var elementHtml = $(element).wrap('<container/>').parent().html();
+        const pythonArgs = [elementHtml, index, question_data];
+        this.elementFunction('render', elementName, jsArgs, pythonArgs, (err, html, consoleLog) => {
             if (ERR(err, callback)) return;
-            callback(null, html);
+            callback(null, html, consoleLog);
         });
     },
 
     elementGrade: function(elementName, name, question_data, question, course, callback) {
         const jsArgs = [name, question_data, question, course];
         const pythonArgs = [name, question_data, question, course];
-        this.elementFunction('grade', elementName, jsArgs, pythonArgs, (err, html) => {
+        this.elementFunction('grade', elementName, jsArgs, pythonArgs, (err, grading, consoleLog) => {
             if (ERR(err, callback)) return;
-            callback(null, html);
+            callback(null, grading, consoleLog);
         });
     },
 
@@ -68,11 +70,11 @@ module.exports = {
             params: variant.params,
             true_answer: variant.true_answer,
             options: variant.options,
-            submitted_answer: submission ? submission.submitted_answer : null,
-            feedback: submission ? submission.feedback : null,
             clientFilesQuestion: locals.paths.clientFilesQuestion,
             editable: locals.allowAnswerEditing,
         };
+        if (submission) question_data.submitted_answer = submission.submitted_answer;
+        if (submission) question_data.feedback = submission.feedback;
         this.execTemplate(filename, question_data, question, course, (err, question_data, html, $) => {
             if (ERR(err, callback)) return;
 
@@ -118,7 +120,13 @@ module.exports = {
     },
 
     execPython: function(pythonFile, pythonFunction, pythonArgs, pythonCwd, callback) {
-        var cmdInput = {file: pythonFile, fcn: pythonFunction, args: pythonArgs, cwd: pythonCwd};
+        var cmdInput = {
+            file: pythonFile,
+            fcn: pythonFunction,
+            args: pythonArgs,
+            cwd: pythonCwd,
+            pylibdir: path.join(__dirname, 'freeformPythonLib'),
+        };
         try {
             var input = JSON.stringify(cmdInput);
         } catch (e) {
@@ -190,7 +198,7 @@ module.exports = {
             }
             if (!callbackCalled) {
                 callbackCalled = true;
-                callback(null, output);
+                callback(null, output, outputBoth);
             } else {
                 // FIXME: silently swallowing the output here
                 return;
@@ -266,7 +274,8 @@ module.exports = {
             options: _.defaults({}, course.options, question.options),
             question_dir: question_dir,
         };
-        this.execPythonServer('get_data', pythonArgs, question, course, (err, ret_question_data) => {
+        var consoleLog = '';
+        this.execPythonServer('get_data', pythonArgs, question, course, (err, ret_question_data, ret_consoleLog) => {
             if (ERR(err, callback)) return;
             var question_data = ret_question_data;
             question_data.options = question_data.options || {};
@@ -275,14 +284,17 @@ module.exports = {
             question_data.params._grade = question_data.params._grade || {};
             question_data.params._weights = question_data.params._weights || {};
             question_data.true_answer = question_data.true_answer || {};
+            if (_.isString(ret_consoleLog) && ret_consoleLog.length > 0) consoleLog += ret_consoleLog;
             this.execTemplate('question.html', question_data, question, course, (err, question_data, html, $) => {
                 if (ERR(err, callback)) return;
 
                 let index = 0;
                 async.eachSeries(elements.keys(), (elementName, callback) => {
                     async.eachSeries($(elementName).toArray(), (element, callback) => {
-                        this.elementPrepare(elementName, $, element, parseInt(variant_seed, 36), index, question_data, (err) => {
+                        this.elementPrepare(elementName, $, element, parseInt(variant_seed, 36), index, question_data, (err, new_question_data, ret_consoleLog) => {
                             if (ERR(err, callback)) return;
+                            _.assign(question_data, new_question_data || {});
+                            if (_.isString(ret_consoleLog) && ret_consoleLog.length > 0) consoleLog += ret_consoleLog;
                             index++;
                             callback(null);
                         });
@@ -292,7 +304,7 @@ module.exports = {
                     });
                 }, (err) => {
                     if (ERR(err, callback)) return;
-                    callback(null, question_data);
+                    callback(null, question_data, consoleLog);
                 });
             });
         });

@@ -32,6 +32,7 @@ function ensureVariant(locals, callback) {
                 question_params: variant.params,
                 true_answer: variant.true_answer,
                 options: variant.options,
+                console: variant.console,
             };
             sqldb.queryOneRow(sql.make_variant, params, function(err, result) {
                 if (ERR(err, callback)) return;
