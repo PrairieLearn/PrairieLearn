@@ -96,3 +96,21 @@ Main repository topology:
 |/
 *  1.0.0 tag
 ```
+
+## FAQ
+
+### I forgot to branch. How do I move changes from master to a new branch?
+
+No problem, assuming that you have not made any commits yet.
+First, create and checkout a new branch in which to keep your changes, leaving the current branch as is.
+```
+git checkout -b <new-branch>
+```
+Then, make a commit as you normally would:
+```
+git add <files>
+git commit -m "<Brief description of this commit>"
+```
+Once your commit is made, you can checkout and reset master.
+
+[See here for more information.](https://stackoverflow.com/questions/1394797/move-existing-uncommited-work-to-a-new-branch-in-git)
