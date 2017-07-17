@@ -38,3 +38,8 @@ npm-debug.log
 # Code coverage files
 /coverage/
 /.nyc_output/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class

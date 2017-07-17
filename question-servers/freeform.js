@@ -77,11 +77,21 @@ module.exports = {
         child.stdout.on('data', (data) => {
             outputStdout += data;
             outputBoth += data;
+
+            // Temporary fix to write stderr to console while waiting for this
+            // to be displayed in browser
+            console.log("FIXME")
+            console.log(data)
         });
-        
+
         child.stderr.on('data', (data) => {
             outputStderr += data;
             outputBoth += data;
+
+            // Temporary fix to write stderr to console while waiting for this
+            // to be displayed in browser
+            console.log("FIXME")
+            console.log(data)
         });
 
         child.stdio[3].on('data', (data) => {
@@ -124,7 +134,7 @@ module.exports = {
                 return;
             }
         });
-        
+
         child.on('error', (error) => {
             let err = new Error('Error executing python question code');
             err.data = {execMsg: error.message, cmdInput};
