@@ -332,7 +332,7 @@ module.exports = {
             });
         }, (err, elementGradings) => {
             if (ERR(err, callback)) return;
-            elementGradings = _.omitBy(elementGradings, (value, key) => (value == null));
+            elementGradings = _.omitBy(elementGradings, value => (value == null));
             const feedback = {
                 _element_scores: _.mapValues(elementGradings, 'score'),
                 _element_feedbacks: _.mapValues(elementGradings, 'feedback'),
