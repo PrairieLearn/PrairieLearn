@@ -34,7 +34,7 @@ module.exports = {
 
     elementPrepare: function(elementName, $, element, variant_seed, index, question_data, callback) {
         const jsArgs = [$, element, variant_seed, index, question_data];
-        var elementHtml = $(element).wrap('<container/>').parent().html();
+        var elementHtml = $(element).clone().wrap('<container/>').parent().html();
         const pythonArgs = [elementHtml, index, variant_seed, question_data];
         this.elementFunction('prepare', elementName, jsArgs, pythonArgs, (err, new_question_data, consoleLog) => {
             if (ERR(err, callback)) return;
@@ -44,7 +44,7 @@ module.exports = {
 
     elementRender: function(elementName, $, element, index, question_data, callback) {
         const jsArgs = [$, element, index, question_data];
-        var elementHtml = $(element).wrap('<container/>').parent().html();
+        var elementHtml = $(element).clone().wrap('<container/>').parent().html();
         const pythonArgs = [elementHtml, index, question_data];
         this.elementFunction('render', elementName, jsArgs, pythonArgs, (err, html, consoleLog) => {
             if (ERR(err, callback)) return;
