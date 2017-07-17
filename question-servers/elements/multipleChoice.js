@@ -5,12 +5,11 @@ const RandomGenerator = require('../../lib/random-generator');
 
 module.exports = {};
 
-module.exports.prepare = function($, element, variant_seed, element_index, question_data, callback) {
+module.exports.prepare = function($, element, element_index, question_data, callback) {
     try {
         const name = elementHelper.getAttrib(element, 'name');
-        const weight = elementHelper.getNumberAttrib(element, 'weight', 1);
 
-        var rand = new RandomGenerator(variant_seed + element_index * 37);
+        var rand = new RandomGenerator(question_data.variant_seed + element_index * 37);
         
         let correctAnswers = [];
         let incorrectAnswers = [];
@@ -47,8 +46,6 @@ module.exports.prepare = function($, element, variant_seed, element_index, quest
 
         if (_.has(question_data.params, name)) return callback(new Error('Duplicate use of name for params: "' + name + '"'));
         question_data.params[name] = answers;
-        question_data.params._grade[name] = 'multipleChoice';
-        question_data.params._weights[name] = weight;
         if (_.has(question_data.true_answer, name)) return callback(new Error('Duplicate use of name for true_answer: "' + name + '"'));
         question_data.true_answer[name] = trueAnswer;
 
@@ -91,7 +88,9 @@ module.exports.render = function($, element, element_index, question_data, callb
     }
 };
 
-module.exports.grade = function(name, question_data, question, course, callback) {
+module.exports.grade = function($, element, element_index, question_data, callback) {
+    const name = elementHelper.getAttrib(element, 'name');
+    const weight = elementHelper.getNumberAttrib(element, 'weight', 1);
     const submittedKey = _.get(question_data, ['submitted_answer', name], null);
     const trueKey = _.get(question_data, ['true_answer', name, 'key'], null);
     if (submittedKey == null || trueKey == null) {
@@ -99,11 +98,13 @@ module.exports.grade = function(name, question_data, question, course, callback)
     }
 
     let grading = {};
+    grading[name] = {};
     if (trueKey == submittedKey) {
-        grading.score = 1;
+        grading[name].score = 1;
     } else {
-        grading.score = 0;
+        grading[name].score = 0;
     }
+    grading[name].weight = weight;
 
     callback(null, grading);
 };

@@ -2,7 +2,7 @@ const elementHelper = require('../../lib/element-helper');
 
 module.exports = {};
 
-module.exports.prepare = function($, element, variant_seed, element_index, question_data, callback) {
+module.exports.prepare = function($, element, element_index, question_data, callback) {
     callback(null);
 };
 
@@ -21,4 +21,8 @@ module.exports.render = function($, element, element_index, question_data, callb
     } catch (err) {
         return callback(null, 'multipleChoiceTrueAnswer render error: ' + err);
     }
+};
+
+module.exports.grade = function($, element, element_index, question_data, callback) {
+    callback(null);
 };

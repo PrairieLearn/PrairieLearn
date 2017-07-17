@@ -1,7 +1,7 @@
 import random, lxml.html
 import prairielearn
 
-def prepare(element_html, variant_seed, element_index, question_data):
+def prepare(element_html, element_index, question_data):
     element = lxml.html.fragment_fromstring(element_html)
     name = element.get("name")
 
@@ -23,8 +23,6 @@ def prepare(element_html, variant_seed, element_index, question_data):
             true_index = i
 
     question_data["params"][name] = display_answers
-    question_data["params"]["_grade"][name] = "multipleChoicePy"
-    question_data["params"]["_weights"][name] = 1
     question_data["true_answer"][name] = display_answers[true_index]
 
     return question_data
@@ -56,7 +54,10 @@ def render(element_html, element_index, question_data):
 
     return html
 
-def grade(name, question_data, *args):
+def grade(element_html, element_index, question_data):
+    element = lxml.html.fragment_fromstring(element_html)
+    name = element.get("name")
+    weight = 1
     submitted_key = question_data["submitted_answer"].get(name, None)
     true_key = question_data["true_answer"].get(name, {"key": None}).get("key", None)
     if (submitted_key == None or true_key == None):
@@ -66,5 +67,5 @@ def grade(name, question_data, *args):
     if (true_key == submitted_key):
         score = 1
 
-    grading = {"score": score}
+    grading = {name: {"score": score, "weight": weight}}
     return grading

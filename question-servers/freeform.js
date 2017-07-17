@@ -10,7 +10,10 @@ var cheerio = require('cheerio');
 var elements = require('./elements');
 
 module.exports = {
-    elementFunction: function(fcn, elementName, jsArgs, pythonArgs, callback) {
+    elementFunction: function(fcn, elementName, $, element, index, question_data, callback) {
+        const jsArgs = [$, element, index, question_data];
+        const elementHtml = $(element).clone().wrap('<container/>').parent().html();
+        const pythonArgs = [elementHtml, index, question_data];
         if (!elements.has(elementName)) {
             return callback(null, 'ERROR: invalid element name: ' + elementName);
         }
@@ -32,91 +35,8 @@ module.exports = {
         }
     },
 
-    elementPrepare: function(elementName, $, element, variant_seed, index, question_data, callback) {
-        const jsArgs = [$, element, variant_seed, index, question_data];
-        var elementHtml = $(element).clone().wrap('<container/>').parent().html();
-        const pythonArgs = [elementHtml, index, variant_seed, question_data];
-        this.elementFunction('prepare', elementName, jsArgs, pythonArgs, (err, new_question_data, consoleLog) => {
-            if (ERR(err, callback)) return;
-            callback(null, new_question_data, consoleLog);
-        });
-    },
-
-    elementRender: function(elementName, $, element, index, question_data, callback) {
-        const jsArgs = [$, element, index, question_data];
-        var elementHtml = $(element).clone().wrap('<container/>').parent().html();
-        const pythonArgs = [elementHtml, index, question_data];
-        this.elementFunction('render', elementName, jsArgs, pythonArgs, (err, html, consoleLog) => {
-            if (ERR(err, callback)) return;
-            callback(null, html, consoleLog);
-        });
-    },
-
-    elementGrade: function(elementName, name, question_data, question, course, callback) {
-        const jsArgs = [name, question_data, question, course];
-        const pythonArgs = [name, question_data, question, course];
-        this.elementFunction('grade', elementName, jsArgs, pythonArgs, (err, grading, consoleLog) => {
-            if (ERR(err, callback)) return;
-            callback(null, grading, consoleLog);
-        });
-    },
-
     renderExtraHeaders: function(question, course, locals, callback) {
         callback(null, '');
-    },
-
-    renderFile: function(filename, variant, question, submission, course, locals, callback) {
-        var question_data = {
-            params: variant.params,
-            true_answer: variant.true_answer,
-            options: variant.options,
-            clientFilesQuestion: locals.paths.clientFilesQuestion,
-            editable: locals.allowAnswerEditing,
-        };
-        if (submission) question_data.submitted_answer = submission.submitted_answer;
-        if (submission) question_data.feedback = submission.feedback;
-        this.execTemplate(filename, question_data, question, course, (err, question_data, html, $) => {
-            if (ERR(err, callback)) return;
-
-            let index = 0;
-            async.eachSeries(elements.keys(), (elementName, callback) => {
-                async.eachSeries($(elementName).toArray(), (element, callback) => {
-                    this.elementRender(elementName, $, element, index, question_data, (err, elementHtml) => {
-                        if (ERR(err, callback)) return;
-                        $(element).replaceWith(elementHtml);
-                        index++;
-                        callback(null);
-                    });
-                }, (err) => {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            }, (err) => {
-                if (ERR(err, callback)) return;
-                callback(null, $.html());
-            });
-        });
-    },
-
-    renderQuestion: function(variant, question, submission, course, locals, callback) {
-        this.renderFile('question.html', variant, question, submission, course, locals, (err, html) => {
-            if (ERR(err, callback)) return;
-            callback(null, html);
-        });
-    },
-
-    renderSubmission: function(variant, question, submission, course, locals, callback) {
-        this.renderFile('submission.html', variant, question, submission, course, locals, (err, html) => {
-            if (ERR(err, callback)) return;
-            callback(null, html);
-        });
-    },
-
-    renderTrueAnswer: function(variant, question, course, locals, callback) {
-        this.renderFile('answer.html', variant, question, null, course, locals, (err, html) => {
-            if (ERR(err, callback)) return;
-            callback(null, html);
-        });
     },
 
     execPython: function(pythonFile, pythonFunction, pythonArgs, pythonCwd, callback) {
@@ -270,7 +190,7 @@ module.exports = {
         var question_dir = path.join(course.path, 'questions', question.directory);
 
         var pythonArgs = {
-            variant_seed: variant_seed,
+            variant_seed: parseInt(variant_seed, 36),
             options: _.defaults({}, course.options, question.options),
             question_dir: question_dir,
         };
@@ -278,6 +198,7 @@ module.exports = {
         this.execPythonServer('get_data', pythonArgs, question, course, (err, ret_question_data, ret_consoleLog) => {
             if (ERR(err, callback)) return;
             var question_data = ret_question_data;
+            question_data.variant_seed = parseInt(variant_seed, 36);
             question_data.options = question_data.options || {};
             _.defaults(question_data.options, course.options, question.options);
             question_data.params = question_data.params || {};
@@ -291,7 +212,7 @@ module.exports = {
                 let index = 0;
                 async.eachSeries(elements.keys(), (elementName, callback) => {
                     async.eachSeries($(elementName).toArray(), (element, callback) => {
-                        this.elementPrepare(elementName, $, element, parseInt(variant_seed, 36), index, question_data, (err, new_question_data, ret_consoleLog) => {
+                        this.elementFunction('prepare', elementName, $, element, index, question_data, (err, new_question_data, ret_consoleLog) => {
                             if (ERR(err, callback)) return;
                             _.assign(question_data, new_question_data || {});
                             if (_.isString(ret_consoleLog) && ret_consoleLog.length > 0) consoleLog += ret_consoleLog;
@@ -314,40 +235,108 @@ module.exports = {
         callback(new Error('not implemented'));
     },
 
+    renderFile: function(filename, variant, question, submission, course, locals, callback) {
+        var question_data = {
+            variant_seed: parseInt(variant.variant_seed, 36),
+            params: variant.params,
+            true_answer: variant.true_answer,
+            options: variant.options,
+            clientFilesQuestion: locals.paths.clientFilesQuestion,
+            editable: locals.allowAnswerEditing,
+        };
+        let consoleLog = '';
+        if (submission) question_data.submitted_answer = submission.submitted_answer;
+        if (submission) question_data.feedback = submission.feedback;
+        this.execTemplate(filename, question_data, question, course, (err, question_data, html, $) => {
+            if (ERR(err, callback)) return;
+
+            let index = 0;
+            async.eachSeries(elements.keys(), (elementName, callback) => {
+                async.eachSeries($(elementName).toArray(), (element, callback) => {
+                    this.elementFunction('render', elementName, $, element, index, question_data, (err, elementHtml, ret_consoleLog) => {
+                        if (ERR(err, callback)) return;
+                        $(element).replaceWith(elementHtml);
+                        if (_.isString(ret_consoleLog) && ret_consoleLog.length > 0) consoleLog += ret_consoleLog;
+                        index++;
+                        callback(null);
+                    });
+                }, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            }, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null, $.html(), consoleLog);
+            });
+        });
+    },
+
+    renderQuestion: function(variant, question, submission, course, locals, callback) {
+        this.renderFile('question.html', variant, question, submission, course, locals, (err, html) => {
+            if (ERR(err, callback)) return;
+            callback(null, html);
+        });
+    },
+
+    renderSubmission: function(variant, question, submission, course, locals, callback) {
+        this.renderFile('submission.html', variant, question, submission, course, locals, (err, html) => {
+            if (ERR(err, callback)) return;
+            callback(null, html);
+        });
+    },
+
+    renderTrueAnswer: function(variant, question, course, locals, callback) {
+        this.renderFile('answer.html', variant, question, null, course, locals, (err, html) => {
+            if (ERR(err, callback)) return;
+            callback(null, html);
+        });
+    },
+
     gradeSubmission: function(submission, variant, question, course, callback) {
         const question_data = {
+            variant_seed: parseInt(variant.variant_seed, 36),
             params: variant.params,
             true_answer: variant.true_answer,
             options: variant.options,
             submitted_answer: submission.submitted_answer,
         };
-        async.mapValuesSeries(question_data.params._grade, (elementName, name, callback) => {
-            if (!elements.has(elementName)) {
-                return callback(null, {score: 0, feedback: 'Invalid element name: ' + elementName});
-            }
-            this.elementGrade(elementName, name, question_data, question, course, (err, elementGrading) => {
-                if (ERR(err, callback)) return;
-                callback(null, elementGrading);
-            });
-        }, (err, elementGradings) => {
+        var consoleLog = '';
+        this.execTemplate('question.html', question_data, question, course, (err, question_data, html, $) => {
             if (ERR(err, callback)) return;
-            const feedback = {
-                _element_scores: _.mapValues(elementGradings, 'score'),
-                _element_feedbacks: _.mapValues(elementGradings, 'feedback'),
-            };
-            let total_weight = 0, total_weight_score = 0;
-            _.each(feedback._element_scores, (score, key) => {
-                const weight = _.get(question_data, ['params', '_weights', key], 1);
-                total_weight += weight;
-                total_weight_score += weight * score;
-            });
-            const score = total_weight_score / (total_weight == 0 ? 1 : total_weight);
-            const correct = (score >= 1);
-            const grading = {score, feedback, correct};
 
-            // FIXME: call server.grade()
-        
-            callback(null, grading);
+            const _element_gradings = {};
+            let index = 0;
+            async.eachSeries(elements.keys(), (elementName, callback) => {
+                async.eachSeries($(elementName).toArray(), (element, callback) => {
+                    this.elementFunction('grade', elementName, $, element, index, question_data, (err, element_grading, ret_consoleLog) => {
+                        if (ERR(err, callback)) return;
+                        _.assign(_element_gradings, element_grading || {});
+                        if (_.isString(ret_consoleLog) && ret_consoleLog.length > 0) consoleLog += ret_consoleLog;
+                        index++;
+                        callback(null);
+                    });
+                }, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            }, (err) => {
+                if (ERR(err, callback)) return;
+                let total_weight = 0, total_weight_score = 0;
+                _.each(_element_gradings, value => {
+                    const score = _.get(value, 'score', 0);
+                    const weight = _.get(value, 'weight', 1);
+                    total_weight += weight;
+                    total_weight_score += weight * score;
+                });
+                const score = total_weight_score / (total_weight == 0 ? 1 : total_weight);
+                const correct = (score >= 1);
+                const feedback = {_element_gradings};
+                const grading = {score, feedback, correct};
+
+                // FIXME: call server.grade()
+
+                callback(null, grading, consoleLog);
+            });
         });
     },
 };
