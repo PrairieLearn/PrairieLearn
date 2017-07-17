@@ -22,9 +22,11 @@ def prepare(element_html, variant_seed, element_index, question_data):
         if correct:
             true_index = i
 
-    question_data["params"][name] = display_answers
-    question_data["params"]["_grade"][name] = "multipleChoicePy"
-    question_data["params"]["_weights"][name] = 1
+    question_data["params"][name] = {
+        "answers": display_answers,
+        "_grade": "multipleChoicePy",
+        "_weight": 1,
+    };
     question_data["true_answer"][name] = display_answers[true_index]
 
     return question_data
@@ -33,7 +35,10 @@ def render(element_html, element_index, question_data):
     element = lxml.html.fragment_fromstring(element_html)
     name = element.get("name")
 
-    answers = question_data["params"].get(name, [])
+    params = question_data["params"].get(name, None)
+    if (params == None):
+        raise Exception("no params for multipleChoicePy: %s" + name)
+    answers = question_data["params"][name].get("answers", [])
 
     submitted_key = None
     if "submitted_answer" in question_data:

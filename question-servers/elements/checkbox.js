@@ -42,9 +42,11 @@ module.exports.prepare = function($, element, variant_seed, element_index, quest
         let trueAnswer = _.map(trueIndexes, i => answers[i]);
         trueAnswer = _.sortBy(trueAnswer, 'key');
 
-        question_data.params[name] = answers;
-        question_data.params._grade[name] = 'checkbox';
-        question_data.params._weights[name] = weight;
+        question_data.params[name] = {
+            answers,
+            _grade: 'checkbox',
+            _weight: weight,
+        };
         question_data.true_answer[name] = trueAnswer;
         callback(null);
     } catch (err) {
@@ -56,8 +58,8 @@ module.exports.render = function($, element, element_index, question_data, callb
     try {
         const name = elementHelper.getAttrib(element, 'name');
         const inline = elementHelper.getBooleanAttrib(element, 'inline', false);
-        if (!question_data.params[name]) throw new Error('unable to find params for ' + name);
-        const answers = question_data.params[name];
+        const answers = _.get(question_data, ['params', name, 'answers'], null);
+        if (answers == null) throw new Error('unable to find answers for ' + name);
 
         let submittedKeys = _.get(question_data, ['submitted_answer', name], []);
         if (!_.isArray(submittedKeys)) submittedKeys = [submittedKeys];

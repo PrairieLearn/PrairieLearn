@@ -10,9 +10,6 @@ module.exports.render = function($, element, element_index, question_data, callb
     try {
         const name = elementHelper.getAttrib(element, 'name');
 
-        if (!question_data.params[name]) return callback(null, 'No params for ' + name);
-        //const params = question_data.params[name];
-
         if (!question_data.submitted_answer[name]) {
             return callback(null, 'No submitted answer');
         }
