@@ -11,8 +11,8 @@ module.exports.render = function($, element, element_index, question_data, callb
     try {
         const name = elementHelper.getAttrib(element, 'name');
 
-        const answers = _.get(question_data, ['params', name, 'answers'], null);
-        if (answers == null) throw new Error('unable to find answers for ' + name);
+        if (!question_data.params[name]) return callback(null, 'No params for ' + name);
+        const answers = question_data.params[name];
 
         if (!question_data.submitted_answer[name]) {
             return callback(null, 'No answers selected');

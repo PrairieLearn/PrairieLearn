@@ -281,6 +281,8 @@ module.exports = {
             question_data.options = question_data.options || {};
             _.defaults(question_data.options, course.options, question.options);
             question_data.params = question_data.params || {};
+            question_data.params._grade = question_data.params._grade || {};
+            question_data.params._weights = question_data.params._weights || {};
             question_data.true_answer = question_data.true_answer || {};
             if (_.isString(ret_consoleLog) && ret_consoleLog.length > 0) consoleLog += ret_consoleLog;
             this.execTemplate('question.html', question_data, question, course, (err, question_data, html, $) => {
@@ -319,12 +321,9 @@ module.exports = {
             options: variant.options,
             submitted_answer: submission.submitted_answer,
         };
-        async.mapValuesSeries(question_data.params, (variable, name, callback) => {
-            if (!_.isObject(variable)) return callback(null, null);
-            if (!variable.hasOwnProperty('_grade')) return callback(null, null);
-            const elementName = variable._grade;
+        async.mapValuesSeries(question_data.params._grade, (elementName, name, callback) => {
             if (!elements.has(elementName)) {
-                return callback(null, {score: 0, feedback: 'Invalid element name for grading: ' + elementName});
+                return callback(null, {score: 0, feedback: 'Invalid element name: ' + elementName});
             }
             this.elementGrade(elementName, name, question_data, question, course, (err, elementGrading) => {
                 if (ERR(err, callback)) return;
@@ -332,14 +331,13 @@ module.exports = {
             });
         }, (err, elementGradings) => {
             if (ERR(err, callback)) return;
-            elementGradings = _.omitBy(elementGradings, (value, key) => (value == null));
             const feedback = {
                 _element_scores: _.mapValues(elementGradings, 'score'),
                 _element_feedbacks: _.mapValues(elementGradings, 'feedback'),
             };
             let total_weight = 0, total_weight_score = 0;
             _.each(feedback._element_scores, (score, key) => {
-                const weight = _.get(question_data, ['params', key, '_weight'], 1);
+                const weight = _.get(question_data, ['params', '_weights', key], 1);
                 total_weight += weight;
                 total_weight_score += weight * score;
             });

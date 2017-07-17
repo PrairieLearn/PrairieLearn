@@ -16,7 +16,9 @@ module.exports.prepare = function($, element, variant_seed, element_index, quest
 
         if (sig_figs == null && dec_places == null) throw new Error('must specify either sig_figs or dec_places');
 
-        question_data.params[name] = {sig_figs, dec_places, required, _grade: 'numberInput', _weight: weight};
+        question_data.params[name] = {sig_figs, dec_places, required};
+        question_data.params._grade[name] = 'numberInput';
+        question_data.params._weights[name] = weight;
         question_data.true_answer[name] = true_answer;
         callback(null);
     } catch (err) {
@@ -27,6 +29,8 @@ module.exports.prepare = function($, element, variant_seed, element_index, quest
 module.exports.render = function($, element, element_index, question_data, callback) {
     try {
         const name = elementHelper.getAttrib(element, 'name');
+        if (!question_data.params[name]) throw new Error('unable to find params for ' + name);
+        //const params = question_data.params[name];
 
         const submittedAnsString = _.get(question_data, ['submitted_answer', name], null);
 

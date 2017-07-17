@@ -46,11 +46,9 @@ module.exports.prepare = function($, element, variant_seed, element_index, quest
         };
 
         if (_.has(question_data.params, name)) return callback(new Error('Duplicate use of name for params: "' + name + '"'));
-        question_data.params[name] = {
-            answers,
-            _grade: 'multipleChoice',
-            _weight: weight,
-        };
+        question_data.params[name] = answers;
+        question_data.params._grade[name] = 'multipleChoice';
+        question_data.params._weights[name] = weight;
         if (_.has(question_data.true_answer, name)) return callback(new Error('Duplicate use of name for true_answer: "' + name + '"'));
         question_data.true_answer[name] = trueAnswer;
 
@@ -65,8 +63,8 @@ module.exports.render = function($, element, element_index, question_data, callb
         const name = elementHelper.getAttrib(element, 'name');
         const inline = elementHelper.getBooleanAttrib(element, 'inline', false);
 
-        const answers = _.get(question_data, ['params', name, 'answers'], null);
-        if (answers == null) throw new Error('unable to find answers for ' + name);
+        if (!question_data.params[name]) return callback(null, 'No params for ' + name);
+        const answers = question_data.params[name];
         
         const submittedKey = _.get(question_data, ['submitted_answer', name], null);
 
