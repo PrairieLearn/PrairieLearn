@@ -15,6 +15,12 @@ def prepare(element_html, variant_seed, element_index, question_data):
     #         nVariables += 1
     # questionData["params"][name] = {"nVariables": nVariables}
 
+    question_data["params"][name] = {
+        "_grade": "matrixInputPy",
+        "_weight": 1,
+    };
+    # question_data["true_answer"][name] = display_answers[true_index]
+
     return question_data
 
 def render(element_html, element_index, question_data):
@@ -22,27 +28,11 @@ def render(element_html, element_index, question_data):
     name = element.get("name")
 
     html = ""
-
-    html += '<div style="display:table;">\n'
-
-    # <span style="display:table-cell">'+prairielearn.inner_html(child)+'&nbsp;=&nbsp;&nbsp;</span><span style="display:table-cell;width:100%"><input name="'+child.get("name")+'" style="width:100%"/></span></div></p>\n'
-
     for child in element:
         if child.tag == "variable":
             # TODO: Disable input if question_data.editable is False.
             # TODO: Put submitted answer there if it's non-null.
-
-            html += '   <div style="display:table-row;margin-bottom:15px;">\n'
-            html += '       <span style="display:table-cell">'+prairielearn.inner_html(child)+'&nbsp;=&nbsp;&nbsp;</span>\n'
-            html += '       <span style="display:table-cell;width:100%"><input name="'+child.get("name")+'" style="width:100%"/></span>\n'
-            html += '   </div>\n'
-
-            # html += '<p><div><span style="display:table-cell">'+prairielearn.inner_html(child)+'&nbsp;=&nbsp;&nbsp;</span><span style="display:table-cell;width:100%"><input name="'+child.get("name")+'" style="width:100%"/></span></div></p>\n'
-            # html += '<p><span>'+prairielearn.inner_html(child)+' = </span><input name="'+child.get("name")+'" style="width:100%"></p>\n'
-
-    html += '</div>'
-
-    print(html)
+            html += '<p><div><span style="display:table-cell">'+prairielearn.inner_html(child)+'&nbsp;=&nbsp;&nbsp;</span><span style="display:table-cell;width:100%"><input name="'+child.get("name")+'" style="width:100%"/></span></div></p>\n'
 
     #
     # # Count the number of variables
@@ -62,16 +52,24 @@ def render(element_html, element_index, question_data):
     return html
 
 def grade(name, question_data, *args):
-    submitted_key = question_data["submitted_answer"].get(name, None)
+    print(name)
+    print(question_data)
+
+    
 
 
-    true_key = question_data["true_answer"].get(name, {"key": None}).get("key", None)
-    if (submitted_key == None or true_key == None):
-        return {"score": 0}
+    return {"score": 0}
 
-    score = 0
-    if (true_key == submitted_key):
-        score = 1
-
-    grading = {"score": score}
-    return grading
+    # submitted_key = question_data["submitted_answer"].get(name, None)
+    #
+    #
+    # true_key = question_data["true_answer"].get(name, {"key": None}).get("key", None)
+    # if (submitted_key == None or true_key == None):
+    #     return {"score": 0}
+    #
+    # score = 0
+    # if (true_key == submitted_key):
+    #     score = 1
+    #
+    # grading = {"score": score}
+    # return grading
