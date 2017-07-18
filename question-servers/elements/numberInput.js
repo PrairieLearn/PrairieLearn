@@ -17,27 +17,28 @@ module.exports.prepare = function($, element, element_index, question_data, call
 
         question_data.params[name] = {sig_figs, dec_places, required};
         question_data.true_answer[name] = true_answer;
-        callback(null);
     } catch (err) {
         return callback(err);
     }
+    callback(null);
 };
 
 module.exports.render = function($, element, element_index, question_data, callback) {
+    let html;
     try {
         const name = elementHelper.getAttrib(element, 'name');
 
         const submittedAnsString = _.get(question_data, ['submitted_answer', name], null);
 
-        let html
+        html
             = '<input name="' + name + '"'
             + (question_data.editable ? '' : ' disabled')
             + (submittedAnsString == null ? '' : (' value="' + submittedAnsString + '"'))
             + ' >\n';
-        callback(null, html);
     } catch (err) {
         return callback(err);
     }
+    callback(null, html);
 };
 
 module.exports.grade = function($, element, element_index, question_data, callback) {

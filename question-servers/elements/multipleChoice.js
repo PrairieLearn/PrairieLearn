@@ -22,7 +22,7 @@ module.exports.prepare = function($, element, element_index, question_data, call
                 incorrectAnswers.push(html);
             }
         }
-        if (correctAnswers.length < 1) return callback(new Error('multipleChoice must have a correct answer'));
+        if (correctAnswers.length < 1) throw new Error('multipleChoice must have a correct answer');
 
         const numberCorrect = 1;
         const numberIncorrect = incorrectAnswers.length;
@@ -44,28 +44,28 @@ module.exports.prepare = function($, element, element_index, question_data, call
             html: answers[trueIndex].html,
         };
 
-        if (_.has(question_data.params, name)) return callback(new Error('Duplicate use of name for params: "' + name + '"'));
+        if (_.has(question_data.params, name)) throw new Error('Duplicate use of name for params: "' + name + '"');
         question_data.params[name] = answers;
-        if (_.has(question_data.true_answer, name)) return callback(new Error('Duplicate use of name for true_answer: "' + name + '"'));
+        if (_.has(question_data.true_answer, name)) throw new Error('Duplicate use of name for true_answer: "' + name + '"');
         question_data.true_answer[name] = trueAnswer;
-
-        callback(null);
     } catch (err) {
         return callback(new Error('multipleChoice prepare error: ' + err));
     }
+    callback(null);
 };
 
 module.exports.render = function($, element, element_index, question_data, callback) {
+    let html;
     try {
         const name = elementHelper.getAttrib(element, 'name');
         const inline = elementHelper.getBooleanAttrib(element, 'inline', false);
 
-        if (!question_data.params[name]) return callback(null, 'No params for ' + name);
+        if (!question_data.params[name]) throw new Error('No params for ' + name);
         const answers = question_data.params[name];
         
         const submittedKey = _.get(question_data, ['submitted_answer', name], null);
 
-        var html = '';
+        html = '';
         if (inline) html += '<p>\n';
         for (const ans of answers) {
             if (!inline) html += '<div class="radio">\n';
@@ -81,11 +81,10 @@ module.exports.render = function($, element, element_index, question_data, callb
             if (!inline) html += '</div>\n';
         }
         if (inline) html += '</p>\n';
-
-        callback(null, html);
     } catch (err) {
         return callback(null, 'multipleChoice render error: ' + err);
     }
+    callback(null, html);
 };
 
 module.exports.grade = function($, element, element_index, question_data, callback) {
