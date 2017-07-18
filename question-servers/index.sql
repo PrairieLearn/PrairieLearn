@@ -14,16 +14,17 @@ WITH results AS (
         score = $score,
         correct = $correct,
         feedback = $feedback,
+        partial_scores = $partial_scores,
         grading_method = $grading_method
     WHERE
         s.id = $submission_id
     RETURNING s.*
 )
 INSERT INTO grading_jobs AS gj
-        (submission_id, score, correct, feedback,  auth_user_id,  grading_method)
+        (submission_id, score, correct, feedback,  partial_scores,  auth_user_id,  grading_method)
 (
     SELECT
-         id,            score, correct, feedback, $auth_user_id, $grading_method
+         id,            score, correct, feedback, $partial_scores, $auth_user_id, $grading_method
     FROM
         results
 )

@@ -12,7 +12,7 @@ module.exports.render = function($, element, element_index, question_data, callb
     try_block: try {
         const name = elementHelper.getAttrib(element, 'name');
 
-        const score = _.get(question_data, ['feedback', '_element_gradings', name, 'score'], null);
+        const score = _.get(question_data, ['partial_scores', name, 'score'], null);
         if (score == null) {
             html = '';
             break try_block;
@@ -21,7 +21,7 @@ module.exports.render = function($, element, element_index, question_data, callb
             html = '<span class="label label-danger">ERROR: invalid score: ' + score + '</span>';
             break try_block;
         }
-        const feedback = _.get(question_data, ['feedback', '_element_gradings', name, 'feedback'], null);
+        const feedback = _.get(question_data, ['partial_scores', name, 'feedback'], null);
 
         if (score >= 1) {
             html

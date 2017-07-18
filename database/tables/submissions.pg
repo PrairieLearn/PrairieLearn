@@ -11,6 +11,7 @@ columns
     id: bigint not null default nextval('submissions_id_seq'::regclass)
     mode: enum_mode
     override_score: double precision
+    partial_scores: jsonb
     score: double precision
     sid: text
     submitted_answer: jsonb

@@ -95,6 +95,7 @@ module.exports = {
                         score: grading.score,
                         correct: grading.correct,
                         feedback: grading.feedback,
+                        partial_scores: grading.partial_scores,
                     };
                     sqldb.queryWithClientOneRow(client, sql.update_submission, params, function(err, result) {
                         if (ERR(err, callback)) return;
