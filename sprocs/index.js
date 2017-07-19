@@ -67,6 +67,7 @@ module.exports = {
             'instance_questions_points.sql',
             'instance_questions_grade.sql',
             'submissions_insert.sql',
+            'submissions_update_parsing.sql',
             'assessment_instances_update.sql',
             'assessment_instances_update_homework.sql',
             'grading_job_status.sql',

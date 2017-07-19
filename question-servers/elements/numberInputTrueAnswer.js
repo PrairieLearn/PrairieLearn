@@ -8,19 +8,25 @@ module.exports.prepare = function($, element, element_index, question_data, call
 };
 
 module.exports.render = function($, element, element_index, question_data, callback) {
+    let html;
     try {
         const name = elementHelper.getAttrib(element, 'name');
 
         const params = _.get(question_data, ['params', name], null);
-        if (params == null) return callback(null, 'No params for ' + name);
+        if (params == null) throw new Error('No params for ' + name);
 
         const trueAnswer = _.get(question_data, ['true_answer', name], null);
-        if (trueAnswer == null) return callback(null, 'No true answer for ' + name);
+        if (trueAnswer == null) throw new Error('No true answer for ' + name);
 
-        callback(null, String(trueAnswer));
+        html = String(trueAnswer);
     } catch (err) {
         return callback(null, 'inputNumberTrueAnswer render error: ' + err);
     }
+    callback(null, html);
+};
+
+module.exports.parse = function($, element, element_index, question_data, callback) {
+    callback(null, question_data);
 };
 
 module.exports.grade = function($, element, element_index, question_data, callback) {

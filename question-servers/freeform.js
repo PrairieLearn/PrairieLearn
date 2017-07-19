@@ -216,10 +216,8 @@ module.exports = {
             question_data.options = question_data.options || {};
             _.defaults(question_data.options, course.options, question.options);
             question_data.params = question_data.params || {};
-            question_data.params._grade = question_data.params._grade || {};
-            question_data.params._weights = question_data.params._weights || {};
             question_data.true_answer = question_data.true_answer || {};
-            if (_.isString(ret_consoleLog) && ret_consoleLog.length > 0) consoleLog += ret_consoleLog;
+            if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
             this.execTemplate('question.html', question_data, question, course, (err, question_data, html, $) => {
                 if (ERR(err, callback)) return;
 
@@ -229,7 +227,7 @@ module.exports = {
                         this.elementFunction('prepare', elementName, $, element, index, question_data, (err, new_question_data, ret_consoleLog) => {
                             if (ERR(err, callback)) return;
                             _.assign(question_data, new_question_data || {});
-                            if (_.isString(ret_consoleLog) && ret_consoleLog.length > 0) consoleLog += ret_consoleLog;
+                            if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
                             index++;
                             callback(null);
                         });
@@ -257,6 +255,7 @@ module.exports = {
             options: variant.options,
             clientFilesQuestion: locals.paths.clientFilesQuestion,
             editable: locals.allowAnswerEditing,
+            partial_scores: submission ? submission.partial_scores : null,
         };
         let consoleLog = '';
         if (submission) question_data.submitted_answer = submission.submitted_answer;
@@ -270,7 +269,7 @@ module.exports = {
                     this.elementFunction('render', elementName, $, element, index, question_data, (err, elementHtml, ret_consoleLog) => {
                         if (ERR(err, callback)) return;
                         $(element).replaceWith(elementHtml);
-                        if (_.isString(ret_consoleLog) && ret_consoleLog.length > 0) consoleLog += ret_consoleLog;
+                        if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
                         index++;
                         callback(null);
                     });
@@ -306,6 +305,44 @@ module.exports = {
         });
     },
 
+    parseSubmission: function(submission, variant, question, course, callback) {
+        const question_data = {
+            variant_seed: parseInt(variant.variant_seed, 36),
+            params: variant.params,
+            true_answer: variant.true_answer,
+            options: variant.options,
+            submitted_answer: submission.submitted_answer,
+            parse_errors: {},
+        };
+        var consoleLog = '';
+        this.execTemplate('question.html', question_data, question, course, (err, question_data, html, $) => {
+            if (ERR(err, callback)) return;
+
+            let index = 0;
+            async.eachSeries(elements.keys(), (elementName, callback) => {
+                async.eachSeries($(elementName).toArray(), (element, callback) => {
+                    this.elementFunction('parse', elementName, $, element, index, question_data, (err, new_question_data, ret_consoleLog) => {
+                        if (ERR(err, callback)) return;
+                        question_data.submitted_answer = new_question_data.submitted_answer;
+                        question_data.parse_errors = new_question_data.parse_errors;
+                        if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
+                        index++;
+                        callback(null);
+                    });
+                }, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            }, (err) => {
+                if (ERR(err, callback)) return;
+
+                // FIXME: call server.parse()
+
+                callback(null, question_data.submitted_answer, question_data.parse_errors, consoleLog);
+            });
+        });
+    },
+
     gradeSubmission: function(submission, variant, question, course, callback) {
         const question_data = {
             variant_seed: parseInt(variant.variant_seed, 36),
@@ -318,14 +355,14 @@ module.exports = {
         this.execTemplate('question.html', question_data, question, course, (err, question_data, html, $) => {
             if (ERR(err, callback)) return;
 
-            const _element_gradings = {};
+            const partial_scores = {};
             let index = 0;
             async.eachSeries(elements.keys(), (elementName, callback) => {
                 async.eachSeries($(elementName).toArray(), (element, callback) => {
                     this.elementFunction('grade', elementName, $, element, index, question_data, (err, element_grading, ret_consoleLog) => {
                         if (ERR(err, callback)) return;
-                        _.assign(_element_gradings, element_grading || {});
-                        if (_.isString(ret_consoleLog) && ret_consoleLog.length > 0) consoleLog += ret_consoleLog;
+                        _.assign(partial_scores, element_grading || {});
+                        if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
                         index++;
                         callback(null);
                     });
@@ -336,16 +373,15 @@ module.exports = {
             }, (err) => {
                 if (ERR(err, callback)) return;
                 let total_weight = 0, total_weight_score = 0;
-                _.each(_element_gradings, value => {
+                _.each(partial_scores, value => {
                     const score = _.get(value, 'score', 0);
                     const weight = _.get(value, 'weight', 1);
                     total_weight += weight;
                     total_weight_score += weight * score;
                 });
                 const score = total_weight_score / (total_weight == 0 ? 1 : total_weight);
-                const correct = (score >= 1);
-                const feedback = {_element_gradings};
-                const grading = {score, feedback, correct};
+                const feedback = {};
+                const grading = {score, partial_scores, feedback};
 
                 // FIXME: call server.grade()
 

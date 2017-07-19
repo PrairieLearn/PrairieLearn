@@ -151,23 +151,15 @@ module.exports.submitAndGrade = function(submission, instance_question_id, quest
                 });
             },
             function(callback) {
-                var params = [
-                    instance_question_id,
-                    submission.auth_user_id,
-                    submission.submitted_answer,
-                    submission.type,
-                    submission.credit,
-                    submission.mode,
-                    submission.variant_id,
-                ];
-                logger.debug('homework.submitAndGrade(): calling submissions_insert',
-                             {instance_question_id: instance_question_id, params: params});
-                sqldb.callWithClientOneRow(client, 'submissions_insert', params, function(err, result) {
+                logger.debug('homework.submitAndGrade(): calling saveSubmission()',
+                             {instance_question_id: instance_question_id,
+                              submission: submission, variant: variant,
+                              question: question, course: course});
+                questionServers.saveSubmission(client, submission, variant, question, course, function(err, ret_submission_id) {
                     if (ERR(err, callback)) return;
-                    submission_id = result.rows[0].submission_id;
-                    logger.debug('homework.submitAndGrade(): finished submissions_insert',
-                                 {instance_question_id: instance_question_id,
-                                  submission_id: submission_id});
+                    submission_id = ret_submission_id;
+                    logger.debug('homework.submitAndGrade(): finished saveSubmission()',
+                                 {instance_question_id, submission_id});
                     callback(null);
                 });
             },

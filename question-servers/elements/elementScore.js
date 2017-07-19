@@ -8,43 +8,51 @@ module.exports.prepare = function($, element, element_index, question_data, call
 };
 
 module.exports.render = function($, element, element_index, question_data, callback) {
-    try {
+    let html;
+    try_block: try {
         const name = elementHelper.getAttrib(element, 'name');
 
-        const score = _.get(question_data, ['feedback', '_element_gradings', name, 'score'], null);
+        const score = _.get(question_data, ['partial_scores', name, 'score'], null);
         if (score == null) {
-            return callback(null, '');
+            html = '';
+            break try_block;
         }
         if (!Number.isFinite(score)) {
-            return callback(null, '<span class="label label-danger">ERROR: invalid score: ' + score + '</span>');
+            html = '<span class="label label-danger">ERROR: invalid score: ' + score + '</span>';
+            break try_block;
         }
-        const feedback = _.get(question_data, ['feedback', '_element_gradings', name, 'feedback'], null);
+        const feedback = _.get(question_data, ['partial_scores', name, 'feedback'], null);
 
         if (score >= 1) {
-            return callback(null,
-                            '<span class="label label-success">'
-                            + '<i class="fa fa-check" aria-hidden="true"></i>'
-                            + ' correct: ' + Math.floor(score * 100) + '%'
-                            + (feedback ? (' (' + feedback + ')') : '')
-                            + '</span>');
+            html
+                = '<span class="label label-success">'
+                + '<i class="fa fa-check" aria-hidden="true"></i>'
+                + ' correct: ' + Math.floor(score * 100) + '%'
+                + (feedback ? (' (' + feedback + ')') : '')
+                + '</span>';
         } else if (score > 0) {
-            return callback(null,
-                            '<span class="label label-warning">'
-                            + '<i class="fa fa-circle-o" aria-hidden="true"></i>'
-                            + ' partially correct: ' + Math.floor(score * 100) + '%'
-                            + (feedback ? (' (' + feedback + ')') : '')
-                            + '</span>');
+            html
+                = '<span class="label label-warning">'
+                + '<i class="fa fa-circle-o" aria-hidden="true"></i>'
+                + ' partially correct: ' + Math.floor(score * 100) + '%'
+                + (feedback ? (' (' + feedback + ')') : '')
+                + '</span>';
         } else {
-            return callback(null,
-                            '<span class="label label-danger">'
-                            + '<i class="fa fa-times" aria-hidden="true"></i>'
-                            + ' incorrect: ' + Math.floor(score * 100) + '%'
-                            + (feedback ? (' (' + feedback + ')') : '')
-                            + '</span>');
+            html
+                = '<span class="label label-danger">'
+                + '<i class="fa fa-times" aria-hidden="true"></i>'
+                + ' incorrect: ' + Math.floor(score * 100) + '%'
+                + (feedback ? (' (' + feedback + ')') : '')
+                + '</span>';
         }
     } catch (err) {
         callback(new Error('elementScore render error: ' + err));
     }
+    callback(null, html);
+};
+
+module.exports.parse = function($, element, element_index, question_data, callback) {
+    callback(null, question_data);
 };
 
 module.exports.grade = function($, element, element_index, question_data, callback) {

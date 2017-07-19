@@ -54,6 +54,9 @@ def render(element_html, element_index, question_data):
 
     return html
 
+def parse(element_html, element_index, question_data):
+    return question_data
+
 def grade(element_html, element_index, question_data):
     element = lxml.html.fragment_fromstring(element_html)
     name = element.get("name")

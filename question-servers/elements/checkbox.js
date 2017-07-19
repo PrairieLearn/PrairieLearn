@@ -43,13 +43,14 @@ module.exports.prepare = function($, element, element_index, question_data, call
 
         question_data.params[name] = answers;
         question_data.true_answer[name] = trueAnswer;
-        callback(null);
     } catch (err) {
         return callback(err);
     }
+    callback(null);
 };
 
 module.exports.render = function($, element, element_index, question_data, callback) {
+    let html;
     try {
         const name = elementHelper.getAttrib(element, 'name');
         const inline = elementHelper.getBooleanAttrib(element, 'inline', false);
@@ -59,7 +60,7 @@ module.exports.render = function($, element, element_index, question_data, callb
         let submittedKeys = _.get(question_data, ['submitted_answer', name], []);
         if (!_.isArray(submittedKeys)) submittedKeys = [submittedKeys];
 
-        let html = '';
+        html = '';
         if (inline) html += '<p>\n';
         for (const ans of answers) {
             if (!inline) html += '<div class="checkbox">\n';
@@ -75,11 +76,20 @@ module.exports.render = function($, element, element_index, question_data, callb
             if (!inline) html += '</div>\n';
         }
         if (inline) html += '</p>\n';
-
-        callback(null, html);
     } catch (err) {
         return callback(err);
     }
+    callback(null, html);
+};
+
+module.exports.parse = function($, element, element_index, question_data, callback) {
+    const name = elementHelper.getAttrib(element, 'name');
+
+    if (!_.has(question_data.submitted_answer, name)) {
+        question_data.parse_errors[name] = 'No answers selected';
+        return callback(null, question_data);
+    }
+    return callback(null, question_data);
 };
 
 module.exports.grade = function($, element, element_index, question_data, callback) {

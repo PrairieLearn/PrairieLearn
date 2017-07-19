@@ -72,6 +72,10 @@ module.exports = {
         });
     },
 
+    parseSubmission: function(submission, variant, question, course, callback) {
+        callback(null, submission.submitted_answer, null);
+    },
+
     gradeSubmission: function(submission, variant, question, course, callback) {
         questionHelper.loadServer(question, course, function(err, server) {
             if (ERR(err, callback)) return;

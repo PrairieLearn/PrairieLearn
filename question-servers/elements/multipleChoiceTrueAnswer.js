@@ -7,20 +7,22 @@ module.exports.prepare = function($, element, element_index, question_data, call
 };
 
 module.exports.render = function($, element, element_index, question_data, callback) {
+    let html;
     try {
         const name = elementHelper.getAttrib(element, 'name');
 
-        if (!question_data.true_answer[name]) {
-            return callback(null, 'No true answer for ' + name);
-        }
+        if (!question_data.true_answer[name]) throw new Error('No true answer for ' + name);
 
         const trueAnswer = question_data.true_answer[name];
-        const html = '(' + trueAnswer.key + ') ' + trueAnswer.html.trim() + '\n';
-
-        callback(null, html);
+        html = '(' + trueAnswer.key + ') ' + trueAnswer.html.trim() + '\n';
     } catch (err) {
         return callback(null, 'multipleChoiceTrueAnswer render error: ' + err);
     }
+    callback(null, html);
+};
+
+module.exports.parse = function($, element, element_index, question_data, callback) {
+    callback(null, question_data);
 };
 
 module.exports.grade = function($, element, element_index, question_data, callback) {

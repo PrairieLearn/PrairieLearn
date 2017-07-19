@@ -437,6 +437,31 @@ function foo(p, callback) {
 
 * Note that the [async-stacktrace library](https://github.com/Pita/async-stacktrace) `ERR` function will throw an exception if not provided with a callback, so in cases where there is no callback (e.g., in `cron/index.js`) we should call it with `ERR(err, function() {})`.
 
+* Don't call a `callback` function inside a try block, especially if there is also a `callback` call in the catch handler. Otherwise exceptions thrown much later will show up incorrectly as a double-callback or just in the wrong place. For example:
+
+```javascript
+// Don't do this:
+function foo(p, callback) {
+    try {
+        let result = 3;
+        callback(null, result); // this could throw an error from upstream code in the callback
+    } catch (err) {
+        callback(err);
+    }
+}
+
+// Instead do this:
+function foo(p, callback) {
+    let result;
+    try {
+        result = 3;
+    } catch (err) {
+        callback(err);
+    }
+    callback(null, result);
+}
+```
+
 * Don't use promises.
 
 * We will switch to [async/await](https://github.com/tc39/ecmascript-asyncawait) when it becomes available in Node.js. The async/await proposal made it to [stage 4](https://github.com/tc39/proposals/blob/master/finished-proposals.md) in July 2016 and was thus included in the [latest draft Ecmascript spec](https://tc39.github.io/ecma262/). This will appear as ES2017/ES7. V8 [merged support](https://bugs.chromium.org/p/v8/issues/detail?id=4483) for async/await. Node.js is [tracking its implementation](https://github.com/nodejs/promises/issues/4) but as of 2016-09-26 it looks like there is still work needed.
