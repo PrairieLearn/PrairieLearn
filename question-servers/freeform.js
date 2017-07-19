@@ -80,8 +80,10 @@ module.exports = {
 
             // Temporary fix to write stderr to console while waiting for this
             // to be displayed in browser
-            console.log("FIXME")
-            console.log(data)
+            /* eslint-disable no-console */
+            console.log('FIXME');
+            console.log(data);
+            /* eslint-enable no-console */
         });
 
         child.stderr.on('data', (data) => {
@@ -90,8 +92,10 @@ module.exports = {
 
             // Temporary fix to write stderr to console while waiting for this
             // to be displayed in browser
-            console.log("FIXME")
-            console.log(data)
+            /* eslint-disable no-console */
+            console.log('FIXME');
+            console.log(data);
+            /* eslint-enable no-console */
         });
 
         child.stdio[3].on('data', (data) => {
