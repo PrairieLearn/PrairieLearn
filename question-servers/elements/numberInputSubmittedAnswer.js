@@ -14,11 +14,15 @@ module.exports.render = function($, element, element_index, question_data, callb
         if (!question_data.submitted_answer[name]) throw new Error('No submitted answer');
 
         const submittedAnswer = question_data.submitted_answer[name];
-        html = submittedAnswer;
+        html = String(submittedAnswer);
     } catch (err) {
         return callback(null, 'inputNumberSubmittedAnswer render error: ' + err);
     }
     callback(null, html);
+};
+
+module.exports.parse = function($, element, element_index, question_data, callback) {
+    callback(null, question_data);
 };
 
 module.exports.grade = function($, element, element_index, question_data, callback) {

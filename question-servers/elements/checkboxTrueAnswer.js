@@ -25,6 +25,9 @@ module.exports.render = function($, element, element_index, question_data, callb
     callback(null, html);
 };
 
+module.exports.parse = function($, element, element_index, question_data, callback) {
+    callback(null, question_data);
+};
 
 module.exports.grade = function($, element, element_index, question_data, callback) {
     callback(null);

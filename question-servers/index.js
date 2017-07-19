@@ -66,6 +66,45 @@ module.exports = {
         });
     },
 
+    parseSubmission: function(submission, variant, question, course, callback) {
+        this.getModule(question.type, function(err, questionModule) {
+            if (ERR(err, callback)) return;
+            questionModule.parseSubmission(submission, variant, question, course, function(err, new_submitted_answer, parse_errors) {
+                if (ERR(err, callback)) return;
+                callback(null, new_submitted_answer, parse_errors);
+            });
+        });
+    },
+
+    // must be called from within a transaction that has an update lock on the assessment_instance
+    saveSubmission: function(client, submission, variant, question, course, callback) {
+        const params = [
+            variant.instance_question_id,
+            submission.auth_user_id,
+            submission.submitted_answer,
+            submission.type,
+            submission.credit,
+            submission.mode,
+            submission.variant_id,
+        ];
+        sqldb.callWithClientOneRow(client, 'submissions_insert', params, function(err, result) {
+            if (ERR(err, callback)) return;
+            const submission_id = result.rows[0].submission_id;
+            module.exports.parseSubmission(submission, variant, question, course, (err, new_submitted_answer, parse_errors) => {
+                if (ERR(err, callback)) return;
+                const params = [
+                    submission_id,
+                    new_submitted_answer,
+                    parse_errors,
+                ];
+                sqldb.callWithClient(client, 'submissions_update_parsing', params, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null, submission_id);
+                });
+            });
+        });
+    },
+
     gradeSubmission: function(submission, variant, question, course, options, callback) {
         this.getModule(question.type, function(err, questionModule) {
             if (ERR(err, callback)) return;

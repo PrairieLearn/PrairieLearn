@@ -41,16 +41,33 @@ module.exports.render = function($, element, element_index, question_data, callb
     callback(null, html);
 };
 
+module.exports.parse = function($, element, element_index, question_data, callback) {
+    const name = elementHelper.getAttrib(element, 'name');
+
+    if (!_.has(question_data.submitted_answer, name)) {
+        question_data.parse_errors[name] = 'No answer entered';
+        return callback(null, question_data);
+    }
+    const submittedAnsString = _.get(question_data, ['submitted_answer', name], null);
+    const submittedAnsNumber = Number.parseFloat(submittedAnsString);
+    if (!Number.isFinite(submittedAnsNumber)) {
+        question_data.parse_errors[name] = 'Invalid format for a number: ' + submittedAnsString;
+        return callback(null, question_data);
+    }
+    question_data.submitted_answer[name] = submittedAnsNumber;
+    
+    return callback(null, question_data);
+};
+
 module.exports.grade = function($, element, element_index, question_data, callback) {
     const name = elementHelper.getAttrib(element, 'name');
     const weight = elementHelper.getNumberAttrib(element, 'weight', 1);
+
     const trueAns = _.get(question_data, ['true_answer', name], null);
     if (trueAns == null) return callback(null, {score: 0});
 
-    const submittedAnsString = _.get(question_data, ['submitted_answer', name], null);
-    if (submittedAnsString == null) return callback(null, {score: 0});
-    const submittedAns = Number.parseFloat(submittedAnsString);
-    if (!Number.isFinite(submittedAns)) return callback(null, {score: 0, feedback: 'not a number'});
+    const submittedAns = _.get(question_data, ['submitted_answer', name], null);
+    if (submittedAns == null) return callback(null, {score: 0});
 
     const sig_figs = _.get(question_data, ['params', name, 'sig_figs'], null);
     const dec_places = _.get(question_data, ['params', name, 'dec_places'], null);

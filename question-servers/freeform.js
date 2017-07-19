@@ -217,7 +217,7 @@ module.exports = {
             _.defaults(question_data.options, course.options, question.options);
             question_data.params = question_data.params || {};
             question_data.true_answer = question_data.true_answer || {};
-            if (_.isString(ret_consoleLog) && ret_consoleLog.length > 0) consoleLog += ret_consoleLog;
+            if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
             this.execTemplate('question.html', question_data, question, course, (err, question_data, html, $) => {
                 if (ERR(err, callback)) return;
 
@@ -227,7 +227,7 @@ module.exports = {
                         this.elementFunction('prepare', elementName, $, element, index, question_data, (err, new_question_data, ret_consoleLog) => {
                             if (ERR(err, callback)) return;
                             _.assign(question_data, new_question_data || {});
-                            if (_.isString(ret_consoleLog) && ret_consoleLog.length > 0) consoleLog += ret_consoleLog;
+                            if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
                             index++;
                             callback(null);
                         });
@@ -269,7 +269,7 @@ module.exports = {
                     this.elementFunction('render', elementName, $, element, index, question_data, (err, elementHtml, ret_consoleLog) => {
                         if (ERR(err, callback)) return;
                         $(element).replaceWith(elementHtml);
-                        if (_.isString(ret_consoleLog) && ret_consoleLog.length > 0) consoleLog += ret_consoleLog;
+                        if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
                         index++;
                         callback(null);
                     });
@@ -305,6 +305,44 @@ module.exports = {
         });
     },
 
+    parseSubmission: function(submission, variant, question, course, callback) {
+        const question_data = {
+            variant_seed: parseInt(variant.variant_seed, 36),
+            params: variant.params,
+            true_answer: variant.true_answer,
+            options: variant.options,
+            submitted_answer: submission.submitted_answer,
+            parse_errors: {},
+        };
+        var consoleLog = '';
+        this.execTemplate('question.html', question_data, question, course, (err, question_data, html, $) => {
+            if (ERR(err, callback)) return;
+
+            let index = 0;
+            async.eachSeries(elements.keys(), (elementName, callback) => {
+                async.eachSeries($(elementName).toArray(), (element, callback) => {
+                    this.elementFunction('parse', elementName, $, element, index, question_data, (err, new_question_data, ret_consoleLog) => {
+                        if (ERR(err, callback)) return;
+                        question_data.submitted_answer = new_question_data.submitted_answer;
+                        question_data.parse_errors = new_question_data.parse_errors;
+                        if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
+                        index++;
+                        callback(null);
+                    });
+                }, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            }, (err) => {
+                if (ERR(err, callback)) return;
+
+                // FIXME: call server.parse()
+
+                callback(null, question_data.submitted_answer, question_data.parse_errors, consoleLog);
+            });
+        });
+    },
+
     gradeSubmission: function(submission, variant, question, course, callback) {
         const question_data = {
             variant_seed: parseInt(variant.variant_seed, 36),
@@ -324,7 +362,7 @@ module.exports = {
                     this.elementFunction('grade', elementName, $, element, index, question_data, (err, element_grading, ret_consoleLog) => {
                         if (ERR(err, callback)) return;
                         _.assign(partial_scores, element_grading || {});
-                        if (_.isString(ret_consoleLog) && ret_consoleLog.length > 0) consoleLog += ret_consoleLog;
+                        if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
                         index++;
                         callback(null);
                     });

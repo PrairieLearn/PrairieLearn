@@ -87,6 +87,16 @@ module.exports.render = function($, element, element_index, question_data, callb
     callback(null, html);
 };
 
+module.exports.parse = function($, element, element_index, question_data, callback) {
+    const name = elementHelper.getAttrib(element, 'name');
+
+    if (!_.has(question_data.submitted_answer, name)) {
+        question_data.parse_errors[name] = 'No answer selected';
+        return callback(null, question_data);
+    }
+    return callback(null, question_data);
+};
+
 module.exports.grade = function($, element, element_index, question_data, callback) {
     const name = elementHelper.getAttrib(element, 'name');
     const weight = elementHelper.getNumberAttrib(element, 'weight', 1);
