@@ -2,7 +2,7 @@ import lxml.html
 import numpy as np
 import prairielearn
 
-def prepare(element_html, variant_seed, element_index, question_data):
+def prepare(element_html, element_index, question_data):
     return question_data
 
 def render(element_html, element_index, question_data):
@@ -39,3 +39,6 @@ def numpy_to_matlab(A,ndigits=2,wtype='f'):
                 else:
                     A_str += ' '
         return A_str
+
+def grade(element_html, element_index, question_data):
+    return {}
