@@ -17,6 +17,9 @@ def render(element_html, element_index, question_data):
     html += "</pre>"
     return html
 
+def parse(element_html, element_index, question_data):
+    return question_data
+
 # This function assumes that A is either a floating-point number or a
 # real-valued numpy array. It returns A as a MATLAB-formatted string.
 def numpy_to_matlab(A,ndigits=2,wtype='f'):
