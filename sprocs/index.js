@@ -105,6 +105,7 @@ module.exports = {
             'variants_select_for_assessment_instance_grading.sql',
             'variants_update_after_grading.sql',
             'variants_ensure_open.sql',
+            'sproc-testing_boundaries_by_date.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

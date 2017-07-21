@@ -137,6 +137,7 @@ ORDER BY
 
 -- BLOCK assessment_access_rules
 SELECT
+    aar.id AS aar_id,
     CASE
         WHEN aar.mode IS NULL THEN '—'
         ELSE aar.mode::text

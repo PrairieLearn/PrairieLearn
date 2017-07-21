@@ -14,6 +14,7 @@ var dataFiles = require('../../lib/data-files');
 var assessment = require('../../lib/assessment');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
+var plpsutilities = require('../../lib/plps-utilities');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -76,8 +77,31 @@ router.get('/', function(req, res, next) {
             var params = {assessment_id: res.locals.assessment.id};
             sqldb.query(sql.assessment_access_rules, params, function(err, result) {
                 if (ERR(err, callback)) return;
+
                 res.locals.access_rules = result.rows;
-                callback(null);
+
+                plpsutilities.validPLPSexams(res.locals.course.id, 'assessment_id', res.locals.assessment.id, function(err, result) {
+                    if (ERR(err, callback)) return;
+
+                    _.each(res.locals.access_rules, function(rule) {
+                        if (rule.mode != 'Exam') return;
+
+                        rule.valid_exams = _.filter(result, ['aar_id', rule.aar_id]);
+                        if (!rule.valid_exams) rule.valid_exams = [];
+                    });
+
+                    // Move this to a middleware?
+                    plpsutilities.courseLinked(res.locals.course.id, function(err, result) {
+                        if (ERR(err, next)) return;
+
+                        res.locals.course.ps_course_ids = result;
+
+//                        console.log(res.locals.access_rules);
+//                        console.log(res.locals.course);
+
+                        callback(null);
+                    });
+                });
             });
         },
         function(callback) {
