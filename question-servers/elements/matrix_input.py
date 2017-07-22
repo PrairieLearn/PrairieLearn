@@ -1,40 +1,83 @@
 import lxml.html
 import numpy as np
 import sys
-import prairielearn
+import prairielearn as pl
+from html import escape
 
 
-# TODO: add library function to check element attributes (like in numberInput.js)
-# TODO: don't use exceptions to signal things like invalid comparison (e.g., when a_sub and a_tru are not same size)?
-#       (this is dangerous because it hides real bugs)
+# TODO: check element attributes (like in numberInput.js)
 
-def prepare(element_html, element_index, question_data):
+def prepare(element_html, element_index, data, options):
+    # element = lxml.html.fragment_fromstring(element_html)
+    # name = pl.get_string_attrib(element, "name")
+    return data
+
+def render(element_html, element_index, data, options):
+    return ""
+    
     element = lxml.html.fragment_fromstring(element_html)
-    name = element.get("name")
-
-    # print("This is some debugging output from matrixInputPy in prepare for element name '%s'" % name)
-
-    question_data["params"][name] = {
-        "_grade": "matrixInputPy",
-        "_weight": 1,
-    };
-
-    return question_data
-
-def render(element_html, element_index, question_data):
-    element = lxml.html.fragment_fromstring(element_html)
-    name = element.get("name")
+    # name = pl.get_string_attrib(element, "name")
 
     html = ""
     for child in element:
         if child.tag == "variable":
-            # TODO: Disable input if question_data.editable is False.
-            # TODO: Put submitted answer there if it's non-null.
-            html += '<p><div><span style="display:table-cell">'+prairielearn.inner_html(child)+'</span><span style="display:table-cell;width:100%"><input name="'+child.get("name")+'" style="width:100%"/></span></div></p>\n'
+            if options["panel"] == "question":
+                editable = options["editable"]
+                raw_submitted_answer = options["raw_submitted_answer"].get(name, None)
+                var_name = pl.get_string_attrib(child, "name")
+                input_html = '<input name="' + var_name + '"' \
+                    + ('' if editable else ' disabled') \
+                    + ('' if (raw_submitted_answer is None) else (' value="' + escape(raw_submitted_answer) + '"')) \
+                    + 'style="width:100%"/>'
+                html += '<p><div><span style="display:table-cell">' \
+                    + prairielearn.inner_html(child) \
+                    + '</span><span style="display:table-cell;width:100%">' \
+                    + input_html \
+                    + '</span></div></p>\n''
+
+
+
+
+
+            # html += '<p><div><span style="display:table-cell">'+prairielearn.inner_html(child)+'</span><span style="display:table-cell;width:100%"><input name="'+child.get("name")+'" style="width:100%"/></span></div></p>\n'
+
+
+
+
+    # if options["panel"] == "question":
+    #     editable = options["editable"]
+    #     raw_submitted_answer = options["raw_submitted_answer"].get(name, None)
+    #
+    #     # FIXME: URL encode raw_submitted_answer
+    #     html = '<input name="' + name + '"' \
+    #         + ('' if editable else ' disabled') \
+    #         + ('' if (raw_submitted_answer is None) else (' value="' + raw_submitted_answer + '"')) \
+    #         + ' >\n';
+    # elif options["panel"] == "submission":
+    #     submitted_answer = data["submitted_answer"].get(name, None)
+    #     parse_error = data["parse_errors"].get(name, None)
+    #     if parse_error is not None:
+    #         html = parse_error
+    #     else:
+    #         html = "%g" % submitted_answer # FIXME: render this properly with sig_figs
+    # elif options["panel"] == "answer":
+    #     true_answer = data["true_answer"].get(name, None)
+    #     if true_answer is None:
+    #         html = "No true_answer for variable: %s" % name
+    #     else:
+    #         html = "%g" % true_answer # FIXME: render this properly with sig_figs
+    # else:
+    #     raise Exception("Invalid panel type: %s" % options["panel"])
+
+    print(html)
+    print("hello")
 
     return html
 
-def parse(element_html, element_index, question_data):
+def parse(element_html, element_index, data, options):
+    return data
+
+
     # By convention, this function returns at the first error found
 
     element = lxml.html.fragment_fromstring(element_html)
@@ -63,7 +106,7 @@ def parse(element_html, element_index, question_data):
             # Replace submitted answer with numpy array
             question_data["submitted_answer"][var_name] = var_sub_parsed.tolist()
 
-    return question_data
+    return data
 
 
 
@@ -73,7 +116,10 @@ def parse(element_html, element_index, question_data):
 
 
 
-def grade(element_html, element_index, question_data):
+def grade(element_html, element_index, data, options):
+    return data
+
+
     element = lxml.html.fragment_fromstring(element_html)
     name = element.get("name")
     grading = {}
