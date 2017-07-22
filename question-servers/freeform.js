@@ -246,7 +246,7 @@ module.exports = {
             err = checkProp(data, 'data', 'feedback', 'object', checked); if (err) return err;
         }
         extraProps = _.difference(_.keys(data), checked);
-        if (extraProps.length > 0) return '"data" has invalid extra keys: ' + ', '.join(extraProps);
+        if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
 
         checked = [];
         err = checkProp(options, 'options', 'variant_seed', 'integer', checked); if (err) return err;
@@ -259,7 +259,7 @@ module.exports = {
             err = checkProp(options, 'options', 'panel', 'string', checked); if (err) return err;
         }
         extraProps = _.difference(_.keys(options), checked);
-        if (extraProps.length > 0) return '"options" has invalid extra keys: ' + ', '.join(extraProps);
+        if (extraProps.length > 0) return '"options" has invalid extra keys: ' + extraProps.join(', ');
 
         return null;
     },
