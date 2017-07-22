@@ -201,7 +201,7 @@ module.exports = {
         });
     },
 
-    checkQuestionData: function(data, options) {
+    checkQuestionData: function(data, options, checkOptions) {
         const checkProp = (obj, objName, prop, type, checked) => {
             if (!_.has(obj, prop)) return '"' + prop + '" is missing from ' + objName;
             if (type == 'integer') {
@@ -236,20 +236,28 @@ module.exports = {
         checked = [];
         err = checkProp(data, 'data', 'params', 'object', checked); if (err) return err;
         err = checkProp(data, 'data', 'true_answer', 'object', checked); if (err) return err;
-        err = checkProp(data, 'data', 'partial_scores', 'object', checked); if (err) return err;
-        err = checkProp(data, 'data', 'submitted_answer', 'object', checked); if (err) return err;
-        err = checkProp(data, 'data', 'parse_errors', 'object', checked); if (err) return err;
-        err = checkProp(data, 'data', 'score', 'number', checked); if (err) return err;
-        err = checkProp(data, 'data', 'feedback', 'object', checked); if (err) return err;
+        if (checkOptions.has_submission) {
+            err = checkProp(data, 'data', 'submitted_answer', 'object', checked); if (err) return err;
+            err = checkProp(data, 'data', 'parse_errors', 'object', checked); if (err) return err;
+        }
+        if (checkOptions.has_grading) {
+            err = checkProp(data, 'data', 'partial_scores', 'object', checked); if (err) return err;
+            err = checkProp(data, 'data', 'score', 'number', checked); if (err) return err;
+            err = checkProp(data, 'data', 'feedback', 'object', checked); if (err) return err;
+        }
         extraProps = _.difference(_.keys(data), checked);
         if (extraProps.length > 0) return '"data" has invalid extra keys: ' + ', '.join(extraProps);
 
         checked = [];
         err = checkProp(options, 'options', 'variant_seed', 'integer', checked); if (err) return err;
         err = checkProp(options, 'options', 'options', 'object', checked); if (err) return err;
-        err = checkProp(options, 'options', 'editable', 'boolean', checked); if (err) return err;
-        err = checkProp(options, 'options', 'raw_submitted_answer', 'object', checked); if (err) return err;
-        err = checkProp(options, 'options', 'panel', 'string', checked); if (err) return err;
+        if (checkOptions.has_submission) {
+            err = checkProp(options, 'options', 'raw_submitted_answer', 'object', checked); if (err) return err;
+        }
+        if (checkOptions.for_render) {
+            err = checkProp(options, 'options', 'editable', 'boolean', checked); if (err) return err;
+            err = checkProp(options, 'options', 'panel', 'string', checked); if (err) return err;
+        }
         extraProps = _.difference(_.keys(options), checked);
         if (extraProps.length > 0) return '"options" has invalid extra keys: ' + ', '.join(extraProps);
 
@@ -260,21 +268,14 @@ module.exports = {
         let data = {
             params: {},
             true_answer: {},
-            submitted_answer: {},
-            parse_errors: {},
-            partial_scores: {},
-            score: 0,
-            feedback: {},
         };
         const options = {
             variant_seed: parseInt(variant_seed, 36),
             options: _.defaults({}, course.options, question.options),
-            raw_submitted_answer: {},
-            editable: false,
-            panel: 'none',
         };
 
-        const checkErr = module.exports.checkQuestionData(data, options);
+        const checkOptions = {has_submission: false, has_grading: false, for_render: false};
+        const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
         if (checkErr) {
             const err = new Error('Invalid state before server.get_data(): ' + checkErr);
             err.data = {data, options, question, course};
@@ -289,7 +290,7 @@ module.exports = {
             if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
             data = ret_data;
 
-            const checkErr = module.exports.checkQuestionData(data, options);
+            const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
             if (checkErr) {
                 const err = new Error('Invalid state after server.get_data(): ' + checkErr);
                 err.data = {data, options, question, course};
@@ -305,7 +306,7 @@ module.exports = {
                         this.elementFunction('prepare', elementName, $, element, index, data, options, (err, ret_data, ret_consoleLog) => {
                             if (ERR(err, callback)) return;
                             data = ret_data;
-                            const checkErr = module.exports.checkQuestionData(data, options);
+                            const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
                             if (checkErr) {
                                 const err = new Error('Invalid state after element ' + index + ' ' + elementName + '.prepare(): ' + checkErr);
                                 err.data = {data, options, question, course};
@@ -351,7 +352,8 @@ module.exports = {
         options.options.client_files_question_url = locals.paths.clientFilesQuestion;
         let consoleLog = '';
 
-        const checkErr = module.exports.checkQuestionData(data, options);
+        const checkOptions = {has_submission: true, has_grading: true, for_render: true};
+        const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
         if (checkErr) {
             const err = new Error('Invalid state before render: ' + checkErr);
             err.data = {data, options, submission, variant, question, course};
@@ -409,20 +411,16 @@ module.exports = {
             true_answer: _.get(variant, 'true_answer', {}),
             submitted_answer: _.get(submission, 'submitted_answer', {}),
             parse_errors: _.get(submission, 'parse_errors', {}),
-            partial_scores: _.get(submission, 'partial_scores', {}),
-            score: _.get(submission, 'score', 0),
-            feedback: _.get(submission, 'feedback', {}),
         };
         const options = {
             variant_seed: parseInt(variant.variant_seed, 36),
             options: _.get(variant, 'options', {}),
             raw_submitted_answer: _.get(submission, 'raw_submitted_answer', {}),
-            editable: false,
-            panel: 'none',
         };
         var consoleLog = '';
 
-        const checkErr = module.exports.checkQuestionData(data, options);
+        const checkOptions = {has_submission: true, has_grading: false, for_render: false};
+        const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
         if (checkErr) {
             const err = new Error('Invalid state before parse: ' + checkErr);
             err.data = {data, options, submission, variant, question, course};
@@ -438,7 +436,7 @@ module.exports = {
                     this.elementFunction('parse', elementName, $, element, index, data, options, (err, ret_data, ret_consoleLog) => {
                         if (ERR(err, callback)) return;
                         data = ret_data;
-                        const checkErr = module.exports.checkQuestionData(data, options);
+                        const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
                         if (checkErr) {
                             const err = new Error('Invalid state after element ' + index + ' ' + elementName + '.parse(): ' + checkErr);
                             err.data = {data, options, submission, variant, question, course};
@@ -455,14 +453,14 @@ module.exports = {
             }, (err) => {
                 if (ERR(err, callback)) return;
 
-                let checkErr = module.exports.checkQuestionData(data, options);
+                let checkErr = module.exports.checkQuestionData(data, options, checkOptions);
                 if (checkErr) {
                     const err = new Error('Invalid state before server.parse(): ' + checkErr);
                     err.data = {data, options, submission, variant, question, course};
                     return callback(err);
                 }
                 // FIXME: call server.parse()
-                checkErr = module.exports.checkQuestionData(data, options);
+                checkErr = module.exports.checkQuestionData(data, options, checkOptions);
                 if (checkErr) {
                     const err = new Error('Invalid state after server.parse(): ' + checkErr);
                     err.data = {data, options, submission, variant, question, course};
@@ -488,12 +486,11 @@ module.exports = {
             variant_seed: parseInt(variant.variant_seed, 36),
             options: _.get(variant, 'options', {}),
             raw_submitted_answer: submission.raw_submitted_answer,
-            editable: false,
-            panel: 'none',
         };
         var consoleLog = '';
 
-        const checkErr = module.exports.checkQuestionData(data, options);
+        const checkOptions = {has_submission: true, has_grading: true, for_render: false};
+        const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
         if (checkErr) {
             const err = new Error('Invalid state before grade: ' + checkErr);
             err.data = {data, options, submission, variant, question, course};
@@ -509,7 +506,7 @@ module.exports = {
                     this.elementFunction('grade', elementName, $, element, index, data, options, (err, ret_data, ret_consoleLog) => {
                         if (ERR(err, callback)) return;
                         data = ret_data;
-                        const checkErr = module.exports.checkQuestionData(data, options);
+                        const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
                         if (checkErr) {
                             const err = new Error('Invalid state after element ' + index + ' ' + elementName + '.grade(): ' + checkErr);
                             err.data = {data, options, submission, variant, question, course};
@@ -535,14 +532,14 @@ module.exports = {
                 data.score = total_weight_score / (total_weight == 0 ? 1 : total_weight);
                 data.feedback = {};
 
-                let checkErr = module.exports.checkQuestionData(data, options);
+                let checkErr = module.exports.checkQuestionData(data, options, checkOptions);
                 if (checkErr) {
                     const err = new Error('Invalid state before server.grade(): ' + checkErr);
                     err.data = {data, options, submission, variant, question, course};
                     return callback(err);
                 }
                 // FIXME: call server.grade()
-                checkErr = module.exports.checkQuestionData(data, options);
+                checkErr = module.exports.checkQuestionData(data, options, checkOptions);
                 if (checkErr) {
                     const err = new Error('Invalid state after server.grade(): ' + checkErr);
                     err.data = {data, options, submission, variant, question, course};
