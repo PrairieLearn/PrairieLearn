@@ -135,11 +135,28 @@ module.exports = {
                         correct: (question_data.score >= 0.5),
                         feedback: question_data.feedback,
                         partial_scores: question_data.partial_scores,
+                        submitted_answer: question_data.submitted_answer,
+                        parse_errors: question_data.parse_errors,
                     };
                     sqldb.queryWithClientOneRow(client, sql.update_submission, params, function(err, result) {
                         if (ERR(err, callback)) return;
                         var grading_job = result.rows[0];
-                        callback(null, grading_job);
+
+                        if (question_data.params || question_data.true_answer) {
+                            let params = {
+                                variant_id: variant.id,
+                                params: question_data.params,
+                                true_answer: question_data.true_answer,
+                            };
+                            sqldb.queryWithClient(client, sql.update_variant, params, function(err) {
+                                if (ERR(err, callback)) return;
+
+                                callback(null, grading_job);
+                            });
+
+                        } else {
+                            callback(null, grading_job);
+                        }
                     });
                 });
             });

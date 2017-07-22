@@ -72,8 +72,10 @@ BEGIN
     -- actually insert the submission
 
     INSERT INTO submissions
-            (variant_id, auth_user_id,  raw_submitted_answer, submitted_answer, type, credit, mode, duration)
-    VALUES  (variant_id, authn_user_id, submitted_answer,     submitted_answer, type, credit, mode, delta)
+            (variant_id, auth_user_id,  raw_submitted_answer, submitted_answer,
+            type, credit, mode, duration,         params,         true_answer)
+    VALUES  (variant_id, authn_user_id, submitted_answer,     submitted_answer,
+            type, credit, mode, delta,    variant.params, variant.true_answer)
     RETURNING id
     INTO submission_id;
 

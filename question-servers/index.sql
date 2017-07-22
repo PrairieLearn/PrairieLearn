@@ -15,6 +15,8 @@ WITH results AS (
         correct = $correct,
         feedback = $feedback,
         partial_scores = $partial_scores,
+        submitted_answer = $submitted_answer,
+        parse_errors = $parse_errors,
         grading_method = $grading_method
     WHERE
         s.id = $submission_id
@@ -29,6 +31,14 @@ INSERT INTO grading_jobs AS gj
         results
 )
 RETURNING gj.*;
+
+-- BLOCK update_variant
+UPDATE variants AS v
+SET
+    params = $params,
+    true_answer = $true_answer
+WHERE
+    v.id = $variant_id;
 
 -- BLOCK cancel_outstanding_grading_requests
 WITH
