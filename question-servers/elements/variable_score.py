@@ -1,17 +1,17 @@
 import lxml.html, math
 import prairielearn as pl
 
-def prepare(element_html, element_index, question_data):
-    return question_data
+def prepare(element_html, element_index, data, options):
+    return data
 
-def render(element_html, element_index, question_data):
+def render(element_html, element_index, data, options):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
 
-    if question_data["panel"] == "answer":
+    if options["panel"] == "answer":
         return ''
 
-    partial_score = question_data["partial_scores"].get(name, {"score": None, "feedback": None})
+    partial_score = data["partial_scores"].get(name, {"score": None, "feedback": None})
     score = partial_score.get("score", None)
     feedback = partial_score.get("feedback", None)
 
@@ -44,8 +44,8 @@ def render(element_html, element_index, question_data):
 
     return html
 
-def parse(element_html, element_index, question_data):
-    return question_data
+def parse(element_html, element_index, data, options):
+    return data
 
-def grade(element_html, element_index, question_data):
-    return question_data
+def grade(element_html, element_index, data, options):
+    return data
