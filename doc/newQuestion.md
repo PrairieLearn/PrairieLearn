@@ -168,3 +168,83 @@ System | Read the `variant` and `submission` out of the database.
 System | Update the `variant` and `submission` in the database.
 
 After a submitted answer has been graded the question page is normally redisplayed to show the score and other information.
+
+## Elements
+
+### `multiple_choice` element
+
+```html
+<multiple_choice name="acc" weight="1" inline="true">
+  <answer correct="false">positive</answer>
+  <answer correct="true">negative</answer>
+  <answer correct="false">zero</answer>
+</multiple_choice>
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`inline` | boolean | false | List answer choices on a single line instead of as separate paragraphs.
+`number_answers` | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.
+`fixed_order` | boolean | false | Disable the randomization of answer order.
+
+A `multiple_choice` element selects one correct answer and zero or more incorrect answers and displays them in a random order as radio buttons.
+
+An `answer` element inside a `multiple_choice` element has attributes:
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`correct` | boolean | false | Is this a correct answer to the question?
+
+### `checkbox` element
+
+```html
+<checkbox name="vpos" weight="1" inline="true">
+  <answer correct="true">A-B</answer>
+  <answer correct="true">B-C</answer>
+  <answer>               C-D</answer>
+  <answer correct="true">D-E</answer>
+  <answer>               E-F</answer>
+  <answer>               F-G</answer>
+</checkbox>
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`inline` | boolean | false | List answer choices on a single line instead of as separate paragraphs.
+`number_answers` | integer | special | The total number of answer choices to display. Defaults to displaying all answers.
+`min_correct` | integer | special | The minimum number of correct answers to display. Defaults to displaying all correct answers.
+`max_correct` | integer | special | The maximum number of correct answers to display. Defaults to displaying all correct answers.
+`fixed_order` | boolean | false | Disable the randomization of answer order.
+
+A `multiple_choice` element displays a subset of the answers in a random order as checkboxes.
+
+An `answer` element inside a `multiple_choice` element has attributes:
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`correct` | boolean | false | Is this a correct answer to the question?
+
+### `number_input` element
+
+```html
+<number_input name="v_avg" true_answer="0.8" sig_figs="2"/>
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`true_answer` | float | special | True answer for grading. Defaults to `true_answer[name]`.
+`sig_figs` | integer | 3 | Number of significant figures to use for grading.
+
+### `question_panel` element
+
+Only display contents when rendering the question panel.
+
+### `variable_score` element
+
+Display the partial score for a specific variable.

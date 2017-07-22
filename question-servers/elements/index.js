@@ -2,17 +2,12 @@
 module.exports = {};
 
 module.exports = new Map([
-    ['multipleChoice', require('./multipleChoice')],
-    ['multipleChoiceSubmittedAnswer', require('./multipleChoiceSubmittedAnswer')],
-    ['multipleChoiceTrueAnswer', require('./multipleChoiceTrueAnswer')],
-    ['checkbox', require('./checkbox')],
-    ['checkboxSubmittedAnswer', require('./checkboxSubmittedAnswer')],
-    ['checkboxTrueAnswer', require('./checkboxTrueAnswer')],
-    ['numberInput', require('./numberInput')],
-    ['numberInputSubmittedAnswer', require('./numberInputSubmittedAnswer')],
-    ['numberInputTrueAnswer', require('./numberInputTrueAnswer')],
-    ['elementScore', require('./elementScore')],
-    ['multipleChoicePy', 'multipleChoicePy.py'],
+    ['checkbox', 'checkbox.py'],
+    ['element_score', 'element_score.py'],
     ['matrixOutputPy', 'matrixOutputPy.py'],
-    ['matrixInputPy', 'matrixInputPy.py']
+    ['matrixInputPy', 'matrixInputPy.py'],
+    ['multiple_choice', 'multiple_choice.py'],
+    ['number_input', 'number_input.py'],
+    ['question_panel', 'question_panel.py'],
+    ['variable_score', 'variable_score.py'],
 ]);

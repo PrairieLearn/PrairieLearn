@@ -108,10 +108,10 @@ module.exports = {
     gradeSubmission: function(submission, variant, question, course, options, callback) {
         this.getModule(question.type, function(err, questionModule) {
             if (ERR(err, callback)) return;
-            questionModule.gradeSubmission(submission, variant, question, course, function(err, grading) {
+            questionModule.gradeSubmission(submission, variant, question, course, function(err, question_data) {
                 if (ERR(err, callback)) return;
-                grading.correct = (grading.score >= 0.5);
-                callback(null, grading);
+                question_data.correct = 
+                callback(null, question_data);
             });
         });
     },
@@ -124,17 +124,17 @@ module.exports = {
                 if (ERR(err, callback)) return;
                 var submission = result.rows[0];
 
-                module.exports.gradeSubmission(submission, variant, question, course, {}, function(err, grading) {
+                module.exports.gradeSubmission(submission, variant, question, course, {}, function(err, question_data) {
                     if (ERR(err, callback)) return;
 
                     let params = {
                         submission_id: submission_id,
                         auth_user_id: auth_user_id,
                         grading_method: question.grading_method,
-                        score: grading.score,
-                        correct: grading.correct,
-                        feedback: grading.feedback,
-                        partial_scores: grading.partial_scores,
+                        score: question_data.score,
+                        correct: (question_data.score >= 0.5),
+                        feedback: question_data.feedback,
+                        partial_scores: question_data.partial_scores,
                     };
                     sqldb.queryWithClientOneRow(client, sql.update_submission, params, function(err, result) {
                         if (ERR(err, callback)) return;

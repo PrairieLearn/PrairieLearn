@@ -1,13 +1,14 @@
-<p>
-  An object's motion is described by the position-time graph below.
-</p>
+<question_panel>
+  <p>
+    An object's motion is described by the position-time graph below.
+  </p>
 
-<img src="{{clientFilesQuestion}}/graph.png" width="500px" class="img-responsive center-block" />
+  <img src="{{options.client_files_question_url}}/graph.png" width="500px" class="img-responsive center-block" />
+</question_panel>
 
-<hr>
-<p>
-  1. Select all regions where the object's velocity is primarily positive.
-</p>
+<question_panel><hr></question_panel>
+
+<p>1. <question_panel>Select all regions where the object's velocity is primarily positive.</question_panel>
 <checkbox name="vpos" weight="1" order="fixed" inline="true">
   <answer correct="true">A-B</answer>
   <answer correct="true">B-C</answer>
@@ -16,46 +17,42 @@
   <answer>               E-F</answer>
   <answer>               F-G</answer>
 </checkbox>
-<elementScore name="vpos" />
+<variable_score name="vpos" />
 
-<hr>
-<p>
-  2. At point <b>E</b>, the object's acceleration is:
-</p>
-<multipleChoicePy name="acc" weight="1" inline="true">
+<question_panel><hr></question_panel>
+
+<p>2. <question_panel>At point <b>E</b>, the object's acceleration is:</question_panel>
+<multiple_choice name="acc" weight="1" inline="true">
   <answer correct="false">positive</answer>
   <answer correct="true">negative</answer>
   <answer correct="false">zero</answer>
-</multipleChoicePy>
-<elementScore name="acc" />
+</multiple_choice>
+<variable_score name="acc" />
 
-<hr>
-<p>
-  3. At point <b>F</b>, the object is:
-</p>
-<multipleChoice name="speed_change" weight="1">
+<question_panel><hr></question_panel>
+
+<p>3. <question_panel>At point <b>F</b>, the object is:</question_panel>
+<multiple_choice name="speed_change" weight="1">
   <answer correct="true">speeding up</answer>
   <answer correct="false">slowing down</answer>
   <answer correct="false">neither speeding up nor slowing down</answer>
-</multipleChoice>
-<elementScore name="speed_change" />
+</multiple_choice>
+<variable_score name="speed_change" />
 
-<hr>
-<p>
-  4. What is the average velocity of the object during the time interval from $t = 0\rm\ s$ to $t = 5\rm\ s$?
-</p>
-<p>
-  $v_{\rm avg} = $ <numberInput name="v_avg" true_answer="0.8" sig_figs="2" weight="1"/> $\rm\ m/s$
-</p>
-<elementScore name="v_avg" />
+<question_panel><hr></question_panel>
 
-<hr>
-<p>
-  5. How do the velocities of the object at points <b>B</b> and <b>C</b> compare?
-</p>
-<multipleChoice name="v_comp" weight="1" order="fixed" inline="true">
+<p>4. <question_panel>What is the average velocity of the object during the time interval from $t = 0\rm\ s$ to $t = 5\rm\ s$?
+    <p>
+  </question_panel>
+  $v_{\rm avg} = $ <number_input name="v_avg" true_answer="0.8" sig_figs="2" weight="1"/> $\rm\ m/s$
+<variable_score name="v_avg" />
+
+<question_panel><hr></question_panel>
+
+<p>5. <question_panel>How do the velocities of the object at points <b>B</b> and <b>C</b> compare?</question_panel>
+<multiple_choice name="v_comp" weight="1" order="fixed" inline="true">
   <answer correct="true">$v(B) > v(C)$</answer>
   <answer correct="false">$v(B) = v(C)$</answer>
   <answer correct="false">$v(B) < v(C)$</answer>
-</multipleChoice>
-<elementScore name="v_comp" />
+</multiple_choice>
+<variable_score name="v_comp" />
