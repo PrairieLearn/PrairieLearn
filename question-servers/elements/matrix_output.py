@@ -6,15 +6,13 @@ def prepare(element_html, element_index, data, options):
     return data
 
 def render(element_html, element_index, data, options):
-    return ""
-
     element = lxml.html.fragment_fromstring(element_html)
     html = "<pre>\n"
     for child in element:
         if child.tag == "variable":
             html += prairielearn.inner_html(child) \
                 + " = " \
-                + numpy_to_matlab(np.array(question_data["params"].get(child.get("name"),None))) \
+                + numpy_to_matlab(np.array(data["params"].get(child.get("name"),None))) \
                 + "\n"
     html += "</pre>"
     return html

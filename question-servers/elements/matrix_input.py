@@ -13,8 +13,6 @@ def prepare(element_html, element_index, data, options):
     return data
 
 def render(element_html, element_index, data, options):
-    return ""
-    
     element = lxml.html.fragment_fromstring(element_html)
     # name = pl.get_string_attrib(element, "name")
 
@@ -22,24 +20,24 @@ def render(element_html, element_index, data, options):
     for child in element:
         if child.tag == "variable":
             if options["panel"] == "question":
-                editable = options["editable"]
-                raw_submitted_answer = options["raw_submitted_answer"].get(name, None)
                 var_name = pl.get_string_attrib(child, "name")
+                editable = options["editable"]
+                raw_submitted_answer = options["raw_submitted_answer"].get(var_name, None)
                 input_html = '<input name="' + var_name + '"' \
                     + ('' if editable else ' disabled') \
                     + ('' if (raw_submitted_answer is None) else (' value="' + escape(raw_submitted_answer) + '"')) \
                     + 'style="width:100%"/>'
                 html += '<p><div><span style="display:table-cell">' \
-                    + prairielearn.inner_html(child) \
+                    + pl.inner_html(child) \
                     + '</span><span style="display:table-cell;width:100%">' \
                     + input_html \
-                    + '</span></div></p>\n''
+                    + '</span></div></p>\n'
 
 
 
 
 
-            # html += '<p><div><span style="display:table-cell">'+prairielearn.inner_html(child)+'</span><span style="display:table-cell;width:100%"><input name="'+child.get("name")+'" style="width:100%"/></span></div></p>\n'
+            # html += '<p><div><span style="display:table-cell">'+pl.inner_html(child)+'</span><span style="display:table-cell;width:100%"><input name="'+child.get("name")+'" style="width:100%"/></span></div></p>\n'
 
 
 
@@ -69,15 +67,9 @@ def render(element_html, element_index, data, options):
     # else:
     #     raise Exception("Invalid panel type: %s" % options["panel"])
 
-    print(html)
-    print("hello")
-
     return html
 
 def parse(element_html, element_index, data, options):
-    return data
-
-
     # By convention, this function returns at the first error found
 
     element = lxml.html.fragment_fromstring(element_html)
@@ -92,19 +84,19 @@ def parse(element_html, element_index, data, options):
                 raise KeyError('all variables in element %s must have a name' % name)
 
             # Get submitted answer or return parse_error if it does not exist
-            var_sub = question_data["submitted_answer"].get(var_name,None)
+            var_sub = data["submitted_answer"].get(var_name,None)
             if var_sub is None:
-                question_data["parse_errors"][var_name] = 'No submitted answer.'
-                return question_data
+                data["parse_errors"][var_name] = 'No submitted answer.'
+                return data
 
             # Convert submitted answer to numpy array (return parse_error on failure)
             (var_sub_parsed,parse_error) = matlab_to_numpy(var_sub)
             if var_sub_parsed is None:
-                question_data["parse_errors"][var_name] = parse_error
-                return question_data
+                data["parse_errors"][var_name] = parse_error
+                return data
 
             # Replace submitted answer with numpy array
-            question_data["submitted_answer"][var_name] = var_sub_parsed.tolist()
+            data["submitted_answer"][var_name] = var_sub_parsed.tolist()
 
     return data
 
@@ -112,17 +104,13 @@ def parse(element_html, element_index, data, options):
 
 
 # # Get true answer or raise KeyError if it does not exist
-# var_tru = question_data["true_answer"][var_name]
+# var_tru = data["true_answer"][var_name]
 
 
 
 def grade(element_html, element_index, data, options):
-    return data
-
-
     element = lxml.html.fragment_fromstring(element_html)
     name = element.get("name")
-    grading = {}
 
     # Iterate over all variables
     for child in element:
@@ -139,7 +127,7 @@ def grade(element_html, element_index, data, options):
 
             # Get true answer (if it does not exist, create no grade - leave it
             # up to the question code)
-            a_tru = question_data["true_answer"].get(var_name,None)
+            a_tru = data["true_answer"].get(var_name,None)
             if a_tru is None:
                 continue
             # Convert true answer to numpy
@@ -149,16 +137,16 @@ def grade(element_html, element_index, data, options):
                 raise ValueError('true answer must be a 2D array')
 
             # Get submitted answer (if it does not exist, score is zero)
-            a_sub = question_data["submitted_answer"].get(var_name,None)
+            a_sub = data["submitted_answer"].get(var_name,None)
             if a_sub is None:
-                grading[var_name] = {"score": 0, "weight": weight}
+                data["partial_scores"][var_name] = {"score": 0, "weight": weight}
                 continue
             # Convert submitted answer to numpy
             a_sub = np.array(a_sub)
 
             # If true and submitted answers have different shapes, score is zero
             if not (a_sub.shape==a_tru.shape):
-                grading[var_name] = {"score": 0, "weight": weight}
+                data["partial_scores"][var_name] = {"score": 0, "weight": weight}
                 continue
 
             # Get method of comparison, with relabs as default
@@ -181,11 +169,11 @@ def grade(element_html, element_index, data, options):
                 raise ValueError('method of comparison "%s" is not valid' % comparison)
 
             if correct:
-                grading[var_name] = {"score": 1, "weight": weight}
+                data["partial_scores"][var_name] = {"score": 1, "weight": weight}
             else:
-                grading[var_name] = {"score": 0, "weight": weight}
+                data["partial_scores"][var_name] = {"score": 0, "weight": weight}
 
-    return grading
+    return data
 
 def matlab_to_numpy(a):
     if (('[' in a) and (']' in a)):

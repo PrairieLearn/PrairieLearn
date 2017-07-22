@@ -1,6 +1,6 @@
 import numpy as np
 
-def get_data(*args):
+def get_data(data, options):
 
     # Dimensions
     nInnerMin = 2
@@ -31,12 +31,11 @@ def get_data(*args):
         "C": C.tolist()
     }
 
-    question_data = {
+    data = {
         "params": params,
-        "true_answer": true_answer,
-        "options": {},
+        "true_answer": true_answer
     }
-    
-    return question_data
+
+    return data
 
     # return {}
