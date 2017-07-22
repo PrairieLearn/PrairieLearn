@@ -171,6 +171,65 @@ After a submitted answer has been graded the question page is normally redisplay
 
 ## Elements
 
+All element functions have the signature:
+
+```python
+def fcn(element_html, element_index, data, options)
+```
+
+The arguments are:
+
+Argument | Type | Description
+--- | --- | ---
+`element_html` | string | The template HTML for the element.
+`element_index` | integer | The number of the element in the template.
+`data` | dict | Mutable data for the question, which can be modified and returned.
+`options` | dict | Immutable data for the question.
+
+The `data` dictionary has the following possible keys (not all keys will be present in all element functions):
+
+Key | Type | Description
+--- | --- | ---
+`data["params"]` | dict | Parameters that describe the question variant.
+`data["true_answer"]` | dict | The true answer (if any) for the variant.
+`data["submitted_answer"]` | dict | The answer submitted by the student (after parsing).
+`data["parse_errors"]` | dict | Any errors encountered while parsign the student input.
+`data["partial_scores"]` | dict | Partial scores for individual variables in the question.
+`data["score"]` | float | The total final score for the question.
+`data["feedback"]` | dict | Any feedback to the student on their submitted answer.
+
+The `options` dictionary has the following possible keys (not all keys will be present in all element functions):
+
+Key | Type | Description
+--- | --- | ---
+`options["variant_seed"]` | integer | The random seed for this question variant.
+`options["options"]` | dict | Any options associated with the question.
+`options["raw_submitted_answer"]` | dict | The answer submitted by the student before parsing.
+`options["editable"]` | boolean | Whether the question is currently in an editable state.
+`options["panel"]` | string | Which panel is being rendered (`question`, `submisison`, or `answer`).
+
+So that multiple elements can exist together in one question, the convention is that each element instance is associated with one or more **variables**. These variables are keys in the dictionaries for the data elements. For example, if there are variables `x` and `y` then we might have:
+
+```
+true_answer["params"]["x"] = 4
+true_answer["params"]["y"] = 7
+```
+
+This structure, where dictionaries have variables as keys, is used all dictionaries in `data` and for `options["raw_submitted_answer"]`.
+
+The element functions are:
+
+Function | Return object | `data` keys present | `options` keys present | Description
+--- | --- | --- | ---
+`prepare()` | `data` (dict) | `params`, `true_answer` | `variant_seed`, `options` | Generate the parameter and true answers for a new random question variant. Set `data["params"][var]` and `data["true_answer"][var]` for any variables as needed. Return the modified `data` dictionary.
+`render()` | `html` (string) | `params`, `true_answer`, `submitted_answer`, `parse_errors`, `partial_scores`, `score`, `feedback` | `variant_seed`, `options`, `raw_submitted_answer`, `editable`, `panel` | Render the HTML for one panel and return it as a string.
+`parse()` | `data` (dict) | `params`, `true_answer`, `submitted_answer`, `parse_errors` | `variant_seed`, `options`, `raw_submitted_answer` | Parse the `data["submitted_answer"][var]` data entered by the student, modifying this variable. Return the modified `data` dictionary.
+`grade()` | `data` (dict) | `params`, `true_answer`, `submitted_answer`, `parse_errors`, `partial_scores`, `score`, `feedback` | `variant_seed`, `options`, `raw_submitted_answer` | Grade `data["submitted_answer"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Return the modified `data` dictionary.
+
+The above function descriptions describe the typical variables that will be read and modified by each function. However, any function that returns `data` (i.e., not `parse()`) is allowed to modify any of the values in `data` and these changes will be persisted to the database. No function is allowed to add new keys to `data`.
+
+## Built-in Elements
+
 ### `multiple_choice` element
 
 ```html
