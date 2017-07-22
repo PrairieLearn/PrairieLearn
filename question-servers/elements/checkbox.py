@@ -1,7 +1,7 @@
 import random, lxml.html
 import prairielearn as pl
 
-def prepare(element_html, element_index, question_data):
+def prepare(element_html, element_index, data, options):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
 
@@ -59,30 +59,30 @@ def prepare(element_html, element_index, question_data):
         if correct:
             true_answers.append(keyed_answer)
 
-    if name in question_data["params"]:
+    if name in data["params"]:
         raise Exception("duplicate params variable name: %s" % name)
-    if name in question_data["true_answer"]:
+    if name in data["true_answer"]:
         raise Exception("duplicate true_answer variable name: %s" % name)
-    question_data["params"][name] = display_answers
-    question_data["true_answer"][name] = true_answers
-    return question_data
+    data["params"][name] = display_answers
+    data["true_answer"][name] = true_answers
+    return data
 
-def render(element_html, element_index, question_data):
+def render(element_html, element_index, data, options):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
 
-    display_answers = question_data["params"].get(name, [])
+    display_answers = data["params"].get(name, [])
 
     inline = pl.get_boolean_attrib(element, "inline", False)
 
-    submitted_keys = question_data["submitted_answer"].get(name, [])
+    submitted_keys = data["submitted_answer"].get(name, [])
     # if there is only one key then it is passed as a string,
     # not as a length-one list, so we fix that next
     if isinstance(submitted_keys, str):
         submitted_keys = [submitted_keys]
 
-    if question_data["panel"] == "question":
-        editable = question_data.get("editable", False)
+    if options["panel"] == "question":
+        editable = options["editable"]
 
         html = '';
         for answer in display_answers:
@@ -99,7 +99,7 @@ def render(element_html, element_index, question_data):
             html += item
         if inline:
             html = '<p>\n' + html + '</p>\n'
-    elif question_data["panel"] == "submission":
+    elif options["panel"] == "submission":
         if len(submitted_keys) == 0:
             html = "No selected answers"
         else:
@@ -120,8 +120,8 @@ def render(element_html, element_index, question_data):
                 html = ', '.join(html_list) + '\n'
             else:
                 html = '\n'.join(html_list) + '\n'
-    elif question_data["panel"] == "answer":
-        true_answers = question_data["true_answer"].get(name, [])
+    elif options["panel"] == "answer":
+        true_answers = data["true_answer"].get(name, [])
         if len(true_answers) == 0:
             html = "No selected answers"
         else:
@@ -138,25 +138,25 @@ def render(element_html, element_index, question_data):
             else:
                 html = '\n'.join(html_list) + '\n'
     else:
-        raise Exception("Invalid panel type: %s" % question_data["panel"])
+        raise Exception("Invalid panel type: %s" % options["panel"])
 
     return html
 
-def parse(element_html, element_index, question_data):
-    return question_data
+def parse(element_html, element_index, data, options):
+    return data
 
-def grade(element_html, element_index, question_data):
+def grade(element_html, element_index, data, options):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
     weight = pl.get_integer_attrib(element, "weight", 1)
 
-    submitted_keys = question_data["submitted_answer"].get(name, [])
-    true_answers = question_data["true_answer"].get(name, [])
+    submitted_keys = data["submitted_answer"].get(name, [])
+    true_answers = data["true_answer"].get(name, [])
     true_keys = [answer["key"] for answer in true_answers]
 
     score = 0
     if set(submitted_keys) == set(true_keys):
         score = 1
 
-    question_data["partial_scores"][name] = {"score": score, "weight": weight}
-    return question_data
+    data["partial_scores"][name] = {"score": score, "weight": weight}
+    return data

@@ -10,10 +10,10 @@ var cheerio = require('cheerio');
 var elements = require('./elements');
 
 module.exports = {
-    elementFunction: function(fcn, elementName, $, element, index, question_data, callback) {
-        const jsArgs = [$, element, index, question_data];
+    elementFunction: function(fcn, elementName, $, element, index, data, options, callback) {
+        const jsArgs = [$, element, index, data, options];
         const elementHtml = $(element).clone().wrap('<container/>').parent().html();
-        const pythonArgs = [elementHtml, index, question_data];
+        const pythonArgs = [elementHtml, index, data, options];
         if (!elements.has(elementName)) {
             return callback(null, 'ERROR: invalid element name: ' + elementName);
         }
@@ -168,7 +168,7 @@ module.exports = {
         return hb;
     },
 
-    execTemplate: function(filename, question_data, question, course, callback) {
+    execTemplate: function(filename, data, options, question, course, callback) {
         var question_dir = path.join(course.path, 'questions', question.directory);
         var question_html = path.join(question_dir, filename);
         fs.readFile(question_html, {encoding: 'utf8'}, (err, data) => {
@@ -177,14 +177,15 @@ module.exports = {
                 var hb = this.makeHandlebars();
                 var template = hb.compile(data);
             } catch (err) {
-                err.data = {question_data, question, course};
+                err.data = {data, options, question, course};
                 return ERR(err, callback);
             }
             var html;
             try {
-                html = template(question_data);
+                const template_data = _.defaults(data, options);
+                html = template(template_data);
             } catch (err) {
-                err.data = {question_data, question, course};
+                err.data = {data, options, question, course};
                 return ERR(err, callback);
             }
             var $;
@@ -193,122 +194,122 @@ module.exports = {
                     recognizeSelfClosing: true,
                 });
             } catch (err) {
-                err.data = {question_data, question, course};
+                err.data = {data, options, question, course};
                 return ERR(err, callback);
             }
-            callback(null, question_data, html, $);
+            callback(null, html, $);
         });
     },
 
-    checkQuestionData: function(question_data) {
-        const checkedProps = [];
-        const checkProp = (prop, type) => {
-            if (!_.has(question_data, prop)) return '"' + prop + '" is missing from question_data';
+    checkQuestionData: function(data, options, checkOptions) {
+        const checkProp = (obj, objName, prop, type, checked) => {
+            if (!_.has(obj, prop)) return '"' + prop + '" is missing from ' + objName;
             if (type == 'integer') {
-                if (!_.isInteger(question_data[prop])) {
-                    return 'question_data.' + prop + ' is not an integer: ' + String(question_data[prop]);
+                if (!_.isInteger(obj[prop])) {
+                    return objName + '.' + prop + ' is not an integer: ' + String(obj[prop]);
                 }
             } else if (type == 'number') {
-                if (!_.isFinite(question_data[prop])) {
-                    return 'question_data.' + prop + ' is not a number: ' + String(question_data[prop]);
+                if (!_.isFinite(obj[prop])) {
+                    return objName + '.' + prop + ' is not a number: ' + String(obj[prop]);
                 }
             } else if (type == 'string') {
-                if (!_.isString(question_data[prop])) {
-                    return 'question_data.' + prop + ' is not a string: ' + String(question_data[prop]);
+                if (!_.isString(obj[prop])) {
+                    return objName + '.' + prop + ' is not a string: ' + String(obj[prop]);
                 }
             } else if (type == 'boolean') {
-                if (!_.isBoolean(question_data[prop])) {
-                    return 'question_data.' + prop + ' is not a boolean: ' + String(question_data[prop]);
+                if (!_.isBoolean(obj[prop])) {
+                    return objName + '.' + prop + ' is not a boolean: ' + String(obj[prop]);
                 }
             } else if (type == 'object') {
-                if (!_.isObject(question_data[prop])) {
-                    return 'question_data.' + prop + ' is not an object: ' + String(question_data[prop]);
+                if (!_.isObject(obj[prop])) {
+                    return objName + '.' + prop + ' is not an object: ' + String(obj[prop]);
                 }
             } else {
                 return 'invalid type: ' + String(type);
             }
-            checkedProps.push(prop);
+            checked.push(prop);
             return null;
         };
 
-        let err;
-        err = checkProp('variant_seed', 'integer'); if (err) return err;
-        err = checkProp('options', 'object'); if (err) return err;
-        err = checkProp('params', 'object'); if (err) return err;
-        err = checkProp('true_answer', 'object'); if (err) return err;
-        err = checkProp('editable', 'boolean'); if (err) return err;
-        err = checkProp('partial_scores', 'object'); if (err) return err;
-        err = checkProp('raw_submitted_answer', 'object'); if (err) return err;
-        err = checkProp('submitted_answer', 'object'); if (err) return err;
-        err = checkProp('parse_errors', 'object'); if (err) return err;
-        err = checkProp('score', 'number'); if (err) return err;
-        err = checkProp('feedback', 'object'); if (err) return err;
-        err = checkProp('panel', 'string'); if (err) return err;
+        let err, checked, extraProps;
 
-        const extraProps = _.difference(_.keys(question_data), checkedProps);
-        if (extraProps.length > 0) return 'question_data has invalid extra keys: ' + ', '.join(extraProps);
+        checked = [];
+        err = checkProp(data, 'data', 'params', 'object', checked); if (err) return err;
+        err = checkProp(data, 'data', 'true_answer', 'object', checked); if (err) return err;
+        if (checkOptions.has_submission) {
+            err = checkProp(data, 'data', 'submitted_answer', 'object', checked); if (err) return err;
+            err = checkProp(data, 'data', 'parse_errors', 'object', checked); if (err) return err;
+        }
+        if (checkOptions.has_grading) {
+            err = checkProp(data, 'data', 'partial_scores', 'object', checked); if (err) return err;
+            err = checkProp(data, 'data', 'score', 'number', checked); if (err) return err;
+            err = checkProp(data, 'data', 'feedback', 'object', checked); if (err) return err;
+        }
+        extraProps = _.difference(_.keys(data), checked);
+        if (extraProps.length > 0) return '"data" has invalid extra keys: ' + ', '.join(extraProps);
+
+        checked = [];
+        err = checkProp(options, 'options', 'variant_seed', 'integer', checked); if (err) return err;
+        err = checkProp(options, 'options', 'options', 'object', checked); if (err) return err;
+        if (checkOptions.has_submission) {
+            err = checkProp(options, 'options', 'raw_submitted_answer', 'object', checked); if (err) return err;
+        }
+        if (checkOptions.for_render) {
+            err = checkProp(options, 'options', 'editable', 'boolean', checked); if (err) return err;
+            err = checkProp(options, 'options', 'panel', 'string', checked); if (err) return err;
+        }
+        extraProps = _.difference(_.keys(options), checked);
+        if (extraProps.length > 0) return '"options" has invalid extra keys: ' + ', '.join(extraProps);
+
         return null;
     },
 
     getData: function(question, course, variant_seed, callback) {
-        let question_dir = path.join(course.path, 'questions', question.directory);
-
-        let pythonArgs = {
-            variant_seed: parseInt(variant_seed, 36),
-            options: _.defaults({}, course.options, question.options),
-            question_dir: question_dir,
+        let data = {
+            params: {},
+            true_answer: {},
         };
-        let consoleLog = '';
-        /*
-        let question_data = {
+        const options = {
             variant_seed: parseInt(variant_seed, 36),
             options: _.defaults({}, course.options, question.options),
+        };
+
+        const checkOptions = {has_submission: false, has_grading: false, for_render: false};
+        const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
+        if (checkErr) {
+            const err = new Error('Invalid state before server.get_data(): ' + checkErr);
+            err.data = {data, options, question, course};
+            return callback(err);
         }
 
-        // FIXME: pass question_data to get_data(), rather than just returning it
-        */
+        let consoleLog = '';
 
-        this.execPythonServer('get_data', pythonArgs, question, course, (err, ret_question_data, ret_consoleLog) => {
+        let pythonArgs = [data, options];
+        this.execPythonServer('get_data', pythonArgs, question, course, (err, ret_data, ret_consoleLog) => {
             if (ERR(err, callback)) return;
             if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
+            data = ret_data;
 
-            var question_data = ret_question_data;
-            question_data.variant_seed = parseInt(variant_seed, 36);
-            question_data.options = question_data.options || {};
-            _.defaults(question_data.options, course.options, question.options);
-
-            question_data = _.defaults(question_data, {
-                params: {},
-                true_answer: {},
-                editable: false,
-                partial_scores: {},
-                raw_submitted_answer: {},
-                submitted_answer: {},
-                parse_errors: {},
-                score: 0,
-                feedback: {},
-                panel: 'question',
-            });
-            const checkErr = module.exports.checkQuestionData(question_data);
-            if (err) {
-                const err = new Error('Invalid question_data after server.get_data(): ' + checkErr);
-                err.data = {question_data, question, course};
+            const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
+            if (checkErr) {
+                const err = new Error('Invalid state after server.get_data(): ' + checkErr);
+                err.data = {data, options, question, course};
                 return callback(err);
             }
 
-            this.execTemplate('question.html', question_data, question, course, (err, question_data, html, $) => {
+            this.execTemplate('question.html', data, options, question, course, (err, html, $) => {
                 if (ERR(err, callback)) return;
 
                 let index = 0;
                 async.eachSeries(elements.keys(), (elementName, callback) => {
                     async.eachSeries($(elementName).toArray(), (element, callback) => {
-                        this.elementFunction('prepare', elementName, $, element, index, question_data, (err, new_question_data, ret_consoleLog) => {
+                        this.elementFunction('prepare', elementName, $, element, index, data, options, (err, ret_data, ret_consoleLog) => {
                             if (ERR(err, callback)) return;
-                            question_data = new_question_data;
-                            const checkErr = module.exports.checkQuestionData(question_data);
+                            data = ret_data;
+                            const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
                             if (checkErr) {
-                                const err = new Error('Invalid question_data after element ' + index + ' ' + elementName + '.prepare(): ' + checkErr);
-                                err.data = {question_data, question, course};
+                                const err = new Error('Invalid state after element ' + index + ' ' + elementName + '.prepare(): ' + checkErr);
+                                err.data = {data, options, question, course};
                                 return callback(err);
                             }
                             if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
@@ -321,7 +322,7 @@ module.exports = {
                     });
                 }, (err) => {
                     if (ERR(err, callback)) return;
-                    callback(null, question_data, consoleLog);
+                    callback(null, data, consoleLog);
                 });
             });
         });
@@ -332,37 +333,40 @@ module.exports = {
     },
 
     renderFile: function(filename, panel, variant, question, submission, course, locals, callback) {
-        var question_data = {
-            variant_seed: parseInt(variant.variant_seed, 36),
+        let data = {
             params: _.get(variant, 'params', {}),
             true_answer: _.get(variant, 'true_answer', {}),
-            options: _.get(variant, 'options', {}),
-            editable: !!locals.allowAnswerEditing,
-            partial_scores: submission ? _.get(submission, 'partial_scores', {}) : {},
-            raw_submitted_answer: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
             submitted_answer: submission ? _.get(submission, 'submitted_answer', {}) : {},
             parse_errors: submission ? _.get(submission, 'parse_errors', {}) : {},
+            partial_scores: submission ? _.get(submission, 'partial_scores', {}) : {},
             score: submission ? _.get(submission, 'score', 0) : 0,
             feedback: submission ? _.get(submission, 'feedback', {}) : {},
+        };
+        const options = {
+            variant_seed: parseInt(variant.variant_seed, 36),
+            options: _.get(variant, 'options', {}),
+            raw_submitted_answer: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
+            editable: !!locals.allowAnswerEditing,
             panel: panel,
         };
-        question_data.options.client_files_question_url = locals.paths.clientFilesQuestion;
+        options.options.client_files_question_url = locals.paths.clientFilesQuestion;
         let consoleLog = '';
 
-        const checkErr = module.exports.checkQuestionData(question_data);
+        const checkOptions = {has_submission: true, has_grading: true, for_render: true};
+        const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
         if (checkErr) {
-            const err = new Error('Invalid question_data before render: ' + checkErr);
-            err.data = {question_data, submission, variant, question, course};
+            const err = new Error('Invalid state before render: ' + checkErr);
+            err.data = {data, options, submission, variant, question, course};
             return callback(err);
         }
 
-        this.execTemplate(filename, question_data, question, course, (err, question_data, html, $) => {
+        this.execTemplate(filename, data, options, question, course, (err, html, $) => {
             if (ERR(err, callback)) return;
 
             let index = 0;
             async.eachSeries(elements.keys(), (elementName, callback) => {
                 async.eachSeries($(elementName).toArray(), (element, callback) => {
-                    this.elementFunction('render', elementName, $, element, index, question_data, (err, elementHtml, ret_consoleLog) => {
+                    this.elementFunction('render', elementName, $, element, index, data, options, (err, elementHtml, ret_consoleLog) => {
                         if (ERR(err, callback)) return;
                         $(element).replaceWith(elementHtml);
                         if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
@@ -402,42 +406,40 @@ module.exports = {
     },
 
     parseSubmission: function(submission, variant, question, course, callback) {
-        const question_data = {
+        let data = {
+            params: _.get(variant, 'params', {}),
+            true_answer: _.get(variant, 'true_answer', {}),
+            submitted_answer: _.get(submission, 'submitted_answer', {}),
+            parse_errors: _.get(submission, 'parse_errors', {}),
+        };
+        const options = {
             variant_seed: parseInt(variant.variant_seed, 36),
-            params: variant.params,
-            true_answer: variant.true_answer,
-            options: variant.options,
-            raw_submitted_answer: submission.raw_submitted_answer || {},
-            submitted_answer: submission.submitted_answer || {},
-            parse_errors: {},
-            editable: false,
-            partial_scores: {},
-            score: 0,
-            feedback: {},
-            panel: 'question',
+            options: _.get(variant, 'options', {}),
+            raw_submitted_answer: _.get(submission, 'raw_submitted_answer', {}),
         };
         var consoleLog = '';
 
-        const checkErr = module.exports.checkQuestionData(question_data);
+        const checkOptions = {has_submission: true, has_grading: false, for_render: false};
+        const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
         if (checkErr) {
-            const err = new Error('Invalid question_data before parse: ' + checkErr);
-            err.data = {question_data, submission, variant, question, course};
+            const err = new Error('Invalid state before parse: ' + checkErr);
+            err.data = {data, options, submission, variant, question, course};
             return callback(err);
         }
 
-        this.execTemplate('question.html', question_data, question, course, (err, question_data, html, $) => {
+        this.execTemplate('question.html', data, options, question, course, (err, html, $) => {
             if (ERR(err, callback)) return;
 
             let index = 0;
             async.eachSeries(elements.keys(), (elementName, callback) => {
                 async.eachSeries($(elementName).toArray(), (element, callback) => {
-                    this.elementFunction('parse', elementName, $, element, index, question_data, (err, new_question_data, ret_consoleLog) => {
+                    this.elementFunction('parse', elementName, $, element, index, data, options, (err, ret_data, ret_consoleLog) => {
                         if (ERR(err, callback)) return;
-                        question_data = new_question_data;
-                        const checkErr = module.exports.checkQuestionData(question_data);
+                        data = ret_data;
+                        const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
                         if (checkErr) {
-                            const err = new Error('Invalid question_data after element ' + index + ' ' + elementName + '.parse(): ' + checkErr);
-                            err.data = {question_data, submission, variant, question, course};
+                            const err = new Error('Invalid state after element ' + index + ' ' + elementName + '.parse(): ' + checkErr);
+                            err.data = {data, options, submission, variant, question, course};
                             return callback(err);
                         }
                         if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
@@ -451,62 +453,63 @@ module.exports = {
             }, (err) => {
                 if (ERR(err, callback)) return;
 
-                let checkErr = module.exports.checkQuestionData(question_data);
+                let checkErr = module.exports.checkQuestionData(data, options, checkOptions);
                 if (checkErr) {
-                    const err = new Error('Invalid question_data before server.parse(): ' + checkErr);
-                    err.data = {question_data, submission, variant, question, course};
+                    const err = new Error('Invalid state before server.parse(): ' + checkErr);
+                    err.data = {data, options, submission, variant, question, course};
                     return callback(err);
                 }
                 // FIXME: call server.parse()
-                checkErr = module.exports.checkQuestionData(question_data);
+                checkErr = module.exports.checkQuestionData(data, options, checkOptions);
                 if (checkErr) {
-                    const err = new Error('Invalid question_data after server.parse(): ' + checkErr);
-                    err.data = {question_data, submission, variant, question, course};
+                    const err = new Error('Invalid state after server.parse(): ' + checkErr);
+                    err.data = {data, options, submission, variant, question, course};
                     return callback(err);
                 }
 
-                callback(null, question_data.submitted_answer, question_data.parse_errors, consoleLog);
+                callback(null, data.submitted_answer, data.parse_errors, consoleLog);
             });
         });
     },
 
     gradeSubmission: function(submission, variant, question, course, callback) {
-        const question_data = {
-            variant_seed: parseInt(variant.variant_seed, 36),
+        let data = {
             params: variant.params,
             true_answer: variant.true_answer,
-            options: variant.options,
-            raw_submitted_answer: submission.raw_submitted_answer,
             submitted_answer: submission.submitted_answer,
             parse_errors: submission.parse_errors,
-            editable: false,
-            partial_scores: {},
-            score: 0,
-            feedback: {},
-            panel: 'question',
+            partial_scores: (submission.partial_scores == null) ? {} : submission.partial_scores,
+            score: (submission.score == null) ? 0 : submission.score,
+            feedback: (submission.feedback == null) ? {} : submission.feedback,
+        };
+        const options = {
+            variant_seed: parseInt(variant.variant_seed, 36),
+            options: _.get(variant, 'options', {}),
+            raw_submitted_answer: submission.raw_submitted_answer,
         };
         var consoleLog = '';
 
-        const checkErr = module.exports.checkQuestionData(question_data);
+        const checkOptions = {has_submission: true, has_grading: true, for_render: false};
+        const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
         if (checkErr) {
-            const err = new Error('Invalid question_data before grade: ' + checkErr);
-            err.data = {question_data, submission, variant, question, course};
+            const err = new Error('Invalid state before grade: ' + checkErr);
+            err.data = {data, options, submission, variant, question, course};
             return callback(err);
         }
 
-        this.execTemplate('question.html', question_data, question, course, (err, question_data, html, $) => {
+        this.execTemplate('question.html', data, options, question, course, (err, html, $) => {
             if (ERR(err, callback)) return;
 
             let index = 0;
             async.eachSeries(elements.keys(), (elementName, callback) => {
                 async.eachSeries($(elementName).toArray(), (element, callback) => {
-                    this.elementFunction('grade', elementName, $, element, index, question_data, (err, new_question_data, ret_consoleLog) => {
+                    this.elementFunction('grade', elementName, $, element, index, data, options, (err, ret_data, ret_consoleLog) => {
                         if (ERR(err, callback)) return;
-                        question_data = new_question_data;
-                        const checkErr = module.exports.checkQuestionData(question_data);
+                        data = ret_data;
+                        const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
                         if (checkErr) {
-                            const err = new Error('Invalid question_data after element ' + index + ' ' + elementName + '.grade(): ' + checkErr);
-                            err.data = {question_data, submission, variant, question, course};
+                            const err = new Error('Invalid state after element ' + index + ' ' + elementName + '.grade(): ' + checkErr);
+                            err.data = {data, options, submission, variant, question, course};
                             return callback(err);
                         }
                         if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
@@ -520,30 +523,30 @@ module.exports = {
             }, (err) => {
                 if (ERR(err, callback)) return;
                 let total_weight = 0, total_weight_score = 0;
-                _.each(question_data.partial_scores, value => {
+                _.each(data.partial_scores, value => {
                     const score = _.get(value, 'score', 0);
                     const weight = _.get(value, 'weight', 1);
                     total_weight += weight;
                     total_weight_score += weight * score;
                 });
-                question_data.score = total_weight_score / (total_weight == 0 ? 1 : total_weight);
-                question_data.feedback = {};
+                data.score = total_weight_score / (total_weight == 0 ? 1 : total_weight);
+                data.feedback = {};
 
-                let checkErr = module.exports.checkQuestionData(question_data);
+                let checkErr = module.exports.checkQuestionData(data, options, checkOptions);
                 if (checkErr) {
-                    const err = new Error('Invalid question_data before server.grade(): ' + checkErr);
-                    err.data = {question_data, submission, variant, question, course};
+                    const err = new Error('Invalid state before server.grade(): ' + checkErr);
+                    err.data = {data, options, submission, variant, question, course};
                     return callback(err);
                 }
                 // FIXME: call server.grade()
-                checkErr = module.exports.checkQuestionData(question_data);
+                checkErr = module.exports.checkQuestionData(data, options, checkOptions);
                 if (checkErr) {
-                    const err = new Error('Invalid question_data after server.grade(): ' + checkErr);
-                    err.data = {question_data, submission, variant, question, course};
+                    const err = new Error('Invalid state after server.grade(): ' + checkErr);
+                    err.data = {data, options, submission, variant, question, course};
                     return callback(err);
                 }
 
-                callback(null, question_data, consoleLog);
+                callback(null, data, consoleLog);
             });
         });
     },
