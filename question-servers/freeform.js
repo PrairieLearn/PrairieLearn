@@ -179,11 +179,11 @@ module.exports = {
     execTemplate: function(filename, data, options, question, course, callback) {
         var question_dir = path.join(course.path, 'questions', question.directory);
         var question_html = path.join(question_dir, filename);
-        fs.readFile(question_html, {encoding: 'utf8'}, (err, data) => {
+        fs.readFile(question_html, {encoding: 'utf8'}, (err, raw_file) => {
             if (ERR(err, callback)) return;
             try {
                 var hb = this.makeHandlebars();
-                var template = hb.compile(data);
+                var template = hb.compile(raw_file);
             } catch (err) {
                 err.data = {data, options, question, course};
                 return ERR(err, callback);
