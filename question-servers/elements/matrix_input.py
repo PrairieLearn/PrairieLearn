@@ -24,10 +24,57 @@ def render(element_html, element_index, data, options):
     if options["panel"] == "question":
         editable = options["editable"]
         raw_submitted_answer = options["raw_submitted_answer"].get(name, None)
+        # Add input to html
         html = '<input name="' + name + '"' \
             + ('' if editable else ' disabled') \
             + ('' if (raw_submitted_answer is None) else (' value="' + escape(raw_submitted_answer) + '" ')) \
-            + style + '/>'
+            + style + '/> '
+        # Get method of comparison, with relabs as default
+        comparison = pl.get_string_attrib(element, "comparison","relabs")
+        # Get comparison parameters and info string
+        if comparison=="relabs":
+            rtol = pl.get_float_attrib(element,"rtol",1e-5)
+            atol = pl.get_float_attrib(element,"atol",1e-8)
+            info = 'Write your answer in MATLAB format. ' \
+                + 'Enclose it by a single pair of square brackets. ' \
+                + 'Separate entries in each row with a space. ' \
+                + 'Indicate the end of each intermediate row with a semicolon. ' \
+                + 'Each entry must be a number. ' \
+                + 'No symbolic expressions (those that involve fractions, ' \
+                + 'square roots, variables, etc.) will be accepted. Scientific ' \
+                + 'notation is accepted (e.g., 1.2e03). ' \
+                + 'Numbers must be accurate' \
+                + ' to within relative tolerance ' + ('%g' % rtol) \
+                + ' and absolute tolerance ' + ('%g' % rtol) + '.'
+        elif comparison=="sigfig":
+            digits = pl.get_integer_attrib(element,"digits",2)
+            info = 'Write your answer in MATLAB format. ' \
+                + 'Enclose it by a single pair of square brackets. ' \
+                + 'Separate entries in each row with a space. ' \
+                + 'Indicate the end of each intermediate row with a semicolon. ' \
+                + 'Each entry must be a number. ' \
+                + 'No symbolic expressions (those that involve fractions, ' \
+                + 'square roots, variables, etc.) will be accepted. Scientific ' \
+                + 'notation is accepted (e.g., 1.2e03). ' \
+                + 'Numbers must be accurate' \
+                + ' to ' + ('%d' % digits) + ' significant figures.'
+        elif comparison=="decdig":
+            digits = pl.get_integer_attrib(element,"digits",2)
+            info = 'Write your answer in MATLAB format. ' \
+                + 'Enclose it by a single pair of square brackets. ' \
+                + 'Separate entries in each row with a space. ' \
+                + 'Indicate the end of each intermediate row with a semicolon. ' \
+                + 'Each entry must be a number. ' \
+                + 'No symbolic expressions (those that involve fractions, ' \
+                + 'square roots, variables, etc.) will be accepted. Scientific ' \
+                + 'notation is accepted (e.g., 1.2e03). ' \
+                + 'Numbers must be accurate' \
+                + ' to ' + ('%d' % digits) + ' digits after the decimal.'
+        else:
+            raise ValueError('method of comparison "%s" is not valid' % comparison)
+        # Add span with tooltip to html
+        html += '<span style="border: 1px solid #ddd;border-left: 0px;white-space:nowrap;padding: 9.5px;margin: 0 2px 10px;box-sizing: border-box;background-color: #eee;color: #999;" title="'+info+'">?</span>'
+        # <span style="border: 1px solid #ddd;border-left: 0px;white-space:nowrap;padding: 9.5px;margin: 0 2px 10px;box-sizing: border-box;background-color: #eee;color: #999;" title="basic tooltip">?</span>
     elif options["panel"] == "submission":
         parse_error = data["parse_errors"].get(name, None)
         if parse_error is not None:
@@ -101,21 +148,21 @@ def grade(element_html, element_index, data, options):
         return data
 
     # Get method of comparison, with relabs as default
-    comparison = pl.get_string_attrib(element, "name","relabs")
+    comparison = pl.get_string_attrib(element, "comparison","relabs")
 
     # Compare submitted answer with true answer
     if comparison=="relabs":
-        rtol = pl.get_float_attrib("rtol","1e-5")
-        atol = pl.get_float_attrib("atol","1e-8")
-        correct = is_correct_ndarray2D_ra(a_sub,a_tru,rtol,atol)
+        rtol = pl.get_float_attrib(element,"rtol",1e-5)
+        atol = pl.get_float_attrib(element,"atol",1e-8)
+        correct = pl.is_correct_ndarray2D_ra(a_sub,a_tru,rtol,atol)
     elif comparison=="sigfig":
-        digits = pl.get_float_attrib("digits","2")
-        eps_digits = pl.get_float_attrib("eps_digits","3")
-        correct = is_correct_ndarray2D_sf(a_sub,a_tru,digits,eps_digits)
+        digits = pl.get_integer_attrib(element,"digits",2)
+        eps_digits = pl.get_integer_attrib(element,"eps_digits",3)
+        correct = pl.is_correct_ndarray2D_sf(a_sub,a_tru,digits,eps_digits)
     elif comparison=="decdig":
-        digits = pl.get_float_attrib("digits","2")
-        eps_digits = pl.get_float_attrib("eps_digits","3")
-        correct = is_correct_ndarray2D_dd(a_sub,a_tru,digits,eps_digits)
+        digits = pl.get_integer_attrib(element,"digits",2)
+        eps_digits = pl.get_integer_attrib(element,"eps_digits",3)
+        correct = pl.is_correct_ndarray2D_dd(a_sub,a_tru,digits,eps_digits)
     else:
         raise ValueError('method of comparison "%s" is not valid' % comparison)
 
