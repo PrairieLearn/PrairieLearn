@@ -1,4 +1,5 @@
 import lxml.html
+import numpy as np
 
 def inner_html(element):
     html = element.text
@@ -104,3 +105,149 @@ def get_float_attrib(element, name, *args):
         # handler because it gives an overly complex displayed error
         raise Exception("Attribute \"%s\" must be an integer: %s" % (name, val))
     return float_val
+
+# This function assumes that A is either a floating-point number or a
+# real-valued numpy array. It returns A as a MATLAB-formatted string.
+def numpy_to_matlab(A,ndigits=2,wtype='f'):
+    if np.isscalar(A):
+        A_str = '{:.{indigits}{iwtype}};'.format(A,indigits=ndigits,iwtype=wtype)
+        return A_str
+    else:
+        s = A.shape
+        m = s[0]
+        n = s[1]
+        A_str = '['
+        for i in range(0,m):
+            for j in range(0,n):
+                A_str += '{:.{indigits}{iwtype}}'.format(A[i,j],indigits=ndigits,iwtype=wtype)
+                if j==n-1:
+                    if i==m-1:
+                        A_str += '];'
+                    else:
+                        A_str += '; '
+                else:
+                    A_str += ' '
+        return A_str
+
+def matlab_to_numpy(a):
+    if (('[' in a) and (']' in a)):
+        # Split at first left bracket
+        (a_before_leftbracket,a_leftbracket,a) = a.partition('[')
+
+        # Return error if there was anything but space before left bracket
+        if a_before_leftbracket.strip():
+            return (None,'Non-empty space before first left bracket.')
+
+        # Split at first right bracket
+        (a,a_rightbracket,a_after_rightbracket) = a.partition(']')
+
+        # Return error if there was anything but space after right bracket
+        if a_after_rightbracket.strip():
+            return (None,'Non-empty space after first right bracket.')
+
+        # Split on semicolon
+        a = a.split(';')
+
+        # Get number of rows
+        m = len(a)
+
+        # Return error if there are no rows (i.e., the matrix is empty)
+        if (m==0):
+            return (None,'Matrix has no rows.')
+
+        # Get number of columns by splitting first row on space
+        n = len(a[0].split())
+
+        # Return error if first row has no columns
+        if (n==0):
+            return (None,'First row of matrix has no columns.')
+
+        # Define matrix in which to put result
+        A = np.zeros((m,n))
+
+        # Iterate over rows
+        for i in range(0,m):
+
+            # Split on space
+            s = a[i].split()
+
+            # Return error if current row has more or less columns than first row
+            if (len(s) != n):
+                return (None,'Rows 1 and %d of matrix have a different number of columns.' % (i+1))
+
+            # Iterate over columns
+            for j in range(0,n):
+                try:
+                    # Convert entry to float
+                    A[i,j] = float(s[j])
+
+                    # Return error if entry is not finite
+                    if not np.isfinite(A[i,j]):
+                        return (None,'Entry (%d,%d) of matrix is not finite.' % (i+1,j+1))
+                except:
+                    # Return error if entry could not be converted to float
+                    return (None,'Entry (%d,%d) of matrix has invalid format.' % (i+1,j+1))
+
+        # Return resulting ndarray with no error
+        return (A,None)
+    else:
+        try:
+            # Convert submitted answer (assumed to be a scalar) to float
+            A = np.array([[float(a)]])
+            # Return it with no error
+            return (A,None)
+        except:
+            # Return error if submitted answer coult not be converted to float
+            return (None,'Invalid format (missing square brackets and not a real number).')
+
+def is_correct_ndarray2D_dd(a_sub,a_tru,digits=2,eps_digits=3):
+    # Check if each element is correct
+    m = a_sub.shape[0]
+    n = a_sub.shape[1]
+    for i in range(0,m):
+        for j in range(0,n):
+            if not is_correct_scalar_dd(a_sub[i,j],a_tru[i,j],digits,eps_digits):
+                return False
+
+    # All elements were close
+    return True
+
+def is_correct_ndarray2D_sf(a_sub,a_tru,digits=2,eps_digits=3):
+    # Check if each element is correct
+    m = a_sub.shape[0]
+    n = a_sub.shape[1]
+    for i in range(0,m):
+        for j in range(0,n):
+            if not is_correct_scalar_sf(a_sub[i,j],a_tru[i,j],digits,eps_digits):
+                return False
+
+    # All elements were close
+    return True
+
+def is_correct_ndarray2D_ra(a_sub,a_tru,rtol=1e-5,atol=1e-8):
+    # Check if each element is correct
+    return np.allclose(a_sub,a_tru,rtol,atol)
+
+def is_correct_scalar_dd(a_sub,a_tru,digits=2,eps_digits=3):
+    # Get bounds on submitted answer
+    m = 10**digits
+    eps = 10**-(digits+eps_digits)
+    lower_bound = (np.floor(m*(a_tru-eps))/m)-eps
+    upper_bound = (np.ceil(m*(a_tru+eps))/m)+eps
+
+    # Check if submitted answer is in bounds
+    return (a_sub > lower_bound) & (a_sub < upper_bound)
+
+def is_correct_scalar_sf(a_sub,a_tru,digits=2,eps_digits=3):
+    # Get bounds on submitted answer
+    n = -int(np.floor(np.log10(np.abs(a_tru))))+(digits-1)
+    m = 10**n
+    eps = 10**-(n+eps_digits)
+    lower_bound = (np.floor(m*(a_tru-eps))/m)-eps
+    upper_bound = (np.ceil(m*(a_tru+eps))/m)+eps
+
+    # Check if submitted answer is in bounds
+    return (a_sub > lower_bound) & (a_sub < upper_bound)
+
+def get_digits_for_sf(a,digits):
+    return -int(floor(log10(a)))+(digits-1)
