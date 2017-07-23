@@ -5,6 +5,7 @@
     "assessmentSets": [
     ],
     "topics": [
+        {"name": "Calculus", "color": "yellow3", "description": "Single and multiple variable calculus."},
         {"name": "Vectors", "color": "blue3", "description": "Vector algebra in 3D."},
         {"name": "Functions", "color": "pink3", "description": "Writing and calling functions in code."},
         {"name": "Energy", "color": "purple3", "description": "Mechanical energy; kinetic and potential."},
