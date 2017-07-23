@@ -5,6 +5,8 @@ def prepare(element_html, element_index, data, options):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
 
+    print("hello")
+
     true_answer = pl.get_float_attrib(element, "true_answer", None)
     if true_answer is not None:
         if name in data["true_answer"]:
