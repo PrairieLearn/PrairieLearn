@@ -1,13 +1,16 @@
+<question_panel>
 <p>
 Two matrices $A$ and $B$ are given in MATLAB format as follows:
 </p>
-<matrix_output name="bogus">
+<matrix_output>
     <variable name="A">A</variable>
     <variable name="B">B</variable>
 </matrix_output>
 <p>
 Find the product of these two matrices and express it in MATLAB format:
 </p>
-<matrix_input name="product">
-    <variable name="C" points="1" comparison="sigfig" digits="3">$A \times B=\;$</variable>
-</matrix_input>
+</question_panel>
+<div style="display: flex; align-items: center; width: 100%">
+    <span style="white-space:nowrap;padding: 9.5px;margin: 0 0 10px;">$A \times B$</span>
+    <matrix_input name="C" points="1" comparison="sigfig" digits="3" style="flex:1;width:50%;padding: 9.5px;margin: 0 0 10px;" />
+</div>

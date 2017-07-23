@@ -1,6 +1,6 @@
 import lxml.html
 import numpy as np
-import prairielearn
+import prairielearn as pl
 
 def prepare(element_html, element_index, data, options):
     return data
@@ -10,38 +10,19 @@ def render(element_html, element_index, data, options):
     html = "<pre>\n"
     for child in element:
         if child.tag == "variable":
-            html += prairielearn.inner_html(child) \
+            var_name = pl.get_string_attrib(child, "name")
+            var_data = data["params"].get(var_name,None)
+            if var_data is None:
+                raise Exception('No value in data["params"] for variable %s in matrix_output element' % var_name)
+            html += pl.inner_html(child) \
                 + " = " \
-                + numpy_to_matlab(np.array(data["params"].get(child.get("name"),None))) \
+                + pl.numpy_to_matlab(np.array(var_data)) \
                 + "\n"
     html += "</pre>"
     return html
 
 def parse(element_html, element_index, data, options):
     return data
-
-# This function assumes that A is either a floating-point number or a
-# real-valued numpy array. It returns A as a MATLAB-formatted string.
-def numpy_to_matlab(A,ndigits=2,wtype='f'):
-    if np.isscalar(A):
-        A_str = '{:.{indigits}{iwtype}};'.format(A,indigits=ndigits,iwtype=wtype)
-        return A_str
-    else:
-        s = A.shape
-        m = s[0]
-        n = s[1]
-        A_str = '['
-        for i in range(0,m):
-            for j in range(0,n):
-                A_str += '{:.{indigits}{iwtype}}'.format(A[i,j],indigits=ndigits,iwtype=wtype)
-                if j==n-1:
-                    if i==m-1:
-                        A_str += '];'
-                    else:
-                        A_str += '; '
-                else:
-                    A_str += ' '
-        return A_str
 
 def grade(element_html, element_index, data, options):
     return data
