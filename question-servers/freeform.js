@@ -190,7 +190,7 @@ module.exports = {
             }
             var html;
             try {
-                const template_data = _.defaults(data, options);
+                const template_data = _.assign({}, data, options);
                 html = template(template_data);
             } catch (err) {
                 err.data = {data, options, question, course};
