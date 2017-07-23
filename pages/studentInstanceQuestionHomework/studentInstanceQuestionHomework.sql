@@ -7,37 +7,26 @@ WHERE
     v.id = $variant_id
     AND v.instance_question_id = $instance_question_id;
 
--- BLOCK get_available_variant
+-- BLOCK select_variant_console
 SELECT
-    v.*
+    v.console
 FROM
     variants AS v
 WHERE
-    v.instance_question_id = $instance_question_id
-    AND v.valid
-    AND v.available
-ORDER BY v.date DESC
-LIMIT 1;
+    v.id = $variant_id;
 
--- BLOCK make_variant
-INSERT INTO variants AS v (authn_user_id, instance_question_id, number, variant_seed, params, true_answer, options, console, valid)
-(
-    SELECT
-        $authn_user_id,
-        $instance_question_id,
-        coalesce(max(other_v.number) + 1, 1),
-        $variant_seed,
-        $question_params,
-        $true_answer,
-        $options,
-        $console,
-        $valid
-    FROM
-        variants AS other_v
-    WHERE
-        other_v.instance_question_id = $instance_question_id
-)
-RETURNING v.*;
+-- BLOCK select_errors
+SELECT
+    e.*,
+    format_date_full(e.date, ci.display_timezone) AS formatted_date
+FROM
+    errors AS e
+    JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
+WHERE
+    e.variant_id = $variant_id
+    AND e.course_caused
+ORDER BY
+    e.date;
 
 -- BLOCK select_submissions
 SELECT

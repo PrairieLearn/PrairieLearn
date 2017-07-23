@@ -1,3 +1,44 @@
+-- BLOCK get_available_variant
+SELECT
+    v.*
+FROM
+    variants AS v
+WHERE
+    v.instance_question_id = $instance_question_id
+    AND v.available
+ORDER BY v.date DESC
+LIMIT 1;
+
+-- BLOCK insert_variant
+INSERT INTO variants AS v (authn_user_id, instance_question_id, number, variant_seed, params, true_answer, options, console, valid)
+(
+    SELECT
+        $authn_user_id,
+        $instance_question_id,
+        coalesce(max(other_v.number) + 1, 1),
+        $variant_seed,
+        $question_params,
+        $true_answer,
+        $options,
+        $console,
+        $valid
+    FROM
+        variants AS other_v
+    WHERE
+        other_v.instance_question_id = $instance_question_id
+)
+RETURNING v.*;
+
+-- BLOCK variant_append_console
+UPDATE variants AS v
+SET
+    console = CASE
+        WHEN v.console IS NULL OR v.console = '' THEN $extra_console
+        ELSE v.console || E'\n' || $extra_console
+    END
+WHERE
+    v.id = $variant_id;
+
 -- BLOCK select_submission
 SELECT
     s.*

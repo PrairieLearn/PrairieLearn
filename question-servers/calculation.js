@@ -22,6 +22,17 @@ module.exports = {
         callback(null, '');
     },
 
+    render: function(panel, variant, question, submission, course, locals, callback) {
+        if (panel == 'extraHeaders') {
+            module.exports.renderExtraHeaders(question, course, locals, (err, html) => {
+                if (ERR(err, callback)) return;
+                callback(null, null, html, '');
+            });
+        } else {
+            callback(null, null, '', '');
+        }
+    },
+
     getData: function(question, course, variant_seed, callback) {
         var questionDir = path.join(course.path, 'questions', question.directory);
         questionHelper.loadServer(question, course, function(err, server) {
@@ -44,7 +55,7 @@ module.exports = {
                 true_answer: questionData.trueAnswer,
                 options: questionData.options || question.options || {},
             };
-            callback(null, data, true);
+            callback(null, null, data);
         });
     },
 
@@ -73,7 +84,7 @@ module.exports = {
     },
 
     parseSubmission: function(submission, variant, question, course, callback) {
-        callback(null, submission.submitted_answer, null);
+        callback(null, null, null);
     },
 
     gradeSubmission: function(submission, variant, question, course, callback) {
@@ -98,7 +109,7 @@ module.exports = {
                 err.status = 500;
                 return ERR(error.addData(err, data), callback);
             }
-            callback(null, grading);
+            callback(null, null, grading);
         });
     },
 };

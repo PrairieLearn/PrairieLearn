@@ -12,37 +12,6 @@ var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-function ensureVariant(locals, callback) {
-    // if we have an existing variant that is valid and ungraded (may have an ungraded submission)
-    // then use that one, otherwise make a new one
-    var params = {
-        instance_question_id: locals.instance_question.id,
-    };
-    sqldb.query(sql.get_available_variant, params, function(err, result) {
-        if (ERR(err, callback)) return;
-        if (result.rowCount == 1) {
-            return callback(null, result.rows[0]);
-        }
-        questionServers.makeVariant(locals.question, locals.course, {}, function(err, variant) {
-            if (ERR(err, callback)) return;
-            var params = {
-                authn_user_id: locals.authn_user.user_id,
-                instance_question_id: locals.instance_question.id,
-                variant_seed: variant.variant_seed,
-                question_params: variant.params,
-                true_answer: variant.true_answer,
-                options: variant.options,
-                console: variant.console,
-                valid: variant.valid,
-            };
-            sqldb.queryOneRow(sql.make_variant, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                return callback(null, result.rows[0]);
-            });
-        });
-    });
-}
-
 function processSubmission(req, res, callback) {
     let variant_id, submitted_answer, type = null;
     if (res.locals.question.type == 'Freeform') {
@@ -96,7 +65,7 @@ function processGet(req, res, variant_id, callback) {
                     callback(null);
                 });
             } else {
-                ensureVariant(res.locals, function(err, variant) {
+                questionServers.ensureVariant(res.locals.instance_question.id, res.locals.authn_user.user_id, res.locals.question, res.locals.course, {}, function(err, variant) {
                     if (ERR(err, callback)) return;
                     res.locals.variant = variant;
                     callback(null);
@@ -158,9 +127,9 @@ function processGet(req, res, variant_id, callback) {
                 res.locals.extraHeaders = '';
                 return callback(null);
             }
-            questionModule.renderExtraHeaders(res.locals.question, res.locals.course, res.locals, function(err, extraHeaders) {
+            questionServers.render('header', res.locals.variant, res.locals.question, res.locals.submission, res.locals.course, res.locals, function(err, extraHeadersHtml) {
                 if (ERR(err, callback)) return;
-                res.locals.extraHeaders = extraHeaders;
+                res.locals.extraHeadersHtml = extraHeadersHtml;
                 callback(null);
             });
         },
@@ -172,7 +141,7 @@ function processGet(req, res, variant_id, callback) {
                     res.locals.submissionHtmls.push('');
                     return callback(null);
                 }
-                questionModule.renderSubmission(res.locals.variant, res.locals.question, submission, res.locals.course, res.locals, function(err, submissionHtml) {
+                questionServers.render('submission', res.locals.variant, res.locals.question, submission, res.locals.course, res.locals, function(err, submissionHtml) {
                     if (ERR(err, callback)) return;
                     res.locals.submissionHtmls.push(submissionHtml);
                     callback(null);
@@ -188,7 +157,7 @@ function processGet(req, res, variant_id, callback) {
                 return callback(null);
             }
             if (!res.locals.showTrueAnswer) return callback(null);
-            questionModule.renderTrueAnswer(res.locals.variant, res.locals.question, res.locals.course, res.locals, function(err, answerHtml) {
+            questionServers.render('answer', res.locals.variant, res.locals.question, res.locals.submission, res.locals.course, res.locals, function(err, answerHtml) {
                 if (ERR(err, callback)) return;
                 res.locals.answerHtml = answerHtml;
                 callback(null);
@@ -199,9 +168,31 @@ function processGet(req, res, variant_id, callback) {
                 res.locals.questionHtml = '';
                 return callback(null);
             }
-            questionModule.renderQuestion(res.locals.variant, res.locals.question, res.locals.submission, res.locals.course, res.locals, function(err, questionHtml) {
+            questionServers.render('question', res.locals.variant, res.locals.question, res.locals.submission, res.locals.course, res.locals, function(err, questionHtml) {
                 if (ERR(err, callback)) return;
                 res.locals.questionHtml = questionHtml;
+                callback(null);
+            });
+        },
+        function(callback) {
+            // load errors last in case there are error from rendering
+            const params = {
+                variant_id: res.locals.variant.id,
+            };
+            sqldb.query(sql.select_errors, params, (err, result) => {
+                if (ERR(err, callback)) return;
+                res.locals.errors = result.rows;
+                callback(null);
+            });
+        },
+        function(callback) {
+            // reload variant.console in case it changed during render
+            const params = {
+                variant_id: res.locals.variant.id,
+            };
+            sqldb.queryOneRow(sql.select_variant_console, params, (err, result) => {
+                if (ERR(err, callback)) return;
+                res.locals.variant.console = result.rows[0].console;
                 callback(null);
             });
         },

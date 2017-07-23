@@ -52,7 +52,7 @@ function makeAssessmentInstance(req, res, callback) {
                         if (ERR(err, callback)) return;
                         // FIXME: returning with error here triggers "Can't set headers" exception
                         var instanceQuestionId = result.rows[0].id;
-                        questionServers.makeVariant(new_question.question, res.locals.course, {}, function(err, variant) {
+                        questionServers.makeVariant(new_question.question, res.locals.course, {}, function(err, courseErr, variant) {
                             if (ERR(err, callback)) return;
                             var params = {
                                 authn_user_id: res.locals.authn_user.user_id,

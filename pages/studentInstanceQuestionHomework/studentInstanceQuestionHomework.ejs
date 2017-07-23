@@ -7,7 +7,7 @@
     <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
     <script type="text/javascript" src="/localscripts/question.js"></script>
     <script type="text/javascript" src="/javascripts/socket.io.js"></script>
-    <%- extraHeaders %>
+    <%- extraHeadersHtml %>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
@@ -22,18 +22,55 @@
           <div id="question-0" class="question-container">
             <div hidden="true" class="question-data"><%= questionJsonBase64 %></div>
 
-            <% if (!variant.valid) { %>
+            <% errors.forEach(function(error, iError) { %>
             <div class="panel panel-danger">
               <div class="panel-heading">
-                <h3 class="panel-title">ERROR</h3>
+                <h3 class="panel-title">Error</h3>
               </div>
-              <div class="panel-body">
-                Error creating question variant.
-              </div>
-            </div>
-            <% } %>
 
-            <% if (variant.console) { %>
+              <table class="table table-condensed table-hover two-column-description">
+                <tbody>
+                  <% if (devMode || authz_data.has_instructor_view) { %>
+                  <tr><th>Student message:</th><td><%= error.student_message %></td></tr>
+                  <tr><th>Instructor message:</th><td><%= error.instructor_message %></td></tr>
+                  <% } else { %>
+                  <tr><th>Message:</th><td><%= error.student_message %></td></tr>
+                  <% } %>
+                  <tr><th>ID:</th><td><%= error.display_id %></td></tr>
+                  <tr><th>Date:</th><td><%= error.formatted_date %></td></tr>
+                </tbody>
+              </table>
+
+              <% if (devMode || authz_data.has_instructor_view || is_administrator) { %>
+              <div class="panel-body">
+                <p><strong>Associated data:</strong>
+                  <a class="btn btn-xs btn-default" role="button" data-toggle="collapse" href="#error-course-data-<%= iError %>" aria-expanded="false" aria-controls="#error-course-data-<%= iError %>">
+                    Show/hide
+                  </a>
+                </p>
+                <div class="collapse" id="error-course-data-<%= iError %>">
+                  <pre>
+                    <%= JSON.stringify(error.course_data, null, '    ') %>
+                  </pre>
+                </div>
+                <% if (is_administrator) { %>
+                <p><strong>System data:</strong>
+                  <a class="btn btn-xs btn-default" role="button" data-toggle="collapse" href="#error-system-data-<%= iError %>" aria-expanded="false" aria-controls="#error-system-data-<%= iError %>">
+                    Show/hide
+                  </a>
+                </p>
+                <div class="collapse" id="error-system-data-<%= iError %>">
+                  <pre>
+                    <%= JSON.stringify(error.system_data, null, '    ') %>
+                  </pre>
+                </div>
+                <% } %>
+              </div>
+              <% } %>
+            </div>
+            <% }); %>
+
+            <% if ((devMode || authz_data.has_instructor_view) && variant.console) { %>
             <div class="panel panel-default">
               <div class="panel-heading">
                 <h3 class="panel-title">Console output</h3>
