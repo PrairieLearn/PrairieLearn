@@ -14,12 +14,13 @@ FROM
     variants AS v
 WHERE
     v.instance_question_id = $instance_question_id
+    AND v.valid
     AND v.available
 ORDER BY v.date DESC
 LIMIT 1;
 
 -- BLOCK make_variant
-INSERT INTO variants AS v (authn_user_id, instance_question_id, number, variant_seed, params, true_answer, options, console)
+INSERT INTO variants AS v (authn_user_id, instance_question_id, number, variant_seed, params, true_answer, options, console, valid)
 (
     SELECT
         $authn_user_id,
@@ -29,7 +30,8 @@ INSERT INTO variants AS v (authn_user_id, instance_question_id, number, variant_
         $question_params,
         $true_answer,
         $options,
-        $console
+        $console,
+        $valid
     FROM
         variants AS other_v
     WHERE

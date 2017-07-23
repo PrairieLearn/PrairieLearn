@@ -10,6 +10,14 @@ var cheerio = require('cheerio');
 var elements = require('./elements');
 
 module.exports = {
+    getElementFilename: function(elementName) {
+        if (!elements.has(elementName)) {
+            return 'No such element: "' + elementName + '"';
+        }
+        const elementModule = elements.get(elementName);
+        return path.join(__dirname, 'elements', elementModule);
+    },
+
     elementFunction: function(fcn, elementName, $, element, index, data, options, callback) {
         const jsArgs = [$, element, index, data, options];
         const elementHtml = $(element).clone().wrap('<container/>').parent().html();
@@ -108,7 +116,7 @@ module.exports = {
             let err, output;
             if (code) {
                 err = new Error('Error in question code execution');
-                err.data = {code, cmdInput, outputStdout, outputStderr, outputData};
+                err.data = {code, cmdInput, outputStdout, outputStderr, outputBoth, outputData};
                 if (!callbackCalled) {
                     callbackCalled = true;
                     return ERR(err, callback);
@@ -120,8 +128,8 @@ module.exports = {
             try {
                 output = JSON.parse(outputData);
             } catch (e) {
-                err = new Error('Error decoding question JSON');
-                err.data = {decodeMsg: e.message, cmdInput, outputStdout, outputStderr, outputData};
+                err = new Error('Error decoding question JSON: ' + e.message);
+                err.data = {decodeMsg: e.message, cmdInput, outputStdout, outputStderr, outputBoth, outputData};
                 if (!callbackCalled) {
                     callbackCalled = true;
                     return ERR(err, callback);
@@ -140,8 +148,8 @@ module.exports = {
         });
 
         child.on('error', (error) => {
-            let err = new Error('Error executing python question code');
-            err.data = {execMsg: error.message, cmdInput};
+            let err = new Error('Error executing python question code: ' + error.message);
+            err.data = {execMsg: error.message, cmdInput, outputStdout, outputStderr, outputBoth};
             if (!callbackCalled) {
                 callbackCalled = true;
                 return ERR(err, callback);
@@ -265,6 +273,8 @@ module.exports = {
     },
 
     getData: function(question, course, variant_seed, callback) {
+        const question_dir = path.join(course.path, 'questions', question.directory);
+        let consoleLog = '';
         let data = {
             params: {},
             true_answer: {},
@@ -277,24 +287,26 @@ module.exports = {
         const checkOptions = {has_submission: false, has_grading: false, for_render: false};
         const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
         if (checkErr) {
-            const err = new Error('Invalid state before server.get_data(): ' + checkErr);
-            err.data = {data, options, question, course};
-            return callback(err);
+            consoleLog += 'Invalid state before server.get_data(): ' + checkErr + '\n';
+            return callback(null, data, false, consoleLog);
         }
-
-        let consoleLog = '';
 
         let pythonArgs = [data, options];
         this.execPythonServer('get_data', pythonArgs, question, course, (err, ret_data, ret_consoleLog) => {
-            if (ERR(err, callback)) return;
+            if (err) {
+                consoleLog += _.get(err, ['data', 'outputBoth'], '');
+                consoleLog += '\n';
+                consoleLog += path.join(question_dir, 'server.py') + ': Error calling get_data()\n';
+                consoleLog += err.toString();
+                return callback(null, data, false, consoleLog);
+            }
+
             if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
             data = ret_data;
-
             const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
             if (checkErr) {
-                const err = new Error('Invalid state after server.get_data(): ' + checkErr);
-                err.data = {data, options, question, course};
-                return callback(err);
+                consoleLog += 'Invalid state after server.get_data(): ' + checkErr + '\n';
+                return callback(null, data, false, consoleLog);
             }
 
             this.execTemplate('question.html', data, options, question, course, (err, html, $) => {
@@ -304,25 +316,38 @@ module.exports = {
                 async.eachSeries(elements.keys(), (elementName, callback) => {
                     async.eachSeries($(elementName).toArray(), (element, callback) => {
                         this.elementFunction('prepare', elementName, $, element, index, data, options, (err, ret_data, ret_consoleLog) => {
-                            if (ERR(err, callback)) return;
+                            if (err) {
+                                consoleLog += _.get(err, ['data', 'outputBoth'], '');
+                                if (err.code) consoleLog += 'Error code: ' + err.code;
+                                const elementFile = module.exports.getElementFilename(elementName);
+                                consoleLog += '\n';
+                                consoleLog += elementFile + ': Error calling prepare()\n';
+                                consoleLog += err.toString();
+                                return callback(new Error());
+                            }
+
+                            if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
                             data = ret_data;
                             const checkErr = module.exports.checkQuestionData(data, options, checkOptions);
                             if (checkErr) {
-                                const err = new Error('Invalid state after element ' + index + ' ' + elementName + '.prepare(): ' + checkErr);
-                                err.data = {data, options, question, course};
-                                return callback(err);
+                                consoleLog += _.get(err, ['data', 'outputBoth'], '');
+                                const elementFile = module.exports.getElementFilename(elementName);
+                                consoleLog += '\n';
+                                consoleLog += elementFile + ': Error after prepare()\n';
+                                consoleLog += 'Invalid state after element number ' + index + ' ' + elementName + '.parse(): ' + checkErr;
+                                return callback(new Error());
                             }
-                            if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
+
                             index++;
                             callback(null);
                         });
                     }, (err) => {
-                        if (ERR(err, callback)) return;
+                        if (err) return callback(err);
                         callback(null);
                     });
                 }, (err) => {
-                    if (ERR(err, callback)) return;
-                    callback(null, data, consoleLog);
+                    if (err) return callback(null, data, false, consoleLog);
+                    callback(null, data, true, consoleLog);
                 });
             });
         });

@@ -12,6 +12,7 @@ columns
     params: jsonb
     qiid: text
     true_answer: jsonb
+    valid: boolean default true
     variant_seed: text
 
 indexes

@@ -22,8 +22,19 @@
           <div id="question-0" class="question-container">
             <div hidden="true" class="question-data"><%= questionJsonBase64 %></div>
 
-            <% if (variant.console) { %>
+            <% if (!variant.valid) { %>
             <div class="panel panel-danger">
+              <div class="panel-heading">
+                <h3 class="panel-title">ERROR</h3>
+              </div>
+              <div class="panel-body">
+                Error creating question variant.
+              </div>
+            </div>
+            <% } %>
+
+            <% if (variant.console) { %>
+            <div class="panel panel-default">
               <div class="panel-heading">
                 <h3 class="panel-title">Console output</h3>
               </div>

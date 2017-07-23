@@ -13,7 +13,7 @@ var sqlLoader = require('../../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 function ensureVariant(locals, callback) {
-    // if we have an existing variant that is ungraded (may have an ungraded submission)
+    // if we have an existing variant that is valid and ungraded (may have an ungraded submission)
     // then use that one, otherwise make a new one
     var params = {
         instance_question_id: locals.instance_question.id,
@@ -33,6 +33,7 @@ function ensureVariant(locals, callback) {
                 true_answer: variant.true_answer,
                 options: variant.options,
                 console: variant.console,
+                valid: variant.valid,
             };
             sqldb.queryOneRow(sql.make_variant, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -153,6 +154,10 @@ function processGet(req, res, variant_id, callback) {
             callback(null);
         },
         function(callback) {
+            if (!res.locals.variant.valid) {
+                res.locals.extraHeaders = '';
+                return callback(null);
+            }
             questionModule.renderExtraHeaders(res.locals.question, res.locals.course, res.locals, function(err, extraHeaders) {
                 if (ERR(err, callback)) return;
                 res.locals.extraHeaders = extraHeaders;
@@ -163,6 +168,10 @@ function processGet(req, res, variant_id, callback) {
             if (!res.locals.showSubmissions) return callback(null);
             res.locals.submissionHtmls = [];
             async.eachSeries(res.locals.submissions, function(submission, callback) {
+                if (!res.locals.variant.valid) {
+                    res.locals.submissionHtmls.push('');
+                    return callback(null);
+                }
                 questionModule.renderSubmission(res.locals.variant, res.locals.question, submission, res.locals.course, res.locals, function(err, submissionHtml) {
                     if (ERR(err, callback)) return;
                     res.locals.submissionHtmls.push(submissionHtml);
@@ -174,6 +183,10 @@ function processGet(req, res, variant_id, callback) {
             });
         },
         function(callback) {
+            if (!res.locals.variant.valid) {
+                res.locals.answerHtml = '';
+                return callback(null);
+            }
             if (!res.locals.showTrueAnswer) return callback(null);
             questionModule.renderTrueAnswer(res.locals.variant, res.locals.question, res.locals.course, res.locals, function(err, answerHtml) {
                 if (ERR(err, callback)) return;
@@ -182,6 +195,10 @@ function processGet(req, res, variant_id, callback) {
             });
         },
         function(callback) {
+            if (!res.locals.variant.valid) {
+                res.locals.questionHtml = '';
+                return callback(null);
+            }
             questionModule.renderQuestion(res.locals.variant, res.locals.question, res.locals.submission, res.locals.course, res.locals, function(err, questionHtml) {
                 if (ERR(err, callback)) return;
                 res.locals.questionHtml = questionHtml;

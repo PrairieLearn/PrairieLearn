@@ -52,7 +52,7 @@ module.exports = {
         }
         this.getModule(question.type, function(err, questionModule) {
             if (ERR(err, callback)) return;
-            questionModule.getData(question, course, variant_seed, function(err, questionData, consoleLog) {
+            questionModule.getData(question, course, variant_seed, function(err, questionData, valid, consoleLog) {
                 if (ERR(err, callback)) return;
                 var variant = {
                     variant_seed: variant_seed,
@@ -60,6 +60,7 @@ module.exports = {
                     true_answer: questionData.true_answer || {},
                     options: questionData.options || {},
                     console: consoleLog || '',
+                    valid: valid,
                 };
                 callback(null, variant);
             });

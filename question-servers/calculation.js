@@ -44,7 +44,7 @@ module.exports = {
                 true_answer: questionData.trueAnswer,
                 options: questionData.options || question.options || {},
             };
-            callback(null, data);
+            callback(null, data, true);
         });
     },
 
