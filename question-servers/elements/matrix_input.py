@@ -26,7 +26,13 @@ def render(element_html, element_index, data, options):
         raw_submitted_answer = options["raw_submitted_answer"].get(name, None)
         # Put javascript in html to enable popovers
         # FIXME: enable popovers someplace else
-        html = '<script>$(document).ready(function(){$(''[data-toggle="popover"]'').popover();});</script>'
+        # html = '<script>$(document).ready(function(){$(''[data-toggle="popover"]'').popover();});</script>'
+        html = '''<style> .popover{max-width: 50%;} </style>'''
+        html += '''<script>\n''' \
+            + '''    $(document).ready(function(){\n''' \
+            + '''        $('[data-toggle="popover"]').popover({container: 'body'});\n''' \
+            + '''    });\n''' \
+            + '''</script>\n\n'''
         # Add input to html
         html += '<input name="' + name + '"' \
             + ('' if editable else ' disabled') \
@@ -73,7 +79,8 @@ def render(element_html, element_index, data, options):
         else:
             raise ValueError('method of comparison "%s" is not valid' % comparison)
         # Add span with popover to html
-        html += '<span style="border: 1px solid #ddd;border-left: 0px;white-space:nowrap;padding: 9.5px;margin: 0 2px 10px;box-sizing: border-box;background-color: #eee;color: #999;" data-toggle="popover" title="MATLAB Format" data-content="'+info+'">?</span>'
+        html += '<span style="border: 1px solid #ddd;border-left: 0px;white-space:nowrap;padding: 9.5px;margin: 0 2px 10px;box-sizing: border-box;background-color: #eee;color: #999;" data-toggle="popover" title="MATLAB Format" data-content="'+info+'" data-placement="left">?</span>'
+        print(html)
         # <span style="border: 1px solid #ddd;border-left: 0px;white-space:nowrap;padding: 9.5px;margin: 0 2px 10px;box-sizing: border-box;background-color: #eee;color: #999;" title="basic tooltip">?</span>
     elif options["panel"] == "submission":
         parse_error = data["parse_errors"].get(name, None)
