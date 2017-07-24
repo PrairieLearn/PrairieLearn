@@ -22,20 +22,9 @@ def get_data(data, options):
     # Product of these two matrices
     C = A.dot(B)
 
-    params = {
-        "A": A.tolist(),
-        "B": B.tolist()
-    }
-
-    true_answer = {
-        "C": C.tolist()
-    }
-
-    data = {
-        "params": params,
-        "true_answer": true_answer
-    }
+    # Modify data and return
+    data["params"]["A"] = A.tolist()
+    data["params"]["B"] = B.tolist()
+    data["true_answer"]["C"] = C.tolist()
 
     return data
-
-    # return {}
