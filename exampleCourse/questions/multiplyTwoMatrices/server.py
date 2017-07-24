@@ -23,9 +23,8 @@ def get_data(data, options):
     C = A.dot(B)
 
     # Modify data and return
-    params["A"] = A.tolist()
-    params["B"] = B.tolist()
-    true_answer["C"] = C.tolist()
-
+    data["params"]["A"] = A.tolist()
+    data["params"]["B"] = B.tolist()
+    data["true_answer"]["C"] = C.tolist()
 
     return data
