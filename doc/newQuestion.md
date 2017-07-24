@@ -220,7 +220,7 @@ This structure, where dictionaries have variables as keys, is used all dictionar
 The element functions are:
 
 Function | Return object | `data` keys present | `options` keys present | Description
---- | --- | --- | ---
+--- | --- | --- | --- | ---
 `prepare()` | `data` (dict) | `params`, `true_answer` | `variant_seed`, `options` | Generate the parameter and true answers for a new random question variant. Set `data["params"][var]` and `data["true_answer"][var]` for any variables as needed. Return the modified `data` dictionary.
 `render()` | `html` (string) | `params`, `true_answer`, `submitted_answer`, `parse_errors`, `partial_scores`, `score`, `feedback` | `variant_seed`, `options`, `raw_submitted_answer`, `editable`, `panel` | Render the HTML for one panel and return it as a string.
 `parse()` | `data` (dict) | `params`, `true_answer`, `submitted_answer`, `parse_errors` | `variant_seed`, `options`, `raw_submitted_answer` | Parse the `data["submitted_answer"][var]` data entered by the student, modifying this variable. Return the modified `data` dictionary.
