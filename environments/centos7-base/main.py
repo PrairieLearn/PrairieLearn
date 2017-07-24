@@ -10,6 +10,10 @@ from datetime import datetime
 from subprocess import call
 from string import Template
 
+# specifies environment variables that should be forwarded to the child process
+# that executes the grading script
+ENV_WHITELIST = ['PATH', 'HOME']
+
 def error(message):
     log(Template('ERR: $message').substitute(message=message))
     sys.stdout.flush()
@@ -119,7 +123,6 @@ def main():
     if 'DEV_MODE' in os.environ and os.environ['DEV_MODE']:
         info['dev_mode'] = True
         dev_mode = True
-        del os.environ["DEV_MODE"]
     else:
         info['dev_mode'] = False
         dev_mode = False
@@ -134,7 +137,6 @@ def main():
         except:
             error('could not parse JOB_ID environment variable to an int')
             environ_error = True
-        del os.environ["JOB_ID"]
 
     if 'ENTRYPOINT' not in os.environ:
         error('entrypoint was not specified in the ENTRYPOINT environment variable')
@@ -142,7 +144,6 @@ def main():
         environ_error = True
     else:
         info['entrypoint'] = os.environ['ENTRYPOINT']
-        del os.environ['ENTRYPOINT']
 
     # These will only be present and useful when running on AWS infrastructure
     if not dev_mode:
@@ -152,7 +153,6 @@ def main():
             environ_error = True
         else:
             info['jobs_bucket'] = os.environ['S3_JOBS_BUCKET']
-            del os.environ["S3_JOBS_BUCKET"]
 
         if 'S3_RESULTS_BUCKET' not in os.environ:
             error('the S3 results bucket was not specified in the S3_RESULTS_BUCKET environment variable')
@@ -160,7 +160,6 @@ def main():
             environ_error = True
         else:
             info['results_bucket'] = os.environ['S3_RESULTS_BUCKET']
-            del os.environ["S3_RESULTS_BUCKET"]
 
         if 'S3_ARCHIVES_BUCKET' not in os.environ:
             error('the S3 archives bucket was not specified in the S3_ARCHIVES_BUCKET environment variable')
@@ -168,48 +167,45 @@ def main():
             environ_error = True
         else:
             info['archives_bucket'] = os.environ['S3_ARCHIVES_BUCKET']
-            del os.environ["S3_ARCHIVES_BUCKET"]
 
         if 'WEBHOOK_URL' not in os.environ:
             warn('the webhook callback url was not specified in the WEBHOOK_URL environment variable')
             info['webhook_url'] = None
         else:
             info['webhook_url'] = os.environ['WEBHOOK_URL']
-            del os.environ["WEBHOOK_URL"]
 
         if 'CSRF_TOKEN' not in os.environ:
             warn('a csrf token was not specified in the CSRF_TOKEN environment variable')
             info['csrf_token'] = None
         else:
             info['csrf_token'] = os.environ['CSRF_TOKEN']
-            del os.environ["CSRF_TOKEN"]
 
     if environ_error:
         finish(False, info)
 
     job_id = info['job_id']
 
-    # Notify PL that grading has been started
-    # force
-    if info['webhook_url']:
-        headers = {'Content-Type': 'application/json'}
-        if info['csrf_token']:
-            log('CSRF Token: %s' % info['csrf_token'])
-            headers['x-csrf-token'] = info['csrf_token']
-
-        data = {}
-        data['start_time'] = info['start_time']
-
-        final_data = {}
-        final_data['data'] = data
-        final_data['event'] = 'grading_start'
-        final_data['job_id'] = info['job_id']
-
-        r = requests.post(info['webhook_url'], data=json.dumps(final_data), headers=headers)
-
     log(Template('running job $job').substitute(job=job_id))
 
     if not dev_mode:
+        # Notify PL that grading has been started
+        # force
+        if info['webhook_url']:
+            headers = {'Content-Type': 'application/json'}
+            if info['csrf_token']:
+                log('CSRF Token: %s' % info['csrf_token'])
+                headers['x-csrf-token'] = info['csrf_token']
+
+            data = {}
+            data['start_time'] = info['start_time']
+
+            final_data = {}
+            final_data['data'] = data
+            final_data['event'] = 'grading_start'
+            final_data['job_id'] = info['job_id']
+
+            r = requests.post(info['webhook_url'], data=json.dumps(final_data), headers=headers)
+
         # Load the job archive from S3
         jobs_bucket = info['jobs_bucket']
         s3_job_file = Template('s3://$bucket/job_$job.tar.gz').substitute(bucket=jobs_bucket, job=job_id)
@@ -226,12 +222,17 @@ def main():
 
     entrypoint = info['entrypoint']
 
+    # We need to construct a new set of environment variables from the whitelist
+    env = {}
+    for key in ENV_WHITELIST:
+        env[key] = os.environ[key]
+
     if os.path.isfile(entrypoint):
         chmod_ret = call(['chmod', '+x', entrypoint])
         if chmod_ret != 0:
             error(Template('Could not make $file executable').substitute(file=entrypoint))
         else:
-            run_ret = call([entrypoint], shell=True)
+            run_ret = call([entrypoint], env=env, shell=True)
             if run_ret != 0:
                 error(Template('error executing $file').substitute(file=entrypoint))
                 finish(False, info)
