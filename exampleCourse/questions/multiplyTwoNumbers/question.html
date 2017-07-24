@@ -1,11 +1,16 @@
-<script>
-$(document).ready(function(){
-    $('[data-toggle="popover"]').popover();
-});
-</script>
-
-This is a number: {{params.stuff}}
-
 <p>
-<a href="#" data-toggle="popover" title="Popover Header" data-content="Some content inside the popover">Toggle popover</a>
+    This is text that will appear in all panels: {{params.stuff}}
 </p>
+
+
+<question_panel>
+    This only appears in the question panel.
+</question_panel>
+
+<answer_panel>
+    This only appears in the answer panel.
+</answer_panel>
+
+<submission_panel>
+    This only appears in the submission panel.
+</submission_panel>
