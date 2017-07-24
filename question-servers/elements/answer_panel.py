@@ -5,10 +5,10 @@ def prepare(element_html, element_index, data, options):
     return data
 
 def render(element_html, element_index, data, options):
-    if options["panel"] == 'answer':
+    if options["panel"] == "answer":
         return element_html
     else:
-        return ''
+        return ""
 
 def parse(element_html, element_index, data, options):
     return data
