@@ -5,39 +5,18 @@ import prairielearn as pl
 from html import escape
 
 
-# TODO: check element attributes (like in numberInput.js)
-
 def prepare(element_html, element_index, data, options):
-    # element = lxml.html.fragment_fromstring(element_html)
-    # name = pl.get_string_attrib(element, "name")
     return data
 
 def render(element_html, element_index, data, options):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
-    style = pl.get_string_attrib(element, "style", None)
-    if style is None:
-        style = ""
-    else:
-        style = 'style="'+style+'"'
+    label = pl.get_string_attrib(element,"label",None)
 
     if options["panel"] == "question":
         editable = options["editable"]
         raw_submitted_answer = options["raw_submitted_answer"].get(name, None)
-        # Put javascript in html to enable popovers
-        # FIXME: enable popovers someplace else
-        # html = '<script>$(document).ready(function(){$(''[data-toggle="popover"]'').popover();});</script>'
-        html = '''<style> .popover{max-width: 50%;} </style>'''
-        html += '''<script>\n''' \
-            + '''    $(document).ready(function(){\n''' \
-            + '''        $('[data-toggle="popover"]').popover({container: 'body'});\n''' \
-            + '''    });\n''' \
-            + '''</script>\n\n'''
-        # Add input to html
-        html += '<input name="' + name + '"' \
-            + ('' if editable else ' disabled') \
-            + ('' if (raw_submitted_answer is None) else (' value="' + escape(raw_submitted_answer) + '" ')) \
-            + style + '/> '
+
         # Get method of comparison, with relabs as default
         comparison = pl.get_string_attrib(element, "comparison","relabs")
         # Get comparison parameters and info string
@@ -78,23 +57,63 @@ def render(element_html, element_index, data, options):
                 + ' to ' + ('%d' % digits) + ' digits after the decimal.'
         else:
             raise ValueError('method of comparison "%s" is not valid' % comparison)
-        # Add span with popover to html
-        html += '<span style="border: 1px solid #ddd;border-left: 0px;white-space:nowrap;padding: 9.5px;margin: 0 2px 10px;box-sizing: border-box;background-color: #eee;color: #999;" data-toggle="popover" title="MATLAB Format" data-content="'+info+'" data-placement="left">?</span>'
-        print(html)
-        # <span style="border: 1px solid #ddd;border-left: 0px;white-space:nowrap;padding: 9.5px;margin: 0 2px 10px;box-sizing: border-box;background-color: #eee;color: #999;" title="basic tooltip">?</span>
+
+        # Put javascript in html to enable popovers
+        # FIXME: enable popovers someplace else
+
+        html = '''<style>\n    .popover{max-width: 50%;}\n</style>\n\n'''
+        html += '''<script>\n''' \
+            + '''    $(document).ready(function(){\n''' \
+            + '''        $('[data-toggle="popover"]').popover({container: 'body'});\n''' \
+            + '''    });\n''' \
+            + '''</script>\n\n'''
+
+        html += '''<div class="input-group">\n'''
+        if label is not None:
+            html += '''    <label class="input-group-addon" id="basic-addon2">'''+label+'''</label>\n'''
+        html += '''    <input name="'''+name+'''" type="text" class="form-control" ''' \
+            + ('' if editable else ' disabled') \
+            + ('' if (raw_submitted_answer is None) else (' value="' + escape(raw_submitted_answer) + '" ')) \
+            + '''placeholder="[1 2 3; 4 5 6]" aria-describedby="basic-addon1" />\n''' \
+            + '''    <span class="input-group-btn" id="basic-addon1">\n''' \
+            + '''        <a class="btn btn-default" type="button" data-toggle="popover" title="MATLAB Format" data-content="'''+info+'''" data-placement="left" data-trigger="focus" tabindex="0">\n''' \
+            + '''            <i class="fa fa-question-circle" aria-hidden="true"></i>\n''' \
+            + '''        </a>\n''' \
+            + '''    </span>\n''' \
+            + '''</div>'''
     elif options["panel"] == "submission":
         parse_error = data["parse_errors"].get(name, None)
         if parse_error is not None:
-            html = '<pre ' + style + '>' + '<strong>INVALID\n&nbsp;...&nbsp;</strong>' + parse_error + '</pre>'
+            html = '''<div style="display: flex; align-items: center;">\n'''
+            if label is not None:
+                html += '''    <span style="white-space:nowrap;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;">'''+label+'''</span>\n'''
+            html += '''    <pre style="flex:1;width:50%;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;"><strong>INVALID\n&nbsp;...&nbsp;</strong>'''+parse_error+'''</pre>\n''' \
+                + '''</div>'''
         else:
             # Get submitted answer or throw exception if it does not exist
             a_sub = np.array(data["submitted_answer"][name])
-            html = '<pre ' + style + '>' + pl.numpy_to_matlab(a_sub,ndigits=12,wtype='g') + '</pre>'
+
+            html = '''<div style="display: flex; align-items: center;">\n'''
+            if label is not None:
+                html += '''    <span style="white-space:nowrap;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;">'''+label+'''</span>\n'''
+            html += '''    <pre style="flex:1;width:50%;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;">'''+pl.numpy_to_matlab(a_sub,ndigits=12,wtype='g')+'''</pre>\n''' \
+                + '''</div>'''
     elif options["panel"] == "answer":
-        # Get true answer or throw exception if it does not exist
-        a_tru = np.array(data["true_answer"][name])
-        # FIXME: render correctly with respect to method of comparison
-        html = '<pre ' + style + '>' + pl.numpy_to_matlab(a_tru,ndigits=12,wtype='g') + '</pre>'
+        # Get true answer - do nothing if it does not exist
+        a_tru = data["true_answer"].get(name, None)
+        if a_tru is not None:
+            a_tru = np.array(a_tru)
+
+            # FIXME: render correctly with respect to method of comparison
+            
+            html = '''<div style="display: flex; align-items: center;">\n'''
+            if label is not None:
+                html += '''    <span style="white-space:nowrap;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;">'''+label+'''</span>\n'''
+            html += '''    <pre style="flex:1;width:50%;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;"> '''+pl.numpy_to_matlab(a_tru,ndigits=12,wtype='g')+''' </pre>\n''' \
+                + '''</div>'''
+        else:
+            html = ""
+
     else:
         raise Exception("Invalid panel type: %s" % options["panel"])
 
