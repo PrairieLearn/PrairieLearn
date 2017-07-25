@@ -131,13 +131,13 @@
                   <% if (access_rule.mode == 'Exam') { %>
                     <br>
                     <% if (access_rule.valid_exams && access_rule.valid_exams.length > 0) { %>
-                      Matching CBTF exams:
+                    Matching CBTF exam(s): 
                       <% access_rule.valid_exams.forEach(function(match) { %>
                       <a href="https://cbtf.engr.illinois.edu/sched/course/<%= match.course_id %>/exam/<%= match.exam_id %>"><%= match.exam_string %></a> 
                       <% }); %>
                     <% } else { %>
                       <% if (course.ps_course_ids) { %>
-                        No matching CBTF exams! Check date ranges?
+                        No matching CBTF exam! Check date ranges?
                       <% } %>
                     <% } %>
                   <% } %>
