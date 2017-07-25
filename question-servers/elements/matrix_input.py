@@ -1,8 +1,8 @@
 import lxml.html
-import numpy as np
-import sys
-import prairielearn as pl
 from html import escape
+import numpy as np
+import prairielearn as pl
+
 
 
 def prepare(element_html, element_index, data, options):
@@ -17,50 +17,36 @@ def render(element_html, element_index, data, options):
         editable = options["editable"]
         raw_submitted_answer = options["raw_submitted_answer"].get(name, None)
 
+        # Create info string
+        info = 'Enclose it by a single pair of square brackets. ' \
+            + 'Separate entries in each row with a space. ' \
+            + 'Indicate the end of each intermediate row with a semicolon. ' \
+            + 'Each entry must be a number. ' \
+            + 'No symbolic expressions (those that involve fractions, ' \
+            + 'square roots, variables, etc.) will be accepted. Scientific ' \
+            + 'notation is accepted (e.g., 1.2e03). '
         # Get method of comparison, with relabs as default
         comparison = pl.get_string_attrib(element, "comparison","relabs")
         # Get comparison parameters and info string
         if comparison=="relabs":
             rtol = pl.get_float_attrib(element,"rtol",1e-5)
             atol = pl.get_float_attrib(element,"atol",1e-8)
-            info = 'Enclose it by a single pair of square brackets. ' \
-                + 'Separate entries in each row with a space. ' \
-                + 'Indicate the end of each intermediate row with a semicolon. ' \
-                + 'Each entry must be a number. ' \
-                + 'No symbolic expressions (those that involve fractions, ' \
-                + 'square roots, variables, etc.) will be accepted. Scientific ' \
-                + 'notation is accepted (e.g., 1.2e03). ' \
-                + 'Numbers must be accurate' \
+            info += 'Numbers must be accurate' \
                 + ' to within relative tolerance ' + ('%g' % rtol) \
                 + ' and absolute tolerance ' + ('%g' % rtol) + '.'
         elif comparison=="sigfig":
             digits = pl.get_integer_attrib(element,"digits",2)
-            info = 'Enclose it by a single pair of square brackets. ' \
-                + 'Separate entries in each row with a space. ' \
-                + 'Indicate the end of each intermediate row with a semicolon. ' \
-                + 'Each entry must be a number. ' \
-                + 'No symbolic expressions (those that involve fractions, ' \
-                + 'square roots, variables, etc.) will be accepted. Scientific ' \
-                + 'notation is accepted (e.g., 1.2e03). ' \
-                + 'Numbers must be accurate' \
+            info += 'Numbers must be accurate' \
                 + ' to ' + ('%d' % digits) + ' significant figures.'
         elif comparison=="decdig":
             digits = pl.get_integer_attrib(element,"digits",2)
-            info = 'Enclose it by a single pair of square brackets. ' \
-                + 'Separate entries in each row with a space. ' \
-                + 'Indicate the end of each intermediate row with a semicolon. ' \
-                + 'Each entry must be a number. ' \
-                + 'No symbolic expressions (those that involve fractions, ' \
-                + 'square roots, variables, etc.) will be accepted. Scientific ' \
-                + 'notation is accepted (e.g., 1.2e03). ' \
-                + 'Numbers must be accurate' \
+            info += 'Numbers must be accurate' \
                 + ' to ' + ('%d' % digits) + ' digits after the decimal.'
         else:
-            raise ValueError('method of comparison "%s" is not valid' % comparison)
+            raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
 
         # Put javascript in html to enable popovers
         # FIXME: enable popovers someplace else
-
         html = '''<style>\n    .popover{max-width: 50%;}\n</style>\n\n'''
         html += '''<script>\n''' \
             + '''    $(document).ready(function(){\n''' \
@@ -74,9 +60,9 @@ def render(element_html, element_index, data, options):
         html += '''    <input name="'''+name+'''" type="text" class="form-control" ''' \
             + ('' if editable else ' disabled') \
             + ('' if (raw_submitted_answer is None) else (' value="' + escape(raw_submitted_answer) + '" ')) \
-            + '''placeholder="[1 2 3; 4 5 6]" aria-describedby="basic-addon1" />\n''' \
+            + '''aria-describedby="basic-addon1" />\n''' \
             + '''    <span class="input-group-btn" id="basic-addon1">\n''' \
-            + '''        <a class="btn btn-default" type="button" data-toggle="popover" title="MATLAB Format" data-content="'''+info+'''" data-placement="left" data-trigger="focus" tabindex="0">\n''' \
+            + '''        <a class="btn btn-default" type="button" data-toggle="popover" title="MATLAB Format" data-content="'''+info+'''" data-placement="auto left" data-trigger="focus" tabindex="0">\n''' \
             + '''            <i class="fa fa-question-circle" aria-hidden="true"></i>\n''' \
             + '''        </a>\n''' \
             + '''    </span>\n''' \
@@ -105,7 +91,7 @@ def render(element_html, element_index, data, options):
             a_tru = np.array(a_tru)
 
             # FIXME: render correctly with respect to method of comparison
-            
+
             html = '''<div style="display: flex; align-items: center;">\n'''
             if label is not None:
                 html += '''    <span style="white-space:nowrap;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;">'''+label+'''</span>\n'''
@@ -127,14 +113,16 @@ def parse(element_html, element_index, data, options):
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data["submitted_answer"].get(name,None)
-    if a_sub is None:
+    if not a_sub:
         data["parse_errors"][name] = 'No submitted answer.'
+        data["submitted_answer"][name] = None
         return data
 
     # Convert submitted answer to numpy array (return parse_error on failure)
     (a_sub_parsed,parse_error) = pl.matlab_to_numpy(a_sub)
     if a_sub_parsed is None:
         data["parse_errors"][name] = parse_error
+        data["submitted_answer"][name] = None
         return data
 
     # Replace submitted answer with numpy array

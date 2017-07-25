@@ -1,16 +1,16 @@
 <p>
-    This is text that will appear in all panels: {{params.stuff}}
+The product of ${{params.a}}$ and ${{params.b}}$ is
+<number_input name="c" points="1" comparison="sigfig" digits="3" display="inline" />
+.
 </p>
+<variable_score name="c" />
 
+<hr>
 
 <question_panel>
-    This only appears in the question panel.
+<p>
+Find the sum of $a={{params.a}}$ and $b={{params.b}}$:
+</p>
 </question_panel>
-
-<answer_panel>
-    This only appears in the answer panel.
-</answer_panel>
-
-<submission_panel>
-    This only appears in the submission panel.
-</submission_panel>
+<number_input name="d" points="1" comparison="sigfig" digits="3" display="block" label="$a+b=$" />
+<variable_score name="d" />
