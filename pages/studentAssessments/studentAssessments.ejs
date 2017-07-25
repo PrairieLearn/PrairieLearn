@@ -74,6 +74,9 @@
           </tbody>
         </table>
       </div>
+      <% if (authz_data.mode == 'Exam') { %>
+      <p>Don't see your exam? Exams for this course are only made available to students during CBTF checked-in reservations. See a proctor for assistance.</p>
+      <% } %>
     </div>
   </body>
 </html>
