@@ -38,7 +38,11 @@ course_instances_list AS (
     SELECT
         coalesce(jsonb_agg(jsonb_build_object(
             'label', c.short_name || ': ' || c.title || ', ' || ci.long_name,
-            'id', ci.id
+            'id', ci.id,
+            'c_short_name', c.short_name,
+            'ci_long_name', ci.long_name,
+            'c_title', c.title,
+            'c_id', c.id
         ) ORDER BY c.short_name, c.title, c.id, ci.number DESC, ci.id), '[]'::jsonb) AS course_instances
     FROM
         pl_courses AS c
