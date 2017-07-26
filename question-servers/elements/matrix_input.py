@@ -4,8 +4,6 @@ import numpy as np
 import chevron
 import prairielearn as pl
 
-from lxml import etree
-
 
 
 def prepare(element_html, element_index, data, options):
