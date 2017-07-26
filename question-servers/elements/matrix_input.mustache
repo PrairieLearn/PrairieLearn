@@ -1,0 +1,45 @@
+{{#question}}
+{{! FIXME: Put this somewhere else.}}
+<style>
+    .popover{max-width: 50%;}
+</style>
+
+{{! FIXME: Put this somewhere else.}}
+<script>
+    $(document).ready(function(){
+        $('[data-toggle="popover"]').popover({container: 'body'});
+    });
+</script>
+
+<div class="input-group">
+    {{#label}}<label class="input-group-addon" id="basic-addon2">{{label}}</label>{{/label}}
+    <input name="{{name}}" type="text" class="form-control" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" />
+    <span class="input-group-btn" id="basic-addon1">
+        <a class="btn btn-default" type="button" data-toggle="popover" title="MATLAB Format" data-content="{{info}}" data-placement="auto left" data-trigger="focus" tabindex="0">
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+        </a>
+    </span>
+</div>
+{{/question}}
+
+{{#submission}}
+{{#parse_error}}
+<div style="display: flex; align-items: center;">
+    {{#label}}<span style="white-space:nowrap;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;">{{label}}</span>{{/label}}
+    <pre style="flex:1;width:50%;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;"><strong>INVALID ... </strong>{{parse_error}}</pre>
+</div>
+{{/parse_error}}
+{{^parse_error}}
+<div style="display: flex; align-items: center;">
+    {{#label}}<span style="white-space:nowrap;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;">{{label}}</span>{{/label}}
+    <pre style="flex:1;width:50%;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;">{{a_sub}}</pre>
+</div>
+{{/parse_error}}
+{{/submission}}
+
+{{#answer}}
+<div style="display: flex; align-items: center;">
+    {{#label}}<span style="white-space:nowrap;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;">{{label}}</span>{{/label}}
+    <pre style="flex:1;width:50%;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;">{{a_tru}}</pre>
+</div>
+{{/answer}}

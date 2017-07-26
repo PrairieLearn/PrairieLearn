@@ -1,7 +1,10 @@
 import lxml.html
 from html import escape
 import numpy as np
+import chevron
 import prairielearn as pl
+
+from lxml import etree
 
 
 
@@ -17,73 +20,37 @@ def render(element_html, element_index, data, options):
         editable = options["editable"]
         raw_submitted_answer = options["raw_submitted_answer"].get(name, None)
 
-        # Create info string
-        info = 'Enclose it by a single pair of square brackets. ' \
-            + 'Separate entries in each row with a space. ' \
-            + 'Indicate the end of each intermediate row with a semicolon. ' \
-            + 'Each entry must be a number. ' \
-            + 'No symbolic expressions (those that involve fractions, ' \
-            + 'square roots, variables, etc.) will be accepted. Scientific ' \
-            + 'notation is accepted (e.g., 1.2e03). '
-        # Get method of comparison, with relabs as default
-        comparison = pl.get_string_attrib(element, "comparison","relabs")
         # Get comparison parameters and info string
+        comparison = pl.get_string_attrib(element, "comparison","relabs")
         if comparison=="relabs":
             rtol = pl.get_float_attrib(element,"rtol",1e-5)
             atol = pl.get_float_attrib(element,"atol",1e-8)
-            info += 'Numbers must be accurate' \
-                + ' to within relative tolerance ' + ('%g' % rtol) \
-                + ' and absolute tolerance ' + ('%g' % rtol) + '.'
+            info_params = {'matrix_matlab': True, 'relabs': True, 'rtol': rtol, 'atol': atol}
         elif comparison=="sigfig":
             digits = pl.get_integer_attrib(element,"digits",2)
-            info += 'Numbers must be accurate' \
-                + ' to ' + ('%d' % digits) + ' significant figures.'
+            info_params = {'matrix_matlab': True, 'sigfig': True, 'digits': digits}
         elif comparison=="decdig":
             digits = pl.get_integer_attrib(element,"digits",2)
-            info += 'Numbers must be accurate' \
-                + ' to ' + ('%d' % digits) + ' digits after the decimal.'
+            info_params = {'matrix_matlab': True, 'decdig': True, 'digits': digits}
         else:
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
+        with open('format.mustache','r') as f:
+            info = chevron.render(f,info_params).rstrip()
 
-        # Put javascript in html to enable popovers
-        # FIXME: enable popovers someplace else
-        html = '''<style>\n    .popover{max-width: 50%;}\n</style>\n\n'''
-        html += '''<script>\n''' \
-            + '''    $(document).ready(function(){\n''' \
-            + '''        $('[data-toggle="popover"]').popover({container: 'body'});\n''' \
-            + '''    });\n''' \
-            + '''</script>\n\n'''
+        html_params = {'question': True, 'name': name, 'label': label, 'editable': editable, 'info': info}
+        if raw_submitted_answer is not None:
+            html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+        with open('matrix_input.mustache','r') as f:
+            html = chevron.render(f,html_params)
 
-        html += '''<div class="input-group">\n'''
-        if label is not None:
-            html += '''    <label class="input-group-addon" id="basic-addon2">'''+label+'''</label>\n'''
-        html += '''    <input name="'''+name+'''" type="text" class="form-control" ''' \
-            + ('' if editable else ' disabled') \
-            + ('' if (raw_submitted_answer is None) else (' value="' + escape(raw_submitted_answer) + '" ')) \
-            + '''aria-describedby="basic-addon1" />\n''' \
-            + '''    <span class="input-group-btn" id="basic-addon1">\n''' \
-            + '''        <a class="btn btn-default" type="button" data-toggle="popover" title="MATLAB Format" data-content="'''+info+'''" data-placement="auto left" data-trigger="focus" tabindex="0">\n''' \
-            + '''            <i class="fa fa-question-circle" aria-hidden="true"></i>\n''' \
-            + '''        </a>\n''' \
-            + '''    </span>\n''' \
-            + '''</div>'''
     elif options["panel"] == "submission":
         parse_error = data["parse_errors"].get(name, None)
-        if parse_error is not None:
-            html = '''<div style="display: flex; align-items: center;">\n'''
-            if label is not None:
-                html += '''    <span style="white-space:nowrap;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;">'''+label+'''</span>\n'''
-            html += '''    <pre style="flex:1;width:50%;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;"><strong>INVALID\n&nbsp;...&nbsp;</strong>'''+parse_error+'''</pre>\n''' \
-                + '''</div>'''
-        else:
-            # Get submitted answer or throw exception if it does not exist
+        html_params = {'submission': True, 'label': label, 'parse_error': parse_error}
+        if parse_error is None:
             a_sub = np.array(data["submitted_answer"][name])
-
-            html = '''<div style="display: flex; align-items: center;">\n'''
-            if label is not None:
-                html += '''    <span style="white-space:nowrap;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;">'''+label+'''</span>\n'''
-            html += '''    <pre style="flex:1;width:50%;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;">'''+pl.numpy_to_matlab(a_sub,ndigits=12,wtype='g')+'''</pre>\n''' \
-                + '''</div>'''
+            html_params['a_sub'] = pl.numpy_to_matlab(a_sub,ndigits=12,wtype='g')
+        with open('matrix_input.mustache','r') as f:
+            html = chevron.render(f,html_params)
     elif options["panel"] == "answer":
         # Get true answer - do nothing if it does not exist
         a_tru = data["true_answer"].get(name, None)
@@ -91,12 +58,9 @@ def render(element_html, element_index, data, options):
             a_tru = np.array(a_tru)
 
             # FIXME: render correctly with respect to method of comparison
-
-            html = '''<div style="display: flex; align-items: center;">\n'''
-            if label is not None:
-                html += '''    <span style="white-space:nowrap;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;">'''+label+'''</span>\n'''
-            html += '''    <pre style="flex:1;width:50%;padding: 9.5px;margin: 0 0 10px;box-sizing: border-box;"> '''+pl.numpy_to_matlab(a_tru,ndigits=12,wtype='g')+''' </pre>\n''' \
-                + '''</div>'''
+            html_params = {'answer': True, 'label': label, 'a_tru': pl.numpy_to_matlab(a_tru,ndigits=12,wtype='g')}
+            with open('matrix_input.mustache','r') as f:
+                html = chevron.render(f,html_params)
         else:
             html = ""
 
