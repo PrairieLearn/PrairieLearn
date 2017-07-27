@@ -11,16 +11,32 @@
     });
 </script>
 
+{{#inline}}
+<span class="form-inline">
+    <span class="input-group">
+        <input name="{{name}}" type="text" class="form-control" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" />
+        <span class="input-group-btn" id="basic-addon1">
+            <a class="btn btn-default" type="button" data-toggle="popover" data-html="true" title="Number" data-content="{{info}}" data-placement="auto left" data-trigger="focus" tabindex="0">
+                <i class="fa fa-question-circle" aria-hidden="true"></i>
+            </a>
+        </span>
+    </span>
+</span>
+{{/inline}}
+
+{{#block}}
 <div class="input-group">
     {{#label}}<label class="input-group-addon" id="basic-addon2">{{label}}</label>{{/label}}
     <input name="{{name}}" type="text" class="form-control" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" />
     <span class="input-group-btn" id="basic-addon1">
-        <a class="btn btn-default" type="button" data-toggle="popover" data-html="true" title="MATLAB Matrix" data-content="{{info}}" data-placement="auto left" data-trigger="focus" tabindex="0">
+        <a class="btn btn-default" type="button" data-toggle="popover" data-html="true" title="Number" data-content="{{info}}" data-placement="auto left" data-trigger="focus" tabindex="0">
             <i class="fa fa-question-circle" aria-hidden="true"></i>
         </a>
     </span>
 </div>
+{{/block}}
 {{/question}}
+
 
 {{#submission}}
 {{#parse_error}}
@@ -51,5 +67,5 @@
 {{/answer}}
 
 {{#format}}
-Enclose it by a single pair of square brackets. Separate entries in each row with a space. Indicate the end of each intermediate row with a semicolon. Each entry must be a number. No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted. Scientific notation is accepted (e.g., 1.2e03). {{#relabs}}Numbers must be accurate to within relative tolerance {{rtol}} and absolute tolerance {{atol}}.{{/relabs}}{{#sigfig}}Numbers must be accurate to {{digits}} significant figures.{{/sigfig}}{{#decdig}}Numbers must be accurate to {{digits}} digits after the decimal.{{/decdig}}
+No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted. Scientific notation is accepted (e.g., 1.2e03). {{#relabs}}Your answer must be accurate to within relative tolerance {{rtol}} and absolute tolerance {{atol}}.{{/relabs}}{{#sigfig}}Your answer must be accurate to {{digits}} significant figures.{{/sigfig}}{{#decdig}}Your answer must be accurate to {{digits}} digits after the decimal.{{/decdig}}
 {{/format}}
