@@ -25,7 +25,7 @@ def render(element_html, element_index, data, options):
         editable = options["editable"]
         raw_submitted_answer = options["raw_submitted_answer"].get(name, None)
 
-        # Get comparison parameters and info string
+        # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, "comparison","relabs")
         if comparison=="relabs":
             rtol = pl.get_float_attrib(element,"rtol",1e-5)
@@ -41,8 +41,12 @@ def render(element_html, element_index, data, options):
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
         with open('number_input.mustache','r') as f:
             info = chevron.render(f,info_params).strip()
+        with open('number_input.mustache','r') as f:
+            info_params.pop("format",None)
+            info_params["shortformat"] = True
+            shortinfo = chevron.render(f,info_params).strip()
 
-        html_params = {'question': True, 'name': name, 'label': label, 'editable': editable, 'info': info}
+        html_params = {'question': True, 'name': name, 'label': label, 'editable': editable, 'info': info, 'shortinfo': shortinfo}
         if display=="inline":
             html_params["inline"] = True
         elif display=="block":
