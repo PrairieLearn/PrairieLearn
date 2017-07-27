@@ -23,23 +23,23 @@ def render(element_html, element_index, data, options):
         if comparison=="relabs":
             rtol = pl.get_float_attrib(element,"rtol",1e-5)
             atol = pl.get_float_attrib(element,"atol",1e-8)
-            info_params = {'matrix_matlab': True, 'relabs': True, 'rtol': rtol, 'atol': atol}
+            info_params = {'format': True, 'relabs': True, 'rtol': rtol, 'atol': atol}
         elif comparison=="sigfig":
             digits = pl.get_integer_attrib(element,"digits",2)
-            info_params = {'matrix_matlab': True, 'sigfig': True, 'digits': digits}
+            info_params = {'format': True, 'sigfig': True, 'digits': digits}
         elif comparison=="decdig":
             digits = pl.get_integer_attrib(element,"digits",2)
-            info_params = {'matrix_matlab': True, 'decdig': True, 'digits': digits}
+            info_params = {'format': True, 'decdig': True, 'digits': digits}
         else:
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
-        with open('format.mustache','r') as f:
-            info = chevron.render(f,info_params).rstrip()
+        with open('matrix_input.mustache','r') as f:
+            info = chevron.render(f,info_params).strip()
 
         html_params = {'question': True, 'name': name, 'label': label, 'editable': editable, 'info': info}
         if raw_submitted_answer is not None:
             html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
         with open('matrix_input.mustache','r') as f:
-            html = chevron.render(f,html_params)
+            html = chevron.render(f,html_params).strip()
 
     elif options["panel"] == "submission":
         parse_error = data["parse_errors"].get(name, None)
@@ -47,8 +47,13 @@ def render(element_html, element_index, data, options):
         if parse_error is None:
             a_sub = np.array(data["submitted_answer"][name])
             html_params['a_sub'] = pl.numpy_to_matlab(a_sub,ndigits=12,wtype='g')
+        else:
+            raw_submitted_answer = options["raw_submitted_answer"].get(name, None)
+            if raw_submitted_answer is not None:
+                html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
         with open('matrix_input.mustache','r') as f:
-            html = chevron.render(f,html_params)
+            html = chevron.render(f,html_params).strip()
+
     elif options["panel"] == "answer":
         # Get true answer - do nothing if it does not exist
         a_tru = data["true_answer"].get(name, None)
@@ -58,7 +63,7 @@ def render(element_html, element_index, data, options):
             # FIXME: render correctly with respect to method of comparison
             html_params = {'answer': True, 'label': label, 'a_tru': pl.numpy_to_matlab(a_tru,ndigits=12,wtype='g')}
             with open('matrix_input.mustache','r') as f:
-                html = chevron.render(f,html_params)
+                html = chevron.render(f,html_params).strip()
         else:
             html = ""
 
