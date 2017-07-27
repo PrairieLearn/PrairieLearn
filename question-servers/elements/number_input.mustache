@@ -26,13 +26,14 @@
 
 {{#block}}
 <div class="input-group">
-    {{#label}}<label class="input-group-addon" id="basic-addon2">{{label}}</label>{{/label}}
-    <input name="{{name}}" type="text" class="form-control" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
-    <span class="input-group-btn" id="basic-addon1">
+    {{#label}}<label class="input-group-addon">{{label}}</label>{{/label}}
+    <input name="{{name}}" type="text" class="form-control" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} placeholder="{{shortinfo}}" />
+    <div class="input-group-btn">
+        {{#suffix}}<span type="text" class="btn btn-default" disabled>{{suffix}}</span>{{/suffix}}
         <a class="btn btn-default" type="button" data-toggle="popover" data-html="true" title="Number" data-content="{{info}}" data-placement="auto left" data-trigger="focus" tabindex="0">
-            <i class="fa fa-question-circle" aria-hidden="true"></i>
+                <i class="fa fa-question-circle" aria-hidden="true"></i>
         </a>
-    </span>
+    </div>
 </div>
 {{/block}}
 {{/question}}
@@ -58,12 +59,14 @@
 {{^parse_error}}
 {{#label}}<span>{{label}}</span>{{/label}}
 <samp>{{a_sub}}</samp>
+{{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/parse_error}}
 {{/submission}}
 
 {{#answer}}
 {{#label}}<span>{{label}}</span>{{/label}}
 <samp>{{a_tru}}</samp>
+{{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/answer}}
 
 {{#format}}

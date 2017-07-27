@@ -19,6 +19,7 @@ def render(element_html, element_index, data, options):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
     label = pl.get_string_attrib(element,"label",None)
+    suffix = pl.get_string_attrib(element,"suffix",None)
     display = pl.get_string_attrib(element,"display","inline")
 
     if options["panel"] == "question":
@@ -46,7 +47,7 @@ def render(element_html, element_index, data, options):
             info_params["shortformat"] = True
             shortinfo = chevron.render(f,info_params).strip()
 
-        html_params = {'question': True, 'name': name, 'label': label, 'editable': editable, 'info': info, 'shortinfo': shortinfo}
+        html_params = {'question': True, 'name': name, 'label': label, 'suffix': suffix, 'editable': editable, 'info': info, 'shortinfo': shortinfo}
         if display=="inline":
             html_params["inline"] = True
         elif display=="block":
@@ -63,6 +64,7 @@ def render(element_html, element_index, data, options):
         html_params = {'submission': True, 'label': label, 'parse_error': parse_error}
         if parse_error is None:
             a_sub = data["submitted_answer"][name]
+            html_params["suffix"] = suffix
             html_params["a_sub"] = '{:.12g}'.format(a_sub)
         else:
             raw_submitted_answer = options["raw_submitted_answer"].get(name, None)
@@ -74,7 +76,7 @@ def render(element_html, element_index, data, options):
         a_tru = data["true_answer"].get(name, None)
         if a_tru is not None:
             # FIXME: render correctly with respect to method of comparison
-            html_params = {'answer': True, 'label': label, 'a_tru': '{:12g}'.format(a_tru)}
+            html_params = {'answer': True, 'label': label, 'a_tru': '{:12g}'.format(a_tru), 'suffix': suffix}
             with open('number_input.mustache','r') as f:
                 html = chevron.render(f,html_params).strip()
         else:

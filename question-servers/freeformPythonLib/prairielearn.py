@@ -228,6 +228,9 @@ def is_correct_ndarray2D_ra(a_sub,a_tru,rtol=1e-5,atol=1e-8):
     # Check if each element is correct
     return np.allclose(a_sub,a_tru,rtol,atol)
 
+def is_correct_scalar_ra(a_sub,a_tru,rtol=1e-5,atol=1e-8):
+    return np.allclose(a_sub,a_tru,rtol,atol)
+
 def is_correct_scalar_dd(a_sub,a_tru,digits=2,eps_digits=3):
     # Get bounds on submitted answer
     m = 10**digits
