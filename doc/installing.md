@@ -5,7 +5,10 @@
 
 This is the easiest way to get started.
 
-* Step 1: Install [Docker](https://www.docker.com). On Linux and MacOS this is straightforward. On Windows the best version is "Docker for Windows", which require Windows 10 Pro/Edu. You should install this if at all possible because it is much better than the older "Docker Toolbox".
+* Step 1: Install [Docker Community Edition](https://www.docker.com/community-edition). It's free. 
+    * On Linux and MacOS this is straightforward. [Download from here](https://store.docker.com/search?type=edition&offering=community).
+    * On Windows the best version is [Docker Community Edition for Windows](https://store.docker.com/editions/community/docker-ce-desktop-windows), which requires Windows 10 Pro/Edu. You should install this if at all possible because it is much better than the older "Docker Toolbox".
+        * UIUC students and staff can download Windows 10 from [the WebStore](https://webstore.illinois.edu/).
 
 * Step 2: Run PrairieLearn using the example course with:
 
@@ -33,7 +36,7 @@ If you are using Docker for Windows then you will need to first give Docker perm
 
 If you're in the root of your course directory already, you can substitute `%cd%` (on Windows) or `$PWD` (Linux and MacOS) for `/path/to/course`.
 
-### Upgrading PrairieLearn with Docker
+### Upgrading your Docker's version of PrairieLearn
 
 To obtain the latest version of PrairieLearn at any time, run:
 
