@@ -83,7 +83,7 @@ router.get('/', function(req, res, next) {
                 plpsutilities.validPLPSexams(res.locals.course.id, 'assessment_id', res.locals.assessment.id, function(err, result) {
                     if (ERR(err, callback)) return;
 
-                    console.log(result);
+                    //console.log(result);
 
                     _.each(res.locals.access_rules, function(rule) {
                         if (rule.mode != 'Exam') return;

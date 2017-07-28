@@ -20,6 +20,7 @@
               <th style="width: 1%"></th>
               <th></th>
               <th>TID</th>
+              <th>CBTF exam?</th>
               <th class="cell-center">Students</th>
               <th class="cell-center">Scores</th>
               <th class="cell-center">Mean Score</th>
@@ -42,7 +43,7 @@
                 <%- include('../partials/errorBadge', {count: row.open_error_count}); %>
               </td>
               <td><%= row.tid %></td>
-
+              <td><%- row.exam_server %></td>
               <td class="cell-center"><%= row.number %></td>
 
               <% if (row.number > 0) { %>

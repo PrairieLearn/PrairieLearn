@@ -3,9 +3,11 @@ var _ = require('lodash');
 var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
+var async = require('async');
 
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
+var plpsutilities = require('../../lib/plps-utilities');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -28,7 +30,45 @@ router.get('/', function(req, res, next) {
         if (ERR(err, next)) return;
 
         res.locals.rows = result.rows;
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        
+        plpsutilities.validPLPSexams(res.locals.course.id, 'course_instance_id', res.locals.course_instance.id, function(err, validplps) {
+            if (ERR(err, next)) return;
+
+            //console.log(validplps);
+
+            plpsutilities.courseLinked(res.locals.course.id, function(err, linked) {
+                if (ERR(err, next)) return;
+
+                async.eachSeries(res.locals.rows, function(row, callback) {
+
+                
+                    row.exam_server = _.reduce(validplps, function(summary, r) {
+                        if (r.assessment_id == row.id) {
+                            var url = plpsutilities.psExamUrl(r.course_id, r.exam_id);
+                            return `${summary} <a href='${url}'>${r.exam_string}</a> `;
+
+                        } else {
+                            return summary;
+                        }
+                    }, "");
+
+                    if (row.exam_server == "") {
+                        if (linked) {
+                            row.exam_server = 'Not found';
+                        } else {
+                            row.exam_server = ''; //'Not linked';
+                        }
+                    }
+
+                    callback(null);
+                }, function(err) {
+                    if (ERR(err, next)) return;
+
+                    //console.log(res.locals.rows);
+                    res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                });
+            });
+        });
     });
 });
 
