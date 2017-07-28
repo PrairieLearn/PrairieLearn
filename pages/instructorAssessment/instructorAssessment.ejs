@@ -122,26 +122,13 @@
               <th>Credit</th>
               <th>Time limit</th>
               <th>Password</th>
+              <th>CBTF exam</th>
             </tr>
           </thead>
           <tbody>
             <% access_rules.forEach(function(access_rule) { %>
             <tr>
-              <td><%= access_rule.mode %>
-                  <% if (access_rule.mode == 'Exam') { %>
-                    <br>
-                    <% if (access_rule.valid_exams && access_rule.valid_exams.length > 0) { %>
-                    Matching CBTF exam(s): 
-                      <% access_rule.valid_exams.forEach(function(match) { %>
-                      <a href="https://cbtf.engr.illinois.edu/sched/course/<%= match.course_id %>/exam/<%= match.exam_id %>"><%= match.exam_string %></a> 
-                      <% }); %>
-                    <% } else { %>
-                      <% if (course.ps_course_ids) { %>
-                        No matching CBTF exam! Check date ranges?
-                      <% } %>
-                    <% } %>
-                  <% } %>
-              </td>
+              <td><%= access_rule.mode %></td>
               <td><%= access_rule.role %></td>
               <td><%= access_rule.uids %></td>
               <td><%= access_rule.start_date %></td>
@@ -149,6 +136,20 @@
               <td><%= access_rule.credit %></td>
               <td><%= access_rule.time_limit %></td>
               <td><%= access_rule.password %></td>
+              <td>
+                  <% if (access_rule.mode == 'Exam') { %>
+                    <% if (access_rule.valid_exams && access_rule.valid_exams.length > 0) { %>
+                        Matches:
+                        <% access_rule.valid_exams.forEach(function(match) { %>
+                            <a href="<%= match.url %>"><%= match.exam_string %></a>
+                        <% }); %>
+                    <% } else { %>
+                        <% if (course.ps_course_ids) { %>
+                            No matching CBTF exam! Check date ranges?
+                        <% } %>
+                    <% } %>
+                  <% } %>
+              </td>
             </tr>
             <% }); %>
           </tbody>

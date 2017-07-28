@@ -83,11 +83,17 @@ router.get('/', function(req, res, next) {
                 plpsutilities.validPLPSexams(res.locals.course.id, 'assessment_id', res.locals.assessment.id, function(err, result) {
                     if (ERR(err, callback)) return;
 
+                    console.log(result);
+
                     _.each(res.locals.access_rules, function(rule) {
                         if (rule.mode != 'Exam') return;
 
                         rule.valid_exams = _.filter(result, ['aar_id', rule.aar_id]);
                         if (!rule.valid_exams) rule.valid_exams = [];
+
+                        _.each(rule.valid_exams, function(exam) {
+                            exam.url = plpsutilities.psExamUrl(exam.course_id, exam.exam_id);
+                        });
                     });
 
                     // Move this to a middleware?
