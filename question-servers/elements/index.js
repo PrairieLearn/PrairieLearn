@@ -12,4 +12,5 @@ module.exports = new Map([
     ['pl_submission_panel', 'pl_submission_panel.py'],
     ['pl_answer_panel', 'pl_answer_panel.py'],
     ['pl_variable_score', 'pl_variable_score.py'],
+    ['pl_figure', 'pl_figure.py'],
 ]);
