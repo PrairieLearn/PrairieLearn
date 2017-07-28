@@ -18,7 +18,6 @@ router.get('/', function(req, res, next) {
         res.locals.courses = result.rows[0].courses;
         res.locals.course_instances = result.rows[0].course_instances;
 
-        console.log(res.locals.course_instances);
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
