@@ -23,7 +23,7 @@ def prepare(element_html, element_index, data, options):
     len_total = len_correct + len_incorrect
 
     if len_correct < 1:
-        raise Exception("multiple_choice element must have at least one correct answer")
+        raise Exception("pl_multiple_choice element must have at least one correct answer")
 
     number_answers = pl.get_integer_attrib(element, "number_answers", len_total)
 
