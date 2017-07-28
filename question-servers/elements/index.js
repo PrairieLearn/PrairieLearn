@@ -2,14 +2,14 @@
 module.exports = {};
 
 module.exports = new Map([
-    ['checkbox', 'checkbox.py'],
-    ['element_score', 'element_score.py'],
-    ['matrix_output', 'matrix_output.py'],
-    ['matrix_input', 'matrix_input.py'],
-    ['multiple_choice', 'multiple_choice.py'],
-    ['number_input', 'number_input.py'],
-    ['question_panel', 'question_panel.py'],
-    ['submission_panel', 'submission_panel.py'],
-    ['answer_panel', 'answer_panel.py'],
-    ['variable_score', 'variable_score.py'],
+    ['pl_checkbox', 'pl_checkbox.py'],
+    ['pl_element_score', 'pl_element_score.py'],
+    ['pl_matrix_output', 'pl_matrix_output.py'],
+    ['pl_matrix_input', 'pl_matrix_input.py'],
+    ['pl_multiple_choice', 'pl_multiple_choice.py'],
+    ['pl_number_input', 'pl_number_input.py'],
+    ['pl_question_panel', 'pl_question_panel.py'],
+    ['pl_submission_panel', 'pl_submission_panel.py'],
+    ['pl_answer_panel', 'pl_answer_panel.py'],
+    ['pl_variable_score', 'pl_variable_score.py'],
 ]);
