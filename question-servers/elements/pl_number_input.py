@@ -3,28 +3,28 @@ from html import escape
 import chevron
 import prairielearn as pl
 
-def prepare(element_html, element_index, data, options):
+def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
 
-    true_answer = pl.get_float_attrib(element, "true_answer", None)
-    if true_answer is not None:
-        if name in data["true_answer"]:
-            raise Exception("duplicate true_answer variable name: %s" % name)
-        data["true_answer"][name] = true_answer
+    correct_answer = pl.get_float_attrib(element, "correct_answer", None)
+    if correct_answer is not None:
+        if name in data["correct_answers"]:
+            raise Exception("duplicate correct_answers variable name: %s" % name)
+        data["correct_answers"][name] = correct_answer
 
     return data
 
-def render(element_html, element_index, data, options):
+def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
     label = pl.get_string_attrib(element,"label",None)
     suffix = pl.get_string_attrib(element,"suffix",None)
     display = pl.get_string_attrib(element,"display","inline")
 
-    if options["panel"] == "question":
-        editable = options["editable"]
-        raw_submitted_answer = options["raw_submitted_answer"].get(name, None)
+    if data["panel"] == "question":
+        editable = data["editable"]
+        raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
 
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, "comparison","relabs")
@@ -59,21 +59,21 @@ def render(element_html, element_index, data, options):
         with open('pl_number_input.mustache','r') as f:
             html = chevron.render(f,html_params).strip()
 
-    elif options["panel"] == "submission":
+    elif data["panel"] == "submission":
         parse_error = data["parse_errors"].get(name, None)
         html_params = {'submission': True, 'label': label, 'parse_error': parse_error}
         if parse_error is None:
-            a_sub = data["submitted_answer"][name]
+            a_sub = data["submitted_answers"][name]
             html_params["suffix"] = suffix
             html_params["a_sub"] = '{:.12g}'.format(a_sub)
         else:
-            raw_submitted_answer = options["raw_submitted_answer"].get(name, None)
+            raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
             if raw_submitted_answer is not None:
                 html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
         with open('pl_number_input.mustache','r') as f:
             html = chevron.render(f,html_params).strip()
-    elif options["panel"] == "answer":
-        a_tru = data["true_answer"].get(name, None)
+    elif data["panel"] == "answer":
+        a_tru = data["correct_answers"].get(name, None)
         if a_tru is not None:
             # FIXME: render correctly with respect to method of comparison
             html_params = {'answer': True, 'label': label, 'a_tru': '{:12g}'.format(a_tru), 'suffix': suffix}
@@ -82,30 +82,30 @@ def render(element_html, element_index, data, options):
         else:
             html = ""
     else:
-        raise Exception("Invalid panel type: %s" % options["panel"])
+        raise Exception("Invalid panel type: %s" % data["panel"])
 
     return html
 
-def parse(element_html, element_index, data, options):
+def parse(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
 
     # Get submitted answer or return parse_error if it does not exist
-    a_sub = data["submitted_answer"].get(name,None)
+    a_sub = data["submitted_answers"].get(name,None)
     if not a_sub:
         data["parse_errors"][name] = 'No submitted answer.'
-        data["submitted_answer"][name] = None
+        data["submitted_answers"][name] = None
         return data
 
     try:
-        data["submitted_answer"][name] = float(a_sub)
+        data["submitted_answers"][name] = float(a_sub)
     except ValueError:
         data["parse_errors"][name] = "Invalid format (not a real number)."
-        data["submitted_answer"][name] = None
+        data["submitted_answers"][name] = None
 
     return data
 
-def grade(element_html, element_index, data, options):
+def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
 
@@ -114,12 +114,12 @@ def grade(element_html, element_index, data, options):
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
-    a_tru = data["true_answer"].get(name,None)
+    a_tru = data["correct_answers"].get(name,None)
     if a_tru is None:
         return data
 
     # Get submitted answer (if it does not exist, score is zero)
-    a_sub = data["submitted_answer"].get(name,None)
+    a_sub = data["submitted_answers"].get(name,None)
     if a_sub is None:
         data["partial_scores"][name] = {"score": 0, "weight": weight}
         return data

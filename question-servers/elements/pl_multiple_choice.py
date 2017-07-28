@@ -1,7 +1,7 @@
 import random, lxml.html
 import prairielearn as pl
 
-def prepare(element_html, element_index, data, options):
+def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = element.get("name")
 
@@ -46,32 +46,32 @@ def prepare(element_html, element_index, data, options):
         sampled_answers.sort(key=lambda a: a[0]) # sort by stored original index
 
     display_answers = []
-    true_answer = None
+    correct_answer = None
     for (i, (index, correct, html)) in enumerate(sampled_answers):
         keyed_answer = {"key": chr(ord('a') + i), "html": html}
         display_answers.append(keyed_answer)
         if correct:
-            true_answer = keyed_answer
+            correct_answer = keyed_answer
 
     if name in data["params"]:
         raise Exception("duplicate params variable name: %s" % name)
-    if name in data["true_answer"]:
-        raise Exception("duplicate true_answer variable name: %s" % name)
+    if name in data["correct_answers"]:
+        raise Exception("duplicate correct_answers variable name: %s" % name)
     data["params"][name] = display_answers
-    data["true_answer"][name] = true_answer
+    data["correct_answers"][name] = correct_answer
     return data
 
-def render(element_html, element_index, data, options):
+def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = element.get("name")
 
     answers = data["params"].get(name, [])
     inline = pl.get_boolean_attrib(element, "inline", False)
 
-    submitted_key = data["submitted_answer"].get(name, None)
+    submitted_key = data["submitted_answers"].get(name, None)
 
-    if options["panel"] == "question":
-        editable = options["editable"]
+    if data["panel"] == "question":
+        editable = data["editable"]
 
         html = '';
         for answer in answers:
@@ -88,7 +88,7 @@ def render(element_html, element_index, data, options):
             html += item
         if inline:
             html = '<p>\n' + html + '</p>\n'
-    elif options["panel"] == "submission":
+    elif data["panel"] == "submission":
         if submitted_key is None:
             html = 'No submitted answer'
         else:
@@ -97,27 +97,27 @@ def render(element_html, element_index, data, options):
                 html = "ERROR: Invalid submitted value selected: %s" % submitted_key
             else:
                 html = "(%s) %s" % (submitted_key, submitted_html)
-    elif options["panel"] == "answer":
-        true_answer = data["true_answer"].get(name, None)
-        if true_answer is None:
+    elif data["panel"] == "answer":
+        correct_answer = data["correct_answers"].get(name, None)
+        if correct_answer is None:
             html = "ERROR: No true answer"
         else:
-            html = "(%s) %s" % (true_answer["key"], true_answer["html"])
+            html = "(%s) %s" % (correct_answer["key"], correct_answer["html"])
     else:
-        raise Exception("Invalid panel type: %s" % options["panel"])
+        raise Exception("Invalid panel type: %s" % data["panel"])
 
     return html
 
-def parse(element_html, element_index, data, options):
+def parse(element_html, element_index, data):
     return data
 
-def grade(element_html, element_index, data, options):
+def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
     weight = pl.get_integer_attrib(element, "weight", 1)
 
-    submitted_key = data["submitted_answer"].get(name, None)
-    true_key = data["true_answer"].get(name, {"key": None}).get("key", None)
+    submitted_key = data["submitted_answers"].get(name, None)
+    true_key = data["correct_answers"].get(name, {"key": None}).get("key", None)
 
     score = 0
     if (submitted_key is not None and submitted_key == true_key):

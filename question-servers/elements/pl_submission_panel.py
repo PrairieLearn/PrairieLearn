@@ -1,17 +1,17 @@
 import random, lxml.html
 import prairielearn
 
-def prepare(element_html, element_index, data, options):
+def prepare(element_html, element_index, data):
     return data
 
-def render(element_html, element_index, data, options):
-    if options["panel"] == "submission":
+def render(element_html, element_index, data):
+    if data["panel"] == "submission":
         return element_html
     else:
         return ""
 
-def parse(element_html, element_index, data, options):
+def parse(element_html, element_index, data):
     return data
 
-def grade(element_html, element_index, data, options):
+def grade(element_html, element_index, data):
     return data

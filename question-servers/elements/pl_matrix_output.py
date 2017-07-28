@@ -2,10 +2,10 @@ import lxml.html
 import numpy as np
 import prairielearn as pl
 
-def prepare(element_html, element_index, data, options):
+def prepare(element_html, element_index, data):
     return data
 
-def render(element_html, element_index, data, options):
+def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     html = "<pre>\n"
     for child in element:
@@ -21,8 +21,8 @@ def render(element_html, element_index, data, options):
     html += "</pre>"
     return html
 
-def parse(element_html, element_index, data, options):
+def parse(element_html, element_index, data):
     return data
 
-def grade(element_html, element_index, data, options):
+def grade(element_html, element_index, data):
     return data

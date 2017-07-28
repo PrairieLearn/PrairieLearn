@@ -1,7 +1,7 @@
 import random, lxml.html
 import prairielearn as pl
 
-def prepare(element_html, element_index, data, options):
+def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
 
@@ -52,22 +52,22 @@ def prepare(element_html, element_index, data, options):
         sampled_answers.sort(key=lambda a: a[0]) # sort by stored original index
 
     display_answers = []
-    true_answers = []
+    correct_answer_list = []
     for (i, (index, correct, html)) in enumerate(sampled_answers):
         keyed_answer = {"key": chr(ord('a') + i), "html": html}
         display_answers.append(keyed_answer)
         if correct:
-            true_answers.append(keyed_answer)
+            correct_answer_list.append(keyed_answer)
 
     if name in data["params"]:
         raise Exception("duplicate params variable name: %s" % name)
-    if name in data["true_answer"]:
-        raise Exception("duplicate true_answer variable name: %s" % name)
+    if name in data["correct_answers"]:
+        raise Exception("duplicate correct_answers variable name: %s" % name)
     data["params"][name] = display_answers
-    data["true_answer"][name] = true_answers
+    data["correct_answers"][name] = correct_answer_list
     return data
 
-def render(element_html, element_index, data, options):
+def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
 
@@ -75,14 +75,14 @@ def render(element_html, element_index, data, options):
 
     inline = pl.get_boolean_attrib(element, "inline", False)
 
-    submitted_keys = data["submitted_answer"].get(name, [])
+    submitted_keys = data["submitted_answers"].get(name, [])
     # if there is only one key then it is passed as a string,
     # not as a length-one list, so we fix that next
     if isinstance(submitted_keys, str):
         submitted_keys = [submitted_keys]
 
-    if options["panel"] == "question":
-        editable = options["editable"]
+    if data["panel"] == "question":
+        editable = data["editable"]
 
         html = '';
         for answer in display_answers:
@@ -99,7 +99,7 @@ def render(element_html, element_index, data, options):
             html += item
         if inline:
             html = '<p>\n' + html + '</p>\n'
-    elif options["panel"] == "submission":
+    elif data["panel"] == "submission":
         if len(submitted_keys) == 0:
             html = "No selected answers"
         else:
@@ -120,13 +120,13 @@ def render(element_html, element_index, data, options):
                 html = ', '.join(html_list) + '\n'
             else:
                 html = '\n'.join(html_list) + '\n'
-    elif options["panel"] == "answer":
-        true_answers = data["true_answer"].get(name, [])
-        if len(true_answers) == 0:
+    elif data["panel"] == "answer":
+        correct_answer_list = data["correct_answers"].get(name, [])
+        if len(correct_answer_list) == 0:
             html = "No selected answers"
         else:
             html_list = [];
-            for answer in true_answers:
+            for answer in correct_answer_list:
                 item = "(%s) %s" % (answer["key"], answer["html"])
                 if inline:
                     item = '<span>' + item + '</span>\n'
@@ -138,21 +138,21 @@ def render(element_html, element_index, data, options):
             else:
                 html = '\n'.join(html_list) + '\n'
     else:
-        raise Exception("Invalid panel type: %s" % options["panel"])
+        raise Exception("Invalid panel type: %s" % data["panel"])
 
     return html
 
-def parse(element_html, element_index, data, options):
+def parse(element_html, element_index, data):
     return data
 
-def grade(element_html, element_index, data, options):
+def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
     weight = pl.get_integer_attrib(element, "weight", 1)
 
-    submitted_keys = data["submitted_answer"].get(name, [])
-    true_answers = data["true_answer"].get(name, [])
-    true_keys = [answer["key"] for answer in true_answers]
+    submitted_keys = data["submitted_answers"].get(name, [])
+    correct_answer_list = data["correct_answers"].get(name, [])
+    true_keys = [answer["key"] for answer in correct_answer_list]
 
     score = 0
     if set(submitted_keys) == set(true_keys):

@@ -3,10 +3,10 @@ import chevron
 import os
 import prairielearn as pl
 
-def prepare(element_html, element_index, data, options):
+def prepare(element_html, element_index, data):
     return data
 
-def render(element_html, element_index, data, options):
+def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     # Get file name or raise exception if one does not exist
@@ -14,7 +14,7 @@ def render(element_html, element_index, data, options):
 
     # Get base directory or raise exception if one does not exist
     # FIXME: put client_files_question_url at top level in options?
-    base = options["options"]["client_files_question_url"]
+    base = data["options"]["client_files_question_url"]
 
     # Create full path to image file
     src = os.path.join(base,name)
@@ -29,8 +29,8 @@ def render(element_html, element_index, data, options):
 
     return html
 
-def parse(element_html, element_index, data, options):
+def parse(element_html, element_index, data):
     return data
 
-def grade(element_html, element_index, data, options):
+def grade(element_html, element_index, data):
     return data

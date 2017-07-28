@@ -1,14 +1,14 @@
 import lxml.html, math
 import prairielearn as pl
 
-def prepare(element_html, element_index, data, options):
+def prepare(element_html, element_index, data):
     return data
 
-def render(element_html, element_index, data, options):
+def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
 
-    if options["panel"] == "answer":
+    if data["panel"] == "answer":
         return ''
 
     partial_score = data["partial_scores"].get(name, {"score": None, "feedback": None})
@@ -44,8 +44,8 @@ def render(element_html, element_index, data, options):
 
     return html
 
-def parse(element_html, element_index, data, options):
+def parse(element_html, element_index, data):
     return data
 
-def grade(element_html, element_index, data, options):
+def grade(element_html, element_index, data):
     return data

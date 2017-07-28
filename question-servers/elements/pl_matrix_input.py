@@ -6,17 +6,17 @@ import prairielearn as pl
 
 
 
-def prepare(element_html, element_index, data, options):
+def prepare(element_html, element_index, data):
     return data
 
-def render(element_html, element_index, data, options):
+def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
     label = pl.get_string_attrib(element,"label",None)
 
-    if options["panel"] == "question":
-        editable = options["editable"]
-        raw_submitted_answer = options["raw_submitted_answer"].get(name, None)
+    if data["panel"] == "question":
+        editable = data["editable"]
+        raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
 
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, "comparison","relabs")
@@ -45,22 +45,22 @@ def render(element_html, element_index, data, options):
         with open('pl_matrix_input.mustache','r') as f:
             html = chevron.render(f,html_params).strip()
 
-    elif options["panel"] == "submission":
+    elif data["panel"] == "submission":
         parse_error = data["parse_errors"].get(name, None)
         html_params = {'submission': True, 'label': label, 'parse_error': parse_error}
         if parse_error is None:
-            a_sub = np.array(data["submitted_answer"][name])
+            a_sub = np.array(data["submitted_answers"][name])
             html_params['a_sub'] = pl.numpy_to_matlab(a_sub,ndigits=12,wtype='g')
         else:
-            raw_submitted_answer = options["raw_submitted_answer"].get(name, None)
+            raw_submitted_answer = data["raw_submitted_answer"].get(name, None)
             if raw_submitted_answer is not None:
                 html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
         with open('pl_matrix_input.mustache','r') as f:
             html = chevron.render(f,html_params).strip()
 
-    elif options["panel"] == "answer":
+    elif data["panel"] == "answer":
         # Get true answer - do nothing if it does not exist
-        a_tru = data["true_answer"].get(name, None)
+        a_tru = data["correct_answers"].get(name, None)
         if a_tru is not None:
             a_tru = np.array(a_tru)
 
@@ -72,36 +72,36 @@ def render(element_html, element_index, data, options):
             html = ""
 
     else:
-        raise Exception("Invalid panel type: %s" % options["panel"])
+        raise Exception("Invalid panel type: %s" % data["panel"])
 
     return html
 
-def parse(element_html, element_index, data, options):
+def parse(element_html, element_index, data):
     # By convention, this function returns at the first error found
 
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
 
     # Get submitted answer or return parse_error if it does not exist
-    a_sub = data["submitted_answer"].get(name,None)
+    a_sub = data["submitted_answers"].get(name,None)
     if not a_sub:
         data["parse_errors"][name] = 'No submitted answer.'
-        data["submitted_answer"][name] = None
+        data["submitted_answers"][name] = None
         return data
 
     # Convert submitted answer to numpy array (return parse_error on failure)
     (a_sub_parsed,parse_error) = pl.matlab_to_numpy(a_sub)
     if a_sub_parsed is None:
         data["parse_errors"][name] = parse_error
-        data["submitted_answer"][name] = None
+        data["submitted_answers"][name] = None
         return data
 
     # Replace submitted answer with numpy array
-    data["submitted_answer"][name] = a_sub_parsed.tolist()
+    data["submitted_answers"][name] = a_sub_parsed.tolist()
 
     return data
 
-def grade(element_html, element_index, data, options):
+def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "name")
 
@@ -110,7 +110,7 @@ def grade(element_html, element_index, data, options):
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
-    a_tru = data["true_answer"].get(name,None)
+    a_tru = data["correct_answers"].get(name,None)
     if a_tru is None:
         return data
     # Convert true answer to numpy
@@ -120,7 +120,7 @@ def grade(element_html, element_index, data, options):
         raise ValueError('true answer must be a 2D array')
 
     # Get submitted answer (if it does not exist, score is zero)
-    a_sub = data["submitted_answer"].get(name,None)
+    a_sub = data["submitted_answers"].get(name,None)
     if a_sub is None:
         data["partial_scores"][name] = {"score": 0, "weight": weight}
         return data
