@@ -9,7 +9,7 @@ RUN yum -y update \
     && yum install -y https://centos7.iuscommunity.org/ius-release.rpm \
     && yum install -y python35u python35u-pip \
     && python3.5 -m pip install awscli requests \
-    && yum install -y ocaml
+    && yum install -y ocaml make
 
 RUN useradd ag
 
