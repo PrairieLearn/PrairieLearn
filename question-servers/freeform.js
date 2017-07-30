@@ -48,127 +48,16 @@ module.exports = {
         }
     },
 
-    execPython: function(pythonFile, pythonFunction, pythonArgs, pythonCwd, callback) {
-        var cmdInput = {
-            file: pythonFile,
-            fcn: pythonFunction,
-            args: pythonArgs,
-            cwd: pythonCwd,
-            pylibdir: path.join(__dirname, 'freeformPythonLib'),
-        };
-        try {
-            var input = JSON.stringify(cmdInput);
-        } catch (e) {
-            var err = new Error('Error encoding question JSON');
-            err.data = {endcodeMsg: e.message, cmdInput};
-            return ERR(err, callback);
-        }
-        var cmdOptions = {
-            cwd: pythonCwd,
-            input: input,
-            timeout: 10000, // milliseconds
-            killSignal: 'SIGKILL',
-            stdio: ['pipe', 'pipe', 'pipe', 'pipe'], // stdin, stdout, stderr, and an extra one for data
-        };
-        var cmd = 'python';
-        var args = [__dirname + '/python_caller.py'];
-        var child = child_process.spawn(cmd, args, cmdOptions);
-
-        child.stderr.setEncoding('utf8');
-        child.stdout.setEncoding('utf8');
-        child.stdio[3].setEncoding('utf8');
-
-        var outputStdout = '';
-        var outputStderr = '';
-        var outputBoth = '';
-        var outputData = '';
-
-        child.stdout.on('data', (data) => {
-            outputStdout += data;
-            outputBoth += data;
-
-            // Temporary fix to write stderr to console while waiting for this
-            // to be displayed in browser
-            /* eslint-disable no-console */
-            console.log('FIXME');
-            console.log(data);
-            /* eslint-enable no-console */
-        });
-
-        child.stderr.on('data', (data) => {
-            outputStderr += data;
-            outputBoth += data;
-
-            // Temporary fix to write stderr to console while waiting for this
-            // to be displayed in browser
-            /* eslint-disable no-console */
-            console.log('FIXME');
-            console.log(data);
-            /* eslint-enable no-console */
-        });
-
-        child.stdio[3].on('data', (data) => {
-            outputData += data;
-        });
-
-        var callbackCalled = false;
-
-        child.on('close', (code) => {
-            let err, output;
-            if (code) {
-                err = new Error('Error in question code execution');
-                err.data = {code, cmdInput, outputStdout, outputStderr, outputBoth, outputData};
-                if (!callbackCalled) {
-                    callbackCalled = true;
-                    return ERR(err, callback);
-                } else {
-                    // FIXME: silently swallowing the error here
-                    return;
-                }
-            }
-            try {
-                output = JSON.parse(outputData);
-            } catch (e) {
-                err = new Error('Error decoding question JSON: ' + e.message);
-                err.data = {decodeMsg: e.message, cmdInput, outputStdout, outputStderr, outputBoth, outputData};
-                if (!callbackCalled) {
-                    callbackCalled = true;
-                    return ERR(err, callback);
-                } else {
-                    // FIXME: silently swallowing the error here
-                    return;
-                }
-            }
-            if (!callbackCalled) {
-                callbackCalled = true;
-                callback(null, output, outputBoth);
-            } else {
-                // FIXME: silently swallowing the output here
-                return;
-            }
-        });
-
-        child.on('error', (error) => {
-            let err = new Error('Error executing python question code: ' + error.message);
-            err.data = {execMsg: error.message, cmdInput, outputStdout, outputStderr, outputBoth};
-            if (!callbackCalled) {
-                callbackCalled = true;
-                return ERR(err, callback);
-            } else {
-                // FIXME: silently swallowing the error here
-                return;
-            }
-        });
-
-        child.stdin.write(input);
-        child.stdin.end();
-    },
-
-    execPythonServer: function(pythonFunction, pythonArgs, question, course, callback) {
+    execPythonServer: function(pc, pythonFunction, pythonArgs, question, course, callback) {
         var question_dir = path.join(course.path, 'questions', question.directory);
-        this.execPython('server', pythonFunction, pythonArgs, question_dir, (err, output) => {
+        const pythonFile = 'server';
+        const opts = {
+            cwd: question_dir,
+            paths: [],
+        };
+        pc.call(pythonFile, pythonFunction, pythonArgs, opts, (err, ret, consoleLog) => {
             if (ERR(err, callback)) return;
-            callback(null, output);
+            callback(null, ret, consoleLog);
         });
     },
 
@@ -284,8 +173,9 @@ module.exports = {
         }
 
         let pythonArgs = [data];
-        this.execPythonServer('get_data', pythonArgs, question, course, (err, ret_data, ret_consoleLog) => {
+        this.execPythonServer(pc, 'get_data', pythonArgs, question, course, (err, ret_data, ret_consoleLog) => {
             if (err) {
+                consoleLog += _.get(err, ['data', 'outputBoth'], '');
                 const courseErr = new Error(path.join(question_dir, 'server.py') + ': Error calling get_data(): ' + err.toString());
                 courseErr.data = err.data;
                 return callback(null, courseErr, data, consoleLog);
