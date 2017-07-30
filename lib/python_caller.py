@@ -19,28 +19,48 @@ import sys, os, json, importlib, copy
 
 saved_path = copy.copy(sys.path)
 
-while True:
-    json_inp = sys.stdin.readline()
-    inp = json.loads(json_inp)
+# file descriptor 3 is for output data
+with open(3, 'w', encoding='utf-8') as outf:
 
-    file = inp['file']
-    fcn = inp['fcn']
-    args = inp['args']
-    cwd = inp['cwd']
-    paths = inp['paths']
+    # Infinite loop where we wait for an input command, do it, and
+    # return the results. The caller should terminate us with a
+    # SIGTERM.
+    while True:
 
-    sys.path = copy.copy(saved_path)
-    for path in reversed(paths):
-        sys.path.insert(0, path)
-    sys.path.insert(0, cwd)
-    os.chdir(cwd)
-    mod = importlib.import_module(file);
-    method = getattr(mod, fcn)
-    output = method(*args)
-    sys.stderr.flush()
-    sys.stdout.flush()
-    json_outp = json.dumps(output)
-    with open(3, 'w', encoding='utf-8') as outf:
+        # wait for a single line of input
+        json_inp = sys.stdin.readline()
+        # unpack the input line as JSON
+        inp = json.loads(json_inp)
+
+        # get the contents of the JSON input
+        file = inp['file']
+        fcn = inp['fcn']
+        args = inp['args']
+        cwd = inp['cwd']
+        paths = inp['paths']
+
+        # reset and then set up the path
+        sys.path = copy.copy(saved_path)
+        for path in reversed(paths):
+            sys.path.insert(0, path)
+        sys.path.insert(0, cwd)
+
+        # change to the desired working directory
+        os.chdir(cwd)
+
+        # load the "file" as a module and get the function
+        mod = importlib.import_module(file);
+        method = getattr(mod, fcn)
+
+        # call the desired function in the loaded module
+        output = method(*args)
+
+        # make sure all output streams are flushed
+        sys.stderr.flush()
+        sys.stdout.flush()
+
+        # write the return value as JSON on a single line
+        json_outp = json.dumps(output)
         outf.write(json_outp)
         outf.write("\n");
         outf.flush()

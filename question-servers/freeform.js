@@ -19,7 +19,7 @@ module.exports = {
         return path.join(__dirname, 'elements', elementModule);
     },
 
-    elementFunction: function(fcn, elementName, $, element, index, data, callback) {
+    elementFunction: function(pc, fcn, elementName, $, element, index, data, callback) {
         const jsArgs = [$, element, index, data];
         const elementHtml = $(element).clone().wrap('<container/>').parent().html();
         const pythonArgs = [elementHtml, index, data];
@@ -31,14 +31,12 @@ module.exports = {
             // python module
             const pythonFile = elementModule.replace(/\.[pP][yY]$/, '');
             const pythonCwd = path.join(__dirname, 'elements');
-            const pc = new codeCaller.PythonCaller();
             const opts = {
                 cwd: pythonCwd,
                 paths: [path.join(__dirname, 'freeformPythonLib')],
             };
             pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
                 if (ERR(err, callback)) return;
-                pc.done();
                 callback(null, ret, consoleLog);
             });
         } else {
@@ -268,6 +266,7 @@ module.exports = {
     },
 
     getData: function(question, course, variant_seed, callback) {
+        const pc = new codeCaller.PythonCaller();
         const question_dir = path.join(course.path, 'questions', question.directory);
         let consoleLog = '';
         let data = {
@@ -288,7 +287,7 @@ module.exports = {
         this.execPythonServer('get_data', pythonArgs, question, course, (err, ret_data, ret_consoleLog) => {
             if (err) {
                 const courseErr = new Error(path.join(question_dir, 'server.py') + ': Error calling get_data(): ' + err.toString());
-                consoleLog += _.get(err, ['data', 'outputBoth'], '');
+                courseErr.data = err.data;
                 return callback(null, courseErr, data, consoleLog);
             }
 
@@ -311,11 +310,12 @@ module.exports = {
                 let index = 0;
                 async.eachSeries(elements.keys(), (elementName, callback) => {
                     async.eachSeries($(elementName).toArray(), (element, callback) => {
-                        this.elementFunction('prepare', elementName, $, element, index, data, (err, ret_data, ret_consoleLog) => {
+                        this.elementFunction(pc, 'prepare', elementName, $, element, index, data, (err, ret_data, ret_consoleLog) => {
                             if (err) {
                                 consoleLog += _.get(err, ['data', 'outputBoth'], '');
                                 const elementFile = module.exports.getElementFilename(elementName);
                                 const courseErr = new Error(elementFile + ': Error calling prepare(): ' + err.toString());
+                                courseErr.data = err.data;
                                 return callback(courseErr);
                             }
 
@@ -337,6 +337,7 @@ module.exports = {
                         callback(null);
                     });
                 }, (err) => {
+                    pc.done();
                     if (err) return callback(null, err, data, consoleLog);
                     data = {
                         params: data.params,
@@ -353,6 +354,7 @@ module.exports = {
     },
 
     render: function(panel, variant, question, submission, course, locals, callback) {
+        const pc = new codeCaller.PythonCaller();
         if (panel == 'header') return callback(null, null, '', ''); // FIXME
 
         const question_dir = path.join(course.path, 'questions', question.directory);
@@ -391,12 +393,13 @@ module.exports = {
             let index = 0;
             async.eachSeries(elements.keys(), (elementName, callback) => {
                 async.eachSeries($(elementName).toArray(), (element, callback) => {
-                    this.elementFunction('render', elementName, $, element, index, data, (err, elementHtml, ret_consoleLog) => {
+                    this.elementFunction(pc, 'render', elementName, $, element, index, data, (err, elementHtml, ret_consoleLog) => {
                         if (err) {
                             consoleLog += _.get(err, ['data', 'outputBoth'], '');
                             const fullFilename = path.join(question_dir, 'question.html');
                             const elementFile = module.exports.getElementFilename(elementName);
                             const courseErr = new Error('Error rendering panel "' + panel + '" from ' + fullFilename + ': ' + elementFile + ': Error calling render(): ' + err.toString());
+                            courseErr.data = err.data;
                             return callback(courseErr);
                         }
                         if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
@@ -409,6 +412,7 @@ module.exports = {
                     callback(null);
                 });
             }, (err) => {
+                pc.done();
                 if (err) return callback(null, err, data, consoleLog);
                 callback(null, null, $.html(), consoleLog);
             });
@@ -416,6 +420,7 @@ module.exports = {
     },
 
     parseSubmission: function(submission, variant, question, course, callback) {
+        const pc = new codeCaller.PythonCaller();
         const question_dir = path.join(course.path, 'questions', question.directory);
         var consoleLog = '';
         let data = {
@@ -439,17 +444,19 @@ module.exports = {
             if (err) {
                 const fullFilename = path.join(question_dir, 'question.html');
                 const courseErr = new Error(fullFilename + ': ' + err.toString());
+                courseErr.data = err.data;
                 return callback(null, courseErr, data, consoleLog);
             }
 
             let index = 0;
             async.eachSeries(elements.keys(), (elementName, callback) => {
                 async.eachSeries($(elementName).toArray(), (element, callback) => {
-                    this.elementFunction('parse', elementName, $, element, index, data, (err, ret_data, ret_consoleLog) => {
+                    this.elementFunction(pc, 'parse', elementName, $, element, index, data, (err, ret_data, ret_consoleLog) => {
                         if (err) {
                             consoleLog += _.get(err, ['data', 'outputBoth'], '');
                             const elementFile = module.exports.getElementFilename(elementName);
                             const courseErr = new Error(elementFile + ': Error calling parse(): ' + err.toString());
+                            courseErr.data = err.data;
                             return callback(courseErr);
                         }
 
@@ -471,6 +478,7 @@ module.exports = {
                     callback(null);
                 });
             }, (err) => {
+                pc.done();
                 if (err) return callback(null, err, data, consoleLog);
 
                 // FIXME: call server.parse()
@@ -494,6 +502,7 @@ module.exports = {
     },
 
     gradeSubmission: function(submission, variant, question, course, callback) {
+        const pc = new codeCaller.PythonCaller();
         const question_dir = path.join(course.path, 'questions', question.directory);
         var consoleLog = '';
         let data = {
@@ -526,11 +535,12 @@ module.exports = {
             let index = 0;
             async.eachSeries(elements.keys(), (elementName, callback) => {
                 async.eachSeries($(elementName).toArray(), (element, callback) => {
-                    this.elementFunction('grade', elementName, $, element, index, data, (err, ret_data, ret_consoleLog) => {
+                    this.elementFunction(pc, 'grade', elementName, $, element, index, data, (err, ret_data, ret_consoleLog) => {
                         if (err) {
                             consoleLog += _.get(err, ['data', 'outputBoth'], '');
                             const elementFile = module.exports.getElementFilename(elementName);
                             const courseErr = new Error(elementFile + ': Error calling grade(): ' + err.toString());
+                            courseErr.data = err.data;
                             return callback(courseErr);
                         }
 
@@ -579,6 +589,7 @@ module.exports = {
                     return callback(null, courseErr, data, consoleLog);
                 }
 
+                pc.done();
                 data = {
                     params: data.params,
                     true_answer: data.correct_answers,

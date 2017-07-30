@@ -90,13 +90,15 @@ module.exports = {
                 }
 
                 const instructor_message = courseErr ? courseErr.toString() : 'Console output during prepare';
+                const stack = courseErr ? courseErr.stack : 'No stack trace';
+                const courseErrData = courseErr ? courseErr.data : null;
                 const params = [
                     variant.id,
                     'Error creating question variant', // student message
                     instructor_message,
                     true, // course_caused
                     {variant, question, course}, // course_data
-                    {stack: courseErr.stack, options}, // system_data
+                    {stack, courseErrData, options}, // system_data
                     authn_user_id,
                 ];
                 sqldb.call('errors_insert_for_variant', params, (err) => {
@@ -146,13 +148,14 @@ module.exports = {
 
                     const instructor_message = courseErr ? courseErr.toString() : 'Console output during prepare';
                     const stack = courseErr ? courseErr.stack : 'No stack trace';
+                    const courseErrData = courseErr ? courseErr.data : null;
                     const params = [
                         variant.id,
                         'Error rendering question', // student message
                         instructor_message,
                         true, // course_caused
                         {panel, variant, question, submission, course}, // course_data
-                        {stack, locals}, // system_data
+                        {stack, courseErrData, locals}, // system_data
                         locals.authn_user.user_id,
                     ];
                     sqldb.call('errors_insert_for_variant', params, (err) => {
@@ -183,13 +186,15 @@ module.exports = {
                     if (ERR(err, callback)) return;
 
                     const instructor_message = courseErr ? courseErr.toString() : 'Console output during parse';
+                    const stack = courseErr ? courseErr.stack : 'No stack trace';
+                    const courseErrData = courseErr ? courseErr.data : null;
                     const params = [
                         variant.id,
                         'Error parsing submitted answer', // student message
                         instructor_message,
                         true, // course_caused
                         {variant, question, submission, course}, // course_data
-                        {stack: courseErr.stack}, // system_data
+                        {stack, courseErrData}, // system_data
                         submission.auth_user_id,
                     ];
                     sqldb.callWithClient(client, 'errors_insert_for_variant', params, (err) => {
