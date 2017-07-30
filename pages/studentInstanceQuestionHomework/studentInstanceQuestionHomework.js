@@ -124,7 +124,7 @@ function processGet(req, res, variant_id, callback) {
         },
         function(callback) {
             if (!res.locals.variant.valid) {
-                res.locals.extraHeaders = '';
+                res.locals.extraHeadersHtml = '';
                 return callback(null);
             }
             questionServers.render('header', res.locals.variant, res.locals.question, res.locals.submission, res.locals.course, res.locals, function(err, extraHeadersHtml) {

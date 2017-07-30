@@ -8,6 +8,7 @@ var handlebars = require('handlebars');
 var cheerio = require('cheerio');
 
 var elements = require('./elements');
+var codeCaller = require('../lib/code-caller');
 
 module.exports = {
     getElementFilename: function(elementName) {
@@ -30,8 +31,14 @@ module.exports = {
             // python module
             const pythonFile = elementModule.replace(/\.[pP][yY]$/, '');
             const pythonCwd = path.join(__dirname, 'elements');
-            this.execPython(pythonFile, fcn, pythonArgs, pythonCwd, (err, ret, consoleLog) => {
+            const pc = new codeCaller.PythonCaller();
+            const opts = {
+                cwd: pythonCwd,
+                paths: [path.join(__dirname, 'freeformPythonLib')],
+            };
+            pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
                 if (ERR(err, callback)) return;
+                pc.done();
                 callback(null, ret, consoleLog);
             });
         } else {
@@ -546,6 +553,7 @@ module.exports = {
                 });
             }, (err) => {
                 if (err) return callback(null, err, data, consoleLog);
+                console.log('a', 'data', data);
 
                 let total_weight = 0, total_weight_score = 0;
                 _.each(data.partial_scores, value => {
@@ -581,6 +589,7 @@ module.exports = {
                     score: data.score,
                     feedback: data.feedback,
                 };
+                console.log('b', 'data', data);
                 callback(null, null, data, consoleLog);
             });
         });

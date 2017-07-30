@@ -145,13 +145,14 @@ module.exports = {
                     if (ERR(err, callback)) return;
 
                     const instructor_message = courseErr ? courseErr.toString() : 'Console output during prepare';
+                    const stack = courseErr ? courseErr.stack : 'No stack trace';
                     const params = [
                         variant.id,
                         'Error rendering question', // student message
                         instructor_message,
                         true, // course_caused
                         {panel, variant, question, submission, course}, // course_data
-                        {stack: courseErr.stack, locals}, // system_data
+                        {stack, locals}, // system_data
                         locals.authn_user.user_id,
                     ];
                     sqldb.call('errors_insert_for_variant', params, (err) => {
@@ -245,10 +246,10 @@ module.exports = {
         });
     },
 
-    gradeSubmission: function(submission, variant, question, course, options, callback) {
+    gradeSubmission: function(submission, variant, question, course, callback) {
         this.getModule(question.type, function(err, questionModule) {
             if (ERR(err, callback)) return;
-            questionModule.gradeSubmission(submission, variant, question, course, function(err, question_data) {
+            questionModule.gradeSubmission(submission, variant, question, course, function(err, courseErr, question_data, consoleLog) {
                 if (ERR(err, callback)) return;
                 callback(null, question_data);
             });
@@ -263,7 +264,7 @@ module.exports = {
                 if (ERR(err, callback)) return;
                 var submission = result.rows[0];
 
-                module.exports.gradeSubmission(submission, variant, question, course, {}, function(err, question_data) {
+                module.exports.gradeSubmission(submission, variant, question, course, function(err, question_data) {
                     if (ERR(err, callback)) return;
 
                     let params = {
