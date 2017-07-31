@@ -7,6 +7,14 @@ def inner_html(element):
         html += lxml.html.tostring(child, method="html", pretty_print=True).decode("utf-8")
     return html
 
+def check_attribs(element, required_attribs, optional_attribs):
+    for name in required_attribs:
+        if name not in element.attrib:
+            raise Exception("Required attribute \"%s\" missing" % name);
+    extra_attribs = list(set(element.attrib) - set(required_attribs) - set(optional_attribs));
+    for name in extra_attribs:
+        raise Exception("Unknown attribute \"%s\"" % name);
+
 def _get_attrib(element, name, *args):
     """(value, is_default) = _get_attrib(element, name, default)
 

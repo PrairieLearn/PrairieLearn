@@ -2,6 +2,8 @@ import lxml.html, math
 import prairielearn as pl
 
 def prepare(element_html, element_index, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    pl.check_attribs(element, required_attribs=["name"], optional_attribs=[])
     return data
 
 def render(element_html, element_index, data):

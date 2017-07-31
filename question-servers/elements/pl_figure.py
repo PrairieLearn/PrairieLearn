@@ -4,6 +4,8 @@ import os
 import prairielearn as pl
 
 def prepare(element_html, element_index, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    pl.check_attribs(element, required_attribs=["name"], optional_attribs=["width"])
     return data
 
 def render(element_html, element_index, data):

@@ -3,13 +3,17 @@ import prairielearn as pl
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
+    required_attribs = ["name"]
+    optional_attribs = ["weight", "number_answers", "min_correct", "max_correct", "fixed_order", "inline"];
+    pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "name")
 
     correct_answers = [];
     incorrect_answers = [];
     index = 0
     for child in element:
-        if child.tag == "answer":
+        if child.tag == "pl_answer":
+            pl.check_attribs(child, required_attribs=[], optional_attribs=["correct"]);
             correct = pl.get_boolean_attrib(child, "correct", False)
             child_html = pl.inner_html(child)
             answer_tuple = (index, correct, child_html)
