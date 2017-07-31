@@ -1,6 +1,6 @@
 import numpy as np
 
-def get_data(data, options):
+def get_data(data):
     # Maximum number of digits after the decimal
     nDigits = 1
 
@@ -23,7 +23,7 @@ def get_data(data, options):
     # Modify data and return
     data["params"]["a"] = a
     data["params"]["b"] = b
-    data["true_answer"]["c"] = c
-    data["true_answer"]["d"] = d
+    data["correct_answers"]["c"] = c
+    data["correct_answers"]["d"] = d
 
     return data

@@ -10,7 +10,7 @@ def render(element_html, element_index, data):
     html = "<pre>\n"
     for child in element:
         if child.tag == "variable":
-            var_name = pl.get_string_attrib(child, "name")
+            var_name = pl.get_string_attrib(child, "params_name")
             var_data = data["params"].get(var_name,None)
             if var_data is None:
                 raise Exception('No value in data["params"] for variable %s in matrix_output element' % var_name)

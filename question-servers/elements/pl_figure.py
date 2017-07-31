@@ -10,7 +10,7 @@ def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     # Get file name or raise exception if one does not exist
-    name = pl.get_string_attrib(element, "name")
+    name = pl.get_string_attrib(element, "file_name")
 
     # Get base directory or raise exception if one does not exist
     # FIXME: put client_files_question_url at top level in options?

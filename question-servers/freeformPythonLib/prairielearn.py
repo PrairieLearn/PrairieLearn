@@ -1,4 +1,5 @@
 import lxml.html
+import to_precision
 import numpy as np
 
 def inner_html(element):
@@ -120,6 +121,30 @@ def numpy_to_matlab(A,ndigits=2,wtype='f'):
         for i in range(0,m):
             for j in range(0,n):
                 A_str += '{:.{indigits}{iwtype}}'.format(A[i,j],indigits=ndigits,iwtype=wtype)
+                if j==n-1:
+                    if i==m-1:
+                        A_str += '];'
+                    else:
+                        A_str += '; '
+                else:
+                    A_str += ' '
+        return A_str
+
+# This function assumes that A is either a floating-point number or a
+# real-valued numpy array. It returns A as a MATLAB-formatted string
+# in which each entry has ndigits significant digits.
+def numpy_to_matlab_sf(A,ndigits=2):
+    if np.isscalar(A):
+        A_str = to_precision.to_precision(A,ndigits)
+        return A_str
+    else:
+        s = A.shape
+        m = s[0]
+        n = s[1]
+        A_str = '['
+        for i in range(0,m):
+            for j in range(0,n):
+                A_str += to_precision.to_precision(A[i,j],ndigits)
                 if j==n-1:
                     if i==m-1:
                         A_str += '];'

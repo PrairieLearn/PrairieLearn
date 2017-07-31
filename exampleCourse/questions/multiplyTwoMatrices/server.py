@@ -1,6 +1,6 @@
 import numpy as np
 
-def get_data(data, options):
+def get_data(data):
 
     # Dimensions
     nInnerMin = 2
@@ -25,6 +25,6 @@ def get_data(data, options):
     # Modify data and return
     data["params"]["A"] = A.tolist()
     data["params"]["B"] = B.tolist()
-    data["true_answer"]["C"] = C.tolist()
+    data["correct_answers"]["C"] = C.tolist()
 
     return data
