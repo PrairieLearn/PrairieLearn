@@ -6,7 +6,7 @@ import prairielearn as pl
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, "name")
+    name = pl.get_string_attrib(element, "answers_name")
 
     correct_answer = pl.get_float_attrib(element, "correct_answer", None)
     if correct_answer is not None:
@@ -18,7 +18,7 @@ def prepare(element_html, element_index, data):
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, "name")
+    name = pl.get_string_attrib(element, "answers_name")
     label = pl.get_string_attrib(element,"label",None)
     suffix = pl.get_string_attrib(element,"suffix",None)
     display = pl.get_string_attrib(element,"display","inline")
@@ -106,7 +106,7 @@ def render(element_html, element_index, data):
 
 def parse(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, "name")
+    name = pl.get_string_attrib(element, "answers_name")
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data["submitted_answers"].get(name,None)
@@ -125,7 +125,7 @@ def parse(element_html, element_index, data):
 
 def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, "name")
+    name = pl.get_string_attrib(element, "answers_name")
 
     # Get weight
     weight = pl.get_integer_attrib(element, "weight", 1)
