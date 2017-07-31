@@ -52,7 +52,7 @@ def render(element_html, element_index, data):
             a_sub = np.array(data["submitted_answers"][name])
             html_params['a_sub'] = pl.numpy_to_matlab(a_sub,ndigits=12,wtype='g')
         else:
-            raw_submitted_answer = data["raw_submitted_answer"].get(name, None)
+            raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
             if raw_submitted_answer is not None:
                 html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
         with open('pl_matrix_input.mustache','r') as f:
