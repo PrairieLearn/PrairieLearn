@@ -43,6 +43,27 @@ module.exports = {
         }
     },
 
+    writeCourseErrs: function(courseErrs, variant_id, authn_user_id, studentMessage, courseData, callback) {
+        async.eachSeries(courseErrs, (courseErr, callback) => {
+            const params = [
+                variant_id,
+                studentMessage,
+                courseErr.toString(), // instructor message
+                true, // course_caused
+                courseData,
+                {stack: courseErr.stack, courseErrData: courseErr.data}, // system_data
+                authn_user_id,
+            ];
+            sqldb.call('errors_insert_for_variant', params, (err) => {
+                if (ERR(err, callback)) return;
+                return callback(null);
+            });
+        }, (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+
     makeVariant: function(question, course, options, callback) {
         var variant_seed;
         if (_(options).has('variant_seed')) {
@@ -52,24 +73,38 @@ module.exports = {
         }
         this.getModule(question.type, function(err, questionModule) {
             if (ERR(err, callback)) return;
-            questionModule.getData(question, course, variant_seed, function(err, courseErr, questionData, consoleLog) {
+            questionModule.generate(question, course, variant_seed, function(err, courseErrs, data) {
                 if (ERR(err, callback)) return;
-                if (courseErr) consoleLog = consoleLog + '\n' + courseErr.toString() + '\n';
+                const hasFatalError = _.some(_.map(courseErrs, 'fatal'));
                 var variant = {
                     variant_seed: variant_seed,
-                    params: questionData.params || {},
-                    true_answer: questionData.true_answer || {},
-                    options: questionData.options || {},
-                    console: consoleLog || '',
-                    valid: (courseErr == null),
+                    params: data.params || {},
+                    true_answer: data.true_answer || {},
+                    options: data.options || {},
+                    valid: !hasFatalError,
                 };
-                callback(null, courseErr, variant);
+                if (hasFatalError) {
+                    return callback(null, courseErrs, variant);
+                }
+                questionModule.prepare(question, course, variant, function(err, extraCourseErrs, data) {
+                    if (ERR(err, callback)) return;
+                    courseErrs.push(...extraCourseErrs);
+                    const hasFatalError = _.some(_.map(courseErrs, 'fatal'));
+                    var variant = {
+                        variant_seed: variant_seed,
+                        params: data.params || {},
+                        true_answer: data.true_answer || {},
+                        options: data.options || {},
+                        valid: !hasFatalError,
+                    };
+                    callback(null, courseErrs, variant);
+                });
             });
         });
     },
 
     makeAndInsertVariant: function(instance_question_id, authn_user_id, question, course, options, callback) {
-        module.exports.makeVariant(question, course, options, (err, courseErr, variant) => {
+        module.exports.makeVariant(question, course, options, (err, courseErrs, variant) => {
             if (ERR(err, callback)) return;
             const params = {
                 authn_user_id: authn_user_id,
@@ -78,35 +113,19 @@ module.exports = {
                 question_params: variant.params,
                 true_answer: variant.true_answer,
                 options: variant.options,
-                console: variant.console,
                 valid: variant.valid,
             };
             sqldb.queryOneRow(sql.insert_variant, params, (err, result) => {
                 if (ERR(err, callback)) return;
                 const variant = result.rows[0];
 
-                if (!courseErr && variant.console.length == 0) {
-                    return callback(null, variant);
-                }
-
-                const instructor_message = courseErr ? courseErr.toString() : 'Console output during prepare';
-                const stack = courseErr ? courseErr.stack : 'No stack trace';
-                const courseErrData = courseErr ? courseErr.data : null;
-                const params = [
-                    variant.id,
-                    'Error creating question variant', // student message
-                    instructor_message,
-                    true, // course_caused
-                    {variant, question, course}, // course_data
-                    {stack, courseErrData, options}, // system_data
-                    authn_user_id,
-                ];
-                sqldb.call('errors_insert_for_variant', params, (err) => {
+                const studentMessage = 'Error creating question variant';
+                const courseData = {variant, question, course};
+                module.exports.writeCourseErrs(courseErrs, variant.id, authn_user_id, studentMessage, courseData, (err) => {
                     if (ERR(err, callback)) return;
                     return callback(null, variant);
                 });
             });
-            
         });
     },
 
@@ -131,76 +150,31 @@ module.exports = {
     render: function(panel, variant, question, submission, course, locals, callback) {
         this.getModule(question.type, function(err, questionModule) {
             if (ERR(err, callback)) return;
-            questionModule.render(panel, variant, question, submission, course, locals, function(err, courseErr, html, consoleLog) {
+            questionModule.render(panel, variant, question, submission, course, locals, function(err, courseErrs, html) {
                 if (ERR(err, callback)) return;
-                if (courseErr) consoleLog = consoleLog + '\n' + courseErr.toString() + '\n';
-                if (consoleLog.length == 0) {
-                    // guaranteed no courseErr
-                    return callback(null, html);
-                }
-
-                const params = {
-                    variant_id: variant.id,
-                    extra_console: consoleLog,
-                };
-                sqldb.query(sql.variant_append_console, params, (err) => {
+                
+                const studentMessage = 'Error rendering question';
+                const courseData = {panel, variant, question, submission, course};
+                module.exports.writeCourseErrs(courseErrs, variant.id, locals.authn_user.user_id, studentMessage, courseData, (err) => {
                     if (ERR(err, callback)) return;
-
-                    const instructor_message = courseErr ? courseErr.toString() : 'Console output during prepare';
-                    const stack = courseErr ? courseErr.stack : 'No stack trace';
-                    const courseErrData = courseErr ? courseErr.data : null;
-                    const params = [
-                        variant.id,
-                        'Error rendering question', // student message
-                        instructor_message,
-                        true, // course_caused
-                        {panel, variant, question, submission, course}, // course_data
-                        {stack, courseErrData, locals}, // system_data
-                        locals.authn_user.user_id,
-                    ];
-                    sqldb.call('errors_insert_for_variant', params, (err) => {
-                        if (ERR(err, callback)) return;
-                        return callback(null, '');
-                    });
+                    return callback(null, html);
                 });
             });
         });
     },
 
-    parseSubmission: function(client, submission, variant, question, course, callback) {
+    // must be called from within a transaction that has an update lock on the assessment_instance
+    parse: function(client, submission, variant, question, course, callback) {
         this.getModule(question.type, function(err, questionModule) {
             if (ERR(err, callback)) return;
-            questionModule.parseSubmission(submission, variant, question, course, function(err, courseErr, data, consoleLog) {
+            questionModule.parse(submission, variant, question, course, function(err, courseErrs, data) {
                 if (ERR(err, callback)) return;
-                if (courseErr) consoleLog = consoleLog + '\n' + courseErr.toString() + '\n';
-                if (consoleLog.length == 0) {
-                    // guaranteed no courseErr
-                    return callback(null, data);
-                }
 
-                const params = {
-                    variant_id: variant.id,
-                    extra_console: consoleLog,
-                };
-                sqldb.queryWithClient(client, sql.variant_append_console, params, (err) => {
+                const studentMessage = 'Error parsing submission';
+                const courseData = {variant, question, submission, course};
+                module.exports.writeCourseErrs(courseErrs, variant.id, submission.auth_user_id, studentMessage, courseData, (err) => {
                     if (ERR(err, callback)) return;
-
-                    const instructor_message = courseErr ? courseErr.toString() : 'Console output during parse';
-                    const stack = courseErr ? courseErr.stack : 'No stack trace';
-                    const courseErrData = courseErr ? courseErr.data : null;
-                    const params = [
-                        variant.id,
-                        'Error parsing submitted answer', // student message
-                        instructor_message,
-                        true, // course_caused
-                        {variant, question, submission, course}, // course_data
-                        {stack, courseErrData}, // system_data
-                        submission.auth_user_id,
-                    ];
-                    sqldb.callWithClient(client, 'errors_insert_for_variant', params, (err) => {
-                        if (ERR(err, callback)) return;
-                        return callback(null, data);
-                    });
+                    return callback(null, data);
                 });
             });
         });
@@ -220,7 +194,7 @@ module.exports = {
         sqldb.callWithClientOneRow(client, 'submissions_insert', params, function(err, result) {
             if (ERR(err, callback)) return;
             const submission_id = result.rows[0].submission_id;
-            module.exports.parseSubmission(client, submission, variant, question, course, (err, data) => {
+            module.exports.parse(client, submission, variant, question, course, (err, data) => {
                 if (ERR(err, callback)) return;
 
                 if (data == null) {
@@ -251,12 +225,18 @@ module.exports = {
         });
     },
 
-    gradeSubmission: function(submission, variant, question, course, callback) {
+    grade: function(submission, variant, question, course, authn_user_id, callback) {
         this.getModule(question.type, function(err, questionModule) {
             if (ERR(err, callback)) return;
-            questionModule.gradeSubmission(submission, variant, question, course, function(err, courseErr, question_data, consoleLog) {
+            questionModule.grade(submission, variant, question, course, function(err, courseErrs, data) {
                 if (ERR(err, callback)) return;
-                callback(null, question_data);
+
+                const studentMessage = 'Error grading submission';
+                const courseData = {variant, question, submission, course};
+                module.exports.writeCourseErrs(courseErrs, variant.id, authn_user_id, studentMessage, courseData, (err) => {
+                    if (ERR(err, callback)) return;
+                    return callback(null, data);
+                });
             });
         });
     },
@@ -269,7 +249,7 @@ module.exports = {
                 if (ERR(err, callback)) return;
                 var submission = result.rows[0];
 
-                module.exports.gradeSubmission(submission, variant, question, course, function(err, question_data) {
+                module.exports.grade(submission, variant, question, course, auth_user_id, function(err, question_data) {
                     if (ERR(err, callback)) return;
 
                     let params = {

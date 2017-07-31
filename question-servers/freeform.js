@@ -3,8 +3,7 @@ var async = require('async');
 var _ = require('lodash');
 var fs = require('fs');
 var path = require('path');
-var child_process = require('child_process');
-var handlebars = require('handlebars');
+var mustache = require('mustache');
 var cheerio = require('cheerio');
 
 var elements = require('./elements');
@@ -48,16 +47,35 @@ module.exports = {
         }
     },
 
-    execPythonServer: function(pc, pythonFunction, pythonArgs, question, course, callback) {
-        var question_dir = path.join(course.path, 'questions', question.directory);
+    defaultServerRet: function(phase, data, html, options) {
+        if (phase == 'render') {
+            return html;
+        } else {
+            return data;
+        }
+    },
+
+    execPythonServer: function(pc, phase, data, html, options, callback) {
         const pythonFile = 'server';
+        const pythonFunction = phase;
+        const pythonArgs = [data];
+        if (phase == 'render') pythonArgs.push(html);
         const opts = {
-            cwd: question_dir,
+            cwd: options.question_dir,
             paths: [],
         };
-        pc.call(pythonFile, pythonFunction, pythonArgs, opts, (err, ret, consoleLog) => {
-            if (ERR(err, callback)) return;
-            callback(null, ret, consoleLog);
+        const fullFilename = path.join(options.question_dir, 'server.py');
+        fs.access(fullFilename, fs.constants.R_OK, (err) => {
+            if (err) {
+                // server.py does not exist
+                callback(null, module.exports.defaultServerRet(phase, data, html, options), '');
+            } else {
+                // server.py exists
+                pc.call(pythonFile, pythonFunction, pythonArgs, opts, (err, ret, consoleLog) => {
+                    if (ERR(err, callback)) return;
+                    callback(null, ret, consoleLog);
+                });
+            }
         });
     },
 
@@ -66,41 +84,34 @@ module.exports = {
         return hb;
     },
 
-    execTemplate: function(filename, data, question, course, callback) {
-        var question_dir = path.join(course.path, 'questions', question.directory);
-        var question_html = path.join(question_dir, filename);
-        fs.readFile(question_html, {encoding: 'utf8'}, (err, raw_file) => {
+    execTemplate: function(htmlFilename, data, callback) {
+        fs.readFile(htmlFilename, {encoding: 'utf8'}, (err, raw_file) => {
             if (ERR(err, callback)) return;
+            let html;
+            err = null;
             try {
-                var hb = this.makeHandlebars();
-                var template = hb.compile(raw_file);
-            } catch (err) {
-                err.data = {data, question, course};
-                return ERR(err, callback);
+                html = mustache.render(raw_file, data);
+            } catch (e) {
+                err = e;
             }
-            var html;
-            try {
-                html = template(data);
-            } catch (err) {
-                err.data = {data, question, course};
-                return ERR(err, callback);
-            }
-            var $;
+            if (ERR(err, callback)) return;
+            let $;
             try {
                 $ = cheerio.load(html, {
                     recognizeSelfClosing: true,
                 });
-            } catch (err) {
-                err.data = {data, question, course};
-                return ERR(err, callback);
+            } catch (e) {
+                err = e;
             }
+            if (ERR(err, callback)) return;
             callback(null, html, $);
         });
     },
 
-    checkQuestionData: function(data, checkOptions) {
+    checkData: function(data, origData, phase) {
         const checked = [];
-        const checkProp = (prop, type) => {
+        const checkProp = (prop, type, presentPhases, fixedPhases) => {
+            if (!presentPhases.includes(phase)) return null;
             if (!_.has(data, prop)) return '"' + prop + '" is missing from "data"';
             if (type == 'integer') {
                 if (!_.isInteger(data[prop])) {
@@ -125,130 +136,238 @@ module.exports = {
             } else {
                 return 'invalid type: ' + String(type);
             }
+            if (fixedPhases.includes(phase)) {
+                if (!_.has(origData, prop)) return '"' + prop + '" is missing from "origData"';
+                if (!_.isEqual(data[prop], origData[prop])) {
+                    return 'data.' + prop + ' has been modified, which is not permitted at this time'
+                }
+            }
             checked.push(prop);
             return null;
         };
 
         let err;
-        err = checkProp('params', 'object'); if (err) return err;
-        err = checkProp('correct_answers', 'object'); if (err) return err;
-        err = checkProp('variant_seed', 'integer'); if (err) return err;
-        err = checkProp('options', 'object'); if (err) return err;
-        if (checkOptions.has_submission) {
-            err = checkProp('submitted_answers', 'object'); if (err) return err;
-            err = checkProp('parse_errors', 'object'); if (err) return err;
-            err = checkProp('raw_submitted_answers', 'object'); if (err) return err;
-        }
-        if (checkOptions.has_grading) {
-            err = checkProp('partial_scores', 'object'); if (err) return err;
-            err = checkProp('score', 'number'); if (err) return err;
-            err = checkProp('feedback', 'object'); if (err) return err;
-        }
-        if (checkOptions.for_render) {
-            err = checkProp('editable', 'boolean'); if (err) return err;
-            err = checkProp('panel', 'string'); if (err) return err;
-        }
+        let allPhases = ['generate', 'prepare', 'render', 'parse', 'grade'];
+        err = checkProp('params',                 'object',  allPhases,                    ['render']); if (err) return err;
+        err = checkProp('correct_answers',        'object',  allPhases,                    ['render']); if (err) return err;
+        err = checkProp('variant_seed',           'integer', allPhases,                    ['render']); if (err) return err;
+        err = checkProp('options',                'object',  allPhases,                    ['render']); if (err) return err;
+        err = checkProp('submitted_answers',      'object',  ['render', 'parse', 'grade'], ['render']); if (err) return err;
+        err = checkProp('parse_errors',           'object',  ['render', 'parse', 'grade'], ['render']); if (err) return err;
+        err = checkProp('raw_submitted_answers',  'object',  ['render', 'parse', 'grade'], allPhases);  if (err) return err;
+        err = checkProp('partial_scores',         'object',  ['render', 'grade'],          ['render']); if (err) return err;
+        err = checkProp('score',                  'number',  ['render', 'grade'],          ['render']); if (err) return err;
+        err = checkProp('feedback',               'object',  ['render', 'grade'],          ['render']); if (err) return err;
+        err = checkProp('editable',               'boolean', ['render'],                   ['render']); if (err) return err;
+        err = checkProp('panel',                  'string',  ['render'],                   ['render']); if (err) return err;
         const extraProps = _.difference(_.keys(data), checked);
         if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
 
         return null;
     },
 
-    getData: function(question, course, variant_seed, callback) {
-        const pc = new codeCaller.PythonCaller();
-        const question_dir = path.join(course.path, 'questions', question.directory);
-        let consoleLog = '';
-        let data = {
+    processQuestionHtml: function(phase, pc, data, options, callback) {
+        const courseErrs = []
+        const origData = JSON.parse(JSON.stringify(data));
+
+        const checkErr = module.exports.checkData(data, origData, phase);
+        if (checkErr) {
+            const courseErr = new Error('Invalid state before ' + phase + ': ' + checkErr);
+            courseErr.fatal = true;
+            courseErrs.push(courseErr);
+            return callback(null, courseErrs, data, '');
+        }
+
+        const htmlFilename = path.join(options.question_dir, 'question.html');
+        this.execTemplate(htmlFilename, data, (err, html, $) => {
+            if (err) {
+                const courseErr = new Error(htmlFilename + ': ' + err.toString());
+                courseErr.fatal = true;
+                courseErrs.push(courseErr);
+                return callback(null, courseErrs, data, '');
+            }
+
+            let index = 0;
+            async.eachSeries(elements.keys(), (elementName, callback) => {
+                async.eachSeries($(elementName).toArray(), (element, callback) => {
+                    this.elementFunction(pc, phase, elementName, $, element, index, data, (err, ret_val, consoleLog) => {
+                        if (err) {
+                            const elementFile = module.exports.getElementFilename(elementName);
+                            const courseErr = new Error(elementFile + ': Error calling ' + phase + '(): ' + err.toString());
+                            courseErr.data = err.data;
+                            courseErr.fatal = true;
+                            courseErrs.push(courseErr);
+                            return callback(courseErr);
+                        }
+                        if (_.isString(consoleLog) && consoleLog.length > 0) {
+                            const elementFile = module.exports.getElementFilename(elementName);
+                            const courseErr = new Error(elementFile + ': output logged on console during ' + phase + '()');
+                            courseErr.data = {outputBoth: consoleLog};
+                            courseErr.fatal = false;
+                            courseErrs.push(courseErr);
+                        }
+
+                        if (phase == 'render') {
+                            if (!_.isString(ret_val)) {
+                                const elementFile = module.exports.getElementFilename(elementName);
+                                const courseErr = new Error(elementFile + ': Error calling ' + phase + '(): return value is not a string');
+                                courseErr.data = {ret_val};
+                                courseErr.fatal = true;
+                                courseErrs.push(courseErr);
+                                return callback(courseErr);
+                            }
+                            $(element).replaceWith(ret_val);
+                        } else {
+                            data = ret_val;
+                            const checkErr = module.exports.checkData(data, origData, phase);
+                            if (checkErr) {
+                                const elementFile = module.exports.getElementFilename(elementName);
+                                const courseErr = new Error(elementFile + ': Invalid state after ' + phase + '(): ' + checkErr);
+                                courseErr.fatal = true;
+                                courseErrs.push(courseErr);
+                                return callback(courseErr);
+                            }
+                        }
+
+                        index++;
+                        callback(null);
+                    });
+                }, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            }, (err) => {
+                ERR(err, () => {});
+
+                if (phase == 'grade') {
+                    let total_weight = 0, total_weight_score = 0;
+                    _.each(data.partial_scores, value => {
+                        const score = _.get(value, 'score', 0);
+                        const weight = _.get(value, 'weight', 1);
+                        total_weight += weight;
+                        total_weight_score += weight * score;
+                    });
+                    data.score = total_weight_score / (total_weight == 0 ? 1 : total_weight);
+                    data.feedback = {};
+                }
+
+                callback(null, courseErrs, data, $.html());
+            });
+        });
+    },
+
+    processQuestionServer: function(phase, pc, data, html, options, callback) {
+        const courseErrs = []
+        const origData = JSON.parse(JSON.stringify(data));
+
+        const checkErr = module.exports.checkData(data, origData, phase);
+        if (checkErr) {
+            const courseErr = new Error('Invalid state before calling server.' + phase + '(): ' + checkErr);
+            courseErr.fatal = true;
+            courseErrs.push(courseErr);
+            return callback(null, courseErrs, data, '');
+        }
+
+        this.execPythonServer(pc, phase, data, html, options, (err, ret_val, consoleLog) => {
+            if (err) {
+                const serverFile = path.join(options.question_dir, 'server.py');
+                const courseErr = new Error(serverFile + ': Error calling ' + phase + '(): ' + err.toString());
+                courseErr.data = err.data;
+                courseErr.fatal = true;
+                courseErrs.push(courseErr);
+                return callback(null, courseErrs, data);
+            }
+            if (_.isString(consoleLog) && consoleLog.length > 0) {
+                const serverFile = path.join(options.question_dir, 'server.py');
+                const courseErr = new Error(serverFile + ': output logged on console');
+                courseErr.data = {outputBoth: consoleLog};
+                courseErr.fatal = false;
+                courseErrs.push(courseErr);
+            }
+            
+            if (phase == 'render') {
+                html = ret_val;
+            } else {
+                data = ret_val;
+            }
+            const checkErr = module.exports.checkData(data, origData, phase);
+            if (checkErr) {
+                const serverFile = path.join(options.question_dir, 'server.py');
+                const courseErr = new Error(serverFile + ': Invalid state after ' + phase + '(): ' + checkErr);
+                courseErr.fatal = true;
+                courseErrs.push(courseErr);
+                return callback(null, courseErrs, data);
+            }
+
+            callback(null, courseErrs, data, html);
+        });
+    },
+
+    processQuestion: function(phase, pc, data, options, callback) {
+        if (phase == 'generate') {
+            module.exports.processQuestionServer(phase, pc, data, '', options, (err, courseErrs, data, html) => {
+                if (ERR(err, callback)) return;
+                callback(null, courseErrs, data, html);
+            });
+        } else {
+            module.exports.processQuestionHtml(phase, pc, data, options, (err, courseErrs, data, html) => {
+                if (ERR(err, callback)) return;
+                module.exports.processQuestionServer(phase, pc, data, html, options, (err, ret_courseErrs, data, html) => {
+                    if (ERR(err, callback)) return;
+                    courseErrs.push(...ret_courseErrs);
+                    callback(null, courseErrs, data, html);
+                });
+            });
+        }
+    },
+
+    generate: function(question, course, variant_seed, callback) {
+        const data = {
             params: {},
             correct_answers: {},
             variant_seed: parseInt(variant_seed, 36),
             options: _.defaults({}, course.options, question.options),
         };
-
-        const checkOptions = {has_submission: false, has_grading: false, for_render: false};
-        const checkErr = module.exports.checkQuestionData(data, checkOptions);
-        if (checkErr) {
-            const courseErr = new Error('Invalid state before server.get_data(): ' + checkErr);
-            return callback(null, courseErr, data, consoleLog);
-        }
-
-        let pythonArgs = [data];
-        this.execPythonServer(pc, 'get_data', pythonArgs, question, course, (err, ret_data, ret_consoleLog) => {
-            if (err) {
-                consoleLog += _.get(err, ['data', 'outputBoth'], '');
-                const courseErr = new Error(path.join(question_dir, 'server.py') + ': Error calling get_data(): ' + err.toString());
-                courseErr.data = err.data;
-                return callback(null, courseErr, data, consoleLog);
-            }
-
-            if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
-            data = ret_data;
-            const checkErr = module.exports.checkQuestionData(data, checkOptions);
-            if (checkErr) {
-                const fullFilename = path.join(question_dir, 'server.py');
-                const courseErr = new Error(fullFilename + ': Invalid state after get_data(): ' + checkErr);
-                return callback(null, courseErr, data, consoleLog);
-            }
-
-            this.execTemplate('question.html', data, question, course, (err, html, $) => {
-                if (err) {
-                    const fullFilename = path.join(question_dir, 'question.html');
-                    const courseErr = new Error(fullFilename + ': ' + err.toString());
-                    return callback(null, courseErr, data, consoleLog);
-                }
-
-                let index = 0;
-                async.eachSeries(elements.keys(), (elementName, callback) => {
-                    async.eachSeries($(elementName).toArray(), (element, callback) => {
-                        this.elementFunction(pc, 'prepare', elementName, $, element, index, data, (err, ret_data, ret_consoleLog) => {
-                            if (err) {
-                                consoleLog += _.get(err, ['data', 'outputBoth'], '');
-                                const elementFile = module.exports.getElementFilename(elementName);
-                                const courseErr = new Error(elementFile + ': Error calling prepare(): ' + err.toString());
-                                courseErr.data = err.data;
-                                return callback(courseErr);
-                            }
-
-                            if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
-                            data = ret_data;
-                            const checkErr = module.exports.checkQuestionData(data, checkOptions);
-                            if (checkErr) {
-                                consoleLog += _.get(err, ['data', 'outputBoth'], '');
-                                const elementFile = module.exports.getElementFilename(elementName);
-                                const courseErr = new Error(elementFile + ': Invalid state after prepare(): ' + checkErr);
-                                return callback(courseErr);
-                            }
-
-                            index++;
-                            callback(null);
-                        });
-                    }, (err) => {
-                        if (ERR(err, callback)) return;
-                        callback(null);
-                    });
-                }, (err) => {
-                    pc.done();
-                    if (err) return callback(null, err, data, consoleLog);
-                    data = {
-                        params: data.params,
-                        true_answer: data.correct_answers,
-                    };
-                    callback(null, null, data, consoleLog);
-                });
-            });
+        const options = {
+            question_dir: path.join(course.path, 'questions', question.directory),
+        };
+        const pc = new codeCaller.PythonCaller();
+        module.exports.processQuestion('generate', pc, data, options, (err, courseErrs, data, _html) => {
+            pc.done();
+            if (ERR(err, callback)) return;
+            const ret_vals = {
+                params: data.params,
+                true_answer: data.correct_answers,
+            };
+            callback(null, courseErrs, ret_vals);
+        });
+    },
+    
+    prepare: function(question, course, variant, callback) {
+        const data = {
+            params: _.get(variant, 'params', {}),
+            correct_answers: _.get(variant, 'true_answer', {}),
+            variant_seed: parseInt(variant.variant_seed, 36),
+            options: _.get(variant, 'options', {}),
+        };
+        const options = {
+            question_dir: path.join(course.path, 'questions', question.directory),
+        };
+        const pc = new codeCaller.PythonCaller();
+        module.exports.processQuestion('prepare', pc, data, options, (err, courseErrs, data, _html) => {
+            pc.done();
+            if (ERR(err, callback)) return;
+            const ret_vals = {
+                params: data.params,
+                true_answer: data.correct_answers,
+            };
+            callback(null, courseErrs, ret_vals);
         });
     },
 
-    getFile: function(filename, variant, question, course, callback) {
-        callback(new Error('not implemented'));
-    },
-
     render: function(panel, variant, question, submission, course, locals, callback) {
-        const pc = new codeCaller.PythonCaller();
-        if (panel == 'header') return callback(null, null, '', ''); // FIXME
-
-        const question_dir = path.join(course.path, 'questions', question.directory);
-        let data = {
+        if (panel == 'header') return callback(null, [], ''); // FIXME
+        const data = {
             params: _.get(variant, 'params', {}),
             correct_answers: _.get(variant, 'true_answer', {}),
             submitted_answers: submission ? _.get(submission, 'submitted_answer', {}) : {},
@@ -262,58 +381,20 @@ module.exports = {
             editable: !!locals.allowAnswerEditing,
             panel: panel,
         };
+        const options = {
+            question_dir: path.join(course.path, 'questions', question.directory),
+        };
         data.options.client_files_question_url = locals.paths.clientFilesQuestion;
-        let consoleLog = '';
-
-        const checkOptions = {has_submission: true, has_grading: true, for_render: true};
-        const checkErr = module.exports.checkQuestionData(data, checkOptions);
-        if (checkErr) {
-            const fullFilename = path.join(question_dir, 'question.html');
-            const courseErr = new Error('Error rendering panel "' + panel + '" from ' + fullFilename + ': Invalid state before render: ' + checkErr);
-            return callback(null, courseErr, data, consoleLog);
-        }
-
-        this.execTemplate('question.html', data, question, course, (err, html, $) => {
-            if (err) {
-                const fullFilename = path.join(question_dir, 'question.html');
-                const courseErr = new Error('Error rendering panel "' + panel + '" from ' + fullFilename + ': ' + err.toString());
-                return callback(null, courseErr, data, consoleLog);
-            }
-
-            let index = 0;
-            async.eachSeries(elements.keys(), (elementName, callback) => {
-                async.eachSeries($(elementName).toArray(), (element, callback) => {
-                    this.elementFunction(pc, 'render', elementName, $, element, index, data, (err, elementHtml, ret_consoleLog) => {
-                        if (err) {
-                            consoleLog += _.get(err, ['data', 'outputBoth'], '');
-                            const fullFilename = path.join(question_dir, 'question.html');
-                            const elementFile = module.exports.getElementFilename(elementName);
-                            const courseErr = new Error('Error rendering panel "' + panel + '" from ' + fullFilename + ': ' + elementFile + ': Error calling render(): ' + err.toString());
-                            courseErr.data = err.data;
-                            return callback(courseErr);
-                        }
-                        if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
-                        $(element).replaceWith(elementHtml);
-                        index++;
-                        callback(null);
-                    });
-                }, (err) => {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            }, (err) => {
-                pc.done();
-                if (err) return callback(null, err, data, consoleLog);
-                callback(null, null, $.html(), consoleLog);
-            });
+        const pc = new codeCaller.PythonCaller();
+        module.exports.processQuestion('render', pc, data, options, (err, courseErrs, _data, html) => {
+            pc.done();
+            if (ERR(err, callback)) return;
+            callback(null, courseErrs, html);
         });
     },
 
-    parseSubmission: function(submission, variant, question, course, callback) {
-        const pc = new codeCaller.PythonCaller();
-        const question_dir = path.join(course.path, 'questions', question.directory);
-        var consoleLog = '';
-        let data = {
+    parse: function(submission, variant, question, course, callback) {
+        const data = {
             params: _.get(variant, 'params', {}),
             correct_answers: _.get(variant, 'true_answer', {}),
             submitted_answers: _.get(submission, 'submitted_answer', {}),
@@ -322,79 +403,24 @@ module.exports = {
             options: _.get(variant, 'options', {}),
             raw_submitted_answers: _.get(submission, 'raw_submitted_answer', {}),
         };
-
-        const checkOptions = {has_submission: true, has_grading: false, for_render: false};
-        const checkErr = module.exports.checkQuestionData(data, checkOptions);
-        if (checkErr) {
-            const courseErr = new Error('Invalid state before parse: ' + checkErr);
-            return callback(null, courseErr, data, consoleLog);
-        }
-
-        this.execTemplate('question.html', data, question, course, (err, html, $) => {
-            if (err) {
-                const fullFilename = path.join(question_dir, 'question.html');
-                const courseErr = new Error(fullFilename + ': ' + err.toString());
-                courseErr.data = err.data;
-                return callback(null, courseErr, data, consoleLog);
-            }
-
-            let index = 0;
-            async.eachSeries(elements.keys(), (elementName, callback) => {
-                async.eachSeries($(elementName).toArray(), (element, callback) => {
-                    this.elementFunction(pc, 'parse', elementName, $, element, index, data, (err, ret_data, ret_consoleLog) => {
-                        if (err) {
-                            consoleLog += _.get(err, ['data', 'outputBoth'], '');
-                            const elementFile = module.exports.getElementFilename(elementName);
-                            const courseErr = new Error(elementFile + ': Error calling parse(): ' + err.toString());
-                            courseErr.data = err.data;
-                            return callback(courseErr);
-                        }
-
-                        if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
-                        data = ret_data;
-                        const checkErr = module.exports.checkQuestionData(data, checkOptions);
-                        if (checkErr) {
-                            consoleLog += _.get(err, ['data', 'outputBoth'], '');
-                            const elementFile = module.exports.getElementFilename(elementName);
-                            const courseErr = new Error(elementFile + ': Invalid state after parse(): ' + checkErr);
-                            return callback(courseErr);
-                        }
-
-                        index++;
-                        callback(null);
-                    });
-                }, (err) => {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            }, (err) => {
-                pc.done();
-                if (err) return callback(null, err, data, consoleLog);
-
-                // FIXME: call server.parse()
-                const checkErr = module.exports.checkQuestionData(data, checkOptions);
-                if (checkErr) {
-                    const fullFilename = path.join(question_dir, 'server.py');
-                    const courseErr = new Error(fullFilename + ': Invalid state after parse(): ' + checkErr);
-                    return callback(null, courseErr, data, consoleLog);
-                }
-
-                data = {
-                    params: data.params,
-                    true_answer: data.correct_answers,
-                    submitted_answer: data.submitted_answers,
-                    parse_errors: data.parse_errors,
-                    raw_submitted_answer: data.raw_submitted_answers,
-                };
-                callback(null, null, data, consoleLog);
-            });
+        const options = {
+            question_dir: path.join(course.path, 'questions', question.directory),
+        };
+        const pc = new codeCaller.PythonCaller();
+        module.exports.processQuestion('parse', pc, data, options, (err, courseErrs, data, _html) => {
+            pc.done();
+            if (ERR(err, callback)) return;
+            const ret_vals = {
+                params: data.params,
+                true_answer: data.correct_answers,
+                submitted_answer: data.submitted_answers,
+                parse_errors: data.parse_errors,
+            };
+            callback(null, courseErrs, ret_vals);
         });
     },
 
-    gradeSubmission: function(submission, variant, question, course, callback) {
-        const pc = new codeCaller.PythonCaller();
-        const question_dir = path.join(course.path, 'questions', question.directory);
-        var consoleLog = '';
+    grade: function(submission, variant, question, course, callback) {
         let data = {
             params: variant.params,
             correct_answers: variant.true_answer,
@@ -407,92 +433,24 @@ module.exports = {
             options: _.get(variant, 'options', {}),
             raw_submitted_answers: submission.raw_submitted_answer,
         };
-
-        const checkOptions = {has_submission: true, has_grading: true, for_render: false};
-        const checkErr = module.exports.checkQuestionData(data, checkOptions);
-        if (checkErr) {
-            const courseErr = new Error('Invalid state before grade: ' + checkErr);
-            return callback(null, courseErr, data, consoleLog);
-        }
-
-        this.execTemplate('question.html', data, question, course, (err, html, $) => {
-            if (err) {
-                const fullFilename = path.join(question_dir, 'question.html');
-                const courseErr = new Error(fullFilename + ': ' + err.toString());
-                return callback(null, courseErr, data, consoleLog);
-            }
-
-            let index = 0;
-            async.eachSeries(elements.keys(), (elementName, callback) => {
-                async.eachSeries($(elementName).toArray(), (element, callback) => {
-                    this.elementFunction(pc, 'grade', elementName, $, element, index, data, (err, ret_data, ret_consoleLog) => {
-                        if (err) {
-                            consoleLog += _.get(err, ['data', 'outputBoth'], '');
-                            const elementFile = module.exports.getElementFilename(elementName);
-                            const courseErr = new Error(elementFile + ': Error calling grade(): ' + err.toString());
-                            courseErr.data = err.data;
-                            return callback(courseErr);
-                        }
-
-                        if (_.isString(ret_consoleLog)) consoleLog += ret_consoleLog;
-                        data = ret_data;
-                        const checkErr = module.exports.checkQuestionData(data, checkOptions);
-                        if (checkErr) {
-                            consoleLog += _.get(err, ['data', 'outputBoth'], '');
-                            const elementFile = module.exports.getElementFilename(elementName);
-                            const courseErr = new Error(elementFile + ': Invalid state after grade(): ' + checkErr);
-                            return callback(courseErr);
-                        }
-
-                        index++;
-                        callback(null);
-                    });
-                }, (err) => {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            }, (err) => {
-                if (err) return callback(null, err, data, consoleLog);
-                console.log('a', 'data', data);
-
-                let total_weight = 0, total_weight_score = 0;
-                _.each(data.partial_scores, value => {
-                    const score = _.get(value, 'score', 0);
-                    const weight = _.get(value, 'weight', 1);
-                    total_weight += weight;
-                    total_weight_score += weight * score;
-                });
-                data.score = total_weight_score / (total_weight == 0 ? 1 : total_weight);
-                data.feedback = {};
-
-                let checkErr = module.exports.checkQuestionData(data, checkOptions);
-                if (checkErr) {
-                    const fullFilename = path.join(question_dir, 'server.py');
-                    const courseErr = new Error(fullFilename + ': Invalid state before server.grade(): ' + checkErr);
-                    return callback(null, courseErr, data, consoleLog);
-                }
-                // FIXME: call server.grade()
-                checkErr = module.exports.checkQuestionData(data, checkOptions);
-                if (checkErr) {
-                    const fullFilename = path.join(question_dir, 'server.py');
-                    const courseErr = new Error(fullFilename + ': Invalid state after server.grade(): ' + checkErr);
-                    return callback(null, courseErr, data, consoleLog);
-                }
-
-                pc.done();
-                data = {
-                    params: data.params,
-                    true_answer: data.correct_answers,
-                    submitted_answer: data.submitted_answers,
-                    parse_errors: data.parse_errors,
-                    raw_submitted_answer: data.raw_submitted_answers,
-                    partial_scores: data.partial_scores,
-                    score: data.score,
-                    feedback: data.feedback,
-                };
-                console.log('b', 'data', data);
-                callback(null, null, data, consoleLog);
-            });
+        const options = {
+            question_dir: path.join(course.path, 'questions', question.directory),
+        };
+        const pc = new codeCaller.PythonCaller();
+        module.exports.processQuestion('grade', pc, data, options, (err, courseErrs, data, _html) => {
+            pc.done();
+            if (ERR(err, callback)) return;
+            const ret_vals = {
+                params: data.params,
+                true_answer: data.correct_answers,
+                submitted_answer: data.submitted_answers,
+                parse_errors: data.parse_errors,
+                raw_submitted_answer: data.raw_submitted_answers,
+                partial_scores: data.partial_scores,
+                score: data.score,
+                feedback: data.feedback,
+            };
+            callback(null, courseErrs, ret_vals);
         });
     },
 };

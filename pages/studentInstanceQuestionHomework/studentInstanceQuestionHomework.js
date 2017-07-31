@@ -44,7 +44,6 @@ function processSubmission(req, res, callback) {
 }
 
 function processGet(req, res, variant_id, callback) {
-    var questionModule;
     res.locals.showSubmitButton = true;
     res.locals.showNewVariantButton = false;
     res.locals.showSubmissions = false;
@@ -102,13 +101,6 @@ function processGet(req, res, variant_id, callback) {
                 res.locals.allowAnswerEditing = true;
             }
             callback(null);
-        },
-        function(callback) {
-            questionServers.getModule(res.locals.question.type, function(err, qm) {
-                if (ERR(err, callback)) return;
-                questionModule = qm;
-                callback(null);
-            });
         },
         function(callback) {
             questionServers.getEffectiveQuestionType(res.locals.question.type, function(err, eqt) {

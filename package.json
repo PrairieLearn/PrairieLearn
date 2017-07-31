@@ -29,6 +29,7 @@
         "mathjax": "2.7.x",
         "mersenne": "0.0.x",
         "mongodb": "2.2.x",
+        "mustache": "2.3.0",
         "numeric": "1.2.x",
         "pg": "6.1.x",
         "request": "2.81.x",
