@@ -11,6 +11,6 @@ The product of ${{params.a}}$ and ${{params.b}}$ is
 Find the sum of $a={{params.a}}$ and $b={{params.b}}$:
 </p>
 </pl_question_panel>
-<pl_number_input name="d" points="1" comparison="relabs" digits="3" display="block" label="$a+b=$" suffix="units"/>
+<pl_number_input name="d" points="1" comparison="relabs" rtol="1e-3" atol="1e-5" display="block" label="$a+b=$" suffix="units"/>
 
 <pl_variable_score name="d" />

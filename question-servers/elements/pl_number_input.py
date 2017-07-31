@@ -1,6 +1,7 @@
 import lxml.html
 from html import escape
 import chevron
+import to_precision
 import prairielearn as pl
 
 def prepare(element_html, element_index, data):
@@ -75,8 +76,25 @@ def render(element_html, element_index, data):
     elif data["panel"] == "answer":
         a_tru = data["correct_answers"].get(name, None)
         if a_tru is not None:
+
+            # Get comparison parameters
+            comparison = pl.get_string_attrib(element, "comparison","relabs")
+            if comparison=="relabs":
+                rtol = pl.get_float_attrib(element,"rtol",1e-5)
+                atol = pl.get_float_attrib(element,"atol",1e-8)
+                # FIXME: render correctly with respect to rtol and atol
+                a_tru = '{:.12g}'.format(a_tru)
+            elif comparison=="sigfig":
+                digits = pl.get_integer_attrib(element,"digits",2)
+                a_tru = to_precision.to_precision(a_tru,digits)
+            elif comparison=="decdig":
+                digits = pl.get_integer_attrib(element,"digits",2)
+                a_tru = '{:.{ndigits}f}'.format(a_tru,ndigits=digits)
+            else:
+                raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
+
             # FIXME: render correctly with respect to method of comparison
-            html_params = {'answer': True, 'label': label, 'a_tru': '{:12g}'.format(a_tru), 'suffix': suffix}
+            html_params = {'answer': True, 'label': label, 'a_tru': a_tru, 'suffix': suffix}
             with open('pl_number_input.mustache','r') as f:
                 html = chevron.render(f,html_params).strip()
         else:

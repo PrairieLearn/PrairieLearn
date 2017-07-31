@@ -64,8 +64,25 @@ def render(element_html, element_index, data):
         if a_tru is not None:
             a_tru = np.array(a_tru)
 
+            # Get comparison parameters
+            comparison = pl.get_string_attrib(element, "comparison","relabs")
+            if comparison=="relabs":
+                rtol = pl.get_float_attrib(element,"rtol",1e-5)
+                atol = pl.get_float_attrib(element,"atol",1e-8)
+                # FIXME: render correctly with respect to rtol and atol
+                a_tru = pl.numpy_to_matlab(a_tru,ndigits=12,wtype='g')
+            elif comparison=="sigfig":
+                digits = pl.get_integer_attrib(element,"digits",2)
+                a_tru = pl.numpy_to_matlab_sf(a_tru,ndigits=digits)
+            elif comparison=="decdig":
+                digits = pl.get_integer_attrib(element,"digits",2)
+                a_tru = pl.numpy_to_matlab(a_tru,ndigits=digits,wtype='f')
+            else:
+                raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
+
+
             # FIXME: render correctly with respect to method of comparison
-            html_params = {'answer': True, 'label': label, 'a_tru': pl.numpy_to_matlab(a_tru,ndigits=12,wtype='g')}
+            html_params = {'answer': True, 'label': label, 'a_tru': a_tru}
             with open('pl_matrix_input.mustache','r') as f:
                 html = chevron.render(f,html_params).strip()
         else:
