@@ -68,14 +68,17 @@ module.exports = {
         fs.access(fullFilename, fs.constants.R_OK, (err) => {
             if (err) {
                 // server.py does not exist
-                callback(null, module.exports.defaultServerRet(phase, data, html, options), '');
-            } else {
-                // server.py exists
-                pc.call(pythonFile, pythonFunction, pythonArgs, opts, (err, ret, consoleLog) => {
-                    if (ERR(err, callback)) return;
-                    callback(null, ret, consoleLog);
-                });
+                return callback(null, module.exports.defaultServerRet(phase, data, html, options), '');
             }
+
+            pc.call(pythonFile, pythonFunction, pythonArgs, opts, (err, ret, consoleLog) => {
+                if (err instanceof codeCaller.FunctionMissingError) {
+                    // function wasn't present in server
+                    return callback(null, module.exports.defaultServerRet(phase, data, html, options), '');
+                }
+                if (ERR(err, callback)) return;
+                callback(null, ret, consoleLog);
+            });
         });
     },
 
@@ -312,6 +315,8 @@ module.exports = {
         } else {
             module.exports.processQuestionHtml(phase, pc, data, options, (err, courseErrs, data, html) => {
                 if (ERR(err, callback)) return;
+                const hasFatalError = _.some(_.map(courseErrs, 'fatal'));
+                if (hasFatalError) return callback(null, courseErrs, data, html);
                 module.exports.processQuestionServer(phase, pc, data, html, options, (err, ret_courseErrs, data, html) => {
                     if (ERR(err, callback)) return;
                     courseErrs.push(...ret_courseErrs);

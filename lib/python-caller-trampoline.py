@@ -48,12 +48,18 @@ with open(3, 'w', encoding='utf-8') as outf:
         # change to the desired working directory
         os.chdir(cwd)
 
-        # load the "file" as a module and get the function
+        # load the "file" as a module
         mod = importlib.import_module(file);
-        method = getattr(mod, fcn)
 
-        # call the desired function in the loaded module
-        output = method(*args)
+        # check whether we have the desired fcn in the module
+        if hasattr(mod, fcn):
+            # call the desired function in the loaded module
+            method = getattr(mod, fcn)
+            val = method(*args)
+            output = {"present": True, "val": val}
+        else:
+            # the function wasn't present, so report this
+            output = {"present": False}
 
         # make sure all output streams are flushed
         sys.stderr.flush()
