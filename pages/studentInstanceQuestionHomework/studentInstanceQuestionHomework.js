@@ -51,6 +51,7 @@ function processGet(req, res, variant_id, callback) {
     res.locals.showTrueAnswer = false;
     res.locals.showGradingRequested = false;
     res.locals.allowAnswerEditing = true;
+    res.locals.submissions = [];
     async.series([
         function(callback) {
             if (variant_id) {
@@ -115,54 +116,18 @@ function processGet(req, res, variant_id, callback) {
             callback(null);
         },
         function(callback) {
-            if (!res.locals.variant.valid) {
-                res.locals.extraHeadersHtml = '';
-                return callback(null);
-            }
-            questionServers.render('header', res.locals.variant, res.locals.question, res.locals.submission, res.locals.course, res.locals, function(err, extraHeadersHtml) {
+            const renderSelection = {
+                'header': res.locals.variant.valid,
+                'question': res.locals.variant.valid,
+                'submissions': res.locals.variant.valid && res.locals.showSubmissions,
+                'answer': res.locals.variant.valid && res.locals.showTrueAnswer,
+            };
+            questionServers.render(renderSelection, res.locals.variant, res.locals.question, res.locals.submission, res.locals.submissions, res.locals.course, res.locals, function(err, htmls) {
                 if (ERR(err, callback)) return;
-                res.locals.extraHeadersHtml = extraHeadersHtml;
-                callback(null);
-            });
-        },
-        function(callback) {
-            if (!res.locals.showSubmissions) return callback(null);
-            res.locals.submissionHtmls = [];
-            async.eachSeries(res.locals.submissions, function(submission, callback) {
-                if (!res.locals.variant.valid) {
-                    res.locals.submissionHtmls.push('');
-                    return callback(null);
-                }
-                questionServers.render('submission', res.locals.variant, res.locals.question, submission, res.locals.course, res.locals, function(err, submissionHtml) {
-                    if (ERR(err, callback)) return;
-                    res.locals.submissionHtmls.push(submissionHtml);
-                    callback(null);
-                });
-            }, function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        function(callback) {
-            if (!res.locals.variant.valid) {
-                res.locals.answerHtml = '';
-                return callback(null);
-            }
-            if (!res.locals.showTrueAnswer) return callback(null);
-            questionServers.render('answer', res.locals.variant, res.locals.question, res.locals.submission, res.locals.course, res.locals, function(err, answerHtml) {
-                if (ERR(err, callback)) return;
-                res.locals.answerHtml = answerHtml;
-                callback(null);
-            });
-        },
-        function(callback) {
-            if (!res.locals.variant.valid) {
-                res.locals.questionHtml = '';
-                return callback(null);
-            }
-            questionServers.render('question', res.locals.variant, res.locals.question, res.locals.submission, res.locals.course, res.locals, function(err, questionHtml) {
-                if (ERR(err, callback)) return;
-                res.locals.questionHtml = questionHtml;
+                res.locals.extraHeadersHtml = htmls.extraHeadersHtml;
+                res.locals.questionHtml = htmls.questionHtml;
+                res.locals.submissionHtmls = htmls.submissionHtmls;
+                res.locals.answerHtml = htmls.answerHtml;
                 callback(null);
             });
         },

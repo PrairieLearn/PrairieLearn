@@ -370,8 +370,7 @@ module.exports = {
         });
     },
 
-    render: function(panel, variant, question, submission, course, locals, callback) {
-        if (panel == 'header') return callback(null, [], ''); // FIXME
+    renderPanel: function(panel, pc, variant, question, submission, course, locals, callback) {
         const data = {
             params: _.get(variant, 'params', {}),
             correct_answers: _.get(variant, 'true_answer', {}),
@@ -390,11 +389,59 @@ module.exports = {
             question_dir: path.join(course.path, 'questions', question.directory),
         };
         data.options.client_files_question_url = locals.paths.clientFilesQuestion;
-        const pc = new codeCaller.PythonCaller();
         module.exports.processQuestion('render', pc, data, options, (err, courseErrs, _data, html) => {
-            pc.done();
             if (ERR(err, callback)) return;
             callback(null, courseErrs, html);
+        });
+    },
+
+    render: function(renderSelection, variant, question, submission, submissions, course, locals, callback) {
+        const htmls = {
+            extraHeadersHtml: '',
+            questionHtml: '',
+            submissionHtmls: _.map(submissions, () => ''),
+            answerHtml: '',
+        };
+        const courseErrs = [];
+        const pc = new codeCaller.PythonCaller();
+        async.series([
+            // FIXME: suppprt 'header'
+            (callback) => {
+                if (!renderSelection.question) return callback(null);
+                module.exports.renderPanel('question', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html) => {
+                    if (ERR(err, callback)) return;
+              	    courseErrs.push(...ret_courseErrs);
+                    htmls.questionHtml = html;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                if (!renderSelection.submissions) return callback(null);
+                async.mapSeries(submissions, (submission, callback) => {
+                    module.exports.renderPanel('submission', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html) => {
+                        if (ERR(err, callback)) return;
+              	        courseErrs.push(...ret_courseErrs);
+                        callback(null, html);
+                    });
+                }, (err, submissionHtmls) => {
+                    if (ERR(err, callback)) return;
+                    htmls.submissionHtmls = submissionHtmls;
+                    callback(null);
+                });
+            },
+            (callback) => {
+                if (!renderSelection.answer) return callback(null);
+                module.exports.renderPanel('answer', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html) => {
+                    if (ERR(err, callback)) return;
+              	    courseErrs.push(...ret_courseErrs);
+                    htmls.answerHtml = html;
+                    callback(null);
+                });
+            },
+        ], (err) => {
+            pc.done();
+            if (ERR(err, callback)) return;
+            callback(null, courseErrs, htmls);
         });
     },
 

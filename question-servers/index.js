@@ -147,17 +147,17 @@ module.exports = {
         });
     },
 
-    render: function(panel, variant, question, submission, course, locals, callback) {
+    render: function(renderSelection, variant, question, submission, submissions, course, locals, callback) {
         this.getModule(question.type, function(err, questionModule) {
             if (ERR(err, callback)) return;
-            questionModule.render(panel, variant, question, submission, course, locals, function(err, courseErrs, html) {
+            questionModule.render(renderSelection, variant, question, submission, submissions, course, locals, function(err, courseErrs, htmls) {
                 if (ERR(err, callback)) return;
                 
                 const studentMessage = 'Error rendering question';
-                const courseData = {panel, variant, question, submission, course};
+                const courseData = {variant, question, submission, course};
                 module.exports.writeCourseErrs(courseErrs, variant.id, locals.authn_user.user_id, studentMessage, courseData, (err) => {
                     if (ERR(err, callback)) return;
-                    return callback(null, html);
+                    return callback(null, htmls);
                 });
             });
         });
