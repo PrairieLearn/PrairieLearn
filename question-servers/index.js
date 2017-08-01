@@ -197,12 +197,6 @@ module.exports = {
             module.exports.parse(client, submission, variant, question, course, (err, data) => {
                 if (ERR(err, callback)) return;
 
-                if (data == null) {
-                    // caller doesn't want anything updated, legacy code path for Calculation questions
-                    // FIXME: set submission to be gradable
-                    return callback(null, submission_id);
-                }
-
                 const params = {
                     variant_id: variant.id,
                     params: data.params,
@@ -278,7 +272,6 @@ module.exports = {
 
                                 callback(null, grading_job);
                             });
-
                         } else {
                             callback(null, grading_job);
                         }
