@@ -32,10 +32,10 @@ function makeAssessmentInstance(req, res, callback) {
                 });
             },
             function(callback) {
-                var params = {
-                    assessment_id: res.locals.assessment.id,
-                };
-                sqldb.queryWithClient(client, sql.select_new_questions, params, function(err, result) {
+                var params = [
+                    res.locals.assessment.id,
+                ];
+                sqldb.callWithClient(client, 'select_assessment_questions', params, function(err, result) {
                     if (ERR(err, callback)) return;
                     new_questions = result.rows;
                     callback(null);
@@ -51,21 +51,12 @@ function makeAssessmentInstance(req, res, callback) {
                     sqldb.queryWithClientOneRow(client, sql.make_instance_question, params, function(err, result) {
                         if (ERR(err, callback)) return;
                         // FIXME: returning with error here triggers "Can't set headers" exception
-                        var instanceQuestionId = result.rows[0].id;
-                        questionServers.makeVariant(new_question.question, res.locals.course, {}, function(err, courseErr, variant) {
+                        var instance_question_id = result.rows[0].id;
+
+                        const require_available = false;
+                        questionServers.ensureVariant(client, instance_question_id, res.locals.authn_user.user_id, new_question.question, res.locals.course, {}, require_available, function(err, variant) {
                             if (ERR(err, callback)) return;
-                            var params = {
-                                authn_user_id: res.locals.authn_user.user_id,
-                                instance_question_id: instanceQuestionId,
-                                variant_seed: variant.variant_seed,
-                                question_params: variant.params,
-                                true_answer: variant.true_answer,
-                                options: variant.options,
-                            };
-                            sqldb.queryWithClientOneRow(client, sql.make_variant, params, function(err, _result) {
-                                if (ERR(err, callback)) return;
-                                callback(null);
-                            });
+                            callback(null);
                         });
                     });
                 }, function(err) {

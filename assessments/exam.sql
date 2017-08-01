@@ -1,3 +1,17 @@
+--BLOCK lock_with_variant_id
+SELECT
+    to_jsonb(v.*) AS variant,
+    ai.id AS assessment_instance_id
+FROM
+    variants AS v
+    JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+    JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+WHERE
+    v.id = $variant_id
+    AND iq.id = $instance_question_id -- ensure the variant matches the instance_question
+    AND v.available -- ensure the variant is still available
+FOR UPDATE OF ai;
+
 -- BLOCK lock_with_grading_job_id
 SELECT
     gj.auth_user_id,

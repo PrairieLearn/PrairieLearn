@@ -5,7 +5,7 @@ FROM
     variants AS v
 WHERE
     v.instance_question_id = $instance_question_id
-    AND v.available
+    AND (NOT $require_available OR v.available)
 ORDER BY v.date DESC
 LIMIT 1;
 

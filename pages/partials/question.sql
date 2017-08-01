@@ -1,12 +1,24 @@
--- BLOCK get_variant
+-- BLOCK select_variant_for_instance_question
 SELECT
     v.*
 FROM
     variants AS v
 WHERE
-    v.instance_question_id = $instance_question_id
-ORDER BY v.date DESC
-LIMIT 1;
+    v.id = $variant_id
+    AND v.instance_question_id = $instance_question_id;
+
+-- BLOCK select_errors
+SELECT
+    e.*,
+    format_date_full(e.date, ci.display_timezone) AS formatted_date
+FROM
+    errors AS e
+    JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
+WHERE
+    e.variant_id = $variant_id
+    AND e.course_caused
+ORDER BY
+    e.date;
 
 -- BLOCK select_submissions
 SELECT

@@ -43,7 +43,7 @@ module.exports = {
         }
     },
 
-    writeCourseErrs: function(courseErrs, variant_id, authn_user_id, studentMessage, courseData, callback) {
+    writeCourseErrs: function(client, courseErrs, variant_id, authn_user_id, studentMessage, courseData, callback) {
         async.eachSeries(courseErrs, (courseErr, callback) => {
             const params = [
                 variant_id,
@@ -54,10 +54,17 @@ module.exports = {
                 {stack: courseErr.stack, courseErrData: courseErr.data}, // system_data
                 authn_user_id,
             ];
-            sqldb.call('errors_insert_for_variant', params, (err) => {
-                if (ERR(err, callback)) return;
-                return callback(null);
-            });
+            if (client) {
+                sqldb.callWithClient('errors_insert_for_variant', params, (err) => {
+                    if (ERR(err, callback)) return;
+                    return callback(null);
+                });
+            } else {
+                sqldb.call('errors_insert_for_variant', params, (err) => {
+                    if (ERR(err, callback)) return;
+                    return callback(null);
+                });
+            }
         }, (err) => {
             if (ERR(err, callback)) return;
             callback(null);
@@ -103,7 +110,7 @@ module.exports = {
         });
     },
 
-    makeAndInsertVariant: function(instance_question_id, authn_user_id, question, course, options, callback) {
+    makeAndInsertVariant: function(client, instance_question_id, authn_user_id, question, course, options, callback) {
         module.exports.makeVariant(question, course, options, (err, courseErrs, variant) => {
             if (ERR(err, callback)) return;
             const params = {
@@ -115,13 +122,13 @@ module.exports = {
                 options: variant.options,
                 valid: variant.valid,
             };
-            sqldb.queryOneRow(sql.insert_variant, params, (err, result) => {
+            sqldb.queryWithClientOneRow(client, sql.insert_variant, params, (err, result) => {
                 if (ERR(err, callback)) return;
                 const variant = result.rows[0];
 
                 const studentMessage = 'Error creating question variant';
                 const courseData = {variant, question, course};
-                module.exports.writeCourseErrs(courseErrs, variant.id, authn_user_id, studentMessage, courseData, (err) => {
+                module.exports.writeCourseErrs(client, courseErrs, variant.id, authn_user_id, studentMessage, courseData, (err) => {
                     if (ERR(err, callback)) return;
                     return callback(null, variant);
                 });
@@ -129,18 +136,19 @@ module.exports = {
         });
     },
 
-    ensureVariant: function(instance_question_id, authn_user_id, question, course, options, callback) {
+    ensureVariant: function(client, instance_question_id, authn_user_id, question, course, options, require_available, callback) {
         // if we have an existing variant that is available then use
         // that one, otherwise make a new one
         var params = {
             instance_question_id: instance_question_id,
+            require_available: require_available,
         };
-        sqldb.query(sql.get_available_variant, params, function(err, result) {
+        sqldb.queryWithClient(client, sql.get_available_variant, params, function(err, result) {
             if (ERR(err, callback)) return;
             if (result.rowCount == 1) {
                 return callback(null, result.rows[0]);
             }
-            module.exports.makeAndInsertVariant(instance_question_id, authn_user_id, question, course, options, (err, variant) => {
+            module.exports.makeAndInsertVariant(client, instance_question_id, authn_user_id, question, course, options, (err, variant) => {
                 if (ERR(err, callback)) return;
                 callback(null, variant);
             });
@@ -155,7 +163,7 @@ module.exports = {
                 
                 const studentMessage = 'Error rendering question';
                 const courseData = {variant, question, submission, course};
-                module.exports.writeCourseErrs(courseErrs, variant.id, locals.authn_user.user_id, studentMessage, courseData, (err) => {
+                module.exports.writeCourseErrs(null, courseErrs, variant.id, locals.authn_user.user_id, studentMessage, courseData, (err) => {
                     if (ERR(err, callback)) return;
                     return callback(null, htmls);
                 });
@@ -172,7 +180,7 @@ module.exports = {
 
                 const studentMessage = 'Error parsing submission';
                 const courseData = {variant, question, submission, course};
-                module.exports.writeCourseErrs(courseErrs, variant.id, submission.auth_user_id, studentMessage, courseData, (err) => {
+                module.exports.writeCourseErrs(client, courseErrs, variant.id, submission.auth_user_id, studentMessage, courseData, (err) => {
                     if (ERR(err, callback)) return;
                     return callback(null, data);
                 });
@@ -219,7 +227,7 @@ module.exports = {
         });
     },
 
-    grade: function(submission, variant, question, course, authn_user_id, callback) {
+    grade: function(client, submission, variant, question, course, authn_user_id, callback) {
         this.getModule(question.type, function(err, questionModule) {
             if (ERR(err, callback)) return;
             questionModule.grade(submission, variant, question, course, function(err, courseErrs, data) {
@@ -227,7 +235,7 @@ module.exports = {
 
                 const studentMessage = 'Error grading submission';
                 const courseData = {variant, question, submission, course};
-                module.exports.writeCourseErrs(courseErrs, variant.id, authn_user_id, studentMessage, courseData, (err) => {
+                module.exports.writeCourseErrs(client, courseErrs, variant.id, authn_user_id, studentMessage, courseData, (err) => {
                     if (ERR(err, callback)) return;
                     return callback(null, data);
                 });
@@ -243,7 +251,7 @@ module.exports = {
                 if (ERR(err, callback)) return;
                 var submission = result.rows[0];
 
-                module.exports.grade(submission, variant, question, course, auth_user_id, function(err, question_data) {
+                module.exports.grade(client, submission, variant, question, course, auth_user_id, function(err, question_data) {
                     if (ERR(err, callback)) return;
 
                     let params = {

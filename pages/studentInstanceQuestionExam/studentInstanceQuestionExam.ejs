@@ -7,7 +7,7 @@
     <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
     <script type="text/javascript" src="/localscripts/question.js"></script>
     <script type="text/javascript" src="/javascripts/socket.io.js"></script>
-    <%- extraHeaders %>
+    <%- extraHeadersHtml %>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
@@ -18,65 +18,7 @@
     <div id="content" class="container">
       <div class="row">
         <div class="col-md-9 col-sm-12">
-
-          <div id="question-0" class="question-container">
-            <div hidden="true" class="question-data"><%= questionJsonBase64 %></div>
-
-            <div class="panel panel-primary question-block">
-              <div class="panel-heading">
-                <h3 class="panel-title"><%= instance_question_info.question_number %>. <%= question.title %></h3>
-              </div>
-              <div class="panel-body question-body">
-                <%- questionHtml %>
-              </div>
-              <div class="panel-footer">
-                <% if (showSaveButton) { %>
-                <button class="btn btn-primary question-submit">Save answer</button>
-                <form class="question-form" name="question-form" method="POST">
-                  <input type="hidden" name="postAction" value="submitQuestionAnswer">
-                  <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
-                  <input type="hidden" name="postData" class="postData">
-                </form>
-                <% } %>
-              </div>
-            </div>
-
-            <% if (showTrueAnswer) { %>
-            <div class="panel panel-info grading-block">
-              <div class="panel-heading">
-                <h3 class="panel-title">Correct answer</h3>
-              </div>
-              <div class="panel-body answer-body">
-                <%- answerHtml %>
-              </div>
-            </div>
-            <% } %>
-
-            <% if (showSubmissions) { %>
-            <div class="panel-group">
-              <% submissions.forEach(function(submission, iSubmission) { %>
-              <div class="panel panel-info pastsubmission-block">
-                <div class="panel-heading">
-                  <h3 class="panel-title">
-                    Saved answer
-                    <% if (submissions.length > 1) { %>
-                    <%= submissions.length - iSubmission %>
-                    <% } %>
-                    &nbsp;&nbsp;&nbsp;
-                    <%- include('../partials/submissionStatus', {submission: submission, reloadUrl: urlPrefix + '/instance_question/' + instance_question.id + '/?variant_id=' + variant.id}); %>
-                    &nbsp;
-                    <small>Saved at <%- submission.formatted_date %></small>
-                  </h3>
-                </div>
-                <div class="panel-body submission-body" id="submission-<%= iSubmission %>-body">
-                  <%- submissionHtmls[iSubmission] %>
-                </div>
-              </div>
-              <% }); %>
-            </div>
-            <% } %>
-
-          </div> <!-- question-container -->
+          <%- include('../partials/question'); %>
         </div>
 
         <!-- ################################################################################# -->
