@@ -76,17 +76,6 @@
             </div>
             <% }); %>
 
-            <% if ((devMode || authz_data.has_instructor_view) && variant.console) { %>
-            <div class="panel panel-default">
-              <div class="panel-heading">
-                <h3 class="panel-title">Console output</h3>
-              </div>
-              <div class="panel-body">
-                <pre><%= variant.console %></pre>
-              </div>
-            </div>
-            <% } %>
-            
             <% if (question.type == 'Freeform') { %>
             <form class="question-form" name="question-form" method="POST">
             <% } %>

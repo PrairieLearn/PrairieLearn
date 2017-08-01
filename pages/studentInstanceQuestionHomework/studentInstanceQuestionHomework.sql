@@ -7,14 +7,6 @@ WHERE
     v.id = $variant_id
     AND v.instance_question_id = $instance_question_id;
 
--- BLOCK select_variant_console
-SELECT
-    v.console
-FROM
-    variants AS v
-WHERE
-    v.id = $variant_id;
-
 -- BLOCK select_errors
 SELECT
     e.*,

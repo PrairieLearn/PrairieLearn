@@ -61,7 +61,6 @@ function makeAssessmentInstance(req, res, callback) {
                                 question_params: variant.params,
                                 true_answer: variant.true_answer,
                                 options: variant.options,
-                                console: variant.console,
                             };
                             sqldb.queryWithClientOneRow(client, sql.make_variant, params, function(err, _result) {
                                 if (ERR(err, callback)) return;

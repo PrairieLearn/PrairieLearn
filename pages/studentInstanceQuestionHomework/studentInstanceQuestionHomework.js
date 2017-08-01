@@ -167,24 +167,13 @@ function processGet(req, res, variant_id, callback) {
             });
         },
         function(callback) {
-            // load errors last in case there are error from rendering
+            // load errors last in case there are errors from rendering
             const params = {
                 variant_id: res.locals.variant.id,
             };
             sqldb.query(sql.select_errors, params, (err, result) => {
                 if (ERR(err, callback)) return;
                 res.locals.errors = result.rows;
-                callback(null);
-            });
-        },
-        function(callback) {
-            // reload variant.console in case it changed during render
-            const params = {
-                variant_id: res.locals.variant.id,
-            };
-            sqldb.queryOneRow(sql.select_variant_console, params, (err, result) => {
-                if (ERR(err, callback)) return;
-                res.locals.variant.console = result.rows[0].console;
                 callback(null);
             });
         },

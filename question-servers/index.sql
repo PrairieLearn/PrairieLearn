@@ -28,16 +28,6 @@ INSERT INTO variants AS v (authn_user_id, instance_question_id, number, variant_
 )
 RETURNING v.*;
 
--- BLOCK variant_append_console
-UPDATE variants AS v
-SET
-    console = CASE
-        WHEN v.console IS NULL OR v.console = '' THEN $extra_console
-        ELSE v.console || E'\n' || $extra_console
-    END
-WHERE
-    v.id = $variant_id;
-
 -- BLOCK select_submission
 SELECT
     s.*
