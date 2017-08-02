@@ -10,6 +10,7 @@ RUN yum -y install \
     && su postgres -c "/usr/pgsql-9.6/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log" \
     && yum install -y https://centos7.iuscommunity.org/ius-release.rpm \
     && yum install -y python36u python36u-pip \
+    && ln -s /usr/bin/python3.6 /usr/bin/python3 \
     && python3.6 -m pip install numpy scipy matplotlib pandas sympy lxml
 
 # NOTE: Modify .dockerignore to whitelist files/directories to copy.
