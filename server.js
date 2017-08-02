@@ -137,6 +137,8 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/
     require('./pages/instructorAssessmentInstance/instructorAssessmentInstance'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id', [
+    // FIXME
+    function(req, res, next) {next(new Error('Instructor question pages are temporarily disabled. Please use the student pages instead.'));},
     require('./middlewares/selectAndAuthzInstructorQuestion'),
     require('./pages/instructorQuestion/instructorQuestion'),
 ]);
