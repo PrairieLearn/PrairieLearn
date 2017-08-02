@@ -6,6 +6,9 @@ import prairielearn as pl
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
+    required_attribs = ["answers_name"]
+    optional_attribs = ["weight", "correct_answer", "label", "suffix", "display", "comparison", "rtol", "atol", "digits", "eps_digits"]
+    pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers_name")
 
     correct_answer = pl.get_float_attrib(element, "correct_answer", None)

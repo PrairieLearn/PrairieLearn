@@ -43,6 +43,34 @@ module.exports = {
         }
     },
 
+    writeCourseErrs: function(client, courseErrs, variant_id, authn_user_id, studentMessage, courseData, callback) {
+        async.eachSeries(courseErrs, (courseErr, callback) => {
+            const params = [
+                variant_id,
+                studentMessage,
+                courseErr.toString(), // instructor message
+                true, // course_caused
+                courseData,
+                {stack: courseErr.stack, courseErrData: courseErr.data}, // system_data
+                authn_user_id,
+            ];
+            if (client) {
+                sqldb.callWithClient(client, 'errors_insert_for_variant', params, (err) => {
+                    if (ERR(err, callback)) return;
+                    return callback(null);
+                });
+            } else {
+                sqldb.call('errors_insert_for_variant', params, (err) => {
+                    if (ERR(err, callback)) return;
+                    return callback(null);
+                });
+            }
+        }, (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+
     makeVariant: function(question, course, options, callback) {
         var variant_seed;
         if (_(options).has('variant_seed')) {
@@ -52,27 +80,110 @@ module.exports = {
         }
         this.getModule(question.type, function(err, questionModule) {
             if (ERR(err, callback)) return;
-            questionModule.getData(question, course, variant_seed, function(err, questionData, valid, consoleLog) {
+            questionModule.generate(question, course, variant_seed, function(err, courseErrs, data) {
                 if (ERR(err, callback)) return;
+                const hasFatalError = _.some(_.map(courseErrs, 'fatal'));
                 var variant = {
                     variant_seed: variant_seed,
-                    params: questionData.params || {},
-                    true_answer: questionData.true_answer || {},
-                    options: questionData.options || {},
-                    console: consoleLog || '',
-                    valid: valid,
+                    params: data.params || {},
+                    true_answer: data.true_answer || {},
+                    options: data.options || {},
+                    valid: !hasFatalError,
                 };
+                if (hasFatalError) {
+                    return callback(null, courseErrs, variant);
+                }
+                questionModule.prepare(question, course, variant, function(err, extraCourseErrs, data) {
+                    if (ERR(err, callback)) return;
+                    courseErrs.push(...extraCourseErrs);
+                    const hasFatalError = _.some(_.map(courseErrs, 'fatal'));
+                    var variant = {
+                        variant_seed: variant_seed,
+                        params: data.params || {},
+                        true_answer: data.true_answer || {},
+                        options: data.options || {},
+                        valid: !hasFatalError,
+                    };
+                    callback(null, courseErrs, variant);
+                });
+            });
+        });
+    },
+
+    makeAndInsertVariant: function(client, instance_question_id, authn_user_id, question, course, options, callback) {
+        module.exports.makeVariant(question, course, options, (err, courseErrs, variant) => {
+            if (ERR(err, callback)) return;
+            const params = {
+                authn_user_id: authn_user_id,
+                instance_question_id: instance_question_id,
+                variant_seed: variant.variant_seed,
+                question_params: variant.params,
+                true_answer: variant.true_answer,
+                options: variant.options,
+                valid: variant.valid,
+            };
+            sqldb.queryWithClientOneRow(client, sql.insert_variant, params, (err, result) => {
+                if (ERR(err, callback)) return;
+                const variant = result.rows[0];
+
+                const studentMessage = 'Error creating question variant';
+                const courseData = {variant, question, course};
+                module.exports.writeCourseErrs(client, courseErrs, variant.id, authn_user_id, studentMessage, courseData, (err) => {
+                    if (ERR(err, callback)) return;
+                    return callback(null, variant);
+                });
+            });
+        });
+    },
+
+    ensureVariant: function(client, instance_question_id, authn_user_id, question, course, options, require_available, callback) {
+        // if we have an existing variant that is available then use
+        // that one, otherwise make a new one
+        var params = {
+            instance_question_id: instance_question_id,
+            require_available: require_available,
+        };
+        sqldb.queryWithClient(client, sql.get_available_variant, params, function(err, result) {
+            if (ERR(err, callback)) return;
+            if (result.rowCount == 1) {
+                return callback(null, result.rows[0]);
+            }
+            module.exports.makeAndInsertVariant(client, instance_question_id, authn_user_id, question, course, options, (err, variant) => {
+                if (ERR(err, callback)) return;
                 callback(null, variant);
             });
         });
     },
 
-    parseSubmission: function(submission, variant, question, course, callback) {
+    render: function(renderSelection, variant, question, submission, submissions, course, locals, callback) {
         this.getModule(question.type, function(err, questionModule) {
             if (ERR(err, callback)) return;
-            questionModule.parseSubmission(submission, variant, question, course, function(err, new_submitted_answer, parse_errors) {
+            questionModule.render(renderSelection, variant, question, submission, submissions, course, locals, function(err, courseErrs, htmls) {
                 if (ERR(err, callback)) return;
-                callback(null, new_submitted_answer, parse_errors);
+                
+                const studentMessage = 'Error rendering question';
+                const courseData = {variant, question, submission, course};
+                module.exports.writeCourseErrs(null, courseErrs, variant.id, locals.authn_user.user_id, studentMessage, courseData, (err) => {
+                    if (ERR(err, callback)) return;
+                    return callback(null, htmls);
+                });
+            });
+        });
+    },
+
+    // must be called from within a transaction that has an update lock on the assessment_instance
+    parse: function(client, submission, variant, question, course, callback) {
+        this.getModule(question.type, function(err, questionModule) {
+            if (ERR(err, callback)) return;
+            questionModule.parse(submission, variant, question, course, function(err, courseErrs, data) {
+                if (ERR(err, callback)) return;
+
+                const studentMessage = 'Error parsing submission';
+                const courseData = {variant, question, submission, course};
+                module.exports.writeCourseErrs(client, courseErrs, variant.id, submission.auth_user_id, studentMessage, courseData, (err) => {
+                    if (ERR(err, callback)) return;
+                    return callback(null, data);
+                });
             });
         });
     },
@@ -91,28 +202,43 @@ module.exports = {
         sqldb.callWithClientOneRow(client, 'submissions_insert', params, function(err, result) {
             if (ERR(err, callback)) return;
             const submission_id = result.rows[0].submission_id;
-            module.exports.parseSubmission(submission, variant, question, course, (err, new_submitted_answer, parse_errors) => {
+            module.exports.parse(client, submission, variant, question, course, (err, data) => {
                 if (ERR(err, callback)) return;
-                const params = [
-                    submission_id,
-                    new_submitted_answer,
-                    parse_errors,
-                ];
-                sqldb.callWithClient(client, 'submissions_update_parsing', params, function(err) {
+
+                const params = {
+                    variant_id: variant.id,
+                    params: data.params,
+                    true_answer: data.true_answer,
+                };
+                sqldb.queryWithClient(client, sql.update_variant, params, (err) => {
                     if (ERR(err, callback)) return;
-                    callback(null, submission_id);
+                
+                    const params = [
+                        submission_id,
+                        data.submitted_answer,
+                        data.parse_errors,
+                    ];
+                    sqldb.callWithClient(client, 'submissions_update_parsing', params, function(err) {
+                        if (ERR(err, callback)) return;
+                        callback(null, submission_id);
+                    });
                 });
             });
         });
     },
 
-    gradeSubmission: function(submission, variant, question, course, options, callback) {
+    grade: function(client, submission, variant, question, course, authn_user_id, callback) {
         this.getModule(question.type, function(err, questionModule) {
             if (ERR(err, callback)) return;
-            questionModule.gradeSubmission(submission, variant, question, course, function(err, question_data) {
+            questionModule.grade(submission, variant, question, course, function(err, courseErrs, data) {
                 if (ERR(err, callback)) return;
-                question_data.correct = 
-                callback(null, question_data);
+
+                const studentMessage = 'Error grading submission';
+                const courseData = {variant, question, submission, course};
+                module.exports.writeCourseErrs(client, courseErrs, variant.id, authn_user_id, studentMessage, courseData, (err) => {
+                    if (ERR(err, callback)) return;
+                    return callback(null, data);
+                });
             });
         });
     },
@@ -125,7 +251,7 @@ module.exports = {
                 if (ERR(err, callback)) return;
                 var submission = result.rows[0];
 
-                module.exports.gradeSubmission(submission, variant, question, course, {}, function(err, question_data) {
+                module.exports.grade(client, submission, variant, question, course, auth_user_id, function(err, question_data) {
                     if (ERR(err, callback)) return;
 
                     let params = {
@@ -154,7 +280,6 @@ module.exports = {
 
                                 callback(null, grading_job);
                             });
-
                         } else {
                             callback(null, grading_job);
                         }

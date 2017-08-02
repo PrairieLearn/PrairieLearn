@@ -73,9 +73,9 @@ BEGIN
 
     INSERT INTO submissions
             (variant_id, auth_user_id,  raw_submitted_answer, submitted_answer,
-            type, credit, mode, duration,         params,         true_answer)
+            type, credit, mode, duration,         params,         true_answer, parse_errors)
     VALUES  (variant_id, authn_user_id, submitted_answer,     submitted_answer,
-            type, credit, mode, delta,    variant.params, variant.true_answer)
+            type, credit, mode, delta,    variant.params, variant.true_answer, '{}'::jsonb)
     RETURNING id
     INTO submission_id;
 

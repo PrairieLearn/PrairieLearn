@@ -1,4 +1,4 @@
--- BLOCK select_variant_for_question_instance
+-- BLOCK select_variant_for_instance_question
 SELECT
     v.*
 FROM
@@ -7,37 +7,18 @@ WHERE
     v.id = $variant_id
     AND v.instance_question_id = $instance_question_id;
 
--- BLOCK get_available_variant
+-- BLOCK select_errors
 SELECT
-    v.*
+    e.*,
+    format_date_full(e.date, ci.display_timezone) AS formatted_date
 FROM
-    variants AS v
+    errors AS e
+    JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
 WHERE
-    v.instance_question_id = $instance_question_id
-    AND v.valid
-    AND v.available
-ORDER BY v.date DESC
-LIMIT 1;
-
--- BLOCK make_variant
-INSERT INTO variants AS v (authn_user_id, instance_question_id, number, variant_seed, params, true_answer, options, console, valid)
-(
-    SELECT
-        $authn_user_id,
-        $instance_question_id,
-        coalesce(max(other_v.number) + 1, 1),
-        $variant_seed,
-        $question_params,
-        $true_answer,
-        $options,
-        $console,
-        $valid
-    FROM
-        variants AS other_v
-    WHERE
-        other_v.instance_question_id = $instance_question_id
-)
-RETURNING v.*;
+    e.variant_id = $variant_id
+    AND e.course_caused
+ORDER BY
+    e.date;
 
 -- BLOCK select_submissions
 SELECT
@@ -56,7 +37,7 @@ FROM
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     JOIN assessments AS a ON (a.id = ai.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-    JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
+    LEFT JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
 WHERE
     v.id = $variant_id
 ORDER BY

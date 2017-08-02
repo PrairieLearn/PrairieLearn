@@ -219,11 +219,12 @@ This structure, where dictionaries have variables as keys, is used all dictionar
 
 The element functions are:
 
-Function | Return object | `data` keys present | `options` keys present | Description
+Function | Return object | modifiable `data` keys | unmodifiable `data` keys | Description
 --- | --- | --- | --- | ---
-`prepare()` | `data` (dict) | `params`, `true_answer` | `variant_seed`, `options` | Generate the parameter and true answers for a new random question variant. Set `data["params"][var]` and `data["true_answer"][var]` for any variables as needed. Return the modified `data` dictionary.
-`render()` | `html` (string) | `params`, `true_answer`, `submitted_answer`, `parse_errors`, `partial_scores`, `score`, `feedback` | `variant_seed`, `options`, `raw_submitted_answer`, `editable`, `panel` | Render the HTML for one panel and return it as a string.
-`parse()` | `data` (dict) | `params`, `true_answer`, `submitted_answer`, `parse_errors` | `variant_seed`, `options`, `raw_submitted_answer` | Parse the `data["submitted_answer"][var]` data entered by the student, modifying this variable. Return the modified `data` dictionary.
+`generate()` | `data` (dict) | `params`, `true_answer` | `variant_seed`, `options` | Generate the parameter and true answers for a new random question variant. Set `data["params"][name]` and `data["true_answer"][name]` for any variables as needed. Return the modified `data` dictionary.
+`prepare()` | `data` (dict) | `params`, `true_answer` | `variant_seed`, `options` | Final question preparation after element code has run. Can modify data as necessary. Return the modified `data` dictionary.
+`render()` | `html` (string) | `params`, `true_answer`, `submitted_answer`, `parse_errors`, `partial_scores`, `score`, `feedback` `variant_seed`, `options`, `raw_submitted_answer`, `editable`, `panel` | Render the HTML for one panel and return it as a string.
+`parse()` | `data` (dict) | `submitted_answer`, `parse_errors` | `params`, `true_answer`, `variant_seed`, `options`, `raw_submitted_answer` | Parse the `data["submitted_answer"][var]` data entered by the student, modifying this variable. Return the modified `data` dictionary.
 `grade()` | `data` (dict) | `params`, `true_answer`, `submitted_answer`, `parse_errors`, `partial_scores`, `score`, `feedback` | `variant_seed`, `options`, `raw_submitted_answer` | Grade `data["submitted_answer"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Return the modified `data` dictionary.
 
 The above function descriptions describe the typical variables that will be read and modified by each function. However, any function that returns `data` (i.e., not `parse()`) is allowed to modify any of the values in `data` and these changes will be persisted to the database. No function is allowed to add new keys to `data`.

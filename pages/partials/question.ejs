@@ -1,0 +1,136 @@
+<div id="question-0" class="question-container">
+  <div hidden="true" class="question-data"><%= questionJsonBase64 %></div>
+
+  <% errors.forEach(function(error, iError) { %>
+  <div class="panel panel-danger">
+    <div class="panel-heading">
+      <h3 class="panel-title">Error</h3>
+    </div>
+
+    <table class="table table-condensed table-hover two-column-description">
+      <tbody>
+        <% if (devMode || authz_data.has_instructor_view) { %>
+        <tr><th>Student message:</th><td><%= error.student_message %></td></tr>
+        <tr><th>Instructor message:</th><td><%= error.instructor_message %></td></tr>
+        <% } else { %>
+        <tr><th>Message:</th><td><%= error.student_message %></td></tr>
+        <% } %>
+        <tr><th>ID:</th><td><%= error.display_id %></td></tr>
+        <tr><th>Date:</th><td><%= error.formatted_date %></td></tr>
+      </tbody>
+    </table>
+
+    <% if (devMode || authz_data.has_instructor_view || is_administrator) { %>
+    <div class="panel-body">
+      <% if (is_administrator && error.system_data.courseErrData ) { %>
+      <p><strong>Console log:</strong>
+        <pre>
+          <%= error.system_data.courseErrData.outputBoth %>
+        </pre>
+        <% } %>
+      <p><strong>Associated data:</strong>
+        <a class="btn btn-xs btn-default" role="button" data-toggle="collapse" href="#error-course-data-<%= iError %>" aria-expanded="false" aria-controls="#error-course-data-<%= iError %>">
+          Show/hide
+        </a>
+      </p>
+      <div class="collapse" id="error-course-data-<%= iError %>">
+        <pre>
+          <%= JSON.stringify(error.course_data, null, '    ') %>
+        </pre>
+      </div>
+      <% if (is_administrator) { %>
+      <p><strong>System data:</strong>
+        <a class="btn btn-xs btn-default" role="button" data-toggle="collapse" href="#error-system-data-<%= iError %>" aria-expanded="false" aria-controls="#error-system-data-<%= iError %>">
+          Show/hide
+        </a>
+      </p>
+      <div class="collapse" id="error-system-data-<%= iError %>">
+        <pre>
+          <%= JSON.stringify(error.system_data, null, '    ') %>
+        </pre>
+      </div>
+      <% } %>
+    </div>
+    <% } %>
+  </div>
+  <% }); %>
+
+  <% if (question.type == 'Freeform') { %>
+  <form class="question-form" name="question-form" method="POST">
+    <% } %>
+    <div class="panel panel-primary question-block">
+      <div class="panel-heading">
+        <h3 class="panel-title"><%= instance_question_info.question_number %>. <%= question.title %></h3>
+      </div>
+      <div class="panel-body question-body">
+        <%- questionHtml %>
+      </div>
+      <div class="panel-footer">
+        <% if (showSubmitButton || showSaveButton) { %>
+        <% if (question.type == 'Freeform') { %>
+        <% if (showSubmitButton) { %>
+        <button class="btn btn-primary freeform-question-submit">Submit</button>
+        <% } %>
+        <% if (showSaveButton) { %>
+        <button class="btn btn-primary freeform-question-submit">Save answer</button>
+        <% } %>
+        <input type="hidden" name="variant_id" value="<%= variant.id %>">
+        <% } else { %>
+        <% if (showSubmitButton) { %>
+        <button class="btn btn-primary question-submit">Submit</button>
+        <% } %>
+        <% if (showSaveButton) { %>
+        <button class="btn btn-primary question-submit">Save</button>
+        <% } %>
+        <form class="question-form" name="question-form" method="POST">
+          <% } %>
+          <input type="hidden" name="postAction" value="submitQuestionAnswer">
+          <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+          <% if (question.type != 'Freeform') { %>
+          <input type="hidden" name="postData" class="postData">
+        </form>
+        <% } %>
+        <% } %>
+        <% if (showNewVariantButton) { %>
+        <a href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/" class="btn btn-primary">Try question again</a>
+        <% } %>
+      </div>
+    </div>
+    <% if (question.type == 'Freeform') { %>
+  </form>
+  <% } %>
+
+  <% if (showTrueAnswer) { %>
+  <div class="panel panel-info grading-block">
+    <div class="panel-heading">
+      <h3 class="panel-title">Correct answer</h3>
+    </div>
+    <div class="panel-body answer-body">
+      <%- answerHtml %>
+    </div>
+  </div>
+  <% } %>
+
+  <% if (showSubmissions) { %>
+  <div class="panel-group">
+    <% submissions.forEach(function(submission, iSubmission) { %>
+    <div class="panel panel-info pastsubmission-block">
+      <div class="panel-heading">
+        <h3 class="panel-title">
+          Submitted answer
+          <% if (submissions.length > 1) { %>
+          <%= submissions.length - iSubmission %>
+          <% } %>
+        </h3>
+        <%- include('../partials/submissionStatus', {submission: submission, reloadUrl: urlPrefix + '/instance_question/' + instance_question.id + '/?variant_id=' + variant.id}); %>
+        <small>Submitted at <%- submission.formatted_date %></small>
+      </div>
+      <div class="panel-body submission-body" id="submission-<%= iSubmission %>-body">
+        <%- submissionHtmls[iSubmission] %>
+      </div>
+    </div>
+    <% }); %>
+  </div>
+  <% } %>
+
+</div>

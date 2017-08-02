@@ -1,6 +1,6 @@
 import random, math
 
-def get_data(data):
+def generate(data):
     m = random.choice([3, 1.4, 1.6, 1.8])
     h = random.choice([4, 12, 14, 16])
     d = 1.5*h

@@ -3,13 +3,17 @@ import prairielearn as pl
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, "name")
+    required_attribs = ["answers_name"]
+    optional_attribs = ["weight", "number_answers", "min_correct", "max_correct", "fixed_order", "inline"];
+    pl.check_attribs(element, required_attribs, optional_attribs)
+    name = pl.get_string_attrib(element, "answers_name")
 
     correct_answers = [];
     incorrect_answers = [];
     index = 0
     for child in element:
-        if child.tag == "answer":
+        if child.tag == "pl_answer":
+            pl.check_attribs(child, required_attribs=[], optional_attribs=["correct"]);
             correct = pl.get_boolean_attrib(child, "correct", False)
             child_html = pl.inner_html(child)
             answer_tuple = (index, correct, child_html)
@@ -69,7 +73,7 @@ def prepare(element_html, element_index, data):
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, "name")
+    name = pl.get_string_attrib(element, "answers_name")
 
     display_answers = data["params"].get(name, [])
 
@@ -147,7 +151,7 @@ def parse(element_html, element_index, data):
 
 def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, "name")
+    name = pl.get_string_attrib(element, "answers_name")
     weight = pl.get_integer_attrib(element, "weight", 1)
 
     submitted_keys = data["submitted_answers"].get(name, [])

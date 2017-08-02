@@ -9,7 +9,7 @@ router.get('/variant_seed/:variant_seed/*', function(req, res, next) {
     var filename = req.params[0];
     questionServers.getModule(res.locals.question.type, function(err, questionModule) {
         if (ERR(err, next)) return;
-        questionServers.makeVariant(res.locals.question, res.locals.course, {variant_seed}, function(err, variant) {
+        questionServers.makeVariant(res.locals.question, res.locals.course, {variant_seed}, function(err, courseErr, variant) {
             if (ERR(err, next)) return;
             questionModule.getFile(filename, variant, res.locals.question, res.locals.course, function(err, fileData) {
                 if (ERR(err, next)) return;

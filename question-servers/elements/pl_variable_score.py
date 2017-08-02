@@ -2,11 +2,13 @@ import lxml.html, math
 import prairielearn as pl
 
 def prepare(element_html, element_index, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    pl.check_attribs(element, required_attribs=["answers_name"], optional_attribs=[])
     return data
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, "name")
+    name = pl.get_string_attrib(element, "answers_name")
 
     if data["panel"] == "answer":
         return ''
