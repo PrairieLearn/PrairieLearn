@@ -9,7 +9,7 @@ Follow the instructions for the OS you're running on. These instructions are mea
 ## Windows
 
 1. Install [Docker Community Edition for Windows](https://store.docker.com/editions/community/docker-ce-desktop-windows), which requires Windows 10 Pro/Edu. You should install this if at all possible because it is much better than the older "Docker Toolbox".
-    * UIUC students and staff can download Windows 10 from [the WebStore](https://webstore.illinois.edu/).
+    - UIUC students and staff can download Windows 10 from [the WebStore](https://webstore.illinois.edu/).
 1. Do some things
 1. Profit!
 
@@ -20,15 +20,15 @@ Follow the instructions for the OS you're running on. These instructions are mea
 1. In Finder, navigate to the downloaded archive and double-click it to extract the `prairielearn.sh` file.
 1. Control-click the `prairielearn.sh` file and select `Open in -> Text Edit`.
 1. Determine the absolute path to your course directory.
-  * If you use GitHub Desktop to manage your course, your course will be in a directory like
+  - If you use GitHub Desktop to manage your course, your course will be in a directory like
   ```
   /Users/mwest/Document/GitHub/pl-tam212
   ```
   Be sure to substitute your username for `mwest` and your course respository name for `pl-tam212`.
-  * If you typically use git from the command line, you can navigate to your course directory in a terminal and run `pwd` to find that path.
+  - If you typically use git from the command line, you can navigate to your course directory in a terminal and run `pwd` to find that path.
 1. Edit the `COURSE_DIR` variable near the top of the file to contain that path. For example:
 ```
-COURSE_DIR="Users/nathanw/git/pl-cs225"
+COURSE_DIR="Users/mwest/git/pl-tam212"
 ```
 1. Double-click on the downloaded file to start the PrairieLearn server. A terminal window will open; wait until you see `"Go to http://localhost:3000"`.
 1. Leave the terminal window open and visit `http://localhost:3000` in your browser.
