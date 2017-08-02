@@ -1,6 +1,6 @@
 import numpy as np
 
-def get_data(data):
+def generate(data):
 
     # Dimensions
     nInnerMin = 2

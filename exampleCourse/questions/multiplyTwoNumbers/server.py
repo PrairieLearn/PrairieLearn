@@ -1,6 +1,6 @@
 import numpy as np
 
-def get_data(data):
+def generate(data):
     # Maximum number of digits after the decimal
     nDigits = 1
 

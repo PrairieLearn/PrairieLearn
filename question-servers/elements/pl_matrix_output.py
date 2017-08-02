@@ -4,7 +4,7 @@ import prairielearn as pl
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, required_attribs=["params_name"], optional_attribs=[])
+    pl.check_attribs(element, required_attribs=[], optional_attribs=[])
     return data
 
 def render(element_html, element_index, data):
@@ -12,6 +12,7 @@ def render(element_html, element_index, data):
     html = "<pre>\n"
     for child in element:
         if child.tag == "variable":
+            pl.check_attribs(child, required_attribs=["params_name"], optional_attribs=[])
             var_name = pl.get_string_attrib(child, "params_name")
             var_data = data["params"].get(var_name,None)
             if var_data is None:

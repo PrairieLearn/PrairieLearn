@@ -47,7 +47,7 @@ module.exports = {
                     var params = {
                         uuid: q.uuid,
                         qid: qid,
-                        type: q.type,
+                        type: (q.type == 'v3') ? 'Freeform' : q.type,
                         title: q.title,
                         template_directory: q.template,
                         options: q.options,

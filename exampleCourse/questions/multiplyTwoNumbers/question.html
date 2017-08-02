@@ -1,7 +1,7 @@
 <p>
 The product of ${{params.a}}$ and ${{params.b}}$ is
-<pl_number_input answers_name="c" points="1" comparison="sigfig" digits="3" display="inline" />
-. <pl_variable_score name="c" />
+<pl_number_input answers_name="c" comparison="sigfig" digits="3" display="inline" />
+. <pl_variable_score answers_name="c" />
 </p>
 
 <hr>
@@ -11,6 +11,6 @@ The product of ${{params.a}}$ and ${{params.b}}$ is
 Find the sum of $a={{params.a}}$ and $b={{params.b}}$:
 </p>
 </pl_question_panel>
-<pl_number_input answers_name="d" points="1" comparison="relabs" rtol="1e-3" atol="1e-5" display="block" label="$a+b=$" suffix="units"/>
+<pl_number_input answers_name="d" comparison="relabs" rtol="1e-3" atol="1e-5" display="block" label="$a+b=$" suffix="units"/>
 
-<pl_variable_score name="d" />
+<pl_variable_score answers_name="d" />
