@@ -19,7 +19,7 @@ module.exports.save = function(submission, instance_question_id, question, cours
         logger.debug('exam.save(): finished beginTransaction()',
                      {instance_question_id: instance_question_id});
 
-        var variant, assessment_instance_id, submission_id, external_grading_job_ids = [];
+        var variant, assessment_instance_id, submission_id;
         async.series([
             function(callback) {
                 var params = {

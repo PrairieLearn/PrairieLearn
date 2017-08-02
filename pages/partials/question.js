@@ -1,12 +1,7 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var async = require('async');
-var express = require('express');
-var router = express.Router();
 
-var error = require('../../lib/error');
 var questionServers = require('../../question-servers');
-var assessmentsHomework = require('../../assessments/homework');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 

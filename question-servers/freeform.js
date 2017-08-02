@@ -47,7 +47,7 @@ module.exports = {
         }
     },
 
-    defaultServerRet: function(phase, data, html, options) {
+    defaultServerRet: function(phase, data, html, _options) {
         if (phase == 'render') {
             return html;
         } else {
@@ -80,11 +80,6 @@ module.exports = {
                 callback(null, ret, consoleLog);
             });
         });
-    },
-
-    makeHandlebars: function() {
-        var hb = handlebars.create();
-        return hb;
     },
 
     execTemplate: function(htmlFilename, data, callback) {
@@ -142,7 +137,7 @@ module.exports = {
             if (fixedPhases.includes(phase)) {
                 if (!_.has(origData, prop)) return '"' + prop + '" is missing from "origData"';
                 if (!_.isEqual(data[prop], origData[prop])) {
-                    return 'data.' + prop + ' has been modified, which is not permitted at this time'
+                    return 'data.' + prop + ' has been modified, which is not permitted at this time';
                 }
             }
             checked.push(prop);
@@ -170,7 +165,7 @@ module.exports = {
     },
 
     processQuestionHtml: function(phase, pc, data, options, callback) {
-        const courseErrs = []
+        const courseErrs = [];
         const origData = JSON.parse(JSON.stringify(data));
 
         const checkErr = module.exports.checkData(data, origData, phase);
@@ -260,7 +255,7 @@ module.exports = {
     },
 
     processQuestionServer: function(phase, pc, data, html, options, callback) {
-        const courseErrs = []
+        const courseErrs = [];
         const origData = JSON.parse(JSON.stringify(data));
 
         const checkErr = module.exports.checkData(data, origData, phase);
@@ -410,7 +405,7 @@ module.exports = {
                 if (!renderSelection.question) return callback(null);
                 module.exports.renderPanel('question', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html) => {
                     if (ERR(err, callback)) return;
-              	    courseErrs.push(...ret_courseErrs);
+                    courseErrs.push(...ret_courseErrs);
                     htmls.questionHtml = html;
                     callback(null);
                 });
@@ -420,7 +415,7 @@ module.exports = {
                 async.mapSeries(submissions, (submission, callback) => {
                     module.exports.renderPanel('submission', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html) => {
                         if (ERR(err, callback)) return;
-              	        courseErrs.push(...ret_courseErrs);
+                        courseErrs.push(...ret_courseErrs);
                         callback(null, html);
                     });
                 }, (err, submissionHtmls) => {
@@ -433,7 +428,7 @@ module.exports = {
                 if (!renderSelection.answer) return callback(null);
                 module.exports.renderPanel('answer', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html) => {
                     if (ERR(err, callback)) return;
-              	    courseErrs.push(...ret_courseErrs);
+                    courseErrs.push(...ret_courseErrs);
                     htmls.answerHtml = html;
                     callback(null);
                 });
