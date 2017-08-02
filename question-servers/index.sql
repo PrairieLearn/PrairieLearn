@@ -9,25 +9,6 @@ WHERE
 ORDER BY v.date DESC
 LIMIT 1;
 
--- BLOCK insert_variant
-INSERT INTO variants AS v (authn_user_id, instance_question_id, number, variant_seed, params, true_answer, options, valid)
-(
-    SELECT
-        $authn_user_id,
-        $instance_question_id,
-        coalesce(max(other_v.number) + 1, 1),
-        $variant_seed,
-        $question_params,
-        $true_answer,
-        $options,
-        $valid
-    FROM
-        variants AS other_v
-    WHERE
-        other_v.instance_question_id = $instance_question_id
-)
-RETURNING v.*;
-
 -- BLOCK select_submission
 SELECT
     s.*
@@ -78,9 +59,7 @@ cancel_submission_results AS (
         grading_requested_at = NULL
     FROM
         submissions AS this_s
-        JOIN variants AS this_v ON (this_v.id = this_s.variant_id)
-        JOIN instance_questions AS iq ON (iq.id = this_v.instance_question_id)
-        JOIN variants AS v ON (v.instance_question_id = iq.id)
+        JOIN variants AS v ON (v.id = this_s.variant_id)
     WHERE
         this_s.id = $submission_id
         AND s.variant_id = v.id
@@ -93,9 +72,7 @@ SET
     grading_request_canceled_by = $auth_user_id
 FROM
     submissions AS this_s
-    JOIN variants AS this_v ON (this_v.id = this_s.variant_id)
-    JOIN instance_questions AS iq ON (iq.id = this_v.instance_question_id)
-    JOIN variants AS v ON (v.instance_question_id = iq.id)
+    JOIN variants AS v ON (v.id = this_s.variant_id)
     JOIN submissions AS s ON (s.variant_id = v.id)
 WHERE
     this_s.id = $submission_id
@@ -163,7 +140,5 @@ FROM
     grading_job_results AS gj
     JOIN submission_results AS s ON (s.id = gj.submission_id)
     JOIN variants AS v ON (v.id = s.variant_id)
-    JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
-    JOIN questions AS q ON (q.id = aq.question_id)
+    JOIN questions AS q ON (q.id = v.question_id)
     JOIN pl_courses AS c ON (c.id = q.course_id);

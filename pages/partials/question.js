@@ -50,7 +50,8 @@ module.exports.getVariant = function(req, res, variant_id, assessmentType, callb
                     if (ERR(err, callback)) return;
 
                     const require_available = (assessmentType != 'Exam');
-                    questionServers.ensureVariant(client, res.locals.instance_question.id, res.locals.authn_user.user_id, res.locals.question, res.locals.course, {}, require_available, function(err, variant) {
+                    const instance_question_id = res.locals.instance_question ? res.locals.instance_question.id : null;
+                    questionServers.ensureVariant(client, instance_question_id, res.locals.user.user_id, res.locals.authn_user.user_id, res.locals.question, res.locals.course, {}, require_available, function(err, variant) {
                         if (ERR(err, callback)) return;
                         res.locals.variant = variant;
 

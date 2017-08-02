@@ -110,19 +110,22 @@ module.exports = {
         });
     },
 
-    makeAndInsertVariant: function(client, instance_question_id, authn_user_id, question, course, options, callback) {
+    makeAndInsertVariant: function(client, instance_question_id, user_id, authn_user_id, question, course, options, callback) {
         module.exports.makeVariant(question, course, options, (err, courseErrs, variant) => {
             if (ERR(err, callback)) return;
-            const params = {
-                authn_user_id: authn_user_id,
-                instance_question_id: instance_question_id,
-                variant_seed: variant.variant_seed,
-                question_params: variant.params,
-                true_answer: variant.true_answer,
-                options: variant.options,
-                valid: variant.valid,
-            };
-            sqldb.queryWithClientOneRow(client, sql.insert_variant, params, (err, result) => {
+
+            const params = [
+                variant.variant_seed,
+                variant.params,
+                variant.true_answer,
+                variant.options,
+                variant.valid,
+                instance_question_id,
+                question.id,
+                user_id,
+                authn_user_id,
+            ];
+            sqldb.callWithClientOneRow(client, 'variants_insert', params, (err, result) => {
                 if (ERR(err, callback)) return;
                 const variant = result.rows[0];
 
@@ -136,23 +139,32 @@ module.exports = {
         });
     },
 
-    ensureVariant: function(client, instance_question_id, authn_user_id, question, course, options, require_available, callback) {
-        // if we have an existing variant that is available then use
-        // that one, otherwise make a new one
-        var params = {
-            instance_question_id: instance_question_id,
-            require_available: require_available,
-        };
-        sqldb.queryWithClient(client, sql.get_available_variant, params, function(err, result) {
-            if (ERR(err, callback)) return;
-            if (result.rowCount == 1) {
-                return callback(null, result.rows[0]);
-            }
-            module.exports.makeAndInsertVariant(client, instance_question_id, authn_user_id, question, course, options, (err, variant) => {
+    ensureVariant: function(client, instance_question_id, user_id, authn_user_id, question, course, options, require_available, callback) {
+        if (instance_question_id != null) {
+            // if we have an existing variant that is available then use
+            // that one, otherwise make a new one
+            var params = {
+                instance_question_id: instance_question_id,
+                require_available: require_available,
+            };
+            sqldb.queryWithClient(client, sql.get_available_variant, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                if (result.rowCount == 1) {
+                    const variant = result.rows[0];
+                    return callback(null, variant);
+                }
+                module.exports.makeAndInsertVariant(client, instance_question_id, user_id, authn_user_id, question, course, options, (err, variant) => {
+                    if (ERR(err, callback)) return;
+                    callback(null, variant);
+                });
+            });
+        } else {
+            // if we don't have instance_question_id, just make a new variant
+            module.exports.makeAndInsertVariant(client, instance_question_id, user_id, authn_user_id, question, course, options, (err, variant) => {
                 if (ERR(err, callback)) return;
                 callback(null, variant);
             });
-        });
+        }
     },
 
     render: function(renderSelection, variant, question, submission, submissions, course, locals, callback) {
