@@ -36,16 +36,6 @@ module.exports = {
         });
     },
 
-    updateAssessmentInstanceScore: function(assessment_type, assessment_instance_id, auth_user_id, credit, callback) {
-        this.getModule(assessment_type, function(err, assessmentModule) {
-            if (ERR(err, callback)) return;
-            assessmentModule.updateAssessmentInstanceScore(assessment_instance_id, auth_user_id, credit, function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        });
-    },
-
     gradeAssessmentInstance: function(assessment_type, assessment_instance_id, auth_user_id, credit, finish, callback) {
         this.getModule(assessment_type, function(err, assessmentModule) {
             if (ERR(err, callback)) return;
@@ -116,6 +106,7 @@ module.exports.processGradingResult = function(content) {
         },
     ], function(err) {
         if (ERR(err, function() {})) {
+            // FIXME: call sprocs/errors_insert here
             logger.error('processGradingResult: error',
                          {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
         }
