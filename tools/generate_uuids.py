@@ -1,24 +1,45 @@
 #!/usr/bin/env python
 
-import sys, os, json, re, uuid
+import sys, os, json, re, uuid, argparse
 
-if len(sys.argv) < 2:
-    print("Usage: generate_uuids <coursedir>")
-    sys.exit(0)
+parser = argparse.ArgumentParser(description="Generate UUIDs for info*.json files that don't already have them.")
+parser.add_argument("directory", help="the directory to search for info*.json files")
+parser.add_argument("-n", "--new", action="store_true", help="generate new UUIDs for all files, even if they already have one")
+args = parser.parse_args()
 
-start_re = re.compile(r"^(\s*{ *\n)(.*)$", re.DOTALL)
-    
+skip_dirs = [".git"]
+
+error_list = []
+
 def add_uuid_to_file(filename):
     try:
         with open(filename, 'rU') as in_f:
             contents = in_f.read()
         data = json.loads(contents)
         if "uuid" in data:
-            return 0
-        match = start_re.match(contents)
-        if match is None:
-            raise Exception("file does not begin with a single line containing a \"{\" character")
-        new_contents = match.group(1) + ("    \"uuid\": \"%s\",\n" % uuid.uuid4()) + match.group(2)
+            # file already has a UUID
+            if not args.new:
+                return 0 # we don't want new UUIDs, so just skip this file
+
+            # replace the exising UUID
+            (new_contents, n_sub) = re.subn(r'"uuid":(\s*)"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"',
+                                            r'"uuid":\1"%s"' % uuid.uuid4(),
+                                            contents)
+            if n_sub == 0:
+                raise Exception("%s: file already contains a UUID, but the regexp failed to find it" % filename)
+            if n_sub > 1:
+                raise Exception("%s: regexp found multiple UUIDs and we can't determine which one to replace" % filename)
+
+        else:
+            # file doesn't have a UUID, so insert one at the start of the file
+            (new_contents, n_sub) = re.subn(r'^(\s*{)(\s*)',
+                                            r'\1\2"uuid": "%s",\2' % uuid.uuid4(),
+                                            contents)
+            if n_sub == 0:
+                raise Exception("%s: file doesn't start with a { character, so we can't insert a UUID property" % filename)
+            if n_sub > 1:
+                raise Exception("%s: impossible internal error occurred" % filename)
+
         tmp_filename = filename + ".tmp_with_uuid"
         if os.path.exists(tmp_filename):
             os.remove(tmp_filename) # needed on Windows
@@ -28,49 +49,29 @@ def add_uuid_to_file(filename):
         os.rename(tmp_filename, filename)
         return 1
     except Exception as error:
-        print("WARNING: skipping %s: %s" % (filename, error))
+        error_list.append(error)
         return 0
-    
-def ensure_is_dir(path):
-    if not os.path.isdir(path):
-        print("ERROR: Not a directory: %s" % path)
-        sys.exit(1)
 
-num_added = 0
-        
-course_dir = sys.argv[1]
-print("Processing course directory: %s" % course_dir)
-ensure_is_dir(course_dir)
-num_added += add_uuid_to_file(os.path.join(course_dir, "infoCourse.json"))
+num_files = 0
+num_changed = 0
 
-questions_dir = os.path.join(course_dir, "questions")
-print("Processing questions directory: %s" % questions_dir)
-ensure_is_dir(questions_dir)
-question_dir_names = os.listdir(questions_dir)
-for question_dir_name in question_dir_names:
-    question_path = os.path.join(questions_dir, question_dir_name)
-    if os.path.isdir(question_path):
-        info_file_name = os.path.join(question_path, "info.json")
-        num_added += add_uuid_to_file(info_file_name)
+for root, dirs, files in os.walk(args.directory):
+    for skip_dir in skip_dirs:
+        if skip_dir in dirs:
+            dirs.remove(skip_dir)
+    for f in files:
+        if re.fullmatch(r'.*\.json', f):
+            filename = os.path.join(root, f)
+            num_files += 1
+            num_changed += add_uuid_to_file(filename)
 
-course_instances_dir = os.path.join(course_dir, "courseInstances")
-print("Processing courseInstances directory: %s" % course_instances_dir)
-ensure_is_dir(course_instances_dir)
-course_instance_dir_names = os.listdir(course_instances_dir)
-for course_instance_dir_name in course_instance_dir_names:
-    course_instance_path = os.path.join(course_instances_dir, course_instance_dir_name)
-    if os.path.isdir(course_instance_path):
-        info_file_name = os.path.join(course_instance_path, "infoCourseInstance.json")
-        num_added += add_uuid_to_file(info_file_name)
-        assessments_dir = os.path.join(course_instance_path, "assessments")
-        print("Processing assessments directory: %s" % assessments_dir)
-        if os.path.isdir(assessments_dir):
-            assessment_dir_names = os.listdir(assessments_dir)
-            for assessment_dir_name in assessment_dir_names:
-                assessment_path = os.path.join(assessments_dir, assessment_dir_name)
-                if os.path.isdir(assessment_path):
-                    info_file_name = os.path.join(assessment_path, "infoAssessment.json")
-                    num_added += add_uuid_to_file(info_file_name)
+print("Processed %d files" % num_files)
+print("Generated UUID in %d files" % num_changed)
 
-print("Sucessfully completed")
-print("Added UUID to %d files" % num_added)
+if error_list:
+    print()
+    print("Errors occurred during processing")
+    for error in error_list:
+        print("%s" % error)
+else:
+    print("Processing successsfully complete with no errors")

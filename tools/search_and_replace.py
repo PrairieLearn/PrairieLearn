@@ -1,40 +1,49 @@
 #!/usr/bin/env python
 
-# This is an example python program to show how to iterate
-# over a questions directory and perform search-and-replace on the
-# info.json files for each question.
+# This is an example python program to show how to iterate over a
+# questions directory and perform search-and-replace on the files for
+# each question.
 
-import os
+import os, re
 
-course_path = '/Users/mwest/git/pl-tam251'
+course_path = '/Users/mwest/git/pl-phys100'
 questions_path = os.path.join(course_path, 'questions')
+
+def read_file(path, filename):
+    input_path = os.path.join(path, filename)
+    print("reading %s" % input_path)
+    try:
+        with open(input_path, 'r') as input_file:
+            contents = input_file.read()
+    except FileNotFoundError:
+        return None
+    return contents
+
+def write_file(path, filename, contents):
+    input_path = os.path.join(path, filename)
+    output_path = input_path + '.new'
+    print("writing %s" % output_path)
+    if (os.path.exists(output_file)):
+        os.remove(tmp_filename) # needed on Windows
+    with open(output_path, 'w') as output_file:
+        output_file.write(contents)
+    print("renaming %s -> %s" % (output_path, input_path))
+    os.remove(input_path) # needed on Windows
+    os.rename(output_path, input_path)
 
 question_dirs = os.listdir(questions_path)
 for question_dir in question_dirs:
     print("##################################################")
     question_path = os.path.join(questions_path, question_dir)
-    print("question_path: %s" % question_path)
 
-    input_filename = "info.json"
-    input_path = os.path.join(question_path, input_filename)
-    print("reading %s" % input_path)
-    input_file = open(input_path, 'r')
-    contents = input_file.read()
-    input_file.close()
-    
-    print("performing replacements on file contents")
-    contents = contents.replace('"non-test"', '"nontest"')
-    contents = contents.replace('"2015Fall"', '"Fa15"')
+    input_filename = "question.html"
+    contents = read_file(question_path, input_filename)
 
-    output_filename = input_filename + ".new"
-    output_path = os.path.join(question_path, output_filename)
-    print("writing %s" % output_path)
-    output_file = open(output_path, 'w')
-    output_file.write(contents)
-    output_file.close()
+    # these are direct string replacements
+    contents.replace('<multipleChoice>', '<pl_multiple_choice>');
+    contents.replace('</multipleChoice>', '</pl_multiple_choice>');
 
-    print("deleting %s" % input_path)
-    os.remove(input_path)
+    # these are regular expression replacements
+    contents = re.sub(r'<(/?)checkbox>', '<\1pl_checkbox>', contents);
 
-    print("renaming %s to %s" % (output_path, input_path))
-    os.rename(output_path, input_path)
+    write_file(question_path, input_filename, contents)
