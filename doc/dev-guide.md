@@ -354,13 +354,19 @@ sqldb.beginTransaction(function(err, client, done) {
 * Use explicit row locking on `assessment_instances` within a transaction for any score-modifying updates to any part of an assessment. For example, to grade a question, wrap everything in a transaction as described above and have the first query in the transaction be something like:
 
 ```sql
-SELECT
-    ai.id
-FROM
-    assessment_instances AS ai
-WHERE
-    ai.id = $assessment_instance_id
-FOR UPDATE OF assessment_instances;
+SELECT ai.id
+FROM assessment_instances AS ai
+WHERE ai.id = $assessment_instance_id
+FOR UPDATE OF ai;
+```
+
+* For `variants` that don't have an `assessment_instance`, use explicit row locking on the variant within a transaction for any score-modifying updates. For example:
+
+```sql
+SELECT v.id
+FROM variants AS v
+WHERE v.id = variant_id
+FOR UPDATE OF v;
 ```
 
 * To pass an array of parameters to SQL code, use the following pattern, which allows zero or more elements in the array. This replaces `$points_list` with `ARRAY[10, 5, 1]` in the SQL. It's required to specify the type of array in case it is empty:

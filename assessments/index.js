@@ -91,15 +91,14 @@ module.exports.processGradingResult = function(content) {
             if (_(content.grading).has('feedback') && !_(content.grading.feedback).isObject()) {
                 return callback(error.makeWithData('invalid grading.feedback', {content: content}));
             }
-            var grading_job_id = content.gradingId;
-            var grading = {
-                score: content.grading.score,
-                correct: (content.grading.score >= 0.5),
-                feedback: content.grading.feedback || null,
-                startTime: content.grading.startTime || null,
-                endTime: content.grading.endTime || null
-            };
-            module.exports.updateExternalGrading(assessment_type, grading_job_id, grading, function(err) {
+            const params = [
+                content.gradingId;
+                content.grading.score,
+                content.grading.feedback,
+                content.grading.startTime,
+                content.grading.endTime,
+            ];
+            sqldb.call('grading_jobs_process_external', params, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
