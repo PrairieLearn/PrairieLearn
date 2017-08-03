@@ -19,7 +19,6 @@ columns
     sid: text
     submitted_answer: jsonb
     true_answer: jsonb
-    type: enum_submission_type
     variant_id: bigint not null
 
 indexes

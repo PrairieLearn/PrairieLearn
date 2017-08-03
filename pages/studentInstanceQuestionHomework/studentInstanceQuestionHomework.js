@@ -32,6 +32,8 @@ function processSubmission(req, res, callback) {
         credit: res.locals.authz_result.credit,
         mode: res.locals.authz_data.mode,
     };
+    // FIXME: check that variant_id matches res.locals.instance_question.id
+    FIXME FIXME FIXME
     assessmentsHomework.submitAndGrade(submission, res.locals.instance_question.id, res.locals.question, res.locals.course, function(err) {
         if (ERR(err, callback)) return;
         callback(null, submission.variant_id);

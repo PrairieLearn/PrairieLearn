@@ -14,6 +14,9 @@ DECLARE
     instance_question_id bigint;
     assessment_instance_id bigint;
 BEGIN
+    -- ######################################################################
+    -- get the variant and related objects
+
     -- we must have a variant, but we might not have an assessment_instance
     SELECT gj.*,        s.credit,       v.id,                iq.id,                  ai.id
     INTO   grading_job,   credit, variant_id, instance_question_id, assessment_instance_id
@@ -27,6 +30,9 @@ BEGIN
 
     IF NOT FOUND THEN RAISE EXCEPTION 'could not find variant for grading_job_id = %', grading_job_id; END IF
 
+    -- ######################################################################
+    -- check that everything is ok
+
     -- bail out if we don't need this grading result
     IF gj.grading_request_canceled_at IS NOT NULL THEN RETURN;
 
@@ -36,6 +42,9 @@ BEGIN
     -- make a separate grading_job for re-grades.
     IF gj.graded_at IS NOT NULL THEN RETURN;
 
+    -- ######################################################################
+    -- locking
+
     -- lock the assessment_instance if we have one, otherwise lock the variant
     IF assessment_instance_id IS NOT NULL THEN
         PERFORM ai.id FROM assessment_instances AS ai
@@ -44,6 +53,9 @@ BEGIN
         PERFORM v.id FROM variants AS v
         WHERE v.id = variant_id FOR UPDATE OF v;
     END IF;
+
+    -- ######################################################################
+    -- store the grading information
 
     UPDATE grading_jobs
     SET
@@ -64,6 +76,9 @@ BEGIN
         correct = grading_job.correct,
         feedback = grading_job.feedback
     WHERE id = grading_job.submission_id;
+
+    -- ######################################################################
+    -- update all parent objects
 
     variants_update_after_grading(variant_id);
     IF assessment_instance_id IS NOT NULL THEN

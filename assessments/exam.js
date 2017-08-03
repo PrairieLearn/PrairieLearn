@@ -10,60 +10,6 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = {};
 
-module.exports.save = function(submission, instance_question_id, question, course, callback) {
-    logger.debug('exam.save()',
-                 {submission: submission, instance_question_id: instance_question_id,
-                  question: question, course: course});
-    sqldb.beginTransaction(function(err, client, done) {
-        if (ERR(err, callback)) return;
-        logger.debug('exam.save(): finished beginTransaction()',
-                     {instance_question_id: instance_question_id});
-
-        var variant, assessment_instance_id, submission_id;
-        async.series([
-            function(callback) {
-                var params = {
-                    variant_id: submission.variant_id,
-                    instance_question_id: instance_question_id,
-                };
-                logger.debug('exam.save(): calling lock_with_variant_id',
-                             {instance_question_id: instance_question_id, params: params});
-                sqldb.queryWithClientOneRow(client, sql.lock_with_variant_id, params, function(err, result) {
-                    if (ERR(err, callback)) return;
-                    variant = result.rows[0].variant;
-                    assessment_instance_id = result.rows[0].assessment_instance_id;
-                    logger.debug('exam.save(): finished lock_with_variant_id',
-                                 {instance_question_id: instance_question_id, variant: variant,
-                                  assessment_instance_id: assessment_instance_id});
-                    callback(null);
-                });
-            },
-            function(callback) {
-                logger.debug('exam.save(): calling saveSubmission()',
-                             {instance_question_id: instance_question_id,
-                              submission: submission, variant: variant,
-                              question: question, course: course});
-                questionServers.saveSubmission(client, submission, variant, question, course, function(err, ret_submission_id) {
-                    if (ERR(err, callback)) return;
-                    submission_id = ret_submission_id;
-                    logger.debug('exam.save(): finished saveSubmission()',
-                                 {instance_question_id, submission_id});
-                    callback(null);
-                });
-            },
-        ], function(err) {
-            logger.debug('exam.save(): calling endTransaction()',
-                         {instance_question_id: instance_question_id, err: err});
-            sqldb.endTransaction(client, done, err, function(err) {
-                if (ERR(err, callback)) return;
-                logger.debug('exam.save(): finished endTransaction()',
-                             {instance_question_id: instance_question_id});
-                callback(null);
-            });
-        });
-    });
-};
-
 module.exports.gradeAssessmentInstance = function(assessment_instance_id, auth_user_id, credit, finish, callback) {
     logger.debug('exam.gradeAssessmentInstance()',
                  {assessment_instance_id: assessment_instance_id, auth_user_id: auth_user_id,

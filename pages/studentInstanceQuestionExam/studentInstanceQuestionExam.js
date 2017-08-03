@@ -6,6 +6,7 @@ var router = express.Router();
 var error = require('../../lib/error');
 var assessmentsExam = require('../../assessments/exam');
 var partialsQuestion = require('../partials/question');
+var sqldb = require('../../lib/sqldb');
 
 function processSubmission(req, res, callback) {
     if (!res.locals.assessment_instance.open) return callback(error.make(400, 'assessment_instance is closed'));
@@ -34,9 +35,13 @@ function processSubmission(req, res, callback) {
         credit: res.locals.authz_result.credit,
         mode: res.locals.authz_data.mode,
     };
-    assessmentsExam.save(submission, res.locals.instance_question.id, res.locals.question, res.locals.course, function(err) {
+    sqldb.callOneRow('variants_ensure_instance_question', [variant_id, res.locals.instance_question.id], (err, result) {
         if (ERR(err, callback)) return;
-        callback(null);
+        const variant = result.rows[0];
+        questionServers.saveSubmision(submission, variant, res.locals.question, res.locals.course, (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
     });
 }
 

@@ -183,8 +183,7 @@ module.exports = {
         });
     },
 
-    // must be called from within a transaction that has an update lock on the assessment_instance
-    parse: function(client, submission, variant, question, course, callback) {
+    saveSubmission: function(submission, variant, question, course, callback) {
         this.getModule(question.type, function(err, questionModule) {
             if (ERR(err, callback)) return;
             questionModule.parse(submission, variant, question, course, function(err, courseErrs, data) {
@@ -192,46 +191,26 @@ module.exports = {
 
                 const studentMessage = 'Error parsing submission';
                 const courseData = {variant, question, submission, course};
-                module.exports.writeCourseErrs(client, courseErrs, variant.id, submission.auth_user_id, studentMessage, courseData, (err) => {
-                    if (ERR(err, callback)) return;
-                    return callback(null, data);
-                });
-            });
-        });
-    },
-
-    // must be called from within a transaction that has an update lock on the assessment_instance
-    saveSubmission: function(client, submission, variant, question, course, callback) {
-        const params = [
-            variant.instance_question_id,
-            submission.auth_user_id,
-            submission.submitted_answer,
-            submission.type,
-            submission.credit,
-            submission.mode,
-            submission.variant_id,
-        ];
-        sqldb.callWithClientOneRow(client, 'submissions_insert', params, function(err, result) {
-            if (ERR(err, callback)) return;
-            const submission_id = result.rows[0].submission_id;
-            module.exports.parse(client, submission, variant, question, course, (err, data) => {
-                if (ERR(err, callback)) return;
-
-                const params = {
-                    variant_id: variant.id,
-                    params: data.params,
-                    true_answer: data.true_answer,
-                };
-                sqldb.queryWithClient(client, sql.update_variant, params, (err) => {
+                module.exports.writeCourseErrs(null, courseErrs, variant.id, submission.auth_user_id, studentMessage, courseData, (err) => {
                     if (ERR(err, callback)) return;
                 
+                    const hasFatalError = _.some(_.map(courseErrs, 'fatal'));
+                    if (hasFatalError) data.gradable = false;
+
                     const params = [
-                        submission_id,
                         data.submitted_answer,
+                        data.raw_submitted_answer,
                         data.parse_errors,
+                        data.gradable,
+                        submission.type,
+                        submission.credit,
+                        submission.mode,
+                        submission.variant_id,
+                        submission.auth_user_id,
                     ];
-                    sqldb.callWithClient(client, 'submissions_update_parsing', params, function(err) {
+                    sqldb.callOneRow('submissions_insert', params, function(err, result) {
                         if (ERR(err, callback)) return;
+                        const submission_id = result.rows[0].submission_id;
                         callback(null, submission_id);
                     });
                 });
