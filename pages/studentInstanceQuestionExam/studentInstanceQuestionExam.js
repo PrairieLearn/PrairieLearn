@@ -5,6 +5,7 @@ var router = express.Router();
 
 var error = require('../../lib/error');
 var assessmentsExam = require('../../assessments/exam');
+var question = require('../../lib/question');
 var partialsQuestion = require('../partials/question');
 var sqldb = require('../../lib/sqldb');
 
@@ -35,10 +36,10 @@ function processSubmission(req, res, callback) {
         credit: res.locals.authz_result.credit,
         mode: res.locals.authz_data.mode,
     };
-    sqldb.callOneRow('variants_ensure_instance_question', [variant_id, res.locals.instance_question.id], (err, result) {
+    sqldb.callOneRow('variants_ensure_instance_question', [variant_id, res.locals.instance_question.id], (err, result) => {
         if (ERR(err, callback)) return;
         const variant = result.rows[0];
-        questionServers.saveSubmision(submission, variant, res.locals.question, res.locals.course, (err) => {
+        question.saveSubmision(submission, variant, res.locals.question, res.locals.course, (err) => {
             if (ERR(err, callback)) return;
             callback(null);
         });

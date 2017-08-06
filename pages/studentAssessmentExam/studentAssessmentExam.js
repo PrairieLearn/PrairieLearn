@@ -4,7 +4,7 @@ var express = require('express');
 var router = express.Router();
 
 var error = require('../../lib/error');
-var questionServers = require('../../question-servers');
+var question = require('../../lib/question');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
@@ -53,8 +53,8 @@ function makeAssessmentInstance(req, res, callback) {
                         // FIXME: returning with error here triggers "Can't set headers" exception
                         var instance_question_id = result.rows[0].id;
 
-                        const require_available = false;
-                        questionServers.ensureVariant(client, instance_question_id, res.locals.user.user_id, res.locals.authn_user.user_id, new_question.question, res.locals.course, {}, require_available, function(err, _variant) {
+                        const require_open = false;
+                        question.ensureVariant(client, instance_question_id, res.locals.user.user_id, res.locals.authn_user.user_id, new_question.question, res.locals.course, {}, require_open, function(err, _variant) {
                             if (ERR(err, callback)) return;
                             callback(null);
                         });

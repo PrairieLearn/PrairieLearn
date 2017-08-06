@@ -47,6 +47,7 @@
         "colors": "1.1.x",
         "coveralls": "2.13.x",
         "eslint": "3.19.x",
+        "jsdoc": "3.5.x",
         "mocha": "3.2.x",
         "nyc": "10.3.x",
         "request": "2.79.x",

@@ -2,7 +2,7 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 
-var questionServers = require('../../question-servers');
+var question = require('../../lib/question');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
@@ -18,13 +18,11 @@ router.get('/variant/:variant_id/*', function(req, res, next) {
     sqldb.queryOneRow(sql.select_variant, params, function(err, result) {
         if (ERR(err, next)) return;
         var variant = result.rows[0];
-        questionServers.getModule(res.locals.question.type, function(err, questionModule) {
+
+        question.getFile(filename, variant, res.locals.question, res.locals.course, function(err, fileData) {
             if (ERR(err, next)) return;
-            questionModule.getFile(filename, variant, res.locals.question, res.locals.course, function(err, fileData) {
-                if (ERR(err, next)) return;
-                res.attachment(filename);
-                res.send(fileData);
-            });
+            res.attachment(filename);
+            res.send(fileData);
         });
     });
 });

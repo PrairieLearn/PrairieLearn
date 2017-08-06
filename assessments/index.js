@@ -6,11 +6,7 @@ var ejs = require('ejs');
 var error = require('../lib/error');
 var logger = require('../lib/logger');
 var sqldb = require('../lib/sqldb');
-var sqlLoader = require('../lib/sql-loader');
 var externalGradingSocket = require('../lib/external-grading-socket');
-
-
-var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var assessmentModules = {
     'Homework': require('./homework'),
@@ -64,20 +60,7 @@ module.exports = {
 };
 
 module.exports.processGradingResult = function(content) {
-    var assessment_type;
     async.series([
-        function(callback) {
-            if (!_(content.gradingId).isInteger()) return callback(new Error('invalid gradingId'));
-            var params = {
-                grading_job_id: content.gradingId,
-            };
-            sqldb.queryOneRow(sql.select_assessment_info, params, function(err, result) {
-                if (ERR(err, callback)) return;
-
-                assessment_type = result.rows[0].assessment_type;
-                callback(null);
-            });
-        },
         function(callback) {
             if (!_(content.grading).isObject()) {
                 return callback(error.makeWithData('invalid grading', {content: content}));
@@ -92,7 +75,7 @@ module.exports.processGradingResult = function(content) {
                 return callback(error.makeWithData('invalid grading.feedback', {content: content}));
             }
             const params = [
-                content.gradingId;
+                content.gradingId,
                 content.grading.score,
                 content.grading.feedback,
                 content.grading.startTime,

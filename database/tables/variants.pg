@@ -1,19 +1,19 @@
 columns
     authn_user_id: bigint
-    available: boolean default true
+    broken: boolean default false
     date: timestamp with time zone default now()
     duration: interval default '00:00:00'::interval
     first_duration: interval
     id: bigint not null default nextval('variants_id_seq'::regclass)
     instance_question_id: bigint
     number: integer
+    open: boolean default true
     options: jsonb
     params: jsonb
     qiid: text
     question_id: bigint not null
     true_answer: jsonb
     user_id: bigint not null
-    valid: boolean default true
     variant_seed: text
 
 indexes

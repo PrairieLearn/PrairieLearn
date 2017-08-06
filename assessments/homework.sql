@@ -27,7 +27,7 @@ FROM
 WHERE
     v.id = $variant_id
     AND iq.id = $instance_question_id -- ensure the variant matches the instance_question
-    AND v.available -- ensure the variant is still available
+    AND v.open -- ensure the variant is still open
 FOR UPDATE OF ai;
 
 -- BLOCK update_grading_job_and_submission
@@ -61,7 +61,7 @@ WHERE
 -- BLOCK update_variant
 UPDATE variants AS v
 SET
-    available = CASE WHEN q.single_variant THEN true ELSE false END
+    open = CASE WHEN q.single_variant THEN true ELSE false END
 FROM
     instance_questions AS iq
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)

@@ -25,6 +25,7 @@ module.exports = {
             'check_course_instance_access.sql',
             'check_assessment_access_rule.sql',
             'check_assessment_access.sql',
+            'assessment_instances_lock.sql',
             'assessment_instances_insert.sql',
             'assessment_instances_duration.sql',
             'assessments_duration_stats.sql',
@@ -78,6 +79,7 @@ module.exports = {
             'grading_jobs_stats_day.sql',
             'errors_generate_display_id.sql',
             'errors_insert_for_variant.sql',
+            'variants_lock.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

@@ -3,6 +3,7 @@
 
 In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL (PostgreSQL) as the languages of implementation and try to minimize the number of complex libraries or frameworks being used. The website is server-side generated pages with minimal client-side JavaScript.
 
+
 ## High level view
 
 ![High level system structure](high-level.png)
@@ -13,6 +14,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 
 * All student data is all stored in the DB and is not pushed back into the git repository or disk at any point.
 
+
 ## Directory layout
 
 * Broadly follow the [Express generator](http://expressjs.com/en/starter/generator.html) layout.
@@ -20,7 +22,7 @@ In general we prefer simplicity. We standardize on JavaScript (Node.js) and SQL 
 * Top-level files and directories are:
 
 ```text
-PrairieLearn/v2
+PrairieLearn
 +-- autograder         # files needed to autograde code on a seperate server
 |   `-- ...            # various scripts and docker images
 +-- config.json        # server configuration file (optional)
@@ -53,6 +55,21 @@ PrairieLearn/v2
 +-- sync               # code to load on-disk course config into DB
 `-- tests              # unit tests, currently unused
 ```
+
+
+## Unit tests and integration tests
+
+* Tests are stored in the `tests/` directory. They are run with:
+
+```sh
+# make sure you are in the top-level PrairieLearn/ directory
+npm test
+npm run lint -s
+```
+
+* The above tests are run by the CI server on every push to GitHub.
+
+* The tests are mainly integration tests that start with a blank database, run the server to initialize the database, load the `exampleCourse`, and then emulate a client web broswer that answers questions on assessments. If a test fails then the it is often easiest to debug but recreating the error by doing questions yourself against a locally-running server.
 
 
 ## Page generation
@@ -112,21 +129,27 @@ module.exports = router;
 <%- include('../partials/assessment', {assessment: assessment}); %>
 ```
 
+
 ## Page style
 
 * Use [Bootstrap](http://getbootstrap.com) as the style. As of 2016-09-27 we are using v3.
 
-* Local CSS rules go in `public/stylesheets/local.css`. Try to minimize use of this and use plain Bootstrap styling.
+* Local CSS rules go in `public/stylesheets/local.css`. Try to minimize use of this and use plain Bootstrap styling wherever possible.
+
 
 ## SQL usage
 
-* Use [PostgreSQL](https://www.postgresql.org) and feel free to use the latest features. As of 2016-09-26 we run version 9.5.
+* Use [PostgreSQL](https://www.postgresql.org) and feel free to use the latest features. As of 2017-08-05 we run version 9.6.
 
 * The [PostgreSQL manual](https://www.postgresql.org/docs/manuals/) is an excellent reference.
 
 * Write raw SQL rather than using a [ORM library](https://en.wikipedia.org/wiki/Object-relational_mapping). This reduces the number of frameworks/languages needed.
 
 * Try and write as much code in SQL and [PL/pgSQL](https://www.postgresql.org/docs/9.5/static/plpgsql.html) as possible, rather than in JavaScript. Use PostgreSQL-specific SQL and don't worry about SQL dialect portability. Functions should be written as stored procedures in the `sprocs/` directory.
+
+* The `sprocs/` directory has files that each contain exactly one stored procedure. The filename is the same as the name of the stored procedure, so the `variants_insert()` stored procedure is in the `sprocs/variants_insert.sql` file.
+
+* Stored procedure names should generally start with the name of the table they are associated with and try to use standard SQL command names to describe what they do. For example, `variants_insert()` will do some kind of `INSERT INTO variants`, while `submission_update_parsing()` will do an `UPDATE submissions` with some parsing data.
 
 * Use the SQL convention of [`snake_case`](https://en.wikipedia.org/wiki/Snake_case) for names. Also use the same convention in JavaScript for names that are the same as in SQL, so the `question_id` variable in SQL is also called `question_id` in JavaScript code.
 
@@ -190,6 +213,7 @@ FROM
     second_preliminary_table AS spt;
 ```
 
+
 ## DB schema (simplified overview)
 
 * The most important tables in the database are shown in the diagram below (also as a [PDF image](simplified-models.pdf)).
@@ -220,11 +244,13 @@ FROM
 
 * For each variant of a question that a student sees they will have submitted zero or more `submissions` with a `variant_id` to show what it belongs to. The submissions row also contains information the submitted answer and whether it was correct.
 
+
 ## DB schema (full data)
 
 * See the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/), with the ER (entity relationship) diagram below ([PDF ER diagram](models.pdf)).
 
 ![DB Schema](models.png)
+
 
 ## DB schema conventions
 
@@ -244,6 +270,7 @@ WHERE
 
 * We (almost) never delete student data from the DB. To avoid having rows with broken or missing foreign keys, course configuration tables (e.g. `assessments`) can't be actually deleted. Instead they are "soft-deleted" by setting the `deleted_at` column to non-NULL. This means that when using any soft-deletable table we need to have a `WHERE deleted_at IS NULL` to get only the active rows.
 
+
 ## DB schema modification
 
 * The database is built with a series of consecutive "migrations". A migration is a modification to table schema and is represented as a file in `migrations/`.
@@ -254,25 +281,7 @@ WHERE
 
 * The database has a special `migrations` table that tracks which migrations have already been applied. This ensures that migrations are always applied exactly once.
 
-* The current state of the DB schema is stored in a human-readable form in the `database/` directory. This is checked automatically by the unit tests and needs to be manually updated after migrations and the updates should be committed to git along with the migrations. To update `database/`, do something like this:
-
-```sh
-dropdb postgres
-createdb postgres
-nodejs server # allow PL to start to create the DB, then kill it
-tools/pg_describe -o database postgres
-```
-
-If you don't have postgres installed locally, you can run PrairieLearn from docker and then connect to the container and run `pg_describe` from there:
-
-```sh
-# get container name
-docker ps
-
-docker exec -it [container_name] /bin/bash
-cd /PrairieLearn
-tools/pg_describe -o database postgres
-```
+* The current state of the DB schema is stored in a human-readable form in the `database/` directory. This is checked automatically by the unit tests and needs to be manually updated after migrations and the updates should be committed to git along with the migrations.
 
 * _Historical node_: Migration statements started with PrairieLearn version 2.0.0. Starting with 2.0.0, the schema was maintained with separate `models` and `migrations` directories, which had to be kept in sync. In version 2.0.10, that was switched to solely `migrations`, and the state of `models` as of 2.0.0 was captured in `migrations/000_initial_state.sql`. All future migrations are applied on top of that.
 
@@ -351,23 +360,7 @@ sqldb.beginTransaction(function(err, client, done) {
 });
 ```
 
-* Use explicit row locking on `assessment_instances` within a transaction for any score-modifying updates to any part of an assessment. For example, to grade a question, wrap everything in a transaction as described above and have the first query in the transaction be something like:
-
-```sql
-SELECT ai.id
-FROM assessment_instances AS ai
-WHERE ai.id = $assessment_instance_id
-FOR UPDATE OF ai;
-```
-
-* For `variants` that don't have an `assessment_instance`, use explicit row locking on the variant within a transaction for any score-modifying updates. For example:
-
-```sql
-SELECT v.id
-FROM variants AS v
-WHERE v.id = variant_id
-FOR UPDATE OF v;
-```
+* Use explicit row locking whenever modifying student data related to an asseesment. This must be done within a transaction. The `sprocs/variants_lock` and `sprocs/assessment_instances_lock` functions do the actual locking. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one).
 
 * To pass an array of parameters to SQL code, use the following pattern, which allows zero or more elements in the array. This replaces `$points_list` with `ARRAY[10, 5, 1]` in the SQL. It's required to specify the type of array in case it is empty:
 
@@ -397,6 +390,7 @@ sqldb.query(sql.select_questions, params, ...);
 SELECT * FROM questions WHERE id IN (SELECT unnest($id_list::INTEGER[]));
 ```
 
+
 ## Error handling and control flow in JavaScript
 
 * Use tradtional [Node.js error handling conventions](https://docs.nodejitsu.com/articles/errors/what-are-the-error-conventions/) with the `callback(err, result)` pattern.
@@ -424,7 +418,7 @@ function foo(p, callback) {
 }
 ```
 
-* Don't pass `callback` functions directly through to children, but instead capture the error with [async-stacktrace library](https://github.com/Pita/async-stacktrace) and pass it up the stack explicitly. This allows a complete stack trace to be printed on error. That is:
+* Don't pass `callback` functions directly through to children, but instead capture the error with the [async-stacktrace library](https://github.com/Pita/async-stacktrace) and pass it up the stack explicitly. This allows a complete stack trace to be printed on error. That is:
 
 ```javascript
 // Don't do this:
@@ -470,7 +464,7 @@ function foo(p, callback) {
 
 * Don't use promises.
 
-* We will switch to [async/await](https://github.com/tc39/ecmascript-asyncawait) when it becomes available in Node.js. The async/await proposal made it to [stage 4](https://github.com/tc39/proposals/blob/master/finished-proposals.md) in July 2016 and was thus included in the [latest draft Ecmascript spec](https://tc39.github.io/ecma262/). This will appear as ES2017/ES7. V8 [merged support](https://bugs.chromium.org/p/v8/issues/detail?id=4483) for async/await. Node.js is [tracking its implementation](https://github.com/nodejs/promises/issues/4) but as of 2016-09-26 it looks like there is still work needed.
+* We will switch to [async/await](https://github.com/tc39/ecmascript-asyncawait) once it is stable and widely supported in Node.js and the libraries we use. As of 2017-08-04 the internal Node.js support for async/await is still under development.
 
 
 ## Security model
@@ -536,6 +530,7 @@ router.post('/', function(req, res, next) {
 
 * The `res.locals.csrfToken` variable is set and checked by early-stage middleware, so no explicit action is needed on each page.
 
+
 ## Coding style
 
 * [ESLint](http://eslint.org/) is used to enforce a consistent coding style throughout the codebase. We use the [default rule set](http://eslint.org/docs/rules/) , with the following additional rules enforced:
@@ -549,3 +544,43 @@ app.use(/^\/?$/, function(req, res, _next) {res.redirect('/pl');});
 ```
 
 * To lint the code, use `npm run lint -s`. This is also run by the CI tests.
+
+
+## Question error handling
+
+* There are three types of errors that can occur during the creation, answering, and grading of a question:
+
+Error type | Caused | Stored | Reported | Effect
+--- | --- | --- | --- | ---
+System errors | Internal PrairieLearn errors | On-disk logs | Error page | Operation is blocked. Data is not saved to the database.
+Question errors | Errors in question code | `errors` table | Error panels on the question page | `variant.broken` or `submission.broeken` set to `true`. Operation completes, but future operations are blocked.
+Student errors | Invalid data submitted by the student (unparsable or ungradable) | `submission.scorable` set to `false` and details are stored in `submission.errors`.
+
+* Assuming that there are no system or question code errors, there are two different things that can be wrong with a student's submitted answer:
+
+    1. The answer might be not be scorable (`submission.scorable = false`). This could be due to a missing answer, an invalid format (e.g., entering a string in a numeric input), or a answer that doesn't pass some basic check (e.g., a code submission that didn't compile). This can be discovered during either the parsing or grading phases. In such a case the `submission.errors` object should store information on what was wrong to allow the student to correct their answer. A submission with `scorable = false` will not cause any updating of points for the question. That is, it acts like a saved-but-not-graded submission, in that it is recorded but has no impact on the question. If `scorable = false` then the `score` and `feedback` will not be displayed to the student.
+
+    2. The answer might be scorable but incorrect. In this case `scorable = true` but `score = 0` (or less than 1 for a partial score). If desired, the `feedback` object can be set to give information to the student on what was wrong with their answer. This is not necessary, however. If `feedback` is set then it will be shown to the student along with their `score` as soon as the question is graded.
+
+* The important variables involved in tracking question errors are:
+
+Variable | Description
+--- | ---
+`variant.broken` | Set to `true` if there were question code errors in generating the variant. Such a variant will be not have `render()` functions called, but will instead be displayed as `This question is broken`.
+`variant.available` | Whether submissions can be made to this variant.
+`submission.broken` | Set to `true` if there question code errors in parsing or grading the variant. After `submission.broken` is `true`, no further actions will be taken with the submission.
+`submisison.scorable` | Whether this submission can be given a score. Set to `false` if format errors in the `submitted_answer` were encountered during either parsing or grading.
+`submission.errors` | Details on any errors during parsing or grading. Should be set to something meaningful if `scorable = false` to explain what was wrong with the submitted answer.
+`submission.graded_at` | NULL if grading has not yet occurred.
+`submission.score` | Final score for the submission. Only used if `scorable = true` and `graded_at` is not NULL.
+`submission.feedback` | Feedback generated during grading. Only shown to the student if `scorable = true`.
+
+* Note that `submission.errors` stores information about student errors, while the `errors` table stores information about question code errors.
+
+* The full question flow is illustrated by the figure below.
+
+![Question flow](question-flow.png)
+
+* The question flow is shown in the diagram below (also as a [PDF image](question-flow.pdf)).
+
+![Question flow](question-flow.png)

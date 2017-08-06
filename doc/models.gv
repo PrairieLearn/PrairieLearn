@@ -1,4 +1,4 @@
-digraph partmc_modules {
+digraph prairielearn_tables {
 
     rankdir = BT;
     node [fontsize = 10, height = 0.3, width = 0.5];

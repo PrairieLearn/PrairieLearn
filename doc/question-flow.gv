@@ -1,0 +1,53 @@
+digraph question_flow {
+
+    direction=TB;
+
+    node [fontsize = 10, height = 0.3, width = 0.5];
+    edge [fontsize = 10, arrowsize = 0.7];
+
+    no_variant [label="No variant"];
+    generating [label="generate() code"];
+    preparing [label="prepare() code"];
+    broken_variant [label="Broken variant:\l\lvariant.broken = true\lvariant.open = true"];
+    display_broken [label="update errors table\ldisplay error code to student"];
+    open_variant [label="Open variant:\l\lvariant.broken = false\lvariant.open = true"];
+    closed_variant [label="Closed variant:\l\lvariant.broken = false\lvariant.open = false"];
+    rendering_editable [label="render() code\l\leditable = true"];
+    rendering_uneditable [label="render() code\l\leditable = false"];
+    display_editable [label="question displayed to student\lwith save/submit buttons"];
+    display_uneditable [label="question displayed to student\lwithout save/submit buttons"];
+    submission_received [label="submission received"];
+    parsing [label="parse() code"];
+    broken_submission [label="Broken submission:\l\lsubmission.broken = true"];
+    unscorable_submission [label="Unscorable submission:\l\lsubmission.broken = false\lsubmission.scorable = false"];
+    scorable_submission [label="Scorable submission:\l\lsubmission.broken = false\lsubmission.scorable = true"];
+    grading [label="grade() code"];
+    graded_submission [label="Graded submission:\l\lsubmission.broken = false\lsubmission.scorable = true\lsubmission.graded_at != NULL\lsubmision.score != NULL\lsubmission.feedback != NULL"];
+    question_update [label="question points update"];
+
+    no_variant -> generating;
+    generating -> broken_variant [label="question\lcode error"];
+    generating -> preparing;
+    preparing -> broken_variant [label="question\lcode error"];
+    broken_variant -> display_broken;
+    preparing -> open_variant;
+    open_variant -> rendering_editable;
+    rendering_editable -> display_editable;
+    rendering_editable -> display_broken [label="question\lcode error"];
+    display_editable -> submission_received [label="student submits\lan answer"];
+    submission_received -> parsing;
+    parsing -> broken_submission [label="question\lcode error"];
+    broken_submission -> display_broken;
+    parsing -> unscorable_submission [label="invalid format for\lsubmitted_answer"];
+    unscorable_submission -> open_variant;
+    parsing -> scorable_submission;
+    scorable_submission -> grading;
+    grading -> unscorable_submission [label="invalid format for\lsubmitted_answer"];
+    grading -> graded_submission;
+    graded_submission -> question_update;
+    question_update -> open_variant [label="more submissions are\lallowed for this variant"];
+    question_update -> closed_variant [label="submissions are no longer\lallowed for this variant"];
+    closed_variant -> rendering_uneditable;
+    rendering_uneditable -> display_broken [label="question\lcode error"];
+    rendering_uneditable -> display_uneditable;
+}
