@@ -1,8 +1,8 @@
 CREATE OR REPLACE FUNCTION
     submissions_update_parsing(
-        IN submission_id bigint,
-        IN submitted_answer jsonb,
-        IN parse_errors jsonb
+        submission_id bigint,
+        submitted_answer jsonb,
+        parse_errors jsonb
     ) RETURNS VOID
 AS $$
 BEGIN
