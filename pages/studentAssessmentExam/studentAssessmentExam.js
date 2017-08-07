@@ -4,81 +4,11 @@ var express = require('express');
 var router = express.Router();
 
 var error = require('../../lib/error');
-var question = require('../../lib/question');
+var assessment = require('../../lib/assessment');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
-
-function makeAssessmentInstance(req, res, callback) {
-    sqldb.beginTransaction(function(err, client, done) {
-        if (ERR(err, callback)) return;
-
-        var assessment_instance_id, new_questions;
-        async.series([
-            function(callback) {
-                var params = [
-                    res.locals.assessment.id,
-                    res.locals.user.user_id,
-                    res.locals.authn_user.user_id,
-                    res.locals.authz_data.mode,
-                    res.locals.authz_result.time_limit_min,
-                    res.locals.authz_data.date,
-                ];
-                sqldb.callWithClientOneRow(client, 'assessment_instances_insert', params, function(err, result) {
-                    if (ERR(err, callback)) return;
-                    assessment_instance_id = result.rows[0].assessment_instance_id;
-                    callback(null);
-                });
-            },
-            function(callback) {
-                var params = [
-                    res.locals.assessment.id,
-                ];
-                sqldb.callWithClient(client, 'select_assessment_questions', params, function(err, result) {
-                    if (ERR(err, callback)) return;
-                    new_questions = result.rows;
-                    callback(null);
-                });
-            },
-            function(callback) {
-                async.each(new_questions, function(new_question, callback) {
-                    var params = {
-                        authn_user_id: res.locals.authn_user.user_id,
-                        assessment_question_id: new_question.assessment_question_id,
-                        assessment_instance_id: assessment_instance_id,
-                    };
-                    sqldb.queryWithClientOneRow(client, sql.make_instance_question, params, function(err, result) {
-                        if (ERR(err, callback)) return;
-                        // FIXME: returning with error here triggers "Can't set headers" exception
-                        var instance_question_id = result.rows[0].id;
-
-                        const require_open = false;
-                        question.ensureVariant(client, instance_question_id, res.locals.user.user_id, res.locals.authn_user.user_id, new_question.question, res.locals.course, {}, require_open, function(err, _variant) {
-                            if (ERR(err, callback)) return;
-                            callback(null);
-                        });
-                    });
-                }, function(err) {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            },
-            function(callback) {
-                var params = {assessment_instance_id: assessment_instance_id};
-                sqldb.queryWithClient(client, sql.set_max_points, params, function(err, _result) {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            },
-        ], function(err) {
-            sqldb.endTransaction(client, done, err, function(err) {
-                if (ERR(err, callback)) return;
-                callback(null, assessment_instance_id);
-            });
-        });
-    });
-}
 
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
@@ -110,7 +40,7 @@ router.post('/', function(req, res, next) {
                 return next(new Error('Incorrect password'));
             }
         }
-        makeAssessmentInstance(req, res, function(err, assessment_instance_id) {
+        assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.authn_user.user_id, res.locals.authz_data.mode, res.locals.authz_result.time_limit_min, res.locals.authz_data.date, res.locals.course, (err, assessment_instance_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
         });

@@ -9,6 +9,7 @@ CREATE OR REPLACE FUNCTION
     )
 AS $$
 DECLARE
+    assessment_type enum_assessment_type;
     old_points DOUBLE PRECISION;
     old_score DOUBLE PRECISION;
     new_points DOUBLE PRECISION;
@@ -17,8 +18,19 @@ DECLARE
     user_id bigint;
     assessment_instance_updated boolean;
 BEGIN
-    -- first update the assessment instance
-    updated := assessment_instances_update(assessment_instance_id, authn_user_id);
+    -- get the assessment type
+    SELECT a.type
+    INTO assessment_type
+    FROM
+        assessment_instances AS ai
+        JOIN assessments AS a ON (a.id = ai.assessment_id)
+    WHERE ai.id = assessment_instance_id;
+
+    -- first update Homeworks
+    updated := FALSE;
+    IF assessment_type = 'Homework' THEN
+        updated := assessment_instances_update(assessment_instance_id, authn_user_id);
+    END IF;
 
     -- lock the assessment instance for updating and store old points/score_perc
     SELECT

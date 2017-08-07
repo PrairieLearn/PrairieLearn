@@ -335,9 +335,10 @@ sqldb.queryOneRow(sql.block_name, params, function(err, result) {
 });
 ```
 
-* For transactions with correct error handling use the pattern:
+* For transactions with correct error handling use following pattern. It is important to use `async.series()` to run all the operations rather than using a callback stack, because with `async.series()` we can guarantee that `endTransaction()` is called no matter whether any of the intermediate operations produce an error.
 
 ```javascript
+// do this
 sqldb.beginTransaction(function(err, client, done) {
     if (ERR(err, callback)) return;
     async.series([
@@ -354,6 +355,18 @@ sqldb.beginTransaction(function(err, client, done) {
         sqldb.endTransaction(client, done, err, function(err) { // will rollback if err is defined
             if (ERR(err, callback)) return;
             // transaction successfully committed at this point
+            callback(null);
+        });
+    });
+});
+
+// don't do this
+sqldb.beginTransaction(function(err, client, done) {
+    if (ERR(err, callback)) return;
+    sqldb.queryWithClient(client, sql.block_name, params, function(err, result) {
+        if (ERR(err, callback)) return; // THIS IS WRONG, it may exit without endTransaction()
+        sqldb.endTransaction(client, done, err, function(err) {
+            if (ERR(err, callback)) return;
             callback(null);
         });
     });

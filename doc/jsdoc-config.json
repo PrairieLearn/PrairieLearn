@@ -1,6 +1,7 @@
 {
     "opts": {
-        "destination": "./code-docs/"
+        "destination": "./code-docs/",
+        "access": "public,undefined"
     },
     "source": {
         "include": [
