@@ -1,3 +1,5 @@
+var _ = require('underscore');
+
 /**
  * Question servers module.
  * @module question-servers

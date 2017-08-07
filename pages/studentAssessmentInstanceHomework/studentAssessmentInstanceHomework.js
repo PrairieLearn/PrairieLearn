@@ -9,7 +9,7 @@ var sqlLoader = require('../../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var ensureUpToDate = (locals, callback) => {
-    assessment.update(locals.assessment_instance.id, locals.authn_user.user_id, (err, updated) {
+    assessment.update(locals.assessment_instance.id, locals.authn_user.user_id, (err, updated) => {
         if (ERR(err, callback)) return;
 
         if (!updated) return callback(null);

@@ -1,7 +1,6 @@
 var ERR = require('async-stacktrace');
 var path = require('path');
 var _ = require('lodash');
-var fs = require('fs');
 
 var error = require('../lib/error');
 var filePaths = require('../lib/file-paths');
