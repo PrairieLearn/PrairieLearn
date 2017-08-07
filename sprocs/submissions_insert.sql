@@ -2,7 +2,7 @@ CREATE OR REPLACE FUNCTION
     submissions_insert(
         IN submitted_answer jsonb,
         IN raw_submitted_answer jsonb,
-        IN parse_errors jsonb,
+        IN format_errors jsonb,
         IN gradable boolean,
         IN credit integer,
         IN mode enum_mode,
@@ -71,9 +71,9 @@ BEGIN
     -- actually insert the submission
 
     INSERT INTO submissions
-            (variant_id, auth_user_id,  raw_submitted_answer, submitted_answer, parse_errors,
+            (variant_id, auth_user_id,  raw_submitted_answer, submitted_answer, format_errors,
             type, credit, mode, duration,         params,         true_answer)
-    VALUES  (variant_id, authn_user_id, raw_submitted_answer, submitted_answer, parse_errors,
+    VALUES  (variant_id, authn_user_id, raw_submitted_answer, submitted_answer, format_errors,
             type, credit, mode, delta,    variant.params, variant.true_answer)
     RETURNING id
     INTO submission_id;

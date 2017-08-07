@@ -151,7 +151,7 @@ module.exports = {
         err = checkProp('variant_seed',           'integer', allPhases,                    ['render']); if (err) return err;
         err = checkProp('options',                'object',  allPhases,                    ['render']); if (err) return err;
         err = checkProp('submitted_answers',      'object',  ['render', 'parse', 'grade'], ['render']); if (err) return err;
-        err = checkProp('parse_errors',           'object',  ['render', 'parse', 'grade'], ['render']); if (err) return err;
+        err = checkProp('format_errors',           'object',  ['render', 'parse', 'grade'], ['render']); if (err) return err;
         err = checkProp('raw_submitted_answers',  'object',  ['render', 'parse', 'grade'], allPhases);  if (err) return err;
         err = checkProp('partial_scores',         'object',  ['render', 'grade'],          ['render']); if (err) return err;
         err = checkProp('score',                  'number',  ['render', 'grade'],          ['render']); if (err) return err;
@@ -370,7 +370,7 @@ module.exports = {
             params: _.get(variant, 'params', {}),
             correct_answers: _.get(variant, 'true_answer', {}),
             submitted_answers: submission ? _.get(submission, 'submitted_answer', {}) : {},
-            parse_errors: submission ? _.get(submission, 'parse_errors', {}) : {},
+            format_errors: submission ? _.get(submission, 'format_errors', {}) : {},
             partial_scores: (!submission || submission.partial_scores == null) ? {} : submission.partial_scores,
             score: (!submission || submission.score == null) ? 0 : submission.score,
             feedback: (!submission || submission.feedback == null) ? {} : submission.feedback,
@@ -445,7 +445,7 @@ module.exports = {
             params: _.get(variant, 'params', {}),
             correct_answers: _.get(variant, 'true_answer', {}),
             submitted_answers: _.get(submission, 'submitted_answer', {}),
-            parse_errors: _.get(submission, 'parse_errors', {}),
+            format_errors: _.get(submission, 'format_errors', {}),
             variant_seed: parseInt(variant.variant_seed, 36),
             options: _.get(variant, 'options', {}),
             raw_submitted_answers: _.get(submission, 'raw_submitted_answer', {}),
@@ -461,7 +461,7 @@ module.exports = {
                 params: data.params,
                 true_answer: data.correct_answers,
                 submitted_answer: data.submitted_answers,
-                parse_errors: data.parse_errors,
+                format_errors: data.format_errors,
             };
             callback(null, courseErrs, ret_vals);
         });
@@ -472,7 +472,7 @@ module.exports = {
             params: variant.params,
             correct_answers: variant.true_answer,
             submitted_answers: submission.submitted_answer,
-            parse_errors: submission.parse_errors,
+            format_errors: submission.format_errors,
             partial_scores: (submission.partial_scores == null) ? {} : submission.partial_scores,
             score: (submission.score == null) ? 0 : submission.score,
             feedback: (submission.feedback == null) ? {} : submission.feedback,
@@ -491,7 +491,7 @@ module.exports = {
                 params: data.params,
                 true_answer: data.correct_answers,
                 submitted_answer: data.submitted_answers,
-                parse_errors: data.parse_errors,
+                format_errors: data.format_errors,
                 raw_submitted_answer: data.raw_submitted_answers,
                 partial_scores: data.partial_scores,
                 score: data.score,

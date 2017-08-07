@@ -102,7 +102,7 @@ module.exports = {
             params: variant.params,
             true_answer: variant.true_answer,
             submitted_answer: submission.submitted_answer,
-            parse_errors: {},
+            format_errors: {},
         };
         callback(null, [], data);
     },
@@ -134,7 +134,7 @@ module.exports = {
                 feedback: grading.feedback,
                 partial_scores: null,
                 submitted_answer: submission.submitted_answer,
-                parse_errors: submission.parse_errors,
+                format_errors: submission.format_errors,
             };
             callback(null, [], data);
         });

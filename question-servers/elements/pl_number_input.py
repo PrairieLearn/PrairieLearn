@@ -64,7 +64,7 @@ def render(element_html, element_index, data):
             html = chevron.render(f,html_params).strip()
 
     elif data["panel"] == "submission":
-        parse_error = data["parse_errors"].get(name, None)
+        parse_error = data["format_errors"].get(name, None)
         html_params = {'submission': True, 'label': label, 'parse_error': parse_error}
         if parse_error is None:
             a_sub = data["submitted_answers"][name]
@@ -114,14 +114,14 @@ def parse(element_html, element_index, data):
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data["submitted_answers"].get(name,None)
     if not a_sub:
-        data["parse_errors"][name] = 'No submitted answer.'
+        data["format_errors"][name] = 'No submitted answer.'
         data["submitted_answers"][name] = None
         return data
 
     try:
         data["submitted_answers"][name] = float(a_sub)
     except ValueError:
-        data["parse_errors"][name] = "Invalid format (not a real number)."
+        data["format_errors"][name] = "Invalid format (not a real number)."
         data["submitted_answers"][name] = None
 
     return data
