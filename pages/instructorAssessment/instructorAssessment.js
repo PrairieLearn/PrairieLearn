@@ -11,7 +11,7 @@ var logger = require('../../lib/logger');
 var serverJobs = require('../../lib/server-jobs');
 var csvMaker = require('../../lib/csv-maker');
 var dataFiles = require('../../lib/data-files');
-var assessments = require('../../assessments');
+var assessment = require('../lib/assessment');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 

@@ -14,7 +14,7 @@ var logger = require('./lib/logger');
 var config = require('./lib/config');
 var messageQueue = require('./lib/messageQueue');
 var externalGradingSocket = require('./lib/external-grading-socket');
-var assessments = require('./assessments');
+var assessment = require('./lib/assessment');
 var sqldb = require('./lib/sqldb');
 var migrations = require('./migrations');
 var sprocs = require('./sprocs');
@@ -375,7 +375,7 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            messageQueue.init(assessments.processGradingResult, function(err) {
+            messageQueue.init(assessment.processGradingResult, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

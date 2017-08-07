@@ -4,7 +4,6 @@ var express = require('express');
 var router = express.Router();
 
 var error = require('../../lib/error');
-var assessmentsExam = require('../../assessments/exam');
 var question = require('../../lib/question');
 var sqldb = require('../../lib/sqldb');
 

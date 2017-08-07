@@ -3,7 +3,7 @@ var async = require('async');
 
 var config = require('../lib/config');
 var logger = require('../lib/logger');
-var assessmentsExam = require('../assessments/exam');
+var question = require('../lib/question');
 var sqldb = require('../lib/sqldb');
 
 module.exports = {};
@@ -16,9 +16,9 @@ module.exports.run = function(callback) {
 
         async.eachSeries(examList, function(examItem, callback) {
             logger.verbose('autoFinishExams: finishing ' + examItem.assessment_instance_id, examItem);
-            var auth_user_id = null; // graded by the system
-            var finishExam = true; // close the exam after grading it
-            assessmentsExam.gradeAssessmentInstance(examItem.assessment_instance_id, auth_user_id, examItem.credit, finishExam, function(err) {
+            var authn_user_id = null; // graded by the system
+            var closeExam = true; // close the exam after grading it
+            question.gradeAssessmentInstance(examItem.assessment_instance_id, authn_user_id, closeExam, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
