@@ -4,7 +4,7 @@ var router = express.Router();
 
 var error = require('../../lib/error');
 var assessments = require('../../assessments');
-var assessmentsExam = require('../../assessments/exam');
+var question = require('../../lib/question');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
@@ -14,17 +14,17 @@ router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
 
-    var finishExam;
+    var closeExam;
     if (req.body.postAction == 'grade') {
-        finishExam = false;
+        closeExam = false;
     } else if (req.body.postAction == 'finish') {
-        finishExam = true;
+        closeExam = true;
     } else if (req.body.postAction == 'timeLimitFinish') {
-        finishExam = true;
+        closeExam = true;
     } else {
         return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
     }
-    assessmentsExam.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.user.user_id, res.locals.authz_result.credit, finishExam, function(err) {
+    question.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, function(err) {
         if (ERR(err, next)) return;
         if (req.body.postAction == 'timeLimitFinish') {
             res.redirect(req.originalUrl + '?timeLimitExpired=true');
@@ -34,6 +34,7 @@ router.post('/', function(req, res, next) {
     });
 });
 
+// FIXME: delete this
 var tmp_upgrade = function(locals, callback) {
     if (locals.assessment_instance.tmp_upgraded_iq_status) {
         return callback(null);

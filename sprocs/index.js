@@ -71,7 +71,13 @@ module.exports = {
             'submissions_update_parsing.sql',
             'assessment_instances_update.sql',
             'assessment_instances_update_homework.sql',
+            'instance_questions_update_in_grading.sql',
+            'assessment_instances_close.sql',
             'grading_job_status.sql',
+            'grading_jobs_insert.sql',
+            'grading_jobs_insert_external_manual.sql',
+            'grading_jobs_insert_internal.sql',
+            'grading_jobs_process_external.sql',
             'ip_to_mode.sql',
             'config_select.sql',
             'users_select_or_insert.sql',
@@ -80,6 +86,10 @@ module.exports = {
             'errors_generate_display_id.sql',
             'errors_insert_for_variant.sql',
             'variants_lock.sql',
+            'variants_ensure_instance_question.sql',
+            'variants_insert.sql',
+            'variants_select_submission_for_grading.sql',
+            'variants_update_after_grading.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

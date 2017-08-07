@@ -6,7 +6,6 @@ var router = express.Router();
 var error = require('../../lib/error');
 var assessmentsExam = require('../../assessments/exam');
 var question = require('../../lib/question');
-var partialsQuestion = require('../partials/question');
 var sqldb = require('../../lib/sqldb');
 
 function processSubmission(req, res, callback) {
@@ -58,8 +57,8 @@ router.post('/', function(req, res, next) {
             res.redirect(req.originalUrl);
         });
     } else if (req.body.postAction == 'timeLimitFinish') {
-        var finishExam = true;
-        assessmentsExam.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.user.user_id, res.locals.assessment_instance.credit, finishExam, function(err) {
+        var closeExam = true;
+        question.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, function(err) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + res.locals.assessment_instance.id + '?timeLimitExpired=true');
         });
@@ -71,7 +70,7 @@ router.post('/', function(req, res, next) {
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     const variant_id = null;
-    partialsQuestion.getVariant(req, res, variant_id, res.locals.assessment.type, function(err) {
+    question.renderVariant(variant_id, res.locals, function(err) {
         if (ERR(err, next)) return;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });

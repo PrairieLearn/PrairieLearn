@@ -4,8 +4,7 @@ var express = require('express');
 var router = express.Router();
 
 var error = require('../../lib/error');
-var assessmentsHomework = require('../../assessments/homework');
-var partialsQuestion = require('../partials/question');
+var question = require('../../lib/question');
 
 function processSubmission(req, res, callback) {
     let variant_id, submitted_answer, type = null;
@@ -32,11 +31,13 @@ function processSubmission(req, res, callback) {
         credit: res.locals.authz_result.credit,
         mode: res.locals.authz_data.mode,
     };
-    // FIXME: check that variant_id matches res.locals.instance_question.id
-    FIXME FIXME FIXME
-    assessmentsHomework.submitAndGrade(submission, res.locals.instance_question.id, res.locals.question, res.locals.course, function(err) {
+    sqldb.callOneRow('variants_ensure_instance_question', [submission.variant_id, res.locals.instance_question.id], (err, result) => {
         if (ERR(err, callback)) return;
-        callback(null, submission.variant_id);
+        const variant = result.rows[0];
+        question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
+            if (ERR(err, callback)) return;
+            callback(null, submission.variant_id);
+        });
     });
 }
 
@@ -56,7 +57,8 @@ router.post('/', function(req, res, next) {
 
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
-    partialsQuestion.getVariant(req, res, req.query.variant_id, res.locals.assessment.type, function(err) {
+    // req.query.variant_id might be undefined, which will generate a new variant
+    question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
         if (ERR(err, next)) return;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
