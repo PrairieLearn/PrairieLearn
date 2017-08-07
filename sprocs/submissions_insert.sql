@@ -2,7 +2,7 @@ CREATE OR REPLACE FUNCTION
     submissions_insert(
         IN submitted_answer jsonb,
         IN raw_submitted_answer jsonb,
-        IN parse_errors,
+        IN parse_errors jsonb,
         IN gradable boolean,
         IN credit integer,
         IN mode enum_mode,
@@ -21,20 +21,22 @@ BEGIN
     -- ######################################################################
     -- get the variant
 
+    SELECT v.* INTO variant FROM variants AS v WHERE v.id = variant_id;
+
+    IF NOT FOUND THEN RAISE EXCEPTION 'invalid variant_id = %', variant_id; END IF;
+    
+    IF NOT variant.open THEN
+        RAISE EXCEPTION 'variant is not open';
+    END IF;
+
     -- we must have a variant, but we might not have an assessment_instance
-    SELECT v.*,                    iq.id,                  ai.id
-    INTO   variant, instance_question_id, assessment_instance_id
+    SELECT              iq.id,                  ai.id
+    INTO instance_question_id, assessment_instance_id
     FROM
         variants AS v
         LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     WHERE v.id = variant_id;
-
-    IF NOT FOUND THEN RAISE EXCEPTION 'invalid variant_id = %', variant_id; END IF
-
-    IF NOT variant.available THEN
-        RAISE EXCEPTION 'variant is not available';
-    END IF;
 
     -- ######################################################################
     -- locking

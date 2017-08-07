@@ -1,3 +1,5 @@
+DROP FUNCTION IF EXISTS assessment_instances_update(bigint,bigint);
+
 CREATE OR REPLACE FUNCTION
     assessment_instances_update (
         IN assessment_instance_id bigint,
@@ -65,7 +67,7 @@ BEGIN
             (assessment_question_id, assessment_instance_id) DO NOTHING
         RETURNING
             iq.*
-    )
+    ),
     inserted_audit_logs AS (
         INSERT INTO audit_logs
             (authn_user_id, course_id, user_id,

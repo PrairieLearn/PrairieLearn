@@ -1,22 +1,22 @@
 
 CREATE OR REPLACE FUNCTION
     variants_insert(
-        variant_seed text,
-        params jsonb,
-        true_answer jsonb,
-        options jsonb,
-        valid boolean,
-        instance_question_id bigint, -- can be NULL
-        question_id bigint,          -- can be NULL, but needed if instance_question_id is NULL
-        user_id bigint,              -- can be NULL, but needed if instance_question_id is NULL
-        authn_user_id bigint
-    ) RETURNS variants%rowtype
+        IN variant_seed text,
+        IN params jsonb,
+        IN true_answer jsonb,
+        IN options jsonb,
+        IN valid boolean,
+        IN instance_question_id bigint, -- can be NULL
+        IN question_id bigint,          -- can be NULL, but needed if instance_question_id is NULL
+        IN user_id bigint,              -- can be NULL, but needed if instance_question_id is NULL
+        IN authn_user_id bigint,
+        OUT variant variants
+    )
 AS $$
 DECLARE
     real_question_id bigint;
     real_user_id bigint;
     new_number integer;
-    variant variants%rowtype;
 BEGIN
     -- The caller must have provided either instance_question_id or
     -- the (question_id, user_id). If instance_question_id is not
@@ -61,7 +61,5 @@ BEGIN
         new_number, variant_seed, params, true_answer, options, valid, authn_user_id)
     RETURNING *
     INTO variant;
-
-    RETURN variant;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

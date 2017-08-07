@@ -5,7 +5,7 @@ var router = express.Router();
 
 var error = require('../../lib/error');
 var question = require('../../lib/question');
-var sqldb = require('../../sqldb');
+var sqldb = require('../../lib/sqldb');
 
 function processSubmission(req, res, callback) {
     let variant_id, submitted_answer, type = null;

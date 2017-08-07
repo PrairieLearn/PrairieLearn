@@ -1,8 +1,11 @@
+DROP FUNCTION IF EXISTS variants_select_submission_for_grading(bigint,boolean);
+DROP FUNCTION IF EXISTS variants_select_submission_for_grading(bigint,bigint);
+
 CREATE OR REPLACE FUNCTION
     variants_select_submission_for_grading (
-        variant_id bigint,
-        check_submission_id boolean DEFAULT NULL
-    ) RETURNS submissions%rowtype
+        IN variant_id bigint,
+        IN check_submission_id bigint DEFAULT NULL
+    ) RETURNS TABLE (submission submissions)
 AS $$
 DECLARE
     submission submissions%rowtype;
@@ -23,10 +26,10 @@ BEGIN
     END IF;
 
     -- does the most recent submission actually need grading?
-    IF submission.score IS NOT NULL THEN RETURN NULL; END IF; -- already graded
-    IF submission.grading_requested_at IS NOT NULL THEN RETURN NULL; END IF; -- grading is in progress
-    IF NOT submission.gradable THEN RETURN NULL; END IF;
+    IF submission.score IS NOT NULL THEN RETURN; END IF; -- already graded
+    IF submission.grading_requested_at IS NOT NULL THEN RETURN; END IF; -- grading is in progress
+    IF NOT submission.gradable THEN RETURN; END IF;
 
-    RETURN submission;
+    RETURN NEXT;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

@@ -2,8 +2,8 @@ CREATE OR REPLACE FUNCTION
     grading_jobs_insert_external_manual (
         IN submission_id bigint,
         IN authn_user_id bigint,
-        OUT grading_job grading_jobs%rowtype
-    ) RETURNS 
+        OUT grading_job grading_jobs
+    )
 AS $$
 DECLARE
     credit integer;
@@ -11,13 +11,14 @@ DECLARE
     instance_question_id bigint;
     assessment_instance_id bigint;
     grading_method enum_grading_method;
+    gj grading_jobs%rowtype;
 BEGIN
     -- ######################################################################
     -- get the related objects
 
     -- we must have a variant, but we might not have an assessment_instance
-    SELECT s.credit,       v.id, q.grading_method,              iq.id,                  ai.id
-    INTO     credit, variant_id, grading_method, instance_question_id, assessment_instance_id
+    SELECT s.credit,       v.id, q.grading_method,                iq.id,                  ai.id
+    INTO     credit, variant_id,   grading_method, instance_question_id, assessment_instance_id
     FROM
         submissions AS s
         JOIN variants AS v ON (v.id = s.variant_id)
@@ -25,7 +26,7 @@ BEGIN
         LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     WHERE s.id = submission_id;
 
-    IF NOT FOUND RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
+    IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
     IF grading_method != 'External' AND grading_method != 'Manual' THEN
         RAISE EXCEPTION 'grading_method is not External or Manual for submisison_id: %', submission_id;
     END IF;
@@ -69,7 +70,7 @@ BEGIN
 
     UPDATE submissions AS s
     SET
-        grading_requested_at = now()
+        grading_requested_at = now(),
         grading_method = grading_method
     WHERE s.id = submission_id;
 
@@ -77,8 +78,8 @@ BEGIN
     -- update all parent objects
 
     IF assessment_instance_id IS NOT NULL THEN
-        instance_questions_update_in_grading(instance_question_id, authn_user_id);
-        assessment_instances_grade(assessment_instance_id, authn_user_id, credit);
+        PERFORM instance_questions_update_in_grading(instance_question_id, authn_user_id);
+        PERFORM assessment_instances_grade(assessment_instance_id, authn_user_id, credit);
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

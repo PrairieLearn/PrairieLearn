@@ -2,7 +2,7 @@ CREATE OR REPLACE FUNCTION
     variants_ensure_instance_question(
         IN variant_id bigint,
         IN instance_question_id bigint,
-        OUT variant
+        OUT variant variants
     )
 AS $$
 BEGIN

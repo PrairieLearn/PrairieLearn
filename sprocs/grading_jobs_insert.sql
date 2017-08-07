@@ -10,7 +10,7 @@ CREATE OR REPLACE FUNCTION
         IN new_submitted_answer jsonb DEFAULT NULL,
         IN new_params jsonb DEFAULT NULL,
         IN new_true_answer jsonb DEFAULT NULL,
-        OUT grading_job grading_jobs%rowtype
+        OUT grading_job grading_jobs
     )
 AS $$
 DECLARE
@@ -26,7 +26,7 @@ BEGIN
         JOIN variants AS v ON (v.id = s.variant_id)
     WHERE s.id = submission_id;
 
-    IF NOT FOUND RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
+    IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
 
     -- ######################################################################
     -- delegate the call

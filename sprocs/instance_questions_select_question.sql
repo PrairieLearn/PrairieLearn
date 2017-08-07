@@ -1,11 +1,13 @@
+DROP FUNCTION IF EXISTS instance_questions_select_question(bigint);
+
 CREATE OR REPLACE FUNCTION
     instance_questions_select_question (
         IN instance_question_id bigint,
-        OUT question questions%rowtype
+        OUT question questions
     )
 AS $$
 BEGIN
-    SELECT a.*
+    SELECT q.*
     INTO question
     FROM
         instance_questions AS iq

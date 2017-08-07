@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION
     variants_update_after_grading(
-        variant_id bigint,
+        variant_id bigint
     ) RETURNS void
 AS $$
 DECLARE

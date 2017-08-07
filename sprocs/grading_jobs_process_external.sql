@@ -17,9 +17,12 @@ BEGIN
     -- ######################################################################
     -- get the variant and related objects
 
+    SELECT * INTO grading_job FROM grading_jobs WHERE id = grading_job_id;
+    IF NOT FOUND THEN RAISE EXCEPTION 'no grading_job_id: %', grading_job_id; END IF;
+
     -- we must have a variant, but we might not have an assessment_instance
-    SELECT gj.*,        s.credit,       v.id,                iq.id,                  ai.id
-    INTO   grading_job,   credit, variant_id, instance_question_id, assessment_instance_id
+    SELECT s.credit,       v.id,                iq.id,                  ai.id
+    INTO     credit, variant_id, instance_question_id, assessment_instance_id
     FROM
         grading_jobs AS gj
         JOIN submissions AS s ON (s.id = gj.submission_id)
@@ -28,19 +31,19 @@ BEGIN
         LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     WHERE gj.id = grading_job_id;
 
-    IF NOT FOUND THEN RAISE EXCEPTION 'could not find variant for grading_job_id = %', grading_job_id; END IF
+    IF NOT FOUND THEN RAISE EXCEPTION 'could not find variant for grading_job_id = %', grading_job_id; END IF;
 
     -- ######################################################################
     -- check that everything is ok
 
     -- bail out if we don't need this grading result
-    IF gj.grading_request_canceled_at IS NOT NULL THEN RETURN;
+    IF grading_job.grading_request_canceled_at IS NOT NULL THEN RETURN; END IF;
 
     -- Bail out if we've already done this grading. This could happen
     -- if the message queues double-process a message, for
     -- example. This is not involved in re-grading because we will
     -- make a separate grading_job for re-grades.
-    IF gj.graded_at IS NOT NULL THEN RETURN;
+    IF grading_job.graded_at IS NOT NULL THEN RETURN; END IF;
 
     -- ######################################################################
     -- locking
@@ -80,10 +83,10 @@ BEGIN
     -- ######################################################################
     -- update all parent objects
 
-    variants_update_after_grading(variant_id);
+    PERFORM variants_update_after_grading(variant_id);
     IF assessment_instance_id IS NOT NULL THEN
-        instance_questions_grade(instance_question_id, grading_job.correct, grading_job.auth_user_id);
-        assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit);
+        PERFORM instance_questions_grade(instance_question_id, grading_job.correct, grading_job.auth_user_id);
+        PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit);
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

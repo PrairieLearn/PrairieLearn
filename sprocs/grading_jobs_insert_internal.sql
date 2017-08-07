@@ -10,7 +10,7 @@ CREATE OR REPLACE FUNCTION
         IN new_submitted_answer jsonb,
         IN new_params jsonb,
         IN new_true_answer jsonb,
-        OUT grading_job grading_jobs%rowtype
+        OUT grading_job grading_jobs
     )
 AS $$
 DECLARE
@@ -34,7 +34,7 @@ BEGIN
         LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     WHERE s.id = submission_id;
 
-    IF NOT FOUND RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
+    IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
     IF grading_method != 'Internal' THEN
         RAISE EXCEPTION 'grading_method is not Internal for submisison_id: %', submission_id;
     END IF;
@@ -82,10 +82,10 @@ BEGIN
     -- ######################################################################
     -- update all parent objects
 
-    variants_update_after_grading(variant_id);
+    PERFORM variants_update_after_grading(variant_id);
     IF assessment_instance_id IS NOT NULL THEN
-        instance_questions_grade(instance_question_id, grading_job.correct, grading_job.auth_user_id);
-        assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit);
+        PERFORM instance_questions_grade(instance_question_id, grading_job.correct, grading_job.auth_user_id);
+        PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit);
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

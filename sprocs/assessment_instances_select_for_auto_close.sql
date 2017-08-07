@@ -1,8 +1,9 @@
+DROP FUNCTION IF EXISTS assessment_instances_select_for_auto_close(integer);
+
 CREATE OR REPLACE FUNCTION
     assessment_instances_select_for_auto_close(
-        IN age_mins integer, -- time in minutes (after last activity) when we auto-close an exam
-        OUT assessment_instance_id bigint
-    ) RETURNS SETOF RECORD
+        age_mins integer -- time in minutes (after last activity) when we auto-close an exam
+    ) RETURNS TABLE (assessment_instance_id bigint)
 AS $$
 DECLARE
     assessment_instance assessment_instances;
@@ -23,8 +24,8 @@ BEGIN
         assessment_instance_id := assessment_instance.id;
 
         -- find the oldest submission information
-        SELECT s.date, s.mode
-        INTO last_active_date, mode
+        SELECT s.date
+        INTO last_active_date
         FROM
             instance_questions AS iq
             JOIN variants AS v ON (v.instance_question_id = iq.id)

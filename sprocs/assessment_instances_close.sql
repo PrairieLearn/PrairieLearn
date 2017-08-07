@@ -1,7 +1,7 @@
 CREATE OR REPLACE FUNCTION
     assessment_instances_close (
         assessment_instance_id bigint,
-        authn_user_id bigint,
+        authn_user_id bigint
     ) RETURNS void
 AS $$
 DECLARE
@@ -16,9 +16,9 @@ BEGIN
     FROM assessment_instances AS ai
     WHERE ai.id = assessment_instance_id;
 
-    IF NOT FOUND THEN RAISE EXCEPTION 'no such assessment_instance_id: %', assessment_instance_id; END IF
+    IF NOT FOUND THEN RAISE EXCEPTION 'no such assessment_instance_id: %', assessment_instance_id; END IF;
 
-    IF NOT current_open THEN RETURN; -- don't error, just silently succeed
+    IF NOT current_open THEN RETURN; END IF; -- don't error, just silently succeed
 
     -- ######################################################################
     -- compute the duration
