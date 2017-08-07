@@ -5,8 +5,8 @@ columns
     credit: integer
     date: timestamp with time zone default now()
     duration: interval default '00:00:00'::interval
-    errors: jsonb
     feedback: jsonb
+    format_errors: jsonb
     gradable: boolean default true
     graded_at: timestamp with time zone
     grading_method: enum_grading_method
@@ -15,14 +15,12 @@ columns
     mode: enum_mode
     override_score: double precision
     params: jsonb
-    parse_success: boolean default true
     partial_scores: jsonb
     raw_submitted_answer: jsonb
     score: double precision
     sid: text
     submitted_answer: jsonb
     true_answer: jsonb
-    valid: boolean default true
     variant_id: bigint not null
 
 indexes
