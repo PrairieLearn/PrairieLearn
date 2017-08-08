@@ -42,14 +42,24 @@
 
           <% if (error.stack) { %><p><strong>Stack trace:</strong></p><pre><%= error.stack %></pre><% } %>
 
+          <% if (error.data && error.data.sqlError) {%>
+          <p><strong>SQL error:</strong></p><pre>error: <%= error.data.sqlError.message %>
+detail: <%= error.data.sqlError.detail %>
+where: <%= error.data.sqlError.where %>
+internal query:
+<%= error.data.sqlError.internalQuery %></pre>
+          <% } %>
           <% if (error.data && error.data.sql) {%>
           <p><strong>SQL query:</strong></p><pre><%= error.data.sql %></pre>
-          <% if (error.data && error.data.params) {%>
-          <p><strong>SQL params:</strong></p><pre><%= JSON.stringify(error.data.params, null, '    ') %></pre>
           <% } %>
+          <% if (error.data && error.data.sqlParams) {%>
+          <p><strong>SQL params:</strong></p><pre><%= error_data_sqlParams %></pre>
+          <% } %>
+          <% if (error.data && error.data.sqlError) {%>
+          <p><strong>SQL error data:</strong></p><pre><%= error_data_sqlError %></pre>
           <% } %>
 
-          <% if (error.data) { %><p><strong>Additional data:</strong></p><pre><%= JSON.stringify(error.data, null, '    ') %></pre><% } %>
+          <% if (error.data) { %><p><strong>Additional data:</strong></p><pre><%= error_data %></pre><% } %>
           
         </div>
 

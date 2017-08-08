@@ -366,6 +366,8 @@ module.exports = {
     },
 
     renderPanel: function(panel, pc, variant, question, submission, course, locals, callback) {
+        if (variant.broken) return callback(null, [], 'Broken question due to error in question code');
+        if (submission && submission.broken) return callback(null, [], 'Broken submission due to error in question code');
         const data = {
             params: _.get(variant, 'params', {}),
             correct_answers: _.get(variant, 'true_answer', {}),

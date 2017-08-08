@@ -72,6 +72,47 @@ npm run lint -s
 * The tests are mainly integration tests that start with a blank database, run the server to initialize the database, load the `exampleCourse`, and then emulate a client web broswer that answers questions on assessments. If a test fails then the it is often easiest to debug but recreating the error by doing questions yourself against a locally-running server.
 
 
+## Debugging server-side JavaScript
+
+* Use the [debug package](https://www.npmjs.com/package/debug) to help trace execution flow in JavaScript. To run the server with debugging output enabled:
+
+```sh
+DEBUG=* node server
+```
+
+* To insert more debugging output, import `debug` and use it like this:
+
+```javascript
+var path = require('path');
+var debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+
+// in some function later
+debug('func()', 'param:', param);
+```
+
+* As of 2017-08-08 we don't have very good coverage with debug output in code, but we are trying to add more as needed, especially in code in `lib/`.
+
+## Debugging client-side JavaScript
+
+* Make sure you have the JavaScript Console open in your browser and reload the page.
+
+## Debugging SQL and PL/pgSQL
+
+* Use the [`psql`](https://www.postgresql.org/docs/9.6/static/app-psql.html) commandline interface to test SQL separately. A default development PrairieLearn install uses the `postgres` database, so you should run:
+
+```sh
+psql postgres
+```
+
+* To debug syntax errors in a stored procedure, import it manually with `\i filename.sql` in `psql`.
+
+* To follow execution flow in PL/pgSQL use `RAISE NOTICE`. This will log to the console when run from `psql` and to the server log file when run from within PrairieLearn. The syntax is:
+
+```sql
+RAISE NOTICE 'This is logging: % and %', var1, var2;
+```
+
+
 ## Page generation
 
 * Use [Express](http://expressjs.com) as the web framework. As of 2016-09-27 we are using v4.

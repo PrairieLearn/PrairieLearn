@@ -1,3 +1,4 @@
+DROP FUNCTION IF EXISTS variants_insert(text,jsonb,jsonb,jsonb,boolean,bigint,bigint,bigint,bigint);
 
 CREATE OR REPLACE FUNCTION
     variants_insert(
@@ -5,7 +6,7 @@ CREATE OR REPLACE FUNCTION
         IN params jsonb,
         IN true_answer jsonb,
         IN options jsonb,
-        IN valid boolean,
+        IN broken boolean,
         IN instance_question_id bigint, -- can be NULL
         IN question_id bigint,          -- can be NULL, but needed if instance_question_id is NULL
         IN user_id bigint,              -- can be NULL, but needed if instance_question_id is NULL
@@ -27,7 +28,7 @@ BEGIN
         SELECT           q.id,    u.user_id
         INTO real_question_id, real_user_id
         FROM
-            instances_questions AS iq
+            instance_questions AS iq
             JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
             JOIN questions AS q ON (q.id = aq.question_id)
             JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -40,7 +41,7 @@ BEGIN
         SELECT max(v.number)
         INTO new_number
         FROM variants AS v
-        WHERE v.instance_question_id = instance_question_id;
+        WHERE v.instance_question_id = variants_insert.instance_question_id;
 
         new_number := coalesce(new_number + 1, 1);
     ELSE
@@ -55,10 +56,10 @@ BEGIN
 
     INSERT INTO variants
         (instance_question_id,      question_id,      user_id,
-        number,     variant_seed, params, true_answer, options, valid, authn_user_id)
+        number,     variant_seed, params, true_answer, options, broken, authn_user_id)
     VALUES
         (instance_question_id, real_question_id, real_user_id,
-        new_number, variant_seed, params, true_answer, options, valid, authn_user_id)
+        new_number, variant_seed, params, true_answer, options, broken, authn_user_id)
     RETURNING *
     INTO variant;
 END;

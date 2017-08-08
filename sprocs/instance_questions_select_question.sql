@@ -11,7 +11,8 @@ BEGIN
     INTO question
     FROM
         instance_questions AS iq
-        JOIN questions AS q ON (q.id = iq.question_id)
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        JOIN questions AS q ON (q.id = aq.question_id)
     WHERE iq.id = instance_question_id;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such instance_question_id: %', instance_question_id; END IF;
