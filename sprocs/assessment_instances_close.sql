@@ -19,7 +19,7 @@ BEGIN
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such assessment_instance_id: %', assessment_instance_id; END IF;
 
-    IF NOT current_open THEN RETURN; END IF; -- don't error, just silently succeed
+    IF NOT current_open THEN RAISE EXCEPTION 'assessment is already closed: %', assessment_instance_id; END IF;
 
     -- ######################################################################
     -- compute the duration
