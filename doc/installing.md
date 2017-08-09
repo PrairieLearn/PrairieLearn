@@ -55,7 +55,7 @@ The list of available versions is viewable on the [hub.docker build page](https:
 To run a specific older version (e.g., version 1.2.3) then you can do:
 
 ```sh
-docker run [args] prairielearn/prairielearn:1.2.3
+docker run -it --rm -p 3000:3000 [other args] prairielearn/prairielearn:1.2.3
 ```
 
 ### Running Commands in Docker
@@ -88,7 +88,7 @@ npm install
 * Run it with:
 
 ```sh
-docker run --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn
+docker run -it --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn prairielearn/prairielearn
 ```
 
 
