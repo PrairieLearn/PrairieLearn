@@ -102,7 +102,9 @@ module.exports = {
             params: variant.params,
             true_answer: variant.true_answer,
             submitted_answer: submission.submitted_answer,
+            raw_submitted_answer: submission.raw_submitted_answer,
             format_errors: {},
+            gradable: true,
         };
         callback(null, [], data);
     },
@@ -132,9 +134,12 @@ module.exports = {
             const data = {
                 score: grading.score,
                 feedback: grading.feedback,
-                partial_scores: null,
+                partial_scores: {},
                 submitted_answer: submission.submitted_answer,
-                format_errors: submission.format_errors,
+                format_errors: {},
+                gradable: true,
+                params: variant.params,
+                true_answer: variant.true_answer,
             };
             callback(null, [], data);
         });
