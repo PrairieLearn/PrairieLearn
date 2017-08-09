@@ -1,5 +1,6 @@
 var ERR = require('async-stacktrace');
 var async = require('async');
+var path = require('path');
 
 var config = require('../lib/config');
 var socketServer = require('../lib/socket-server');
@@ -13,7 +14,7 @@ var server = require('../server');
 var logger = require('./dummyLogger');
 var helperDb = require('./helperDb');
 
-var courseDir = 'exampleCourse';
+var courseDir = path.join(__dirname, '..', 'exampleCourse');
 
 module.exports = {
     before: function(callback) {

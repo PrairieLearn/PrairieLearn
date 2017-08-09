@@ -15,11 +15,15 @@ DECLARE
     user_id bigint;
     assessment_id bigint;
     assessment_type enum_assessment_type;
+    assessment_instance_open boolean;
     new_instance_questions_count integer;
     assessment_max_points double precision;
     old_assessment_instance_max_points double precision;
     new_assessment_instance_max_points double precision;
 BEGIN
+    updated := false;
+    new_instance_question_ids = array[]::bigint[];
+
     -- lock the assessment instance for update
     PERFORM ai.id
     FROM assessment_instances AS ai
@@ -29,10 +33,12 @@ BEGIN
     -- get basic data about existing objects
     SELECT
         c.id,      u.user_id, a.id,          a.type,
-        a.max_points,          ai.max_points
+        a.max_points,          ai.max_points,
+        ai.open
     INTO
         course_id, user_id,   assessment_id, assessment_type,
-        assessment_max_points, old_assessment_instance_max_points
+        assessment_max_points, old_assessment_instance_max_points,
+        assessment_instance_open
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
@@ -45,6 +51,8 @@ BEGIN
     IF NOT FOUND THEN
         RAISE EXCEPTION 'assessment_instance_update could not find assessment_instance_id: %', assessment_instance_id;
     END IF;
+
+    IF NOT assessment_instance_open THEN RETURN; END IF; -- silently return without updating
 
     -- get new questions if any, insert them, and log it
     WITH
@@ -80,7 +88,10 @@ BEGIN
     INTO new_instance_question_ids
     FROM inserted_instance_questions AS iq;
 
-    updated := (cardinality(new_instance_question_ids) > 0); -- did we add any instance questions above?
+    -- did we add any instance questions above?
+    IF cardinality(new_instance_question_ids) > 0 THEN
+        updated := true;
+    END IF;
 
     -- determine the correct max_points
     new_assessment_instance_max_points := assessment_max_points;
@@ -99,6 +110,8 @@ BEGIN
 
     -- update max_points if necessary and log it
     IF new_assessment_instance_max_points IS DISTINCT FROM old_assessment_instance_max_points THEN
+        updated := TRUE;
+
         UPDATE assessment_instances AS ai
         SET
             max_points = new_assessment_instance_max_points
@@ -115,8 +128,6 @@ BEGIN
             'assessment_instances', 'max_points', assessment_instance_id,
             'update', jsonb_build_object('max_points', old_assessment_instance_max_points),
             jsonb_build_object('max_points', new_assessment_instance_max_points));
-
-        updated := TRUE;
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

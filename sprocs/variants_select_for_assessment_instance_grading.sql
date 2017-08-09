@@ -8,24 +8,10 @@ CREATE OR REPLACE FUNCTION
         OUT course jsonb
     ) RETURNS SETOF RECORD
 AS $$
-DECLARE
-    current_open boolean;
 BEGIN
-    -- ######################################################################
-    -- check everything is ok
+    PERFORM assessment_instances_ensure_open(assessment_instance_id);
 
-    SELECT ai.open
-    INTO current_open
-    FROM assessment_instances AS ai
-    WHERE ai.id = assessment_instance_id;
-
-    IF NOT FOUND THEN RAISE EXCEPTION 'no such assessment_instance_id: %', assessment_instance_id; END IF;
-
-    IF NOT current_open THEN RAISE EXCEPTION 'assessment is already closed: %', assessment_instance_id; END IF;
-
-    -- ######################################################################
-    -- select the most recent variant for each instance_question
-
+    -- most recent variant for each instance_question
     RETURN QUERY
     SELECT DISTINCT ON (iq.id)
         to_jsonb(v.*) AS variant,

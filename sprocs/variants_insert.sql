@@ -18,6 +18,7 @@ DECLARE
     real_question_id bigint;
     real_user_id bigint;
     new_number integer;
+    assessment_instance_id bigint;
 BEGIN
     -- The caller must have provided either instance_question_id or
     -- the (question_id, user_id). If instance_question_id is not
@@ -25,8 +26,8 @@ BEGIN
     -- just use them.
 
     IF instance_question_id IS NOT NULL THEN
-        SELECT           q.id,    u.user_id
-        INTO real_question_id, real_user_id
+        SELECT           q.id,    u.user_id,                  ai.id
+        INTO real_question_id, real_user_id, assessment_instance_id
         FROM
             instance_questions AS iq
             JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -37,6 +38,9 @@ BEGIN
             iq.id = instance_question_id;
 
         IF NOT FOUND THEN RAISE EXCEPTION 'instance_question not found'; END IF;
+
+        PERFORM instance_questions_ensure_open(instance_question_id);
+        PERFORM assessment_instances_ensure_open(assessment_instance_id);
 
         SELECT max(v.number)
         INTO new_number

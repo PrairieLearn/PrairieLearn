@@ -25,10 +25,6 @@ BEGIN
 
     IF NOT FOUND THEN RAISE EXCEPTION 'invalid variant_id = %', variant_id; END IF;
     
-    IF NOT variant.open THEN
-        RAISE EXCEPTION 'variant is not open';
-    END IF;
-
     -- we must have a variant, but we might not have an assessment_instance
     SELECT              iq.id,                  ai.id
     INTO instance_question_id, assessment_instance_id
@@ -48,6 +44,17 @@ BEGIN
     ELSE
         PERFORM v.id FROM variants AS v
         WHERE v.id = variant_id FOR UPDATE OF v;
+    END IF;
+
+    -- ######################################################################
+    -- make sure everything is still open
+
+    PERFORM variants_ensure_open(variant_id);
+    IF instance_question_id IS NOT NULL THEN
+        PERFORM instance_questions_ensure_open(instance_question_id);
+    END IF;
+    IF assessment_instance_id IS NOT NULL THEN
+        PERFORM assessment_instances_ensure_open(assessment_instance_id);
     END IF;
 
     -- ######################################################################

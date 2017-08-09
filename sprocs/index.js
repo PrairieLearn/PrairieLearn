@@ -63,12 +63,14 @@ module.exports = {
             'assessment_instances_grade.sql',
             'assessment_instances_regrade.sql',
             'assessment_instances_select_for_auto_close.sql',
+            'assessment_instances_ensure_open.sql',
             'instance_questions_points_homework.sql',
             'instance_questions_points_exam.sql',
             'instance_questions_points.sql',
             'instance_questions_grade.sql',
             'instance_questions_select_question.sql',
             'instance_questions_lock.sql',
+            'instance_questions_ensure_open.sql',
             'submissions_insert.sql',
             'submissions_update_parsing.sql',
             'assessment_instances_update.sql',
@@ -92,6 +94,7 @@ module.exports = {
             'variants_select_submission_for_grading.sql',
             'variants_select_for_assessment_instance_grading.sql',
             'variants_update_after_grading.sql',
+            'variants_ensure_open.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

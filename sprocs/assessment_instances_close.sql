@@ -6,20 +6,12 @@ CREATE OR REPLACE FUNCTION
 AS $$
 <<main>>
 DECLARE
-    current_open boolean;
     duration interval;
 BEGIN
     -- ######################################################################
     -- check everything is ok
 
-    SELECT ai.open
-    INTO current_open
-    FROM assessment_instances AS ai
-    WHERE ai.id = assessment_instance_id;
-
-    IF NOT FOUND THEN RAISE EXCEPTION 'no such assessment_instance_id: %', assessment_instance_id; END IF;
-
-    IF NOT current_open THEN RAISE EXCEPTION 'assessment is already closed: %', assessment_instance_id; END IF;
+    PERFORM assessment_instances_ensure_open(assessment_instance_id);
 
     -- ######################################################################
     -- compute the duration
@@ -39,5 +31,6 @@ BEGIN
     INSERT INTO assessment_state_logs
             (open, assessment_instance_id,  auth_user_id)
     VALUES (false, assessment_instance_id, authn_user_id);
+
 END;
 $$ LANGUAGE plpgsql VOLATILE;

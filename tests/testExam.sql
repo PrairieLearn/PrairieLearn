@@ -62,8 +62,7 @@ SELECT
 FROM
     variants AS v
 WHERE
-    v.id = $variant_id
-    AND v.instance_question_id = instance_question_id;
+    v.id = $variant_id;
 
 -- BLOCK select_last_submission
 SELECT
