@@ -4,7 +4,6 @@ var router = express.Router();
 
 var error = require('../../lib/error');
 var assessment = require('../../lib/assessment');
-var question = require('../../lib/question');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
@@ -24,7 +23,7 @@ router.post('/', function(req, res, next) {
     } else {
         return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
     }
-    question.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, function(err) {
+    assessment.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, function(err) {
         if (ERR(err, next)) return;
         if (req.body.postAction == 'timeLimitFinish') {
             res.redirect(req.originalUrl + '?timeLimitExpired=true');

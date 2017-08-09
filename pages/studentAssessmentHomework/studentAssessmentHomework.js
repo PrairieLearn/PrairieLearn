@@ -5,6 +5,7 @@ var path = require('path');
 var debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
 var error = require('../../lib/error');
+var assessment = require('../../lib/assessment');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 

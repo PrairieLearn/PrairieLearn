@@ -17,6 +17,7 @@ DECLARE
     course_instance_id bigint;
     user_id bigint;
     assessment_instance_updated boolean;
+    new_instance_question_ids bigint[];
 BEGIN
     -- get the assessment type
     SELECT a.type
@@ -29,7 +30,9 @@ BEGIN
     -- first update Homeworks
     updated := FALSE;
     IF assessment_type = 'Homework' THEN
-        updated := assessment_instances_update(assessment_instance_id, authn_user_id);
+        SELECT *
+        INTO updated, new_instance_question_ids
+        FROM assessment_instances_update(assessment_instance_id, authn_user_id);
     END IF;
 
     -- lock the assessment instance for updating and store old points/score_perc

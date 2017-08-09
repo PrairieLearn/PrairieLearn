@@ -5,6 +5,7 @@ var router = express.Router();
 
 var error = require('../../lib/error');
 var question = require('../../lib/question');
+var assessment = require('../../lib/assessment');
 var sqldb = require('../../lib/sqldb');
 
 function processSubmission(req, res, callback) {
@@ -35,7 +36,7 @@ function processSubmission(req, res, callback) {
     sqldb.callOneRow('variants_ensure_instance_question', [variant_id, res.locals.instance_question.id], (err, result) => {
         if (ERR(err, callback)) return;
         const variant = result.rows[0];
-        question.saveSubmision(submission, variant, res.locals.question, res.locals.course, (err) => {
+        question.saveSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
             if (ERR(err, callback)) return;
             callback(null);
         });
@@ -55,7 +56,7 @@ router.post('/', function(req, res, next) {
         });
     } else if (req.body.postAction == 'timeLimitFinish') {
         var closeExam = true;
-        question.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, function(err) {
+        assessment.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, function(err) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + res.locals.assessment_instance.id + '?timeLimitExpired=true');
         });
@@ -67,7 +68,7 @@ router.post('/', function(req, res, next) {
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     const variant_id = null;
-    question.renderVariant(variant_id, res.locals, function(err) {
+    question.getAndRenderVariant(variant_id, res.locals, function(err) {
         if (ERR(err, next)) return;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });

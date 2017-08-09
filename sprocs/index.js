@@ -90,7 +90,7 @@ module.exports = {
             'variants_ensure_instance_question.sql',
             'variants_insert.sql',
             'variants_select_submission_for_grading.sql',
-            'variants_select_for_assessment_instance.sql',
+            'variants_select_for_assessment_instance_grading.sql',
             'variants_update_after_grading.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);

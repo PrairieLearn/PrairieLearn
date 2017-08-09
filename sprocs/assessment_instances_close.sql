@@ -4,6 +4,7 @@ CREATE OR REPLACE FUNCTION
         authn_user_id bigint
     ) RETURNS void
 AS $$
+<<main>>
 DECLARE
     current_open boolean;
     duration interval;
@@ -32,7 +33,7 @@ BEGIN
     SET
         open = FALSE,
         closed_at = CURRENT_TIMESTAMP,
-        duration = duration
+        duration = main.duration
     WHERE ai.id = assessment_instance_id;
 
     INSERT INTO assessment_state_logs
