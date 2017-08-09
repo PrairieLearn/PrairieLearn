@@ -7,8 +7,6 @@ CREATE OR REPLACE FUNCTION
         IN check_submission_id bigint DEFAULT NULL
     ) RETURNS TABLE (submission submissions)
 AS $$
-DECLARE
-    submission submissions%rowtype;
 BEGIN
     -- start with the most recent submission
     SELECT s.*
@@ -18,7 +16,6 @@ BEGIN
         JOIN submissions AS s ON (s.variant_id = v.id)
     ORDER BY s.date DESC
     LIMIT 1;
-
     IF NOT FOUND THEN RETURN; END IF; -- no submissions
 
     IF check_submission_id IS NOT NULL and check_submission_id != submission.id THEN

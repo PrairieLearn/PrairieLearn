@@ -1,9 +1,11 @@
+DROP FUNCTION IF EXISTS grading_jobs_insert_internal(bigint,bigint,boolean,jsonb,jsonb,double precision,jsonb,jsonb,jsonb,jsonb);
+
 CREATE OR REPLACE FUNCTION
     grading_jobs_insert_internal (
         IN submission_id bigint,
         IN authn_user_id bigint,
         IN new_gradable boolean,
-        IN new_errors jsonb,
+        IN new_format_errors jsonb,
         IN new_partial_scores jsonb,
         IN new_score double precision,
         IN new_feedback jsonb,
@@ -13,6 +15,7 @@ CREATE OR REPLACE FUNCTION
         OUT grading_job grading_jobs
     )
 AS $$
+<<main>>
 DECLARE
     credit integer;
     variant_id bigint;
@@ -26,15 +29,17 @@ BEGIN
 
     -- we must have a variant, but we might not have an assessment_instance
     SELECT s.credit,       v.id, q.grading_method,              iq.id,                  ai.id
-    INTO     credit, variant_id, grading_method, instance_question_id, assessment_instance_id
+    INTO     credit, variant_id,   grading_method, instance_question_id, assessment_instance_id
     FROM
         submissions AS s
         JOIN variants AS v ON (v.id = s.variant_id)
+        JOIN questions AS q ON (q.id = v.question_id)
         LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     WHERE s.id = submission_id;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'no such submission_id: %', submission_id; END IF;
+
     IF grading_method != 'Internal' THEN
         RAISE EXCEPTION 'grading_method is not Internal for submisison_id: %', submission_id;
     END IF;
@@ -48,13 +53,13 @@ BEGIN
     SET
         graded_at = now(),
         gradable = new_gradable,
-        errors = new_errors,
+        format_errors = new_format_errors,
         partial_scores = new_partial_scores,
         score = new_score,
         correct = (new_score >= 0.5),
         feedback = new_feedback,
         submitted_answer = new_submitted_answer,
-        grading_method = grading_method
+        grading_method = main.grading_method
     WHERE
         s.id = submission_id;
 
@@ -74,7 +79,7 @@ BEGIN
         (submission_id,     score,     correct,     feedback,
             partial_scores, auth_user_id,  grading_method)
     VALUES
-        (submissino_id, new_score, new_correct, new_feedback,
+        (submission_id, new_score, new_correct, new_feedback,
         new_partial_scores, authn_user_id, grading_method)
     RETURNING gj.*
     INTO grading_job;

@@ -6,16 +6,9 @@ CREATE OR REPLACE FUNCTION
     )
 AS $$
 BEGIN
-    SELECT v.*
-    INTO variant
-    FROM
-        variants AS v
-        JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
-    WHERE
-        v.id = variant_id
-        AND iq.id = instance_question_id;
+    SELECT * INTO variant FROM variants WHERE id = variant_id;
 
-    IF NOT FOUND THEN
+    IF variant.instance_question_id IS DISTINCT FROM instance_question_id THEN
         RAISE EXCEPTION 'variant_id = % does not match instance_question_id = %', variant_id, instance_question_id;
     END IF;
 END;

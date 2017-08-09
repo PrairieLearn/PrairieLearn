@@ -80,6 +80,12 @@ npm run lint -s
 DEBUG=* node server
 ```
 
+* To just see debugging logs from PrairieLearn you can use:
+
+```sh
+DEBUG=prairielearn:* node server
+```
+
 * To insert more debugging output, import `debug` and use it like this:
 
 ```javascript

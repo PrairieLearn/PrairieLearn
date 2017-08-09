@@ -8,7 +8,7 @@ var question = require('../../lib/question');
 var sqldb = require('../../lib/sqldb');
 
 function processSubmission(req, res, callback) {
-    let variant_id, submitted_answer, type = null;
+    let variant_id, submitted_answer;
     if (res.locals.question.type == 'Freeform') {
         variant_id = req.body.variant_id;
         submitted_answer = _.omit(req.body, ['postAction', 'csrfToken', 'variant_id']);
@@ -22,13 +22,11 @@ function processSubmission(req, res, callback) {
         }
         variant_id = postData.variant ? postData.variant.id : null;
         submitted_answer = postData.submittedAnswer;
-        type = postData.type;
     }
     const submission = {
         variant_id: variant_id,
         auth_user_id: res.locals.authn_user.user_id,
         submitted_answer: submitted_answer,
-        type: type,
         credit: res.locals.authz_result.credit,
         mode: res.locals.authz_data.mode,
     };
