@@ -15,7 +15,7 @@ var siteUrl = 'http://localhost:' + config.serverPort;
 var baseUrl = siteUrl + '/pl';
 var courseInstanceBaseUrl = baseUrl + '/course_instance/1';
 var assessmentsUrl = courseInstanceBaseUrl + '/assessments';
-var assessmentUrl, assessmentInstanceUrl, q1Url, q2Url, q3Url, instructorAssessmentUrl;
+var assessmentUrl, assessmentInstanceUrl, instructorAssessmentUrl;
 
 const addNumbers = {qid: 'addNumbers', type: 'Freeform'};
 const addVectors = {qid: 'addVectors', type: 'Calculation'};
@@ -150,7 +150,7 @@ describe('Exam assessment', function() {
         it('should have the correct assessment_instance.assessment_id', function() {
             assert.equal(assessment_instance.assessment_id, assessment_id);
         });
-        it('should create two instance_questions', function(callback) {
+        it('should create three instance_questions', function(callback) {
             sqldb.query(sql.select_instance_questions, [], function(err, result) {
                 if (ERR(err, callback)) return;
                 if (result.rowCount != 3) {
@@ -786,8 +786,8 @@ describe('Exam assessment', function() {
                     expectedResult: {
                         submission_score: 1,
                         submission_correct: true,
-                        instance_question_points: 5,
-                        instance_question_score_perc: 5/10 * 100,
+                        instance_question_points: 3,
+                        instance_question_score_perc: 3/5 * 100,
                     },
                 };
             });
@@ -825,8 +825,8 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals = {
                     expectedResult: {
-                        assessment_instance_points: 5,
-                        assessment_instance_score_perc: 5/30 * 100,
+                        assessment_instance_points: 3,
+                        assessment_instance_score_perc: 3/35 * 100,
                     },
                 };
             });
@@ -918,8 +918,8 @@ describe('Exam assessment', function() {
                     expectedResult: {
                         submission_score: 1,
                         submission_correct: true,
-                        instance_question_points: 5,
-                        instance_question_score_perc: 5/10 * 100,
+                        instance_question_points: 3,
+                        instance_question_score_perc: 3/5 * 100,
                     },
                 };
             });
@@ -957,8 +957,8 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals = {
                     expectedResult: {
-                        assessment_instance_points: 5,
-                        assessment_instance_score_perc: 5/30 * 100,
+                        assessment_instance_points: 3,
+                        assessment_instance_score_perc: 3/35 * 100,
                     },
                 };
             });
@@ -1034,8 +1034,8 @@ describe('Exam assessment', function() {
                     expectedResult: {
                         submission_score: 1,
                         submission_correct: true,
-                        instance_question_points: 5,
-                        instance_question_score_perc: 5/10 * 100,
+                        instance_question_points: 3,
+                        instance_question_score_perc: 3/5 * 100,
                     },
                 };
             });
@@ -1073,8 +1073,8 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals = {
                     expectedResult: {
-                        assessment_instance_points: 5,
-                        assessment_instance_score_perc: 5/30 * 100,
+                        assessment_instance_points: 3,
+                        assessment_instance_score_perc: 3/35 * 100,
                     },
                 };
             });
@@ -1210,8 +1210,8 @@ describe('Exam assessment', function() {
                         expectedResult: {
                             submission_score: 1,
                             submission_correct: true,
-                            instance_question_points: 5,
-                            instance_question_score_perc: 5/10 * 100,
+                            instance_question_points: 3,
+                            instance_question_score_perc: 3/5 * 100,
                         },
                     };
                 });
@@ -1249,8 +1249,8 @@ describe('Exam assessment', function() {
                 it('should succeed', function() {
                     locals = {
                         expectedResult: {
-                            assessment_instance_points: 15,
-                            assessment_instance_score_perc: 15/30 * 100,
+                            assessment_instance_points: 13,
+                            assessment_instance_score_perc: 13/35 * 100,
                         },
                     };
                 });

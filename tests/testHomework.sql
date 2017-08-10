@@ -62,19 +62,30 @@ SELECT
 FROM
     variants AS v
 WHERE
-    v.id = $variant_id
-    AND v.instance_question_id = instance_question_id;
+    v.id = $variant_id;
 
--- BLOCK select_submission_for_variant
+-- BLOCK select_last_submission
+SELECT
+    s.*
+FROM
+    submissions AS s
+ORDER BY
+    s.date DESC
+LIMIT
+    1;
+
+-- BLOCK select_last_submission_for_instance_question
 SELECT
     s.*
 FROM
     submissions AS s
     JOIN variants AS v ON (v.id = s.variant_id)
 WHERE
-    v.id = $variant_id
+    v.instance_question_id = $instance_question_id
 ORDER BY
-    s.date;
+    s.date DESC
+LIMIT
+    1;
 
 -- BLOCK update_max_points
 UPDATE assessments

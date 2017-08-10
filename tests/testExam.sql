@@ -48,14 +48,6 @@ FROM
 WHERE
     ai.id = $assessment_instance_id;
 
--- BLOCK select_variants
-SELECT
-    v.*
-FROM
-    variants AS v
-ORDER BY
-    v.date;
-
 -- BLOCK select_variant
 SELECT
     v.*
