@@ -18,6 +18,8 @@ AS $$
 DECLARE
     grading_method enum_grading_method;
 BEGIN
+    PERFORM submissions_lock(submission_id);
+
     -- ######################################################################
     -- get the grading method
 

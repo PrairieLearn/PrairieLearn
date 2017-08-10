@@ -420,7 +420,14 @@ sqldb.beginTransaction(function(err, client, done) {
 });
 ```
 
-* Use explicit row locking whenever modifying student data related to an asseesment. This must be done within a transaction. The `sprocs/variants_lock` and `sprocs/assessment_instances_lock` functions do the actual locking. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one).
+* Use explicit row locking whenever modifying student data related to an asseesment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc) should call a locking function when they start. All locking functions are equivalent in their action, so the most convenient one should be used in any given situation:
+
+Locking function | Argument
+--- | ---
+`assessment_instances_lock` | `assessment_instance_id`
+`instance_questions_lock` | `instance_question_id`
+`variants_lock` | `variant_id`
+`submission_lock` | `submission_id`
 
 * To pass an array of parameters to SQL code, use the following pattern, which allows zero or more elements in the array. This replaces `$points_list` with `ARRAY[10, 5, 1]` in the SQL. It's required to specify the type of array in case it is empty:
 
@@ -606,40 +613,47 @@ app.use(/^\/?$/, function(req, res, _next) {res.redirect('/pl');});
 * To lint the code, use `npm run lint -s`. This is also run by the CI tests.
 
 
-## Question error handling
+## Question open status
 
-* There are three types of errors that can occur during the creation, answering, and grading of a question:
+* There are three levels at which “open” status is tracked, as follows. If `open = false` for any object then it will block the creation of new objects below it. For example, to create a new submission the corresponding variant, instance_question, and assessment_instance must all be open.
 
-Error type | Caused | Stored | Reported | Effect
+Variable | Allow new `instance_questions` | Allow new `variants` | Allow new `submissions`
+--- | --- | --- | ---
+`assessment_instance.open` | ✓ | ✓ | ✓
+`instance_question.open` | | ✓ | ✓
+`variant.open` | | | ✓
+
+
+## Errors in question handling
+
+* We distinguish between two different types of student errors:
+
+    1. The answer might be not be gradable (`submission.gradable = false`). This could be due to a missing answer, an invalid format (e.g., entering a string in a numeric input), or a answer that doesn't pass some basic check (e.g., a code submission that didn't compile). This can be discovered during either the parsing or grading phases. In such a case the `submission.format_errors` object should store information on what was wrong to allow the student to correct their answer. A submission with `gradable = false` will not cause any updating of points for the question. That is, it acts like a saved-but-not-graded submission, in that it is recorded but has no impact on the question. If `gradable = false` then the `score` and `feedback` will not be displayed to the student.
+
+    2. The answer might be gradable but incorrect. In this case `submission.gradable = true` but `submission.score = 0` (or less than 1 for a partial score). If desired, the `submission.feedback` object can be set to give information to the student on what was wrong with their answer. This is not necessary, however. If `submission.feedback` is set then it will be shown to the student along with their `submission.score` as soon as the question is graded.
+
+* There are three levels of errors that can occur during the creation, answering, and grading of a question:
+
+Error level | Caused | Stored | Reported | Effect
 --- | --- | --- | --- | ---
 System errors | Internal PrairieLearn errors | On-disk logs | Error page | Operation is blocked. Data is not saved to the database.
-Question errors | Errors in question code | `errors` table | Error panels on the question page | `variant.broken` or `submission.broeken` set to `true`. Operation completes, but future operations are blocked.
-Student errors | Invalid data submitted by the student (unparsable or ungradable) | `submission.scorable` set to `false` and details are stored in `submission.errors`.
-
-* Assuming that there are no system or question code errors, there are two different things that can be wrong with a student's submitted answer:
-
-    1. The answer might be not be scorable (`submission.scorable = false`). This could be due to a missing answer, an invalid format (e.g., entering a string in a numeric input), or a answer that doesn't pass some basic check (e.g., a code submission that didn't compile). This can be discovered during either the parsing or grading phases. In such a case the `submission.errors` object should store information on what was wrong to allow the student to correct their answer. A submission with `scorable = false` will not cause any updating of points for the question. That is, it acts like a saved-but-not-graded submission, in that it is recorded but has no impact on the question. If `scorable = false` then the `score` and `feedback` will not be displayed to the student.
-
-    2. The answer might be scorable but incorrect. In this case `scorable = true` but `score = 0` (or less than 1 for a partial score). If desired, the `feedback` object can be set to give information to the student on what was wrong with their answer. This is not necessary, however. If `feedback` is set then it will be shown to the student along with their `score` as soon as the question is graded.
+Question errors | Errors in question code | `errors` table | Error panels on the question page | `variant.broken` or `submission.broken` set to `true`. Operation completes, but future operations are blocked.
+Student errors | Invalid data submitted by the student (unparsable or ungradable) | `submission.gradable` set to `false` and details are stored in `submission.format_errors` | Inside the rendered submission panel | The submission is not assigned a score and no further action is taken (e.g., points are changed for the instance question). The student can resubmit to correct the error.
 
 * The important variables involved in tracking question errors are:
 
-Variable | Description
---- | ---
-`variant.broken` | Set to `true` if there were question code errors in generating the variant. Such a variant will be not have `render()` functions called, but will instead be displayed as `This question is broken`.
-`variant.available` | Whether submissions can be made to this variant.
-`submission.broken` | Set to `true` if there question code errors in parsing or grading the variant. After `submission.broken` is `true`, no further actions will be taken with the submission.
-`submisison.scorable` | Whether this submission can be given a score. Set to `false` if format errors in the `submitted_answer` were encountered during either parsing or grading.
-`submission.errors` | Details on any errors during parsing or grading. Should be set to something meaningful if `scorable = false` to explain what was wrong with the submitted answer.
-`submission.graded_at` | NULL if grading has not yet occurred.
-`submission.score` | Final score for the submission. Only used if `scorable = true` and `graded_at` is not NULL.
-`submission.feedback` | Feedback generated during grading. Only shown to the student if `scorable = true`.
+Variable | Error level | Description
+--- | --- | ---
+`variant.broken` | Question error | Set to `true` if there were question code errors in generating the variant. Such a variant will be not have `render()` functions called, but will instead be displayed as `This question is broken`.
+`submission.broken` | Question error | Set to `true` if there question code errors in parsing or grading the variant. After `submission.broken` is `true`, no further actions will be taken with the submission.
+`errors` table | Question error | Rows are inserted to record the details of the errors that caused `variant.broken` or `submission.broken` to be set to `true`.
+`submisison.gradable` | Student error | Whether this submission can be given a score. Set to `false` if format errors in the `submitted_answer` were encountered during either parsing or grading.
+`submission.format_errors` | Student error | Details on any errors during parsing or grading. Should be set to something meaningful if `gradable = false` to explain what was wrong with the submitted answer.
+`submission.graded_at` | None | NULL if grading has not yet occurred, otherwise a timestamp.
+`submission.score` | None | Final score for the submission. Only used if `gradable = true` and `graded_at` is not NULL.
+`submission.feedback` | None | Feedback generated during grading. Only used if `gradable = true` and `graded_at` is not NULL.
 
-* Note that `submission.errors` stores information about student errors, while the `errors` table stores information about question code errors.
-
-* The full question flow is illustrated by the figure below.
-
-![Question flow](question-flow.png)
+* Note that `submission.format_errors` stores information about student errors, while the `errors` table stores information about question code errors.
 
 * The question flow is shown in the diagram below (also as a [PDF image](question-flow.pdf)).
 

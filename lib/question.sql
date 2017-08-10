@@ -1,14 +1,3 @@
--- BLOCK get_open_variant
-SELECT
-    v.*
-FROM
-    variants AS v
-WHERE
-    v.instance_question_id = $instance_question_id
-    AND (NOT $require_open OR v.open)
-ORDER BY v.date DESC
-LIMIT 1;
-
 -- BLOCK select_submission
 SELECT
     s.*

@@ -265,7 +265,6 @@ describe('Exam assessment', function() {
                 sqldb.queryOneRow(sql.select_variant, params, function(err, result) {
                     if (ERR(err, callback)) return;
                     variant = result.rows[0];
-                    console.log('variant', variant);
                     callback(null);
                 });
             });

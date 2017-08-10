@@ -1,19 +1,23 @@
 CREATE OR REPLACE FUNCTION
-    variants_lock (
-        variant_id bigint
+    grading_jobs_lock (
+        grading_job_id bigint
     ) RETURNS void
 AS $$
 DECLARE
+    variant_id bigint;
     assessment_instance_id bigint;
 BEGIN
-    SELECT ai.id INTO assessment_instance_id
+    SELECT     v.id,                  ai.id
+    INTO variant_id, assessment_instance_id
     FROM
-        variants AS v
+        grading_jobs AS gj
+        JOIN submissions AS s ON (s.id = gj.submission_id)
+        JOIN variants AS v ON (v.id = s.variant_id)
         LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-    WHERE v.id = variant_id;
+    WHERE gj.id = grading_job_id;
 
-    IF NOT FOUND THEN RAISE EXCEPTION 'no such variant_id: %', variant_id; END IF;
+    IF NOT FOUND THEN RAISE EXCEPTION 'no such grading_job_id: %', grading_job_id; END IF;
 
     IF assessment_instance_id IS NOT NULL THEN
         -- lock the assessment_instance

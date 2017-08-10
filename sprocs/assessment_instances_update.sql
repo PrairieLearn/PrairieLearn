@@ -21,14 +21,10 @@ DECLARE
     old_assessment_instance_max_points double precision;
     new_assessment_instance_max_points double precision;
 BEGIN
+    PERFORM assessment_instances_lock(assessment_instance_id);
+
     updated := false;
     new_instance_question_ids = array[]::bigint[];
-
-    -- lock the assessment instance for update
-    PERFORM ai.id
-    FROM assessment_instances AS ai
-    WHERE ai.id = assessment_instance_id
-    FOR UPDATE OF ai;
 
     -- get basic data about existing objects
     SELECT
@@ -89,9 +85,7 @@ BEGIN
     FROM inserted_instance_questions AS iq;
 
     -- did we add any instance questions above?
-    IF cardinality(new_instance_question_ids) > 0 THEN
-        updated := true;
-    END IF;
+    updated := updated OR (cardinality(new_instance_question_ids) > 0);
 
     -- determine the correct max_points
     new_assessment_instance_max_points := assessment_max_points;

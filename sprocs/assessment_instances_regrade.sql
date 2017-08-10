@@ -19,6 +19,8 @@ DECLARE
     assessment_instance_updated boolean;
     new_instance_question_ids bigint[];
 BEGIN
+    PERFORM assessment_instances_lock(assessment_instance_id);
+
     -- get the assessment type
     SELECT a.type
     INTO assessment_type
@@ -35,28 +37,16 @@ BEGIN
         FROM assessment_instances_update(assessment_instance_id, authn_user_id);
     END IF;
 
-    -- lock the assessment instance for updating and store old points/score_perc
-    SELECT
-        ai.points,
-        ai.score_perc,
-        c.id,
-        ci.id,
-        u.user_id
-    INTO
-        old_points,
-        old_score_perc,
-        course_id,
-        course_instance_id,
-        user_id
+    -- store old points/score_perc
+    SELECT ai.points,  ai.score_perc,      c.id,              ci.id, u.user_id
+    INTO  old_points, old_score_perc, course_id, course_instance_id,   user_id
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
         JOIN pl_courses AS c ON (c.id = ci.course_id)
         JOIN users AS u USING (user_id)
-    WHERE
-        ai.id = assessment_instance_id
-    FOR UPDATE OF ai;
+    WHERE ai.id = assessment_instance_id;
 
     -- regrade questions, log it, and store the list of updated questions
     WITH updated_instance_questions AS (
@@ -98,6 +88,7 @@ BEGIN
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id);
 
+    -- did we update any questions above?
     updated := updated OR (cardinality(updated_question_names) > 0);
 
     -- regrade the assessment instance
@@ -105,6 +96,7 @@ BEGIN
     INTO assessment_instance_updated, new_points, new_score_perc
     FROM assessment_instances_grade(assessment_instance_id, authn_user_id, NULL, TRUE);
 
+    -- did we update the grade?
     updated := updated OR assessment_instance_updated;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

@@ -7,6 +7,8 @@ DECLARE
     single_variant boolean;
     assessment_type enum_assessment_type;
 BEGIN
+    PERFORM variants_lock(variant_id);
+
     SELECT q.single_variant,          a.type
     INTO     single_variant, assessment_type
     FROM

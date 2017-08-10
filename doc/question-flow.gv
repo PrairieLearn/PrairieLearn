@@ -9,8 +9,8 @@ digraph question_flow {
 
     start [label="Start"];
     display_broken [label="update errors table\ldisplay error code to student"];
-    display_editable [label="question displayed to student\lwith save/submit buttons"];
-    display_uneditable [label="question displayed to student\lwithout save/submit buttons"];
+    display_editable [label="question displayed to student\lwith submit button"];
+    display_uneditable [label="question displayed to student\lwithout submit button"];
     submission_received [label="submission received"];
     question_update [label="question points update"];
 
@@ -31,7 +31,7 @@ digraph question_flow {
     broken_submission [label="Broken submission:\l\lsubmission.broken = true"];
     ungradable_submission [label="Ungradable submission:\l\lsubmission.broken = false\lsubmission.gradable = false"];
     gradable_submission [label="Gradable submission:\l\lsubmission.broken = false\lsubmission.gradable = true"];
-    graded_submission [label="Graded submission:\l\lsubmission.broken = false\lsubmission.gradable = true\lsubmission.graded_at != NULL\lsubmision.score != NULL\lsubmission.feedback != NULL"];
+    graded_submission [label="Graded submission:\l\lsubmission.broken = false\lsubmission.gradable = true\lsubmission.graded_at = <value>\lsubmision.score = <value>\lsubmission.feedback = <value>"];
 
     start -> generating;
     generating -> broken_variant [label="question\lcode error"];

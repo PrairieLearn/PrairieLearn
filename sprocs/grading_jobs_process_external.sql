@@ -14,6 +14,8 @@ DECLARE
     instance_question_id bigint;
     assessment_instance_id bigint;
 BEGIN
+    PERFORM grading_jobs_lock(grading_job_id);
+
     -- ######################################################################
     -- get the variant and related objects
 
@@ -44,18 +46,6 @@ BEGIN
     -- example. This is not involved in re-grading because we will
     -- make a separate grading_job for re-grades.
     IF grading_job.graded_at IS NOT NULL THEN RETURN; END IF;
-
-    -- ######################################################################
-    -- locking
-
-    -- lock the assessment_instance if we have one, otherwise lock the variant
-    IF assessment_instance_id IS NOT NULL THEN
-        PERFORM ai.id FROM assessment_instances AS ai
-        WHERE ai.id = assessment_instance_id FOR UPDATE OF ai;
-    ELSE
-        PERFORM v.id FROM variants AS v
-        WHERE v.id = variant_id FOR UPDATE OF v;
-    END IF;
 
     -- ######################################################################
     -- store the grading information

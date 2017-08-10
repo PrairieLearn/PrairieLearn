@@ -18,6 +18,8 @@ DECLARE
     last_access timestamptz;
     delta interval;
 BEGIN
+    PERFORM variants_lock(variant_id);
+
     -- ######################################################################
     -- get the variant
 
@@ -35,24 +37,18 @@ BEGIN
     WHERE v.id = variant_id;
 
     -- ######################################################################
-    -- locking
+    -- make sure everything is ok
 
-    -- lock the assessment_instance if we have one, otherwise lock the variant
-    IF assessment_instance_id IS NOT NULL THEN
-        PERFORM ai.id FROM assessment_instances AS ai
-        WHERE ai.id = assessment_instance_id FOR UPDATE OF ai;
-    ELSE
-        PERFORM v.id FROM variants AS v
-        WHERE v.id = variant_id FOR UPDATE OF v;
+    IF variant.broken THEN
+        RAISE EXCEPTION 'variant is broken: %', variant_id;
     END IF;
 
-    -- ######################################################################
-    -- make sure everything is still open
-
     PERFORM variants_ensure_open(variant_id);
+
     IF instance_question_id IS NOT NULL THEN
         PERFORM instance_questions_ensure_open(instance_question_id);
     END IF;
+
     IF assessment_instance_id IS NOT NULL THEN
         PERFORM assessment_instances_ensure_open(assessment_instance_id);
     END IF;

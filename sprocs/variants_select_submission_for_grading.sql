@@ -8,6 +8,8 @@ CREATE OR REPLACE FUNCTION
     ) RETURNS TABLE (submission submissions)
 AS $$
 BEGIN
+    PERFORM variants_lock(variant_id);
+
     -- start with the most recent submission
     SELECT s.*
     INTO submission
@@ -25,6 +27,7 @@ BEGIN
     -- does the most recent submission actually need grading?
     IF submission.score IS NOT NULL THEN RETURN; END IF; -- already graded
     IF submission.grading_requested_at IS NOT NULL THEN RETURN; END IF; -- grading is in progress
+    IF submission.broken THEN RETURN; END IF;
     IF NOT submission.gradable THEN RETURN; END IF;
 
     RETURN NEXT;

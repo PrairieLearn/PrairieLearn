@@ -348,6 +348,7 @@ module.exports = {
     },
     
     prepare: function(question, course, variant, callback) {
+        if (variant.broken) return callback(new Error('attemped to prepare broken variant'));
         const data = {
             params: _.get(variant, 'params', {}),
             correct_answers: _.get(variant, 'true_answer', {}),
@@ -447,6 +448,7 @@ module.exports = {
     },
 
     parse: function(submission, variant, question, course, callback) {
+        if (variant.broken) return callback(new Error('attemped to parse broken variant'));
         const data = {
             params: _.get(variant, 'params', {}),
             correct_answers: _.get(variant, 'true_answer', {}),
@@ -477,6 +479,8 @@ module.exports = {
     },
 
     grade: function(submission, variant, question, course, callback) {
+        if (variant.broken) return callback(new Error('attemped to grade broken variant'));
+        if (submission.broken) return callback(new Error('attemped to grade broken submission'));
         let data = {
             params: variant.params,
             correct_answers: variant.true_answer,
