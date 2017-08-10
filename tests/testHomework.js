@@ -28,7 +28,7 @@ describe('Homework assessment', function() {
     before('set up testing server', helperServer.before);
     after('shut down testing server', helperServer.after);
 
-    var res, page, $, elemList;
+    var res, page, elemList;
 
     describe('database', function() {
         it('should contain HW1', function(callback) {
@@ -55,10 +55,10 @@ describe('Homework assessment', function() {
             });
         });
         it('should parse', function() {
-            $ = cheerio.load(page);
+            locals.$ = cheerio.load(page);
         });
         it('should contain HW1', function() {
-            elemList = $('td a:contains("Homework for automatic test suite")');
+            elemList = locals.$('td a:contains("Homework for automatic test suite")');
             assert.lengthOf(elemList, 1);
         });
         it('should have the correct link for HW1', function() {
@@ -139,22 +139,22 @@ describe('Homework assessment', function() {
             });
         });
         it('should parse', function() {
-            $ = cheerio.load(page);
+            locals.$ = cheerio.load(page);
         });
         it('should link to addNumbers question', function() {
-            elemList = $('td a:contains("Add two numbers")');
+            elemList = locals.$('td a:contains("Add two numbers")');
             assert.lengthOf(elemList, 1);
             addNumbers.url = locals.siteUrl + elemList[0].attribs.href;
             assert.equal(addNumbers.url, locals.courseInstanceBaseUrl + '/instance_question/' + addNumbers.id + '/');
         });
         it('should link to addVectors question', function() {
-            elemList = $('td a:contains("Addition of vectors in Cartesian coordinates")');
+            elemList = locals.$('td a:contains("Addition of vectors in Cartesian coordinates")');
             assert.lengthOf(elemList, 1);
             addVectors.url = locals.siteUrl + elemList[0].attribs.href;
             assert.equal(addVectors.url, locals.courseInstanceBaseUrl + '/instance_question/' + addVectors.id + '/');
         });
         it('should link to fossilFuelsRadio question', function() {
-            elemList = $('td a:contains("Advantages of fossil fuels (radio)")');
+            elemList = locals.$('td a:contains("Advantages of fossil fuels (radio)")');
             assert.lengthOf(elemList, 1);
             fossilFuelsRadio.url = locals.siteUrl + elemList[0].attribs.href;
             assert.equal(fossilFuelsRadio.url, locals.courseInstanceBaseUrl + '/instance_question/' + fossilFuelsRadio.id + '/');
@@ -164,6 +164,7 @@ describe('Homework assessment', function() {
     describe('1. submit correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
                 locals.question = addVectors;
                 locals.expectedResult = {
                     submission_score: 1,
@@ -190,6 +191,7 @@ describe('Homework assessment', function() {
     describe('2. submit correct answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
                 locals.question = fossilFuelsRadio;
                 locals.expectedResult = {
                     submission_score: 1,
@@ -215,6 +217,7 @@ describe('Homework assessment', function() {
     describe('3. submit incorrect answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
                 locals.question = addVectors;
                 locals.expectedResult = {
                     submission_score: 0,
@@ -241,6 +244,7 @@ describe('Homework assessment', function() {
     describe('4. submit correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
                 locals.question = addVectors;
                 locals.expectedResult = {
                     submission_score: 1,
@@ -267,6 +271,7 @@ describe('Homework assessment', function() {
     describe('5. submit correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
                 locals.question = addVectors;
                 locals.expectedResult = {
                     submission_score: 1,
@@ -293,6 +298,7 @@ describe('Homework assessment', function() {
     describe('6. submit correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
                 locals.question = addVectors;
                 locals.expectedResult = {
                     submission_score: 1,
@@ -319,6 +325,7 @@ describe('Homework assessment', function() {
     describe('7. submit correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
                 locals.question = addVectors;
                 locals.expectedResult = {
                     submission_score: 1,
@@ -345,6 +352,7 @@ describe('Homework assessment', function() {
     describe('8. load question addNumbers page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
                 locals.question = addNumbers;
             });
         });
@@ -360,6 +368,7 @@ describe('Homework assessment', function() {
     describe('9. submit incorrect answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
                 locals.question = addNumbers;
                 locals.expectedResult = {
                     submission_score: 0,
@@ -385,6 +394,7 @@ describe('Homework assessment', function() {
     describe('10. submit correct answer to saved question addNumbers page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
                 locals.question = addNumbers;
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -405,6 +415,7 @@ describe('Homework assessment', function() {
     describe('11. submit correct answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
                 locals.question = addNumbers;
                 locals.expectedResult = {
                     submission_score: 1,
@@ -430,6 +441,7 @@ describe('Homework assessment', function() {
     describe('12. submit correct answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
                 locals.question = fossilFuelsRadio;
                 locals.expectedResult = {
                     submission_score: 1,
@@ -455,6 +467,7 @@ describe('Homework assessment', function() {
     describe('13. submit incorrect answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
                 locals.question = fossilFuelsRadio;
                 locals.expectedResult = {
                     submission_score: 0,
@@ -480,6 +493,7 @@ describe('Homework assessment', function() {
     describe('14. submit correct answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
                 locals.question = fossilFuelsRadio;
                 locals.expectedResult = {
                     submission_score: 1,
@@ -505,6 +519,7 @@ describe('Homework assessment', function() {
     describe('15. submit incorrect answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
                 locals.question = fossilFuelsRadio;
                 locals.expectedResult = {
                     submission_score: 0,

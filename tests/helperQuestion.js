@@ -9,7 +9,7 @@ var sqldb = require('../lib/sqldb');
 var sqlLoader = require('../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-var res, page, $, elemList;
+var res, page, elemList;
 
 module.exports = {
     getInstanceQuestion(locals) {
@@ -29,11 +29,11 @@ module.exports = {
                 });
             });
             it('should parse', function() {
-                $ = cheerio.load(page);
+                locals.$ = cheerio.load(page);
             });
             it('should contain question-data if Calculation', function() {
                 if (locals.question.type != 'Calculation') return;
-                elemList = $('.question-data');
+                elemList = locals.$('.question-data');
                 assert.lengthOf(elemList, 1);
             });
             it('question-data should contain base64 data if Calculation', function() {
@@ -51,15 +51,17 @@ module.exports = {
                 assert.deepProperty(locals.questionData, 'variant.id');
                 locals.variant_id = locals.questionData.variant.id;
             });
-            it('should have a variant_id input if Freeform', function() {
+            it('should have a variant_id input if Freeform with submit button', function() {
                 if (locals.question.type != 'Freeform') return;
-                elemList = $('.question-form input[name="variant_id"]');
+                if (!locals.shouldHaveSubmitButton) return;
+                elemList = locals.$('.question-form input[name="variant_id"]');
                 assert.lengthOf(elemList, 1);
                 assert.deepProperty(elemList[0], 'attribs.value');
                 locals.variant_id = elemList[0].attribs.value;
                 locals.variant_id = Number.parseInt(locals.variant_id);
             });
-            it('should have the variant in the DB', function(callback) {
+            it('should have the variant in the DB if has submit button', function(callback) {
+                if (!locals.shouldHaveSubmitButton) return callback(null);
                 var params = {
                     variant_id: locals.variant_id
                 };
@@ -69,19 +71,39 @@ module.exports = {
                     callback(null);
                 });
             });
-            it('should have the correct variant.question.id', function() {
+            it('should have the correct variant.question.id if has submit button', function() {
+                if (!locals.shouldHaveSubmitButton) return;
                 assert.equal(locals.variant.instance_question_id, locals.question.id);
             });
-            it('should not be a broken variant if Freeform', function() {
+            it('should not be a broken variant if Freeform with submit button', function() {
                 if (locals.question.type != 'Freeform') return;
+                if (!locals.shouldHaveSubmitButton) return;
                 assert.equal(locals.variant.broken, false);
             });
-            it('should have a CSRF token', function() {
-                elemList = $('.question-form input[name="csrfToken"]');
+            it('should have a CSRF token if has submit button', function() {
+                if (!locals.shouldHaveSubmitButton) return;
+                elemList = locals.$('.question-form input[name="csrfToken"]');
                 assert.lengthOf(elemList, 1);
                 assert.deepProperty(elemList[0], 'attribs.value');
                 locals.csrfToken = elemList[0].attribs.value;
                 assert.isString(locals.csrfToken);
+            });
+            it('should have or not have submit button', function() {
+                if (locals.question.type == 'Freeform') {
+                    elemList = locals.$('button.freeform-question-submit');
+                    if (locals.shouldHaveSubmitButton) {
+                        assert.lengthOf(elemList, 1);
+                    } else {
+                        assert.lengthOf(elemList, 0);
+                    }
+                } else {
+                    elemList = locals.$('button.question-submit');
+                    if (locals.shouldHaveSubmitButton) {
+                        assert.lengthOf(elemList, 1);
+                    } else {
+                        assert.lengthOf(elemList, 0);
+                    }
+                }
             });
         });
     },
@@ -125,7 +147,7 @@ module.exports = {
                 });
             });
             it('should parse', function() {
-                $ = cheerio.load(page);
+                locals.$ = cheerio.load(page);
             });
             it('should create a submission', function(callback) {
                 var params = {variant_id: locals.variant.id};
@@ -282,10 +304,10 @@ module.exports = {
                 });
             });
             it('should parse', function() {
-                $ = cheerio.load(page);
+                locals.$ = cheerio.load(page);
             });
             it('should have a CSRF token', function() {
-                elemList = $('form[name="regrade-all-form"] input[name="csrfToken"]');
+                elemList = locals.$('form[name="regrade-all-form"] input[name="csrfToken"]');
                 assert.lengthOf(elemList, 1);
                 assert.deepProperty(elemList[0], 'attribs.value');
                 locals.csrfToken = elemList[0].attribs.value;

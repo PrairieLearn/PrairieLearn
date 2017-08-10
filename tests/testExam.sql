@@ -26,6 +26,26 @@ FROM
 ORDER BY
     q.qid;
 
+-- BLOCK variant_update_broken
+UPDATE variants
+SET broken = $broken
+WHERE id = $variant_id
+RETURNING *;
+
+-- BLOCK submission_update_broken
+WITH last_submission AS (
+    SELECT *
+    FROM submissions
+    WHERE variant_id = $variant_id
+    ORDER BY date DESC
+    LIMIT 1
+)
+UPDATE submissions AS s
+SET broken = $broken
+FROM last_submission
+WHERE s.id = last_submission.id
+RETURNING *;
+
 -- BLOCK update_question1_force_max_points
 UPDATE assessment_questions AS aq
 SET

@@ -371,8 +371,20 @@ module.exports = {
     },
 
     renderPanel: function(panel, pc, variant, question, submission, course, locals, callback) {
+        // broken variant kills all rendering
         if (variant.broken) return callback(null, [], 'Broken question due to error in question code');
-        if (submission && submission.broken) return callback(null, [], 'Broken submission due to error in question code');
+
+        // broken submission kills the submission panel, but we can
+        // proceed with other panels, treating the submission as
+        // missing
+        if (submission && submission.broken) {
+            if (panel == 'submission') {
+                return callback(null, [], 'Broken submission due to error in question code');
+            } else {
+                submission = null;
+            }
+        }
+
         const data = {
             params: _.get(variant, 'params', {}),
             correct_answers: _.get(variant, 'true_answer', {}),
