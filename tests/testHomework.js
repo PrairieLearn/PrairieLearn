@@ -342,7 +342,22 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('8. submit incorrect answer to question addNumbers', function() {
+    describe('8. load question addNumbers page and save data for later submission', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.question = addNumbers;
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        describe('save data for later submission', function() {
+            it('should succeed', function() {
+                locals.savedVariant = _.clone(locals.variant);
+                locals.questionSavedCsrfToken = locals.csrfToken;
+            });
+        });
+    });
+
+    describe('9. submit incorrect answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.question = addNumbers;
@@ -367,7 +382,27 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('9. submit correct answer to question addNumbers', function() {
+    describe('10. submit correct answer to saved question addNumbers page', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.question = addNumbers;
+                locals.getSubmittedAnswer = function(variant) {
+                    return {
+                        c: variant.true_answer.c,
+                    };
+                };
+            });
+        });
+        describe('restore saved data for submission', function() {
+            it('should succeed', function() {
+                locals.variant = _.clone(locals.savedVariant);
+                locals.csrfToken = locals.questionSavedCsrfToken;
+            });
+        });
+        helperQuestion.postInstanceQuestionAndFail(locals);
+    });
+
+    describe('11. submit correct answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.question = addNumbers;
@@ -392,56 +427,6 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('10. submit correct answer to question fossilFuelsRadio', function() {
-        describe('setting up the submission data', function() {
-            it('should succeed', function() {
-                locals.question = fossilFuelsRadio;
-                locals.expectedResult = {
-                    submission_score: 1,
-                    submission_correct: true,
-                    instance_question_points: 9,
-                    instance_question_score_perc: 9/14 * 100,
-                    assessment_instance_points: 21,
-                    assessment_instance_score_perc: 21/30 * 100,
-                };
-                locals.getSubmittedAnswer = function(variant) {
-                    return {
-                        key: variant.true_answer.key,
-                    };
-                };
-            });
-        });
-        helperQuestion.getInstanceQuestion(locals);
-        helperQuestion.postInstanceQuestion(locals);
-        helperQuestion.checkQuestionScore(locals);
-        helperQuestion.checkAssessmentScore(locals);
-    });
-
-    describe('11. submit incorrect answer to question fossilFuelsRadio', function() {
-        describe('setting up the submission data', function() {
-            it('should succeed', function() {
-                locals.question = fossilFuelsRadio;
-                locals.expectedResult = {
-                    submission_score: 0,
-                    submission_correct: false,
-                    instance_question_points: 9,
-                    instance_question_score_perc: 9/14 * 100,
-                    assessment_instance_points: 21,
-                    assessment_instance_score_perc: 21/30 * 100,
-                };
-                locals.getSubmittedAnswer = function(variant) {
-                    return {
-                        key: (variant.true_answer.key == 'a') ? 'b' : 'a',
-                    };
-                };
-            });
-        });
-        helperQuestion.getInstanceQuestion(locals);
-        helperQuestion.postInstanceQuestion(locals);
-        helperQuestion.checkQuestionScore(locals);
-        helperQuestion.checkAssessmentScore(locals);
-    });
-
     describe('12. submit correct answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
@@ -449,10 +434,10 @@ describe('Homework assessment', function() {
                 locals.expectedResult = {
                     submission_score: 1,
                     submission_correct: true,
-                    instance_question_points: 12,
-                    instance_question_score_perc: 12/14 * 100,
-                    assessment_instance_points: 24,
-                    assessment_instance_score_perc: 24/30 * 100,
+                    instance_question_points: 9,
+                    instance_question_score_perc: 9/14 * 100,
+                    assessment_instance_points: 21,
+                    assessment_instance_score_perc: 21/30 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -474,6 +459,56 @@ describe('Homework assessment', function() {
                 locals.expectedResult = {
                     submission_score: 0,
                     submission_correct: false,
+                    instance_question_points: 9,
+                    instance_question_score_perc: 9/14 * 100,
+                    assessment_instance_points: 21,
+                    assessment_instance_score_perc: 21/30 * 100,
+                };
+                locals.getSubmittedAnswer = function(variant) {
+                    return {
+                        key: (variant.true_answer.key == 'a') ? 'b' : 'a',
+                    };
+                };
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkQuestionScore(locals);
+        helperQuestion.checkAssessmentScore(locals);
+    });
+
+    describe('14. submit correct answer to question fossilFuelsRadio', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.question = fossilFuelsRadio;
+                locals.expectedResult = {
+                    submission_score: 1,
+                    submission_correct: true,
+                    instance_question_points: 12,
+                    instance_question_score_perc: 12/14 * 100,
+                    assessment_instance_points: 24,
+                    assessment_instance_score_perc: 24/30 * 100,
+                };
+                locals.getSubmittedAnswer = function(variant) {
+                    return {
+                        key: variant.true_answer.key,
+                    };
+                };
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkQuestionScore(locals);
+        helperQuestion.checkAssessmentScore(locals);
+    });
+
+    describe('15. submit incorrect answer to question fossilFuelsRadio', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.question = fossilFuelsRadio;
+                locals.expectedResult = {
+                    submission_score: 0,
+                    submission_correct: false,
                     instance_question_points: 12,
                     instance_question_score_perc: 12/14 * 100,
                     assessment_instance_points: 24,
@@ -492,7 +527,7 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('14. regrading', function() {
+    describe('16. regrading', function() {
         describe('change max_points', function() {
             it('should succeed', function(callback) {
                 sqldb.query(sql.update_max_points, [], function(err, _result) {

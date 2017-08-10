@@ -196,8 +196,8 @@ module.exports = {
                     if (error) {
                         return callback(error);
                     }
-                    if (response.statusCode != 400) {
-                        return callback(new Error('bad status (expected 400): ' + response.statusCode));
+                    if (response.statusCode != 400 && response.statusCode != 500) {
+                        return callback(new Error('bad status (expected 400 or 500): ' + response.statusCode));
                     }
                     res = response;
                     page = body;
