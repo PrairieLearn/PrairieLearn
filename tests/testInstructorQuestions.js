@@ -29,7 +29,7 @@ describe('Instructor questions', function() {
     before('set up testing server', helperServer.before);
     after('shut down testing server', helperServer.after);
 
-    var res, page, elemList;
+    var page, elemList;
 
     describe('the database', function() {
         it('should contain questions', function(callback) {
@@ -63,7 +63,6 @@ describe('Instructor questions', function() {
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                res = response;
                 page = body;
                 callback(null);
             });
@@ -116,7 +115,7 @@ describe('Instructor questions', function() {
                     submission_score: 0,
                     submission_correct: false,
                 };
-                locals.getSubmittedAnswer = function(variant) {
+                locals.getSubmittedAnswer = function(_variant) {
                     return {
                         wx: -300,
                         wy: 400,
@@ -180,9 +179,9 @@ describe('Instructor questions', function() {
                     submission_score: null,
                     submission_correct: null,
                 };
-                locals.getSubmittedAnswer = function(variant) {
+                locals.getSubmittedAnswer = function(_variant) {
                     return {
-                        c: "not_a_number",
+                        c: 'not_a_number',
                     };
                 };
             });

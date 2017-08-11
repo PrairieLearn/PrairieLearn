@@ -479,9 +479,9 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals.shouldHaveSubmitButton = true;
                 locals.question = addNumbers;
-                locals.getSubmittedAnswer = function(variant) {
+                locals.getSubmittedAnswer = function(_variant) {
                     return {
-                        c: "not_a_number",
+                        c: 'not_a_number',
                     };
                 };
             });
@@ -586,7 +586,7 @@ describe('Exam assessment', function() {
                     variant_id: locals.variant.id,
                     broken: true,
                 };
-                sqldb.queryOneRow(sql.variant_update_broken, params, function(err, result) {
+                sqldb.queryOneRow(sql.variant_update_broken, params, function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -608,7 +608,7 @@ describe('Exam assessment', function() {
                     variant_id: locals.variant.id,
                     broken: false,
                 };
-                sqldb.queryOneRow(sql.variant_update_broken, params, function(err, result) {
+                sqldb.queryOneRow(sql.variant_update_broken, params, function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -646,7 +646,7 @@ describe('Exam assessment', function() {
                     variant_id: locals.variant.id,
                     broken: true,
                 };
-                sqldb.queryOneRow(sql.submission_update_broken, params, function(err, result) {
+                sqldb.queryOneRow(sql.submission_update_broken, params, function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -725,7 +725,7 @@ describe('Exam assessment', function() {
                     variant_id: locals.variant.id,
                     broken: false,
                 };
-                sqldb.queryOneRow(sql.submission_update_broken, params, function(err, result) {
+                sqldb.queryOneRow(sql.submission_update_broken, params, function(err, _result) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });

@@ -453,9 +453,9 @@ describe('Homework assessment', function() {
                     assessment_instance_points: 15,
                     assessment_instance_score_perc: 15/30 * 100,
                 };
-                locals.getSubmittedAnswer = function(variant) {
+                locals.getSubmittedAnswer = function(_variant) {
                     return {
-                        c: "42c",
+                        c: '42c',
                     };
                 };
             });

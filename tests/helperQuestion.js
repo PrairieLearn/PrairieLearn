@@ -4,12 +4,11 @@ var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
 
-var config = require('../lib/config');
 var sqldb = require('../lib/sqldb');
 var sqlLoader = require('../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-var res, page, elemList;
+var page, elemList;
 
 module.exports = {
     getInstanceQuestion(locals) {
@@ -23,7 +22,6 @@ module.exports = {
                     if (response.statusCode != 200) {
                         return callback(new Error('bad status: ' + response.statusCode));
                     }
-                    res = response;
                     page = body;
                     callback(null);
                 });
@@ -147,7 +145,6 @@ module.exports = {
                     if (response.statusCode != 200) {
                         return callback(new Error('bad status: ' + response.statusCode));
                     }
-                    res = response;
                     page = body;
                     callback(null);
                 });
@@ -229,7 +226,6 @@ module.exports = {
                     if (response.statusCode != 400 && response.statusCode != 500) {
                         return callback(new Error('bad status (expected 400 or 500): ' + response.statusCode));
                     }
-                    res = response;
                     page = body;
                     callback(null);
                 });
@@ -327,7 +323,6 @@ module.exports = {
                     if (response.statusCode != 200) {
                         return callback(new Error('bad status: ' + response.statusCode));
                     }
-                    res = response;
                     page = body;
                     callback(null);
                 });
