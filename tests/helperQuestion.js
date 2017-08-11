@@ -52,7 +52,6 @@ module.exports = {
             it('should have a variant_id input if Freeform with submit button', function() {
                 if (locals.question.type != 'Freeform') return;
                 if (!locals.shouldHaveSubmitButton) return;
-                console.log(locals.$.html());
                 elemList = locals.$('.question-form input[name="variant_id"]');
                 assert.lengthOf(elemList, 1);
                 assert.deepProperty(elemList[0], 'attribs.value');
