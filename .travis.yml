@@ -24,7 +24,7 @@ notifications:
 
 script:
   # Install chevron
-  - pip install chevron
+  - pip3 install chevron
 
   # Run JS tests
   - npm test
