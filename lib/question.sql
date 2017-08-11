@@ -1,10 +1,11 @@
 -- BLOCK select_errors
 SELECT
     e.*,
-    format_date_full(e.date, ci.display_timezone) AS formatted_date
+    format_date_full(e.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date
 FROM
     errors AS e
-    JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
+    LEFT JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
+    JOIN pl_courses AS c ON (c.id = e.course_id)
 WHERE
     e.variant_id = $variant_id
     AND e.course_caused
