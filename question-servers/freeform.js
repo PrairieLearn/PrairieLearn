@@ -478,6 +478,7 @@ module.exports = {
         module.exports.processQuestion('parse', pc, data, options, (err, courseErrs, data, _html) => {
             pc.done();
             if (ERR(err, callback)) return;
+            if (_.size(data.format_errors) > 0) data.gradable = false;
             const ret_vals = {
                 params: data.params,
                 true_answer: data.correct_answers,
@@ -513,6 +514,7 @@ module.exports = {
         module.exports.processQuestion('grade', pc, data, options, (err, courseErrs, data, _html) => {
             pc.done();
             if (ERR(err, callback)) return;
+            if (_.size(data.format_errors) > 0) data.gradable = false;
             const ret_vals = {
                 params: data.params,
                 true_answer: data.correct_answers,

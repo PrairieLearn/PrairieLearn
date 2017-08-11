@@ -472,96 +472,40 @@ describe('Exam assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('6. break the addNumbers variant', function() {
-        describe('setting the question', function() {
-            it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
-                locals.question = addNumbers;
-            });
-        });
-        helperQuestion.getInstanceQuestion(locals);
-        describe('breaking the variant', function() {
-            it('should succeed', function(callback) {
-                let params = {
-                    variant_id: locals.variant.id,
-                    broken: true,
-                };
-                sqldb.queryOneRow(sql.variant_update_broken, params, function(err, result) {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            });
-            it('should result in no submit button', function() {
-                locals.shouldHaveSubmitButton = false;
-            });
-        });
-        helperQuestion.getInstanceQuestion(locals);
-        describe('the question panel contents', function() {
-            it('should contain "Broken question"', function() {
-                elemList = locals.$('div.question-body:contains("Broken question")');
-                assert.lengthOf(elemList, 1);
-            });
-        });
-        describe('un-breaking the variant', function() {
-            it('should succeed', function(callback) {
-                let params = {
-                    variant_id: locals.variant.id,
-                    broken: false,
-                };
-                sqldb.queryOneRow(sql.variant_update_broken, params, function(err, result) {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            });
-        });
-    });
-
-    describe('7. submit correct answer to question addNumbers', function() {
+    describe('6. submit invalid answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveSubmitButton = true;
                 locals.question = addNumbers;
                 locals.getSubmittedAnswer = function(variant) {
                     return {
-                        c: variant.true_answer.c,
+                        c: "not_a_number",
                     };
                 };
             });
         });
         helperQuestion.getInstanceQuestion(locals);
         helperQuestion.postInstanceQuestion(locals);
-    });
-
-    describe('8. break the addNumbers submission', function() {
-        describe('setting the question', function() {
-            it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
-                locals.question = addNumbers;
-            });
-        });
-        helperQuestion.getInstanceQuestion(locals);
-        describe('breaking the most recent submission', function() {
+        describe('check the submission is not gradable', function() {
             it('should succeed', function(callback) {
-                let params = {
-                    variant_id: locals.variant.id,
-                    broken: true,
-                };
-                sqldb.queryOneRow(sql.submission_update_broken, params, function(err, result) {
+                sqldb.queryOneRow(sql.select_last_submission, [], function(err, result) {
                     if (ERR(err, callback)) return;
+                    const submission = result.rows[0];
+                    if (submission.gradable) return callback(new Error('submission.gradable is true'));
                     callback(null);
                 });
             });
         });
         helperQuestion.getInstanceQuestion(locals);
         describe('the submission panel contents', function() {
-            it('should contain "Broken submission"', function() {
-                elemList = locals.$('div.submission-body:contains("Broken submission")');
-                assert.lengthOf(elemList, 1);
+            it('should contain "INVALID"', function() {
+                elemList = locals.$('div.submission-body :contains("INVALID")');
+                assert.isAtLeast(elemList.length, 1);
             });
         });
     });
 
-    describe('9. grade exam', function() {
+    describe('7. grade exam', function() {
         getGradeAssessmentInstance();
         postGradeAssessmentInstance();
         describe('setting up the expected question addNumbers results', function() {
@@ -611,7 +555,162 @@ describe('Exam assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('10. un-break the addNumbers submission', function() {
+    describe('8. submit incorrect answer to question addNumbers', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
+                locals.question = addNumbers;
+                locals.getSubmittedAnswer = function(variant) {
+                    return {
+                        c: variant.true_answer.c - 1,
+                    };
+                };
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        helperQuestion.postInstanceQuestion(locals);
+    });
+
+    describe('9. break the addNumbers variant', function() {
+        describe('setting the question', function() {
+            it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
+                locals.question = addNumbers;
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        describe('breaking the variant', function() {
+            it('should succeed', function(callback) {
+                let params = {
+                    variant_id: locals.variant.id,
+                    broken: true,
+                };
+                sqldb.queryOneRow(sql.variant_update_broken, params, function(err, result) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            });
+            it('should result in no submit button', function() {
+                locals.shouldHaveSubmitButton = false;
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        describe('the question panel contents', function() {
+            it('should contain "Broken question"', function() {
+                elemList = locals.$('div.question-body:contains("Broken question")');
+                assert.lengthOf(elemList, 1);
+            });
+        });
+        describe('un-breaking the variant', function() {
+            it('should succeed', function(callback) {
+                let params = {
+                    variant_id: locals.variant.id,
+                    broken: false,
+                };
+                sqldb.queryOneRow(sql.variant_update_broken, params, function(err, result) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            });
+        });
+    });
+
+    describe('10. submit correct answer to question addNumbers', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
+                locals.question = addNumbers;
+                locals.getSubmittedAnswer = function(variant) {
+                    return {
+                        c: variant.true_answer.c,
+                    };
+                };
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        helperQuestion.postInstanceQuestion(locals);
+    });
+
+    describe('11. break the addNumbers submission', function() {
+        describe('setting the question', function() {
+            it('should succeed', function() {
+                locals.shouldHaveSubmitButton = true;
+                locals.question = addNumbers;
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        describe('breaking the most recent submission', function() {
+            it('should succeed', function(callback) {
+                let params = {
+                    variant_id: locals.variant.id,
+                    broken: true,
+                };
+                sqldb.queryOneRow(sql.submission_update_broken, params, function(err, result) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        describe('the submission panel contents', function() {
+            it('should contain "Broken submission"', function() {
+                elemList = locals.$('div.submission-body:contains("Broken submission")');
+                assert.lengthOf(elemList, 1);
+            });
+        });
+    });
+
+    describe('12. grade exam', function() {
+        getGradeAssessmentInstance();
+        postGradeAssessmentInstance();
+        describe('setting up the expected question addNumbers results', function() {
+            it('should succeed', function() {
+                locals.question = addNumbers;
+                locals.expectedResult = {
+                    submission_score: null,
+                    submission_correct: null,
+                    instance_question_points: 0,
+                    instance_question_score_perc: 0,
+                };
+            });
+        });
+        helperQuestion.checkQuestionScore(locals);
+        describe('setting up the expected question addVectors results', function() {
+            it('should succeed', function() {
+                locals.question = addVectors;
+                locals.expectedResult = {
+                    submission_score: 0,
+                    submission_correct: false,
+                    instance_question_points: 0,
+                    instance_question_score_perc: 0,
+                };
+            });
+        });
+        helperQuestion.checkQuestionScore(locals);
+        describe('setting up the expected question fossilFuelsRadio results', function() {
+            it('should succeed', function() {
+                locals.question = fossilFuelsRadio;
+                locals.expectedResult = {
+                    submission_score: 0,
+                    submission_correct: false,
+                    instance_question_points: 0,
+                    instance_question_score_perc: 0,
+                };
+            });
+        });
+        helperQuestion.checkQuestionScore(locals);
+        describe('setting up the expected assessment results', function() {
+            it('should succeed', function() {
+                locals.expectedResult = {
+                    assessment_instance_points: 0,
+                    assessment_instance_score_perc: 0,
+                };
+            });
+        });
+        helperQuestion.checkAssessmentScore(locals);
+    });
+
+    describe('13. un-break the addNumbers submission', function() {
         describe('setting the question', function() {
             it('should succeed', function() {
                 locals.shouldHaveSubmitButton = true;
@@ -633,7 +732,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('11. load question addNumbers page and save data for later submission', function() {
+    describe('14. load question addNumbers page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveSubmitButton = true;
@@ -649,7 +748,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('12. grade exam', function() {
+    describe('15. grade exam', function() {
         getGradeAssessmentInstance();
         postGradeAssessmentInstance();
         describe('setting up the expected question addNumbers results', function() {
@@ -699,7 +798,7 @@ describe('Exam assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('13. submit correct answer to saved question addNumbers page', function() {
+    describe('16. submit correct answer to saved question addNumbers page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.question = addNumbers;
@@ -719,7 +818,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestionAndFail(locals);
     });
 
-    describe('14. submit incorrect answer to question fossilFuelsRadio', function() {
+    describe('17. submit incorrect answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveSubmitButton = true;
@@ -735,7 +834,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestion(locals);
     });
 
-    describe('15. submit incorrect answer to question addVectors', function() {
+    describe('18. submit incorrect answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveSubmitButton = true;
@@ -752,7 +851,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestion(locals);
     });
 
-    describe('16. load question addVectors page and save data for later submission', function() {
+    describe('19. load question addVectors page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveSubmitButton = true;
@@ -768,7 +867,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('17. grade exam', function() {
+    describe('20. grade exam', function() {
         getGradeAssessmentInstance();
         postGradeAssessmentInstance();
         describe('setting up the expected question addNumbers results', function() {
@@ -818,7 +917,7 @@ describe('Exam assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('18. submit correct answer to saved question addVectors page', function() {
+    describe('21. submit correct answer to saved question addVectors page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.question = addVectors;
@@ -839,7 +938,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestionAndFail(locals);
     });
 
-    describe('19. load question fossilFuelsRadio page and save data for later submission', function() {
+    describe('22. load question fossilFuelsRadio page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveSubmitButton = true;
@@ -855,7 +954,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('20. load assessment instance page and save data for later grade', function() {
+    describe('23. load assessment instance page and save data for later grade', function() {
         getGradeAssessmentInstance();
         describe('save data for later grade', function() {
             it('should succeed', function() {
@@ -864,7 +963,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('21. load assessment instance page and save data for later finish', function() {
+    describe('24. load assessment instance page and save data for later finish', function() {
         getFinishAssessmentInstance();
         describe('save data for later finish', function() {
             it('should succeed', function() {
@@ -873,7 +972,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('22. finish exam', function() {
+    describe('25. finish exam', function() {
         getFinishAssessmentInstance();
         postFinishAssessmentInstance();
         describe('setting up the expected question addNumbers results', function() {
@@ -923,7 +1022,7 @@ describe('Exam assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('23. submit correct answer to saved question fossilFuelsRadio page', function() {
+    describe('26. submit correct answer to saved question fossilFuelsRadio page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.question = fossilFuelsRadio;
@@ -943,7 +1042,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestionAndFail(locals);
     });
 
-    describe('24. grade exam', function() {
+    describe('27. grade exam', function() {
         describe('restore saved data for grade', function() {
             it('should succeed', function() {
                 locals.csrfToken = locals.assessmentGradeSavedCsrfToken;
@@ -952,7 +1051,7 @@ describe('Exam assessment', function() {
         postGradeAssessmentInstanceAndFail();
     });
 
-    describe('25. finish exam', function() {
+    describe('28. finish exam', function() {
         describe('restore saved data for finish', function() {
             it('should succeed', function() {
                 locals.csrfToken = locals.assessmentFinishSavedCsrfToken;
@@ -961,7 +1060,7 @@ describe('Exam assessment', function() {
         postFinishAssessmentInstanceAndFail();
     });
 
-    describe('26. regrading', function() {
+    describe('29. regrading', function() {
         describe('set forceMaxPoints = true for question addVectors', function() {
             it('should succeed', function(callback) {
                 sqldb.query(sql.update_question1_force_max_points, [], function(err, _result) {

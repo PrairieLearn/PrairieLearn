@@ -26,6 +26,12 @@ FROM
 ORDER BY
     q.qid;
 
+-- BLOCK select_last_submission
+SELECT *
+FROM submissions
+ORDER BY date DESC
+LIMIT 1;
+
 -- BLOCK variant_update_broken
 UPDATE variants
 SET broken = $broken

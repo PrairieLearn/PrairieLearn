@@ -75,9 +75,9 @@ BEGIN
 
     INSERT INTO submissions
             (variant_id, auth_user_id,  raw_submitted_answer, submitted_answer, format_errors,
-            credit, mode, duration,         params,         true_answer)
+            credit, mode, duration,         params,         true_answer, gradable)
     VALUES  (variant_id, authn_user_id, raw_submitted_answer, submitted_answer, format_errors,
-            credit, mode, delta,    variant.params, variant.true_answer)
+            credit, mode, delta,    variant.params, variant.true_answer, gradable)
     RETURNING id
     INTO submission_id;
 
