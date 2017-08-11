@@ -496,7 +496,6 @@ describe('Exam assessment', function() {
                 });
             });
         });
-        helperQuestion.getInstanceQuestion(locals);
         describe('the submission panel contents', function() {
             it('should contain "INVALID"', function() {
                 elemList = locals.$('div.submission-body :contains("INVALID")');
