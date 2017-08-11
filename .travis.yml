@@ -23,8 +23,7 @@ notifications:
 
 script:
   # Install python packages
-  - pip3 install lxml
-  - pip3 install chevron
+  - pip3 install numpy scipy matplotlib pandas sympy lxml chevron
 
   # Run JS tests
   - npm test
