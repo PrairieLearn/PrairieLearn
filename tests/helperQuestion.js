@@ -15,8 +15,8 @@ module.exports = {
     getInstanceQuestion(locals) {
         describe('GET to instance_question URL', function() {
             it('should load successfully', function(callback) {
-                var instanceQuestionUrl = locals.courseInstanceBaseUrl + '/instance_question/' + locals.question.id;
-                request(instanceQuestionUrl, function (error, response, body) {
+                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id;
+                request(questionUrl, function (error, response, body) {
                     if (error) {
                         return callback(error);
                     }
@@ -71,9 +71,15 @@ module.exports = {
                     callback(null);
                 });
             });
-            it('should have the correct variant.question.id if has submit button', function() {
+            it('should have the correct variant.instance_question.id if has submit button and is student page', function() {
                 if (!locals.shouldHaveSubmitButton) return;
+                if (!locals.isStudentPage) return;
                 assert.equal(locals.variant.instance_question_id, locals.question.id);
+            });
+            it('should have the correct variant.question.id if has submit button and is instructor page', function() {
+                if (!locals.shouldHaveSubmitButton) return;
+                if (locals.isStudentPage) return;
+                assert.equal(locals.variant.question_id, locals.question.id);
             });
             it('should not be a broken variant if Freeform with submit button', function() {
                 if (locals.question.type != 'Freeform') return;
@@ -131,9 +137,9 @@ module.exports = {
                 } else {
                     throw Error('bad question.type:' + locals.question.type);
                 }
-                var instanceQuestionUrl = locals.courseInstanceBaseUrl + '/instance_question/' + locals.question.id;
+                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id;
                 locals.preEndTime = Date.now();
-                request.post({url: instanceQuestionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
+                request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
                         return callback(error);
                     }
@@ -171,7 +177,8 @@ module.exports = {
                 if (locals.question.type != 'Freeform') return;
                 assert.equal(locals.submission.broken, false);
             });
-            it('should select the assessment_instance duration from the DB', function(callback) {
+            it('should select the assessment_instance duration from the DB if student page', function(callback) {
+                if (!locals.isStudentPage) return callback(null);
                 sqldb.query(sql.select_assessment_instance_durations, [], function(err, result) {
                     if (ERR(err, callback)) return;
                     if (result.rowCount != 1) {
@@ -181,7 +188,8 @@ module.exports = {
                     callback(null);
                 });
             });
-            it('should have the correct assessment_instance duration', function() {
+            it('should have the correct assessment_instance duration if student page', function() {
+                if (!locals.isStudentPage) return;
                 var min_duration = (locals.preEndTime - locals.postStartTime) / 1000;
                 var max_duration = (locals.postEndTime - locals.preStartTime) / 1000;
                 assert.isAbove(locals.assessment_instance_duration, min_duration);
@@ -213,8 +221,8 @@ module.exports = {
                 } else {
                     throw Error('bad question.type:' + locals.question.type);
                 }
-                var instanceQuestionUrl = locals.courseInstanceBaseUrl + '/instance_question/' + locals.question.id;
-                request.post({url: instanceQuestionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
+                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id;
+                request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
                         return callback(error);
                     }
@@ -225,6 +233,27 @@ module.exports = {
                     page = body;
                     callback(null);
                 });
+            });
+        });
+    },
+
+    checkSubmissionScore(locals) {
+        describe('check submission score', function() {
+            it('should have the submission', function(callback) {
+                var params = {
+                    question_id: locals.question.id,
+                };
+                sqldb.queryOneRow(sql.select_last_submission_for_question, params, function(err, result) {
+                    if (ERR(err, callback)) return;
+                    locals.submission = result.rows[0];
+                    callback(null);
+                });
+            });
+            it('should be graded with expected score', function() {
+                assert.equal(locals.submission.score, locals.expectedResult.submission_score);
+            });
+            it('should be graded with expected correctness', function() {
+                assert.equal(locals.submission.correct, locals.expectedResult.submission_correct);
             });
         });
     },

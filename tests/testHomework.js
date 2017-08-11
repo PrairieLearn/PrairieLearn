@@ -17,7 +17,9 @@ const locals = {};
 locals.siteUrl = 'http://localhost:' + config.serverPort;
 locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
+locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/instance_question';
 locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
+locals.isStudentPage = true;
 
 const addNumbers = {qid: 'addNumbers', type: 'Freeform'};
 const addVectors = {qid: 'addVectors', type: 'Calculation'};
@@ -30,7 +32,7 @@ describe('Homework assessment', function() {
 
     var res, page, elemList;
 
-    describe('database', function() {
+    describe('the database', function() {
         it('should contain HW1', function(callback) {
             sqldb.queryOneRow(sql.select_hw1, [], function(err, result) {
                 if (ERR(err, callback)) return;
@@ -40,7 +42,7 @@ describe('Homework assessment', function() {
         });
     });
 
-    describe('GET /pl/assessments', function() {
+    describe('GET ' + locals.assessmentsUrl, function() {
         it('should load successfully', function(callback) {
             request(locals.assessmentsUrl, function (error, response, body) {
                 if (error) {

@@ -63,6 +63,19 @@ ORDER BY
 LIMIT
     1;
 
+-- BLOCK select_last_submission_for_question
+SELECT
+    s.*
+FROM
+    submissions AS s
+    JOIN variants AS v ON (v.id = s.variant_id)
+WHERE
+    v.question_id = $question_id
+ORDER BY
+    s.date DESC
+LIMIT
+    1;
+
 -- BLOCK select_last_submission_for_instance_question
 SELECT
     s.*
