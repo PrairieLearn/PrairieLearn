@@ -2,18 +2,19 @@
 <html>
   <head>
     <%- include('../partials/head'); %>
-  </head>
-  <body>
-    <%- include('../partials/navbar', {navPage: ''}); %>
     <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
     <script type="text/javascript" src="/MathJax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
     <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
     <script type="text/javascript" src="/localscripts/question.js"></script>
-    <%- extraHeaders %>
+    <script type="text/javascript" src="/javascripts/socket.io.js"></script>
+    <%- extraHeadersHtml %>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
     <script type="text/javascript" src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: ''}); %>
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
@@ -52,66 +53,7 @@
         </table>
       </div>
 
-      <div id="question-0" class="question-container">
-        <div hidden="true" class="question-data"><%= questionJsonBase64 %></div>
-
-        <div class="panel panel-primary question-block">
-          <% if (question.type == 'Freeform') { %>
-          <form class="question-form" name="question-form" method="POST">
-          <% } %>
-          <div class="panel-heading">
-            <h3 class="panel-title"><%= question.title %></h3>
-          </div>
-          <div class="panel-body question-body">
-            <%- questionHtml %>
-          </div>
-          <div class="panel-footer">
-            <% if (question.type == 'Freeform') { %>
-            <button class="btn btn-primary freeform-question-submit">Submit</button>
-            <a class="btn btn-info" href=".">New variant</a>
-            <% } else { %>
-            <button class="btn btn-primary question-submit">Submit</button>
-            <a class="btn btn-info" href=".">New variant</a>
-            <form class="question-form" name="question-form" method="POST">
-            <% } %>
-            <input type="hidden" name="postAction" value="submitQuestionAnswer">
-            <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
-            <% if (question.type != 'Freeform') { %>
-            <input type="hidden" name="postData" class="postData">
-            </form>
-            <% } %>
-          </div>
-          <% if (question.type == 'Freeform') { %>
-          </form>
-          <% } %>
-        </div>
-
-        <% if (submission) { %>
-
-        <div class="panel panel-info grading-block">
-          <div class="panel-heading">
-            <h3 class="panel-title">Correct answer</h3>
-          </div>
-          <div class="panel-body answer-body">
-            <%- answerHtml %>
-          </div>
-        </div>
-
-        <div class="panel panel-info submission-block">
-          <div class="panel-heading">
-            <h3 class="panel-title">
-              Submitted answer
-              &nbsp;&nbsp;&nbsp;
-              <%- include('../partials/submissionStatus', {submission: submission, reloadUrl: urlPrefix + '/question' + question.id + '/'}); %>
-            </h3>
-          </div>
-          <div class="panel-body submission-body">
-              <%- submissionHtml %>
-          </div>
-        </div>
-        <% } %>
-
-      </div> <!-- question-container -->
+      <%- include('../partials/question'); %>
 
     </div>
   </body>

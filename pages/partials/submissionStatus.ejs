@@ -55,7 +55,7 @@
 
     <% if (submission.grading_requested_at == null) { %>
         <% if (submission.gradable) { %>
-            <span class="label label-primary">saved, not graded</span>
+            <span class="label label-info">saved, not graded</span>
         <% } else { %>
             <span class="label label-danger">invalid, not graded</span>
         <% } %>

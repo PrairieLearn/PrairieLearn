@@ -402,7 +402,7 @@ module.exports = {
         const options = {
             question_dir: path.join(course.path, 'questions', question.directory),
         };
-        data.options.client_files_question_url = locals.paths.clientFilesQuestion;
+        data.options.client_files_question_url = locals.clientFilesQuestionUrl;
         module.exports.processQuestion('render', pc, data, options, (err, courseErrs, _data, html) => {
             if (ERR(err, callback)) return;
             callback(null, courseErrs, html);
