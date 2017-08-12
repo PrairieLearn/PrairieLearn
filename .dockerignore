@@ -2,7 +2,6 @@
 *
 
 # whitelist things to copy
-!assessments/
 !cron/
 !doc/
 !docker/

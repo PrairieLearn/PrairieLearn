@@ -1,61 +1,57 @@
 var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
+var path = require('path');
+var debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-var assessments = require('../../assessments');
+var assessment = require('../../lib/assessment');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var ensureUpToDate = (locals, callback) => {
-    const params = [
-        locals.assessment_instance.id,
-        locals.authn_user.user_id,
-    ];
-    sqldb.callOneRow('assessment_instances_update_homework', params, (err, result) => {
+    debug('ensureUpToDate()');
+    assessment.update(locals.assessment_instance.id, locals.authn_user.user_id, (err, updated) => {
         if (ERR(err, callback)) return;
 
-        if (!result.rows[0].updated) {
-            return callback(null);
-        }
+        debug('updated:', updated);
+        if (!updated) return callback(null);
+        
+        // we updated the assessment_instance, so reload it
 
-        // we updated the assessment_instance, so now regrade and reload it
-
-        const params = [
-            locals.assessment_instance.id,
-            locals.authn_user.user_id,
-            null, // credit
-            true, // only_log_if_score_updated
-        ];
-        sqldb.callOneRow('assessment_instances_grade', params, (err, _result) => {
+        debug('selecting assessment instance');
+        const params = {assessment_instance_id: locals.assessment_instance.id};
+        sqldb.queryOneRow(sql.select_assessment_instance, params, (err, result) => {
             if (ERR(err, callback)) return;
-
-            const params = {assessment_instance_id: locals.assessment_instance.id};
-            sqldb.queryOneRow(sql.select_assessment_instance, params, (err, result) => {
-                if (ERR(err, callback)) return;
-                locals.assessment_instance = result.rows[0];
-                callback(null);
-            });
+            locals.assessment_instance = result.rows[0];
+            debug('selected assessment_instance.id:', locals.assessment_instance.id);
+            callback(null);
         });
     });
 };
 
 router.get('/', function(req, res, next) {
+    debug('GET');
     if (res.locals.assessment.type !== 'Homework') return next();
+    debug('is Homework');
 
     ensureUpToDate(res.locals, (err) => {
         if (ERR(err, next)) return;
 
+        debug('selecting questions');
         var params = {assessment_instance_id: res.locals.assessment_instance.id};
         sqldb.query(sql.get_questions, params, function(err, result) {
             if (ERR(err, next)) return;
             res.locals.questions = result.rows;
+            debug('number of questions:', res.locals.questions.length);
 
-            assessments.renderText(res.locals.assessment, res.locals.urlPrefix, function(err, assessment_text_templated) {
+            debug('rendering assessment text');
+            assessment.renderText(res.locals.assessment, res.locals.urlPrefix, function(err, assessment_text_templated) {
                 if (ERR(err, next)) return;
                 res.locals.assessment_text_templated = assessment_text_templated;
 
+                debug('rendering EJS');
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
         });

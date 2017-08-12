@@ -146,18 +146,22 @@ module.exports = {
 
         let err;
         let allPhases = ['generate', 'prepare', 'render', 'parse', 'grade'];
+        /****************************************************************************************************/
+        //              property                  type       presentPhases                 fixedPhases
+        /****************************************************************************************************/
         err = checkProp('params',                 'object',  allPhases,                    ['render']); if (err) return err;
         err = checkProp('correct_answers',        'object',  allPhases,                    ['render']); if (err) return err;
         err = checkProp('variant_seed',           'integer', allPhases,                    ['render']); if (err) return err;
         err = checkProp('options',                'object',  allPhases,                    ['render']); if (err) return err;
         err = checkProp('submitted_answers',      'object',  ['render', 'parse', 'grade'], ['render']); if (err) return err;
-        err = checkProp('parse_errors',           'object',  ['render', 'parse', 'grade'], ['render']); if (err) return err;
+        err = checkProp('format_errors',          'object',  ['render', 'parse', 'grade'], ['render']); if (err) return err;
         err = checkProp('raw_submitted_answers',  'object',  ['render', 'parse', 'grade'], allPhases);  if (err) return err;
         err = checkProp('partial_scores',         'object',  ['render', 'grade'],          ['render']); if (err) return err;
         err = checkProp('score',                  'number',  ['render', 'grade'],          ['render']); if (err) return err;
         err = checkProp('feedback',               'object',  ['render', 'grade'],          ['render']); if (err) return err;
         err = checkProp('editable',               'boolean', ['render'],                   ['render']); if (err) return err;
         err = checkProp('panel',                  'string',  ['render'],                   ['render']); if (err) return err;
+        err = checkProp('gradable',               'boolean', ['parse', 'grade'],           ['render']); if (err) return err;
         const extraProps = _.difference(_.keys(data), checked);
         if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
 
@@ -344,6 +348,7 @@ module.exports = {
     },
     
     prepare: function(question, course, variant, callback) {
+        if (variant.broken) return callback(new Error('attemped to prepare broken variant'));
         const data = {
             params: _.get(variant, 'params', {}),
             correct_answers: _.get(variant, 'true_answer', {}),
@@ -366,11 +371,25 @@ module.exports = {
     },
 
     renderPanel: function(panel, pc, variant, question, submission, course, locals, callback) {
+        // broken variant kills all rendering
+        if (variant.broken) return callback(null, [], 'Broken question due to error in question code');
+
+        // broken submission kills the submission panel, but we can
+        // proceed with other panels, treating the submission as
+        // missing
+        if (submission && submission.broken) {
+            if (panel == 'submission') {
+                return callback(null, [], 'Broken submission due to error in question code');
+            } else {
+                submission = null;
+            }
+        }
+
         const data = {
             params: _.get(variant, 'params', {}),
             correct_answers: _.get(variant, 'true_answer', {}),
             submitted_answers: submission ? _.get(submission, 'submitted_answer', {}) : {},
-            parse_errors: submission ? _.get(submission, 'parse_errors', {}) : {},
+            format_errors: submission ? _.get(submission, 'format_errors', {}) : {},
             partial_scores: (!submission || submission.partial_scores == null) ? {} : submission.partial_scores,
             score: (!submission || submission.score == null) ? 0 : submission.score,
             feedback: (!submission || submission.feedback == null) ? {} : submission.feedback,
@@ -383,7 +402,7 @@ module.exports = {
         const options = {
             question_dir: path.join(course.path, 'questions', question.directory),
         };
-        data.options.client_files_question_url = locals.paths.clientFilesQuestion;
+        data.options.client_files_question_url = locals.clientFilesQuestionUrl;
         module.exports.processQuestion('render', pc, data, options, (err, courseErrs, _data, html) => {
             if (ERR(err, callback)) return;
             callback(null, courseErrs, html);
@@ -441,14 +460,16 @@ module.exports = {
     },
 
     parse: function(submission, variant, question, course, callback) {
+        if (variant.broken) return callback(new Error('attemped to parse broken variant'));
         const data = {
             params: _.get(variant, 'params', {}),
             correct_answers: _.get(variant, 'true_answer', {}),
             submitted_answers: _.get(submission, 'submitted_answer', {}),
-            parse_errors: _.get(submission, 'parse_errors', {}),
+            format_errors: _.get(submission, 'format_errors', {}),
             variant_seed: parseInt(variant.variant_seed, 36),
             options: _.get(variant, 'options', {}),
             raw_submitted_answers: _.get(submission, 'raw_submitted_answer', {}),
+            gradable: _.get(submission, 'gradable', true),
         };
         const options = {
             question_dir: path.join(course.path, 'questions', question.directory),
@@ -457,28 +478,34 @@ module.exports = {
         module.exports.processQuestion('parse', pc, data, options, (err, courseErrs, data, _html) => {
             pc.done();
             if (ERR(err, callback)) return;
+            if (_.size(data.format_errors) > 0) data.gradable = false;
             const ret_vals = {
                 params: data.params,
                 true_answer: data.correct_answers,
                 submitted_answer: data.submitted_answers,
-                parse_errors: data.parse_errors,
+                raw_submitted_answer: data.raw_submitted_answers,
+                format_errors: data.format_errors,
+                gradable: data.gradable,
             };
             callback(null, courseErrs, ret_vals);
         });
     },
 
     grade: function(submission, variant, question, course, callback) {
+        if (variant.broken) return callback(new Error('attemped to grade broken variant'));
+        if (submission.broken) return callback(new Error('attemped to grade broken submission'));
         let data = {
             params: variant.params,
             correct_answers: variant.true_answer,
             submitted_answers: submission.submitted_answer,
-            parse_errors: submission.parse_errors,
+            format_errors: submission.format_errors,
             partial_scores: (submission.partial_scores == null) ? {} : submission.partial_scores,
             score: (submission.score == null) ? 0 : submission.score,
             feedback: (submission.feedback == null) ? {} : submission.feedback,
             variant_seed: parseInt(variant.variant_seed, 36),
             options: _.get(variant, 'options', {}),
             raw_submitted_answers: submission.raw_submitted_answer,
+            gradable: submission.gradable,
         };
         const options = {
             question_dir: path.join(course.path, 'questions', question.directory),
@@ -487,15 +514,17 @@ module.exports = {
         module.exports.processQuestion('grade', pc, data, options, (err, courseErrs, data, _html) => {
             pc.done();
             if (ERR(err, callback)) return;
+            if (_.size(data.format_errors) > 0) data.gradable = false;
             const ret_vals = {
                 params: data.params,
                 true_answer: data.correct_answers,
                 submitted_answer: data.submitted_answers,
-                parse_errors: data.parse_errors,
+                format_errors: data.format_errors,
                 raw_submitted_answer: data.raw_submitted_answers,
                 partial_scores: data.partial_scores,
                 score: data.score,
                 feedback: data.feedback,
+                gradable: data.gradable,
             };
             callback(null, courseErrs, ret_vals);
         });

@@ -5,6 +5,7 @@ require('./testDatabase');
 require('./testLoadCourse');
 require('./testSyncCourseInfo');
 require('./testGetHomepage');
+require('./testInstructorQuestions');
 require('./testHomework');
 require('./testExam');
 require('./testAccess');

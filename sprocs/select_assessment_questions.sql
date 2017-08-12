@@ -8,6 +8,7 @@ CREATE OR REPLACE FUNCTION
     ) RETURNS TABLE (
         assessment_question_id bigint,
         init_points double precision,
+        points_list double precision[],
         question JSONB
     )
 AS $$
@@ -91,6 +92,7 @@ z_chosen_assessment_questions AS (
 SELECT
     aq.id,
     aq.init_points,
+    aq.points_list,
     to_jsonb(q) AS question
 FROM
     z_chosen_assessment_questions AS aq

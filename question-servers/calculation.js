@@ -3,9 +3,30 @@ var path = require('path');
 var _ = require('lodash');
 
 var error = require('../lib/error');
-var questionHelper = require('../lib/questionHelper.js');
+var filePaths = require('../lib/file-paths');
+var requireFrontend = require('../lib/require-frontend');
 
 module.exports = {
+    loadServer: function(question, course, callback) {
+        filePaths.questionFilePath('server.js', question.directory, course.path, question, function(err, questionServerPath) {
+            if (ERR(err, callback)) return;
+            var configRequire = requireFrontend.config({
+                paths: {
+                    clientFilesCourse: path.join(course.path, 'clientFilesCourse'),
+                    serverFilesCourse: path.join(course.path, 'serverFilesCourse'),
+                    clientCode: path.join(course.path, 'clientFilesCourse'),
+                    serverCode: path.join(course.path, 'serverFilesCourse'),
+                },
+            });
+            configRequire([questionServerPath], function(server) {
+                if (server === undefined) return callback('Unable to load "server.js" for qid: ' + question.qid);
+                setTimeout(function() {
+                    // use a setTimeout() to get out of requireJS error handling
+                    return callback(null, server);
+                }, 0);
+            });
+        });
+    },
 
     render: function(renderSelection, variant, question, submission, submissions, course, locals, callback) {
         const htmls = {
@@ -19,7 +40,7 @@ module.exports = {
 
     generate: function(question, course, variant_seed, callback) {
         var questionDir = path.join(course.path, 'questions', question.directory);
-        questionHelper.loadServer(question, course, function(err, server) {
+        module.exports.loadServer(question, course, function(err, server) {
             if (ERR(err, callback)) return;
             var options = question.options || {};
             try {
@@ -53,7 +74,7 @@ module.exports = {
     },
     
     getFile: function(filename, variant, question, course, callback) {
-        questionHelper.loadServer(question, course, function(err, server) {
+        module.exports.loadServer(question, course, function(err, server) {
             if (ERR(err, callback)) return;
             var fileData;
             try {
@@ -81,13 +102,15 @@ module.exports = {
             params: variant.params,
             true_answer: variant.true_answer,
             submitted_answer: submission.submitted_answer,
-            parse_errors: {},
+            raw_submitted_answer: submission.raw_submitted_answer,
+            format_errors: {},
+            gradable: true,
         };
         callback(null, [], data);
     },
 
     grade: function(submission, variant, question, course, callback) {
-        questionHelper.loadServer(question, course, function(err, server) {
+        module.exports.loadServer(question, course, function(err, server) {
             if (ERR(err, callback)) return;
             var grading;
             try {
@@ -111,9 +134,12 @@ module.exports = {
             const data = {
                 score: grading.score,
                 feedback: grading.feedback,
-                partial_scores: null,
+                partial_scores: {},
                 submitted_answer: submission.submitted_answer,
-                parse_errors: submission.parse_errors,
+                format_errors: {},
+                gradable: true,
+                params: variant.params,
+                true_answer: variant.true_answer,
             };
             callback(null, [], data);
         });

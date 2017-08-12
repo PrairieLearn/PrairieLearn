@@ -60,7 +60,11 @@
     <% } %>
     <div class="panel panel-primary question-block">
       <div class="panel-heading">
+        <% if (typeof instance_question_info == 'undefined') { %>
+        <h3 class="panel-title"><%= question.title %></h3>
+        <% } else { %>
         <h3 class="panel-title"><%= instance_question_info.question_number %>. <%= question.title %></h3>
+        <% } %>
       </div>
       <div class="panel-body question-body">
         <%- questionHtml %>
@@ -69,18 +73,18 @@
         <% if (showSubmitButton || showSaveButton) { %>
         <% if (question.type == 'Freeform') { %>
         <% if (showSubmitButton) { %>
-        <button class="btn btn-primary freeform-question-submit">Submit</button>
+        <button class="btn btn-primary freeform-question-submit">Grade</button>
         <% } %>
         <% if (showSaveButton) { %>
-        <button class="btn btn-primary freeform-question-submit">Save answer</button>
+        <button class="btn btn-info freeform-question-submit">Save</button>
         <% } %>
         <input type="hidden" name="variant_id" value="<%= variant.id %>">
         <% } else { %>
         <% if (showSubmitButton) { %>
-        <button class="btn btn-primary question-submit">Submit</button>
+        <button class="btn btn-primary question-submit">Grade</button>
         <% } %>
         <% if (showSaveButton) { %>
-        <button class="btn btn-primary question-submit">Save</button>
+        <button class="btn btn-info question-submit">Save</button>
         <% } %>
         <form class="question-form" name="question-form" method="POST">
           <% } %>
@@ -92,7 +96,10 @@
         <% } %>
         <% } %>
         <% if (showNewVariantButton) { %>
-        <a href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/" class="btn btn-primary">Try question again</a>
+        <a href="<%= newVariantUrl %>" class="btn btn-primary">New variant</a>
+        <% } %>
+        <% if (tryAgainButton) { %>
+        <a href="<%= tryAgainUrl %>" class="btn btn-primary">Try question again</a>
         <% } %>
       </div>
     </div>
@@ -122,7 +129,7 @@
           <%= submissions.length - iSubmission %>
           <% } %>
         </h3>
-        <%- include('../partials/submissionStatus', {submission: submission, reloadUrl: urlPrefix + '/instance_question/' + instance_question.id + '/?variant_id=' + variant.id}); %>
+        <%- include('../partials/submissionStatus', {submission: submission}); %>
         <small>Submitted at <%- submission.formatted_date %></small>
       </div>
       <div class="panel-body submission-body" id="submission-<%= iSubmission %>-body">

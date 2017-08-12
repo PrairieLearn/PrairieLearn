@@ -19,6 +19,9 @@
 # MkDocs generated HTML
 /site/
 
+# JSDoc generated HTML
+/doc/code-docs/
+
 # Config files
 /v1/backend/config.json
 /v1/backend/config.json.*

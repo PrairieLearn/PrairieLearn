@@ -4,13 +4,14 @@ var express = require('express');
 var router = express.Router();
 
 var error = require('../../lib/error');
-var assessmentsExam = require('../../assessments/exam');
-var partialsQuestion = require('../partials/question');
+var question = require('../../lib/question');
+var assessment = require('../../lib/assessment');
+var sqldb = require('../../lib/sqldb');
 
 function processSubmission(req, res, callback) {
     if (!res.locals.assessment_instance.open) return callback(error.make(400, 'assessment_instance is closed'));
     if (!res.locals.instance_question.open) return callback(error.make(400, 'instance_question is closed'));
-    let variant_id, submitted_answer, type = null;
+    let variant_id, submitted_answer;
     if (res.locals.question.type == 'Freeform') {
         variant_id = req.body.variant_id;
         submitted_answer = _.omit(req.body, ['postAction', 'csrfToken', 'variant_id']);
@@ -24,19 +25,21 @@ function processSubmission(req, res, callback) {
         }
         variant_id = postData.variant ? postData.variant.id : null;
         submitted_answer = postData.submittedAnswer;
-        type = postData.type;
     }
     const submission = {
         variant_id: variant_id,
         auth_user_id: res.locals.authn_user.user_id,
         submitted_answer: submitted_answer,
-        type: type,
         credit: res.locals.authz_result.credit,
         mode: res.locals.authz_data.mode,
     };
-    assessmentsExam.save(submission, res.locals.instance_question.id, res.locals.question, res.locals.course, function(err) {
+    sqldb.callOneRow('variants_ensure_instance_question', [variant_id, res.locals.instance_question.id], (err, result) => {
         if (ERR(err, callback)) return;
-        callback(null);
+        const variant = result.rows[0];
+        question.saveSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
     });
 }
 
@@ -52,8 +55,8 @@ router.post('/', function(req, res, next) {
             res.redirect(req.originalUrl);
         });
     } else if (req.body.postAction == 'timeLimitFinish') {
-        var finishExam = true;
-        assessmentsExam.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.user.user_id, res.locals.assessment_instance.credit, finishExam, function(err) {
+        var closeExam = true;
+        assessment.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, function(err) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + res.locals.assessment_instance.id + '?timeLimitExpired=true');
         });
@@ -65,7 +68,7 @@ router.post('/', function(req, res, next) {
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     const variant_id = null;
-    partialsQuestion.getVariant(req, res, variant_id, res.locals.assessment.type, function(err) {
+    question.getAndRenderVariant(variant_id, res.locals, function(err) {
         if (ERR(err, next)) return;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });

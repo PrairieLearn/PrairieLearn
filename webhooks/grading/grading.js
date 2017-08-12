@@ -5,13 +5,13 @@ var AWS = require('aws-sdk');
 
 var config = require('../../lib/config');
 var logger = require('../../lib/logger');
-var assessments = require('../../assessments');
+var assessment = require('../../lib/assessment');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 var externalGradingSocket = require('../../lib/external-grading-socket');
 
-// FIXME move this to assessments.js for better code reuse; pull the nice
+// FIXME move this to lib/assessment.js for better code reuse; pull the nice
 // error-handling logic from messageQueue.js into this function as well
 function processResults(data) {
     let gradingResult;
@@ -37,7 +37,7 @@ function processResults(data) {
         };
     }
 
-    assessments.processGradingResult(gradingResult);
+    assessment.processGradingResult(gradingResult);
 }
 
 router.post('/', function(req, res, next) {

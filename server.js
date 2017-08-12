@@ -14,7 +14,7 @@ var logger = require('./lib/logger');
 var config = require('./lib/config');
 var messageQueue = require('./lib/messageQueue');
 var externalGradingSocket = require('./lib/external-grading-socket');
-var assessments = require('./assessments');
+var assessment = require('./lib/assessment');
 var sqldb = require('./lib/sqldb');
 var migrations = require('./migrations');
 var sprocs = require('./sprocs');
@@ -137,8 +137,6 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/
     require('./pages/instructorAssessmentInstance/instructorAssessmentInstance'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id', [
-    // FIXME
-    function(req, res, next) {next(new Error('Instructor question pages are temporarily disabled. Please use the student pages instead.'));},
     require('./middlewares/selectAndAuthzInstructorQuestion'),
     require('./pages/instructorQuestion/instructorQuestion'),
 ]);
@@ -375,7 +373,7 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            messageQueue.init(assessments.processGradingResult, function(err) {
+            messageQueue.init(assessment.processGradingResult, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

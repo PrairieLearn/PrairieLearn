@@ -48,7 +48,7 @@ Property | Type | Description
 --- | --- | ---
 `submission.submitted_answer` | object | The answer submitted by the student, parsed.
 `submission.raw_submitted_answer` | object | The answer submitted by the student, exactly as submitted (not parsed).
-`submission.parse_errors` | object | Any errors encountered during parsing.
+`submission.format_errors` | object | Any errors encountered during parsing.
 `submission.scorable` | boolean | Whether the answer was scorable. This is normally `true`, but might be set to `false` if the answer had a format error and couldn't be scored (e.g., a non-numeric value entered for a numeric answer, or a code submission that didn't compile).
 `submission.score_perc` | object | The percentage score for the submission (0 to 100).
 `submission.feedback` | object | Any feedback that should be shown to the student to explain what was wrong with their answer.

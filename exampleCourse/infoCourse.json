@@ -5,6 +5,7 @@
     "assessmentSets": [
     ],
     "topics": [
+        {"name": "Algebra", "color": "red3", "description": "Basic algebra."},
         {"name": "Calculus", "color": "yellow3", "description": "Single and multiple variable calculus."},
         {"name": "Vectors", "color": "blue3", "description": "Vector algebra in 3D."},
         {"name": "Functions", "color": "pink3", "description": "Writing and calling functions in code."},
@@ -17,6 +18,8 @@
     "tags": [
         {"name": "exampleCourse", "color": "gray1", "description": "Question originally written for exampleCourse"},
         {"name": "mwest", "color": "gray1", "description": "Question originally written by mwest"},
-        {"name": "tbretl", "color": "blue1", "description": "Question originally written by tbretl"}
+        {"name": "tbretl", "color": "blue1", "description": "Question originally written by tbretl"},
+        {"name": "tpl101", "color": "gray1", "description": "Question originally written for the TPL 101 template course"},
+        {"name": "fa17", "color": "gray1", "description": "Question written in Fall 2017"}
     ]
 }

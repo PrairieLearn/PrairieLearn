@@ -11,7 +11,7 @@ var logger = require('../../lib/logger');
 var serverJobs = require('../../lib/server-jobs');
 var csvMaker = require('../../lib/csv-maker');
 var dataFiles = require('../../lib/data-files');
-var assessments = require('../../assessments');
+var assessment = require('../../lib/assessment');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
@@ -650,7 +650,7 @@ router.post('/', function(req, res, next) {
             var assessment_type = result.rows[0].assessment_type;
             var credit = result.rows[0].credit;
             var finish = true;
-            assessments.gradeAssessmentInstance(assessment_type, req.body.assessment_instance_id, res.locals.authn_user.user_id, credit, finish, function(err) {
+            assessment.gradeAssessmentInstance(assessment_type, req.body.assessment_instance_id, res.locals.authn_user.user_id, credit, finish, function(err) {
                 if (ERR(err, next)) return;
                 res.redirect(req.originalUrl);
             });
