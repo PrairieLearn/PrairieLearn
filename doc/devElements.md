@@ -8,7 +8,7 @@ Element code uses the libraries in [`freeformPythonLib/`](https://github.com/Pra
 All element functions have the signature:
 
 ```python
-def fcn(element_html, element_index, data, options)
+def fcn(element_html, element_index, data)
 ```
 
 The arguments are:
@@ -57,5 +57,4 @@ Function | Return object | modifiable `data` keys | unmodifiable `data` keys | D
 `parse()` | `data` (dict) | `submitted_answers`, `format_errors` | `params`, `correct_answers`, `variant_seed`, `options`, `raw_submitted_answers` | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Return the modified `data` dictionary.
 `grade()` | `data` (dict) | `params`, `correct_answers`, `submitted_answers`, `format_errors`, `partial_scores`, `score`, `feedback` | `variant_seed`, `options`, `raw_submitted_answers` | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Return the modified `data` dictionary.
 
-The above function descriptions describe the typical variables that will be read and modified by each function. However, any function that returns `data` (i.e., not `parse()`) is allowed to modify any of the values in `data` and these changes will be persisted to the database. No function is allowed to add new keys to `data`.
-
+The above function descriptions describe the typical variables that will be read and modified by each function. However, any function that returns `data` (i.e., not `parse()`) is allowed to change any of the modifiable values in `data` (see above table) and these changes will be persisted to the database. No function is allowed to add or delete keys in `data`.
