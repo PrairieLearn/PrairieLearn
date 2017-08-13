@@ -36,3 +36,6 @@ def parse(element_html, element_index, data):
 
 def grade(element_html, element_index, data):
     return data
+
+def test(element_html, element_index, data):
+    return data

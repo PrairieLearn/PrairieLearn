@@ -30,7 +30,7 @@ def prepare(element_html, element_index, data):
     min_correct = pl.get_integer_attrib(element, "min_correct", 0)
     max_correct = pl.get_integer_attrib(element, "max_correct", len(correct_answers))
 
-    number_answers = max(0, min(len_total, number_answers))
+    number_answers = max(0, min(len_total, min(26, number_answers)))
     min_correct = min(len_correct, min(number_answers, max(0, max(number_answers - len_incorrect, min_correct))))
     max_correct = min(len_correct, min(number_answers, max(min_correct, max_correct)))
     if not (0 <= min_correct <= max_correct <= len_correct):
@@ -147,6 +147,7 @@ def render(element_html, element_index, data):
     return html
 
 def parse(element_html, element_index, data):
+    # FIXME: check for invalid answers
     return data
 
 def grade(element_html, element_index, data):
@@ -156,11 +157,44 @@ def grade(element_html, element_index, data):
 
     submitted_keys = data["submitted_answers"].get(name, [])
     correct_answer_list = data["correct_answers"].get(name, [])
-    true_keys = [answer["key"] for answer in correct_answer_list]
+    correct_keys = [answer["key"] for answer in correct_answer_list]
 
     score = 0
-    if set(submitted_keys) == set(true_keys):
+    if set(submitted_keys) == set(correct_keys):
         score = 1
 
     data["partial_scores"][name] = {"score": score, "weight": weight}
+    return data
+
+def test(element_html, element_index, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, "answers_name")
+    weight = pl.get_integer_attrib(element, "weight", 1)
+
+    correct_answer_list = data["correct_answers"].get(name, [])
+    correct_keys = [answer["key"] for answer in correct_answer_list]
+    number_answers = len(data["params"][name])
+    all_keys = [chr(ord('a') + i) for i in range(number_answers)]
+
+    result = random.choices(['correct', 'incorrect'])
+    if result == 'correct':
+        if len(correct_keys == 1):
+            data["raw_submitted_answer"][name] = correct_keys[0]
+        elif len(correct_keys > 1):
+            data["raw_submitted_answer"][name] = correct_keys
+        else:
+            pass # no raw_submitted_answer if no correct keys
+        data["partial_scores"][name] = {"score": 1, "weight": weight}
+    elif result == 'incorrect':
+        while True:
+            # select answer keys at random
+            ans = [k for k in all_keys if random.choice([True, False])];
+            # break and use this choice if it isn't correct
+            if set(ans) != set(correct_keys):
+                break
+        data["raw_submitted_answer"][name] = ans
+        data["partial_scores"][name] = {"score": 0, "weight": weight}
+
+        # FIXME: test invalid answers
+        
     return data

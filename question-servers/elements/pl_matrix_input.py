@@ -176,3 +176,6 @@ def grade(element_html, element_index, data):
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
     return data
+
+def test(element_html, element_index, data):
+    return data
