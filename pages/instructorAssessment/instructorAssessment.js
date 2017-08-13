@@ -629,7 +629,7 @@ var regradeAllAssessmentInstances = function(assessment_id, locals, callback) {
 
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_edit) return next();
-    if (req.body.postAction == 'open') {
+    if (req.body.__action == 'open') {
         let params = {
             assessment_id: res.locals.assessment.id,
             assessment_instance_id: req.body.assessment_instance_id,
@@ -639,7 +639,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.postAction == 'close') {
+    } else if (req.body.__action == 'close') {
         let params = {
             assessment_id: res.locals.assessment.id,
             assessment_instance_id: req.body.assessment_instance_id,
@@ -655,7 +655,7 @@ router.post('/', function(req, res, next) {
                 res.redirect(req.originalUrl);
             });
         });
-    } else if (req.body.postAction == 'delete') {
+    } else if (req.body.__action == 'delete') {
         let params = [
             req.body.assessment_instance_id,
             res.locals.authn_user.user_id,
@@ -664,7 +664,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.postAction == 'delete_all') {
+    } else if (req.body.__action == 'delete_all') {
         let params = [
             req.body.assessment_id,
             res.locals.authn_user.user_id,
@@ -673,18 +673,18 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.postAction == 'regrade') {
+    } else if (req.body.__action == 'regrade') {
         regradeAssessmentInstance(req.body.assessment_instance_id, res.locals, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
-    } else if (req.body.postAction == 'regrade_all') {
+    } else if (req.body.__action == 'regrade_all') {
         regradeAllAssessmentInstances(req.body.assessment_id, res.locals, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else {
-        return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
+        return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
 });
 module.exports = router;

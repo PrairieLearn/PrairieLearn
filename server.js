@@ -65,7 +65,7 @@ app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));
 app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
 app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
-app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.csrfToken
+app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
 app.use(require('./middlewares/logRequest'));
 
 // clear all cached course code in dev mode (no authorization needed)

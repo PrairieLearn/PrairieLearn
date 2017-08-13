@@ -19,9 +19,9 @@
           <p><strong>Authenticated mode:</strong> <%= authz_data.authn_mode %></p>
 
           <form id="resetForm" method="POST">
-            <input type="hidden" name="postAction" value="reset">
+            <input type="hidden" name="__action" value="reset">
             <button type="submit" class="btn btn-info">Reset to these values</button>
-            <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
           </form>
         </div>
 
@@ -59,8 +59,8 @@
                   <% }); %>
                 </select>
               </div>
-              <input type="hidden" name="postAction" value="changeRole">
-              <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+              <input type="hidden" name="__action" value="changeRole">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
               <button type="submit" class="btn btn-default">Change role</button>
             </form>
           </div>
@@ -101,8 +101,8 @@
                   <% } %>
                 </datalist>
               </div>
-              <input type="hidden" name="postAction" value="changeUid">
-              <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+              <input type="hidden" name="__action" value="changeUid">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
               <button type="submit" class="btn btn-default">Change UID</button>
             </form>
           </div>
@@ -146,8 +146,8 @@
                   <% } %>
                 </select>
               </div>
-              <input type="hidden" name="postAction" value="changeMode">
-              <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+              <input type="hidden" name="__action" value="changeMode">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
               <button type="submit" class="btn btn-default">Change mode</button>
             </form>
           </div>

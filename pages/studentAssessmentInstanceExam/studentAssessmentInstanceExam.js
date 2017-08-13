@@ -14,18 +14,18 @@ router.post('/', function(req, res, next) {
     if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
 
     var closeExam;
-    if (req.body.postAction == 'grade') {
+    if (req.body.__action == 'grade') {
         closeExam = false;
-    } else if (req.body.postAction == 'finish') {
+    } else if (req.body.__action == 'finish') {
         closeExam = true;
-    } else if (req.body.postAction == 'timeLimitFinish') {
+    } else if (req.body.__action == 'timeLimitFinish') {
         closeExam = true;
     } else {
-        return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
+        return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
     assessment.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, function(err) {
         if (ERR(err, next)) return;
-        if (req.body.postAction == 'timeLimitFinish') {
+        if (req.body.__action == 'timeLimitFinish') {
             res.redirect(req.originalUrl + '?timeLimitExpired=true');
         } else {
             res.redirect(req.originalUrl);

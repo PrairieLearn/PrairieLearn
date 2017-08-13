@@ -1,6 +1,6 @@
 <form name="add-user-form" method="POST">
-  <input type="hidden" name="postAction" value="course_permissions_insert_by_user_uid">
-  <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+  <input type="hidden" name="__action" value="course_permissions_insert_by_user_uid">
+  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
   <div class="form-group">
     <label for="addUserInputUid">UID:</label>
     <input type="text" class="form-control" id="addUserInputUid" name="uid" placeholder="username@domain.org">

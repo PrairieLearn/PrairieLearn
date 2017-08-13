@@ -99,19 +99,19 @@ describe('Exam assessment', function() {
             assert.lengthOf(elemList, 1);
         });
         it('should have a CSRF token', function() {
-            elemList = locals.$('form input[name="csrfToken"]');
+            elemList = locals.$('form input[name="__csrf_token"]');
             assert.lengthOf(elemList, 1);
             assert.deepProperty(elemList[0], 'attribs.value');
-            locals.csrfToken = elemList[0].attribs.value;
-            assert.isString(locals.csrfToken);
+            locals.__csrf_token = elemList[0].attribs.value;
+            assert.isString(locals.__csrf_token);
         });
     });
 
     describe('POST to assessment URL', function() {
         it('should load successfully', function(callback) {
             var form = {
-                postAction: 'newInstance',
-                csrfToken: locals.csrfToken,
+                __action: 'newInstance',
+                __csrf_token: locals.__csrf_token,
             };
             locals.preStartTime = Date.now();
             request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
@@ -227,11 +227,11 @@ describe('Exam assessment', function() {
                 locals.$ = cheerio.load(page);
             });
             it('should have a CSRF token', function() {
-                elemList = locals.$('form[name="grade-form"] input[name="csrfToken"]');
+                elemList = locals.$('form[name="grade-form"] input[name="__csrf_token"]');
                 assert.lengthOf(elemList, 1);
                 assert.deepProperty(elemList[0], 'attribs.value');
-                locals.csrfToken = elemList[0].attribs.value;
-                assert.isString(locals.csrfToken);
+                locals.__csrf_token = elemList[0].attribs.value;
+                assert.isString(locals.__csrf_token);
             });
         });
     };
@@ -240,8 +240,8 @@ describe('Exam assessment', function() {
         describe('POST to assessment_instance URL', function() {
             it('should load successfully', function(callback) {
                 var form = {
-                    postAction: 'grade',
-                    csrfToken: locals.csrfToken,
+                    __action: 'grade',
+                    __csrf_token: locals.__csrf_token,
                 };
                 request.post({url: locals.assessmentInstanceUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
@@ -265,8 +265,8 @@ describe('Exam assessment', function() {
         describe('POST to assessment_instance URL', function() {
             it('should error', function(callback) {
                 var form = {
-                    postAction: 'grade',
-                    csrfToken: locals.csrfToken,
+                    __action: 'grade',
+                    __csrf_token: locals.__csrf_token,
                 };
                 request.post({url: locals.assessmentInstanceUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
@@ -302,11 +302,11 @@ describe('Exam assessment', function() {
                 locals.$ = cheerio.load(page);
             });
             it('should have a CSRF token', function() {
-                elemList = locals.$('form[name="finish-form"] input[name="csrfToken"]');
+                elemList = locals.$('form[name="finish-form"] input[name="__csrf_token"]');
                 assert.lengthOf(elemList, 1);
                 assert.deepProperty(elemList[0], 'attribs.value');
-                locals.csrfToken = elemList[0].attribs.value;
-                assert.isString(locals.csrfToken);
+                locals.__csrf_token = elemList[0].attribs.value;
+                assert.isString(locals.__csrf_token);
             });
         });
     };
@@ -315,8 +315,8 @@ describe('Exam assessment', function() {
         describe('POST to assessment_instance URL', function() {
             it('should load successfully', function(callback) {
                 var form = {
-                    postAction: 'finish',
-                    csrfToken: locals.csrfToken,
+                    __action: 'finish',
+                    __csrf_token: locals.__csrf_token,
                 };
                 request.post({url: locals.assessmentInstanceUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
@@ -340,8 +340,8 @@ describe('Exam assessment', function() {
         describe('POST to assessment_instance URL', function() {
             it('should error', function(callback) {
                 var form = {
-                    postAction: 'finish',
-                    csrfToken: locals.csrfToken,
+                    __action: 'finish',
+                    __csrf_token: locals.__csrf_token,
                 };
                 request.post({url: locals.assessmentInstanceUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
@@ -361,7 +361,8 @@ describe('Exam assessment', function() {
     describe('1. submit correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['save'];
+                locals.postAction = 'save';
                 locals.question = addVectors;
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -378,7 +379,8 @@ describe('Exam assessment', function() {
     describe('2. submit incorrect answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['save'];
+                locals.postAction = 'save';
                 locals.question = addVectors;
                 locals.getSubmittedAnswer = function(_variant) {
                     return {
@@ -395,7 +397,8 @@ describe('Exam assessment', function() {
     describe('3. submit incorrect answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['save'];
+                locals.postAction = 'save';
                 locals.question = addNumbers;
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -411,7 +414,8 @@ describe('Exam assessment', function() {
     describe('4. submit incorrect answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['save'];
+                locals.postAction = 'save';
                 locals.question = fossilFuelsRadio;
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -477,7 +481,8 @@ describe('Exam assessment', function() {
     describe('6. submit invalid answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['save'];
+                locals.postAction = 'save';
                 locals.question = addNumbers;
                 locals.getSubmittedAnswer = function(_variant) {
                     return {
@@ -559,7 +564,8 @@ describe('Exam assessment', function() {
     describe('8. submit incorrect answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['save'];
+                locals.postAction = 'save';
                 locals.question = addNumbers;
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -575,7 +581,8 @@ describe('Exam assessment', function() {
     describe('9. break the addNumbers variant', function() {
         describe('setting the question', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['save'];
+                locals.postAction = 'save';
                 locals.question = addNumbers;
             });
         });
@@ -591,8 +598,15 @@ describe('Exam assessment', function() {
                     callback(null);
                 });
             });
-            it('should result in no submit button', function() {
-                locals.shouldHaveSubmitButton = false;
+        });
+    });
+
+    describe('10. a broken variant', function() {
+        describe('setting the question', function() {
+            it('should succeed', function() {
+                locals.shouldHaveButtons = [];
+                locals.postAction = 'save';
+                locals.question = addNumbers;
             });
         });
         helperQuestion.getInstanceQuestion(locals);
@@ -616,10 +630,11 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('10. submit correct answer to question addNumbers', function() {
+    describe('11. submit correct answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['save'];
+                locals.postAction = 'save';
                 locals.question = addNumbers;
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -632,10 +647,11 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestion(locals);
     });
 
-    describe('11. break the addNumbers submission', function() {
+    describe('12. break the addNumbers submission', function() {
         describe('setting the question', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['save'];
+                locals.postAction = 'save';
                 locals.question = addNumbers;
             });
         });
@@ -661,7 +677,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('12. grade exam', function() {
+    describe('13. grade exam', function() {
         getGradeAssessmentInstance();
         postGradeAssessmentInstance();
         describe('setting up the expected question addNumbers results', function() {
@@ -711,10 +727,11 @@ describe('Exam assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('13. un-break the addNumbers submission', function() {
+    describe('14. un-break the addNumbers submission', function() {
         describe('setting the question', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['save'];
+                locals.postAction = 'save';
                 locals.question = addNumbers;
             });
         });
@@ -733,10 +750,11 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('14. load question addNumbers page and save data for later submission', function() {
+    describe('15. load question addNumbers page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['save'];
+                locals.postAction = 'save';
                 locals.question = addNumbers;
             });
         });
@@ -744,12 +762,12 @@ describe('Exam assessment', function() {
         describe('save data for later submission', function() {
             it('should succeed', function() {
                 locals.savedVariant = _.clone(locals.variant);
-                locals.questionSavedCsrfToken = locals.csrfToken;
+                locals.questionSavedCsrfToken = locals.__csrf_token;
             });
         });
     });
 
-    describe('15. grade exam', function() {
+    describe('16. grade exam', function() {
         getGradeAssessmentInstance();
         postGradeAssessmentInstance();
         describe('setting up the expected question addNumbers results', function() {
@@ -799,7 +817,7 @@ describe('Exam assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('16. submit correct answer to saved question addNumbers page', function() {
+    describe('17. submit correct answer to saved question addNumbers page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.question = addNumbers;
@@ -813,16 +831,17 @@ describe('Exam assessment', function() {
         describe('restore saved data for submission', function() {
             it('should succeed', function() {
                 locals.variant = _.clone(locals.savedVariant);
-                locals.csrfToken = locals.questionSavedCsrfToken;
+                locals.__csrf_token = locals.questionSavedCsrfToken;
             });
         });
         helperQuestion.postInstanceQuestionAndFail(locals);
     });
 
-    describe('17. submit incorrect answer to question fossilFuelsRadio', function() {
+    describe('18. submit incorrect answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['save'];
+                locals.postAction = 'save';
                 locals.question = fossilFuelsRadio;
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -835,10 +854,11 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestion(locals);
     });
 
-    describe('18. submit incorrect answer to question addVectors', function() {
+    describe('19. submit incorrect answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['save'];
+                locals.postAction = 'save';
                 locals.question = addVectors;
                 locals.getSubmittedAnswer = function(_variant) {
                     return {
@@ -852,10 +872,11 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestion(locals);
     });
 
-    describe('19. load question addVectors page and save data for later submission', function() {
+    describe('20. load question addVectors page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['save'];
+                locals.postAction = 'save';
                 locals.question = addVectors;
             });
         });
@@ -863,12 +884,12 @@ describe('Exam assessment', function() {
         describe('save data for later submission', function() {
             it('should succeed', function() {
                 locals.savedVariant = _.clone(locals.variant);
-                locals.questionSavedCsrfToken = locals.csrfToken;
+                locals.questionSavedCsrfToken = locals.__csrf_token;
             });
         });
     });
 
-    describe('20. grade exam', function() {
+    describe('21. grade exam', function() {
         getGradeAssessmentInstance();
         postGradeAssessmentInstance();
         describe('setting up the expected question addNumbers results', function() {
@@ -918,7 +939,7 @@ describe('Exam assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('21. submit correct answer to saved question addVectors page', function() {
+    describe('22. submit correct answer to saved question addVectors page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.question = addVectors;
@@ -933,16 +954,17 @@ describe('Exam assessment', function() {
         describe('restore saved data for submission', function() {
             it('should succeed', function() {
                 locals.variant = _.clone(locals.savedVariant);
-                locals.csrfToken = locals.questionSavedCsrfToken;
+                locals.__csrf_token = locals.questionSavedCsrfToken;
             });
         });
         helperQuestion.postInstanceQuestionAndFail(locals);
     });
 
-    describe('22. load question fossilFuelsRadio page and save data for later submission', function() {
+    describe('23. load question fossilFuelsRadio page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['save'];
+                locals.postAction = 'save';
                 locals.question = fossilFuelsRadio;
             });
         });
@@ -950,30 +972,30 @@ describe('Exam assessment', function() {
         describe('save data for later submission', function() {
             it('should succeed', function() {
                 locals.savedVariant = _.clone(locals.variant);
-                locals.questionSavedCsrfToken = locals.csrfToken;
+                locals.questionSavedCsrfToken = locals.__csrf_token;
             });
         });
     });
 
-    describe('23. load assessment instance page and save data for later grade', function() {
+    describe('24. load assessment instance page and save data for later grade', function() {
         getGradeAssessmentInstance();
         describe('save data for later grade', function() {
             it('should succeed', function() {
-                locals.assessmentGradeSavedCsrfToken = locals.csrfToken;
+                locals.assessmentGradeSavedCsrfToken = locals.__csrf_token;
             });
         });
     });
 
-    describe('24. load assessment instance page and save data for later finish', function() {
+    describe('25. load assessment instance page and save data for later finish', function() {
         getFinishAssessmentInstance();
         describe('save data for later finish', function() {
             it('should succeed', function() {
-                locals.assessmentFinishSavedCsrfToken = locals.csrfToken;
+                locals.assessmentFinishSavedCsrfToken = locals.__csrf_token;
             });
         });
     });
 
-    describe('25. finish exam', function() {
+    describe('26. finish exam', function() {
         getFinishAssessmentInstance();
         postFinishAssessmentInstance();
         describe('setting up the expected question addNumbers results', function() {
@@ -1023,7 +1045,7 @@ describe('Exam assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('26. submit correct answer to saved question fossilFuelsRadio page', function() {
+    describe('27. submit correct answer to saved question fossilFuelsRadio page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.question = fossilFuelsRadio;
@@ -1037,31 +1059,31 @@ describe('Exam assessment', function() {
         describe('restore saved data for submission', function() {
             it('should succeed', function() {
                 locals.variant = _.clone(locals.savedVariant);
-                locals.csrfToken = locals.questionSavedCsrfToken;
+                locals.__csrf_token = locals.questionSavedCsrfToken;
             });
         });
         helperQuestion.postInstanceQuestionAndFail(locals);
     });
 
-    describe('27. grade exam', function() {
+    describe('28. grade exam', function() {
         describe('restore saved data for grade', function() {
             it('should succeed', function() {
-                locals.csrfToken = locals.assessmentGradeSavedCsrfToken;
+                locals.__csrf_token = locals.assessmentGradeSavedCsrfToken;
             });
         });
         postGradeAssessmentInstanceAndFail();
     });
 
-    describe('28. finish exam', function() {
+    describe('29. finish exam', function() {
         describe('restore saved data for finish', function() {
             it('should succeed', function() {
-                locals.csrfToken = locals.assessmentFinishSavedCsrfToken;
+                locals.__csrf_token = locals.assessmentFinishSavedCsrfToken;
             });
         });
         postFinishAssessmentInstanceAndFail();
     });
 
-    describe('29. regrading', function() {
+    describe('30. regrading', function() {
         describe('set forceMaxPoints = true for question addVectors', function() {
             it('should succeed', function(callback) {
                 sqldb.query(sql.update_question1_force_max_points, [], function(err, _result) {
