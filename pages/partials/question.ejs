@@ -1,5 +1,7 @@
 <div id="question-0" class="question-container">
+  <% if (question.type != 'Freeform') { %>
   <div hidden="true" class="question-data"><%= questionJsonBase64 %></div>
+  <% } %>
 
   <% errors.forEach(function(error, iError) { %>
   <div class="panel panel-danger">
