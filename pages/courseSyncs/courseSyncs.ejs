@@ -25,8 +25,8 @@
                 <td><%= course.path %></td>
                 <td>
                   <form name="confirm-form" method="POST">
-                    <input type="hidden" name="postAction" value="status">
-                    <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+                    <input type="hidden" name="__action" value="status">
+                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                     <button type="submit" class="btn btn-xs btn-default">
                       <i class="fa fa-info-circle" aria-hidden="true"></i>
                       Show server git status
@@ -39,8 +39,8 @@
                 <td><%= course.repository %></td>
                 <td>
                   <form name="confirm-form" method="POST">
-                    <input type="hidden" name="postAction" value="pull">
-                    <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+                    <input type="hidden" name="__action" value="pull">
+                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                     <button type="submit" class="btn btn-xs btn-default">
                       <i class="fa fa-cloud-download" aria-hidden="true"></i>
                       Pull from remote git repository

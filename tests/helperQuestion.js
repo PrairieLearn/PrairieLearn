@@ -49,17 +49,17 @@ module.exports = {
                 assert.deepProperty(locals.questionData, 'variant.id');
                 locals.variant_id = locals.questionData.variant.id;
             });
-            it('should have a variant_id input if Freeform with submit button', function() {
+            it('should have a variant_id input if Freeform with grade or save buttons', function() {
                 if (locals.question.type != 'Freeform') return;
-                if (!locals.shouldHaveSubmitButton) return;
-                elemList = locals.$('.question-form input[name="variant_id"]');
+                if (!locals.shouldHaveButtons.includes('grade') && !locals.shouldHaveButtons.includes('save')) return;
+                elemList = locals.$('.question-form input[name="__variant_id"]');
                 assert.lengthOf(elemList, 1);
                 assert.deepProperty(elemList[0], 'attribs.value');
                 locals.variant_id = elemList[0].attribs.value;
                 locals.variant_id = Number.parseInt(locals.variant_id);
             });
-            it('should have the variant in the DB if has submit button', function(callback) {
-                if (!locals.shouldHaveSubmitButton) return callback(null);
+            it('should have the variant in the DB if has grade or save button', function(callback) {
+                if (!locals.shouldHaveButtons.includes('grade') && !locals.shouldHaveButtons.includes('save')) return callback(null);
                 var params = {
                     variant_id: locals.variant_id
                 };
@@ -69,44 +69,77 @@ module.exports = {
                     callback(null);
                 });
             });
-            it('should have the correct variant.instance_question.id if has submit button and is student page', function() {
-                if (!locals.shouldHaveSubmitButton) return;
+            it('should have the correct variant.instance_question.id if has grade or save button and is student page', function() {
+                if (!locals.shouldHaveButtons.includes('grade') && !locals.shouldHaveButtons.includes('save')) return;
                 if (!locals.isStudentPage) return;
                 assert.equal(locals.variant.instance_question_id, locals.question.id);
             });
-            it('should have the correct variant.question.id if has submit button and is instructor page', function() {
-                if (!locals.shouldHaveSubmitButton) return;
+            it('should have the correct variant.question.id if has grade or save button and is instructor page', function() {
+                if (!locals.shouldHaveButtons.includes('grade') && !locals.shouldHaveButtons.includes('save')) return;
                 if (locals.isStudentPage) return;
                 assert.equal(locals.variant.question_id, locals.question.id);
             });
-            it('should not be a broken variant if Freeform with submit button', function() {
+            it('should not be a broken variant if Freeform with grade or save button', function() {
                 if (locals.question.type != 'Freeform') return;
-                if (!locals.shouldHaveSubmitButton) return;
+                if (!locals.shouldHaveButtons.includes('grade') && !locals.shouldHaveButtons.includes('save')) return;
                 assert.equal(locals.variant.broken, false);
             });
-            it('should have a CSRF token if has submit button', function() {
-                if (!locals.shouldHaveSubmitButton) return;
-                elemList = locals.$('.question-form input[name="csrfToken"]');
+            it('should have a CSRF token if has grade or save button', function() {
+                if (!locals.shouldHaveButtons.includes('grade') && !locals.shouldHaveButtons.includes('save')) return;
+                elemList = locals.$('.question-form input[name="__csrf_token"]');
                 assert.lengthOf(elemList, 1);
                 assert.deepProperty(elemList[0], 'attribs.value');
-                locals.csrfToken = elemList[0].attribs.value;
-                assert.isString(locals.csrfToken);
+                locals.__csrf_token = elemList[0].attribs.value;
+                assert.isString(locals.__csrf_token);
             });
-            it('should have or not have submit button', function() {
+            it('should have or not have grade button', function() {
                 if (locals.question.type == 'Freeform') {
-                    elemList = locals.$('button.freeform-question-submit');
-                    if (locals.shouldHaveSubmitButton) {
+                    elemList = locals.$('button[name="__action"][value="grade"]');
+                    if (locals.shouldHaveButtons.includes('grade')) {
                         assert.lengthOf(elemList, 1);
                     } else {
                         assert.lengthOf(elemList, 0);
                     }
                 } else {
-                    elemList = locals.$('button.question-submit');
-                    if (locals.shouldHaveSubmitButton) {
+                    elemList = locals.$('button.question-grade');
+                    if (locals.shouldHaveButtons.includes('grade')) {
                         assert.lengthOf(elemList, 1);
                     } else {
                         assert.lengthOf(elemList, 0);
                     }
+                }
+            });
+            it('should have or not have save button', function() {
+                if (locals.question.type == 'Freeform') {
+                    elemList = locals.$('button[name="__action"][value="save"]');
+                    if (locals.shouldHaveButtons.includes('save')) {
+                        assert.lengthOf(elemList, 1);
+                    } else {
+                        assert.lengthOf(elemList, 0);
+                    }
+                } else {
+                    elemList = locals.$('button.question-save');
+                    if (locals.shouldHaveButtons.includes('save')) {
+                        assert.lengthOf(elemList, 1);
+                    } else {
+                        assert.lengthOf(elemList, 0);
+                    }
+                }
+            });
+            it('should have or not have newVariant button', function() {
+                elemList = locals.$('a:contains(New variant)');
+                if (locals.shouldHaveButtons.includes('newVariant')) {
+                    assert.lengthOf(elemList, 1);
+                } else {
+                    assert.lengthOf(elemList, 0);
+                }
+            });
+            it('should have or not have tryAgain button', function() {
+                elemList = locals.$('a:contains(Try question again)');
+                if (locals.shouldHaveButtons.includes('tryAgain')) {
+                    assert.lengthOf(elemList, 1);
+                } else {
+                    assert.lengthOf(elemList, 0);
                 }
             });
         });
@@ -121,15 +154,15 @@ module.exports = {
                 let form;
                 if (locals.question.type == 'Calculation') {
                     form = {
-                        postAction: 'submitQuestionAnswer',
-                        csrfToken: locals.csrfToken,
+                        __action: locals.postAction,
+                        __csrf_token: locals.__csrf_token,
                         postData: JSON.stringify({variant: locals.variant, submittedAnswer: locals.submittedAnswer}),
                     };
                 } else if (locals.question.type == 'Freeform') {
                     form = {
-                        postAction: 'submitQuestionAnswer',
-                        csrfToken: locals.csrfToken,
-                        variant_id: locals.variant.id,
+                        __action: locals.postAction,
+                        __csrf_token: locals.__csrf_token,
+                        __variant_id: locals.variant.id,
                     };
                     _.assign(form, locals.submittedAnswer);
                 } else {
@@ -204,14 +237,14 @@ module.exports = {
                 let form;
                 if (locals.question.type == 'Calculation') {
                     form = {
-                        postAction: 'submitQuestionAnswer',
-                        csrfToken: locals.csrfToken,
+                        __action: locals.postAction,
+                        __csrf_token: locals.__csrf_token,
                         postData: JSON.stringify({variant: locals.variant, submittedAnswer: locals.submittedAnswer}),
                     };
                 } else if (locals.question.type == 'Freeform') {
                     form = {
-                        postAction: 'submitQuestionAnswer',
-                        csrfToken: locals.csrfToken,
+                        __action: locals.postAction,
+                        __csrf_token: locals.__csrf_token,
                         variant_id: locals.variant.id,
                     };
                     _.assign(form, locals.submittedAnswer);
@@ -331,19 +364,19 @@ module.exports = {
                 locals.$ = cheerio.load(page);
             });
             it('should have a CSRF token', function() {
-                elemList = locals.$('form[name="regrade-all-form"] input[name="csrfToken"]');
+                elemList = locals.$('form[name="regrade-all-form"] input[name="__csrf_token"]');
                 assert.lengthOf(elemList, 1);
                 assert.deepProperty(elemList[0], 'attribs.value');
-                locals.csrfToken = elemList[0].attribs.value;
-                assert.isString(locals.csrfToken);
+                locals.__csrf_token = elemList[0].attribs.value;
+                assert.isString(locals.__csrf_token);
             });
         });
         describe('POST to instructorAssessment URL for regrading', function() {
             it('should succeed', function(callback) {
                 var form = {
-                    postAction: 'regrade_all',
+                    __action: 'regrade_all',
                     assessment_id: locals.assessment_id,
-                    csrfToken: locals.csrfToken,
+                    __csrf_token: locals.__csrf_token,
                 };
                 request.post({url: locals.instructorAssessmentUrl, form: form, followAllRedirects: true}, function (error, response) {
                     if (error) {

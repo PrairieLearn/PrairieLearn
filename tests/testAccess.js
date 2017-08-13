@@ -92,7 +92,7 @@ describe('Access control', function() {
 
     var user, page, $, elemList;
     var assessment_id;
-    var csrfToken;
+    var __csrf_token;
     var assessmentUrl, q1Url, questionData, variant;
 
     /**********************************************************************/
@@ -241,11 +241,11 @@ describe('Access control', function() {
             $ = cheerio.load(page);
         });
         it('should have a CSRF token', function() {
-            elemList = $('form input[name="csrfToken"]');
+            elemList = $('form input[name="__csrf_token"]');
             assert.lengthOf(elemList, 1);
             assert.deepProperty(elemList[0], 'attribs.value');
-            csrfToken = elemList[0].attribs.value;
-            assert.isString(csrfToken);
+            __csrf_token = elemList[0].attribs.value;
+            assert.isString(__csrf_token);
         });
     });
 
@@ -253,8 +253,8 @@ describe('Access control', function() {
 
     var postAssessment = function(cookies, includePassword, expectedStatusCode, callback) {
         var form = {
-            postAction: 'newInstance',
-            csrfToken: csrfToken,
+            __action: 'newInstance',
+            __csrf_token: __csrf_token,
         };
         if (includePassword) form.password = 'secret';
         request.post({url: assessmentUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response, body) {
@@ -319,11 +319,11 @@ describe('Access control', function() {
             $ = cheerio.load(page);
         });
         it('should have a CSRF token', function() {
-            elemList = $('form[name="grade-form"] input[name="csrfToken"]');
+            elemList = $('form[name="grade-form"] input[name="__csrf_token"]');
             assert.lengthOf(elemList, 1);
             assert.deepProperty(elemList[0], 'attribs.value');
-            csrfToken = elemList[0].attribs.value;
-            assert.isString(csrfToken);
+            __csrf_token = elemList[0].attribs.value;
+            assert.isString(__csrf_token);
         });
         it('should link to addVectors question', function() {
             elemList = $('td a:contains("Addition of vectors in Cartesian coordinates")');
@@ -337,8 +337,8 @@ describe('Access control', function() {
 
     var postAssessmentInstance = function(cookies, expectedStatusCode, callback) {
         var form = {
-            postAction: 'grade',
-            csrfToken: csrfToken,
+            __action: 'grade',
+            __csrf_token: __csrf_token,
         };
         request.post({url: assessmentInstanceUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response) {
             if (error) {
@@ -414,11 +414,11 @@ describe('Access control', function() {
             variant = questionData.variant;
         });
         it('should have a CSRF token', function() {
-            elemList = $('.question-form input[name="csrfToken"]');
+            elemList = $('.question-form input[name="__csrf_token"]');
             assert.lengthOf(elemList, 1);
             assert.deepProperty(elemList[0], 'attribs.value');
-            csrfToken = elemList[0].attribs.value;
-            assert.isString(csrfToken);
+            __csrf_token = elemList[0].attribs.value;
+            assert.isString(__csrf_token);
         });
     });
 
@@ -430,8 +430,8 @@ describe('Access control', function() {
             wy: 0,
         };
         var form = {
-            postAction: 'submitQuestionAnswer',
-            csrfToken: csrfToken,
+            __action: 'save',
+            __csrf_token: __csrf_token,
             postData: JSON.stringify({variant, submittedAnswer}),
         };
         request.post({url: q1Url, form: form, jar: cookies, followAllRedirects: true}, function (error, response) {

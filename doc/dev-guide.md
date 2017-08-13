@@ -565,7 +565,7 @@ function foo(p, callback) {
 
 ```javascript
 router.post('/', function(req, res, next) {
-    if (req.body.postAction == 'enroll') {
+    if (req.body.__action == 'enroll') {
         var params = {
             course_instance_id: req.body.course_instance_id,
             user_id: res.locals.authn_user.id,
@@ -575,7 +575,7 @@ router.post('/', function(req, res, next) {
             res.redirect(req.originalUrl);
         });
     } else {
-        return next(error.make(400, 'unknown postAction', {body: req.body, locals: res.locals}));
+        return next(error.make(400, 'unknown __action', {body: req.body, locals: res.locals}));
     }
 });
 ```
@@ -586,8 +586,8 @@ router.post('/', function(req, res, next) {
 
 ```html
 <form name="enroll-form" method="POST">
-    <input type="hidden" name="postAction" value="enroll">
-    <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+    <input type="hidden" name="__action" value="enroll">
+    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
     <input type="hidden" name="course_instance_id" value="56">
     <button type="submit" class="btn btn-info">
         Enroll in course instance 56
@@ -595,7 +595,7 @@ router.post('/', function(req, res, next) {
 </form>
 ```
 
-* The `res.locals.csrfToken` variable is set and checked by early-stage middleware, so no explicit action is needed on each page.
+* The `res.locals.__csrf_token` variable is set and checked by early-stage middleware, so no explicit action is needed on each page.
 
 
 ## Coding style

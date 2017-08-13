@@ -43,8 +43,8 @@ process) in milliseconds as the variable "serverRemainingMS".
 %>
 
 <form name="time-limit-finish-form" method="POST">
-  <input type="hidden" name="postAction" value="timeLimitFinish">
-  <input type="hidden" name="csrfToken" value="<%= csrfToken %>">
+  <input type="hidden" name="__action" value="timeLimitFinish">
+  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
 </form>
 
 <script>

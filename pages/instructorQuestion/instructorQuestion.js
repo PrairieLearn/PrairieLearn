@@ -10,8 +10,8 @@ var sqldb = require('../../lib/sqldb');
 function processSubmission(req, res, callback) {
     let variant_id, submitted_answer;
     if (res.locals.question.type == 'Freeform') {
-        variant_id = req.body.variant_id;
-        submitted_answer = _.omit(req.body, ['postAction', 'csrfToken', 'variant_id']);
+        variant_id = req.body.__variant_id;
+        submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
     } else {
         if (!req.body.postData) return callback(error.make(400, 'No postData', {locals: res.locals, body: req.body}));
         let postData;
@@ -31,23 +31,28 @@ function processSubmission(req, res, callback) {
     sqldb.callOneRow('variants_ensure_question', [submission.variant_id, res.locals.question.id], (err, result) => {
         if (ERR(err, callback)) return;
         const variant = result.rows[0];
-        question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
-            if (ERR(err, callback)) return;
-            callback(null, submission.variant_id);
-        });
+        if (req.body.__action == 'grade') {
+            question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null, submission.variant_id);
+            });
+        } else if (req.body.__action == 'save') {
+            question.saveSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null, submission.variant_id);
+            });
+        } else {
+            callback(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
+        }
     });
 }
 
 router.post('/', function(req, res, next) {
-    if (req.body.postAction == 'submitQuestionAnswer') {
-        processSubmission(req, res, function(err, variant_id) {
-            if (ERR(err, next)) return;
-            res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id
-                         + '/?variant_id=' + variant_id);
-        });
-    } else {
-        return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
-    }
+    processSubmission(req, res, function(err, variant_id) {
+        if (ERR(err, next)) return;
+        res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id
+                     + '/?variant_id=' + variant_id);
+    });
 });
 
 router.get('/', function(req, res, next) {

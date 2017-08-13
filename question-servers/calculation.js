@@ -30,7 +30,7 @@ module.exports = {
 
     render: function(renderSelection, variant, question, submission, submissions, course, locals, callback) {
         const htmls = {
-            extraHeadersHtml: '<script type="text/javascript" src="/javascripts/require.js"></script>',
+            extraHeadersHtml: '',
             questionHtml: '',
             submissionHtmls: _.map(submissions, () => ''),
             answerHtml: '',

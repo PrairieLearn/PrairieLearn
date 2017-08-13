@@ -32,7 +32,7 @@ router.get('/', function(req, res, next) {
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
-    if (req.body.postAction == 'newInstance') {
+    if (req.body.__action == 'newInstance') {
         if (res.locals.authz_result.password != null) {
             if (req.body.password == null) return next(new Error('Password required for this assessment'));
             if (req.body.password !== res.locals.authz_result.password) {
@@ -44,7 +44,7 @@ router.post('/', function(req, res, next) {
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
         });
     } else {
-        return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
+        return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
 });
 

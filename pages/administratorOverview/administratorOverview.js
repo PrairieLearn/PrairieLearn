@@ -20,7 +20,7 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (!res.locals.is_administrator) return next(new Error('Insufficient permissions'));
-    if (req.body.postAction == 'administrators_insert_by_user_uid') {
+    if (req.body.__action == 'administrators_insert_by_user_uid') {
         let params = [
             req.body.uid,
             res.locals.authn_user.user_id,
@@ -29,7 +29,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.postAction == 'administrators_delete_by_user_id') {
+    } else if (req.body.__action == 'administrators_delete_by_user_id') {
         let params = [
             req.body.user_id,
             res.locals.authn_user.user_id,
@@ -38,7 +38,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.postAction == 'courses_insert') {
+    } else if (req.body.__action == 'courses_insert') {
         let params = [
             req.body.short_name,
             req.body.title,
@@ -51,7 +51,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.postAction == 'courses_update_column') {
+    } else if (req.body.__action == 'courses_update_column') {
         let params = [
             req.body.course_id,
             req.body.column_name,
@@ -62,7 +62,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.postAction == 'courses_delete') {
+    } else if (req.body.__action == 'courses_delete') {
         let params = {
             course_id: req.body.course_id,
         };
@@ -87,7 +87,7 @@ router.post('/', function(req, res, next) {
             });
         });
     } else {
-        return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
+        return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
 });
 

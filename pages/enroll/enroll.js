@@ -22,7 +22,7 @@ router.get('/', function(req, res, next) {
 });
 
 router.post('/', function(req, res, next) {
-    if (req.body.postAction == 'enroll') {
+    if (req.body.__action == 'enroll') {
         var params = {
             course_instance_id: req.body.course_instance_id,
             user_id: res.locals.authn_user.user_id,
@@ -32,7 +32,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.postAction == 'unenroll') {
+    } else if (req.body.__action == 'unenroll') {
         let params = {
             course_instance_id: req.body.course_instance_id,
             user_id: res.locals.authn_user.user_id,
@@ -43,7 +43,7 @@ router.post('/', function(req, res, next) {
             res.redirect(req.originalUrl);
         });
     } else {
-        return next(error.make(400, 'unknown action: ' + res.locals.postAction, {postAction: req.body.postAction, body: req.body}));
+        return next(error.make(400, 'unknown action: ' + res.locals.__action, {__action: req.body.__action, body: req.body}));
     }
 });
 

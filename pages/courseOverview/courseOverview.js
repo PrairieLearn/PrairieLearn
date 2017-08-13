@@ -23,7 +23,7 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_course_permission_own) return next(new Error('Insufficient permissions'));
-    if (req.body.postAction == 'course_permissions_insert_by_user_uid') {
+    if (req.body.__action == 'course_permissions_insert_by_user_uid') {
         let params = [
             res.locals.course.id,
             req.body.uid,
@@ -34,7 +34,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.postAction == 'course_permissions_update_role') {
+    } else if (req.body.__action == 'course_permissions_update_role') {
         let params = [
             res.locals.course.id,
             req.body.user_id,
@@ -45,7 +45,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
-    } else if (req.body.postAction == 'course_permissions_delete') {
+    } else if (req.body.__action == 'course_permissions_delete') {
         var params = [
             res.locals.course.id,
             req.body.user_id,
@@ -56,7 +56,7 @@ router.post('/', function(req, res, next) {
             res.redirect(req.originalUrl);
         });
     } else {
-        return next(error.make(400, 'unknown postAction', {locals: res.locals, body: req.body}));
+        return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
 });
 

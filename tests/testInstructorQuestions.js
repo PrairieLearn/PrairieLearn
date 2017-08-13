@@ -87,7 +87,8 @@ describe('Instructor questions', function() {
     describe('1. submit correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+                locals.postAction = 'grade';
                 locals.question = addVectors;
                 locals.expectedResult = {
                     submission_score: 1,
@@ -106,10 +107,34 @@ describe('Instructor questions', function() {
         helperQuestion.checkSubmissionScore(locals);
     });
 
-    describe('2. submit incorrect answer to question addVectors', function() {
+    describe('2. save incorrect answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+                locals.postAction = 'save';
+                locals.question = addVectors;
+                locals.expectedResult = {
+                    submission_score: null,
+                    submission_correct: null,
+                };
+                locals.getSubmittedAnswer = function(_variant) {
+                    return {
+                        wx: 500,
+                        wy: -100,
+                    };
+                };
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkSubmissionScore(locals);
+    });
+
+    describe('3. submit incorrect answer to question addVectors', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+                locals.postAction = 'grade';
                 locals.question = addVectors;
                 locals.expectedResult = {
                     submission_score: 0,
@@ -128,10 +153,11 @@ describe('Instructor questions', function() {
         helperQuestion.checkSubmissionScore(locals);
     });
 
-    describe('3. submit correct answer to question addNumbers', function() {
+    describe('4. submit correct answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+                locals.postAction = 'grade';
                 locals.question = addNumbers;
                 locals.expectedResult = {
                     submission_score: 1,
@@ -149,10 +175,11 @@ describe('Instructor questions', function() {
         helperQuestion.checkSubmissionScore(locals);
     });
 
-    describe('4. submit incorrect answer to question addNumbers', function() {
+    describe('5. submit incorrect answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+                locals.postAction = 'grade';
                 locals.question = addNumbers;
                 locals.expectedResult = {
                     submission_score: 0,
@@ -170,10 +197,11 @@ describe('Instructor questions', function() {
         helperQuestion.checkSubmissionScore(locals);
     });
 
-    describe('5. submit invalid answer to question addNumbers', function() {
+    describe('6. submit invalid answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.shouldHaveSubmitButton = true;
+                locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+                locals.postAction = 'grade';
                 locals.question = addNumbers;
                 locals.expectedResult = {
                     submission_score: null,

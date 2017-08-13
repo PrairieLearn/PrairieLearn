@@ -4,14 +4,17 @@
     <%- include('../partials/head'); %>
     <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
     <script type="text/javascript" src="/MathJax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
-    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
-    <script type="text/javascript" src="/localscripts/question.js"></script>
     <script type="text/javascript" src="/javascripts/socket.io.js"></script>
-    <%- extraHeadersHtml %>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
+    <% if (question.type != 'Freeform') { %>
+    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
+    <script type="text/javascript" src="/javascripts/require.js"></script>
+    <script type="text/javascript" src="/localscripts/question.js"></script>
     <script type="text/javascript" src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
+    <% } %>
+    <%- extraHeadersHtml %>
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: ''}); %>

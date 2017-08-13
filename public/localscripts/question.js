@@ -21,7 +21,7 @@ $(function() {
         questionContainer.find(".answer-body").each(function(i, x) {client.renderAnswer(x, questionData);});
     };
 
-    var submit = function(event) {
+    var submit = function(event, action) {
         var questionContainer = $(event.target).parents(".question-container");
         var client = clients[questionContainer.attr('id')];
 
@@ -37,14 +37,24 @@ $(function() {
             type: 'score',
         };
         questionContainer.find('form.question-form input.postData').val(JSON.stringify(postData));
+        questionContainer.find('form.question-form input.__action').val(action);
         questionContainer.find('form.question-form').submit();
+    };
+
+    var grade = function(event) {
+        submit(event, 'grade');
+    };
+
+    var save = function(event) {
+        submit(event, 'save');
     };
 
     $(".question-container").each(function(i, questionContainer) {
         initialize($(questionContainer), function(err) {
             if (err) return console.log(err);
             render($(questionContainer));
-            $(questionContainer).find(".question-submit").click(submit);
+            $(questionContainer).find(".question-grade").click(grade);
+            $(questionContainer).find(".question-save").click(save);
         });
     });
 });

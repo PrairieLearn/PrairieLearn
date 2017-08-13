@@ -26,22 +26,22 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.authn_has_instructor_view) return next();
-    if (req.body.postAction == 'reset') {
+    if (req.body.__action == 'reset') {
         res.clearCookie('pl_requested_uid');
         res.clearCookie('pl_requested_role');
         res.clearCookie('pl_requested_mode');
         res.redirect(req.originalUrl);
-    } else if (req.body.postAction == 'changeUid') {
+    } else if (req.body.__action == 'changeUid') {
         res.cookie('pl_requested_uid', req.body.pl_requested_uid, {maxAge: 60 * 60 * 1000});
         res.redirect(req.originalUrl);
-    } else if (req.body.postAction == 'changeRole') {
+    } else if (req.body.__action == 'changeRole') {
         res.cookie('pl_requested_role', req.body.pl_requested_role, {maxAge: 60 * 60 * 1000});
         res.redirect(req.originalUrl);
-    } else if (req.body.postAction == 'changeMode') {
+    } else if (req.body.__action == 'changeMode') {
         res.cookie('pl_requested_mode', req.body.pl_requested_mode, {maxAge: 60 * 60 * 1000});
         res.redirect(req.originalUrl);
     } else {
-        return next(error.make(400, 'unknown action: ' + res.locals.postAction, {postAction: req.body.postAction, body: req.body}));
+        return next(error.make(400, 'unknown action: ' + res.locals.__action, {__action: req.body.__action, body: req.body}));
     }
 });
 
