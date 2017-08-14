@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: 'errors'}); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Errors</h3>
+        </div>
+
+        <div class="panel-body">
+          <%- include('../partials/pager') %>
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Date</th>
+              <th>Instance</th>
+              <th>Assessment</th>
+              <th>Question</th>
+              <th>User</th>
+              <th>Message</th>
+              <th>Link</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% rows.forEach(row => { %>
+            <tr>
+              <td><%= row.display_id %></td>
+              <td><%= row.formatted_date %></td>
+              <td><%= row.course_instance_short_name || '—' %></td>
+              <td>
+                <% if (row.assessment) { %>
+                <%- include('../partials/assessment', {assessment: row.assessment}) %>
+                <% } else { %>
+                —
+                <% } %>
+              </td>
+              <td><%= row.question_qid %></td>
+              <td><%= row.user_uid %></td>
+              <td><%= row.student_message %></td>
+              <td>
+                <% if (row.variant_id) { %>
+                <a href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>" class="btn btn-xs btn-primary">View</a>
+                <% } %>
+              </td>
+              <td><%- include('../partials/errorStatus', {open: row.open, error_id: row.error_id}) %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+
+      </div>
+    </div>
+  </body>
+</html>

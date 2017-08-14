@@ -50,7 +50,7 @@ internal query:
 <%= error.data.sqlError.internalQuery %></pre>
           <% } %>
           <% if (error.data && error.data.sql) {%>
-          <p><strong>SQL query:</strong></p><pre><%= error.data.sql %></pre>
+          <p><strong>SQL query:</strong></p><pre><%= error_data_sqlQuery %></pre>
           <% } %>
           <% if (error.data && error.data.sqlParams) {%>
           <p><strong>SQL params:</strong></p><pre><%= error_data_sqlParams %></pre>

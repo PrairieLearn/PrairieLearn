@@ -5,6 +5,7 @@ CREATE OR REPLACE FUNCTION
         IN submission_id bigint,
         IN authn_user_id bigint,
         IN new_gradable boolean,
+        IN new_broken boolean,
         IN new_format_errors jsonb,
         IN new_partial_scores jsonb,
         IN new_score double precision,
@@ -53,6 +54,7 @@ BEGIN
     SET
         graded_at = now(),
         gradable = new_gradable,
+        broken = new_broken,
         format_errors = new_format_errors,
         partial_scores = new_partial_scores,
         score = new_score,

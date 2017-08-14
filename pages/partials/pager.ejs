@@ -1,0 +1,9 @@
+<nav aria-label="...">
+  <ul class="pager">
+    <li><a href="?page=1"><i class="fa fa-fast-backward" aria-hidden="true"></i> Newest</a></li>
+    <li><a href="?page=<%= prevPage %>"><i class="fa fa-chevron-left" aria-hidden="true"></i> Newer</a></li>
+    <li><a href="?page=<%= currPage %>">Page <%= currPage %>/<%= lastPage %></a></li>
+    <li><a href="?page=<%= nextPage %>">Older <i class="fa fa-chevron-right" aria-hidden="true"></i></a></li>
+    <li><a href="?page=<%= lastPage %>">Oldest <i class="fa fa-fast-forward" aria-hidden="true"></i></a></li>
+  </ul>
+</nav>

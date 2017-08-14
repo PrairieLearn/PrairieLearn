@@ -3,7 +3,7 @@ SELECT
     q.*,
     row_to_json(top) AS topic,
     tags_for_question(q.id) AS tags,
-    assessments_for_question(q.id, $course_instance_id) AS assessments
+    assessments_format_for_question(q.id, $course_instance_id) AS assessments
 FROM
     questions AS q
     JOIN topics AS top ON (top.id = q.topic_id)

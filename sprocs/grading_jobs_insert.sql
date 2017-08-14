@@ -5,6 +5,7 @@ CREATE OR REPLACE FUNCTION
         IN submission_id bigint,
         IN authn_user_id bigint,
         IN new_gradable boolean DEFAULT NULL,
+        IN new_broken boolean DEFAULT NULL,
         IN new_format_errors jsonb DEFAULT NULL,
         IN new_partial_scores jsonb DEFAULT NULL,
         IN new_score double precision DEFAULT NULL,
@@ -38,7 +39,7 @@ BEGIN
 
     IF grading_method = 'Internal' THEN
         grading_job := grading_jobs_insert_internal(submission_id, authn_user_id,
-                            new_gradable, new_format_errors, new_partial_scores,
+                            new_gradable, new_broken, new_format_errors, new_partial_scores,
                             new_score, new_feedback, new_submitted_answer,
                             new_params, new_true_answer);
     ELSIF grading_method = 'External' OR grading_method = 'Manual' THEN

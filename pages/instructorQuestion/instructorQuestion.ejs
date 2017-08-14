@@ -47,6 +47,12 @@
               <td><%- include('../partials/tags', {tags: tags}); %></td>
             </tr>
             <tr>
+              <th>Errors</th>
+              <td><%- include('../partials/errorBadge', {count: open_error_count}); %></td>
+              <td>
+              </td>
+            </tr>
+            <tr>
               <th>Assessments</th>
               <td><%- include('../partials/assessments', {assessments: assessments}); %></td>
               <td>
