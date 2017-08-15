@@ -48,11 +48,25 @@ function processSubmission(req, res, callback) {
 }
 
 router.post('/', function(req, res, next) {
-    processSubmission(req, res, function(err, variant_id) {
-        if (ERR(err, next)) return;
-        res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id
-                     + '/?variant_id=' + variant_id);
-    });
+    if (req.body.__action == 'grade' || req.body.__action == 'save') {
+        processSubmission(req, res, function(err, variant_id) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id
+                         + '/?variant_id=' + variant_id);
+        });
+    } else if (req.body.__action == 'test_once') {
+        question.startTestQuestion(1, res.locals.question, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+        });
+    } else if (req.body.__action == 'test_100') {
+        question.startTestQuestion(100, res.locals.question, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+        });
+    } else {
+        return next(new Error('unknown __action: ' + req.body.__action));
+    }
 });
 
 router.get('/', function(req, res, next) {

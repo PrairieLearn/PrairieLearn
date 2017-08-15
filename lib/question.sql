@@ -36,3 +36,8 @@ WHERE
     v.id = $variant_id
 ORDER BY
     s.date DESC;
+
+-- BLOCK select_errors_for_variant
+SELECT e.*
+FROM errors AS e
+WHERE e.variant_id = $variant_id;

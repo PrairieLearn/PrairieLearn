@@ -58,6 +58,16 @@
               <td>
               </td>
             </tr>
+            <tr>
+              <th>Actions</th>
+              <td>
+                <form method="POST">
+                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                  <button class="btn btn-xs btn-default" name="__action" value="test_once">Test once</button>
+                  <button class="btn btn-xs btn-default" name="__action" value="test_100">Test 100 times</button>
+                </form>
+              </td>
+            </tr>
           </tbody>
         </table>
       </div>
