@@ -95,6 +95,7 @@ module.exports = {
             'errors_generate_display_id.sql',
             'errors_insert_for_variant.sql',
             'errors_update_open.sql',
+            'errors_update_open_all.sql',
             'variants_lock.sql',
             'variants_select.sql',
             'variants_ensure_instance_question.sql',

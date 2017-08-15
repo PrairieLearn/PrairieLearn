@@ -6,11 +6,56 @@
   <body>
     <%- include('../partials/navbar', {navPage: 'errors'}); %>
     <div id="content" class="container">
+
+      <div class="modal fade" id="closeAllErrorsModal" tabindex="-1" role="dialog" aria-labelledby="closeAllErrors">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="closeAllErrorsModalLabel">Close all errors</h4>
+            </div>
+            <div class="modal-body">
+              Are you sure you want to close all errors? This cannot
+              be undone.
+            </div>
+            <div class="modal-footer">
+              <form name="close-all-form" method="POST">
+                <input type="hidden" name="__action" value="close_all">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger">Close all</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title">Errors</h3>
         </div>
 
+        <table class="table table-condensed table-hover two-column-description">
+          <tbody>
+            <tr>
+              <th>Number of errors</th>
+              <td><%= errorCount %></td>
+            </tr>
+            <tr>
+              <th>Open errors</th>
+              <td><%- include('../partials/errorBadge', {count: openCount}) %></td>
+            </tr>
+            <tr>
+              <th>Actions</th>
+              <td>
+                <a class="btn btn-xs btn-default" role="button"
+                   data-toggle="modal" data-target="#closeAllErrorsModal">
+                  <i class="fa fa-times" aria-hidden="true"></i> Close all errors
+                </a>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        
         <div class="panel-body">
           <%- include('../partials/pager') %>
         </div>

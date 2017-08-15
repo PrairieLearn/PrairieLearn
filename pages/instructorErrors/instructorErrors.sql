@@ -1,12 +1,21 @@
 -- BLOCK errors_count
+WITH counts AS (
+    SELECT
+        e.open,
+        count(*)::int
+    FROM errors AS e
+    WHERE
+        e.course_id = $course_id
+        AND e.course_caused
+    GROUP BY e.open
+)
 SELECT
-    count(*)
+    open,
+    coalesce(count, 0) AS count
 FROM
-    errors AS e
-WHERE
-    e.course_instance_id = $course_instance_id
-    OR (e.course_id = $course_id AND e.question_id IS NOT NULL)
-    AND e.course_caused;
+    (VALUES (true), (false)) AS tmp(open)
+    LEFT JOIN counts USING (open)
+ORDER BY open;
 
 -- BLOCK select_errors
 SELECT
@@ -29,8 +38,7 @@ FROM
     LEFT JOIN questions AS q ON (q.id = e.question_id)
     LEFT JOIN users AS u ON (u.user_id = e.user_id)
 WHERE
-    e.course_instance_id = $course_instance_id
-    OR (e.course_id = $course_id AND e.question_id IS NOT NULL)
+    e.course_id = $course_id
     AND e.course_caused
 ORDER BY
     e.date DESC, e.id

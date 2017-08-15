@@ -14,6 +14,7 @@ BEGIN
     FROM errors AS e
     WHERE
         e.id = error_id
+        AND e.course_caused
         AND e.course_id = errors_update_open.course_id;
 
     IF NOT FOUND THEN RAISE EXCEPTION 'bad error_id % for course_id %', error_id, course_id; END IF;

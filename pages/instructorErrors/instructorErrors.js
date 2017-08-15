@@ -13,17 +13,18 @@ const pageSize = 100;
 
 router.get('/', function(req, res, next) {
     var params = {
-        course_instance_id: res.locals.course_instance.id,
         course_id: res.locals.course.id,
     }
-    sqldb.queryOneRow(sql.errors_count, params, function(err, result) {
+    sqldb.query(sql.errors_count, params, function(err, result) {
         if (ERR(err, next)) return;
-        const count = result.rows[0].count;
+        if (result.rowCount != 2) return next(new Error('unable to obtain error count, rowCount = ' + result.rowCount));
+        res.locals.closedCount = result.rows[0].count;
+        res.locals.openCount = result.rows[1].count;
+        res.locals.errorCount = res.locals.closedCount + res.locals.openCount;
 
-        _.assign(res.locals, paginate.pages(req.query.page, count, pageSize));
+        _.assign(res.locals, paginate.pages(req.query.page, res.locals.errorCount, pageSize));
         
         var params = {
-            course_instance_id: res.locals.course_instance.id,
             course_id: res.locals.course.id,
             offset: (res.locals.currPage - 1) * pageSize,
             limit: pageSize,
@@ -58,6 +59,16 @@ router.post('/', function(req, res, next) {
             res.locals.authn_user.user_id,
         ];
         sqldb.call('errors_update_open', params, function(err, _result) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action == 'close_all') {
+        let params = [
+            false, // open status
+            res.locals.course.id,
+            res.locals.authn_user.user_id,
+        ];
+        sqldb.call('errors_update_open_all', params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
