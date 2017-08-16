@@ -1,3 +1,5 @@
+DROP FUNCTION IF EXISTS submissions_insert(jsonb,jsonb,jsonb,boolean,boolean,integer,enum_mode,bigint,bigint,bigint);
+
 CREATE OR REPLACE FUNCTION
     submissions_insert(
         IN submitted_answer jsonb,

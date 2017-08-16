@@ -172,4 +172,13 @@ def grade(element_html, element_index, data):
     return data
 
 def test(element_html, element_index, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, "answers_name")
+    weight = pl.get_integer_attrib(element, "weight", 1)
+
+    # FIXME: randomize tests
+
+    data["raw_submitted_answers"][name] = '%f' % data["correct_answers"][name]
+    data["partial_scores"][name] = {"score": 1, "weight": weight}
+
     return data

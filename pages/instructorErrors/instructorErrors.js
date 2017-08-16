@@ -3,6 +3,7 @@ var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
 
+var error = require('../../lib/error');
 var paginate = require('../../lib/paginate');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
@@ -14,7 +15,7 @@ const pageSize = 100;
 router.get('/', function(req, res, next) {
     var params = {
         course_id: res.locals.course.id,
-    }
+    };
     sqldb.query(sql.errors_count, params, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount != 2) return next(new Error('unable to obtain error count, rowCount = ' + result.rowCount));

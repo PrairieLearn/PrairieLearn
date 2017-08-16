@@ -176,12 +176,12 @@ def test(element_html, element_index, data):
     number_answers = len(data["params"][name])
     all_keys = [chr(ord('a') + i) for i in range(number_answers)]
 
-    result = random.choices(['correct', 'incorrect'])
+    result = random.choice(['correct', 'incorrect'])
     if result == 'correct':
-        if len(correct_keys == 1):
-            data["raw_submitted_answer"][name] = correct_keys[0]
-        elif len(correct_keys > 1):
-            data["raw_submitted_answer"][name] = correct_keys
+        if len(correct_keys) == 1:
+            data["raw_submitted_answers"][name] = correct_keys[0]
+        elif len(correct_keys) > 1:
+            data["raw_submitted_answers"][name] = correct_keys
         else:
             pass # no raw_submitted_answer if no correct keys
         data["partial_scores"][name] = {"score": 1, "weight": weight}
@@ -192,9 +192,11 @@ def test(element_html, element_index, data):
             # break and use this choice if it isn't correct
             if set(ans) != set(correct_keys):
                 break
-        data["raw_submitted_answer"][name] = ans
+        data["raw_submitted_answers"][name] = ans
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
         # FIXME: test invalid answers
+    else:
+        raise Exception('invalid result: %s' % result)
         
     return data

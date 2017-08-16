@@ -124,7 +124,7 @@ def parse(element_html, element_index, data):
         data["format_errors"][name] = 'No submitted answer.'
         return data
 
-    if submitted_keys is not in all_keys:
+    if submitted_key not in all_keys:
         data["format_errors"][name] = 'INVALID choice: ' + submitted_key # FIXME: escape submitted_key
         return data
 
@@ -150,27 +150,31 @@ def test(element_html, element_index, data):
     name = pl.get_string_attrib(element, "answers_name")
     weight = pl.get_integer_attrib(element, "weight", 1)
 
-    correct_key = data["correct_answers"].get(name, [])
+    correct_key = data["correct_answers"].get(name, {"key": None}).get("key", None)
+    if correct_key is None:
+        raise Exception("could not determine correct_key")
     number_answers = len(data["params"][name])
     all_keys = [chr(ord('a') + i) for i in range(number_answers)]
     incorrect_keys = list(set(all_keys) - set([correct_key]))
 
-    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])
+    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
     if result == 'correct':
-        data["raw_submitted_answer"][name] = data["correct_answers"][name]["key"]
+        data["raw_submitted_answers"][name] = data["correct_answers"][name]["key"]
         data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == 'incorrect':
         if len(incorrect_keys) > 0:
-            data["raw_submitted_answer"][name] = random.choice(incorrect_keys)
+            data["raw_submitted_answers"][name] = random.choice(incorrect_keys)
             data["partial_scores"][name] = {"score": 0, "weight": weight}
         else:
             # actually an invalid submission
-            data["raw_submitted_answer"][name] = '0'
+            data["raw_submitted_answers"][name] = '0'
             data["format_errors"][name] = "INVALID choice"
     elif result == 'invalid':
-        data["raw_submitted_answer"][name] = '0'
+        data["raw_submitted_answers"][name] = '0'
         data["format_errors"][name] = "INVALID choice"
 
         # FIXME: add more invalid choices
-        
+    else:
+        raise Exception('invalid result: %s' % result)
+
     return data
