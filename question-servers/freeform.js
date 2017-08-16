@@ -108,7 +108,7 @@ module.exports = {
 
     checkData: function(data, origData, phase) {
         const checked = [];
-        const checkProp = (prop, type, presentPhases, fixedPhases) => {
+        const checkProp = (prop, type, presentPhases, editPhases) => {
             if (!presentPhases.includes(phase)) return null;
             if (!_.has(data, prop)) return '"' + prop + '" is missing from "data"';
             if (type == 'integer') {
@@ -134,7 +134,7 @@ module.exports = {
             } else {
                 return 'invalid type: ' + String(type);
             }
-            if (fixedPhases.includes(phase)) {
+            if (!editPhases.includes(phase)) {
                 if (!_.has(origData, prop)) return '"' + prop + '" is missing from "origData"';
                 if (!_.isEqual(data[prop], origData[prop])) {
                     return 'data.' + prop + ' has been modified, which is not permitted at this time';
@@ -146,23 +146,22 @@ module.exports = {
 
         let err;
         let allPhases = ['generate', 'prepare', 'render', 'parse', 'grade', 'test'];
-        let nonTestPhases = ['generate', 'prepare', 'render', 'parse', 'grade'];
-        /****************************************************************************************************/
-        //              property                 type       presentPhases                         fixedPhases
-        /****************************************************************************************************/
-        err = checkProp('params',                'object',  allPhases,                            ['render']); if (err) return err;
-        err = checkProp('correct_answers',       'object',  allPhases,                            ['render']); if (err) return err;
-        err = checkProp('variant_seed',          'integer', allPhases,                            ['render']); if (err) return err;
-        err = checkProp('options',               'object',  allPhases,                            ['render']); if (err) return err;
-        err = checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['render']); if (err) return err;
-        err = checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['render']); if (err) return err;
-        err = checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], nonTestPhases); if (err) return err;
-        err = checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['render']); if (err) return err;
-        err = checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['render']); if (err) return err;
-        err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['render']); if (err) return err;
-        err = checkProp('editable',              'boolean', ['render'],                           ['render']); if (err) return err;
-        err = checkProp('panel',                 'string',  ['render'],                           ['render']); if (err) return err;
-        err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           ['render']); if (err) return err;
+        /**************************************************************************************************************************************/
+        //              property                 type       presentPhases                         changePhases
+        /**************************************************************************************************************************************/
+        err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare']);    if (err) return err;
+        err = checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare']);    if (err) return err;
+        err = checkProp('variant_seed',          'integer', allPhases,                            []);                         if (err) return err;
+        err = checkProp('options',               'object',  allPhases,                            []);                         if (err) return err;
+        err = checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade']);         if (err) return err;
+        err = checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test']); if (err) return err;
+        err = checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test']);                   if (err) return err;
+        err = checkProp('partial_scores',        'object',  ['render', 'grade', 'test'],          ['grade', 'test']);          if (err) return err;
+        err = checkProp('score',                 'number',  ['render', 'grade', 'test'],          ['grade', 'test']);          if (err) return err;
+        err = checkProp('feedback',              'object',  ['render', 'grade', 'test'],          ['grade', 'feedback']);      if (err) return err;
+        err = checkProp('editable',              'boolean', ['render'],                           []);                         if (err) return err;
+        err = checkProp('panel',                 'string',  ['render'],                           []);                         if (err) return err;
+        err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           []);                         if (err) return err;
         const extraProps = _.difference(_.keys(data), checked);
         if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
 
