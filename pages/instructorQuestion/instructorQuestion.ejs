@@ -47,9 +47,29 @@
               <td><%- include('../partials/tags', {tags: tags}); %></td>
             </tr>
             <tr>
+              <th>Errors</th>
+              <td><%- include('../partials/errorBadge', {count: open_error_count}); %></td>
+              <td>
+              </td>
+            </tr>
+            <tr>
               <th>Assessments</th>
               <td><%- include('../partials/assessments', {assessments: assessments}); %></td>
               <td>
+              </td>
+            </tr>
+            <tr>
+              <th>Actions</th>
+              <td>
+                <form method="POST">
+                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                  <button class="btn btn-xs btn-default" name="__action" value="test_once">
+                    Test once with full details
+                  </button>
+                  <button class="btn btn-xs btn-default" name="__action" value="test_100">
+                    Test 100 times with only results
+                  </button>
+                </form>
               </td>
             </tr>
           </tbody>

@@ -15,7 +15,7 @@ BEGIN
     INTO submission
     FROM submissions AS s
     WHERE s.variant_id = variants_select_submission_for_grading.variant_id
-    ORDER BY s.date DESC
+    ORDER BY s.date DESC, s.id DESC
     LIMIT 1;
 
     IF NOT FOUND THEN RETURN; END IF; -- no submissions

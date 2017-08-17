@@ -93,12 +93,13 @@ def render(element_html, element_index, data):
         if inline:
             html = '<p>\n' + html + '</p>\n'
     elif data["panel"] == "submission":
+        # FIXME: handle parse errors?
         if submitted_key is None:
             html = 'No submitted answer'
         else:
             submitted_html = next((a["html"] for a in answers if a["key"] == submitted_key), None)
             if submitted_html is None:
-                html = "ERROR: Invalid submitted value selected: %s" % submitted_key
+                html = "ERROR: Invalid submitted value selected: %s" % submitted_key # FIXME: escape submitted_key
             else:
                 html = "(%s) %s" % (submitted_key, submitted_html)
     elif data["panel"] == "answer":
@@ -113,6 +114,20 @@ def render(element_html, element_index, data):
     return html
 
 def parse(element_html, element_index, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, "answers_name")
+
+    submitted_key = data["submitted_answers"].get(name, None)
+    all_keys = [a["key"] for a in data["params"][name]];
+
+    if submitted_key is None:
+        data["format_errors"][name] = 'No submitted answer.'
+        return data
+
+    if submitted_key not in all_keys:
+        data["format_errors"][name] = 'INVALID choice: ' + submitted_key # FIXME: escape submitted_key
+        return data
+
     return data
 
 def grade(element_html, element_index, data):
@@ -121,11 +136,45 @@ def grade(element_html, element_index, data):
     weight = pl.get_integer_attrib(element, "weight", 1)
 
     submitted_key = data["submitted_answers"].get(name, None)
-    true_key = data["correct_answers"].get(name, {"key": None}).get("key", None)
+    correct_key = data["correct_answers"].get(name, {"key": None}).get("key", None)
 
     score = 0
-    if (submitted_key is not None and submitted_key == true_key):
+    if (submitted_key is not None and submitted_key == correct_key):
         score = 1
 
     data["partial_scores"][name] = {"score": score, "weight": weight}
+    return data
+
+def test(element_html, element_index, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, "answers_name")
+    weight = pl.get_integer_attrib(element, "weight", 1)
+
+    correct_key = data["correct_answers"].get(name, {"key": None}).get("key", None)
+    if correct_key is None:
+        raise Exception("could not determine correct_key")
+    number_answers = len(data["params"][name])
+    all_keys = [chr(ord('a') + i) for i in range(number_answers)]
+    incorrect_keys = list(set(all_keys) - set([correct_key]))
+
+    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    if result == 'correct':
+        data["raw_submitted_answers"][name] = data["correct_answers"][name]["key"]
+        data["partial_scores"][name] = {"score": 1, "weight": weight}
+    elif result == 'incorrect':
+        if len(incorrect_keys) > 0:
+            data["raw_submitted_answers"][name] = random.choice(incorrect_keys)
+            data["partial_scores"][name] = {"score": 0, "weight": weight}
+        else:
+            # actually an invalid submission
+            data["raw_submitted_answers"][name] = '0'
+            data["format_errors"][name] = "INVALID choice"
+    elif result == 'invalid':
+        data["raw_submitted_answers"][name] = '0'
+        data["format_errors"][name] = "INVALID choice"
+
+        # FIXME: add more invalid choices
+    else:
+        raise Exception('invalid result: %s' % result)
+
     return data

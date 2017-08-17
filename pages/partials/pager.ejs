@@ -1,0 +1,33 @@
+<nav aria-label="...">
+  <ul class="pager">
+    <li <% if (currPage == 1) { %>class="disabled"<% } %>>
+      <a href="?page=1">
+        <i class="fa fa-fast-backward" aria-hidden="true"></i>
+        First
+      </a>
+    </li>
+    <li <% if (currPage == 1) { %>class="disabled"<% } %>>
+      <a href="?page=<%= prevPage %>">
+        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+        Prev
+      </a>
+    </li>
+    <li>
+      <a href="?page=<%= currPage %>">
+        Page <%= currPage %>/<%= lastPage %>
+      </a>
+    </li>
+    <li <% if (currPage == lastPage) { %>class="disabled"<% } %>>
+      <a href="?page=<%= nextPage %>">
+        Next
+        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+      </a>
+    </li>
+    <li <% if (currPage == lastPage) { %>class="disabled"<% } %>>
+      <a href="?page=<%= lastPage %>">
+        Last
+        <i class="fa fa-fast-forward" aria-hidden="true"></i>
+      </a>
+    </li>
+  </ul>
+</nav>

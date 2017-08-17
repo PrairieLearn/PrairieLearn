@@ -9,7 +9,7 @@ SELECT
     z.number_choose as zone_number_choose,
     (lag(z.id) OVER (PARTITION BY z.id ORDER BY aq.number) IS NULL) AS start_new_zone,
     (lag(ag.id) OVER (PARTITION BY ag.id ORDER BY aq.number) IS NULL) AS start_new_alternative_group,
-    assessments_for_question(q.id,ci.id,a.id) AS other_assessments
+    assessments_format_for_question(q.id,ci.id,a.id) AS other_assessments
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
