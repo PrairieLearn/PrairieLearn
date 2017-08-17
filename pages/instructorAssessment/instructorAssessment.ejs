@@ -75,12 +75,12 @@
                 <a href="<%= urlPrefix %>/question/<%= question.question_id %>/">
                   <% if (question.alternative_group_size == 1) { %>
                   <%= question.alternative_group_number %>.
-                  <%= question.title %>
                   <% } else { %>
                   &nbsp;&nbsp;&nbsp;&nbsp;
                   <%= question.alternative_group_number %>.<%= question.number_in_alternative_group %>.
-                  <%= question.title %>
                   <% } %>
+                  <%= question.title %>
+                  <%- include('../partials/errorBadge', {count: question.open_error_count}); %>
                 </a>
               </td>
               <td><%= question.qid %></td>

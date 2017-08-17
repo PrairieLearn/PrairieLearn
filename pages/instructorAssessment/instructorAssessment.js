@@ -61,7 +61,10 @@ router.get('/', function(req, res, next) {
         },
         function(callback) {
             debug('query questions');
-            var params = {assessment_id: res.locals.assessment.id};
+            var params = {
+                assessment_id: res.locals.assessment.id,
+                course_id: res.locals.course.id,
+            };
             sqldb.query(sql.questions, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.questions = result.rows;
