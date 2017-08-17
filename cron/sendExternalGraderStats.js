@@ -42,5 +42,5 @@ module.exports.shouldRun = (currentTime, cronInterval) => {
     const desiredTime = 3 * 60 * 60 * 1000;
     // Computes time of day in milliseconds since midnight
     const dayTime = currentTime % (24 * 60 * 60 * 1000);
-    return (desiredTime <= dayTime && dayTime <= desiredTime + cronInterval) || true;
+    return (desiredTime <= dayTime && dayTime <= desiredTime + cronInterval);
 };
