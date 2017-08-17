@@ -31,7 +31,10 @@
           <tbody>
             <% questions.forEach(function(question) { %>
             <tr>
-              <td><a href="<%= urlPrefix %>/question/<%= question.id %>/"><%= question.title %></a></td>
+              <td>
+                <a href="<%= urlPrefix %>/question/<%= question.id %>/"><%= question.title %></a>
+                <%- include('../partials/errorBadge', {count: question.open_error_count}); %>
+              </td>
               <td><%= question.qid %></td>
               <td><%- include('../partials/topic', {topic: question.topic}); %></td>
               <td><%- include('../partials/tags', {tags: question.tags}); %></td>
