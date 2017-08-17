@@ -1,0 +1,285 @@
+{{#question}}
+<!-- Scripts -->
+<script type="text/javascript" src="/javascripts/dropzone.js"></script>
+<script>
+    $(function() {
+        // Turn off Dropzone autodiscover; we'll configure it manually
+        window.Dropzone.autoDiscover = false;
+
+        // All modifications to the saved data should be done on this object,
+        // and then those modifications should be immediately synced to the
+        // hidden input. This should be initialized from the hidden input on
+        // page load.
+        var files = [];
+
+        // The required files will be passes as a comma-separated string that
+        // we'll turn into an array at runtime.
+        var acceptedFiles = "{{filenames}}".split(',');
+
+        /**
+         * Checks if the given file contents should be treated as binary or
+         * text. Uses the same method as git: if the first 8000 bytes contain a
+         * NUL character ('\0'), we consider the file to be binary.
+         * http://stackoverflow.com/questions/6119956/how-to-determine-if-git-handles-a-file-as-binary-or-as-text
+         * @param  {String}  decodedFileContents File contents to check
+         * @return {Boolean}                     If the file is recognized as binary
+         */
+        function isBinary(decodedFileContents) {
+            var nulIdx = decodedFileContents.indexOf('\0');
+            var fileLength = decodedFileContents.length;
+            return nulIdx != -1 && nulIdx <= (fileLength <= 8000 ? fileLength : 8000);
+        }
+
+        // https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#The_Unicode_Problem
+        /**
+         * To support unicode strings, we use a method from Mozilla to decode:
+         * first we get the bytestream, then we percent-encode it, then we
+         * decode that to the original string.
+         * @param  {String} str the base64 string to decode
+         * @return {String}     the decoded string
+         */
+        function b64DecodeUnicode(str) {
+            // Going backwards: from bytestream, to percent-encoding, to original string.
+            return decodeURIComponent(atob(str).split('').map(function(c) {
+                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+            }).join(''));
+        }
+
+        /**
+         * Gets the base64-encoded contents of a file with the given name.
+         * @param  {String} name The desired file
+         * @return {String}      The file's contents, or null if the file was not found
+         */
+        function getSubmittedFileContents(name) {
+            var contents = null;
+            _.each(files, function(file) {
+                if (file.name === name) {
+                    contents = file.contents;
+                }
+            });
+            return contents;
+        }
+
+        /**
+         * Saves or updates the given file.
+         * @param  {String} name     Name of the file
+         * @param  {String} contents The file's base64-encoded contents
+         */
+        function saveSubmittedFile(name, contents) {
+            var idx = _.findIndex(files, function(file) {
+                if (file.name === name) {
+                    return true;
+                }
+            });
+            if (idx === -1) {
+                files.push({
+                    name: name,
+                    contents: contents
+                });
+            } else {
+                files[idx].contents = contents;
+            }
+
+            $('#file-upload-{{name}} input[name={{name}}]').val(JSON.stringify(files));
+        }
+
+        /**
+         * Generates markup to show the status of the uploaded files, including
+         * previews of files as appropriate.
+         * @return {HTMLElement} The generated content
+         */
+        function uploadStatus() {
+            var $uploadStatusPanel = $('<div class="panel panel-default"></div>');
+            var $uploadStatusPanelHeading = $('<div class="panel-heading">Files</div>');
+            $uploadStatusPanel.append($uploadStatusPanelHeading);
+            var $uploadStatus = $('<ul class="list-group"></ul>');
+
+            _.each(acceptedFiles, function(file) {
+                var $item = $('<li class="list-group-item"></li>');
+                $uploadStatus.append($item);
+                $item.append('<code>' + encodeURIComponent(file) + '</code> - ');
+                var fileData = getSubmittedFileContents(file);
+                if (!fileData) {
+                    $item.append('not uploaded');
+                } else {
+                    var $preview = $('<pre><code></code></pre>');
+                    try {
+                        var fileContents = b64DecodeUnicode(fileData);
+                        if (!isBinary(fileContents)) {
+                            $preview.find('code').text(fileContents);
+                        } else {
+                            $preview.find('code').text('Binary file not previewed.');
+                        }
+                    } catch (e) {
+                        console.log(e);
+                        $preview.find('code').text('Unable to decode file.');
+                    }
+                    $preview.hide();
+                    var $toggler = $('<a href="#">view</a>');
+                    $toggler.on('click', function(e) {
+                        $preview.toggle();
+                        e.preventDefault();
+                        return false;
+                    });
+                    $item.append($toggler);
+                    $item.append($preview);
+                }
+            });
+
+            $uploadStatusPanel.append($uploadStatus);
+
+            return $uploadStatusPanel;
+        }
+
+        /**
+         * Updates the DOM with the current state of the files.
+         */
+        function updateTemplate() {
+            $('#file-upload-{{name}} .file-upload-status').html('');
+            $('#file-upload-{{name}} .file-upload-status').append(uploadStatus());
+        }
+
+        /**
+         * Initializes the file upload zone on the question.
+         */
+        function initializeTemplate() {
+            $dropTarget = $('#file-upload-{{name}} .dropzone');
+
+            var dropzone = $dropTarget.dropzone({
+                url: '/none',
+                autoProcessQueue: false,
+                accept: function(file, done) {
+                    if (_.includes(acceptedFiles, file.name)) {
+                        return done();
+                    }
+                    return done('invalid file');
+                },
+                addedfile: function(file) {
+                    if (!_.includes(acceptedFiles, file.name)) {
+                        return;
+                    }
+                    var reader = new FileReader();
+                    reader.onload = function(e) {
+                        var dataUrl = e.target.result;
+
+                        var commaSplitIdx = dataUrl.indexOf(',');
+
+                        // Store the file as base-64 encoded data
+                        var base64FileData = dataUrl.substring(commaSplitIdx + 1);
+                        saveSubmittedFile(file.name, base64FileData);
+                        updateTemplate();
+                    };
+
+                    reader.readAsDataURL(file);
+                },
+            });
+
+            updateTemplate();
+        }
+
+        if (!window.File || !window.FileReader || !window.FileList || !window.Blob) {
+            alert('Warning: Your browser does not fully support HTML5 file upload operations.' +
+            'Please use a more current browser or you may not be able to complete this question.')
+        }
+
+        // We need to parse the
+
+        // Now that we've declared all our helper functions, let's wire
+        // everything up and initialize the page.
+        initializeTemplate();
+    });
+</script>
+
+<div id="file-upload-{{name}}">
+    <input type="hidden" name="{{name}}">
+    <style scoped>
+        .dropzone {
+            position: relative;
+            min-height: 15ex;
+            border-radius: 4px;
+            background-color: #FAFDFF;
+            border: 2px dashed #0087F7;
+        }
+        .dropzone.dz-clickable {
+            cursor: pointer;
+        }
+        .dropzone.dz-drag-hover {
+            background-color: #D9EDF7;
+            border-style: solid;
+        }
+        .dz-message {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            text-align: center;
+            width: 100%;
+        }
+    </style>
+    <div class="dropzone">
+        <div class="dz-message">
+            Drop files here or click to upload.
+            <br/>
+            <small>Only the files listed below will be accepted&mdash;others will be silently ignored.</small>
+        </div>
+    </div>
+    <div class="file-upload-status" style="margin-top: 1ex;"></div>
+</div>
+{{/question}}
+
+{{#submission}}
+<div id="file-upload-{{name}}">
+    <div class="panel panel-default">
+        <div class="panel-heading">Files</div>
+        <ul class="list-group">
+        </ul>
+    </div>
+</div>
+<script>
+$(function() {
+    function isBinary(decodedFileContents) {
+        var nulIdx = decodedFileContents.indexOf('\0');
+        var fileLength = decodedFileContents.length;
+        return nulIdx != -1 && nulIdx <= (fileLength <= 8000 ? fileLength : 8000);
+    }
+
+    function b64DecodeUnicode(str) {
+        // Going backwards: from bytestream, to percent-encoding, to original string.
+        return decodeURIComponent(atob(str).split('').map(function(c) {
+            return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+    }
+
+    var files = {{&files}};
+    var $fileList = $('#file-upload-{{name}} .panel ul.list-group');
+
+    _.each(files, function(file) {
+        var $item = $('<li class="list-group-item"></li>');
+        $item.append('<code>' + encodeURIComponent(file.name) + '</code> - ');
+        var $preview = $('<pre><code></code></pre>');
+        try {
+            var fileContents = b64DecodeUnicode(file.contents);
+            if (!isBinary(fileContents)) {
+                $preview.find('code').text(fileContents);
+            } else {
+                $preview.find('code').text('Binary file not previewed.');
+            }
+        } catch (e) {
+            console.log(e);
+            $preview.find('code').text('Unable to decode file.');
+        }
+        $preview.hide();
+        var $toggler = $('<a href="#">view</a>');
+        $toggler.on('click', function(e) {
+            console.log('click');
+            $preview.toggle();
+            e.preventDefault();
+            return false;
+        });
+        $item.append($toggler);
+        $item.append($preview);
+
+        $fileList.append($item);
+    });
+});
+</script>
+{{/submission}}

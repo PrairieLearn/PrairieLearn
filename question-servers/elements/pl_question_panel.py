@@ -8,6 +8,9 @@ def prepare(element_html, element_index, data):
 
 def render(element_html, element_index, data):
     if data["panel"] == 'question':
-        return element_html
+        # Change the enclosing <pl_question_panel> tags to a div
+        element = lxml.html.fragment_fromstring(element_html)
+        element.tag = 'div'
+        return bytes.decode(lxml.html.tostring(element))
     else:
         return ''
