@@ -39,6 +39,7 @@
               </td>
               <td>
                 <a href="<%= urlPrefix %>/assessment/<%= row.id %>/"><%= row.title %></a>
+                <%- include('../partials/errorBadge', {count: row.open_error_count}); %>
               </td>
               <td><%= row.tid %></td>
 
