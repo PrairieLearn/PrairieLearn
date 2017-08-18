@@ -26,6 +26,7 @@ const addVectors = {qid: 'addVectors', type: 'Calculation'};
 const fossilFuelsRadio = {qid: 'fossilFuelsRadio', type: 'Calculation'};
 
 describe('Homework assessment', function() {
+    this.timeout(5000);
 
     before('set up testing server', helperServer.before);
     after('shut down testing server', helperServer.after);

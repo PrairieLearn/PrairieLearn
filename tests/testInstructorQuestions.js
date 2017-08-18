@@ -25,6 +25,7 @@ const addNumbers = {qid: 'addNumbers', type: 'Freeform'};
 const addVectors = {qid: 'addVectors', type: 'Calculation'};
 
 describe('Instructor questions', function() {
+    this.timeout(5000);
 
     before('set up testing server', helperServer.before);
     after('shut down testing server', helperServer.after);
