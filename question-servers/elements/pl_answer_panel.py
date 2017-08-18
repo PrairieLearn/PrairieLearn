@@ -18,5 +18,8 @@ def parse(element_html, element_index, data):
 def grade(element_html, element_index, data):
     return data
 
-def testcase(element_html, element_index, data):
+def test(element_html, element_index, data):
     return data
+
+def file(element_html, element_index, data):
+    return ''

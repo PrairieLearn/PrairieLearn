@@ -51,9 +51,6 @@ with open(3, 'w', encoding='utf-8') as outf:
         # load the "file" as a module
         mod = importlib.import_module(file);
 
-        if fcn=="file":
-            print(fcn)
-
         # check whether we have the desired fcn in the module
         if hasattr(mod, fcn):
             # call the desired function in the loaded module

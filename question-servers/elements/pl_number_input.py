@@ -182,3 +182,6 @@ def test(element_html, element_index, data):
     data["partial_scores"][name] = {"score": 1, "weight": weight}
 
     return data
+
+def file(element_html, element_index, data):
+    return ''
