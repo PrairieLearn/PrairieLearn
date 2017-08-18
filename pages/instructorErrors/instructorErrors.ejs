@@ -57,6 +57,22 @@
         </table>
         
         <div class="panel-body">
+          <% if (typeof filterQid != 'undefined') { %>
+          <div class="row">
+            <div class="col-xs-12">
+              <div class="input-group">
+                <span class="input-group-addon" id="basic-addon3">Filter:</span>
+                <input type="text" class="form-control" disabled value="QID:<%= filterQid %>">
+                <span class="input-group-btn">
+                  <a class="btn btn-primary" type="button" href="<%= urlPrefix %>/errors">
+                    <i class="fa fa-times" aria-hidden="true"></i>
+                    Clear
+                  </a>
+                </span>
+              </div>
+            </div>
+          </div>
+          <% } %>
           <%- include('../partials/pager') %>
         </div>
 

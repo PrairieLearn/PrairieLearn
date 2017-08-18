@@ -40,6 +40,7 @@ FROM
 WHERE
     e.course_id = $course_id
     AND e.course_caused
+    AND (($qid::text IS NULL) OR (q.qid = $qid::text))
 ORDER BY
     e.date DESC, e.id
 LIMIT

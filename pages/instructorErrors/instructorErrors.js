@@ -29,11 +29,13 @@ router.get('/', function(req, res, next) {
             course_id: res.locals.course.id,
             offset: (res.locals.currPage - 1) * pageSize,
             limit: pageSize,
+            qid: req.query.qid,
         };
         sqldb.query(sql.select_errors, params, function(err, result) {
             if (ERR(err, next)) return;
 
             res.locals.rows = result.rows;
+            res.locals.filterQid = req.query.qid;
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });
     });
