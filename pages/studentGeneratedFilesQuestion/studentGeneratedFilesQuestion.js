@@ -19,7 +19,7 @@ router.get('/variant/:variant_id/*', function(req, res, next) {
         if (ERR(err, next)) return;
         var variant = result.rows[0];
 
-        question.getFile(filename, variant, res.locals.question, res.locals.course, function(err, fileData) {
+        question.getFile(filename, variant, res.locals.question, res.locals.course, res.locals.authn_user.user_id, function(err, fileData) {
             if (ERR(err, next)) return;
             res.attachment(filename);
             res.send(fileData);

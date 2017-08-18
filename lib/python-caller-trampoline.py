@@ -15,7 +15,7 @@
 # Errors are signaled by exiting with non-zero exit code
 # Exceptions are not caught and so will trigger a process exit with non-zero exit code (signaling an error)
 
-import sys, os, json, importlib, copy
+import sys, os, json, importlib, copy, base64
 
 saved_path = copy.copy(sys.path)
 
@@ -51,11 +51,23 @@ with open(3, 'w', encoding='utf-8') as outf:
         # load the "file" as a module
         mod = importlib.import_module(file);
 
+        if fcn=="file":
+            print(fcn)
+
         # check whether we have the desired fcn in the module
         if hasattr(mod, fcn):
             # call the desired function in the loaded module
             method = getattr(mod, fcn)
             val = method(*args)
+
+            # FIXME: if fcn is 'file', convert val to base64...
+            if fcn=="file":
+                # if val is a string, treat it as utf-8
+                if isinstance(val,str):
+                    val = bytes(val,'utf-8')
+                # FIXME: if val is neither str nor bytes, throw an error...
+                val = base64.b64encode(val).decode()
+
             output = {"present": True, "val": val}
         else:
             # the function wasn't present, so report this
