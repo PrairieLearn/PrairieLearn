@@ -13,6 +13,7 @@ var courseDir = 'exampleCourse';
 var course_id = 1;
 
 describe('sync/fromDisk/courseInfo', function() {
+    this.timeout(5000);
 
     var course;
     before('load course from disk', function(callback) {

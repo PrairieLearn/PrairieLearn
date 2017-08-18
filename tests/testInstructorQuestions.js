@@ -25,6 +25,7 @@ const addNumbers = {qid: 'addNumbers', type: 'Freeform'};
 const addVectors = {qid: 'addVectors', type: 'Calculation'};
 
 describe('Instructor questions', function() {
+    this.timeout(5000);
 
     before('set up testing server', helperServer.before);
     after('shut down testing server', helperServer.after);
@@ -221,6 +222,71 @@ describe('Instructor questions', function() {
             it('should contain "INVALID"', function() {
                 elemList = locals.$('div.submission-body :contains("INVALID")');
                 assert.isAtLeast(elemList.length, 1);
+            });
+        });
+    });
+
+    describe('7. run automated test on addNumbers', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+                locals.postAction = 'grade';
+                locals.question = addNumbers;
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        describe('POST to instructorAssessment URL for test_once', function() {
+            it('should succeed', function(callback) {
+                const form = {
+                    __action: 'test_once',
+                    __csrf_token: locals.__csrf_token,
+                };
+                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id;
+                request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, _body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    callback(null);
+                });
+            });
+        });
+        describe('The test job sequence', function() {
+            it('should have an id', function(callback) {
+                sqldb.queryOneRow(sql.select_last_job_sequence, [], (err, result) => {
+                    if (ERR(err, callback)) return;
+                    locals.job_sequence_id = result.rows[0].id;
+                    callback(null);
+                });
+            });
+            it('should complete', function(callback) {
+                var checkComplete = function() {
+                    var params = {job_sequence_id: locals.job_sequence_id};
+                    sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
+                        if (ERR(err, callback)) return;
+                        locals.job_sequence_status = result.rows[0].status;
+                        if (locals.job_sequence_status == 'Running') {
+                            setTimeout(checkComplete, 10);
+                        } else {
+                            callback(null);
+                        }
+                    });
+                };
+                setTimeout(checkComplete, 10);
+            });
+            it('should be successful', function() {
+                assert.equal(locals.job_sequence_status, 'Success');
+            });
+            it('should produce no errors', function(callback) {
+                sqldb.query(sql.select_errors_for_last_variant, [], (err, result) => {
+                    if (ERR(err, callback)) return;
+                    if (result.rowCount > 0) {
+                        callback(new Error(`found ${result.rowCount} errors (expected zero errors)`));
+                    }
+                    callback(null);
+                });
             });
         });
     });

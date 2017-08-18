@@ -12,6 +12,7 @@ DatabaseError.prototype = Object.create(Error.prototype);
 DatabaseError.prototype.constructor = DatabaseError;
 
 describe('database', function() {
+    this.timeout(5000);
 
     before('set up testing database', helperDb.beforeOnlyCreate);
     after('tear down testing database', helperDb.after);

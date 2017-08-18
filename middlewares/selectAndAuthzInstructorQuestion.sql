@@ -4,6 +4,7 @@ WITH error_count AS (
     FROM errors AS e
     WHERE
         e.question_id = $question_id
+        AND e.course_caused
         AND e.open
 )
 SELECT
