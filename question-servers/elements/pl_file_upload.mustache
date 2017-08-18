@@ -6,6 +6,8 @@
         // Turn off Dropzone autodiscover; we'll configure it manually
         window.Dropzone.autoDiscover = false;
 
+        var ELEMENT_ID = "#file-upload-{{name}}-{{uuid}}";
+
         // All modifications to the saved data should be done on this object,
         // and then those modifications should be immediately synced to the
         // hidden input. This should be initialized from the hidden input on
@@ -80,7 +82,7 @@
                 files[idx].contents = contents;
             }
 
-            $('#file-upload-{{name}} input[name={{name}}]').val(JSON.stringify(files));
+            $(ELEMENT_ID + ' input[name={{name}}]').val(JSON.stringify(files));
         }
 
         /**
@@ -135,15 +137,14 @@
          * Updates the DOM with the current state of the files.
          */
         function updateTemplate() {
-            $('#file-upload-{{name}} .file-upload-status').html('');
-            $('#file-upload-{{name}} .file-upload-status').append(uploadStatus());
+            $(ELEMENT_ID + ' .file-upload-status').html('').append(uploadStatus());
         }
 
         /**
          * Initializes the file upload zone on the question.
          */
         function initializeTemplate() {
-            $dropTarget = $('#file-upload-{{name}} .dropzone');
+            $dropTarget = $(ELEMENT_ID + ' .dropzone');
 
             var dropzone = $dropTarget.dropzone({
                 url: '/none',
@@ -190,7 +191,7 @@
     });
 </script>
 
-<div id="file-upload-{{name}}">
+<div id="file-upload-{{name}}-{{uuid}}">
     <input type="hidden" name="{{name}}">
     <style scoped>
         .dropzone {
@@ -227,7 +228,7 @@
 {{/question}}
 
 {{#submission}}
-<div id="file-upload-{{name}}">
+<div id="file-upload-{{name}}-{{uuid}}">
     <div class="panel panel-default">
         <div class="panel-heading">Files</div>
         <ul class="list-group">
@@ -236,6 +237,8 @@
 </div>
 <script>
 $(function() {
+    var ELEMENT_ID = "#file-upload-{{name}}-{{uuid}}";
+
     function isBinary(decodedFileContents) {
         var nulIdx = decodedFileContents.indexOf('\0');
         var fileLength = decodedFileContents.length;
@@ -250,7 +253,7 @@ $(function() {
     }
 
     var files = {{&files}};
-    var $fileList = $('#file-upload-{{name}} .panel ul.list-group');
+    var $fileList = $(ELEMENT_ID + ' .panel ul.list-group');
 
     _.each(files, function(file) {
         var $item = $('<li class="list-group-item"></li>');

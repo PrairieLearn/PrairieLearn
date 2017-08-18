@@ -18,11 +18,12 @@ def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers_name", "_files")
     filenames = pl.get_string_attrib(element, "filenames", "")
+    uuid = pl.get_uuid();
 
     if data["panel"] == "question":
         raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
 
-        html_params = {'question': True, 'name': name, 'filenames': filenames}
+        html_params = {'question': True, 'name': name, 'filenames': filenames, 'uuid': uuid}
 
         if raw_submitted_answer is not None:
             html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
@@ -31,7 +32,7 @@ def render(element_html, element_index, data):
     elif data["panel"] == "submission":
         files = data["submitted_answers"].get(name, None)
 
-        html_params = {'submission': True, 'name': name, 'filenames': filenames}
+        html_params = {'submission': True, 'name': name, 'filenames': filenames, 'uuid': uuid}
 
         if files is not None:
             html_params['files'] = json.dumps(files)

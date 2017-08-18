@@ -1,6 +1,7 @@
 import lxml.html
 import to_precision
 import numpy as np
+import uuid
 
 def inner_html(element):
     html = element.text
@@ -295,3 +296,6 @@ def is_correct_scalar_sf(a_sub,a_tru,digits=2,eps_digits=3):
 
 def get_digits_for_sf(a,digits):
     return -int(floor(log10(a)))+(digits-1)
+
+def get_uuid():
+    return str(uuid.uuid4())
