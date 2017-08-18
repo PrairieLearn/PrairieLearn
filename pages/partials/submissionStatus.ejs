@@ -5,18 +5,19 @@
             function updateStatus(status) {
                 var display = $('#grading-<%= submission.grading_job_id %>');
                 var label;
+                var spinner = '<i class="fa fa-refresh fa-spin fa-fw"></i>';
                 switch (status) {
                     case 'requested':
-                        label = 'Grading requested';
+                        label = 'Grading requested ' + spinner;
                         break;
                     case 'queued':
-                        label = 'Queued for grading';
+                        label = 'Queued for grading ' + spinner;
                         break;
                     case 'grading':
-                        label = 'Grading in progress';
+                        label = 'Grading in progress ' + spinner;
                         break;
                     case 'processing':
-                        label = 'Processing results';
+                        label = 'Processing results ' + spinner;
                         break;
                     case 'graded':
                         label = 'Graded!'
