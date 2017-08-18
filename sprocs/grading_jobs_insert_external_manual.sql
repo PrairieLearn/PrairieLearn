@@ -5,13 +5,13 @@ CREATE OR REPLACE FUNCTION
         OUT grading_job grading_jobs
     )
 AS $$
+<<main>>
 DECLARE
     credit integer;
     variant_id bigint;
     instance_question_id bigint;
     assessment_instance_id bigint;
     grading_method enum_grading_method;
-    gj grading_jobs%rowtype;
 BEGIN
     -- ######################################################################
     -- get the related objects
@@ -22,6 +22,7 @@ BEGIN
     FROM
         submissions AS s
         JOIN variants AS v ON (v.id = s.variant_id)
+        JOIN questions AS q ON (q.id = v.question_id)
         LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     WHERE s.id = submission_id;
@@ -34,16 +35,16 @@ BEGIN
     -- ######################################################################
     -- cancel any outstanding grading jobs
 
-    FOR gj IN
+    FOR grading_job IN
         UPDATE grading_jobs AS gj
         SET
             grading_request_canceled_at = now(),
-            grading_request_canceled_by = authn_user_id
+            grading_request_canceled_by = grading_jobs_insert_external_manual.authn_user_id
         FROM
             variants AS v
             JOIN submissions AS s ON (s.variant_id = v.id)
         WHERE
-            v.id = variant_id
+            v.id = main.variant_id
             AND gj.submission_id = s.id
             AND gj.graded_at = NULL
             AND gj.grading_requested_at IS NOT NULL
@@ -52,7 +53,7 @@ BEGIN
     LOOP
         UPDATE submissions AS s
         SET grading_requested_at = NULL
-        WHERE s.id = gj.submission_id;
+        WHERE s.id = grading_job.submission_id;
     END LOOP;
 
     -- ######################################################################
@@ -71,7 +72,7 @@ BEGIN
     UPDATE submissions AS s
     SET
         grading_requested_at = now(),
-        grading_method = grading_method
+        grading_method = main.grading_method
     WHERE s.id = submission_id;
 
     -- ######################################################################
