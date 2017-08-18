@@ -16,7 +16,7 @@ $(function() {
 
   // The required files will be passes as a comma-separated string that
   // we'll turn into an array at runtime.
-  var acceptedFiles = "{{filenames}}".split(',');
+  var acceptedFiles = {{&filenames}};
 
   /**
   * Checks if the given file contents should be treated as binary or
