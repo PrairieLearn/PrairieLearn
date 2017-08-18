@@ -137,7 +137,7 @@ module.exports = {
             if (!editPhases.includes(phase)) {
                 if (!_.has(origData, prop)) return '"' + prop + '" is missing from "origData"';
                 if (!_.isEqual(data[prop], origData[prop])) {
-                    return 'data.' + prop + ' has been modified, which is not permitted at this time';
+                    return 'data.' + prop + ' has been modified, which is not permitted at this time' + ' data[prop]=' + JSON.stringify(data[prop]) + '   origData[prop]='+JSON.stringify(origData[prop]);
                 }
             }
             checked.push(prop);
@@ -299,11 +299,7 @@ module.exports = {
             } else if (phase == 'file') {
                 // Convert ret_val from base64 back to buffer (this always works,
                 // whether or not ret_val is valid base64) and append to fileData
-                console.log("IN HERE!!!")
-                console.log(ret_val)
-                console.log(Buffer.from(ret_val,'base64'))
                 fileData = Buffer.concat([fileData, Buffer.from(ret_val,'base64')]);
-                console.log(fileData)
             } else {
                 data = ret_val;
             }
@@ -421,8 +417,6 @@ module.exports = {
         // Put base URLs in data.options for access by question code
         data.options.client_files_question_url = locals.clientFilesQuestionUrl;
         data.options.client_files_course_url = locals.clientFilesCourseUrl;
-        data.options.client_files_instance_url = locals.clientFilesCourseInstanceUrl;
-        data.options.client_files_assessment_url = locals.clientFilesAssessmentUrl;
         data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
 
         module.exports.processQuestion('render', pc, data, options, (err, courseErrs, _data, html, _fileData) => {
