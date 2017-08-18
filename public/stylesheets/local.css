@@ -223,15 +223,15 @@ table.two-column-description tr th {
     width: 5%;
 }
 
-.panel.pastsubmission-block .panel-heading {
+.panel.pastsubmission-block > .panel-heading {
     display: flex;
     align-items: center;
 }
 
-.panel.pastsubmission-block .panel-heading > * {
+.panel.pastsubmission-block > .panel-heading > * {
     margin-right: 15px;
 }
 
-.panel.pastsubmission-block .panel-title {
+.panel.pastsubmission-block > .panel-title {
     display: inline-block;
 }
