@@ -35,6 +35,10 @@ module.exports = {
                 paths: [path.join(__dirname, 'freeformPythonLib')],
             };
             pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
+                if (err instanceof codeCaller.FunctionMissingError) {
+                    // function wasn't present in server
+                    return callback(null, module.exports.defaultElementFunctionRet(fcn, data), '');
+                }
                 if (ERR(err, callback)) return;
                 callback(null, ret, consoleLog);
             });
@@ -47,9 +51,21 @@ module.exports = {
         }
     },
 
+    defaultElementFunctionRet: function(phase, data) {
+        if (phase == 'render') {
+            return '';
+        } else if (phase == 'file') {
+            return '';
+        } else {
+            return data;
+        }
+    },
+
     defaultServerRet: function(phase, data, html, _options) {
         if (phase == 'render') {
             return html;
+        } else if (phase == 'file') {
+            return '';
         } else {
             return data;
         }

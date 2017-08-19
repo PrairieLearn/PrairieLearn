@@ -44,15 +44,3 @@ def render(element_html, element_index, data):
 
     # Create and return html
     return '''<a href="'''+file_url+'''" download>'''+file_label+'''</a>'''
-
-def parse(element_html, element_index, data):
-    return data
-
-def grade(element_html, element_index, data):
-    return data
-
-def test(element_html, element_index, data):
-    return data
-
-def file(element_html, element_index, data):
-    return ''
