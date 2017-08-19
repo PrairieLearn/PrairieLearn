@@ -23,32 +23,27 @@ def render(element_html, element_index, data):
     # Get label (default is file_name)
     file_label = pl.get_string_attrib(element, "label", file_name)
 
-    # Get base path, which depends on the type and scope
+    # Get base url, which depends on the type and scope
     if file_type=="static":
         if file_scope=="question":
-            base = data["options"]["client_files_question_url"]
+            base_url = data["options"]["client_files_question_url"]
         elif file_scope=="course":
-            base = data["options"]["client_files_course_url"]
+            base_url = data["options"]["client_files_course_url"]
         else:
             raise ValueError('scope {} is not valid for type {} (must be "question" or "course")'.format(file_scope,file_type))
     elif file_type=="dynamic":
         if file_scope=="question":
-            base = data["options"]["client_files_question_dynamic_url"]
+            base_url = data["options"]["client_files_question_dynamic_url"]
         else:
             raise ValueError('scope {} is not valid for type {} (must be "question")'.format(file_scope,file_type))
     else:
         raise ValueError('type {} is not valid (must be "static" or "dynamic")'.format(file_type))
 
-    # Get full path
-    src = os.path.join(base,file_name)
+    # Get full url
+    file_url = os.path.join(base_url,file_name)
 
     # Create and return html
-    html_params = {}
-    html_params['file_url'] = src
-    html_params['file_label'] = file_label
-    with open('pl_file_download.mustache','r') as f:
-        html = chevron.render(f,html_params).strip()
-    return html
+    return '''<a href="'''+file_url+'''" download>'''+file_label+'''</a>'''
 
 def parse(element_html, element_index, data):
     return data

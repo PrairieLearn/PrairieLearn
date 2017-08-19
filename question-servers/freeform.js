@@ -137,7 +137,7 @@ module.exports = {
             if (!editPhases.includes(phase)) {
                 if (!_.has(origData, prop)) return '"' + prop + '" is missing from "origData"';
                 if (!_.isEqual(data[prop], origData[prop])) {
-                    return 'data.' + prop + ' has been modified, which is not permitted at this time' + ' data[prop]=' + JSON.stringify(data[prop]) + '   origData[prop]='+JSON.stringify(origData[prop]);
+                    return `data.${prop} has been illegally modified, new value: "${data[prop]}", original value: "${origData[prop]}"`;
                 }
             }
             checked.push(prop);
@@ -146,6 +146,9 @@ module.exports = {
 
         let err;
         let allPhases = ['generate', 'prepare', 'render', 'parse', 'grade', 'test', 'file'];
+
+        if (!allPhases.includes(phase)) return `unknown phase: ${phase}`;
+
         /**************************************************************************************************************************************/
         //              property                 type       presentPhases                         changePhases
         /**************************************************************************************************************************************/
@@ -225,11 +228,11 @@ module.exports = {
                         } else if (phase == 'file') {
                             // Convert ret_val from base64 back to buffer (this always works,
                             // whether or not ret_val is valid base64)
-                            var buf = Buffer.from(ret_val,'base64');
+                            var buf = Buffer.from(ret_val, 'base64');
 
                             // If the buffer has non-zero length...
-                            if (buf.length>0) {
-                                if (fileData.length>0) {
+                            if (buf.length > 0) {
+                                if (fileData.length > 0) {
                                     // If fileData already has non-zero length, throw an error
                                     const elementFile = module.exports.getElementFilename(elementName);
                                     const courseErr = new Error(elementFile + ': Error calling ' + phase + '(): attempting to overwrite non-empty fileData');
@@ -237,8 +240,8 @@ module.exports = {
                                     courseErrs.push(courseErr);
                                     return callback(courseErr);
                                 } else {
-                                    // If not, replace fileData with a copy of buffer
-                                    fileData = Buffer.from(buf);
+                                    // If not, replace fileData with buffer
+                                    fileData = buf;
                                 }
                             }
                         } else {
@@ -314,11 +317,11 @@ module.exports = {
             } else if (phase == 'file') {
                 // Convert ret_val from base64 back to buffer (this always works,
                 // whether or not ret_val is valid base64)
-                var buf = Buffer.from(ret_val,'base64');
+                var buf = Buffer.from(ret_val, 'base64');
 
                 // If the buffer has non-zero length...
-                if (buf.length>0) {
-                    if (fileData.length>0) {
+                if (buf.length > 0) {
+                    if (fileData.length > 0) {
                         // If fileData already has non-zero length, throw an error
                         const serverFile = path.join(options.question_dir, 'server.py');
                         const courseErr = new Error(serverFile + ': Error calling ' + phase + '(): attempting to overwrite non-empty fileData');
