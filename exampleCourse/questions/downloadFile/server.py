@@ -9,8 +9,4 @@ def file(data):
         buf = io.BytesIO()
         plt.savefig(buf,format='png')
         return buf
-    else:
-        return ''
-
-def generate(data):
-    return data
+        

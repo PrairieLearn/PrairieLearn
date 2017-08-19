@@ -32,7 +32,7 @@ def render(element_html, element_index, data):
         else:
             raise ValueError('directory "{}" is not valid for type "{}" (must be "clientFilesQuestion" or "clientFilesCourse")'.format(file_directory,file_type))
     elif file_type=="dynamic":
-        if pl.is_attrib(element, "directory"):
+        if pl.has_attrib(element, "directory"):
             raise ValueError('no directory ("{}") can be provided for type "{}"'.format(file_directory,file_type))
         else:
             base_url = data["options"]["client_files_question_dynamic_url"]

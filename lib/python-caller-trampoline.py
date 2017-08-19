@@ -58,6 +58,9 @@ with open(3, 'w', encoding='utf-8') as outf:
             val = method(*args)
 
             if fcn=="file":
+                # if val is None, replace it with empty string
+                if val is None:
+                    val = ''
                 # if val is a file-like object, read whatever is inside
                 if isinstance(val,io.IOBase):
                     val.seek(0)
