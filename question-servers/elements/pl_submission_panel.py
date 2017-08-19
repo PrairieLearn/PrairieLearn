@@ -11,15 +11,3 @@ def render(element_html, element_index, data):
         return element_html
     else:
         return ""
-
-def parse(element_html, element_index, data):
-    return data
-
-def grade(element_html, element_index, data):
-    return data
-
-def test(element_html, element_index, data):
-    return data
-
-def file(element_html, element_index, data):
-    return ''

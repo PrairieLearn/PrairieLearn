@@ -200,6 +200,3 @@ def test(element_html, element_index, data):
         raise Exception('invalid result: %s' % result)
 
     return data
-
-def file(element_html, element_index, data):
-    return ''

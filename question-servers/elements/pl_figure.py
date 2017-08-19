@@ -30,15 +30,3 @@ def render(element_html, element_index, data):
         html = chevron.render(f,html_params).strip()
 
     return html
-
-def parse(element_html, element_index, data):
-    return data
-
-def grade(element_html, element_index, data):
-    return data
-
-def test(element_html, element_index, data):
-    return data
-
-def file(element_html, element_index, data):
-    return ''
