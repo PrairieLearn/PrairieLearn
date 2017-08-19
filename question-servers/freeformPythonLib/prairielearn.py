@@ -41,6 +41,14 @@ def _get_attrib(element, name, *args):
             raise Exception("Attribute \"%s\" missing and no default is available" % name)
     return (element.attrib[name], False)
 
+def is_attrib(element, name):
+    """value = is_attrib(element, name)
+
+    Returns true if the element has an attribute of that name,
+    false otherwise.
+    """
+    return name in element.attrib
+
 def get_string_attrib(element, name, *args):
     """value = get_string_attrib(element, name, default)
 
