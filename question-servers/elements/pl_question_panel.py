@@ -9,6 +9,6 @@ def prepare(element_html, element_index, data):
 def render(element_html, element_index, data):
     if data["panel"] == 'question':
         element = lxml.html.fragment_fromstring(element_html)
-        return pl.inner_html(element_html)
+        return pl.inner_html(element)
     else:
         return ''

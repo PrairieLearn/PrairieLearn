@@ -6,10 +6,74 @@ var path = require('path');
 var mustache = require('mustache');
 var cheerio = require('cheerio');
 
-var elements = require('./elements');
+var {
+    elements,
+    dependencies: elementDependencies
+} = require('./elements');
 var codeCaller = require('../lib/code-caller');
 
 module.exports = {
+    /**
+     * Computes the dependencies given a Set of element names.
+     * @param  {Set}      elements
+     * @param  {Function} callback Will be called with an array of <link>/<script> tags
+     */
+    getElementDependencies: function(elements, callback) {
+        const elementStyleFiles = [];
+        const elementScriptFiles = [];
+        for (const elem of elements) {
+            elementStyleFiles.push(`${elem}.css`);
+            elementScriptFiles.push(`${elem}.js`);
+        }
+        const styleUrls = new Set();
+        const scriptUrls = new Set();
+        async.parallel([
+            (callback) => {
+                async.each(elementStyleFiles, (file, callback) => {
+                    fs.access(path.join(__dirname, 'elements', file), (err) => {
+                        if (!err) {
+                            styleUrls.add(`/pl/static/elements/${file}`);
+                            //headerHtmls.push(`<link href="/pl/static/elements/${file}" rel="stylesheet" />`);
+                        }
+                        callback(null);
+                    });
+                }, () => callback(null));
+            },
+            (callback) => {
+                async.each(elementScriptFiles, (file, callback) => {
+                    fs.access(path.join(__dirname, 'elements', file), (err) => {
+                        if (!err) {
+                            scriptUrls.add(`/pl/static/elements/${file}`);
+                            //headerHtmls.push(`<script type="text/javascript" src="/pl/static/elements/${file}"></script>`);
+                        }
+                        callback(null);
+                    });
+                }, () => callback(null));
+            }
+        ], () => {
+            // Now that we've ~automagically~ added all available files, let's
+            // add any other declared dependencies
+            const globalScriptUrls = new Set();
+            for (const elem of elements) {
+                const deps = elementDependencies[elem];
+                if (!deps) continue;
+                deps.styles && deps.styles.forEach((file) => styleUrls.add(`/pl/static/elements/${file}`));
+                deps.scripts && deps.scripts.forEach((file) => scriptUrls.add(`/pl/static/elements/${file}`));
+                deps.globalStyles && deps.globalStyles.forEach((file) => styleUrls.add(`/stylesheets/${file}`));
+                deps.globalScripts && deps.globalScripts.forEach((file) => globalScriptUrls.add(`/javascripts/${file}`));
+            }
+
+            // Now, generate the actual link/script tags
+            const headerHtmls = [
+                ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
+                // It's important that any library-style scripts come first
+                ...globalScriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
+                ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`)
+            ];
+            callback(headerHtmls);
+        });
+    },
+
     getElementFilename: function(elementName) {
         if (!elements.has(elementName)) {
             return 'No such element: "' + elementName + '"';
@@ -191,6 +255,7 @@ module.exports = {
     processQuestionHtml: function(phase, pc, data, options, callback) {
         const courseErrs = [];
         const origData = JSON.parse(JSON.stringify(data));
+        const renderedElements = new Set();
 
         var fileData = Buffer.from('');
 
@@ -214,6 +279,7 @@ module.exports = {
             let index = 0;
             async.eachSeries(elements.keys(), (elementName, callback) => {
                 async.eachSeries($(elementName).toArray(), (element, callback) => {
+                    renderedElements.add(elementName);
                     this.elementFunction(pc, phase, elementName, $, element, index, data, (err, ret_val, consoleLog) => {
                         if (err) {
                             const elementFile = module.exports.getElementFilename(elementName);
@@ -470,7 +536,7 @@ module.exports = {
 
         module.exports.processQuestion('render', pc, data, options, (err, courseErrs, _data, html, _fileData) => {
             if (ERR(err, callback)) return;
-            callback(null, courseErrs, html);
+            callback(null, courseErrs, html, renderedElements);
         });
     },
 
@@ -483,23 +549,26 @@ module.exports = {
         };
         const courseErrs = [];
         const pc = new codeCaller.PythonCaller();
+        let questionElements = new Set();
         async.series([
             // FIXME: suppprt 'header'
             (callback) => {
                 if (!renderSelection.question) return callback(null);
-                module.exports.renderPanel('question', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html) => {
+                module.exports.renderPanel('question', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html, renderedElements) => {
                     if (ERR(err, callback)) return;
                     courseErrs.push(...ret_courseErrs);
                     htmls.questionHtml = html;
+                    questionElements = questionElements.union(renderedElements || new Set());
                     callback(null);
                 });
             },
             (callback) => {
                 if (!renderSelection.submissions) return callback(null);
                 async.mapSeries(submissions, (submission, callback) => {
-                    module.exports.renderPanel('submission', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html) => {
+                    module.exports.renderPanel('submission', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html, renderedElements) => {
                         if (ERR(err, callback)) return;
                         courseErrs.push(...ret_courseErrs);
+                        questionElements = questionElements.union(renderedElements || new Set());
                         callback(null, html);
                     });
                 }, (err, submissionHtmls) => {
@@ -510,13 +579,20 @@ module.exports = {
             },
             (callback) => {
                 if (!renderSelection.answer) return callback(null);
-                module.exports.renderPanel('answer', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html) => {
+                module.exports.renderPanel('answer', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html, renderedElements) => {
                     if (ERR(err, callback)) return;
                     courseErrs.push(...ret_courseErrs);
                     htmls.answerHtml = html;
+                    questionElements = questionElements.union(renderedElements || new Set());
                     callback(null);
                 });
             },
+            (callback) => {
+                module.exports.getElementDependencies(questionElements, (dependencies) => {
+                    htmls.extraHeadersHtml = dependencies.join('\n');
+                    callback(null);
+                });
+            }
         ], (err) => {
             pc.done();
             if (ERR(err, callback)) return;

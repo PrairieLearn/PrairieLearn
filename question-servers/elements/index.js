@@ -1,7 +1,7 @@
 
 module.exports = {};
 
-module.exports = new Map([
+module.exports.elements = new Map([
     ['pl_checkbox', 'pl_checkbox.py'],
     ['pl_element_score', 'pl_element_score.py'],
     ['pl_matrix_output', 'pl_matrix_output.py'],
@@ -17,3 +17,12 @@ module.exports = new Map([
     ['pl_file_download', 'pl_file_download.py'],
     ['pl_external_grader_results', 'pl_external_grader_results.py'],
 ]);
+
+module.exports.dependencies = {
+    'pl_file_upload': {
+        'globalScripts': [
+            'lodash.min.js',
+            'dropzone.js'
+        ]
+    }
+};
