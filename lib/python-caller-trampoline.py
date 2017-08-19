@@ -15,7 +15,7 @@
 # Errors are signaled by exiting with non-zero exit code
 # Exceptions are not caught and so will trigger a process exit with non-zero exit code (signaling an error)
 
-import sys, os, json, importlib, copy, base64
+import sys, os, json, importlib, copy, base64, io
 
 saved_path = copy.copy(sys.path)
 
@@ -57,12 +57,16 @@ with open(3, 'w', encoding='utf-8') as outf:
             method = getattr(mod, fcn)
             val = method(*args)
 
-            # FIXME: if fcn is 'file', convert val to base64...
             if fcn=="file":
+                # if val is a file-like object, read whatever is inside
+                if isinstance(val,io.IOBase):
+                    val.seek(0)
+                    val = val.read()
                 # if val is a string, treat it as utf-8
                 if isinstance(val,str):
                     val = bytes(val,'utf-8')
-                # FIXME: if val is neither str nor bytes, throw an error...
+                # if this next call does not work, it will throw an error, because
+                # the thing returned by file() does not have the correct format
                 val = base64.b64encode(val).decode()
 
             output = {"present": True, "val": val}

@@ -173,7 +173,7 @@ module.exports = {
         const courseErrs = [];
         const origData = JSON.parse(JSON.stringify(data));
 
-        var fileData = Buffer.from('')
+        var fileData = Buffer.from('');
 
         const checkErr = module.exports.checkData(data, origData, phase);
         if (checkErr) {
@@ -224,8 +224,23 @@ module.exports = {
                             $(element).replaceWith(ret_val);
                         } else if (phase == 'file') {
                             // Convert ret_val from base64 back to buffer (this always works,
-                            // whether or not ret_val is valid base64) and append to fileData
-                            fileData = Buffer.concat([fileData, Buffer.from(ret_val,'base64')]);
+                            // whether or not ret_val is valid base64)
+                            var buf = Buffer.from(ret_val,'base64');
+
+                            // If the buffer has non-zero length...
+                            if (buf.length>0) {
+                                if (fileData.length>0) {
+                                    // If fileData already has non-zero length, throw an error
+                                    const elementFile = module.exports.getElementFilename(elementName);
+                                    const courseErr = new Error(elementFile + ': Error calling ' + phase + '(): attempting to overwrite non-empty fileData');
+                                    courseErr.fatal = true;
+                                    courseErrs.push(courseErr);
+                                    return callback(courseErr);
+                                } else {
+                                    // If not, replace fileData with a copy of buffer
+                                    fileData = Buffer.from(buf);
+                                }
+                            }
                         } else {
                             data = ret_val;
                             const checkErr = module.exports.checkData(data, origData, phase);
@@ -298,8 +313,23 @@ module.exports = {
                 html = ret_val;
             } else if (phase == 'file') {
                 // Convert ret_val from base64 back to buffer (this always works,
-                // whether or not ret_val is valid base64) and append to fileData
-                fileData = Buffer.concat([fileData, Buffer.from(ret_val,'base64')]);
+                // whether or not ret_val is valid base64)
+                var buf = Buffer.from(ret_val,'base64');
+
+                // If the buffer has non-zero length...
+                if (buf.length>0) {
+                    if (fileData.length>0) {
+                        // If fileData already has non-zero length, throw an error
+                        const serverFile = path.join(options.question_dir, 'server.py');
+                        const courseErr = new Error(serverFile + ': Error calling ' + phase + '(): attempting to overwrite non-empty fileData');
+                        courseErr.fatal = true;
+                        courseErrs.push(courseErr);
+                        return callback(null, courseErrs, data);
+                    } else {
+                        // If not, replace fileData with a copy of buffer
+                        fileData = Buffer.from(buf);
+                    }
+                }
             } else {
                 data = ret_val;
             }
