@@ -13,7 +13,8 @@
         {"name": "Particle kinetics", "color": "red3", "description": "Newton's equation for point masses."},
         {"name": "Coding", "color": "turquoise3", "description": "Writing computer code."},
         {"name": "Center of mass", "color": "green3", "description": "Calculating the center of mass for irregular bodies and systems."},
-        {"name": "Linear algebra", "color": "brown3", "decription": "Matrix math."}
+        {"name": "Linear algebra", "color": "brown3", "decription": "Matrix math."},
+        {"name": "Test", "color": "gray3", "description": "Feature examples."}
     ],
     "tags": [
         {"name": "exampleCourse", "color": "gray1", "description": "Question originally written for exampleCourse"},

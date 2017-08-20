@@ -198,5 +198,5 @@ def test(element_html, element_index, data):
         # FIXME: test invalid answers
     else:
         raise Exception('invalid result: %s' % result)
-        
+
     return data

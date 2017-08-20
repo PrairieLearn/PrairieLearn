@@ -3,13 +3,23 @@ var express = require('express');
 var router = express.Router();
 
 var question = require('../../lib/question');
+var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
 
-router.get('/variant_seed/:variant_seed/*', function(req, res, next) {
-    var variant_seed = req.params.variant_seed;
+var sql = sqlLoader.loadSqlEquiv(__filename);
+
+router.get('/variant/:variant_id/*', function(req, res, next) {
+    var variant_id = req.params.variant_id;
     var filename = req.params[0];
-    question.makeVariant(res.locals.question, res.locals.course, {variant_seed}, function(err, courseErr, variant) {
+    var params = {
+        question_id: res.locals.question.id,
+        variant_id: variant_id,
+    };
+    sqldb.queryOneRow(sql.select_variant, params, function(err, result) {
         if (ERR(err, next)) return;
-        question.getFile(filename, variant, res.locals.question, res.locals.course, function(err, fileData) {
+        var variant = result.rows[0];
+
+        question.getFile(filename, variant, res.locals.question, res.locals.course, res.locals.authn_user.user_id, function(err, fileData) {
             if (ERR(err, next)) return;
             res.attachment(filename);
             res.send(fileData);

@@ -45,12 +45,3 @@ def render(element_html, element_index, data):
                 + '</span>'
 
     return html
-
-def parse(element_html, element_index, data):
-    return data
-
-def grade(element_html, element_index, data):
-    return data
-
-def test(element_html, element_index, data):
-    return data

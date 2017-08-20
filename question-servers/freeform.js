@@ -35,6 +35,10 @@ module.exports = {
                 paths: [path.join(__dirname, 'freeformPythonLib')],
             };
             pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
+                if (err instanceof codeCaller.FunctionMissingError) {
+                    // function wasn't present in server
+                    return callback(null, module.exports.defaultElementFunctionRet(fcn, data), '');
+                }
                 if (ERR(err, callback)) return;
                 callback(null, ret, consoleLog);
             });
@@ -47,9 +51,21 @@ module.exports = {
         }
     },
 
+    defaultElementFunctionRet: function(phase, data) {
+        if (phase == 'render') {
+            return '';
+        } else if (phase == 'file') {
+            return '';
+        } else {
+            return data;
+        }
+    },
+
     defaultServerRet: function(phase, data, html, _options) {
         if (phase == 'render') {
             return html;
+        } else if (phase == 'file') {
+            return '';
         } else {
             return data;
         }
@@ -137,7 +153,7 @@ module.exports = {
             if (!editPhases.includes(phase)) {
                 if (!_.has(origData, prop)) return '"' + prop + '" is missing from "origData"';
                 if (!_.isEqual(data[prop], origData[prop])) {
-                    return 'data.' + prop + ' has been modified, which is not permitted at this time';
+                    return `data.${prop} has been illegally modified, new value: "${data[prop]}", original value: "${origData[prop]}"`;
                 }
             }
             checked.push(prop);
@@ -145,7 +161,10 @@ module.exports = {
         };
 
         let err;
-        let allPhases = ['generate', 'prepare', 'render', 'parse', 'grade', 'test'];
+        let allPhases = ['generate', 'prepare', 'render', 'parse', 'grade', 'test', 'file'];
+
+        if (!allPhases.includes(phase)) return `unknown phase: ${phase}`;
+
         /**************************************************************************************************************************************/
         //              property                 type       presentPhases                         changePhases
         /**************************************************************************************************************************************/
@@ -162,6 +181,7 @@ module.exports = {
         err = checkProp('editable',              'boolean', ['render'],                           []);                         if (err) return err;
         err = checkProp('panel',                 'string',  ['render'],                           []);                         if (err) return err;
         err = checkProp('gradable',              'boolean', ['parse', 'grade', 'test'],           []);                         if (err) return err;
+        err = checkProp('filename',              'string',  ['file'],                             []);                         if (err) return err;
         const extraProps = _.difference(_.keys(data), checked);
         if (extraProps.length > 0) return '"data" has invalid extra keys: ' + extraProps.join(', ');
 
@@ -172,12 +192,14 @@ module.exports = {
         const courseErrs = [];
         const origData = JSON.parse(JSON.stringify(data));
 
+        var fileData = Buffer.from('');
+
         const checkErr = module.exports.checkData(data, origData, phase);
         if (checkErr) {
             const courseErr = new Error('Invalid state before ' + phase + ': ' + checkErr);
             courseErr.fatal = true;
             courseErrs.push(courseErr);
-            return callback(null, courseErrs, data, '');
+            return callback(null, courseErrs, data, '', fileData);
         }
 
         const htmlFilename = path.join(options.question_dir, 'question.html');
@@ -186,7 +208,7 @@ module.exports = {
                 const courseErr = new Error(htmlFilename + ': ' + err.toString());
                 courseErr.fatal = true;
                 courseErrs.push(courseErr);
-                return callback(null, courseErrs, data, '');
+                return callback(null, courseErrs, data, '', fileData);
             }
 
             let index = 0;
@@ -219,6 +241,25 @@ module.exports = {
                                 return callback(courseErr);
                             }
                             $(element).replaceWith(ret_val);
+                        } else if (phase == 'file') {
+                            // Convert ret_val from base64 back to buffer (this always works,
+                            // whether or not ret_val is valid base64)
+                            var buf = Buffer.from(ret_val, 'base64');
+
+                            // If the buffer has non-zero length...
+                            if (buf.length > 0) {
+                                if (fileData.length > 0) {
+                                    // If fileData already has non-zero length, throw an error
+                                    const elementFile = module.exports.getElementFilename(elementName);
+                                    const courseErr = new Error(elementFile + ': Error calling ' + phase + '(): attempting to overwrite non-empty fileData');
+                                    courseErr.fatal = true;
+                                    courseErrs.push(courseErr);
+                                    return callback(courseErr);
+                                } else {
+                                    // If not, replace fileData with buffer
+                                    fileData = buf;
+                                }
+                            }
                         } else {
                             data = ret_val;
                             const checkErr = module.exports.checkData(data, origData, phase);
@@ -253,12 +294,12 @@ module.exports = {
                     data.feedback = {};
                 }
 
-                callback(null, courseErrs, data, $.html());
+                callback(null, courseErrs, data, $.html(), fileData);
             });
         });
     },
 
-    processQuestionServer: function(phase, pc, data, html, options, callback) {
+    processQuestionServer: function(phase, pc, data, html, fileData, options, callback) {
         const courseErrs = [];
         const origData = JSON.parse(JSON.stringify(data));
 
@@ -286,9 +327,28 @@ module.exports = {
                 courseErr.fatal = false;
                 courseErrs.push(courseErr);
             }
-            
+
             if (phase == 'render') {
                 html = ret_val;
+            } else if (phase == 'file') {
+                // Convert ret_val from base64 back to buffer (this always works,
+                // whether or not ret_val is valid base64)
+                var buf = Buffer.from(ret_val, 'base64');
+
+                // If the buffer has non-zero length...
+                if (buf.length > 0) {
+                    if (fileData.length > 0) {
+                        // If fileData already has non-zero length, throw an error
+                        const serverFile = path.join(options.question_dir, 'server.py');
+                        const courseErr = new Error(serverFile + ': Error calling ' + phase + '(): attempting to overwrite non-empty fileData');
+                        courseErr.fatal = true;
+                        courseErrs.push(courseErr);
+                        return callback(null, courseErrs, data);
+                    } else {
+                        // If not, replace fileData with a copy of buffer
+                        fileData = Buffer.from(buf);
+                    }
+                }
             } else {
                 data = ret_val;
             }
@@ -301,25 +361,25 @@ module.exports = {
                 return callback(null, courseErrs, data);
             }
 
-            callback(null, courseErrs, data, html);
+            callback(null, courseErrs, data, html, fileData);
         });
     },
 
     processQuestion: function(phase, pc, data, options, callback) {
         if (phase == 'generate') {
-            module.exports.processQuestionServer(phase, pc, data, '', options, (err, courseErrs, data, html) => {
+            module.exports.processQuestionServer(phase, pc, data, '', Buffer.from(''), options, (err, courseErrs, data, html, fileData) => {
                 if (ERR(err, callback)) return;
-                callback(null, courseErrs, data, html);
+                callback(null, courseErrs, data, html, fileData);
             });
         } else {
-            module.exports.processQuestionHtml(phase, pc, data, options, (err, courseErrs, data, html) => {
+            module.exports.processQuestionHtml(phase, pc, data, options, (err, courseErrs, data, html, fileData) => {
                 if (ERR(err, callback)) return;
                 const hasFatalError = _.some(_.map(courseErrs, 'fatal'));
-                if (hasFatalError) return callback(null, courseErrs, data, html);
-                module.exports.processQuestionServer(phase, pc, data, html, options, (err, ret_courseErrs, data, html) => {
+                if (hasFatalError) return callback(null, courseErrs, data, html, fileData);
+                module.exports.processQuestionServer(phase, pc, data, html, fileData, options, (err, ret_courseErrs, data, html, fileData) => {
                     if (ERR(err, callback)) return;
                     courseErrs.push(...ret_courseErrs);
-                    callback(null, courseErrs, data, html);
+                    callback(null, courseErrs, data, html, fileData);
                 });
             });
         }
@@ -336,7 +396,7 @@ module.exports = {
             question_dir: path.join(course.path, 'questions', question.directory),
         };
         const pc = new codeCaller.PythonCaller();
-        module.exports.processQuestion('generate', pc, data, options, (err, courseErrs, data, _html) => {
+        module.exports.processQuestion('generate', pc, data, options, (err, courseErrs, data, _html, _fileData) => {
             pc.done();
             if (ERR(err, callback)) return;
             const ret_vals = {
@@ -346,7 +406,7 @@ module.exports = {
             callback(null, courseErrs, ret_vals);
         });
     },
-    
+
     prepare: function(question, course, variant, callback) {
         if (variant.broken) return callback(new Error('attemped to prepare broken variant'));
         const data = {
@@ -359,7 +419,7 @@ module.exports = {
             question_dir: path.join(course.path, 'questions', question.directory),
         };
         const pc = new codeCaller.PythonCaller();
-        module.exports.processQuestion('prepare', pc, data, options, (err, courseErrs, data, _html) => {
+        module.exports.processQuestion('prepare', pc, data, options, (err, courseErrs, data, _html, _fileData) => {
             pc.done();
             if (ERR(err, callback)) return;
             const ret_vals = {
@@ -402,8 +462,13 @@ module.exports = {
         const options = {
             question_dir: path.join(course.path, 'questions', question.directory),
         };
+
+        // Put base URLs in data.options for access by question code
         data.options.client_files_question_url = locals.clientFilesQuestionUrl;
-        module.exports.processQuestion('render', pc, data, options, (err, courseErrs, _data, html) => {
+        data.options.client_files_course_url = locals.clientFilesCourseUrl;
+        data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
+
+        module.exports.processQuestion('render', pc, data, options, (err, courseErrs, _data, html, _fileData) => {
             if (ERR(err, callback)) return;
             callback(null, courseErrs, html);
         });
@@ -459,6 +524,27 @@ module.exports = {
         });
     },
 
+    file: function(filename, variant, question, course, callback) {
+        if (variant.broken) return callback(new Error('attemped to get a file for a broken variant'));
+        const data = {
+            params: _.get(variant, 'params', {}),
+            correct_answers: _.get(variant, 'true_answer', {}),
+            variant_seed: parseInt(variant.variant_seed, 36),
+            options: _.get(variant, 'options', {}),
+            filename: filename,
+        };
+        const options = {
+            question_dir: path.join(course.path, 'questions', question.directory)
+        };
+        const pc = new codeCaller.PythonCaller();
+        module.exports.processQuestion('file', pc, data, options, (err, courseErrs, _data, _html, fileData) => {
+            pc.done();
+            if (ERR(err, callback)) return;
+            callback(null, courseErrs, fileData);
+        });
+
+    },
+
     parse: function(submission, variant, question, course, callback) {
         if (variant.broken) return callback(new Error('attemped to parse broken variant'));
         const data = {
@@ -475,7 +561,7 @@ module.exports = {
             question_dir: path.join(course.path, 'questions', question.directory),
         };
         const pc = new codeCaller.PythonCaller();
-        module.exports.processQuestion('parse', pc, data, options, (err, courseErrs, data, _html) => {
+        module.exports.processQuestion('parse', pc, data, options, (err, courseErrs, data, _html, _fileData) => {
             pc.done();
             if (ERR(err, callback)) return;
             if (_.size(data.format_errors) > 0) data.gradable = false;
@@ -511,7 +597,7 @@ module.exports = {
             question_dir: path.join(course.path, 'questions', question.directory),
         };
         const pc = new codeCaller.PythonCaller();
-        module.exports.processQuestion('grade', pc, data, options, (err, courseErrs, data, _html) => {
+        module.exports.processQuestion('grade', pc, data, options, (err, courseErrs, data, _html, _fileData) => {
             pc.done();
             if (ERR(err, callback)) return;
             if (_.size(data.format_errors) > 0) data.gradable = false;
@@ -548,7 +634,7 @@ module.exports = {
             question_dir: path.join(course.path, 'questions', question.directory),
         };
         const pc = new codeCaller.PythonCaller();
-        module.exports.processQuestion('test', pc, data, options, (err, courseErrs, data, _html) => {
+        module.exports.processQuestion('test', pc, data, options, (err, courseErrs, data, _html, _fileData) => {
             pc.done();
             if (ERR(err, callback)) return;
             if (_.size(data.format_errors) > 0) data.gradable = false;
