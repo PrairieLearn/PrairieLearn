@@ -4,6 +4,9 @@ node_js:
   - "7.4"
 addons:
   postgresql: "9.6"
+  apt:
+    packages:
+      - python3-pip
 services:
   - postgresql
 cache:
@@ -17,29 +20,11 @@ branches:
 notifications:
   slack:
     secure: DzxZ8DNGFANLnls0j0/hiKjwg6aO/gI3UO8SiRKjqCO/x27uvBCJiDkTqCx834XVzuDBp6LIdHbyUuwRFyaVHyFYTbA0pqE4fe4/DxkK5DuRDj89cw8JgoK7/g9m/J9Y6GvwaOaE4SW0tnHeTwNDVCt7/w8rn1kxDo/tWtS+3cg=
-install:
-  - npm install
-  - sudo apt-get update
-  # We do this conditionally because it saves us some downloading if the
-  # version is the same.
-  - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - hash -r
-  - conda config --set always_yes yes --set changeps1 no
-  - conda update -q conda
-  # Useful for debugging any issues with conda
-  - conda info -a
-
-  # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=3 numpy scipy sympy matplotlib lxml
-  - source activate test-environment
-  - pip install chevron
-  - python3 --version
-  - which python3
-  - conda list
 
 script:
+  # Install python packages
+  - pip3 install numpy scipy matplotlib pandas sympy lxml chevron
+
   # Run JS tests
   - npm test
 
