@@ -1,46 +1,5 @@
 {{#graded}}
-<div>
-  <style scoped>
-  .panel-heading {
-    display: flex;
-    flex-direction: row;
-  }
-
-  .panel-heading .panel-heading-left {
-    flex: 1;
-    align-self: left;
-  }
-
-  .panel-heading .panel-heading-right {
-    align-self: right;
-  }
-
-  .panel-heading .panel-heading-right .glyphicon.glyphicon-chevron-down {
-    transition: all 400ms;
-  }
-
-  .panel-heading:not(.collapsed) .panel-heading-right .glyphicon.glyphicon-chevron-down {
-    transform: rotateX(180deg);
-  }
-
-  pre.terminal-output {
-    background: black;
-    white-space: pre-wrap;
-    overflow-y: auto;
-    overflow-x: hidden;
-    max-height: 200px;
-  }
-
-  pre.terminal-output > code {
-    color: white;
-    font-family: monospace;
-  }
-
-  pre.terminal-output.termial-output-question-panel {
-    margin: 0px;
-    border-radius: 0px;
-  }
-  </style>
+<div class="pl-external-grader-results">
   {{^succeeded}}
     <h3>UNIDENTIFIED ERROR</h3>
   {{/succeeded}}
@@ -79,7 +38,6 @@
     {{/has_tests}}
     {{#has_tests}}
       {{#tests}}
-      <div class="panel-group">
         <div class="panel panel-default">
           <div class="panel-heading collapsed" data-toggle="collapse" data-target="#panel-{{uuid}}-{{index}}" style="cursor: pointer;">
             <div class="panel-heading-left">
@@ -115,7 +73,6 @@
             </ul>
           </div>
         </div>
-      </div>
       {{/tests}}
     {{/has_tests}}
   {{/succeeded}}
