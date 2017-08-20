@@ -32,11 +32,12 @@ install:
   - conda info -a
 
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=3 numpy scipy sympy matplotlib lxml pandas
+  - conda create -q -n test-environment python=3 numpy scipy sympy matplotlib lxml
   - source activate test-environment
   - pip install chevron
   - python3 --version
   - which python3
+  - conda list
 
 script:
   # Run JS tests

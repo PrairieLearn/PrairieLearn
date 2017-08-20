@@ -403,7 +403,11 @@ describe('Instructor questions', function() {
                 sqldb.query(sql.select_errors_for_last_variant, [], (err, result) => {
                     if (ERR(err, callback)) return;
                     if (result.rowCount > 0) {
-                        console.log(result)
+                        console.log(result);
+                        result.rows.forEach(function(row) {
+                            console.log(row.course_data);
+                            console.log(row.system_data);
+                        });
                         callback(new Error(`found ${result.rowCount} errors (expected zero errors)`));
                     }
                     callback(null);
