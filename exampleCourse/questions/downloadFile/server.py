@@ -1,5 +1,9 @@
+import matplotlib
+matplotlib.use('PDF')
 import matplotlib.pyplot as plt
 import io
+
+
 
 def file(data):
     if data['filename']=='data.txt':
@@ -9,4 +13,3 @@ def file(data):
         buf = io.BytesIO()
         plt.savefig(buf,format='png')
         return buf
-        
