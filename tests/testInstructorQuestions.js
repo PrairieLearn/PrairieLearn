@@ -23,6 +23,7 @@ locals.isStudentPage = false;
 
 const addNumbers = {qid: 'addNumbers', type: 'Freeform'};
 const addVectors = {qid: 'addVectors', type: 'Calculation'};
+const downloadFile = {qid: 'downloadFile', type: 'Freeform'};
 
 describe('Instructor questions', function() {
     this.timeout(5000);
@@ -53,6 +54,11 @@ describe('Instructor questions', function() {
             assert.isDefined(question);
             addVectors.id = question.id;
         });
+        it('should contain the downloadFile question', function() {
+            const question = _.find(locals.questions, {directory: downloadFile.qid});
+            assert.isDefined(question);
+            downloadFile.id = question.id;
+        });
     });
 
     describe('GET ' + locals.questionsUrl, function() {
@@ -82,6 +88,12 @@ describe('Instructor questions', function() {
             assert.lengthOf(elemList, 1);
             addVectors.url = locals.siteUrl + elemList[0].attribs.href;
             assert.equal(addVectors.url, locals.courseInstanceBaseUrl + '/question/' + addVectors.id + '/');
+        });
+        it('should link to downloadFile question', function() {
+            elemList = locals.$('td a:contains("File download example question")');
+            assert.lengthOf(elemList, 1);
+            downloadFile.url = locals.siteUrl + elemList[0].attribs.href;
+            assert.equal(downloadFile.url, locals.courseInstanceBaseUrl + '/question/' + downloadFile.id + '/');
         });
     });
 
@@ -287,6 +299,105 @@ describe('Instructor questions', function() {
                     }
                     callback(null);
                 });
+            });
+        });
+    });
+
+    describe('8. test downloading files', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+                locals.question = downloadFile;
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        describe('downloading course text file', function() {
+            it('should contain a link to clientFilesCourse/data.txt', function() {
+                elemList = locals.$('a[href*="clientFilesCourse"]');
+                assert.lengthOf(elemList, 1);
+            });
+            it('should download something with the link to clientFilesCourse/data.txt', function(callback) {
+                const fileUrl = locals.siteUrl+elemList[0].attribs.href;
+                request(fileUrl, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    page = body;
+                    callback(null);
+                });
+            });
+            it('should have downloaded a file with the contents of clientFilesCourse/data.txt', function() {
+                assert.equal(page,'This data is specific to the course.');
+            });
+        });
+        describe('downloading question text file', function() {
+            it('should contain a link to clientFilesQuestion/data.txt', function() {
+                elemList = locals.$('a[href*="clientFilesQuestion"]');
+                assert.lengthOf(elemList, 1);
+            });
+            it('should download something with the link to clientFilesQuestion/data.txt', function(callback) {
+                const fileUrl = locals.siteUrl+elemList[0].attribs.href;
+                request(fileUrl, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    page = body;
+                    callback(null);
+                });
+            });
+            it('should have downloaded a file with the contents of clientFilesQuestion/data.txt', function() {
+                assert.equal(page,'This data is specific to the question.');
+            });
+        });
+        describe('downloading dynamic text file', function() {
+            it('should contain a link to generatedFilesQuestion/data.txt', function() {
+                elemList = locals.$('a[href*="generatedFilesQuestion"][href$="data.txt"]');
+                assert.lengthOf(elemList, 1);
+            });
+            it('should download something with the link to generatedFilesQuestion/data.txt', function(callback) {
+                const fileUrl = locals.siteUrl+elemList[0].attribs.href;
+                request(fileUrl, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    page = body;
+                    callback(null);
+                });
+            });
+            it('should have downloaded a file with the contents of generatedFilesQuestion/data.txt', function() {
+                assert.equal(page,'This data is generated by code.');
+            });
+        });
+        describe('downloading dynamic image file', function() {
+            it('should contain a link to generatedFilesQuestion/figure.png', function() {
+                elemList = locals.$('a[href*="generatedFilesQuestion"][href$="figure.png"]');
+                assert.lengthOf(elemList, 1);
+            });
+            it('should download something with the link to generatedFilesQuestion/figure.png', function(callback) {
+                const fileUrl = locals.siteUrl+elemList[0].attribs.href;
+                request({url: fileUrl, encoding: null}, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    page = body;
+                    callback(null);
+                });
+            });
+            it('should have downloaded a file with the contents of generatedFilesQuestion/figure.png', function() {
+                // assert.equal(page,'This data is generated by code.')
+                assert.equal(page.slice(0,8).toString('hex'),'89504e470d0a1a0a');
             });
         });
     });

@@ -24,6 +24,7 @@ locals.isStudentPage = true;
 const addNumbers = {qid: 'addNumbers', type: 'Freeform'};
 const addVectors = {qid: 'addVectors', type: 'Calculation'};
 const fossilFuelsRadio = {qid: 'fossilFuelsRadio', type: 'Calculation'};
+const downloadFile = {qid: 'downloadFile', type: 'Freeform'};
 
 describe('Homework assessment', function() {
     this.timeout(5000);
@@ -103,10 +104,10 @@ describe('Homework assessment', function() {
         it('should have the correct assessment_instance.assessment_id', function() {
             assert.equal(locals.assessment_instance.assessment_id, locals.assessment_id);
         });
-        it('should create three instance_questions', function(callback) {
+        it('should create four instance_questions', function(callback) {
             sqldb.query(sql.select_instance_questions, [], function(err, result) {
                 if (ERR(err, callback)) return;
-                if (result.rowCount != 3) {
+                if (result.rowCount != 4) {
                     return callback(new Error('expected three instance_questions, got: ' + result.rowCount));
                 }
                 locals.instance_questions = result.rows;
@@ -124,6 +125,10 @@ describe('Homework assessment', function() {
         it('should have the correct third question', function() {
             fossilFuelsRadio.id = locals.instance_questions[2].id;
             assert.equal(locals.instance_questions[2].qid, fossilFuelsRadio.qid);
+        });
+        it('should have the correct fourth question', function() {
+            downloadFile.id = locals.instance_questions[3].id;
+            assert.equal(locals.instance_questions[3].qid, downloadFile.qid);
         });
     });
 
@@ -162,6 +167,12 @@ describe('Homework assessment', function() {
             fossilFuelsRadio.url = locals.siteUrl + elemList[0].attribs.href;
             assert.equal(fossilFuelsRadio.url, locals.courseInstanceBaseUrl + '/instance_question/' + fossilFuelsRadio.id + '/');
         });
+        it('should link to downloadFile question', function() {
+            elemList = locals.$('td a:contains("File download example question")');
+            assert.lengthOf(elemList, 1);
+            downloadFile.url = locals.siteUrl + elemList[0].attribs.href;
+            assert.equal(downloadFile.url, locals.courseInstanceBaseUrl + '/instance_question/' + downloadFile.id + '/');
+        });
     });
 
     describe('1. submit correct answer to question addVectors', function() {
@@ -176,7 +187,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 2,
                     instance_question_score_perc: 2/11 * 100,
                     assessment_instance_points: 2,
-                    assessment_instance_score_perc: 2/30 * 100,
+                    assessment_instance_score_perc: 2/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -204,7 +215,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 3,
                     instance_question_score_perc: 3/14 * 100,
                     assessment_instance_points: 5,
-                    assessment_instance_score_perc: 5/30 * 100,
+                    assessment_instance_score_perc: 5/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -231,7 +242,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 2,
                     instance_question_score_perc: 2/11 * 100,
                     assessment_instance_points: 5,
-                    assessment_instance_score_perc: 5/30 * 100,
+                    assessment_instance_score_perc: 5/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(_variant) {
                     return {
@@ -259,7 +270,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 4,
                     instance_question_score_perc: 4/11 * 100,
                     assessment_instance_points: 7,
-                    assessment_instance_score_perc: 7/30 * 100,
+                    assessment_instance_score_perc: 7/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -287,7 +298,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 4,
                     instance_question_score_perc: 4/11 * 100,
                     assessment_instance_points: 7,
-                    assessment_instance_score_perc: 7/30 * 100,
+                    assessment_instance_score_perc: 7/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(_variant) {
                     return {
@@ -315,7 +326,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 8,
                     instance_question_score_perc: 8/11 * 100,
                     assessment_instance_points: 11,
-                    assessment_instance_score_perc: 11/30 * 100,
+                    assessment_instance_score_perc: 11/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -343,7 +354,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 11,
                     instance_question_score_perc: 11/11 * 100,
                     assessment_instance_points: 14,
-                    assessment_instance_score_perc: 14/30 * 100,
+                    assessment_instance_score_perc: 14/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -371,7 +382,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 11,
                     instance_question_score_perc: 11/11 * 100,
                     assessment_instance_points: 14,
-                    assessment_instance_score_perc: 14/30 * 100,
+                    assessment_instance_score_perc: 14/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -416,7 +427,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 0,
                     instance_question_score_perc: 0/5 * 100,
                     assessment_instance_points: 14,
-                    assessment_instance_score_perc: 14/30 * 100,
+                    assessment_instance_score_perc: 14/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -465,7 +476,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 1,
                     instance_question_score_perc: 1/5 * 100,
                     assessment_instance_points: 15,
-                    assessment_instance_score_perc: 15/30 * 100,
+                    assessment_instance_score_perc: 15/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -492,7 +503,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 1,
                     instance_question_score_perc: 1/5 * 100,
                     assessment_instance_points: 15,
-                    assessment_instance_score_perc: 15/30 * 100,
+                    assessment_instance_score_perc: 15/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(_variant) {
                     return {
@@ -535,7 +546,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 3,
                     instance_question_score_perc: 3/5 * 100,
                     assessment_instance_points: 17,
-                    assessment_instance_score_perc: 17/30 * 100,
+                    assessment_instance_score_perc: 17/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -562,7 +573,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 3,
                     instance_question_score_perc: 3/5 * 100,
                     assessment_instance_points: 17,
-                    assessment_instance_score_perc: 17/30 * 100,
+                    assessment_instance_score_perc: 17/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -589,7 +600,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 9,
                     instance_question_score_perc: 9/14 * 100,
                     assessment_instance_points: 23,
-                    assessment_instance_score_perc: 23/30 * 100,
+                    assessment_instance_score_perc: 23/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -616,7 +627,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 9,
                     instance_question_score_perc: 9/14 * 100,
                     assessment_instance_points: 23,
-                    assessment_instance_score_perc: 23/30 * 100,
+                    assessment_instance_score_perc: 23/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -643,7 +654,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 12,
                     instance_question_score_perc: 12/14 * 100,
                     assessment_instance_points: 26,
-                    assessment_instance_score_perc: 26/30 * 100,
+                    assessment_instance_score_perc: 26/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -670,7 +681,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 12,
                     instance_question_score_perc: 12/14 * 100,
                     assessment_instance_points: 26,
-                    assessment_instance_score_perc: 26/30 * 100,
+                    assessment_instance_score_perc: 26/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -741,6 +752,105 @@ describe('Homework assessment', function() {
                 });
             });
             helperQuestion.checkAssessmentScore(locals);
+        });
+    });
+
+    describe('21. test downloading files', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.shouldHaveButtons = ['grade', 'save'];
+                locals.question = downloadFile;
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        describe('downloading course text file', function() {
+            it('should contain a link to clientFilesCourse/data.txt', function() {
+                elemList = locals.$('a[href*="clientFilesCourse"]');
+                assert.lengthOf(elemList, 1);
+            });
+            it('should download something with the link to clientFilesCourse/data.txt', function(callback) {
+                const fileUrl = locals.siteUrl+elemList[0].attribs.href;
+                request(fileUrl, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    page = body;
+                    callback(null);
+                });
+            });
+            it('should have downloaded a file with the contents of clientFilesCourse/data.txt', function() {
+                assert.equal(page,'This data is specific to the course.');
+            });
+        });
+        describe('downloading question text file', function() {
+            it('should contain a link to clientFilesQuestion/data.txt', function() {
+                elemList = locals.$('a[href*="clientFilesQuestion"]');
+                assert.lengthOf(elemList, 1);
+            });
+            it('should download something with the link to clientFilesQuestion/data.txt', function(callback) {
+                const fileUrl = locals.siteUrl+elemList[0].attribs.href;
+                request(fileUrl, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    page = body;
+                    callback(null);
+                });
+            });
+            it('should have downloaded a file with the contents of clientFilesQuestion/data.txt', function() {
+                assert.equal(page,'This data is specific to the question.');
+            });
+        });
+        describe('downloading dynamic text file', function() {
+            it('should contain a link to generatedFilesQuestion/data.txt', function() {
+                elemList = locals.$('a[href*="generatedFilesQuestion"][href$="data.txt"]');
+                assert.lengthOf(elemList, 1);
+            });
+            it('should download something with the link to generatedFilesQuestion/data.txt', function(callback) {
+                const fileUrl = locals.siteUrl+elemList[0].attribs.href;
+                request(fileUrl, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    page = body;
+                    callback(null);
+                });
+            });
+            it('should have downloaded a file with the contents of generatedFilesQuestion/data.txt', function() {
+                assert.equal(page,'This data is generated by code.');
+            });
+        });
+        describe('downloading dynamic image file', function() {
+            it('should contain a link to generatedFilesQuestion/figure.png', function() {
+                elemList = locals.$('a[href*="generatedFilesQuestion"][href$="figure.png"]');
+                assert.lengthOf(elemList, 1);
+            });
+            it('should download something with the link to generatedFilesQuestion/figure.png', function(callback) {
+                const fileUrl = locals.siteUrl+elemList[0].attribs.href;
+                request({url: fileUrl, encoding: null}, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    page = body;
+                    callback(null);
+                });
+            });
+            it('should have downloaded a file with the contents of generatedFilesQuestion/figure.png', function() {
+                // assert.equal(page,'This data is generated by code.')
+                assert.equal(page.slice(0,8).toString('hex'),'89504e470d0a1a0a');
+            });
         });
     });
 });
