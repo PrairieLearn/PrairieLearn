@@ -35,6 +35,8 @@ install:
   - conda create -q -n test-environment python=3 numpy scipy sympy matplotlib lxml pandas
   - source activate test-environment
   - pip install chevron
+  - python3 --version
+  - which python3
 
 script:
   # Run JS tests
