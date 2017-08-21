@@ -108,7 +108,7 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 ## `pl_file_upload` element
 
 ```html
-<pl_file_upload files="['foo.py','bar.c']" />
+<pl_file_upload files="foo.py, bar.c, filename with\, comma]" />
 ```
 
 Provides a way to accept file uploads as part of an answer. They will be stored
@@ -117,7 +117,7 @@ in [the format expected by externally graded questions](externalGrading.md#file-
 Attribute | Type | Default | description
 --- | --- | --- | ---
 `answers_name` | string | \_file | Variable name to store data in. **For externally graded questions, you should rely on the default.**
-`filenames` | JSON array | [] | List of files that should and must be submitted.
+`filenames` | CSV list | [] | List of files that should and must be submitted. Commas in each filename should be escaped with a backslash, and filenames cannot contain quotes.
 
 ## `pl_external_grader_results` element
 
@@ -126,7 +126,7 @@ Attribute | Type | Default | description
 ```
 
 Displays results from externally-graded questions. It expects results to follow
-[the reference schema for external grading](externalGrading.md#grading-result).
+[the reference schema for external grading results](externalGrading.md#grading-result).
 
 ## `pl_question_panel` element
 

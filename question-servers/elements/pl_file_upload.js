@@ -110,7 +110,7 @@ window.PLFileUpload.prototype.renderFileList = function() {
 
     _.each(this.acceptedFiles, function(file) {
         var $item = $('<li class="list-group-item"></li>');
-        $item.append('<code>' + encodeURIComponent(file) + '</code> - ');
+        $item.append('<code>' + file + '</code> - ');
         var fileData = that.getSubmittedFileContents(file);
         if (!fileData) {
             $item.append('not uploaded');

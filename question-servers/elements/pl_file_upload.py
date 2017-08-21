@@ -4,6 +4,8 @@ import chevron
 import to_precision
 import prairielearn as pl
 import json
+from io import StringIO
+import csv
 
 def get_dependencies(element_html, element_index, data):
     return {
@@ -31,8 +33,13 @@ def prepare(element_html, element_index, data):
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers_name", "_files")
-    filenames = pl.get_string_attrib(element, "filenames", "")
     uuid = pl.get_uuid();
+
+    raw_filenames = StringIO(pl.get_string_attrib(element, "filenames", ""))
+    filenames = "[]"
+    reader = csv.reader(raw_filenames, delimiter=',', escapechar='\\', quoting=csv.QUOTE_NONE, skipinitialspace=True, strict=True)
+    for row in reader:
+        filenames = json.dumps(row)
 
     html_params = {'name': name, 'filenames': filenames, 'uuid': uuid}
 
