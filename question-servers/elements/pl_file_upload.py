@@ -36,17 +36,20 @@ def render(element_html, element_index, data):
 
     html_params = {'name': name, 'filenames': filenames, 'uuid': uuid}
 
+    files = data["submitted_answers"].get(name, None)
+    if files is not None:
+        html_params['has_files'] = True
+        html_params['files'] = json.dumps(files)
+    else:
+        html_params['has_files'] = False
+
     if data["panel"] == "question":
         html_params['question'] = True
-
         with open('pl_file_upload.mustache', 'r') as f:
             html = chevron.render(f, html_params).strip()
+
     elif data["panel"] == "submission":
         html_params['submission'] = True
-        files = data["submitted_answers"].get(name, None)
-        if files is not None:
-            html_params['files'] = json.dumps(files)
-
         with open('pl_file_upload.mustache', 'r') as f:
             html = chevron.render(f, html_params).strip()
     else:

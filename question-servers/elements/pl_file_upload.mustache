@@ -8,6 +8,7 @@ $(function() {
 
   new window.PLFileUpload(ELEMENT_ID, {
     acceptedFiles: {{&filenames}}
+    {{#has_files}}, files: {{&files}}{{/has_files}}
   });
 });
 </script>
