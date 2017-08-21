@@ -568,7 +568,6 @@ module.exports = {
                 module.exports.processQuestionHtml('get_dependencies', pc, data, options, (err, ret_courseErrs, dependencies) => {
                     if (ERR(err, callback)) return;
                     courseErrs.push(...ret_courseErrs);
-                    console.log(dependencies);
 
                     // Transform dependency list into style/link tags
                     const globalScriptUrls = [];
