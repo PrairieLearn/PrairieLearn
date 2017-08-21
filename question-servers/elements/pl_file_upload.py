@@ -5,6 +5,14 @@ import to_precision
 import prairielearn as pl
 import json
 
+def get_dependencies(options):
+    return {
+        'globalScripts': [
+            'lodash.min.js',
+            'dropzone.js'
+        ]
+    }
+
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["filenames"]
@@ -32,7 +40,7 @@ def render(element_html, element_index, data):
         files = data["submitted_answers"].get(name, None)
         if files is not None:
             html_params['files'] = json.dumps(files)
-        
+
         with open('pl_file_upload.mustache', 'r') as f:
             html = chevron.render(f, html_params).strip()
     else:

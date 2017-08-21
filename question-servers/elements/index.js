@@ -17,12 +17,3 @@ module.exports.elements = new Map([
     ['pl_file_download', 'pl_file_download.py'],
     ['pl_external_grader_results', 'pl_external_grader_results.py'],
 ]);
-
-module.exports.dependencies = {
-    'pl_file_upload': {
-        'globalScripts': [
-            'lodash.min.js',
-            'dropzone.js'
-        ]
-    }
-};
