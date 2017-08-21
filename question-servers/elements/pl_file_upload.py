@@ -5,11 +5,17 @@ import to_precision
 import prairielearn as pl
 import json
 
-def get_dependencies(options):
+def get_dependencies(element_html, element_index, data):
     return {
         'globalScripts': [
             'lodash.min.js',
             'dropzone.js'
+        ],
+        'scripts': [
+            'pl_file_upload.js'
+        ],
+        'styles': [
+            'pl_file_upload.css'
         ]
     }
 

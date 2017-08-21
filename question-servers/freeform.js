@@ -57,6 +57,13 @@ module.exports = {
             return '';
         } else if (phase == 'file') {
             return '';
+        } else if (phase == 'get_dependencies') {
+            return {
+                globalStyles: [],
+                globalScripts: [],
+                styles: [],
+                scripts: []
+            };
         } else {
             return data;
         }
@@ -162,17 +169,18 @@ module.exports = {
         };
 
         let err;
-        let allPhases = ['generate', 'prepare', 'render', 'parse', 'grade', 'test', 'file'];
+        let allPhases = ['generate', 'prepare', 'render', 'get_dependencies', 'parse', 'grade', 'test', 'file'];
+        let allPhasesButGetDependencies = _.pull([...allPhases], 'get_dependencies');
 
         if (!allPhases.includes(phase)) return `unknown phase: ${phase}`;
 
         /**************************************************************************************************************************************/
         //              property                 type       presentPhases                         changePhases
         /**************************************************************************************************************************************/
-        err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare']);    if (err) return err;
-        err = checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare']);    if (err) return err;
-        err = checkProp('variant_seed',          'integer', allPhases,                            []);                         if (err) return err;
-        err = checkProp('options',               'object',  [...allPhases, 'get_dependencies'],   []);                         if (err) return err;
+        err = checkProp('params',                'object',  allPhasesButGetDependencies,          ['generate', 'prepare']);    if (err) return err;
+        err = checkProp('correct_answers',       'object',  allPhasesButGetDependencies,          ['generate', 'prepare']);    if (err) return err;
+        err = checkProp('variant_seed',          'integer', allPhasesButGetDependencies,          []);                         if (err) return err;
+        err = checkProp('options',               'object',  allPhases,                            []);                         if (err) return err;
         err = checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade']);         if (err) return err;
         err = checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test']); if (err) return err;
         err = checkProp('raw_submitted_answers', 'object',  ['render', 'parse', 'grade', 'test'], ['test']);                   if (err) return err;
@@ -503,7 +511,7 @@ module.exports = {
 
         module.exports.processQuestion('render', pc, data, options, (err, courseErrs, _data, html, _fileData) => {
             if (ERR(err, callback)) return;
-            callback(null, courseErrs, html, renderedElements);
+            callback(null, courseErrs, html);
         });
     },
 
