@@ -38,6 +38,12 @@ $(function() {
     </div>
   </div>
   {{/question}}
+  {{#submission}}
+  {{#parse_error}}
+  <div class="alert alert-danger"><strong>Error:</strong> {{parse_error}}</div>
+  {{/parse_error}}
+  {{/submission}}
+  {{^parse_error}}
   <div class="file-upload-status" style="margin-top: 1ex;">
     <div class="panel panel-default">
       <div class="panel-heading"><h4 class="panel-title">Files</h4></div>
@@ -45,4 +51,4 @@ $(function() {
       </ul>
     </div>
   </div>
-</div>
+  {{/parse_error}}

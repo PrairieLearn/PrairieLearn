@@ -17,6 +17,7 @@ window.PLFileUpload = function(wrapperId, options) {
         throw new Error('File upload element ' + wrapperId + ' was not found!');
     }
 
+    this.syncFilesToHiddenInput();
     this.initializeTemplate();
 };
 
@@ -61,6 +62,14 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
 };
 
 /**
+ * Syncs the internal file array to the hidden input element
+ * @type {[type]}
+ */
+window.PLFileUpload.prototype.syncFilesToHiddenInput = function() {
+    this.element.find('input').val(JSON.stringify(this.files));
+};
+
+/**
 * Saves or updates the given file.
 * @param  {String} name     Name of the file
 * @param  {String} contents The file's base64-encoded contents
@@ -80,7 +89,7 @@ window.PLFileUpload.prototype.saveSubmittedFile = function(name, contents) {
         this.files[idx].contents = contents;
     }
 
-    this.element.find('input').val(JSON.stringify(this.files));
+    this.syncFilesToHiddenInput();
 };
 
 /**
