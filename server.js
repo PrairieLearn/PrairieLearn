@@ -22,8 +22,6 @@ var cron = require('./cron');
 var socketServer = require('./lib/socket-server');
 var serverJobs = require('./lib/server-jobs');
 
-require('./lib/setExtensions');
-
 if (config.startServer) {
     logger.info('PrairieLearn server start');
 
