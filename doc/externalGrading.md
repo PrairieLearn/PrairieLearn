@@ -125,7 +125,7 @@ If you are using code from the example question, you can also add additional fie
 }
 ```
 
-## Building a client for an externally-graded question
+## File submission format
 
 Your question client in `client.js` will have to submit user files in a specific format. Files are submitted using the usual `submittedAnswer` object. PrairieLearn expects all files to be stored in the `_files` answer as an array of objects:
 

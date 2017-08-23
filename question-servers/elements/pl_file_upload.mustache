@@ -1,0 +1,54 @@
+{{#question}}
+<script>
+$(function() {
+  // Turn off Dropzone autodiscover; we'll configure it manually
+  window.Dropzone.autoDiscover = false;
+
+  var ELEMENT_ID = "#file-upload-{{name}}-{{uuid}}";
+
+  new window.PLFileUpload(ELEMENT_ID, {
+    acceptedFiles: {{&file_names}}
+    {{#has_files}}, files: {{&files}}{{/has_files}}
+  });
+});
+</script>
+{{/question}}
+{{#submission}}
+<script>
+$(function() {
+  var ELEMENT_ID = "#file-upload-{{name}}-{{uuid}}";
+
+  new window.PLFileUpload(ELEMENT_ID, {
+    previewOnly: true,
+    acceptedFiles: {{&file_names}},
+    files: {{&files}}
+  });
+});
+</script>
+{{/submission}}
+
+<div id="file-upload-{{name}}-{{uuid}}">
+  {{#question}}
+  <input type="hidden" name="{{name}}">
+  <div class="plfu-dropzone">
+    <div class="dz-message">
+      Drop files here or click to upload.
+      <br/>
+      <small>Only the files listed below will be accepted&mdash;others will be silently ignored.</small>
+    </div>
+  </div>
+  {{/question}}
+  {{#submission}}
+  {{#parse_error}}
+  <div class="alert alert-danger"><strong>Error:</strong> {{parse_error}}</div>
+  {{/parse_error}}
+  {{/submission}}
+  {{^parse_error}}
+  <div class="file-upload-status" style="margin-top: 1ex;">
+    <div class="panel panel-default">
+      <div class="panel-heading"><h4 class="panel-title">Files</h4></div>
+      <ul class="list-group">
+      </ul>
+    </div>
+  </div>
+  {{/parse_error}}

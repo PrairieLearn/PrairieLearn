@@ -122,6 +122,9 @@ app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res,
 app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
 app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/selectOpenErrorCount'));
 
+// Serve element statics
+app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles'));
+
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////

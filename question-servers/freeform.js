@@ -6,10 +6,11 @@ var path = require('path');
 var mustache = require('mustache');
 var cheerio = require('cheerio');
 
-var elements = require('./elements');
+var { elements } = require('./elements');
 var codeCaller = require('../lib/code-caller');
 
 module.exports = {
+
     getElementFilename: function(elementName) {
         if (!elements.has(elementName)) {
             return 'No such element: "' + elementName + '"';
@@ -56,6 +57,13 @@ module.exports = {
             return '';
         } else if (phase == 'file') {
             return '';
+        } else if (phase == 'get_dependencies') {
+            return {
+                globalStyles: [],
+                globalScripts: [],
+                styles: [],
+                scripts: []
+            };
         } else {
             return data;
         }
@@ -161,16 +169,17 @@ module.exports = {
         };
 
         let err;
-        let allPhases = ['generate', 'prepare', 'render', 'parse', 'grade', 'test', 'file'];
+        let allPhases = ['generate', 'prepare', 'render', 'get_dependencies', 'parse', 'grade', 'test', 'file'];
+        let allPhasesButGetDependencies = _.pull([...allPhases], 'get_dependencies');
 
         if (!allPhases.includes(phase)) return `unknown phase: ${phase}`;
 
         /**************************************************************************************************************************************/
         //              property                 type       presentPhases                         changePhases
         /**************************************************************************************************************************************/
-        err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare']);    if (err) return err;
-        err = checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare']);    if (err) return err;
-        err = checkProp('variant_seed',          'integer', allPhases,                            []);                         if (err) return err;
+        err = checkProp('params',                'object',  allPhasesButGetDependencies,          ['generate', 'prepare']);    if (err) return err;
+        err = checkProp('correct_answers',       'object',  allPhasesButGetDependencies,          ['generate', 'prepare']);    if (err) return err;
+        err = checkProp('variant_seed',          'integer', allPhasesButGetDependencies,          []);                         if (err) return err;
         err = checkProp('options',               'object',  allPhases,                            []);                         if (err) return err;
         err = checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade']);         if (err) return err;
         err = checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test']); if (err) return err;
@@ -191,6 +200,15 @@ module.exports = {
     processQuestionHtml: function(phase, pc, data, options, callback) {
         const courseErrs = [];
         const origData = JSON.parse(JSON.stringify(data));
+        const renderedElementNames = [];
+        const elementDependencies = {
+            globalStyles: [],
+            globalScripts: [],
+            styles: [],
+            scripts: []
+        };
+
+        const isGetDependencies = phase === 'get_dependencies';
 
         var fileData = Buffer.from('');
 
@@ -199,7 +217,7 @@ module.exports = {
             const courseErr = new Error('Invalid state before ' + phase + ': ' + checkErr);
             courseErr.fatal = true;
             courseErrs.push(courseErr);
-            return callback(null, courseErrs, data, '', fileData);
+            return callback(null, courseErrs, isGetDependencies ? elementDependencies : data, '', fileData);
         }
 
         const htmlFilename = path.join(options.question_dir, 'question.html');
@@ -208,12 +226,17 @@ module.exports = {
                 const courseErr = new Error(htmlFilename + ': ' + err.toString());
                 courseErr.fatal = true;
                 courseErrs.push(courseErr);
-                return callback(null, courseErrs, data, '', fileData);
+                return callback(null, courseErrs, isGetDependencies ? elementDependencies : data, '', fileData);
             }
 
             let index = 0;
             async.eachSeries(elements.keys(), (elementName, callback) => {
                 async.eachSeries($(elementName).toArray(), (element, callback) => {
+                    if (phase === 'get_dependencies' && _.includes(renderedElementNames, element)) {
+                        return callback(null);
+                    }
+
+                    renderedElementNames.push(elementName);
                     this.elementFunction(pc, phase, elementName, $, element, index, data, (err, ret_val, consoleLog) => {
                         if (err) {
                             const elementFile = module.exports.getElementFilename(elementName);
@@ -260,6 +283,24 @@ module.exports = {
                                     fileData = buf;
                                 }
                             }
+                        } else if (phase === 'get_dependencies') {
+                            for (const type of ['globalStyles', 'globalScripts', 'styles', 'scripts']) {
+                                if (_.has(ret_val, type)) {
+                                    if (_.isArray(ret_val[type])) {
+                                        for (const dep of ret_val[type]) {
+                                            if (!_.includes(elementDependencies[type], dep)) {
+                                                elementDependencies[type].push(dep);
+                                            }
+                                        }
+                                    } else {
+                                        const elementFile = module.exports.getElementFilename(elementName);
+                                        const courseErr = new Error(`${elementFile}: Error calling ${phase}: "${type}" is not an array`);
+                                        courseErr.data = {ret_val};
+                                        courseErr.fatal = true;
+                                        courseErrs.push(courseErr);
+                                    }
+                                }
+                            }
                         } else {
                             data = ret_val;
                             const checkErr = module.exports.checkData(data, origData, phase);
@@ -294,7 +335,7 @@ module.exports = {
                     data.feedback = {};
                 }
 
-                callback(null, courseErrs, data, $.html(), fileData);
+                callback(null, courseErrs, isGetDependencies ? elementDependencies : data, $.html(), fileData);
             });
         });
     },
@@ -517,6 +558,35 @@ module.exports = {
                     callback(null);
                 });
             },
+            (callback) => {
+                const data = {
+                    options: _.get(variant, 'options', {}),
+                };
+                const options = {
+                    question_dir: path.join(course.path, 'questions', question.directory),
+                };
+                module.exports.processQuestionHtml('get_dependencies', pc, data, options, (err, ret_courseErrs, dependencies) => {
+                    if (ERR(err, callback)) return;
+                    courseErrs.push(...ret_courseErrs);
+
+                    // Transform dependency list into style/link tags
+                    const globalScriptUrls = [];
+                    const scriptUrls = [];
+                    const styleUrls = [];
+                    dependencies.styles.forEach((file) => styleUrls.push(`/pl/static/elements/${file}`));
+                    dependencies.scripts.forEach((file) => scriptUrls.push(`/pl/static/elements/${file}`));
+                    dependencies.globalStyles.forEach((file) => styleUrls.push(`/stylesheets/${file}`));
+                    dependencies.globalScripts.forEach((file) => globalScriptUrls.push(`/javascripts/${file}`));
+                    const headerHtmls = [
+                        ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
+                        // It's important that any library-style scripts come first
+                        ...globalScriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
+                        ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`)
+                    ];
+                    htmls.extraHeadersHtml = headerHtmls.join('\n');
+                    callback(null);
+                });
+            }
         ], (err) => {
             pc.done();
             if (ERR(err, callback)) return;

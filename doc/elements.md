@@ -105,6 +105,29 @@ def file(data):
 
 If `file()` does not return anything, it will be treated as if `file()` returned the empty string.
 
+## `pl_file_upload` element
+
+```html
+<pl_file_upload file_names="foo.py, bar.c, filename with\, comma.txt" />
+```
+
+Provides a way to accept file uploads as part of an answer. They will be stored
+in [the format expected by externally graded questions](externalGrading.md#file-submission-format).
+
+Attribute | Type | Default | description
+--- | --- | --- | ---
+`answers_name` | string | \_file | Variable name to store data in. **For externally graded questions, you should rely on the default.**
+`file_names` | CSV list | "" | List of files that should and must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes.
+
+## `pl_external_grader_results` element
+
+```html
+<pl_external_grader_results></pl_external_grader_results>
+```
+
+Displays results from externally-graded questions. It expects results to follow
+[the reference schema for external grading results](externalGrading.md#grading-result).
+
 ## `pl_question_panel` element
 
 ```html
