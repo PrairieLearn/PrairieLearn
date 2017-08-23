@@ -7,7 +7,7 @@ $(function() {
   var ELEMENT_ID = "#file-upload-{{name}}-{{uuid}}";
 
   new window.PLFileUpload(ELEMENT_ID, {
-    acceptedFiles: {{&filenames}}
+    acceptedFiles: {{&file_names}}
     {{#has_files}}, files: {{&files}}{{/has_files}}
   });
 });
@@ -20,7 +20,7 @@ $(function() {
 
   new window.PLFileUpload(ELEMENT_ID, {
     previewOnly: true,
-    acceptedFiles: {{&filenames}},
+    acceptedFiles: {{&file_names}},
     files: {{&files}}
   });
 });

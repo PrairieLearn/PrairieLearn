@@ -68,16 +68,6 @@ lodash or d3, you can also express that need. PrairieLearn will compile a list
 of all dependencies needed by all elements on a page, dedup the dependencies,
 and ensure they are loaded on the page.
 
-If you place `[element_name].js` or `[element_name].css` files alongside your
-Python and mustache files, they will automatically be included on the page. For
-instance, if I have an element with the tag `<pl_my_element>`, simply creating
-the files `pl_my_element.js` and `pl_my_element.css` will ensure they are loaded
-on the page.
-
-You can also manually list any scripts or stylesheets that your element relies
-on. If you want to express a dependency on a global script (anything located in
-public/javascripts/), you can include that in your dependency list as well.
-
 Dependencies are listed in `question-servers/elements/index.js`. You can
 configure them for your element as follows:
 
@@ -87,6 +77,9 @@ module.exports.dependencies = {
         'globalScripts': [
             'lodash.min.js',
             'dropzone.js'
+        ],
+        'styles': [
+            'pl_my_element.css'
         ]
     }
 };
@@ -94,4 +87,6 @@ module.exports.dependencies = {
 
 Any global resources will map to the url `/javascripts/[filename]`. Non-global
 resources will map to the url `/pl/static/elements/[filename]`; PrairieLearn
-will serve any CSS or JS files in `question-servers/elements/` at that url.
+will serve any CSS or JS files in `question-servers/elements/` at that url. In
+the above example, the file is located at `question-servers/elements/pl_my_element.css`,
+and it will be served at `/pl/static/elements/pl_my_element.css`.
