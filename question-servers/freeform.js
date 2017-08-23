@@ -57,7 +57,7 @@ module.exports = {
             return '';
         } else if (phase == 'file') {
             return '';
-        } else if (phase == 'get_dependencies') {
+        } else if (phase == 'dependencies') {
             return {
                 globalStyles: [],
                 globalScripts: [],
@@ -169,8 +169,8 @@ module.exports = {
         };
 
         let err;
-        let allPhases = ['generate', 'prepare', 'render', 'get_dependencies', 'parse', 'grade', 'test', 'file'];
-        let allPhasesButGetDependencies = _.pull([...allPhases], 'get_dependencies');
+        let allPhases = ['generate', 'prepare', 'render', 'dependencies', 'parse', 'grade', 'test', 'file'];
+        let allPhasesButGetDependencies = _.pull([...allPhases], 'dependencies');
 
         if (!allPhases.includes(phase)) return `unknown phase: ${phase}`;
 
@@ -208,7 +208,7 @@ module.exports = {
             scripts: []
         };
 
-        const isGetDependencies = phase === 'get_dependencies';
+        const isGetDependencies = phase === 'dependencies';
 
         var fileData = Buffer.from('');
 
@@ -232,7 +232,7 @@ module.exports = {
             let index = 0;
             async.eachSeries(elements.keys(), (elementName, callback) => {
                 async.eachSeries($(elementName).toArray(), (element, callback) => {
-                    if (phase === 'get_dependencies' && _.includes(renderedElementNames, element)) {
+                    if (phase === 'dependencies' && _.includes(renderedElementNames, element)) {
                         return callback(null);
                     }
 
@@ -283,7 +283,7 @@ module.exports = {
                                     fileData = buf;
                                 }
                             }
-                        } else if (phase === 'get_dependencies') {
+                        } else if (phase === 'dependencies') {
                             for (const type of ['globalStyles', 'globalScripts', 'styles', 'scripts']) {
                                 if (_.has(ret_val, type)) {
                                     if (_.isArray(ret_val[type])) {
@@ -565,7 +565,7 @@ module.exports = {
                 const options = {
                     question_dir: path.join(course.path, 'questions', question.directory),
                 };
-                module.exports.processQuestionHtml('get_dependencies', pc, data, options, (err, ret_courseErrs, dependencies) => {
+                module.exports.processQuestionHtml('dependencies', pc, data, options, (err, ret_courseErrs, dependencies) => {
                     if (ERR(err, callback)) return;
                     courseErrs.push(...ret_courseErrs);
 

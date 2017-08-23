@@ -5,7 +5,7 @@ import to_precision
 import prairielearn as pl
 import json
 
-def get_dependencies(element_html, element_index, data):
+def dependencies(element_html, element_index, data):
     return {
         'styles': [
             'pl_external_grader_results.css'

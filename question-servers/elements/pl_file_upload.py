@@ -15,7 +15,7 @@ def get_file_names_as_array(raw_file_names):
         # Assume only one row
         return row
 
-def get_dependencies(element_html, element_index, data):
+def dependencies(element_html, element_index, data):
     return {
         'globalScripts': [
             'lodash.min.js',
