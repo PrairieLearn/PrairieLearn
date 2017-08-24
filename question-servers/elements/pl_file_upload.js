@@ -55,6 +55,8 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
                 var base64FileData = dataUrl.substring(commaSplitIdx + 1);
                 that.saveSubmittedFile(file.name, base64FileData);
                 that.renderFileList();
+                // Show the preview for the newly-uploaded file
+                that.element.find('li[data-file="' + file.name + '"] .file-preview').addClass('in');
             };
 
             reader.readAsDataURL(file);
@@ -113,19 +115,35 @@ window.PLFileUpload.prototype.getSubmittedFileContents = function(name) {
 /**
 * Generates markup to show the status of the uploaded files, including
 * previews of files as appropriate.
+*
+* Imperative DOM manipulations can rot in hell.
 */
 window.PLFileUpload.prototype.renderFileList = function() {
     var $fileList = this.element.find('.file-upload-status .panel ul.list-group');
+
+    // Save which panels are currently expanded
+    var expandedFiles = [];
+    $fileList.children().each(function() {
+        var fileName = $(this).attr('data-file');
+        if (fileName && $(this).find('.file-preview').hasClass('in')) {
+            expandedFiles.push(fileName);
+        }
+    });
+
     $fileList.html('');
 
     var uuid = this.uuid;
     var that = this;
 
     _.each(this.acceptedFiles, function(fileName, index) {
+        var isExpanded = _.includes(expandedFiles, fileName);
         var fileData = that.getSubmittedFileContents(fileName);
 
-        var $file = $('<li class="list-group-item"></li>');
+        var $file = $('<li class="list-group-item" data-file="' + fileName + '"></li>');
         var $fileStatusContainer = $('<div class="file-status-container collapsed" data-toggle="collapse" data-target="#file-preview-' + uuid + '-' + index + '"></div>');
+        if (isExpanded) {
+            $fileStatusContainer.removeClass('collapsed');
+        }
         if (fileData) {
             $fileStatusContainer.addClass('has-preview');
         }
@@ -149,6 +167,9 @@ window.PLFileUpload.prototype.renderFileList = function() {
         }
         if (fileData) {
             var $preview = $('<div class="file-preview collapse" id="file-preview-' + uuid + '-' + index + '"><pre><code></code></pre></div>');
+            if (isExpanded) {
+                $preview.addClass('in');
+            }
             try {
                 var fileContents = that.b64DecodeUnicode(fileData);
                 if (!that.isBinary(fileContents)) {
@@ -160,7 +181,7 @@ window.PLFileUpload.prototype.renderFileList = function() {
                 $preview.find('code').text('Unable to decode file.');
             }
             $file.append($preview);
-            $fileStatusContainer.append('<div class="file-status-container-right"><span class="file-preview-icon glyphicon glyphicon-chevron-down"></span></div>');
+            $fileStatusContainer.append('<div class="file-status-container-right"><button type="button" class="btn btn-default btn-xs file-preview-button"><span class="file-preview-icon glyphicon glyphicon-chevron-down"></span></button></div>');
         }
 
         $fileList.append($file);
