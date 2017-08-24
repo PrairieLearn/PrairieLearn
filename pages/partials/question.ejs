@@ -66,6 +66,9 @@
         <%- questionHtml %>
       </div>
       <div class="panel-footer">
+        <% if (showTrueAnswer) { %>
+        This question is complete and cannot be answered again.
+        <% } else { %>
         <div class="row">
           <div class="col-sm-6">
             <% if (showGradeButton) { %><button class="btn btn-primary" name="__action" value="grade">Grade</button><% } %>
@@ -80,6 +83,7 @@
             </span>
           </div>
         </div>
+        <% } %>
       </div>
     </div>
   </form>
@@ -100,6 +104,9 @@
     </div>
     <form class="question-form" name="question-form" method="POST">
       <div class="panel-footer">
+        <% if (showTrueAnswer) { %>
+        This question is complete and cannot be answered again.
+        <% } else { %>
         <div class="row">
           <div class="col-sm-6">
             <% if (showGradeButton) { %><button class="btn btn-primary question-grade">Grade</button><% } %>
@@ -115,6 +122,7 @@
             </span>
           </div>
         </div>
+        <% } %>
       </div>
     </form>
   </div>
