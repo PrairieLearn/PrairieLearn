@@ -8,10 +8,12 @@ $(function() {
 });
 
 window.PLFileUpload = function(wrapperId, options) {
+    this.uuid = options.uuid;
     this.files = options.files || [];
     this.acceptedFiles = options.acceptedFiles || [];
     this.previewOnly = options.previewOnly || false;
 
+    this.elementId = wrapperId;
     this.element = $(wrapperId);
     if (!this.element) {
         throw new Error('File upload element ' + wrapperId + ' was not found!');
@@ -25,7 +27,7 @@ window.PLFileUpload = function(wrapperId, options) {
 * Initializes the file upload zone on the question.
 */
 window.PLFileUpload.prototype.initializeTemplate = function() {
-    var $dropTarget = this.element.find('.plfu-dropzone');
+    var $dropTarget = this.element.find('.dropzone');
 
     var that = this;
 
@@ -116,16 +118,37 @@ window.PLFileUpload.prototype.renderFileList = function() {
     var $fileList = this.element.find('.file-upload-status .panel ul.list-group');
     $fileList.html('');
 
+    var uuid = this.uuid;
     var that = this;
 
-    _.each(this.acceptedFiles, function(file) {
-        var $item = $('<li class="list-group-item"></li>');
-        $item.append('<code>' + file + '</code> - ');
-        var fileData = that.getSubmittedFileContents(file);
-        if (!fileData) {
-            $item.append('not uploaded');
-        } else {
-            var $preview = $('<pre><code></code></pre>');
+    _.each(this.acceptedFiles, function(fileName, index) {
+        var fileData = that.getSubmittedFileContents(fileName);
+
+        var $file = $('<li class="list-group-item"></li>');
+        var $fileStatusContainer = $('<div class="file-status-container collapsed" data-toggle="collapse" data-target="#file-preview-' + uuid + '-' + index + '"></div>');
+        if (fileData) {
+            $fileStatusContainer.addClass('has-preview');
+        }
+        $file.append($fileStatusContainer);
+        var $fileStatusContainerLeft = $('<div class="file-status-container-left"></div>');
+        $fileStatusContainer.append($fileStatusContainerLeft);
+        if (!that.previewOnly) {
+            if (fileData) {
+                $fileStatusContainerLeft.append('<i class="file-status-icon fa fa-check-circle" aria-hidden="true"></i>');
+            } else {
+                $fileStatusContainerLeft.append('<i class="file-status-icon fa fa-circle-o" aria-hidden="true"></i>');
+            }
+        }
+        $fileStatusContainerLeft.append(fileName);
+        if (!that.previewOnly) {
+            if (!fileData) {
+                $fileStatusContainerLeft.append('<p class="file-status">not uploaded</p>');
+            } else {
+                $fileStatusContainerLeft.append('<p class="file-status">uploaded</p>');
+            }
+        }
+        if (fileData) {
+            var $preview = $('<div class="file-preview collapse" id="file-preview-' + uuid + '-' + index + '"><pre><code></code></pre></div>');
             try {
                 var fileContents = that.b64DecodeUnicode(fileData);
                 if (!that.isBinary(fileContents)) {
@@ -136,25 +159,18 @@ window.PLFileUpload.prototype.renderFileList = function() {
             } catch (e) {
                 $preview.find('code').text('Unable to decode file.');
             }
-            $preview.hide();
-            var $toggler = $('<a href="#">view</a>');
-            $toggler.on('click', function(e) {
-                $preview.toggle();
-                e.preventDefault();
-                return false;
-            });
-            $item.append($toggler);
-            $item.append($preview);
+            $file.append($preview);
+            $fileStatusContainer.append('<div class="file-status-container-right"><span class="file-preview-icon glyphicon glyphicon-chevron-down"></span></div>');
         }
 
-        $fileList.append($item);
+        $fileList.append($file);
     });
 };
 
 window.PLFileUpload.prototype.addWarningMessage = function(message) {
     var $alert = $('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>');
     $alert.append(message);
-    this.element.find('.plfu-messages').append($alert);
+    this.element.find('.messages').append($alert);
 };
 
 /**

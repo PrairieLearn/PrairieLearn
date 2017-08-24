@@ -4,9 +4,11 @@ $(function() {
   // Turn off Dropzone autodiscover; we'll configure it manually
   window.Dropzone.autoDiscover = false;
 
-  var ELEMENT_ID = "#file-upload-{{name}}-{{uuid}}";
+  var ELEMENT_ID = "#file-upload-{{uuid}}";
+  var UUID = "{{uuid}}";
 
   new window.PLFileUpload(ELEMENT_ID, {
+    uuid: UUID,
     acceptedFiles: {{&file_names}}
     {{#has_files}}, files: {{&files}}{{/has_files}}
   });
@@ -16,9 +18,11 @@ $(function() {
 {{#submission}}
 <script>
 $(function() {
-  var ELEMENT_ID = "#file-upload-{{name}}-{{uuid}}";
+  var ELEMENT_ID = "#file-upload-{{uuid}}";
+  var UUID = "{{uuid}}";
 
   new window.PLFileUpload(ELEMENT_ID, {
+    uuid: UUID,
     previewOnly: true,
     acceptedFiles: {{&file_names}},
     files: {{&files}}
@@ -27,17 +31,17 @@ $(function() {
 </script>
 {{/submission}}
 
-<div id="file-upload-{{name}}-{{uuid}}">
+<div id="file-upload-{{uuid}}">
   {{#question}}
   <input type="hidden" name="{{name}}">
-  <div class="plfu-dropzone">
+  <div class="dropzone">
     <div class="dz-message">
       Drop files here or click to upload.
       <br/>
       <small>Only the files listed below will be accepted&mdash;others will be silently ignored.</small>
     </div>
   </div>
-  <div class="plfu-messages">
+  <div class="messages">
   </div>
   {{/question}}
   {{#submission}}
