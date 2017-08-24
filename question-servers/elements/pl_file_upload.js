@@ -40,6 +40,7 @@ window.PLFileUpload.prototype.initializeTemplate = function() {
         },
         addedfile: function(file) {
             if (!_.includes(that.acceptedFiles, file.name)) {
+                that.addWarningMessage('<strong>' + file.name + '</strong>' + ' did not match any accepted file for this question.');
                 return;
             }
             var reader = new FileReader();
@@ -148,6 +149,12 @@ window.PLFileUpload.prototype.renderFileList = function() {
 
         $fileList.append($item);
     });
+};
+
+window.PLFileUpload.prototype.addWarningMessage = function(message) {
+    var $alert = $('<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>');
+    $alert.append(message);
+    this.element.find('.plfu-messages').append($alert);
 };
 
 /**

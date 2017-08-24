@@ -4,6 +4,7 @@
   border-radius: 4px;
   background-color: #FAFDFF;
   border: 2px dashed #0087F7;
+  margin-bottom: 20px;
 }
 .plfu-dropzone.dz-clickable {
   cursor: pointer;
