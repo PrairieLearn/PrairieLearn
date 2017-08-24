@@ -16,4 +16,5 @@ module.exports.elements = new Map([
     ['pl_file_upload', 'pl_file_upload.py'],
     ['pl_file_download', 'pl_file_download.py'],
     ['pl_external_grader_results', 'pl_external_grader_results.py'],
+    ['pl_symbolic_input', 'pl_symbolic_input.py'],
 ]);
