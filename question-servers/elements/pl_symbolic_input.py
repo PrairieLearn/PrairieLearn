@@ -4,6 +4,7 @@ import chevron
 import to_precision
 import prairielearn as pl
 import sympy
+import random
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -91,11 +92,27 @@ def parse(element_html, element_index, data):
 
     # Convert submitted answer to sympy
     try:
-        data["submitted_answers"][name] = str(sympy.sympify(a_sub))
+        a_sub = sympy.sympify(a_sub)
+        data["submitted_answers"][name] = str(a_sub)
     except ValueError:
         data["format_errors"][name] = "Invalid format."
         data["submitted_answers"][name] = None
+        return data
 
+    # If there is a list of variables, check that expression can be evaluated
+    # numerically with floating-point numbers substituted for these variables
+    variables = pl.get_string_attrib(element, "variables", None)
+    if variables is not None:
+        keys = variables.split()
+        vals = [random.random() for key in keys]
+        subs = dict(zip(keys,vals))
+        try:
+            res = float(a_sub.evalf(subs=subs))
+        except:
+            data["format_errors"][name] = "Invalid format (could not evaluate after substituting real numbers for allowable variables)."
+            data["submitted_answers"][name] = None
+            return data
+    
     return data
 
 def grade(element_html, element_index, data):
