@@ -1,15 +1,5 @@
-<% if (status == 'complete') { %>
-<span class="label label-info">complete</span>
-<% } %>
-<% if (status == 'unanswered') { %>
-<span class="label label-warning">unanswered</span>
-<% } %>
-<% if (status == 'saved') { %>
-<span class="label label-primary">saved</span>
-<% } %>
-<% if (status == 'correct') { %>
-<span class="label label-success">correct</span>
-<% } %>
-<% if (status == 'incorrect') { %>
-<span class="label label-danger">incorrect</span>
+<% if (open) { %>
+<span class="label label-info">open</span>
+<% } else { %>
+<span class="label label-default">closed</span>
 <% } %>

@@ -1,0 +1,15 @@
+<% if (instance_question.status == 'unanswered') { %>
+    <span class="label label-danger">unanswered</span>
+<% } else if (instance_question.status == 'saved') { %>
+    <span class="label label-info">saved</span>
+<% } else if (instance_question.status == 'grading') { %>
+    <span class="label label-grading">grading</span>
+<% } else { %>
+    <% if (instance_question.score_perc >= 100) { %>
+        <span class="label label-success"><%= Math.floor(instance_question.score_perc) %>%</span>
+    <% } else if (instance_question.score_perc <= 0) { %>
+        <span class="label label-danger"><%= Math.floor(instance_question.score_perc) %>%</span>
+    <% } else { %>
+        <span class="label label-warning"><%= Math.floor(instance_question.score_perc) %>%</span>
+    <% } %>
+<% } %>

@@ -58,9 +58,9 @@ router.get('/', function(req, res, next) {
         if (ERR(err, next)) return;
 
         var params = {assessment_instance_id: res.locals.assessment_instance.id};
-        sqldb.query(sql.get_questions, params, function(err, result) {
+        sqldb.query(sql.select_instance_questions, params, function(err, result) {
             if (ERR(err, next)) return;
-            res.locals.questions = result.rows;
+            res.locals.instance_questions = result.rows;
 
             assessment.renderText(res.locals.assessment, res.locals.urlPrefix, function(err, assessment_text_templated) {
                 if (ERR(err, next)) return;
