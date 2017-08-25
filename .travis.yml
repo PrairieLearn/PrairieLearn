@@ -26,6 +26,9 @@ notifications:
 script:
   # Check python version
   - python3 --version
+  - python3.6 --version
+  - python3_6 --version
+  - python36 --version
 
   # Install python packages
   - pip3 install numpy scipy matplotlib pandas sympy lxml chevron
