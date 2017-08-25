@@ -19,20 +19,25 @@ module.exports = {
         return path.join(__dirname, 'elements', elementModule);
     },
 
-    elementFunction: function(pc, fcn, elementName, $, element, index, data, callback) {
-        const jsArgs = [$, element, index, data];
-        const elementHtml = $(element).clone().wrap('<container/>').parent().html();
-        const pythonArgs = [elementHtml, index, data];
-        if (!elements.has(elementName)) {
+    elementFunction: function(pc, fcn, elementName, $, element, index, data, context, callback) {
+        let elementModule;
+        let cwd;
+        if (context.course_elements.has(elementName)) {
+            cwd = context.course_elements_dir;
+            elementModule = context.course_elements.get(elementName);
+        } else if (!elements.has(elementName)) {
+            cwd = path.join(__dirname, 'elements');
+            elementModule = elements.get(elementName);
+        } else {
             return callback(null, 'ERROR: invalid element name: ' + elementName);
         }
-        const elementModule = elements.get(elementName);
         if (_.isString(elementModule)) {
             // python module
+            const elementHtml = $(element).clone().wrap('<container/>').parent().html();
+            const pythonArgs = [elementHtml, index, data];
             const pythonFile = elementModule.replace(/\.[pP][yY]$/, '');
-            const pythonCwd = path.join(__dirname, 'elements');
             const opts = {
-                cwd: pythonCwd,
+                cwd,
                 paths: [path.join(__dirname, 'freeformPythonLib')],
             };
             pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
@@ -45,6 +50,7 @@ module.exports = {
             });
         } else {
             // JS module
+            const jsArgs = [$, element, index, data];
             elementModule[fcn](...jsArgs, (err, ret) => {
                 if (ERR(err, callback)) return;
                 callback(null, ret, '');
@@ -69,7 +75,7 @@ module.exports = {
         }
     },
 
-    defaultServerRet: function(phase, data, html, _options) {
+    defaultServerRet: function(phase, data, html, _context) {
         if (phase == 'render') {
             return html;
         } else if (phase == 'file') {
@@ -79,26 +85,26 @@ module.exports = {
         }
     },
 
-    execPythonServer: function(pc, phase, data, html, options, callback) {
+    execPythonServer: function(pc, phase, data, html, context, callback) {
         const pythonFile = 'server';
         const pythonFunction = phase;
         const pythonArgs = [data];
         if (phase == 'render') pythonArgs.push(html);
         const opts = {
-            cwd: options.question_dir,
+            cwd: context.question_dir,
             paths: [],
         };
-        const fullFilename = path.join(options.question_dir, 'server.py');
+        const fullFilename = path.join(context.question_dir, 'server.py');
         fs.access(fullFilename, fs.constants.R_OK, (err) => {
             if (err) {
                 // server.py does not exist
-                return callback(null, module.exports.defaultServerRet(phase, data, html, options), '');
+                return callback(null, module.exports.defaultServerRet(phase, data, html, context), '');
             }
 
             pc.call(pythonFile, pythonFunction, pythonArgs, opts, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
-                    return callback(null, module.exports.defaultServerRet(phase, data, html, options), '');
+                    return callback(null, module.exports.defaultServerRet(phase, data, html, context), '');
                 }
                 if (ERR(err, callback)) return;
                 callback(null, ret, consoleLog);
@@ -197,7 +203,7 @@ module.exports = {
         return null;
     },
 
-    processQuestionHtml: function(phase, pc, data, options, callback) {
+    processQuestionHtml: function(phase, pc, data, context, callback) {
         const courseErrs = [];
         const origData = JSON.parse(JSON.stringify(data));
         const renderedElementNames = [];
@@ -205,7 +211,9 @@ module.exports = {
             globalStyles: [],
             globalScripts: [],
             styles: [],
-            scripts: []
+            scripts: [],
+            courseStyles: [],
+            courseScripts: []
         };
 
         const isGetDependencies = phase === 'get_dependencies';
@@ -220,7 +228,7 @@ module.exports = {
             return callback(null, courseErrs, isGetDependencies ? elementDependencies : data, '', fileData);
         }
 
-        const htmlFilename = path.join(options.question_dir, 'question.html');
+        const htmlFilename = path.join(context.question_dir, 'question.html');
         this.execTemplate(htmlFilename, data, (err, html, $) => {
             if (err) {
                 const courseErr = new Error(htmlFilename + ': ' + err.toString());
@@ -229,15 +237,17 @@ module.exports = {
                 return callback(null, courseErrs, isGetDependencies ? elementDependencies : data, '', fileData);
             }
 
+            const questionElements = new Set([...elements.keys(), ...context.course_elements.keys()]).values();
+
             let index = 0;
-            async.eachSeries(elements.keys(), (elementName, callback) => {
+            async.eachSeries(questionElements, (elementName, callback) => {
                 async.eachSeries($(elementName).toArray(), (element, callback) => {
                     if (phase === 'get_dependencies' && _.includes(renderedElementNames, element)) {
                         return callback(null);
                     }
 
                     renderedElementNames.push(elementName);
-                    this.elementFunction(pc, phase, elementName, $, element, index, data, (err, ret_val, consoleLog) => {
+                    this.elementFunction(pc, phase, elementName, $, element, index, data, context, (err, ret_val, consoleLog) => {
                         if (err) {
                             const elementFile = module.exports.getElementFilename(elementName);
                             const courseErr = new Error(elementFile + ': Error calling ' + phase + '(): ' + err.toString());
@@ -284,12 +294,24 @@ module.exports = {
                                 }
                             }
                         } else if (phase === 'get_dependencies') {
-                            for (const type of ['globalStyles', 'globalScripts', 'styles', 'scripts']) {
+                            let depdendencyTypes = ['globalStyles', 'globalScripts', 'styles', 'scripts'];
+                            for (const type of depdendencyTypes) {
+                                // For course elements, track dependencies separately so
+                                // we can properly construct the URLs
+                                let mappedDepType = type;
+                                if (context.course_elements.has(elementName)) {
+                                    if (type === 'styles') {
+                                        mappedDepType = 'courseStyles';
+                                    } else if (type === 'scripts') {
+                                        mappedDepType = 'courseScripts';
+                                    }
+                                }
+
                                 if (_.has(ret_val, type)) {
                                     if (_.isArray(ret_val[type])) {
                                         for (const dep of ret_val[type]) {
-                                            if (!_.includes(elementDependencies[type], dep)) {
-                                                elementDependencies[type].push(dep);
+                                            if (!_.includes(elementDependencies[mappedDepType], dep)) {
+                                                elementDependencies[mappedDepType].push(dep);
                                             }
                                         }
                                     } else {
@@ -340,7 +362,7 @@ module.exports = {
         });
     },
 
-    processQuestionServer: function(phase, pc, data, html, fileData, options, callback) {
+    processQuestionServer: function(phase, pc, data, html, fileData, context, callback) {
         const courseErrs = [];
         const origData = JSON.parse(JSON.stringify(data));
 
@@ -352,9 +374,9 @@ module.exports = {
             return callback(null, courseErrs, data, '');
         }
 
-        this.execPythonServer(pc, phase, data, html, options, (err, ret_val, consoleLog) => {
+        this.execPythonServer(pc, phase, data, html, context, (err, ret_val, consoleLog) => {
             if (err) {
-                const serverFile = path.join(options.question_dir, 'server.py');
+                const serverFile = path.join(context.question_dir, 'server.py');
                 const courseErr = new Error(serverFile + ': Error calling ' + phase + '(): ' + err.toString());
                 courseErr.data = err.data;
                 courseErr.fatal = true;
@@ -362,7 +384,7 @@ module.exports = {
                 return callback(null, courseErrs, data);
             }
             if (_.isString(consoleLog) && consoleLog.length > 0) {
-                const serverFile = path.join(options.question_dir, 'server.py');
+                const serverFile = path.join(context.question_dir, 'server.py');
                 const courseErr = new Error(serverFile + ': output logged on console');
                 courseErr.data = {outputBoth: consoleLog};
                 courseErr.fatal = false;
@@ -380,7 +402,7 @@ module.exports = {
                 if (buf.length > 0) {
                     if (fileData.length > 0) {
                         // If fileData already has non-zero length, throw an error
-                        const serverFile = path.join(options.question_dir, 'server.py');
+                        const serverFile = path.join(context.question_dir, 'server.py');
                         const courseErr = new Error(serverFile + ': Error calling ' + phase + '(): attempting to overwrite non-empty fileData');
                         courseErr.fatal = true;
                         courseErrs.push(courseErr);
@@ -395,7 +417,7 @@ module.exports = {
             }
             const checkErr = module.exports.checkData(data, origData, phase);
             if (checkErr) {
-                const serverFile = path.join(options.question_dir, 'server.py');
+                const serverFile = path.join(context.question_dir, 'server.py');
                 const courseErr = new Error(serverFile + ': Invalid state after ' + phase + '(): ' + checkErr);
                 courseErr.fatal = true;
                 courseErrs.push(courseErr);
@@ -406,18 +428,18 @@ module.exports = {
         });
     },
 
-    processQuestion: function(phase, pc, data, options, callback) {
+    processQuestion: function(phase, pc, data, context, callback) {
         if (phase == 'generate') {
-            module.exports.processQuestionServer(phase, pc, data, '', Buffer.from(''), options, (err, courseErrs, data, html, fileData) => {
+            module.exports.processQuestionServer(phase, pc, data, '', Buffer.from(''), context, (err, courseErrs, data, html, fileData) => {
                 if (ERR(err, callback)) return;
                 callback(null, courseErrs, data, html, fileData);
             });
         } else {
-            module.exports.processQuestionHtml(phase, pc, data, options, (err, courseErrs, data, html, fileData) => {
+            module.exports.processQuestionHtml(phase, pc, data, context, (err, courseErrs, data, html, fileData) => {
                 if (ERR(err, callback)) return;
                 const hasFatalError = _.some(_.map(courseErrs, 'fatal'));
                 if (hasFatalError) return callback(null, courseErrs, data, html, fileData);
-                module.exports.processQuestionServer(phase, pc, data, html, fileData, options, (err, ret_courseErrs, data, html, fileData) => {
+                module.exports.processQuestionServer(phase, pc, data, html, fileData, context, (err, ret_courseErrs, data, html, fileData) => {
                     if (ERR(err, callback)) return;
                     courseErrs.push(...ret_courseErrs);
                     callback(null, courseErrs, data, html, fileData);
@@ -433,11 +455,9 @@ module.exports = {
             variant_seed: parseInt(variant_seed, 36),
             options: _.defaults({}, course.options, question.options),
         };
-        const options = {
-            question_dir: path.join(course.path, 'questions', question.directory),
-        };
+        const context = module.exports.getContext(question, course);
         const pc = new codeCaller.PythonCaller();
-        module.exports.processQuestion('generate', pc, data, options, (err, courseErrs, data, _html, _fileData) => {
+        module.exports.processQuestion('generate', pc, data, context, (err, courseErrs, data, _html, _fileData) => {
             pc.done();
             if (ERR(err, callback)) return;
             const ret_vals = {
@@ -456,11 +476,9 @@ module.exports = {
             variant_seed: parseInt(variant.variant_seed, 36),
             options: _.get(variant, 'options', {}),
         };
-        const options = {
-            question_dir: path.join(course.path, 'questions', question.directory),
-        };
+        const context = module.exports.getContext(question, course);
         const pc = new codeCaller.PythonCaller();
-        module.exports.processQuestion('prepare', pc, data, options, (err, courseErrs, data, _html, _fileData) => {
+        module.exports.processQuestion('prepare', pc, data, context, (err, courseErrs, data, _html, _fileData) => {
             pc.done();
             if (ERR(err, callback)) return;
             const ret_vals = {
@@ -500,16 +518,14 @@ module.exports = {
             editable: !!locals.allowAnswerEditing,
             panel: panel,
         };
-        const options = {
-            question_dir: path.join(course.path, 'questions', question.directory),
-        };
+        const context = module.exports.getContext(question, course);
 
         // Put base URLs in data.options for access by question code
         data.options.client_files_question_url = locals.clientFilesQuestionUrl;
         data.options.client_files_course_url = locals.clientFilesCourseUrl;
         data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
 
-        module.exports.processQuestion('render', pc, data, options, (err, courseErrs, _data, html, _fileData) => {
+        module.exports.processQuestion('render', pc, data, context, (err, courseErrs, _data, html, _fileData) => {
             if (ERR(err, callback)) return;
             callback(null, courseErrs, html);
         });
@@ -562,10 +578,8 @@ module.exports = {
                 const data = {
                     options: _.get(variant, 'options', {}),
                 };
-                const options = {
-                    question_dir: path.join(course.path, 'questions', question.directory),
-                };
-                module.exports.processQuestionHtml('get_dependencies', pc, data, options, (err, ret_courseErrs, dependencies) => {
+                const context = module.exports.getContext(question, course);
+                module.exports.processQuestionHtml('get_dependencies', pc, data, context, (err, ret_courseErrs, dependencies) => {
                     if (ERR(err, callback)) return;
                     courseErrs.push(...ret_courseErrs);
 
@@ -577,6 +591,8 @@ module.exports = {
                     dependencies.scripts.forEach((file) => scriptUrls.push(`/pl/static/elements/${file}`));
                     dependencies.globalStyles.forEach((file) => styleUrls.push(`/stylesheets/${file}`));
                     dependencies.globalScripts.forEach((file) => globalScriptUrls.push(`/javascripts/${file}`));
+                    dependencies.courseStyles.forEach((file) => styleUrls.push(`/pl/course_instance/${course.id}/elements/${file}`));
+                    dependencies.courseScripts.forEach((file) => scriptUrls.push(`/pl/course_instance/${course.id}/elements/${file}`));
                     const headerHtmls = [
                         ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
                         // It's important that any library-style scripts come first
@@ -603,11 +619,9 @@ module.exports = {
             options: _.get(variant, 'options', {}),
             filename: filename,
         };
-        const options = {
-            question_dir: path.join(course.path, 'questions', question.directory)
-        };
+        const context = module.exports.getContext(question, course);
         const pc = new codeCaller.PythonCaller();
-        module.exports.processQuestion('file', pc, data, options, (err, courseErrs, _data, _html, fileData) => {
+        module.exports.processQuestion('file', pc, data, context, (err, courseErrs, _data, _html, fileData) => {
             pc.done();
             if (ERR(err, callback)) return;
             callback(null, courseErrs, fileData);
@@ -627,11 +641,9 @@ module.exports = {
             raw_submitted_answers: _.get(submission, 'raw_submitted_answer', {}),
             gradable: _.get(submission, 'gradable', true),
         };
-        const options = {
-            question_dir: path.join(course.path, 'questions', question.directory),
-        };
+        const context = module.exports.getContext(question, course);
         const pc = new codeCaller.PythonCaller();
-        module.exports.processQuestion('parse', pc, data, options, (err, courseErrs, data, _html, _fileData) => {
+        module.exports.processQuestion('parse', pc, data, context, (err, courseErrs, data, _html, _fileData) => {
             pc.done();
             if (ERR(err, callback)) return;
             if (_.size(data.format_errors) > 0) data.gradable = false;
@@ -663,11 +675,9 @@ module.exports = {
             raw_submitted_answers: submission.raw_submitted_answer,
             gradable: submission.gradable,
         };
-        const options = {
-            question_dir: path.join(course.path, 'questions', question.directory),
-        };
+        const context = module.exports.getContext(question, course);
         const pc = new codeCaller.PythonCaller();
-        module.exports.processQuestion('grade', pc, data, options, (err, courseErrs, data, _html, _fileData) => {
+        module.exports.processQuestion('grade', pc, data, context, (err, courseErrs, data, _html, _fileData) => {
             pc.done();
             if (ERR(err, callback)) return;
             if (_.size(data.format_errors) > 0) data.gradable = false;
@@ -700,11 +710,9 @@ module.exports = {
             raw_submitted_answers: {},
             gradable: true,
         };
-        const options = {
-            question_dir: path.join(course.path, 'questions', question.directory),
-        };
+        const context = module.exports.getContext(question, course);
         const pc = new codeCaller.PythonCaller();
-        module.exports.processQuestion('test', pc, data, options, (err, courseErrs, data, _html, _fileData) => {
+        module.exports.processQuestion('test', pc, data, context, (err, courseErrs, data, _html, _fileData) => {
             pc.done();
             if (ERR(err, callback)) return;
             if (_.size(data.format_errors) > 0) data.gradable = false;
@@ -719,5 +727,24 @@ module.exports = {
             };
             callback(null, courseErrs, ret_vals);
         });
+    },
+
+    getContext(question, course) {
+        const context = {
+            question,
+            course,
+            question_dir: path.join(course.path, 'questions', question.directory),
+            course_elements_dir: path.join(course.path, 'elements'),
+        };
+        try {
+            // Clear cache in case course code has been reloaded
+            delete require.cache[require.resolve(context.course_elements_dir)];
+            context.course_elements = require(context.course_elements_dir).elements;
+        } catch (e) {
+            // This course doesn't have custom elements
+            context.course_elements = new Map();
+        }
+
+        return context;
     },
 };

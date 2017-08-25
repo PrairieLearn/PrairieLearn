@@ -19,7 +19,14 @@ router.get('/*', function(req, res, next) {
         return next(err);
     }
 
-    const elementFilesDir = path.resolve(__dirname, '../../question-servers/elements/');
+    let elementFilesDir;
+    if (res.locals.course) {
+        // Files should be served from the course directory
+        elementFilesDir = path.join(res.locals.course.path, 'elements');
+    } else {
+        elementFilesDir = path.resolve(__dirname, '../../question-servers/elements/');
+    }
+
     res.sendFile(filename, {root: elementFilesDir});
 });
 

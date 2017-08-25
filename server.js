@@ -124,6 +124,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlew
 
 // Serve element statics
 app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles'));
+app.use('/pl/course_instance/:course_instance_id/elements', require('./pages/elementFiles/elementFiles'));
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
