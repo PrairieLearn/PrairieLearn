@@ -149,4 +149,27 @@ def grade(element_html, element_index, data):
     return data
 
 def test(element_html, element_index, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, "answers_name")
+    weight = pl.get_integer_attrib(element, "weight", 1)
+
+    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    if result == 'correct':
+        data["raw_submitted_answers"][name] = data["correct_answers"][name]
+        data["partial_scores"][name] = {"score": 1, "weight": weight}
+    elif result == 'incorrect':
+        data["raw_submitted_answers"][name] = data["correct_answers"][name]+' + {:d}'.format(random.randint(1,100))
+        data["partial_scores"][name] = {"score": 0, "weight": weight}
+    elif result == 'invalid':
+        if random.choice([True,False]):
+            data["raw_submitted_answers"][name] = 'complete garbage'
+            data["format_errors"][name] = "Invalid format."
+        else:
+            data["raw_submitted_answers"][name] = 'garbage'
+            data["format_errors"][name] = "Invalid format (could not evaluate after substituting real numbers for allowable variables)."
+
+        # FIXME: add more invalid choices
+    else:
+        raise Exception('invalid result: %s' % result)
+    
     return data
