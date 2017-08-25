@@ -112,7 +112,7 @@ def parse(element_html, element_index, data):
             data["format_errors"][name] = "Invalid format (could not evaluate after substituting real numbers for allowable variables)."
             data["submitted_answers"][name] = None
             return data
-    
+
     return data
 
 def grade(element_html, element_index, data):
