@@ -25,11 +25,11 @@ module.exports = {
         if (context.course_elements.has(elementName)) {
             cwd = context.course_elements_dir;
             elementModule = context.course_elements.get(elementName);
-        } else if (!elements.has(elementName)) {
+        } else if (elements.has(elementName)) {
             cwd = path.join(__dirname, 'elements');
             elementModule = elements.get(elementName);
         } else {
-            return callback(null, 'ERROR: invalid element name: ' + elementName);
+            return callback(new Error('Invalid element name: ' + elementName), null);
         }
         if (_.isString(elementModule)) {
             // python module
