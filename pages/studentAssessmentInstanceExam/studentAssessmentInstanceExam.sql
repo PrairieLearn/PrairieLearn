@@ -6,7 +6,6 @@ SELECT
     z.title AS zone_title,
     q.title AS question_title,
     aq.max_points,
-    iq.points_list[(iq.number_attempts + 1):array_length(iq.points_list, 1)] AS remaining_points,
     qo.row_order,
     qo.question_number
 FROM

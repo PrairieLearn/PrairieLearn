@@ -6,6 +6,7 @@ columns
     current_value: double precision
     duration: interval default '00:00:00'::interval
     first_duration: interval
+    highest_submission_score: double precision
     id: bigint not null default nextval('instance_questions_id_seq'::regclass)
     number: integer
     number_attempts: integer default 0

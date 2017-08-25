@@ -109,11 +109,9 @@
           <thead>
             <tr>
               <th>Question</th>
-              <th class="cell-center">Status</th>
               <th class="cell-center">Best submission</th>
               <th class="cell-center">Available points</th>
               <th class="cell-center">Awarded points</th>
-              <th class="cell-center">Number of attempts</th>
             </tr>
           </thead>
           <tbody>
@@ -129,17 +127,9 @@
                   Question <%= instance_question.question_number %>
                 </a>
               </td>
-              <td class="cell-center"><%- include('../partials/examQuestionStatus', {open: assessment_instance.open && instance_question.open}); %></td>
               <td class="cell-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
-              <td class="cell-center">
-                <% if (instance_question.remaining_points.length > 0) { %>
-                <%= instance_question.remaining_points.join(', ') %>
-                <% } else { %>
-                —
-                <% } %>
-              </td>
-              <td class="cell-center"><%= instance_question.points %>/<%= instance_question.max_points %></td>
-              <td class="cell-center"><%= instance_question.number_attempts %>/<%= instance_question.points_list.length %></td>
+              <td class="cell-center"><%- include('../partials/examQuestionAvailablePoints', {instance_question}); %></td>
+              <td class="cell-center"><%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %></td>
             </tr>
             <% }); %>
           </tbody>
@@ -148,11 +138,9 @@
         <div class="panel-footer">
           <p>
             <small>
-              The <strong>Status</strong> of a question shows whether it is still <strong>open</strong> for solution attempts, or <strong>closed</strong>.
               The <strong>Best submission</strong> shows the percentage score of the best submitted answer, or whether the question is <strong>unanswered</strong>, has a <strong>saved</strong> but ungraded answer, or is in <strong>grading</strong>.
               The <strong>Available points</strong> is a list of points that would be earned for a correct answer on the next attempt, on the next two attempts, etc.
               The <strong>Awarded points</strong> shows the actual number of points already earned for a question, as a fraction of the maximum possible points.
-              The <strong>Number of attempts</strong> is the number of graded submissions as a fraction of the maximum allowed number.
             </small>
           </p>
         </div>

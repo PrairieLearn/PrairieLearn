@@ -223,6 +223,13 @@ table.two-column-description tr th {
     width: 5%;
 }
 
+table.two-column-description-no-header tr td:first-of-type {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 5%;
+}
+
 .panel.pastsubmission-block > .panel-heading {
     display: flex;
     align-items: center;

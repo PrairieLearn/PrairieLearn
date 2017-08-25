@@ -5,11 +5,11 @@
 <% } else if (instance_question.status == 'grading') { %>
     <span class="label label-grading">grading</span>
 <% } else { %>
-    <% if (instance_question.score_perc >= 100) { %>
-        <span class="label label-success"><%= Math.floor(instance_question.score_perc) %>%</span>
-    <% } else if (instance_question.score_perc <= 0) { %>
-        <span class="label label-danger"><%= Math.floor(instance_question.score_perc) %>%</span>
+    <% if (instance_question.highest_submission_score >= 1) { %>
+        <span class="label label-success"><%= Math.floor(instance_question.highest_submission_score * 100) %>%</span>
+    <% } else if (instance_question.highest_submission_score <= 0) { %>
+        <span class="label label-danger"><%= Math.floor(instance_question.highest_submission_score * 100) %>%</span>
     <% } else { %>
-        <span class="label label-warning"><%= Math.floor(instance_question.score_perc) %>%</span>
+        <span class="label label-warning"><%= Math.floor(instance_question.highest_submission_score * 100) %>%</span>
     <% } %>
 <% } %>

@@ -1,0 +1,8 @@
+<% if (instance_question.points_list.length == 0) { %>
+    —
+<% } else if (instance_question.points_list.length == 1) { %>
+    <%= instance_question.points_list[0] %>
+<% } else { %>
+    <%= instance_question.points_list[0] %>,
+    <small><span class="text-muted"><%= instance_question.points_list.slice(1).join(', ') %></span></small>
+<% } %>
