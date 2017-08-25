@@ -2,6 +2,8 @@ dist: trusty
 language: node_js
 node_js:
   - "7.4"
+python:
+  - "3.6"
 addons:
   postgresql: "9.6"
   apt:
@@ -24,7 +26,7 @@ notifications:
 script:
   # Check python version
   - python3 --version
-  
+
   # Install python packages
   - pip3 install numpy scipy matplotlib pandas sympy lxml chevron
 
