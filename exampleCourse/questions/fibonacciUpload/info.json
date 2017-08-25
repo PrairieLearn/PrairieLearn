@@ -1,18 +1,14 @@
 {
-    "uuid": "ad9e3bcc-1b4d-11e7-93ae-92361f002671",
+    "uuid": "83967c97-5bde-4373-bd0b-8e575abd909e",
     "title": "Fibonacci function with file upload, external grading",
     "topic": "Functions",
     "tags": ["code"],
-    "clientFiles": ["client.js", "question.html", "answer.html", "submission.html"],
-    "type": "Calculation",
-    "options": {
-        "requiredFiles": ["fib.py"]
-    },
+    "type": "v3",
     "singleVariant": true,
     "gradingMethod": "External",
     "externalGradingOptions": {
         "enabled": true,
-        "image": "prairielearn/centos7-base:dev",
+        "image": "prairielearn/centos7-base",
         "files": ["python_autograder/"],
         "entrypoint": "/grade/shared/python_autograder/run.sh"
     }

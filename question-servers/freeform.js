@@ -63,7 +63,7 @@ module.exports = {
             return '';
         } else if (phase == 'file') {
             return '';
-        } else if (phase == 'get_dependencies') {
+        } else if (phase == 'dependencies') {
             return {
                 globalStyles: [],
                 globalScripts: [],
@@ -175,8 +175,8 @@ module.exports = {
         };
 
         let err;
-        let allPhases = ['generate', 'prepare', 'render', 'get_dependencies', 'parse', 'grade', 'test', 'file'];
-        let allPhasesButGetDependencies = _.pull([...allPhases], 'get_dependencies');
+        let allPhases = ['generate', 'prepare', 'render', 'dependencies', 'parse', 'grade', 'test', 'file'];
+        let allPhasesButGetDependencies = _.pull([...allPhases], 'dependencies');
 
         if (!allPhases.includes(phase)) return `unknown phase: ${phase}`;
 
@@ -216,7 +216,7 @@ module.exports = {
             courseScripts: []
         };
 
-        const isGetDependencies = phase === 'get_dependencies';
+        const isGetDependencies = phase === 'dependencies';
 
         var fileData = Buffer.from('');
 
@@ -242,7 +242,7 @@ module.exports = {
             let index = 0;
             async.eachSeries(questionElements, (elementName, callback) => {
                 async.eachSeries($(elementName).toArray(), (element, callback) => {
-                    if (phase === 'get_dependencies' && _.includes(renderedElementNames, element)) {
+                    if (phase === 'dependencies' && _.includes(renderedElementNames, element)) {
                         return callback(null);
                     }
 
@@ -293,7 +293,7 @@ module.exports = {
                                     fileData = buf;
                                 }
                             }
-                        } else if (phase === 'get_dependencies') {
+                        } else if (phase === 'dependencies') {
                             let depdendencyTypes = ['globalStyles', 'globalScripts', 'styles', 'scripts'];
                             for (const type of depdendencyTypes) {
                                 // For course elements, track dependencies separately so
@@ -579,7 +579,7 @@ module.exports = {
                     options: _.get(variant, 'options', {}),
                 };
                 const context = module.exports.getContext(question, course);
-                module.exports.processQuestionHtml('get_dependencies', pc, data, context, (err, ret_courseErrs, dependencies) => {
+                module.exports.processQuestionHtml('dependencies', pc, data, context, (err, ret_courseErrs, dependencies) => {
                     if (ERR(err, callback)) return;
                     courseErrs.push(...ret_courseErrs);
 
