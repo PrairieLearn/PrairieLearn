@@ -423,7 +423,29 @@ describe('Instructor questions', function() {
         });
     });
 
-    describe('9. submit incorrect answer to question differentiatePolynomial', function() {
+    describe('9. submit correct answer to question differentiatePolynomial', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+                locals.postAction = 'grade';
+                locals.question = differentiatePolynomial;
+                locals.expectedResult = {
+                    submission_score: 1,
+                    submission_correct: true,
+                };
+                locals.getSubmittedAnswer = function(variant) {
+                    return {
+                        df: variant.true_answer.df,
+                    };
+                };
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkSubmissionScore(locals);
+    });
+
+    describe('10. submit incorrect answer to question differentiatePolynomial', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
@@ -445,7 +467,7 @@ describe('Instructor questions', function() {
         helperQuestion.checkSubmissionScore(locals);
     });
 
-    describe('10. submit invalid answer to question differentiatePolynomial', function() {
+    describe('11. submit invalid answer to question differentiatePolynomial', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
@@ -473,7 +495,7 @@ describe('Instructor questions', function() {
         });
     });
 
-    describe('11. run automated test on differentiatePolynomial', function() {
+    describe('12. run automated test on differentiatePolynomial', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
