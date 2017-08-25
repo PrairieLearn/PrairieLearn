@@ -5,6 +5,53 @@ See [`elements/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/quest
 
 Element code uses the libraries in [`freeformPythonLib/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/question-servers/freeformPythonLib).
 
+### Anatomy of an element
+
+All PrairieLearn elements should live in `/question-servers/elements` inside a
+folder corresponding to the element name. By convention, all element files are
+named the same as the element they belong to. That directory should contain an
+`info.json` file that contains metadata about the element, including which file
+is the element controller and any dependencies of the element. See
+[the section on dependencies](#element-dependencies) for more information
+
+Each element should have a `.py` controller that contains the functions listed
+in the next section. This controller is responsible for rendering the element,
+parsing the student's submission, and optionally grading the submission.
+
+You can also have course-specific elements in an `/elements` directory inside
+the root of your course repository. See [`exampleCourse/elements`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/elements)
+for an example of this.
+
+As an example, element `my_custom_element` would have the following file
+structure:
+
+```
+my_custom_element
++-- info.json
+|-- my_custom_element.py
+|-- my_custom_element.mustache
+|-- my_custom_element.js
+`-- my_custom_element.css
+```
+
+And an `info.json` with the following contents:
+
+```json
+{
+    "controller": "my_custom_element.py",
+    "dependencies": {
+        "scripts": [
+            "my_custom_element.js"
+        ],
+        "styles": [
+            "my_custom_element.css"
+        ]
+    }
+}
+```
+
+### Element functions
+
 All element functions have the signature:
 
 ```python
@@ -64,29 +111,38 @@ The above function descriptions describe the typical variables that will be read
 It's likely that your element will depend on certain client-side assets,
 such as scripts or stylesheets. To keep clean separation of HTML, CSS, and JS,
 you can place those dependencies in other files. If you depend on libraries like
-lodash or d3, you can also express that need. PrairieLearn will compile a list
+`lodash` or `d3`, you can also express that need. PrairieLearn will compile a list
 of all dependencies needed by all elements on a page, dedup the dependencies,
 and ensure they are loaded on the page.
 
-Dependencies are listed in `question-servers/elements/index.js`. You can
+Dependencies are listed in your element's `info.json`.`question-servers/elements/index.js`. You can
 configure them for your element as follows:
 
-```javscript
-module.exports.dependencies = {
-    'pl_my_element': {
-        'globalScripts': [
-            'lodash.min.js',
-            'dropzone.js'
+```json
+{
+    "controller": "my_custom_element.py",
+    "dependencies": {
+        "globalScripts": [
+            "d3.min.js"
         ],
-        'styles': [
-            'pl_my_element.css'
+        "globalStyles": [
+            "globalStylesheet.css"
+        ],
+        "scripts": [
+            "my_custom_element.js"
+        ],
+        "styles": [
+            "my_custom_element.css"
         ]
     }
-};
+}
 ```
 
-Any global resources will map to the url `/javascripts/[filename]`. Non-global
-resources will map to the url `/pl/static/elements/[filename]`; PrairieLearn
+Any global resources will map to the url `/javascripts/[filename]` or `/stylesheets/[filename]`. Non-global
+resources will map to the url `/pl/static/elements/[elementname]/[filename]`; PrairieLearn
 will serve any CSS or JS files in `question-servers/elements/` at that url. In
-the above example, the file is located at `question-servers/elements/pl_my_element.css`,
-and it will be served at `/pl/static/elements/pl_my_element.css`.
+the above example, the file is located at `question-servers/elements/pl_my_element/pl_my_element.css`,
+and it will be served at `/pl/static/elements/pl_my_element/pl_my_element.css`.
+
+If an element belongs to a specific course, its files will be served at
+`/pl/course_instance/:course_instance_id/elements` instead of `/pl/static/elements/`.

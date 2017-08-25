@@ -1,0 +1,11 @@
+{
+    "controller": "course_element.py",
+    "dependencies": {
+        "scripts": [
+            "course_element.js"
+        ],
+        "styles": [
+            "course_element.css"
+        ]
+    }
+}

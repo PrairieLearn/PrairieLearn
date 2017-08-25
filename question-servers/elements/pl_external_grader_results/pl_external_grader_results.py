@@ -5,13 +5,6 @@ import to_precision
 import prairielearn as pl
 import json
 
-def dependencies(element_html, element_index, data):
-    return {
-        'styles': [
-            'pl_external_grader_results.css'
-        ]
-    }
-
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []

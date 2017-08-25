@@ -21,6 +21,7 @@ var sprocs = require('./sprocs');
 var cron = require('./cron');
 var socketServer = require('./lib/socket-server');
 var serverJobs = require('./lib/server-jobs');
+var freeformServer = require('./question-servers/freeform.js');
 
 if (config.startServer) {
     logger.info('PrairieLearn server start');
@@ -416,6 +417,12 @@ if (config.startServer) {
                 callback(null);
             });
         },
+        function(callback) {
+            freeformServer.init(function(err) {
+              if (ERR(err, callback)) return;
+              callback(null);
+          });
+        }
     ], function(err, data) {
         if (err) {
             logger.error('Error initializing PrairieLearn server:', err, data);

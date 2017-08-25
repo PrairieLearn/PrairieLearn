@@ -1,41 +1,131 @@
 var ERR = require('async-stacktrace');
 var async = require('async');
 var _ = require('lodash');
-var fs = require('fs');
+var fs = require('fs-extra');
 var path = require('path');
 var mustache = require('mustache');
 var cheerio = require('cheerio');
 
-var { elements } = require('./elements');
+var logger = require('../lib/logger');
 var codeCaller = require('../lib/code-caller');
+
+// Maps element names to element info
+let elementsCache = {};
+// Maps course IDs to course element info
+const courseElementsCache = {};
 
 module.exports = {
 
-    getElementFilename: function(elementName) {
-        if (!elements.has(elementName)) {
+    init: function(callback) {
+        // Populate the list of PrairieLearn elements
+        module.exports.loadElements(path.join(__dirname, 'elements'), (err, results) => {
+            if (ERR(err, callback)) return;
+            elementsCache = results;
+            return callback(null);
+        });
+    },
+
+    /**
+     * Takes a directory containing element directories and returns an object
+     * mapping element names to that element's controller, dependencies, etc.
+     * @param  {String}   sourceDir Absolute path to the directory of elements
+     * @param  {Function} callback  Called with any errors and the results
+     */
+    loadElements: function(sourceDir, callback) {
+        async.waterfall([
+            (callback) => {
+                // Read all files in the given path
+                fs.readdir(sourceDir, (err, files) => {
+                    if (err && err.code === 'ENOENT') {
+                        // Directory doesn't exist, most likely a course with not elements
+                        // Proceed with an empty array
+                        return callback(null, []);
+                    }
+                    if (ERR(err, callback)) return;
+                    return callback(null, files);
+                });
+            },
+            (files, callback) => {
+                // Filter out any non-directories
+                async.filter(files, (file, callback) => fs.lstat(path.join(sourceDir, file), (err, stats) => {
+                    if (ERR(err, callback)) return;
+                    callback(null, stats.isDirectory());
+                }), (err, results) => {
+                    if (ERR(err, callback)) return;
+                    return callback(null, results);
+                });
+            },
+            (elementNames, callback) => {
+                const elements = {};
+                async.each(elementNames, (elementName, callback) => {
+                    const elementInfoPath = path.join(sourceDir, elementName, 'info.json');
+                    fs.readJson(elementInfoPath, (err, info) => {
+                        if (err && err.code === 'ENOENT') {
+                            // This must not be an element directory, skip it
+                            logger.verbose(`${elementInfoPath} not found, skipping...`);
+                            return callback(null);
+                        }
+                        if (ERR(err, callback)) return;
+                        if (!_.isString(info.controller)) {
+                            return callback(new Error(`${elementName} is missing an element controller in its info.json`));
+                        }
+                        elements[elementName] = info;
+                        return callback(null);
+                    });
+                }, (err) => {
+                    if (ERR(err, callback)) return;
+                    return callback(null, elements);
+                });
+            }
+        ], (err, elements) => {
+            if (ERR(err, callback)) return;
+            return callback(null, elements);
+        });
+    },
+
+    loadElementsForCourse(course, callback) {
+        if (courseElementsCache[course.id] !== undefined) {
+            return callback(null, courseElementsCache[course.id]);
+        }
+        module.exports.loadElements(path.join(course.path, 'elements'), (err, elements) => {
+            if (ERR(err, callback)) return;
+            courseElementsCache[course.id] = elements;
+            callback(null, courseElementsCache[course.id]);
+        });
+    },
+
+    clearCourseElementsCache: function(courseId) {
+        delete courseElementsCache[courseId];
+    },
+
+    getElementFilename: function(elementName, context) {
+        if (context.course_elements[elementName]) {
+            const element = context.course_elements[elementName];
+            return path.join(context.course.path, 'elements', elementName, element.controller);
+        } else if (elementsCache[elementName]) {
+            const element = elementsCache[elementName];
+            return path.join(__dirname, 'elements', elementName, element.controller);
+        } else {
             return 'No such element: "' + elementName + '"';
         }
-        const elementModule = elements.get(elementName);
-        return path.join(__dirname, 'elements', elementModule);
     },
 
     elementFunction: function(pc, fcn, elementName, $, element, index, data, context, callback) {
-        let elementModule;
-        let cwd;
-        if (context.course_elements.has(elementName)) {
-            cwd = context.course_elements_dir;
-            elementModule = context.course_elements.get(elementName);
-        } else if (elements.has(elementName)) {
-            cwd = path.join(__dirname, 'elements');
-            elementModule = elements.get(elementName);
+        let controller, cwd;
+        if (_.has(context.course_elements, elementName)) {
+            cwd = path.join(context.course.path, 'elements', elementName);
+            controller = context.course_elements[elementName].controller;
+        } else if (_.has(elementsCache, elementName)) {
+            cwd = path.join(__dirname, 'elements', elementName);
+            controller = elementsCache[elementName].controller;
         } else {
             return callback(new Error('Invalid element name: ' + elementName), null);
         }
-        if (_.isString(elementModule)) {
+        if (_.isString(controller)) {
             // python module
             const elementHtml = $(element).clone().wrap('<container/>').parent().html();
             const pythonArgs = [elementHtml, index, data];
-            const pythonFile = elementModule.replace(/\.[pP][yY]$/, '');
+            const pythonFile = controller.replace(/\.[pP][yY]$/, '');
             const opts = {
                 cwd,
                 paths: [path.join(__dirname, 'freeformPythonLib')],
@@ -51,7 +141,7 @@ module.exports = {
         } else {
             // JS module
             const jsArgs = [$, element, index, data];
-            elementModule[fcn](...jsArgs, (err, ret) => {
+            controller[fcn](...jsArgs, (err, ret) => {
                 if (ERR(err, callback)) return;
                 callback(null, ret, '');
             });
@@ -63,13 +153,6 @@ module.exports = {
             return '';
         } else if (phase == 'file') {
             return '';
-        } else if (phase == 'dependencies') {
-            return {
-                globalStyles: [],
-                globalScripts: [],
-                styles: [],
-                scripts: []
-            };
         } else {
             return data;
         }
@@ -175,17 +258,16 @@ module.exports = {
         };
 
         let err;
-        let allPhases = ['generate', 'prepare', 'render', 'dependencies', 'parse', 'grade', 'test', 'file'];
-        let allPhasesButGetDependencies = _.pull([...allPhases], 'dependencies');
+        let allPhases = ['generate', 'prepare', 'render', 'parse', 'grade', 'test', 'file'];
 
         if (!allPhases.includes(phase)) return `unknown phase: ${phase}`;
 
         /**************************************************************************************************************************************/
         //              property                 type       presentPhases                         changePhases
         /**************************************************************************************************************************************/
-        err = checkProp('params',                'object',  allPhasesButGetDependencies,          ['generate', 'prepare']);    if (err) return err;
-        err = checkProp('correct_answers',       'object',  allPhasesButGetDependencies,          ['generate', 'prepare']);    if (err) return err;
-        err = checkProp('variant_seed',          'integer', allPhasesButGetDependencies,          []);                         if (err) return err;
+        err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare']);    if (err) return err;
+        err = checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare']);    if (err) return err;
+        err = checkProp('variant_seed',          'integer', allPhases,                            []);                         if (err) return err;
         err = checkProp('options',               'object',  allPhases,                            []);                         if (err) return err;
         err = checkProp('submitted_answers',     'object',  ['render', 'parse', 'grade'],         ['parse', 'grade']);         if (err) return err;
         err = checkProp('format_errors',         'object',  ['render', 'parse', 'grade', 'test'], ['parse', 'grade', 'test']); if (err) return err;
@@ -216,8 +298,6 @@ module.exports = {
             courseScripts: []
         };
 
-        const isGetDependencies = phase === 'dependencies';
-
         var fileData = Buffer.from('');
 
         const checkErr = module.exports.checkData(data, origData, phase);
@@ -225,7 +305,7 @@ module.exports = {
             const courseErr = new Error('Invalid state before ' + phase + ': ' + checkErr);
             courseErr.fatal = true;
             courseErrs.push(courseErr);
-            return callback(null, courseErrs, isGetDependencies ? elementDependencies : data, '', fileData);
+            return callback(null, courseErrs, data, '', fileData);
         }
 
         const htmlFilename = path.join(context.question_dir, 'question.html');
@@ -234,22 +314,21 @@ module.exports = {
                 const courseErr = new Error(htmlFilename + ': ' + err.toString());
                 courseErr.fatal = true;
                 courseErrs.push(courseErr);
-                return callback(null, courseErrs, isGetDependencies ? elementDependencies : data, '', fileData);
+                return callback(null, courseErrs, data, '', fileData);
             }
 
-            const questionElements = new Set([...elements.keys(), ...context.course_elements.keys()]).values();
+            const questionElements = new Set([..._.keys(elementsCache), ..._.keys(context.course_elements)]).values();
 
             let index = 0;
             async.eachSeries(questionElements, (elementName, callback) => {
                 async.eachSeries($(elementName).toArray(), (element, callback) => {
-                    if (phase === 'dependencies' && _.includes(renderedElementNames, element)) {
-                        return callback(null);
+                    if (phase === 'render' && !_.includes(renderedElementNames, element)) {
+                        renderedElementNames.push(elementName);
                     }
 
-                    renderedElementNames.push(elementName);
                     this.elementFunction(pc, phase, elementName, $, element, index, data, context, (err, ret_val, consoleLog) => {
                         if (err) {
-                            const elementFile = module.exports.getElementFilename(elementName);
+                            const elementFile = module.exports.getElementFilename(elementName, context);
                             const courseErr = new Error(elementFile + ': Error calling ' + phase + '(): ' + err.toString());
                             courseErr.data = err.data;
                             courseErr.fatal = true;
@@ -257,7 +336,7 @@ module.exports = {
                             return callback(courseErr);
                         }
                         if (_.isString(consoleLog) && consoleLog.length > 0) {
-                            const elementFile = module.exports.getElementFilename(elementName);
+                            const elementFile = module.exports.getElementFilename(elementName, context);
                             const courseErr = new Error(elementFile + ': output logged on console during ' + phase + '()');
                             courseErr.data = {outputBoth: consoleLog};
                             courseErr.fatal = false;
@@ -266,7 +345,7 @@ module.exports = {
 
                         if (phase == 'render') {
                             if (!_.isString(ret_val)) {
-                                const elementFile = module.exports.getElementFilename(elementName);
+                                const elementFile = module.exports.getElementFilename(elementName, context);
                                 const courseErr = new Error(elementFile + ': Error calling ' + phase + '(): return value is not a string');
                                 courseErr.data = {ret_val};
                                 courseErr.fatal = true;
@@ -283,7 +362,7 @@ module.exports = {
                             if (buf.length > 0) {
                                 if (fileData.length > 0) {
                                     // If fileData already has non-zero length, throw an error
-                                    const elementFile = module.exports.getElementFilename(elementName);
+                                    const elementFile = module.exports.getElementFilename(elementName, context);
                                     const courseErr = new Error(elementFile + ': Error calling ' + phase + '(): attempting to overwrite non-empty fileData');
                                     courseErr.fatal = true;
                                     courseErrs.push(courseErr);
@@ -299,7 +378,7 @@ module.exports = {
                                 // For course elements, track dependencies separately so
                                 // we can properly construct the URLs
                                 let mappedDepType = type;
-                                if (context.course_elements.has(elementName)) {
+                                if (_.has(context.course_elements, elementName)) {
                                     if (type === 'styles') {
                                         mappedDepType = 'courseStyles';
                                     } else if (type === 'scripts') {
@@ -315,7 +394,7 @@ module.exports = {
                                             }
                                         }
                                     } else {
-                                        const elementFile = module.exports.getElementFilename(elementName);
+                                        const elementFile = module.exports.getElementFilename(elementName, context.course);
                                         const courseErr = new Error(`${elementFile}: Error calling ${phase}: "${type}" is not an array`);
                                         courseErr.data = {ret_val};
                                         courseErr.fatal = true;
@@ -327,7 +406,7 @@ module.exports = {
                             data = ret_val;
                             const checkErr = module.exports.checkData(data, origData, phase);
                             if (checkErr) {
-                                const elementFile = module.exports.getElementFilename(elementName);
+                                const elementFile = module.exports.getElementFilename(elementName, context);
                                 const courseErr = new Error(elementFile + ': Invalid state after ' + phase + '(): ' + checkErr);
                                 courseErr.fatal = true;
                                 courseErrs.push(courseErr);
@@ -357,7 +436,7 @@ module.exports = {
                     data.feedback = {};
                 }
 
-                callback(null, courseErrs, isGetDependencies ? elementDependencies : data, $.html(), fileData);
+                callback(null, courseErrs, data, $.html(), fileData, renderedElementNames);
             });
         });
     },
@@ -435,57 +514,66 @@ module.exports = {
                 callback(null, courseErrs, data, html, fileData);
             });
         } else {
-            module.exports.processQuestionHtml(phase, pc, data, context, (err, courseErrs, data, html, fileData) => {
+            module.exports.processQuestionHtml(phase, pc, data, context, (err, courseErrs, data, html, fileData, renderedElementNames) => {
                 if (ERR(err, callback)) return;
                 const hasFatalError = _.some(_.map(courseErrs, 'fatal'));
                 if (hasFatalError) return callback(null, courseErrs, data, html, fileData);
                 module.exports.processQuestionServer(phase, pc, data, html, fileData, context, (err, ret_courseErrs, data, html, fileData) => {
                     if (ERR(err, callback)) return;
                     courseErrs.push(...ret_courseErrs);
-                    callback(null, courseErrs, data, html, fileData);
+                    callback(null, courseErrs, data, html, fileData, renderedElementNames);
                 });
             });
         }
     },
 
     generate: function(question, course, variant_seed, callback) {
-        const data = {
-            params: {},
-            correct_answers: {},
-            variant_seed: parseInt(variant_seed, 36),
-            options: _.defaults({}, course.options, question.options),
-        };
-        const context = module.exports.getContext(question, course);
-        const pc = new codeCaller.PythonCaller();
-        module.exports.processQuestion('generate', pc, data, context, (err, courseErrs, data, _html, _fileData) => {
-            pc.done();
-            if (ERR(err, callback)) return;
-            const ret_vals = {
-                params: data.params,
-                true_answer: data.correct_answers,
+        module.exports.getContext(question, course, (err, context) => {
+            if (err) {
+                return callback(new Error(`Error generating options: ${err}`));
+            }
+            const data = {
+                params: {},
+                correct_answers: {},
+                variant_seed: parseInt(variant_seed, 36),
+                options: _.defaults({}, course.options, question.options),
             };
-            callback(null, courseErrs, ret_vals);
+            const pc = new codeCaller.PythonCaller();
+            module.exports.processQuestion('generate', pc, data, context, (err, courseErrs, data, _html, _fileData, _renderedElementNames) => {
+                pc.done();
+                if (ERR(err, callback)) return;
+                const ret_vals = {
+                    params: data.params,
+                    true_answer: data.correct_answers,
+                };
+                callback(null, courseErrs, ret_vals);
+            });
         });
     },
 
     prepare: function(question, course, variant, callback) {
         if (variant.broken) return callback(new Error('attemped to prepare broken variant'));
-        const data = {
-            params: _.get(variant, 'params', {}),
-            correct_answers: _.get(variant, 'true_answer', {}),
-            variant_seed: parseInt(variant.variant_seed, 36),
-            options: _.get(variant, 'options', {}),
-        };
-        const context = module.exports.getContext(question, course);
-        const pc = new codeCaller.PythonCaller();
-        module.exports.processQuestion('prepare', pc, data, context, (err, courseErrs, data, _html, _fileData) => {
-            pc.done();
-            if (ERR(err, callback)) return;
-            const ret_vals = {
-                params: data.params,
-                true_answer: data.correct_answers,
+        module.exports.getContext(question, course, (err, context) => {
+            if (err) {
+                return callback(new Error(`Error generating options: ${err}`));
+            }
+
+            const data = {
+                params: _.get(variant, 'params', {}),
+                correct_answers: _.get(variant, 'true_answer', {}),
+                variant_seed: parseInt(variant.variant_seed, 36),
+                options: _.get(variant, 'options', {}),
             };
-            callback(null, courseErrs, ret_vals);
+            const pc = new codeCaller.PythonCaller();
+            module.exports.processQuestion('prepare', pc, data, context, (err, courseErrs, data, _html, _fileData, _renderedElementNames) => {
+                pc.done();
+                if (ERR(err, callback)) return;
+                const ret_vals = {
+                    params: data.params,
+                    true_answer: data.correct_answers,
+                };
+                callback(null, courseErrs, ret_vals);
+            });
         });
     },
 
@@ -503,31 +591,35 @@ module.exports = {
                 submission = null;
             }
         }
+        module.exports.getContext(question, course, (err, context) => {
+            if (err) {
+                return callback(new Error(`Error generating options: ${err}`));
+            }
 
-        const data = {
-            params: _.get(variant, 'params', {}),
-            correct_answers: _.get(variant, 'true_answer', {}),
-            submitted_answers: submission ? _.get(submission, 'submitted_answer', {}) : {},
-            format_errors: submission ? _.get(submission, 'format_errors', {}) : {},
-            partial_scores: (!submission || submission.partial_scores == null) ? {} : submission.partial_scores,
-            score: (!submission || submission.score == null) ? 0 : submission.score,
-            feedback: (!submission || submission.feedback == null) ? {} : submission.feedback,
-            variant_seed: parseInt(variant.variant_seed, 36),
-            options: _.get(variant, 'options', {}),
-            raw_submitted_answers: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
-            editable: !!locals.allowAnswerEditing,
-            panel: panel,
-        };
-        const context = module.exports.getContext(question, course);
+            const data = {
+                params: _.get(variant, 'params', {}),
+                correct_answers: _.get(variant, 'true_answer', {}),
+                submitted_answers: submission ? _.get(submission, 'submitted_answer', {}) : {},
+                format_errors: submission ? _.get(submission, 'format_errors', {}) : {},
+                partial_scores: (!submission || submission.partial_scores == null) ? {} : submission.partial_scores,
+                score: (!submission || submission.score == null) ? 0 : submission.score,
+                feedback: (!submission || submission.feedback == null) ? {} : submission.feedback,
+                variant_seed: parseInt(variant.variant_seed, 36),
+                options: _.get(variant, 'options', {}),
+                raw_submitted_answers: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
+                editable: !!locals.allowAnswerEditing,
+                panel: panel,
+            };
 
-        // Put base URLs in data.options for access by question code
-        data.options.client_files_question_url = locals.clientFilesQuestionUrl;
-        data.options.client_files_course_url = locals.clientFilesCourseUrl;
-        data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
+            // Put base URLs in data.options for access by question code
+            data.options.client_files_question_url = locals.clientFilesQuestionUrl;
+            data.options.client_files_course_url = locals.clientFilesCourseUrl;
+            data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
 
-        module.exports.processQuestion('render', pc, data, context, (err, courseErrs, _data, html, _fileData) => {
-            if (ERR(err, callback)) return;
-            callback(null, courseErrs, html);
+            module.exports.processQuestion('render', pc, data, context, (err, courseErrs, _data, html, _fileData, renderedElementNames) => {
+                if (ERR(err, callback)) return;
+                callback(null, courseErrs, html, renderedElementNames);
+            });
         });
     },
 
@@ -538,25 +630,28 @@ module.exports = {
             submissionHtmls: _.map(submissions, () => ''),
             answerHtml: '',
         };
+        let allRenderedElementNames = [];
         const courseErrs = [];
         const pc = new codeCaller.PythonCaller();
         async.series([
             // FIXME: suppprt 'header'
             (callback) => {
                 if (!renderSelection.question) return callback(null);
-                module.exports.renderPanel('question', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html) => {
+                module.exports.renderPanel('question', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html, renderedElementNames) => {
                     if (ERR(err, callback)) return;
                     courseErrs.push(...ret_courseErrs);
                     htmls.questionHtml = html;
+                    allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
                     callback(null);
                 });
             },
             (callback) => {
                 if (!renderSelection.submissions) return callback(null);
                 async.mapSeries(submissions, (submission, callback) => {
-                    module.exports.renderPanel('submission', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html) => {
+                    module.exports.renderPanel('submission', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html, renderedElementNames) => {
                         if (ERR(err, callback)) return;
                         courseErrs.push(...ret_courseErrs);
+                        allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
                         callback(null, html);
                     });
                 }, (err, submissionHtmls) => {
@@ -567,21 +662,77 @@ module.exports = {
             },
             (callback) => {
                 if (!renderSelection.answer) return callback(null);
-                module.exports.renderPanel('answer', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html) => {
+                module.exports.renderPanel('answer', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html, renderedElementNames) => {
                     if (ERR(err, callback)) return;
                     courseErrs.push(...ret_courseErrs);
                     htmls.answerHtml = html;
+                    allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
                     callback(null);
                 });
             },
             (callback) => {
-                const data = {
-                    options: _.get(variant, 'options', {}),
-                };
-                const context = module.exports.getContext(question, course);
-                module.exports.processQuestionHtml('dependencies', pc, data, context, (err, ret_courseErrs, dependencies) => {
-                    if (ERR(err, callback)) return;
-                    courseErrs.push(...ret_courseErrs);
+                module.exports.getContext(question, course, (err, context) => {
+                    if (err) {
+                        return callback(new Error(`Error generating options: ${err}`));
+                    }
+
+                    const dependencies = {
+                        globalStyles: [],
+                        globalScripts: [],
+                        styles: [],
+                        scripts: [],
+                        courseStyles: [],
+                        courseScripts: []
+                    };
+
+                    // Gather dependencies for all rendered elements
+                    allRenderedElementNames.forEach((elementName) => {
+                        let elementDependencies;
+                        let isCourseElement = false;
+                        if (_.has(context.course_elements, elementName)) {
+                            elementDependencies = context.course_elements[elementName].dependencies || {};
+                            isCourseElement = true;
+                        } else {
+                            elementDependencies = elementsCache[elementName].dependencies || {};
+                        }
+
+                        // Transform non-global dependencies to be prefixed by the element name,
+                        // since they'll be served from their element's directory
+                        if (_.has(elementDependencies, 'styles')) {
+                            elementDependencies.styles = elementDependencies.styles.map(dep => `${elementName}\\${dep}`);
+                        } else if (_.has(elementDependencies, 'scripts')) {
+                            elementDependencies.scripts = elementDependencies.scripts.map(dep => `${elementName}\\${dep}`);
+                        }
+
+                        let depdendencyTypes = ['globalStyles', 'globalScripts', 'styles', 'scripts'];
+                        for (const type of depdendencyTypes) {
+                            // For course elements, track dependencies separately so
+                            // we can properly construct the URLs
+                            let mappedDepType = type;
+                            if (isCourseElement) {
+                                if (type === 'styles') {
+                                    mappedDepType = 'courseStyles';
+                                } else if (type === 'scripts') {
+                                    mappedDepType = 'courseScripts';
+                                }
+                            }
+
+                            if (_.has(elementDependencies, type)) {
+                                if (_.isArray(elementDependencies[type])) {
+                                    for (const dep of elementDependencies[type]) {
+                                        if (!_.includes(dependencies[mappedDepType], dep)) {
+                                            dependencies[mappedDepType].push(dep);
+                                        }
+                                    }
+                                } else {
+                                    const courseErr = new Error(`Error getting dependencies for ${elementName}: "${type}" is not an array`);
+                                    courseErr.data = {elementDependencies};
+                                    courseErr.fatal = true;
+                                    courseErrs.push(courseErr);
+                                }
+                            }
+                        }
+                    });
 
                     // Transform dependency list into style/link tags
                     const globalScriptUrls = [];
@@ -612,139 +763,153 @@ module.exports = {
 
     file: function(filename, variant, question, course, callback) {
         if (variant.broken) return callback(new Error('attemped to get a file for a broken variant'));
-        const data = {
-            params: _.get(variant, 'params', {}),
-            correct_answers: _.get(variant, 'true_answer', {}),
-            variant_seed: parseInt(variant.variant_seed, 36),
-            options: _.get(variant, 'options', {}),
-            filename: filename,
-        };
-        const context = module.exports.getContext(question, course);
-        const pc = new codeCaller.PythonCaller();
-        module.exports.processQuestion('file', pc, data, context, (err, courseErrs, _data, _html, fileData) => {
-            pc.done();
-            if (ERR(err, callback)) return;
-            callback(null, courseErrs, fileData);
-        });
+        module.exports.getContext(question, course, (err, context) => {
+            if (err) {
+                return callback(new Error(`Error generating options: ${err}`));
+            }
 
+            const data = {
+                params: _.get(variant, 'params', {}),
+                correct_answers: _.get(variant, 'true_answer', {}),
+                variant_seed: parseInt(variant.variant_seed, 36),
+                options: _.get(variant, 'options', {}),
+                filename: filename,
+            };
+            const pc = new codeCaller.PythonCaller();
+            module.exports.processQuestion('file', pc, data, context, (err, courseErrs, _data, _html, fileData) => {
+                pc.done();
+                if (ERR(err, callback)) return;
+                callback(null, courseErrs, fileData);
+            });
+        });
     },
 
     parse: function(submission, variant, question, course, callback) {
         if (variant.broken) return callback(new Error('attemped to parse broken variant'));
-        const data = {
-            params: _.get(variant, 'params', {}),
-            correct_answers: _.get(variant, 'true_answer', {}),
-            submitted_answers: _.get(submission, 'submitted_answer', {}),
-            format_errors: _.get(submission, 'format_errors', {}),
-            variant_seed: parseInt(variant.variant_seed, 36),
-            options: _.get(variant, 'options', {}),
-            raw_submitted_answers: _.get(submission, 'raw_submitted_answer', {}),
-            gradable: _.get(submission, 'gradable', true),
-        };
-        const context = module.exports.getContext(question, course);
-        const pc = new codeCaller.PythonCaller();
-        module.exports.processQuestion('parse', pc, data, context, (err, courseErrs, data, _html, _fileData) => {
-            pc.done();
-            if (ERR(err, callback)) return;
-            if (_.size(data.format_errors) > 0) data.gradable = false;
-            const ret_vals = {
-                params: data.params,
-                true_answer: data.correct_answers,
-                submitted_answer: data.submitted_answers,
-                raw_submitted_answer: data.raw_submitted_answers,
-                format_errors: data.format_errors,
-                gradable: data.gradable,
+        module.exports.getContext(question, course, (err, context) => {
+            if (err) {
+                return callback(new Error(`Error generating options: ${err}`));
+            }
+
+            const data = {
+                params: _.get(variant, 'params', {}),
+                correct_answers: _.get(variant, 'true_answer', {}),
+                submitted_answers: _.get(submission, 'submitted_answer', {}),
+                format_errors: _.get(submission, 'format_errors', {}),
+                variant_seed: parseInt(variant.variant_seed, 36),
+                options: _.get(variant, 'options', {}),
+                raw_submitted_answers: _.get(submission, 'raw_submitted_answer', {}),
+                gradable: _.get(submission, 'gradable', true),
             };
-            callback(null, courseErrs, ret_vals);
+            const pc = new codeCaller.PythonCaller();
+            module.exports.processQuestion('parse', pc, data, context, (err, courseErrs, data, _html, _fileData) => {
+                pc.done();
+                if (ERR(err, callback)) return;
+                if (_.size(data.format_errors) > 0) data.gradable = false;
+                const ret_vals = {
+                    params: data.params,
+                    true_answer: data.correct_answers,
+                    submitted_answer: data.submitted_answers,
+                    raw_submitted_answer: data.raw_submitted_answers,
+                    format_errors: data.format_errors,
+                    gradable: data.gradable,
+                };
+                callback(null, courseErrs, ret_vals);
+            });
         });
     },
 
     grade: function(submission, variant, question, course, callback) {
         if (variant.broken) return callback(new Error('attemped to grade broken variant'));
         if (submission.broken) return callback(new Error('attemped to grade broken submission'));
-        let data = {
-            params: variant.params,
-            correct_answers: variant.true_answer,
-            submitted_answers: submission.submitted_answer,
-            format_errors: submission.format_errors,
-            partial_scores: (submission.partial_scores == null) ? {} : submission.partial_scores,
-            score: (submission.score == null) ? 0 : submission.score,
-            feedback: (submission.feedback == null) ? {} : submission.feedback,
-            variant_seed: parseInt(variant.variant_seed, 36),
-            options: _.get(variant, 'options', {}),
-            raw_submitted_answers: submission.raw_submitted_answer,
-            gradable: submission.gradable,
-        };
-        const context = module.exports.getContext(question, course);
-        const pc = new codeCaller.PythonCaller();
-        module.exports.processQuestion('grade', pc, data, context, (err, courseErrs, data, _html, _fileData) => {
-            pc.done();
-            if (ERR(err, callback)) return;
-            if (_.size(data.format_errors) > 0) data.gradable = false;
-            const ret_vals = {
-                params: data.params,
-                true_answer: data.correct_answers,
-                submitted_answer: data.submitted_answers,
-                format_errors: data.format_errors,
-                raw_submitted_answer: data.raw_submitted_answers,
-                partial_scores: data.partial_scores,
-                score: data.score,
-                feedback: data.feedback,
-                gradable: data.gradable,
+        module.exports.getContext(question, course, (err, context) => {
+            if (err) {
+                return callback(new Error(`Error generating options: ${err}`));
+            }
+
+            let data = {
+                params: variant.params,
+                correct_answers: variant.true_answer,
+                submitted_answers: submission.submitted_answer,
+                format_errors: submission.format_errors,
+                partial_scores: (submission.partial_scores == null) ? {} : submission.partial_scores,
+                score: (submission.score == null) ? 0 : submission.score,
+                feedback: (submission.feedback == null) ? {} : submission.feedback,
+                variant_seed: parseInt(variant.variant_seed, 36),
+                options: _.get(variant, 'options', {}),
+                raw_submitted_answers: submission.raw_submitted_answer,
+                gradable: submission.gradable,
             };
-            callback(null, courseErrs, ret_vals);
+            const pc = new codeCaller.PythonCaller();
+            module.exports.processQuestion('grade', pc, data, context, (err, courseErrs, data, _html, _fileData) => {
+                pc.done();
+                if (ERR(err, callback)) return;
+                if (_.size(data.format_errors) > 0) data.gradable = false;
+                const ret_vals = {
+                    params: data.params,
+                    true_answer: data.correct_answers,
+                    submitted_answer: data.submitted_answers,
+                    format_errors: data.format_errors,
+                    raw_submitted_answer: data.raw_submitted_answers,
+                    partial_scores: data.partial_scores,
+                    score: data.score,
+                    feedback: data.feedback,
+                    gradable: data.gradable,
+                };
+                callback(null, courseErrs, ret_vals);
+            });
         });
     },
 
     test: function(variant, question, course, callback) {
         if (variant.broken) return callback(new Error('attemped to test broken variant'));
-        let data = {
-            params: variant.params,
-            correct_answers: variant.true_answer,
-            format_errors: {},
-            partial_scores: {},
-            score: 0,
-            feedback: {},
-            variant_seed: parseInt(variant.variant_seed, 36),
-            options: _.get(variant, 'options', {}),
-            raw_submitted_answers: {},
-            gradable: true,
-        };
-        const context = module.exports.getContext(question, course);
-        const pc = new codeCaller.PythonCaller();
-        module.exports.processQuestion('test', pc, data, context, (err, courseErrs, data, _html, _fileData) => {
-            pc.done();
-            if (ERR(err, callback)) return;
-            if (_.size(data.format_errors) > 0) data.gradable = false;
-            const ret_vals = {
-                params: data.params,
-                true_answer: data.correct_answers,
-                format_errors: data.format_errors,
-                raw_submitted_answer: data.raw_submitted_answers,
-                partial_scores: data.partial_scores,
-                score: data.score,
-                gradable: data.gradable,
+        module.exports.getContext(question, course, (err, context) => {
+            if (err) {
+                return callback(new Error(`Error generating options: ${err}`));
+            }
+
+            let data = {
+                params: variant.params,
+                correct_answers: variant.true_answer,
+                format_errors: {},
+                partial_scores: {},
+                score: 0,
+                feedback: {},
+                variant_seed: parseInt(variant.variant_seed, 36),
+                options: _.get(variant, 'options', {}),
+                raw_submitted_answers: {},
+                gradable: true,
             };
-            callback(null, courseErrs, ret_vals);
+            const pc = new codeCaller.PythonCaller();
+            module.exports.processQuestion('test', pc, data, context, (err, courseErrs, data, _html, _fileData) => {
+                pc.done();
+                if (ERR(err, callback)) return;
+                if (_.size(data.format_errors) > 0) data.gradable = false;
+                const ret_vals = {
+                    params: data.params,
+                    true_answer: data.correct_answers,
+                    format_errors: data.format_errors,
+                    raw_submitted_answer: data.raw_submitted_answers,
+                    partial_scores: data.partial_scores,
+                    score: data.score,
+                    gradable: data.gradable,
+                };
+                callback(null, courseErrs, ret_vals);
+            });
         });
     },
 
-    getContext(question, course) {
+    getContext(question, course, callback) {
         const context = {
             question,
             course,
             question_dir: path.join(course.path, 'questions', question.directory),
             course_elements_dir: path.join(course.path, 'elements'),
         };
-        try {
-            // Clear cache in case course code has been reloaded
-            delete require.cache[require.resolve(context.course_elements_dir)];
-            context.course_elements = require(context.course_elements_dir).elements;
-        } catch (e) {
-            // This course doesn't have custom elements
-            context.course_elements = new Map();
-        }
-
-        return context;
+        module.exports.loadElementsForCourse(course, (err, elements) => {
+            if (ERR(err, callback)) return;
+            context.course_elements = elements;
+            callback(null, context);
+        });
     },
 };
