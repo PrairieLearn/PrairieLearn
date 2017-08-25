@@ -554,7 +554,6 @@ describe('Instructor questions', function() {
                 sqldb.query(sql.select_errors_for_last_variant, [], (err, result) => {
                     if (ERR(err, callback)) return;
                     if (result.rowCount > 0) {
-                        console.log(JSON.stringify(result,null,'    '))
                         callback(new Error(`found ${result.rowCount} errors (expected zero errors)`));
                         return;
                     }
