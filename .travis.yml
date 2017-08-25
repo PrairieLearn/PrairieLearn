@@ -1,7 +1,5 @@
 dist: trusty
-language: node_js
-node_js:
-  - "7.4"
+language: python
 python:
   - "3.6"
 addons:
@@ -22,13 +20,15 @@ branches:
 notifications:
   slack:
     secure: DzxZ8DNGFANLnls0j0/hiKjwg6aO/gI3UO8SiRKjqCO/x27uvBCJiDkTqCx834XVzuDBp6LIdHbyUuwRFyaVHyFYTbA0pqE4fe4/DxkK5DuRDj89cw8JgoK7/g9m/J9Y6GvwaOaE4SW0tnHeTwNDVCt7/w8rn1kxDo/tWtS+3cg=
-
+before_install:
+  - nvm install 7.4
+  - nvm use 7.4
 script:
-  # Check python version
+  # Check versions
   - python3 --version
-  - python3.6 --version
-  - python3_6 --version
-  - python36 --version
+  - node --version
+  - npm --version
+  - npm install
 
   # Install python packages
   - pip3 install numpy scipy matplotlib pandas sympy lxml chevron
