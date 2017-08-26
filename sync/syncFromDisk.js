@@ -56,8 +56,8 @@ module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) 
                     callback(null);
                 });
             },
-            function(callback) {logger.info("Clearing course element cache..."); callback(null);},
-            function(callback) {freeformServer.clearCourseElementsCache(course_id); callback(null);}
+            function(callback) {logger.info("Reloading course elements..."); callback(null);},
+            freeformServer.reloadElementsForCourse.bind(null, course.courseInfo),
         ], function(err) {
             if (ERR(err, callback)) return;
             logger.info("Completed sync of git repository to database");

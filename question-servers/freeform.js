@@ -8,9 +8,10 @@ var cheerio = require('cheerio');
 
 var logger = require('../lib/logger');
 var codeCaller = require('../lib/code-caller');
+var jsonLoader = require('../lib/json-load');
 
-// Maps element names to element info
-let elementsCache = {};
+// Maps core element names to element info
+let coreElementsCache = {};
 // Maps course IDs to course element info
 const courseElementsCache = {};
 
@@ -20,7 +21,7 @@ module.exports = {
         // Populate the list of PrairieLearn elements
         module.exports.loadElements(path.join(__dirname, 'elements'), (err, results) => {
             if (ERR(err, callback)) return;
-            elementsCache = results;
+            coreElementsCache = results;
             return callback(null);
         });
     },
@@ -32,7 +33,16 @@ module.exports = {
      * @param  {Function} callback  Called with any errors and the results
      */
     loadElements: function(sourceDir, callback) {
+        let elementSchema;
         async.waterfall([
+            (callback) => {
+                // Load the element schema
+                jsonLoader.readJSON(path.join(__dirname, '..', 'schemas', 'infoElement.json'), (err, schema) => {
+                    if (ERR(err, callback)) return;
+                    elementSchema = schema;
+                    callback(null);
+                });
+            },
             (callback) => {
                 // Read all files in the given path
                 fs.readdir(sourceDir, (err, files) => {
@@ -66,11 +76,11 @@ module.exports = {
                             return callback(null);
                         }
                         if (ERR(err, callback)) return;
-                        if (!_.isString(info.controller)) {
-                            return callback(new Error(`${elementName} is missing an element controller in its info.json`));
-                        }
-                        elements[elementName] = info;
-                        return callback(null);
+                        jsonLoader.validateJSON(info, elementSchema, (err) => {
+                            if (ERR(err, callback)) return;
+                            elements[elementName] = info;
+                            callback(null);
+                        });
                     });
                 }, (err) => {
                     if (ERR(err, callback)) return;
@@ -94,16 +104,21 @@ module.exports = {
         });
     },
 
-    clearCourseElementsCache: function(courseId) {
-        delete courseElementsCache[courseId];
+    // Skips the cache; used when syncing course from GitHub/disk
+    reloadElementsForCourse(course, callback) {
+        module.exports.loadElements(path.join(course.path, 'elements'), (err, elements) => {
+            if (ERR(err, callback)) return;
+            courseElementsCache[course.id] = elements;
+            callback(null, courseElementsCache[course.id]);
+        });
     },
 
     getElementFilename: function(elementName, context) {
         if (context.course_elements[elementName]) {
             const element = context.course_elements[elementName];
             return path.join(context.course.path, 'elements', elementName, element.controller);
-        } else if (elementsCache[elementName]) {
-            const element = elementsCache[elementName];
+        } else if (coreElementsCache[elementName]) {
+            const element = coreElementsCache[elementName];
             return path.join(__dirname, 'elements', elementName, element.controller);
         } else {
             return 'No such element: "' + elementName + '"';
@@ -115,9 +130,9 @@ module.exports = {
         if (_.has(context.course_elements, elementName)) {
             cwd = path.join(context.course.path, 'elements', elementName);
             controller = context.course_elements[elementName].controller;
-        } else if (_.has(elementsCache, elementName)) {
+        } else if (_.has(coreElementsCache, elementName)) {
             cwd = path.join(__dirname, 'elements', elementName);
-            controller = elementsCache[elementName].controller;
+            controller = coreElementsCache[elementName].controller;
         } else {
             return callback(new Error('Invalid element name: ' + elementName), null);
         }
@@ -317,7 +332,7 @@ module.exports = {
                 return callback(null, courseErrs, data, '', fileData);
             }
 
-            const questionElements = new Set([..._.keys(elementsCache), ..._.keys(context.course_elements)]).values();
+            const questionElements = new Set([..._.keys(coreElementsCache), ..._.keys(context.course_elements)]).values();
 
             let index = 0;
             async.eachSeries(questionElements, (elementName, callback) => {
@@ -693,15 +708,18 @@ module.exports = {
                             elementDependencies = context.course_elements[elementName].dependencies || {};
                             isCourseElement = true;
                         } else {
-                            elementDependencies = elementsCache[elementName].dependencies || {};
+                            elementDependencies = coreElementsCache[elementName].dependencies || {};
                         }
+
+                        elementDependencies = _.cloneDeep(elementDependencies);
 
                         // Transform non-global dependencies to be prefixed by the element name,
                         // since they'll be served from their element's directory
                         if (_.has(elementDependencies, 'styles')) {
-                            elementDependencies.styles = elementDependencies.styles.map(dep => `${elementName}\\${dep}`);
-                        } else if (_.has(elementDependencies, 'scripts')) {
-                            elementDependencies.scripts = elementDependencies.scripts.map(dep => `${elementName}\\${dep}`);
+                            elementDependencies.styles = elementDependencies.styles.map(dep => `${elementName}/${dep}`);
+                        }
+                        if (_.has(elementDependencies, 'scripts')) {
+                            elementDependencies.scripts = elementDependencies.scripts.map(dep => `${elementName}/${dep}`);
                         }
 
                         let depdendencyTypes = ['globalStyles', 'globalScripts', 'styles', 'scripts'];

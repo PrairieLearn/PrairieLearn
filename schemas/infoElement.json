@@ -1,0 +1,53 @@
+{
+    "$schema": "http://json-schema.org/draft-04/schema#",
+    "title": "Element Info",
+    "description": "Info files for v3 elements.",
+    "type": "object",
+    "additionalProperties": false,
+    "required": ["controller"],
+    "properties": {
+        "controller": {
+            "description": "The name of the element's controller file.",
+            "type": "string"
+        },
+        "dependencies": {
+            "description": "The element's client-side dependencies.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "globalStyles": {
+                    "description": "The global styles required by this element.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .css file located in /public/stylesheets.",
+                        "type": "string"
+                    }
+                },
+                "globalScripts": {
+                    "description": "The global scripts required by this element.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .js file located in /public/javascripts.",
+                        "type": "string"
+                    }
+                },
+                "styles": {
+                    "description": "The global styles required by this element.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .css file located in the element's directory.",
+                        "type": "string"
+                    }
+                },
+                "scripts": {
+                    "description": "The global styles required by this element.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .js file located in the element's directory.",
+                        "type": "string"
+                    }
+                }
+            }
+        }
+    }
+}
