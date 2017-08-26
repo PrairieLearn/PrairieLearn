@@ -398,36 +398,6 @@ module.exports = {
                                     fileData = buf;
                                 }
                             }
-                        } else if (phase === 'dependencies') {
-                            let depdendencyTypes = ['globalStyles', 'globalScripts', 'styles', 'scripts'];
-                            for (const type of depdendencyTypes) {
-                                // For course elements, track dependencies separately so
-                                // we can properly construct the URLs
-                                let mappedDepType = type;
-                                if (_.has(context.course_elements, elementName)) {
-                                    if (type === 'styles') {
-                                        mappedDepType = 'courseStyles';
-                                    } else if (type === 'scripts') {
-                                        mappedDepType = 'courseScripts';
-                                    }
-                                }
-
-                                if (_.has(ret_val, type)) {
-                                    if (_.isArray(ret_val[type])) {
-                                        for (const dep of ret_val[type]) {
-                                            if (!_.includes(elementDependencies[mappedDepType], dep)) {
-                                                elementDependencies[mappedDepType].push(dep);
-                                            }
-                                        }
-                                    } else {
-                                        const elementFile = module.exports.getElementFilename(elementName, context.course);
-                                        const courseErr = new Error(`${elementFile}: Error calling ${phase}: "${type}" is not an array`);
-                                        courseErr.data = {ret_val};
-                                        courseErr.fatal = true;
-                                        courseErrs.push(courseErr);
-                                    }
-                                }
-                            }
                         } else {
                             data = ret_val;
                             const checkErr = module.exports.checkData(data, origData, phase);
@@ -738,15 +708,23 @@ module.exports = {
                         // Rename properties so we can track core and course
                         // element dependencies separately
                         if (isCourseElement) {
-                            elementDependencies.courseElementStyles = elementDependencies.elementStyles;
-                            delete elementDependencies.elementStyles;
-                            elementDependencies.courseElementScripts = elementDependencies.elementScripts;
-                            delete elementDependencies.elementScripts;
+                            if (_.has(elementDependencies, 'elementStyles')) {
+                                elementDependencies.courseElementStyles = elementDependencies.elementStyles;
+                                delete elementDependencies.elementStyles;
+                            }
+                            if (_.has(elementDependencies, 'elementScripts')) {
+                                elementDependencies.courseElementScripts = elementDependencies.elementScripts;
+                                delete elementDependencies.elementScripts;
+                            }
                         } else {
-                            elementDependencies.coreElementStyles = elementDependencies.elementStyles;
-                            delete elementDependencies.elementStyles;
-                            elementDependencies.coreElementScripts = elementDependencies.elementScripts;
-                            delete elementDependencies.elementScripts;
+                            if (_.has(elementDependencies, 'elementStyles')) {
+                                elementDependencies.coreElementStyles = elementDependencies.elementStyles;
+                                delete elementDependencies.elementStyles;
+                            }
+                            if (_.has(elementDependencies, 'elementScripts')) {
+                                elementDependencies.coreElementScripts = elementDependencies.elementScripts;
+                                delete elementDependencies.elementScripts;
+                            }
                         }
 
                         let depdendencyTypes = [
