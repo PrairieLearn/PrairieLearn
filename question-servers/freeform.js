@@ -315,14 +315,6 @@ module.exports = {
         const courseErrs = [];
         const origData = JSON.parse(JSON.stringify(data));
         const renderedElementNames = [];
-        const elementDependencies = {
-            globalStyles: [],
-            globalScripts: [],
-            styles: [],
-            scripts: [],
-            courseStyles: [],
-            courseScripts: []
-        };
 
         var fileData = Buffer.from('');
 
