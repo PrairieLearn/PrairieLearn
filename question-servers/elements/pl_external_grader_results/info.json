@@ -1,7 +1,7 @@
 {
     "controller": "pl_external_grader_results.py",
     "dependencies": {
-        "styles": [
+        "elementStyles": [
             "pl_external_grader_results.css"
         ]
     }

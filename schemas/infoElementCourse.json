@@ -15,32 +15,48 @@
             "type": "object",
             "additionalProperties": false,
             "properties": {
-                "globalStyles": {
-                    "description": "The global styles required by this element.",
+                "coreStyles": {
+                    "description": "The styles required by this element from /public/stylesheets.",
                     "type": "array",
                     "items": {
                         "description": "A .css file located in /public/stylesheets.",
                         "type": "string"
                     }
                 },
-                "globalScripts": {
-                    "description": "The global scripts required by this element.",
+                "coreScripts": {
+                    "description": "The scripts required by this element from /public/javascripts.",
                     "type": "array",
                     "items": {
                         "description": "A .js file located in /public/javascripts.",
                         "type": "string"
                     }
                 },
-                "styles": {
-                    "description": "The global styles required by this element.",
+                "clientFilesCourseStyles": {
+                    "description": "The styles required by this element from clientFilesCourse.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .css file located in clientFilesCourse.",
+                        "type": "string"
+                    }
+                },
+                "clientFilesCourseScripts": {
+                    "description": "The styles required by this element from clientFilesCourse.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .js file located in clientFilesCourse.",
+                        "type": "string"
+                    }
+                },
+                "elementStyles": {
+                    "description": "The styles required by this element from the element's directory.",
                     "type": "array",
                     "items": {
                         "description": "A .css file located in the element's directory.",
                         "type": "string"
                     }
                 },
-                "scripts": {
-                    "description": "The global styles required by this element.",
+                "elementScripts": {
+                    "description": "The scripts required by this element from the element's directory.",
                     "type": "array",
                     "items": {
                         "description": "A .js file located in the element's directory.",

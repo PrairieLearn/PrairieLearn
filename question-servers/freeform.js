@@ -19,7 +19,7 @@ module.exports = {
 
     init: function(callback) {
         // Populate the list of PrairieLearn elements
-        module.exports.loadElements(path.join(__dirname, 'elements'), (err, results) => {
+        module.exports.loadElements(path.join(__dirname, 'elements'), 'core', (err, results) => {
             if (ERR(err, callback)) return;
             coreElementsCache = results;
             return callback(null);
@@ -32,12 +32,23 @@ module.exports = {
      * @param  {String}   sourceDir Absolute path to the directory of elements
      * @param  {Function} callback  Called with any errors and the results
      */
-    loadElements: function(sourceDir, callback) {
+    loadElements: function(sourceDir, elementType, callback) {
         let elementSchema;
         async.waterfall([
             (callback) => {
                 // Load the element schema
-                jsonLoader.readJSON(path.join(__dirname, '..', 'schemas', 'infoElement.json'), (err, schema) => {
+                let schemaName;
+                switch (elementType) {
+                    case 'core':
+                        schemaName = 'infoElementCore.json';
+                        break;
+                    case 'course':
+                        schemaName = 'infoElementCourse.json';
+                        break;
+                    default:
+                        return callback(new Error(`Unknown element type ${elementType}`));
+                }
+                jsonLoader.readJSON(path.join(__dirname, '..', 'schemas', schemaName), (err, schema) => {
                     if (ERR(err, callback)) return;
                     elementSchema = schema;
                     callback(null);
@@ -97,7 +108,7 @@ module.exports = {
         if (courseElementsCache[course.id] !== undefined) {
             return callback(null, courseElementsCache[course.id]);
         }
-        module.exports.loadElements(path.join(course.path, 'elements'), (err, elements) => {
+        module.exports.loadElements(path.join(course.path, 'elements'), 'course', (err, elements) => {
             if (ERR(err, callback)) return;
             courseElementsCache[course.id] = elements;
             callback(null, courseElementsCache[course.id]);
@@ -106,7 +117,7 @@ module.exports = {
 
     // Skips the cache; used when syncing course from GitHub/disk
     reloadElementsForCourse(course, callback) {
-        module.exports.loadElements(path.join(course.path, 'elements'), (err, elements) => {
+        module.exports.loadElements(path.join(course.path, 'elements'), 'course', (err, elements) => {
             if (ERR(err, callback)) return;
             courseElementsCache[course.id] = elements;
             callback(null, courseElementsCache[course.id]);
@@ -692,12 +703,14 @@ module.exports = {
                     }
 
                     const dependencies = {
-                        globalStyles: [],
-                        globalScripts: [],
-                        styles: [],
-                        scripts: [],
-                        courseStyles: [],
-                        courseScripts: []
+                        coreStyles: [],
+                        coreScripts: [],
+                        coreElementStyles: [],
+                        coreElementScripts: [],
+                        courseElementStyles: [],
+                        courseElementScripts: [],
+                        clientFilesCourseStyles: [],
+                        clientFilesCourseScripts: []
                     };
 
                     // Gather dependencies for all rendered elements
@@ -715,31 +728,43 @@ module.exports = {
 
                         // Transform non-global dependencies to be prefixed by the element name,
                         // since they'll be served from their element's directory
-                        if (_.has(elementDependencies, 'styles')) {
-                            elementDependencies.styles = elementDependencies.styles.map(dep => `${elementName}/${dep}`);
+                        if (_.has(elementDependencies, 'elementStyles')) {
+                            elementDependencies.elementStyles = elementDependencies.elementStyles.map(dep => `${elementName}/${dep}`);
                         }
-                        if (_.has(elementDependencies, 'scripts')) {
-                            elementDependencies.scripts = elementDependencies.scripts.map(dep => `${elementName}/${dep}`);
+                        if (_.has(elementDependencies, 'elementScripts')) {
+                            elementDependencies.elementScripts = elementDependencies.elementScripts.map(dep => `${elementName}/${dep}`);
                         }
 
-                        let depdendencyTypes = ['globalStyles', 'globalScripts', 'styles', 'scripts'];
+                        // Rename properties so we can track core and course
+                        // element dependencies separately
+                        if (isCourseElement) {
+                            elementDependencies.courseElementStyles = elementDependencies.elementStyles;
+                            delete elementDependencies.elementStyles;
+                            elementDependencies.courseElementScripts = elementDependencies.elementScripts;
+                            delete elementDependencies.elementScripts;
+                        } else {
+                            elementDependencies.coreElementStyles = elementDependencies.elementStyles;
+                            delete elementDependencies.elementStyles;
+                            elementDependencies.coreElementScripts = elementDependencies.elementScripts;
+                            delete elementDependencies.elementScripts;
+                        }
+
+                        let depdendencyTypes = [
+                            'coreStyles',
+                            'coreScripts',
+                            'clientFilesCourseStyles',
+                            'clientFilesCourseScripts',
+                            'coreElementStyles',
+                            'coreElementScripts',
+                            'courseElementStyles',
+                            'courseElementScripts'
+                        ];
                         for (const type of depdendencyTypes) {
-                            // For course elements, track dependencies separately so
-                            // we can properly construct the URLs
-                            let mappedDepType = type;
-                            if (isCourseElement) {
-                                if (type === 'styles') {
-                                    mappedDepType = 'courseStyles';
-                                } else if (type === 'scripts') {
-                                    mappedDepType = 'courseScripts';
-                                }
-                            }
-
                             if (_.has(elementDependencies, type)) {
                                 if (_.isArray(elementDependencies[type])) {
                                     for (const dep of elementDependencies[type]) {
-                                        if (!_.includes(dependencies[mappedDepType], dep)) {
-                                            dependencies[mappedDepType].push(dep);
+                                        if (!_.includes(dependencies[type], dep)) {
+                                            dependencies[type].push(dep);
                                         }
                                     }
                                 } else {
@@ -753,19 +778,21 @@ module.exports = {
                     });
 
                     // Transform dependency list into style/link tags
-                    const globalScriptUrls = [];
+                    const coreScriptUrls = [];
                     const scriptUrls = [];
                     const styleUrls = [];
-                    dependencies.styles.forEach((file) => styleUrls.push(`/pl/static/elements/${file}`));
-                    dependencies.scripts.forEach((file) => scriptUrls.push(`/pl/static/elements/${file}`));
-                    dependencies.globalStyles.forEach((file) => styleUrls.push(`/stylesheets/${file}`));
-                    dependencies.globalScripts.forEach((file) => globalScriptUrls.push(`/javascripts/${file}`));
-                    dependencies.courseStyles.forEach((file) => styleUrls.push(`/pl/course_instance/${course.id}/elements/${file}`));
-                    dependencies.courseScripts.forEach((file) => scriptUrls.push(`/pl/course_instance/${course.id}/elements/${file}`));
+                    dependencies.coreStyles.forEach((file) => styleUrls.push(`/stylesheets/${file}`));
+                    dependencies.coreScripts.forEach((file) => coreScriptUrls.push(`/javascripts/${file}`));
+                    dependencies.clientFilesCourseStyles.forEach((file) => styleUrls.push(`/pl/course_instance/${course.id}/clientFilesCourse/${file}`));
+                    dependencies.clientFilesCourseScripts.forEach((file) => scriptUrls.push(`/pl/course_instance/${course.id}/clientFilesCourse/${file}`));
+                    dependencies.coreElementStyles.forEach((file) => styleUrls.push(`/pl/static/elements/${file}`));
+                    dependencies.coreElementScripts.forEach((file) => scriptUrls.push(`/pl/static/elements/${file}`));
+                    dependencies.courseElementStyles.forEach((file) => styleUrls.push(`/pl/course_instance/${course.id}/elements/${file}`));
+                    dependencies.courseElementScripts.forEach((file) => scriptUrls.push(`/pl/course_instance/${course.id}/elements/${file}`));
                     const headerHtmls = [
                         ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
                         // It's important that any library-style scripts come first
-                        ...globalScriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
+                        ...coreScriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
                         ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`)
                     ];
                     htmls.extraHeadersHtml = headerHtmls.join('\n');
