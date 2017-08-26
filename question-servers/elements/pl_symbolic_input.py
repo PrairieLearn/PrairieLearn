@@ -1,10 +1,10 @@
 import lxml.html
 from html import escape
 import chevron
-import to_precision
 import prairielearn as pl
 import sympy
 import random
+import ast
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -30,7 +30,10 @@ def render(element_html, element_index, data):
         raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
         variables = pl.get_string_attrib(element, "variables", None)
 
-        info_params = {"format": True, "variables": variables}
+        operators = ', '.join(['cos','sin','tan','exp','log','sqrt','( )','+','-','*','/','^','**'])
+        constants = ', '.join(['pi'])
+
+        info_params = {"format": True, "variables": variables, "operators": operators, "constants": constants}
         with open('pl_symbolic_input.mustache','r') as f:
             info = chevron.render(f,info_params).strip()
         with open('pl_symbolic_input.mustache','r') as f:
@@ -83,35 +86,30 @@ def parse(element_html, element_index, data):
         data["submitted_answers"][name] = None
         return data
 
-    # Sanitize submitted answer, because parsing requires eval()
-    a_sub = escape(a_sub)
-
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In python, only the latter can be used.
     a_sub = a_sub.replace('^','**')
 
-    # Convert submitted answer to sympy
+    # Define a list of valid expressions and their mapping to sympy
+    locals_for_eval = {'cos': sympy.cos, 'sin': sympy.sin, 'tan': sympy.tan, 'exp': sympy.exp, 'log': sympy.log, 'sqrt': sympy.sqrt, 'pi': sympy.pi}
+
+    # If there is a list of variables, add each one to the list of expressions
+    variables = pl.get_string_attrib(element, "variables", None)
+    if variables is not None:
+        for variable in variables:
+            locals_for_eval[variable] = sympy.Symbol(variable)
+
     try:
-        a_sub = sympy.sympify(a_sub)
+        # Convert submitted answer safely to sympy
+        a_sub = evaluate(a_sub, locals_for_eval)
+
+        # Store result as a string, which we can henceforth convert safely
+        # back to sympy using sympy.sympify, even though this calls eval()
         data["submitted_answers"][name] = str(a_sub)
-    except ValueError:
+    except:
         data["format_errors"][name] = "Invalid format."
         data["submitted_answers"][name] = None
         return data
-
-    # If there is a list of variables, check that expression can be evaluated
-    # numerically with floating-point numbers substituted for these variables
-    variables = pl.get_string_attrib(element, "variables", None)
-    if variables is not None:
-        keys = variables.split()
-        vals = [random.random() for key in keys]
-        subs = dict(zip(keys,vals))
-        try:
-            res = float(a_sub.evalf(subs=subs))
-        except:
-            data["format_errors"][name] = "Invalid format (could not evaluate after substituting real numbers for allowable variables)."
-            data["submitted_answers"][name] = None
-            return data
 
     return data
 
@@ -148,6 +146,34 @@ def grade(element_html, element_index, data):
 
     return data
 
+# Safe evaluation of user input to convert from string to sympy expression.
+#
+# Adapted from:
+# https://stackoverflow.com/a/30516254
+#
+# Documentation of ast:
+# https://docs.python.org/3/library/ast.html
+#
+# More documentation of ast:
+# https://greentreesnakes.readthedocs.io/
+
+class Visitor(ast.NodeVisitor):
+    def visit(self, node):
+        if not isinstance(node, self.whitelist):
+            raise ValueError(node)
+        return super().visit(node)
+    whitelist = (ast.Module, ast.Expr, ast.Load, ast.Expression, ast.Call, ast.Name, ast.Num, ast.UnaryOp, ast.UAdd, ast.USub, ast.BinOp, ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod, ast.Pow)
+
+def evaluate(expr, locals = {}):
+    if any(elem in expr for elem in '\n#'):
+        raise ValueError(expr)
+    try:
+        node = ast.parse(expr.strip(), mode='eval')
+        Visitor().visit(node)
+        return eval(compile(node, "<string>", "eval"), {'__builtins__': None}, locals)
+    except Exception:
+        raise ValueError(expr)
+
 def test(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers_name")
@@ -164,12 +190,9 @@ def test(element_html, element_index, data):
         if random.choice([True,False]):
             data["raw_submitted_answers"][name] = 'complete garbage'
             data["format_errors"][name] = "Invalid format."
-        else:
-            data["raw_submitted_answers"][name] = 'garbage'
-            data["format_errors"][name] = "Invalid format (could not evaluate after substituting real numbers for allowable variables)."
 
         # FIXME: add more invalid choices
     else:
         raise Exception('invalid result: %s' % result)
-    
+
     return data
