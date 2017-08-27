@@ -417,4 +417,83 @@ module.exports = {
             });
         });
     },
+
+    autoTestQuestion(locals, qid) {
+        describe('auto-testing question ' + qid, function() {
+            describe('the setup', function() {
+                it('should find the question in the database', function(callback) {
+                    sqldb.queryZeroOrOneRow(sql.select_question_by_qid, {qid}, function(err, result) {
+                        if (ERR(err, callback)) return;
+                        if (result.rowCount == 0) {
+                            return callback(new Error(`QID "${qid}" not found in the database`));
+                        }
+                        locals.question = result.rows[0];
+                        callback(null);
+                    });
+                });
+                it('should be a Freeform question', function() {
+                    assert.equal(locals.question.type, 'Freeform');
+                });
+                it('should have submission data', function() {
+                    locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+                    locals.postAction = 'grade';
+                });
+            });
+            module.exports.getInstanceQuestion(locals);
+            describe('the test job sequence', function() {
+                it('should start with POST to instructorAssessment URL for test_once', function(callback) {
+                    const form = {
+                        __action: 'test_once',
+                        __csrf_token: locals.__csrf_token,
+                    };
+                    var questionUrl = locals.questionBaseUrl + '/' + locals.question.id;
+                    request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, _body) {
+                        if (error) {
+                            return callback(error);
+                        }
+                        if (response.statusCode != 200) {
+                            return callback(new Error('bad status: ' + response.statusCode));
+                        }
+                        callback(null);
+                    });
+                });
+                it('should have an id', function(callback) {
+                    sqldb.queryOneRow(sql.select_last_job_sequence, [], (err, result) => {
+                        if (ERR(err, callback)) return;
+                        locals.job_sequence_id = result.rows[0].id;
+                        callback(null);
+                    });
+                });
+                it('should complete', function(callback) {
+                    var checkComplete = function() {
+                        var params = {job_sequence_id: locals.job_sequence_id};
+                        sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
+                            if (ERR(err, callback)) return;
+                            locals.job_sequence_status = result.rows[0].status;
+                            if (locals.job_sequence_status == 'Running') {
+                                setTimeout(checkComplete, 10);
+                            } else {
+                                callback(null);
+                            }
+                        });
+                    };
+                    setTimeout(checkComplete, 10);
+                });
+                it('should be successful', function() {
+                    assert.equal(locals.job_sequence_status, 'Success');
+                });
+                it('should produce no errors', function(callback) {
+                    sqldb.query(sql.select_errors_for_last_variant, [], (err, result) => {
+                        if (ERR(err, callback)) return;
+                        if (result.rowCount > 0) {
+                            callback(new Error(`found ${result.rowCount} errors (expected zero errors):\n`
+                                               + JSON.stringify(result.rows, null, '    ')));
+                            return;
+                        }
+                        callback(null);
+                    });
+                });
+            });
+        });
+    },
 };

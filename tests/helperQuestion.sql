@@ -89,6 +89,11 @@ ORDER BY
 LIMIT
     1;
 
+-- BLOCK select_question_by_qid
+SELECT *
+FROM questions
+WHERE qid = $qid;
+
 -- BLOCK select_last_job_sequence
 SELECT *
 FROM job_sequences
@@ -99,3 +104,16 @@ LIMIT 1;
 SELECT *
 FROM job_sequences
 WHERE id = $job_sequence_id;
+
+-- BLOCK select_errors_for_last_variant
+WITH last_variant AS (
+    SELECT *
+    FROM variants
+    ORDER BY date DESC
+    LIMIT 1
+)
+SELECT *
+FROM
+    errors,
+    last_variant
+WHERE variant_id = last_variant.id;
