@@ -25,7 +25,6 @@ const addNumbers = {qid: 'addNumbers', type: 'Freeform'};
 const addVectors = {qid: 'addVectors', type: 'Calculation'};
 const fossilFuelsRadio = {qid: 'fossilFuelsRadio', type: 'Calculation'};
 const downloadFile = {qid: 'downloadFile', type: 'Freeform'};
-const differentiatePolynomial = {qid: 'differentiatePolynomial', type: 'Freeform'};
 
 describe('Homework assessment', function() {
     this.timeout(5000);
@@ -108,7 +107,7 @@ describe('Homework assessment', function() {
         it('should create five instance_questions', function(callback) {
             sqldb.query(sql.select_instance_questions, [], function(err, result) {
                 if (ERR(err, callback)) return;
-                if (result.rowCount != 5) {
+                if (result.rowCount != 4) {
                     return callback(new Error('expected three instance_questions, got: ' + result.rowCount));
                 }
                 locals.instance_questions = result.rows;
@@ -130,10 +129,6 @@ describe('Homework assessment', function() {
         it('should have the correct fourth question', function() {
             downloadFile.id = locals.instance_questions[3].id;
             assert.equal(locals.instance_questions[3].qid, downloadFile.qid);
-        });
-        it('should have the correct fifth question', function() {
-            differentiatePolynomial.id = locals.instance_questions[4].id;
-            assert.equal(locals.instance_questions[4].qid, differentiatePolynomial.qid);
         });
     });
 
@@ -178,12 +173,6 @@ describe('Homework assessment', function() {
             downloadFile.url = locals.siteUrl + elemList[0].attribs.href;
             assert.equal(downloadFile.url, locals.courseInstanceBaseUrl + '/instance_question/' + downloadFile.id + '/');
         });
-        it('should link to differentiatePolynomial question', function() {
-            elemList = locals.$('td a:contains("Differentiate a polynomial function of one variable")');
-            assert.lengthOf(elemList, 1);
-            differentiatePolynomial.url = locals.siteUrl + elemList[0].attribs.href;
-            assert.equal(differentiatePolynomial.url, locals.courseInstanceBaseUrl + '/instance_question/' + differentiatePolynomial.id + '/');
-        });
     });
 
     describe('1. submit correct answer to question addVectors', function() {
@@ -198,7 +187,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 2,
                     instance_question_score_perc: 2/11 * 100,
                     assessment_instance_points: 2,
-                    assessment_instance_score_perc: 2/70 * 100,
+                    assessment_instance_score_perc: 2/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -226,7 +215,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 3,
                     instance_question_score_perc: 3/14 * 100,
                     assessment_instance_points: 5,
-                    assessment_instance_score_perc: 5/70 * 100,
+                    assessment_instance_score_perc: 5/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -253,7 +242,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 2,
                     instance_question_score_perc: 2/11 * 100,
                     assessment_instance_points: 5,
-                    assessment_instance_score_perc: 5/70 * 100,
+                    assessment_instance_score_perc: 5/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(_variant) {
                     return {
@@ -281,7 +270,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 4,
                     instance_question_score_perc: 4/11 * 100,
                     assessment_instance_points: 7,
-                    assessment_instance_score_perc: 7/70 * 100,
+                    assessment_instance_score_perc: 7/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -309,7 +298,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 4,
                     instance_question_score_perc: 4/11 * 100,
                     assessment_instance_points: 7,
-                    assessment_instance_score_perc: 7/70 * 100,
+                    assessment_instance_score_perc: 7/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(_variant) {
                     return {
@@ -337,7 +326,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 8,
                     instance_question_score_perc: 8/11 * 100,
                     assessment_instance_points: 11,
-                    assessment_instance_score_perc: 11/70 * 100,
+                    assessment_instance_score_perc: 11/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -365,7 +354,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 11,
                     instance_question_score_perc: 11/11 * 100,
                     assessment_instance_points: 14,
-                    assessment_instance_score_perc: 14/70 * 100,
+                    assessment_instance_score_perc: 14/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -393,7 +382,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 11,
                     instance_question_score_perc: 11/11 * 100,
                     assessment_instance_points: 14,
-                    assessment_instance_score_perc: 14/70 * 100,
+                    assessment_instance_score_perc: 14/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -438,7 +427,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 0,
                     instance_question_score_perc: 0/5 * 100,
                     assessment_instance_points: 14,
-                    assessment_instance_score_perc: 14/70 * 100,
+                    assessment_instance_score_perc: 14/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -487,7 +476,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 1,
                     instance_question_score_perc: 1/5 * 100,
                     assessment_instance_points: 15,
-                    assessment_instance_score_perc: 15/70 * 100,
+                    assessment_instance_score_perc: 15/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -514,7 +503,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 1,
                     instance_question_score_perc: 1/5 * 100,
                     assessment_instance_points: 15,
-                    assessment_instance_score_perc: 15/70 * 100,
+                    assessment_instance_score_perc: 15/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(_variant) {
                     return {
@@ -557,7 +546,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 3,
                     instance_question_score_perc: 3/5 * 100,
                     assessment_instance_points: 17,
-                    assessment_instance_score_perc: 17/70 * 100,
+                    assessment_instance_score_perc: 17/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -584,7 +573,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 3,
                     instance_question_score_perc: 3/5 * 100,
                     assessment_instance_points: 17,
-                    assessment_instance_score_perc: 17/70 * 100,
+                    assessment_instance_score_perc: 17/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -611,7 +600,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 9,
                     instance_question_score_perc: 9/14 * 100,
                     assessment_instance_points: 23,
-                    assessment_instance_score_perc: 23/70 * 100,
+                    assessment_instance_score_perc: 23/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -638,7 +627,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 9,
                     instance_question_score_perc: 9/14 * 100,
                     assessment_instance_points: 23,
-                    assessment_instance_score_perc: 23/70 * 100,
+                    assessment_instance_score_perc: 23/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -665,7 +654,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 12,
                     instance_question_score_perc: 12/14 * 100,
                     assessment_instance_points: 26,
-                    assessment_instance_score_perc: 26/70 * 100,
+                    assessment_instance_score_perc: 26/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -692,7 +681,7 @@ describe('Homework assessment', function() {
                     instance_question_points: 12,
                     instance_question_score_perc: 12/14 * 100,
                     assessment_instance_points: 26,
-                    assessment_instance_score_perc: 26/70 * 100,
+                    assessment_instance_score_perc: 26/47 * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -806,104 +795,7 @@ describe('Homework assessment', function() {
         });
     });
 
-    describe('21. submit incorrect answer to question differentiatePolynomial', function() {
-        describe('setting up the submission data', function() {
-            it('should succeed', function() {
-                locals.shouldHaveButtons = ['grade', 'save'];
-                locals.postAction = 'grade';
-                locals.question = differentiatePolynomial;
-                locals.expectedResult = {
-                    submission_score: 0,
-                    submission_correct: false,
-                    instance_question_points: 0,
-                    instance_question_score_perc: 0/23 * 100,
-                    assessment_instance_points: 26,
-                    assessment_instance_score_perc: 26/70 * 100,
-                };
-                locals.getSubmittedAnswer = function(variant) {
-                    return {
-                        df: variant.true_answer.df + '+ 1',
-                    };
-                };
-            });
-        });
-        helperQuestion.getInstanceQuestion(locals);
-        helperQuestion.postInstanceQuestion(locals);
-        helperQuestion.checkQuestionScore(locals);
-        helperQuestion.checkAssessmentScore(locals);
-    });
-
-    describe('22. submit correct answer to question differentiatePolynomial', function() {
-        describe('setting up the submission data', function() {
-            it('should succeed', function() {
-                locals.shouldHaveButtons = ['grade', 'save'];
-                locals.postAction = 'grade';
-                locals.question = differentiatePolynomial;
-                locals.expectedResult = {
-                    submission_score: 1,
-                    submission_correct: true,
-                    instance_question_points: 7,
-                    instance_question_score_perc: 7/23 * 100,
-                    assessment_instance_points: 33,
-                    assessment_instance_score_perc: 33/70 * 100,
-                };
-                locals.getSubmittedAnswer = function(variant) {
-                    return {
-                        df: variant.true_answer.df,
-                    };
-                };
-            });
-        });
-        helperQuestion.getInstanceQuestion(locals);
-        helperQuestion.postInstanceQuestion(locals);
-        helperQuestion.checkQuestionScore(locals);
-        helperQuestion.checkAssessmentScore(locals);
-    });
-
-    describe('25. submit invalid answer to question differentiatePolynomial', function() {
-        describe('setting up the submission data', function() {
-            it('should succeed', function() {
-                locals.shouldHaveButtons = ['grade', 'save'];
-                locals.postAction = 'grade';
-                locals.question = differentiatePolynomial;
-                locals.expectedResult = {
-                    submission_score: null,
-                    submission_correct: null,
-                    instance_question_points: 7,
-                    instance_question_score_perc: 7/23 * 100,
-                    assessment_instance_points: 33,
-                    assessment_instance_score_perc: 33/70 * 100,
-                };
-                locals.getSubmittedAnswer = function(_variant) {
-                    return {
-                        df: 'complete garbage',
-                    };
-                };
-            });
-        });
-        helperQuestion.getInstanceQuestion(locals);
-        helperQuestion.postInstanceQuestion(locals);
-        helperQuestion.checkQuestionScore(locals);
-        helperQuestion.checkAssessmentScore(locals);
-        describe('check the submission is not gradable', function() {
-            it('should succeed', function(callback) {
-                sqldb.queryOneRow(sql.select_last_submission, [], function(err, result) {
-                    if (ERR(err, callback)) return;
-                    const submission = result.rows[0];
-                    if (submission.gradable) return callback(new Error('submission.gradable is true'));
-                    callback(null);
-                });
-            });
-        });
-        describe('the submission panel contents', function() {
-            it('should contain "INVALID"', function() {
-                elemList = locals.$('div.submission-body :contains("INVALID")');
-                assert.isAtLeast(elemList.length, 1);
-            });
-        });
-    });
-
-    describe('28. regrading', function() {
+    describe('21. regrading', function() {
         describe('change max_points', function() {
             it('should succeed', function(callback) {
                 sqldb.query(sql.update_max_points, [], function(err, _result) {

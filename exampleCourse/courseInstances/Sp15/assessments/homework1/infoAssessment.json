@@ -15,8 +15,7 @@
                 {"id": "addNumbers",                "points": 1, "maxPoints": 5},
                 {"id": "addVectors",                "points": 2, "maxPoints": 11},
                 {"id": "fossilFuelsRadio",          "points": 3, "maxPoints": 14},
-                {"id": "downloadFile",              "points": 5, "maxPoints": 17},
-                {"id": "differentiatePolynomial",   "points": 7, "maxPoints": 23}
+                {"id": "downloadFile",              "points": 5, "maxPoints": 17}
             ]
         }
     ]
