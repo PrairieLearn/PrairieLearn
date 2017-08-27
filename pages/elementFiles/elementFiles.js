@@ -24,7 +24,7 @@ router.get('/*', function(req, res, next) {
         // Files should be served from the course directory
         elementFilesDir = path.join(res.locals.course.path, 'elements');
     } else {
-        elementFilesDir = path.resolve(__dirname, '../../question-servers/elements/');
+        elementFilesDir = path.join(__dirname, '..', '..', 'elements');
     }
 
     res.sendFile(filename, {root: elementFilesDir});

@@ -19,7 +19,7 @@ module.exports = {
 
     init: function(callback) {
         // Populate the list of PrairieLearn elements
-        module.exports.loadElements(path.join(__dirname, 'elements'), 'core', (err, results) => {
+        module.exports.loadElements(path.join(__dirname, '..', 'elements'), 'core', (err, results) => {
             if (ERR(err, callback)) return;
             coreElementsCache = results;
             return callback(null);
@@ -130,7 +130,7 @@ module.exports = {
             return path.join(context.course.path, 'elements', elementName, element.controller);
         } else if (coreElementsCache[elementName]) {
             const element = coreElementsCache[elementName];
-            return path.join(__dirname, 'elements', elementName, element.controller);
+            return path.join(__dirname, '..', 'elements', elementName, element.controller);
         } else {
             return 'No such element: "' + elementName + '"';
         }
@@ -142,7 +142,7 @@ module.exports = {
             cwd = path.join(context.course.path, 'elements', elementName);
             controller = context.course_elements[elementName].controller;
         } else if (_.has(coreElementsCache, elementName)) {
-            cwd = path.join(__dirname, 'elements', elementName);
+            cwd = path.join(__dirname, '..', 'elements', elementName);
             controller = coreElementsCache[elementName].controller;
         } else {
             return callback(new Error('Invalid element name: ' + elementName), null);
