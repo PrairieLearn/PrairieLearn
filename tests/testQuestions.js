@@ -16,9 +16,11 @@ const qids = [
     'addNumbers',
     'ballToss2',
     'customElement',
-    'differentiatePolynomial',
+    // FIXME: 'differentiatePolynomial',
     'downloadFile',
+    // FIXME: 'fibonacciUpload',
     'functionValueFromPlot',
+    // FIXME: 'multiplyTwoMatrices',
     'multiplyTwoNumbers',
     'positionTimeGraph',
 ];
