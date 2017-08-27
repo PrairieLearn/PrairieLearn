@@ -4,11 +4,13 @@ import prairielearn as pl
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, required_attribs=[], optional_attribs=[])
+    pl.check_attribs(element, required_attribs=[], optional_attribs=['digits'])
     return data
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
+    digits = pl.get_integer_attrib(element,"digits",2)
+
     html = "<pre>\n"
     for child in element:
         if child.tag == "variable":
@@ -19,7 +21,7 @@ def render(element_html, element_index, data):
                 raise Exception('No value in data["params"] for variable %s in matrix_output element' % var_name)
             html += pl.inner_html(child) \
                 + " = " \
-                + pl.numpy_to_matlab(np.array(var_data)) \
+                + pl.numpy_to_matlab(np.array(var_data),ndigits=digits) \
                 + "\n"
     html += "</pre>"
     return html
