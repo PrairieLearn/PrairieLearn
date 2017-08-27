@@ -24,11 +24,11 @@ def prepare(element_html, element_index, data):
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers_name")
+    variables = pl.get_string_attrib(element, "variables", None)
 
     if data["panel"] == "question":
         editable = data["editable"]
         raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
-        variables = pl.get_string_attrib(element, "variables", None)
 
         operators = ', '.join(['cos','sin','tan','exp','log','sqrt','( )','+','-','*','/','^','**'])
         constants = ', '.join(['pi'])
@@ -52,7 +52,8 @@ def render(element_html, element_index, data):
         html_params = {'submission': True, 'parse_error': parse_error}
         if parse_error is None:
             a_sub = data["submitted_answers"][name]
-            html_params["a_sub"] = sympy.latex(sympy.sympify(a_sub))
+            a_sub = convert_string_to_sympy(a_sub, variables)
+            html_params["a_sub"] = sympy.latex(a_sub)
         else:
             raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
             if raw_submitted_answer is not None:
@@ -63,8 +64,8 @@ def render(element_html, element_index, data):
     elif data["panel"] == "answer":
         a_tru = data["correct_answers"].get(name, None)
         if a_tru is not None:
-
-            html_params = {'answer': True, 'a_tru': sympy.latex(sympy.sympify(a_tru))}
+            a_tru = convert_string_to_sympy(a_tru, variables)
+            html_params = {'answer': True, 'a_tru': sympy.latex(a_tru)}
             with open('pl_symbolic_input.mustache','r') as f:
                 html = chevron.render(f,html_params).strip()
         else:
@@ -78,6 +79,7 @@ def render(element_html, element_index, data):
 def parse(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers_name")
+    variables = pl.get_string_attrib(element, "variables", None)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data["submitted_answers"].get(name,None)
@@ -86,25 +88,11 @@ def parse(element_html, element_index, data):
         data["submitted_answers"][name] = None
         return data
 
-    # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
-    # for exponentiation. In python, only the latter can be used.
-    a_sub = a_sub.replace('^','**')
-
-    # Define a list of valid expressions and their mapping to sympy
-    locals_for_eval = {'cos': sympy.cos, 'sin': sympy.sin, 'tan': sympy.tan, 'exp': sympy.exp, 'log': sympy.log, 'sqrt': sympy.sqrt, 'pi': sympy.pi}
-
-    # If there is a list of variables, add each one to the list of expressions
-    variables = pl.get_string_attrib(element, "variables", None)
-    if variables is not None:
-        for variable in variables:
-            locals_for_eval[variable] = sympy.Symbol(variable)
-
     try:
         # Convert submitted answer safely to sympy
-        a_sub = evaluate(a_sub, locals_for_eval)
+        a_sub = convert_string_to_sympy(a_sub, variables)
 
-        # Store result as a string, which we can henceforth convert safely
-        # back to sympy using sympy.sympify, even though this calls eval()
+        # Store result as a string.
         data["submitted_answers"][name] = str(a_sub)
     except:
         data["format_errors"][name] = "Invalid format."
@@ -132,9 +120,10 @@ def grade(element_html, element_index, data):
         data["partial_scores"][name] = {"score": 0, "weight": weight}
         return data
 
-    # Parse both correct and submitted answer
-    a_tru = sympy.sympify(a_tru)
-    a_sub = sympy.sympify(a_sub)
+    # Parse both correct and submitted answer (will throw an error on fail).
+    variables = pl.get_string_attrib(element, "variables", None)
+    a_tru = convert_string_to_sympy(a_tru, variables)
+    a_sub = convert_string_to_sympy(a_sub, variables)
 
     # Check equality
     correct = a_tru.equals(a_sub)
@@ -170,9 +159,30 @@ def evaluate(expr, locals = {}):
     try:
         node = ast.parse(expr.strip(), mode='eval')
         Visitor().visit(node)
-        return eval(compile(node, "<string>", "eval"), {'__builtins__': None}, locals)
+        return eval(compile(node, '<ast>', 'eval'), {'__builtins__': None}, locals)
     except Exception:
         raise ValueError(expr)
+
+def convert_string_to_sympy(a,variables):
+    # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
+    # for exponentiation. In python, only the latter can be used.
+    a = a.replace('^','**')
+
+    # Define a list of valid expressions and their mapping to sympy
+    locals_for_eval = {'cos': sympy.cos, 'sin': sympy.sin, 'tan': sympy.tan, 'exp': sympy.exp, 'log': sympy.log, 'sqrt': sympy.sqrt, 'pi': sympy.pi}
+
+    # If there is a list of variables, add each one to the list of expressions
+    if variables is not None:
+        for variable in variables:
+            locals_for_eval[variable] = sympy.Symbol(variable)
+
+    # Do the conversion
+    a = evaluate(a, locals_for_eval)
+
+    # Run sympify on the result - we can do this safely now. Note that we need
+    # to run sympify because we want the result to be a sympy object - if 'a'
+    # is an integer, for example, it needs to be converted to sympy.
+    return sympy.sympify(a)
 
 def test(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
