@@ -5,6 +5,9 @@ import uuid
 
 def inner_html(element):
     html = element.text
+    if html is None:
+        html = ''
+    html = str(html)
     for child in element:
         html += lxml.html.tostring(child, method="html", pretty_print=True).decode("utf-8")
     return html
