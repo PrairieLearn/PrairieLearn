@@ -145,12 +145,51 @@ def grade(element_html, element_index, data):
 #
 # More documentation of ast:
 # https://greentreesnakes.readthedocs.io/
+#
+# FIXME: As of 2017-08-27 there is an open sympy issue discussing a
+# similar approach: https://github.com/sympy/sympy/issues/10805 and an
+# associated PR: https://github.com/sympy/sympy/pull/12524 but it is
+# unclear when/if they will be merged. We should check once sympy 1.2
+# is released and see whether we can switch to using
+# `sympify(...,safe=True)`.
+#
+# For examples of the type of attacks that we are avoiding:
+# https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
+# http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
+#
+# Another class of attacks is those that try and consume excessive
+# memory or CPU (e.g., `10**100**100`). We handle these attacks by the
+# fact that the entire element code runs in an isolated subprocess, so
+# this type of input will be caught and treated as a question code
+# failure.
+#
+# Other approaches for safe(r) eval in Python are:
+#
+# PyParsing:
+#     http://pyparsing.wikispaces.com
+#     http://pyparsing.wikispaces.com/file/view/fourFn.py
+#
+# RestrictedPython:
+#     https://pypi.python.org/pypi/RestrictedPython
+#     http://restrictedpython.readthedocs.io/
+#
+# Handling timeouts explicitly:
+#     http://code.activestate.com/recipes/496746-restricted-safe-eval/
+#
+# A similar (but more complex) approach to us:
+#     https://github.com/newville/asteval
 
 class Visitor(ast.NodeVisitor):
     def visit(self, node):
         if not isinstance(node, self.whitelist):
             raise ValueError(node)
         return super().visit(node)
+
+    # Be very careful about adding to the list below. In particular,
+    # do not add `ast.Attribute` without fulling understanding the
+    # reflection-based attacks described by
+    # https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
+    # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
     whitelist = (ast.Module, ast.Expr, ast.Load, ast.Expression, ast.Call, ast.Name, ast.Num, ast.UnaryOp, ast.UAdd, ast.USub, ast.BinOp, ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod, ast.Pow)
 
 def evaluate(expr, locals = {}):
