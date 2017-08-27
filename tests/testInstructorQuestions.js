@@ -24,6 +24,7 @@ locals.isStudentPage = false;
 const addNumbers = {qid: 'addNumbers', type: 'Freeform'};
 const addVectors = {qid: 'addVectors', type: 'Calculation'};
 const downloadFile = {qid: 'downloadFile', type: 'Freeform'};
+const differentiatePolynomial = {qid: 'differentiatePolynomial', type: 'Freeform'};
 
 describe('Instructor questions', function() {
     this.timeout(20000);
@@ -58,6 +59,11 @@ describe('Instructor questions', function() {
             const question = _.find(locals.questions, {directory: downloadFile.qid});
             assert.isDefined(question);
             downloadFile.id = question.id;
+        });
+        it('should contain the differentiatePolynomial question', function() {
+            const question = _.find(locals.questions, {directory: differentiatePolynomial.qid});
+            assert.isDefined(question);
+            differentiatePolynomial.id = question.id;
         });
     });
 
@@ -94,6 +100,12 @@ describe('Instructor questions', function() {
             assert.lengthOf(elemList, 1);
             downloadFile.url = locals.siteUrl + elemList[0].attribs.href;
             assert.equal(downloadFile.url, locals.courseInstanceBaseUrl + '/question/' + downloadFile.id + '/');
+        });
+        it('should link to differentiatePolynomial question', function() {
+            elemList = locals.$('td a:contains("Differentiate a polynomial function of one variable")');
+            assert.lengthOf(elemList, 1);
+            differentiatePolynomial.url = locals.siteUrl + elemList[0].attribs.href;
+            assert.equal(differentiatePolynomial.url, locals.courseInstanceBaseUrl + '/question/' + differentiatePolynomial.id + '/');
         });
     });
 
@@ -296,6 +308,7 @@ describe('Instructor questions', function() {
                     if (ERR(err, callback)) return;
                     if (result.rowCount > 0) {
                         callback(new Error(`found ${result.rowCount} errors (expected zero errors)`));
+                        return;
                     }
                     callback(null);
                 });
@@ -404,6 +417,145 @@ describe('Instructor questions', function() {
                     if (ERR(err, callback)) return;
                     if (result.rowCount > 0) {
                         callback(new Error(`found ${result.rowCount} errors (expected zero errors)`));
+                        return;
+                    }
+                    callback(null);
+                });
+            });
+        });
+    });
+
+    describe('9. submit correct answer to question differentiatePolynomial', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+                locals.postAction = 'grade';
+                locals.question = differentiatePolynomial;
+                locals.expectedResult = {
+                    submission_score: 1,
+                    submission_correct: true,
+                };
+                locals.getSubmittedAnswer = function(variant) {
+                    return {
+                        df: variant.true_answer.df,
+                    };
+                };
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkSubmissionScore(locals);
+    });
+
+    describe('10. submit incorrect answer to question differentiatePolynomial', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+                locals.postAction = 'grade';
+                locals.question = differentiatePolynomial;
+                locals.expectedResult = {
+                    submission_score: 0,
+                    submission_correct: false,
+                };
+                locals.getSubmittedAnswer = function(variant) {
+                    return {
+                        df: variant.true_answer.df + '+ 1',
+                    };
+                };
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkSubmissionScore(locals);
+    });
+
+    describe('11. submit invalid answer to question differentiatePolynomial', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+                locals.postAction = 'grade';
+                locals.question = differentiatePolynomial;
+                locals.expectedResult = {
+                    submission_score: null,
+                    submission_correct: null,
+                };
+                locals.getSubmittedAnswer = function(_variant) {
+                    return {
+                        df: 'this is not a valid symbolic expression',
+                    };
+                };
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkSubmissionScore(locals);
+        describe('the submission panel contents', function() {
+            it('should contain "INVALID"', function() {
+                elemList = locals.$('div.submission-body :contains("INVALID")');
+                assert.isAtLeast(elemList.length, 1);
+            });
+        });
+    });
+
+    describe('12. run automated test on differentiatePolynomial', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+                locals.postAction = 'grade';
+                locals.question = differentiatePolynomial;
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        describe('POST to instructorAssessment URL for test_once', function() {
+            it('should succeed', function(callback) {
+                const form = {
+                    __action: 'test_once',
+                    __csrf_token: locals.__csrf_token,
+                };
+                var questionUrl = locals.questionBaseUrl + '/' + locals.question.id;
+                request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, _body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    callback(null);
+                });
+            });
+        });
+        describe('The test job sequence', function() {
+            it('should have an id', function(callback) {
+                sqldb.queryOneRow(sql.select_last_job_sequence, [], (err, result) => {
+                    if (ERR(err, callback)) return;
+                    locals.job_sequence_id = result.rows[0].id;
+                    callback(null);
+                });
+            });
+            it('should complete', function(callback) {
+                var checkComplete = function() {
+                    var params = {job_sequence_id: locals.job_sequence_id};
+                    sqldb.queryOneRow(sql.select_job_sequence, params, (err, result) => {
+                        if (ERR(err, callback)) return;
+                        locals.job_sequence_status = result.rows[0].status;
+                        if (locals.job_sequence_status == 'Running') {
+                            setTimeout(checkComplete, 10);
+                        } else {
+                            callback(null);
+                        }
+                    });
+                };
+                setTimeout(checkComplete, 10);
+            });
+            it('should be successful', function() {
+                assert.equal(locals.job_sequence_status, 'Success');
+            });
+            it('should produce no errors', function(callback) {
+                sqldb.query(sql.select_errors_for_last_variant, [], (err, result) => {
+                    if (ERR(err, callback)) return;
+                    if (result.rowCount > 0) {
+                        callback(new Error(`found ${result.rowCount} errors (expected zero errors)`));
+                        return;
                     }
                     callback(null);
                 });

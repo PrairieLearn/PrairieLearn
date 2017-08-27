@@ -42,7 +42,8 @@
                 {"id": "multiplyTwoMatrices",        "points": 2, "maxPoints": 10},
                 {"id": "multiplyTwoNumbers",         "points": 2, "maxPoints": 10},
                 {"id": "downloadFile",               "points": 2, "maxPoints": 10},
-                {"id": "customElement",              "points": 1, "maxPoints": 1}
+                {"id": "customElement",              "points": 1, "maxPoints": 1},
+                {"id": "differentiatePolynomial",    "points": 2, "maxPoints": 10}
             ]
         }
     ]
