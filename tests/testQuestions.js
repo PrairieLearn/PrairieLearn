@@ -18,6 +18,7 @@ const qids = [
     'customElement',
     'differentiatePolynomial',
     'downloadFile',
+    'functionValueFromPlot',
     'multiplyTwoNumbers',
     'positionTimeGraph',
 ];
