@@ -340,7 +340,15 @@ WITH all_file_submissions AS (
         s.date,
         s.submitted_answer,
         row_number() OVER (PARTITION BY v.id ORDER BY s.date) AS submission_number,
-        (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1 AS final_submission_per_variant
+        (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1 AS final_submission_per_variant,
+        (CASE
+            WHEN s.submitted_answer ? 'fileData' THEN v.params->>'fileName'
+            WHEN s.submitted_answer ? '_files' THEN f.file->>'name'
+        END) as filename,
+        (CASE
+            WHEN s.submitted_answer ? 'fileData' THEN v.params->>'fileData'
+            WHEN s.submitted_answer ? '_files' THEN f.file->>'contents'
+        END) as contents
     FROM
         assessments AS a
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
@@ -350,10 +358,18 @@ WITH all_file_submissions AS (
         JOIN questions AS q ON (q.id = aq.question_id)
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
+        JOIN (
+            SELECT
+                id,
+                jsonb_array_elements(submitted_answer->'_files') AS file
+            FROM submissions
+        ) f ON (f.id = s.id)
     WHERE
         a.id = $assessment_id
-        AND v.params ? 'fileName'
-        AND s.submitted_answer ? 'fileData'
+        AND (
+            (v.params ? 'fileName' AND s.submitted_answer ? 'fileData')
+            OR (s.submitted_answer ? '_files')
+        )
 )
 SELECT
     (
@@ -362,9 +378,9 @@ SELECT
         || '_' || qid
         || '_' || variant_number
         || '_' || submission_number
-        || '_' || (params->>'fileName')
+        || '_' || filename
     ) AS filename,
-    decode(submitted_answer->>'fileData', 'base64') AS contents
+    decode(contents, 'base64') AS contents
 FROM
     all_file_submissions
 WHERE
