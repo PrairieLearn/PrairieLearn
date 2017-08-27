@@ -14,6 +14,7 @@ var syncQuestions = require('./fromDisk/questions');
 var syncTags = require('./fromDisk/tags');
 var syncAssessmentSets = require('./fromDisk/assessmentSets');
 var syncAssessments = require('./fromDisk/assessments');
+var freeformServer = require('../question-servers/freeform');
 
 module.exports = {};
 
@@ -36,25 +37,31 @@ module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) 
             syncTags.sync.bind(null, course.courseInfo, course.questionDB),
             function(callback) {logger.info("Syncing assessment sets from git repository to database..."); callback(null);},
             syncAssessmentSets.sync.bind(null, course.courseInfo),
-        ], function(err) {
-            if (ERR(err, callback)) return;
-            async.forEachOfSeries(course.courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
-                async.series([
-                    function(callback) {logger.info("Syncing " + courseInstanceShortName
-                                                    + " courseInstance from git repository to database..."); callback(null);},
-                    syncCourseStaff.sync.bind(null, course.courseInfo, courseInstance),
-                    function(callback) {logger.info("Syncing " + courseInstanceShortName
-                                                    + " assessments from git repository to database..."); callback(null);},
-                    syncAssessments.sync.bind(null, course.courseInfo, courseInstance),
-                ], function(err) {
+            (callback) => {
+                async.forEachOfSeries(course.courseInstanceDB, function(courseInstance, courseInstanceShortName, callback) {
+                    async.series([
+                        function(callback) {logger.info("Syncing " + courseInstanceShortName
+                                                        + " courseInstance from git repository to database..."); callback(null);},
+                        syncCourseStaff.sync.bind(null, course.courseInfo, courseInstance),
+                        function(callback) {logger.info("Syncing " + courseInstanceShortName
+                                                        + " assessments from git repository to database..."); callback(null);},
+                        syncAssessments.sync.bind(null, course.courseInfo, courseInstance),
+                    ], function(err) {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                }, function(err) {
                     if (ERR(err, callback)) return;
+                    logger.info("Completed sync of git repository to database");
                     callback(null);
                 });
-            }, function(err) {
-                if (ERR(err, callback)) return;
-                logger.info("Completed sync of git repository to database");
-                callback(null);
-            });
+            },
+            function(callback) {logger.info("Reloading course elements..."); callback(null);},
+            freeformServer.reloadElementsForCourse.bind(null, course.courseInfo),
+        ], function(err) {
+            if (ERR(err, callback)) return;
+            logger.info("Completed sync of git repository to database");
+            callback(null);
         });
     });
 };

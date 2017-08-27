@@ -15,20 +15,6 @@ def get_file_names_as_array(raw_file_names):
         # Assume only one row
         return row
 
-def dependencies(element_html, element_index, data):
-    return {
-        'globalScripts': [
-            'lodash.min.js',
-            'dropzone.js'
-        ],
-        'scripts': [
-            'pl_file_upload.js'
-        ],
-        'styles': [
-            'pl_file_upload.css'
-        ]
-    }
-
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["file_names"]

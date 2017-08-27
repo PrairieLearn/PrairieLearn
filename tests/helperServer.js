@@ -6,6 +6,7 @@ var config = require('../lib/config');
 var socketServer = require('../lib/socket-server');
 var serverJobs = require('../lib/server-jobs');
 var syncFromDisk = require('../sync/syncFromDisk');
+var freeformServer = require('../question-servers/freeform');
 
 config.startServer = false;
 config.serverPort = 3007;
@@ -57,6 +58,12 @@ module.exports = {
                     callback(null);
                 });
             },
+            function(callback) {
+                freeformServer.init(function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            }
         ], function(err) {
             if (ERR(err, callback)) return;
             callback(null);

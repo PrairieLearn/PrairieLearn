@@ -21,6 +21,7 @@ var sprocs = require('./sprocs');
 var cron = require('./cron');
 var socketServer = require('./lib/socket-server');
 var serverJobs = require('./lib/server-jobs');
+var freeformServer = require('./question-servers/freeform.js');
 
 if (config.startServer) {
     logger.info('PrairieLearn server start');
@@ -124,6 +125,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlew
 
 // Serve element statics
 app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles'));
+app.use('/pl/course_instance/:course_instance_id/elements', require('./pages/elementFiles/elementFiles'));
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
@@ -415,6 +417,12 @@ if (config.startServer) {
                 callback(null);
             });
         },
+        function(callback) {
+            freeformServer.init(function(err) {
+              if (ERR(err, callback)) return;
+              callback(null);
+          });
+        }
     ], function(err, data) {
         if (err) {
             logger.error('Error initializing PrairieLearn server:', err, data);
