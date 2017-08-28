@@ -5,6 +5,7 @@
 !cron/
 !doc/
 !docker/
+!elements/
 !exampleCourse/
 !lib/
 !middlewares/
