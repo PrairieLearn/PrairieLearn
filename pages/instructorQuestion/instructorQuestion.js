@@ -3,9 +3,13 @@ var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
 
+var async = require('async');
 var error = require('../../lib/error');
 var question = require('../../lib/question');
 var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
+
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 function processSubmission(req, res, callback) {
     let variant_id, submitted_answer;
@@ -108,22 +112,49 @@ router.post('/', function(req, res, next) {
 });
 
 router.get('/', function(req, res, next) {
-    // req.query.variant_id might be undefined, which will generate a new variant
-    question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
-        if (ERR(err, next)) return;
-
-        res.locals.questionGHLink = null;
-        if (res.locals.course.repository) {
-            const GHfound = res.locals.course.repository.match(/^git@github.com:\/?(.+?)(\.git)?\/?$/);
-            if (GHfound) {
-                if (GHfound[1] == 'PrairieLearn/PrairieLearn') {
-                    // this is exampleCourse, so handle it specially
-                    res.locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/exampleCourse/questions/' + res.locals.question.qid;
-                } else {
-                    res.locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/questions/' + res.locals.question.qid;
+    async.series([
+        (callback) => {
+            sqldb.query(sql.assessment_question_stats, {question_id: res.locals.question.id}, function(err, result) {
+                if (ERR(err, callback)) return;
+                res.locals.assessment_stats = result.rows;
+                callback(null);
+            });
+        },
+        (callback) => {
+            res.locals.question_attempts_histogram = null;
+            res.locals.question_attempts_before_giving_up_histogram = null;
+            res.locals.question_attempts_histogram_hw = null;
+            res.locals.question_attempts_before_giving_up_histogram_hw = null;
+            // res.locals.question_attempts_histogram = res.locals.result.question_attempts_histogram;
+            // res.locals.question_attempts_before_giving_up_histogram = res.locals.result.question_attempts_before_giving_up_histogram;
+            // res.locals.question_attempts_histogram_hw = res.locals.result.question_attempts_histogram_hw;
+            // res.locals.question_attempts_before_giving_up_histogram_hw = res.locals.result.question_attempts_before_giving_up_histogram_hw;
+            callback(null);
+        },
+        (callback) => {
+            // req.query.variant_id might be undefined, which will generate a new variant
+            question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            res.locals.questionGHLink = null;
+            if (res.locals.course.repository) {
+                const GHfound = res.locals.course.repository.match(/^git@github.com:\/?(.+?)(\.git)?\/?$/);
+                if (GHfound) {
+                    if (GHfound[1] == 'PrairieLearn/PrairieLearn') {
+                        // this is exampleCourse, so handle it specially
+                        res.locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/exampleCourse/questions/' + res.locals.question.qid;
+                    } else {
+                        res.locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/questions/' + res.locals.question.qid;
+                    }
                 }
             }
-        }
+            callback(null);
+        },
+    ], (err) => {
+        if (ERR(err, next)) return;
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });

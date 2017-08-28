@@ -4,128 +4,126 @@ CREATE OR REPLACE FUNCTION
     ) RETURNS VOID
 AS $$
 BEGIN
-    WITH mean_question_scores AS (
+    WITH more_info AS (
         SELECT
-            ai.user_id,
-            aq.question_id,
             aq.assessment_id,
-            aq.id AS assessment_question_id,
-            avg(iq.number_attempts) as average_number_attempts,
-            admin_assessment_question_number(aq.id) as number,
-            avg(iq.score_perc) as user_score_perc
-        FROM
-            instance_questions AS iq
-            JOIN assessment_instances AS ai ON (iq.assessment_instance_id = ai.id)
-            JOIN assessment_questions AS aq ON (iq.assessment_question_id = aq.id)
-            JOIN assessments AS a ON (ai.assessment_id = a.id)
-            JOIN course_instances AS ci ON (a.course_instance_id = ci.id)
-            JOIN enrollments AS e ON (ai.user_id = e.user_id AND ci.id = e.course_instance_id)
-        WHERE
-            aq.deleted_at IS NULL
-            AND aq.id = assessment_question_id_var
-            AND e.role = 'Student'
-        GROUP BY
-            ai.user_id,
             aq.question_id,
-            aq.id,
-            aq.assessment_id
-    ),
-    mean_assessment_scores_without_quintiles AS (
-        SELECT
-            ai.user_id,
-            ai.assessment_id,
-            avg(ai.score_perc) AS user_score_perc
-        FROM
-            assessment_instances AS ai
-            JOIN assessments AS a ON (ai.assessment_id = a.id)
-            JOIN course_instances AS ci ON (a.course_instance_id = ci.id)
-            JOIN enrollments AS e ON (ai.user_id = e.user_id AND ci.id = e.course_instance_id)
-        WHERE
-            e.role = 'Student'
-        GROUP BY
-            ai.user_id,
-            ai.assessment_id
-    ),
-    mean_assessment_scores AS (
-        SELECT
-            mean_assessment_scores_without_quintiles.user_id,
-            mean_assessment_scores_without_quintiles.assessment_id,
-            mean_assessment_scores_without_quintiles.user_score_perc,
-            ntile(5) OVER (
-              PARTITION BY mean_assessment_scores_without_quintiles.assessment_id
-              ORDER BY mean_assessment_scores_without_quintiles.user_score_perc
-            ) as quintile
-        FROM
-            mean_assessment_scores_without_quintiles
-    ),
-    assessment_question_users AS (
-        SELECT
-            aq.question_id,
-            ai.user_id,
-            aq.assessment_id,
+            a.course_instance_id,
             aq.id AS assessment_question_id
         FROM
-            instance_questions AS iq
-            JOIN assessment_instances AS ai ON (iq.assessment_instance_id=ai.id)
-            JOIN assessment_questions AS aq ON (iq.assessment_question_id=aq.id)
-            JOIN assessments AS a ON (ai.assessment_id = a.id)
-            JOIN course_instances AS ci ON (a.course_instance_id = ci.id)
-            JOIN enrollments AS e ON (ai.user_id = e.user_id AND ci.id = e.course_instance_id)
+            assessment_questions AS aq
+            JOIN assessments AS a ON (a.id = aq.assessment_id)
         WHERE
-            aq.deleted_at IS NULL
-            AND aq.id = assessment_question_id_var
-            AND e.role = 'Student'
+            aq.id = assessment_question_id_var
+    ),
+    user_roles AS (
+        SELECT
+            u.user_id,
+            e.role
+        FROM
+            users AS u
+            JOIN more_info ON TRUE
+            JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = more_info.course_instance_id)
+    ),
+    relevant_assessments AS (
+        SELECT
+            a.*
+        FROM
+            assessments AS a
+            JOIN more_info ON TRUE
+        WHERE
+            a.id = more_info.assessment_id
+    ),
+    relevant_assessment_instances AS (
+        SELECT
+            ai.*
+        FROM
+            assessment_instances AS ai
+            JOIN user_roles ON user_roles.user_id = ai.user_id
+            JOIN more_info ON TRUE
+        WHERE
+            ai.assessment_id = more_info.assessment_id
+            AND user_roles.role = 'Student'
+    ),
+    relevant_instance_questions AS (
+        SELECT
+            iq.*
+        FROM
+            instance_questions AS iq
+            JOIN more_info ON TRUE
+            JOIN assessment_instances AS ai ON (iq.assessment_instance_id = ai.id)
+            JOIN user_roles ON user_roles.user_id = ai.user_id
+        WHERE
+            iq.assessment_question_id = more_info.assessment_question_id
+            AND user_roles.role = 'Student'
+    ),
+    relevant_users AS (
+        SELECT
+            u.*
+        FROM
+            relevant_assessment_instances AS ai
+            JOIN users AS u ON (ai.user_id = u.user_id)
         GROUP BY
+            u.user_id
+    ),
+    number_attempts AS (
+        SELECT
+            avg(iq.number_attempts) AS average_number_attempts
+        FROM
+            relevant_instance_questions AS iq
+    ),
+    question_scores_by_user AS (
+        SELECT
             ai.user_id,
-            aq.question_id,
-            aq.id,
-            aq.assessment_id
-    ),
-    question_score_quintiles AS (
-        SELECT
-            assessment_question_users.assessment_question_id,
-            mean_assessment_scores.quintile AS user_quintile,
-            avg(mean_question_scores.user_score_perc) AS score_perc
+            avg(iq.score_perc) AS user_score_perc
         FROM
-            assessment_question_users
-            JOIN mean_assessment_scores ON (
-                mean_assessment_scores.user_id = assessment_question_users.user_id
-                AND mean_assessment_scores.assessment_id = assessment_question_users.assessment_id
-            )
-            JOIN mean_question_scores ON (
-                mean_question_scores.assessment_question_id = assessment_question_users.assessment_question_id
-                AND mean_question_scores.user_id = assessment_question_users.user_id
-            )
+            relevant_instance_questions AS iq
+            JOIN assessment_instances AS ai ON (iq.assessment_instance_id = ai.id)
         GROUP BY
-            mean_assessment_scores.quintile,
-            assessment_question_users.assessment_question_id
+            ai.user_id
+    ),
+    assessment_scores_by_user AS (
+        SELECT
+            ai.user_id,
+            avg(ai.score_perc) AS user_score_perc
+        FROM
+            relevant_assessment_instances AS ai
+        GROUP BY
+            ai.user_id
+    ),
+    user_quintiles AS (
+        SELECT
+            assessment_scores_by_user.user_id,
+            ntile(5) OVER (
+                ORDER BY assessment_scores_by_user.user_score_perc
+            ) as quintile
+        FROM
+            assessment_scores_by_user
+    ),
+    quintile_scores AS (
+        SELECT
+            avg(question_scores_by_user.user_score_perc) AS quintile_score
+        FROM
+            question_scores_by_user
+            JOIN user_quintiles ON (user_quintiles.user_id = question_scores_by_user.user_id)
+        GROUP BY
+            user_quintiles.quintile
         ORDER BY
-            mean_assessment_scores.quintile
+            user_quintiles.quintile
     ),
-    question_score_quintiles_condensed AS (
-        SELECT
-            question_score_quintiles.assessment_question_id,
-            array_agg(question_score_quintiles.score_perc) AS quintile_scores
+    quintile_scores_as_array AS (
+        SELECT array_agg(quintile_scores.quintile_score) AS quintile_scores
         FROM
-            question_score_quintiles
-        GROUP BY
-            question_score_quintiles.assessment_question_id
+            quintile_scores
     ),
     aq_stats1 AS (
         SELECT
-            mean_question_scores.assessment_question_id,
-            greatest(0, least(100, avg(mean_question_scores.user_score_perc))) AS mean_score_per_question,
-            greatest(0, least(100, corr(mean_question_scores.user_score_perc, mean_assessment_scores.user_score_perc) * 100.0)) as discrimination,
-            avg(mean_question_scores.average_number_attempts) as average_number_attempts
+            greatest(0, least(100, avg(question_scores_by_user.user_score_perc))) AS mean_score_per_question,
+            greatest(0, least(100, corr(question_scores_by_user.user_score_perc, assessment_scores_by_user.user_score_perc) * 100.0)) as discrimination
         FROM
-            mean_question_scores
-            JOIN mean_assessment_scores
-                ON (
-                    mean_assessment_scores.user_id = mean_question_scores.user_id
-                    AND mean_assessment_scores.assessment_id = mean_question_scores.assessment_id
-                )
-        GROUP BY
-            mean_question_scores.assessment_question_id
+            relevant_users AS u
+            JOIN question_scores_by_user ON (question_scores_by_user.user_id = u.user_id)
+            JOIN assessment_scores_by_user ON (assessment_scores_by_user.user_id = u.user_id)
     ),
     aq_stats2 AS (
         SELECT
@@ -150,62 +148,54 @@ BEGIN
                 AS length_of_incorrect_streak_hist_over_students_with_no_correct_submission
 
         FROM
-            instance_questions AS iq
+            relevant_instance_questions AS iq
             JOIN assessment_questions AS aq ON iq.assessment_question_id = aq.id
-            JOIN assessment_instances AS ai ON (iq.assessment_instance_id = ai.id)
-            JOIN assessments AS a ON (ai.assessment_id = a.id)
-            JOIN course_instances AS ci ON (a.course_instance_id = ci.id)
-            JOIN enrollments AS e ON (ai.user_id = e.user_id AND ci.id = e.course_instance_id)
-        WHERE
-            aq.id = assessment_question_id_var
-            AND e.role = 'Student'
-        AND aq.deleted_at IS NULL
-        GROUP BY aq.id
+        GROUP BY
+            aq.id
     ),
     num_attempts_histogram AS (
         SELECT
             iq.assessment_question_id,
-            histogram(iq.number_attempts, 1, 10, 9) as num_attempts_histogram
+            histogram(iq.number_attempts, 1, 10, 10) as num_attempts_histogram
         FROM
-            instance_questions AS iq
-            JOIN assessment_instances AS ai ON (iq.assessment_instance_id = ai.id)
-            JOIN assessments AS a ON (ai.assessment_id = a.id)
-            JOIN course_instances AS ci ON (a.course_instance_id = ci.id)
-            JOIN enrollments AS e ON (ai.user_id = e.user_id AND ci.id = e.course_instance_id)
+            relevant_instance_questions AS iq
         WHERE
             iq.number_attempts != 0
-            AND e.role = 'Student'
         GROUP BY
             iq.assessment_question_id
+    ),
+    all_stats AS (
+        SELECT
+            *
+        FROM
+            aq_stats2
+            JOIN aq_stats1 ON TRUE
+            JOIN quintile_scores_as_array ON TRUE
+            JOIN num_attempts_histogram ON TRUE
+            JOIN number_attempts ON TRUE
     )
     UPDATE assessment_questions AS aq
     SET
-        mean_score = aq_stats1.mean_score_per_question,
-        discrimination = aq_stats1.discrimination,
-        average_number_attempts = aq_stats1.average_number_attempts,
-        quintile_scores = question_score_quintiles_condensed.quintile_scores,
-        some_correct_submission_perc = aq_stats2.perc_some_correct_submission,
-        first_attempt_correct_perc = aq_stats2.perc_correct_on_first_attempt,
-        last_attempt_correct_perc = aq_stats2.perc_correct_on_last_attempt,
-        some_submission_perc = aq_stats2.perc_question_attempted,
-        average_of_average_success_rates = aq_stats2.average_success_rate,
-        average_success_rate_hist = aq_stats2.average_success_rate_hist,
-        average_length_of_incorrect_streak_with_some_correct_submission = aq_stats2.average_length_of_incorrect_streak_over_students_with_some_correct_submission,
-        length_of_incorrect_streak_hist_with_some_correct_submission = aq_stats2.length_of_incorrect_streak_hist_over_students_with_some_correct_submission,
-        average_length_of_incorrect_streak_with_no_correct_submission = aq_stats2.average_length_of_incorrect_streak_over_students_with_no_correct_submission,
-        length_of_incorrect_streak_hist_with_no_correct_submission = aq_stats2.length_of_incorrect_streak_hist_over_students_with_no_correct_submission,
-        num_attempts_hist = num_attempts_histogram.num_attempts_histogram
+        mean_score = all_stats.mean_score_per_question,
+        discrimination = all_stats.discrimination,
+        average_number_attempts = all_stats.average_number_attempts,
+        quintile_scores = all_stats.quintile_scores,
+        some_correct_submission_perc = all_stats.perc_some_correct_submission,
+        first_attempt_correct_perc = all_stats.perc_correct_on_first_attempt,
+        last_attempt_correct_perc = all_stats.perc_correct_on_last_attempt,
+        some_submission_perc = all_stats.perc_question_attempted,
+        average_of_average_success_rates = all_stats.average_success_rate,
+        average_success_rate_hist = all_stats.average_success_rate_hist,
+        average_length_of_incorrect_streak_with_some_correct_submission = all_stats.average_length_of_incorrect_streak_over_students_with_some_correct_submission,
+        length_of_incorrect_streak_hist_with_some_correct_submission = all_stats.length_of_incorrect_streak_hist_over_students_with_some_correct_submission,
+        average_length_of_incorrect_streak_with_no_correct_submission = all_stats.average_length_of_incorrect_streak_over_students_with_no_correct_submission,
+        length_of_incorrect_streak_hist_with_no_correct_submission = all_stats.length_of_incorrect_streak_hist_over_students_with_no_correct_submission,
+        num_attempts_hist = all_stats.num_attempts_histogram
     FROM
-        aq_stats2
-        JOIN aq_stats1 ON aq_stats2.assessment_question_id = aq_stats1.assessment_question_id
-        JOIN question_score_quintiles_condensed
-            ON (
-                aq_stats2.assessment_question_id = question_score_quintiles_condensed.assessment_question_id
-            )
-        JOIN num_attempts_histogram ON num_attempts_histogram.assessment_question_id = aq_stats2.assessment_question_id
+        all_stats
+        JOIN more_info ON TRUE
     WHERE
-        aq.id = aq_stats2.assessment_question_id
-        AND aq.deleted_at IS NULL;
+        aq.id = more_info.assessment_question_id;
 
 END;
 $$ LANGUAGE plpgsql VOLATILE;
