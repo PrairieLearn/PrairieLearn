@@ -128,7 +128,7 @@
                 </a>
               </td>
               <td class="cell-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
-              <td class="cell-center"><%- include('../partials/examQuestionAvailablePoints', {instance_question}); %></td>
+              <td class="cell-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, points_list: instance_question.points_list}); %></td>
               <td class="cell-center"><%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %></td>
             </tr>
             <% }); %>
