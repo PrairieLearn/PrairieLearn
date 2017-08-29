@@ -52,7 +52,11 @@ FROM last_submission
 WHERE s.id = last_submission.id
 RETURNING *;
 
--- BLOCK update_question1_force_max_points
+-- BLOCK close_all_assessment_instances
+UPDATE assessment_instances
+SET open = false;
+
+-- BLOCK update_addVectors_force_max_points
 UPDATE assessment_questions AS aq
 SET
     force_max_points = TRUE
