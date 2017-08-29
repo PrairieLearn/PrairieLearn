@@ -118,13 +118,13 @@ describe('Access control', function() {
         });
     };
 
-    describe('GET /pl', function() {
+    describe('1. GET /pl', function() {
         it('as student should not contain TPL 101', function(callback) {
             getPl(cookiesStudent(), false, callback);
         });
     });
 
-    describe('the student user', function() {
+    describe('2. the student user', function() {
         it('should select from the DB', function(callback) {
             sqldb.queryOneRow(sql.select_student_user, [], function(err, result) {
                 if (ERR(err, callback)) return;
@@ -134,7 +134,7 @@ describe('Access control', function() {
         });
     });
 
-    describe('Enroll student user into exampleCourse', function() {
+    describe('3. Enroll student user into exampleCourse', function() {
         it('should succeed', function(callback) {
             var params = {user_id: user.user_id};
             sqldb.query(sql.insert_student_enrollment, params, function(err, _result) {
@@ -144,7 +144,7 @@ describe('Access control', function() {
         });
     });
 
-    describe('GET /pl', function() {
+    describe('4. GET /pl', function() {
         it('as student should contain TPL 101', function(callback) {
             getPl(cookiesStudent(), true, callback);
         });
@@ -158,7 +158,7 @@ describe('Access control', function() {
 
     /**********************************************************************/
 
-    describe('database', function() {
+    describe('5. database', function() {
         it('should contain E1', function(callback) {
             sqldb.queryOneRow(sql.select_e1, [], function(err, result) {
                 if (ERR(err, callback)) return;
@@ -190,7 +190,7 @@ describe('Access control', function() {
         });
     };
 
-    describe('GET /pl/assessments', function() {
+    describe('6. GET /pl/assessments', function() {
         it('as student should not contain E1', function(callback) {
             getAssessments(cookiesStudent(), false, callback);
         });
@@ -225,7 +225,7 @@ describe('Access control', function() {
         });
     };
 
-    describe('GET to assessment URL', function() {
+    describe('7. GET to assessment URL', function() {
         it('as student should return 500', function(callback) {
             getAssessment(cookiesStudent(), 500, callback);
         });
@@ -270,7 +270,7 @@ describe('Access control', function() {
         });
     };
 
-    describe('POST to assessment URL', function() {
+    describe('8. POST to assessment URL', function() {
         it('as student should return 500', function(callback) {
             postAssessment(cookiesStudent(), true, 500, callback);
         });
@@ -303,7 +303,7 @@ describe('Access control', function() {
         });
     };
 
-    describe('GET to assessment_instance URL', function() {
+    describe('9. GET to assessment_instance URL', function() {
         it('as student should return 500', function(callback) {
             getAssessmentInstance(cookiesStudent(), 500, callback);
         });
@@ -352,7 +352,7 @@ describe('Access control', function() {
         });
     };
 
-    describe('POST to assessment_instance URL', function() {
+    describe('10. POST to assessment_instance URL', function() {
         it('as student should return 500', function(callback) {
             postAssessmentInstance(cookiesStudent(), 500, callback);
         });
@@ -382,7 +382,7 @@ describe('Access control', function() {
         });
     };
 
-    describe('GET to instance_question URL', function() {
+    describe('11. GET to instance_question URL', function() {
         it('as student should return 500', function(callback) {
             getInstanceQuestion(cookiesStudent(), 500, callback);
         });
@@ -446,7 +446,7 @@ describe('Access control', function() {
         });
     };
 
-    describe('POST to instance_question URL', function() {
+    describe('12. POST to instance_question URL', function() {
         it('as student should return 500', function(callback) {
             postInstanceQuestion(cookiesStudent(), 500, callback);
         });
@@ -475,7 +475,7 @@ describe('Access control', function() {
         });
     });
 
-    describe('insert PrairieSchedule reservation', function() {
+    describe('13. insert PrairieSchedule reservation', function() {
         it('should succeed', function(callback) {
             var params = {user_id: user.user_id};
             sqldb.query(sql.insert_ps_reservation, params, function(err, _result) {
@@ -494,7 +494,7 @@ describe('Access control', function() {
         });
     });
 
-    describe('check in PrairieSchedule reservation', function() {
+    describe('14. check in PrairieSchedule reservation', function() {
         it('should succeed', function(callback) {
             sqldb.query(sql.update_ps_reservation_to_checked_in, [], function(err, _result) {
                 if (ERR(err, callback)) return;
