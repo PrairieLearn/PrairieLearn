@@ -33,7 +33,7 @@ describe('Exam assessment', function() {
 
     var res, page, elemList;
 
-    describe('the database', function() {
+    describe('1. the database', function() {
         it('should contain E1', function(callback) {
             sqldb.queryOneRow(sql.select_e1, [], function(err, result) {
                 if (ERR(err, callback)) return;
@@ -43,7 +43,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('GET ' + locals.assessmentsUrl, function() {
+    describe('2. GET ' + locals.assessmentsUrl, function() {
         it('should load successfully', function(callback) {
             request(locals.assessmentsUrl, function (error, response, body) {
                 if (error) {
@@ -70,7 +70,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('GET to assessment URL', function() {
+    describe('3. GET to assessment URL', function() {
         it('should load successfully', function(callback) {
             request(locals.assessmentUrl, function (error, response, body) {
                 if (error) {
@@ -108,7 +108,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('POST to assessment URL', function() {
+    describe('4. POST to assessment URL', function() {
         it('should load successfully', function(callback) {
             var form = {
                 __action: 'newInstance',
@@ -172,7 +172,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('GET to assessment_instance URL', function() {
+    describe('5. GET to assessment_instance URL', function() {
         it('should load successfully', function(callback) {
             request(locals.assessmentInstanceUrl, function (error, response, body) {
                 if (error) {
@@ -209,7 +209,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('1. save correct answer to question addVectors', function() {
+    describe('6. save correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -235,7 +235,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestion(locals);
     });
 
-    describe('2. grade incorrect answer to question addVectors', function() {
+    describe('7. grade incorrect answer to question addVectors', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -261,7 +261,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestion(locals);
     });
 
-    describe('3. grade incorrect answer to question addNumbers', function() {
+    describe('8. grade incorrect answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -286,7 +286,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestion(locals);
     });
 
-    describe('4. grade incorrect answer to question fossilFuelsRadio', function() {
+    describe('9. grade incorrect answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -311,7 +311,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestion(locals);
     });
 
-    describe('6. grade invalid answer to question addNumbers', function() {
+    describe('10. grade invalid answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -352,7 +352,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('8. save incorrect answer to question addNumbers', function() {
+    describe('11. save incorrect answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -369,7 +369,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestion(locals);
     });
 
-    describe('9. break the addNumbers variant', function() {
+    describe('12. break the addNumbers variant', function() {
         describe('setting the question', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -392,7 +392,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('10. a broken variant', function() {
+    describe('13. a broken variant', function() {
         describe('setting the question', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = [];
@@ -421,7 +421,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('15. load question addNumbers page and save data for later submission', function() {
+    describe('14. load question addNumbers page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -437,7 +437,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('11. grade correct answer to question addNumbers', function() {
+    describe('15. grade correct answer to question addNumbers', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -462,7 +462,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestion(locals);
     });
 
-    describe('17. save correct answer to saved question addNumbers page', function() {
+    describe('16. save correct answer to saved question addNumbers page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.question = addNumbers;
@@ -483,7 +483,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestionAndFail(locals);
     });
 
-    describe('18. save incorrect answer to question fossilFuelsRadio', function() {
+    describe('17. save incorrect answer to question fossilFuelsRadio', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -508,7 +508,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestion(locals);
     });
 
-    describe('20. load question addVectors page and save data for later submission', function() {
+    describe('18. load question addVectors page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -550,7 +550,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestion(locals);
     });
 
-    describe('22. submit correct answer to saved question addVectors page', function() {
+    describe('20. submit correct answer to saved question addVectors page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.question = addVectors;
@@ -572,7 +572,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestionAndFail(locals);
     });
 
-    describe('23. load question fossilFuelsRadio page and save data for later submission', function() {
+    describe('21. load question fossilFuelsRadio page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -588,7 +588,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('26. close exam', function() {
+    describe('22. close exam', function() {
         it('should succeed', function(callback) {
             sqldb.queryOneRow(sql.close_all_assessment_instances, [], function(err, _result) {
                 if (ERR(err, callback)) return;
@@ -597,7 +597,7 @@ describe('Exam assessment', function() {
         });
     });
 
-    describe('27. save correct answer to saved question fossilFuelsRadio page', function() {
+    describe('23. save correct answer to saved question fossilFuelsRadio page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.question = fossilFuelsRadio;
@@ -618,7 +618,7 @@ describe('Exam assessment', function() {
         helperQuestion.postInstanceQuestionAndFail(locals);
     });
 
-    describe('30. regrading', function() {
+    describe('24. regrading', function() {
         describe('set forceMaxPoints = true for question addVectors', function() {
             it('should succeed', function(callback) {
                 sqldb.query(sql.update_addVectors_force_max_points, [], function(err, _result) {
