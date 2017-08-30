@@ -1,10 +1,9 @@
 {
-    "uuid": "e04f3972-1657-11e7-93ae-92361f002671",
+    "uuid": "fda347fe-aa48-4606-a7cb-e4fff580b4a6",
     "title": "Fibonacci function with in-browser editor, external grading",
     "topic": "Functions",
     "tags": ["code"],
-    "clientFiles": ["client.js", "question.html", "answer.html", "submission.html"],
-    "type": "Calculation",
+    "type": "v3",
     "singleVariant": true,
     "gradingMethod": "External",
     "externalGradingOptions": {

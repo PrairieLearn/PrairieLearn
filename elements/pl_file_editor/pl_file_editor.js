@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global _, ace */
+/* global ace */
 window.PLFileEditor = function(uuid, options) {
     this.element = $('#file-editor-' + uuid);
     this.inputElement = this.element.find('input');
