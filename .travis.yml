@@ -12,6 +12,7 @@ services:
 cache:
   directories:
     - node_modules
+  pip: true
 branches:
   only:
   - master
@@ -31,7 +32,7 @@ script:
   - npm install
 
   # Install python packages
-  - pip3 install numpy scipy matplotlib pandas sympy lxml chevron flake8 flake8-quotes
+  - pip3 install -r requirements.txt
 
   # Run JS tests
   - npm test
