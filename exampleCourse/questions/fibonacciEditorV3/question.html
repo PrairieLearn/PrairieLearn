@@ -12,7 +12,17 @@
   </p>
 </pl_question_panel>
 
-<pl_file_editor file_name="fib.py">
+<script>
+window.FibonacciEditorConfig = function(editor) {
+  editor.setTheme('ace/theme/monokai');
+};
+</script>
+
+<pl_file_editor
+  file_name="fib.py"
+  ace_mode="ace/mode/python"
+  editor_config_function="FibonacciEditorConfig"
+>
 def fib(n):
     pass
 </pl_file_editor>

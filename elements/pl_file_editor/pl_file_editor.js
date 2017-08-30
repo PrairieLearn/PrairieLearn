@@ -1,15 +1,30 @@
 /* eslint-env browser,jquery */
-/* global ace */
+/* global _, ace */
 window.PLFileEditor = function(uuid, options) {
     this.element = $('#file-editor-' + uuid);
     this.inputElement = this.element.find('input');
     this.editorElement = this.element.find('.editor');
     this.editor = ace.edit(this.editorElement.get(0));
     this.editor.setTheme('ace/theme/chrome');
-    this.editor.getSession().setMode('ace/mode/python');
     this.editor.getSession().setUseWrapMode(true);
     this.editor.setShowPrintMargin(false);
     this.editor.getSession().on('change', this.syncFileToHiddenInput.bind(this));
+
+    if (options.aceMode) {
+        this.editor.getSession().setMode(options.aceMode);
+    }
+
+    if (options.editorConfigFunction) {
+        var configFn = _.get(window, options.editorConfigFunction);
+        if (configFn) {
+            try {
+                configFn(this.editor);
+            } catch (e) {
+                window.console.error('Error executing editor config function ' + options.editorConfigFunction);
+                window.console.error(e);
+            }
+        }
+    }
 
     var currentContents = '';
     if (options.currentContents) {

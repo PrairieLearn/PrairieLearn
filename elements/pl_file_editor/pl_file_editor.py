@@ -14,7 +14,7 @@ def get_answer_name(file_name):
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["file_name"]
-    optional_attribs = []
+    optional_attribs = ["ace_mode", "editor_config_function"]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     return data
@@ -23,9 +23,17 @@ def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, "file_name", "")
     answer_name = get_answer_name(file_name)
+    editor_config_function = pl.get_string_attrib(element, "editor_config_function", None)
+    ace_mode = pl.get_string_attrib(element, "ace_mode", None)
     uuid = pl.get_uuid();
 
-    html_params = {'name': answer_name, 'file_name': file_name, 'uuid': uuid}
+    html_params = {
+        'name': answer_name,
+        'file_name': file_name,
+        'ace_mode': ace_mode,
+        'editor_config_function': editor_config_function,
+        'uuid': uuid
+    }
 
     html_params["original_file_contents"] = base64.b64encode(str(element.text).encode('UTF-8').strip() or '').decode()
 

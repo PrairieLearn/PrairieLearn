@@ -5,7 +5,9 @@ $(function() {
 
     new window.PLFileEditor(UUID, {
         originalContents: "{{original_file_contents}}",
-        currentContents: "{{current_file_contents}}"
+        currentContents: "{{current_file_contents}}",
+        editorConfigFunction: {{#editor_config_function}}"{{editor_config_function}}"{{/editor_config_function}}{{^editor_config_function}}undefined{{/editor_config_function}},
+        aceMode: {{#ace_mode}}"{{ace_mode}}"{{/ace_mode}}{{^ace_mode}}undefined{{/ace_mode}}
     });
 });
 </script>
