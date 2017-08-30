@@ -5,9 +5,9 @@
 
 ```html
 <pl_multiple_choice answers_name="acc" weight="1" inline="true">
-  <pl_answer correct="false">positive</answer>
-  <pl_answer correct="true">negative</answer>
-  <pl_answer correct="false">zero</answer>
+  <pl_answer correct="false">positive</pl_answer>
+  <pl_answer correct="true">negative</pl_answer>
+  <pl_answer correct="false">zero</pl_answer>
 </pl_multiple_choice>
 ```
 
