@@ -14,6 +14,12 @@ window.PLFileEditor = function(uuid, options) {
         this.editor.getSession().setMode(options.aceMode);
     }
 
+    if (options.aceTheme) {
+        this.editor.setTheme(options.aceTheme);
+    } else {
+        this.editor.setTheme('ace/theme/chrome');
+    }
+
     if (options.editorConfigFunction) {
         var configFn = _.get(window, options.editorConfigFunction);
         if (configFn) {

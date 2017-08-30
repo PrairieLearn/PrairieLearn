@@ -14,13 +14,16 @@
 
 <script>
 window.FibonacciEditorConfig = function(editor) {
-  editor.setTheme('ace/theme/monokai');
+  editor.setOptions({
+      fontSize: "10pt",
+  });
 };
 </script>
 
 <pl_file_editor
   file_name="fib.py"
   ace_mode="ace/mode/python"
+  ace_theme="ace/theme/monokai"
   editor_config_function="FibonacciEditorConfig"
 >
 def fib(n):

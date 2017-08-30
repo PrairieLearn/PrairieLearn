@@ -7,7 +7,8 @@ $(function() {
         originalContents: "{{original_file_contents}}",
         currentContents: "{{current_file_contents}}",
         editorConfigFunction: {{#editor_config_function}}"{{editor_config_function}}"{{/editor_config_function}}{{^editor_config_function}}undefined{{/editor_config_function}},
-        aceMode: {{#ace_mode}}"{{ace_mode}}"{{/ace_mode}}{{^ace_mode}}undefined{{/ace_mode}}
+        aceMode: {{#ace_mode}}"{{ace_mode}}"{{/ace_mode}}{{^ace_mode}}undefined{{/ace_mode}},
+        aceTheme: {{#ace_theme}}"{{ace_theme}}"{{/ace_theme}}{{^ace_theme}}undefined{{/ace_theme}}
     });
 });
 </script>
