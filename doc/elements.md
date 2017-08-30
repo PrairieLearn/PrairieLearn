@@ -155,6 +155,7 @@ Attribute | Type | Default | description
 <pl_file_editor
   file_name="fib.py"
   ace_mode="ace/mode/python"
+  ace_theme="ace/theme/monokai"
 >
 def fib(n):
     pass
@@ -164,33 +165,11 @@ def fib(n):
 Provides an in-broswer file editor that's compatible with the other file elements
 and external grading system.
 
-You can get access to the Ace `editor` object by attaching a function to
-the `window` object and specifying the path to the function on the window object:
-```html
-<script>
-window.MyQuestionEditorConfig = function(editor) {
-  this.editor.setTheme('ace/theme/chrome');
-  editor.setOptions({
-    fontSize: "10pt",
-  });
-};
-</script>
-
-<pl_file_editor
-  file_name="fib.py"
-  editor_config_function="MyQuestionEditorConfig"
->
-def fib(n):
-    pass
-</pl_file_editor>
-```
-
 Attribute | Type | Default | description
 --- | --- | --- | ---
 `file_name` | string | - | The name of this file; will be used to store this file in the `_files` submitted answer
 `ace_mode` | string | None | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).
 `ace_theme` | string | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).
-`editor_config_function` | string | None | Specifies a path to a function on the `window` object that will be called with the Ace editor as the argument. For instance, if this attribute had a value `a.b.config`, the function `window.a.b.config` will be called.
 
 ## `pl_external_grader_results` element
 

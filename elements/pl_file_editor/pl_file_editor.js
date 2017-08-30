@@ -20,18 +20,6 @@ window.PLFileEditor = function(uuid, options) {
         this.editor.setTheme('ace/theme/chrome');
     }
 
-    if (options.editorConfigFunction) {
-        var configFn = _.get(window, options.editorConfigFunction);
-        if (configFn) {
-            try {
-                configFn(this.editor);
-            } catch (e) {
-                window.console.error('Error executing editor config function ' + options.editorConfigFunction);
-                window.console.error(e);
-            }
-        }
-    }
-
     var currentContents = '';
     if (options.currentContents) {
         currentContents = this.b64DecodeUnicode(options.currentContents);
