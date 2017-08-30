@@ -1,0 +1,22 @@
+{{#question}}
+<script>
+$(function() {
+    var UUID = "{{uuid}}";
+
+    new window.PLFileEditor(UUID, {
+        originalContents: "{{original_file_contents}}",
+        currentContents: "{{current_file_contents}}"
+    });
+});
+</script>
+<div id="file-editor-{{uuid}}">
+    <input type="hidden" name="{{name}}">
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h4 class="panel-title">{{file_name}}</h4>
+        </div>
+        <div class="editor"></div>
+    </div>
+    {{submission}}
+</div>
+{{/question}}
