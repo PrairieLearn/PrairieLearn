@@ -94,7 +94,7 @@ describe('Access control', function() {
     var user, page, $, elemList;
     var assessment_id;
     var __csrf_token;
-    var assessmentUrl, q1Url, questionData, variant;
+    var assessmentUrl, q1Url, questionData, variant, instance_question;
 
     /**********************************************************************/
 
@@ -319,51 +319,23 @@ describe('Access control', function() {
         it('should parse', function() {
             $ = cheerio.load(page);
         });
-        it('should have a CSRF token', function() {
-            elemList = $('form[name="grade-form"] input[name="__csrf_token"]');
-            assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
-            __csrf_token = elemList[0].attribs.value;
-            assert.isString(__csrf_token);
+        it('should produce an addVectors instance_question in the DB', function(callback) {
+            sqldb.query(sql.select_instance_question_addVectors, [], function(err, result) {
+                if (ERR(err, callback)) return;
+                if (result.rowCount == 0) {
+                    return callback(new Error('did not find addVectors instance question in DB'));
+                } else if (result.rowCount > 1) {
+                    return callback(new Error('multiple rows found: ' + JSON.stringify(result.rows, null, '    ')));
+                }
+                instance_question = result.rows[0];
+                callback(null);
+            });
         });
         it('should link to addVectors question', function() {
-            elemList = $('td a:contains("Addition of vectors in Cartesian coordinates")');
+            const urlTail = '/pl/course_instance/1/instance_question/' + instance_question.id + '/';
+            q1Url = siteUrl + urlTail;
+            elemList = $(`td a[href="${urlTail}"]`);
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.href');
-            q1Url = siteUrl + elemList[0].attribs.href;
-        });
-    });
-
-    /**********************************************************************/
-
-    var postAssessmentInstance = function(cookies, expectedStatusCode, callback) {
-        var form = {
-            __action: 'grade',
-            __csrf_token: __csrf_token,
-        };
-        request.post({url: assessmentInstanceUrl, form: form, jar: cookies, followAllRedirects: true}, function (error, response) {
-            if (error) {
-                return callback(error);
-            }
-            if (response.statusCode != expectedStatusCode) {
-                return callback(new Error('bad status: ' + response.statusCode));
-            }
-            callback(null);
-        });
-    };
-
-    describe('10. POST to assessment_instance URL', function() {
-        it('as student should return 500', function(callback) {
-            postAssessmentInstance(cookiesStudent(), 500, callback);
-        });
-        it('as student in Exam mode before time period should return 500', function(callback) {
-            postAssessmentInstance(cookiesStudentExamBeforeAssessment(), 500, callback);
-        });
-        it('as student in Exam mode after time period should return 500', function(callback) {
-            postAssessmentInstance(cookiesStudentExamAfterAssessment(), 500, callback);
-        });
-        it('as student in Exam mode should load successfully', function(callback) {
-            postAssessmentInstance(cookiesStudentExam(), 200, callback);
         });
     });
 
