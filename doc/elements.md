@@ -78,6 +78,30 @@ Attribute | Type | Default | Description
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `eps_digits` | integer | 3 | Additional digits (beyond `digits`) used to compute a grace tolerance.
 
+## `pl_matrix_output` element
+
+```html
+<pl_matrix_output digits="3">
+    <variable params_name="A">A</variable>
+    <variable params_name="B">B</variable>
+</pl_matrix_output>
+```
+
+Attributes for `<pl_matrix_output`:
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`digits` | integer | — | Number of digits to display after the decimal.
+
+Attributes for `<variable>` (one of these for each variable to display):
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`params_name` | string | — | Name of variable in `data['params']` to display.
+
+Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `. Each variable will be suffixed by `;`. Each variable will appear on its own line.
+
+
 ## `pl_figure` element
 
 ```html
