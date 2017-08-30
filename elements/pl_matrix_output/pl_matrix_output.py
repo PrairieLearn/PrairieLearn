@@ -11,7 +11,7 @@ def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     digits = pl.get_integer_attrib(element,"digits",2)
 
-    html = "<pre>\n"
+    html = "<pre>\n% Data in MATLAB format\n"
     for child in element:
         if child.tag == "variable":
             pl.check_attribs(child, required_attribs=["params_name"], optional_attribs=[])
@@ -21,7 +21,7 @@ def render(element_html, element_index, data):
                 raise Exception('No value in data["params"] for variable %s in matrix_output element' % var_name)
             html += pl.inner_html(child) \
                 + " = " \
-                + pl.numpy_to_matlab(np.array(var_data),ndigits=digits) \
+                + pl.numpy_to_matlab(np.array(var_data),ndigits=digits) + ";" \
                 + "\n"
     html += "</pre>"
     return html
