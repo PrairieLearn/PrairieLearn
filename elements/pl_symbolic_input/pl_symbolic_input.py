@@ -1,91 +1,94 @@
+import prairielearn as pl
 import lxml.html
 from html import escape
 import chevron
-import prairielearn as pl
 import sympy
 import random
 import ast
 
+
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ["answers_name"]
-    optional_attribs = ["weight", "correct_answer", "variables"]
+    required_attribs = ['answers_name']
+    optional_attribs = ['weight', 'correct_answer', 'variables']
     pl.check_attribs(element, required_attribs, optional_attribs)
-    name = pl.get_string_attrib(element, "answers_name")
+    name = pl.get_string_attrib(element, 'answers_name')
 
-    correct_answer = pl.get_string_attrib(element, "correct_answer", None)
+    correct_answer = pl.get_string_attrib(element, 'correct_answer', None)
     if correct_answer is not None:
-        if name in data["correct_answers"]:
-            raise Exception("duplicate correct_answers variable name: %s" % name)
-        data["correct_answers"][name] = correct_answer
+        if name in data['correct_answers']:
+            raise Exception('duplicate correct_answers variable name: %s' % name)
+        data['correct_answers'][name] = correct_answer
 
     return data
 
+
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, "answers_name")
-    variables = pl.get_string_attrib(element, "variables", None)
+    name = pl.get_string_attrib(element, 'answers_name')
+    variables = pl.get_string_attrib(element, 'variables', None)
 
-    if data["panel"] == "question":
-        editable = data["editable"]
-        raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
+    if data['panel'] == 'question':
+        editable = data['editable']
+        raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
 
-        operators = ', '.join(['cos','sin','tan','exp','log','sqrt','( )','+','-','*','/','^','**'])
+        operators = ', '.join(['cos', 'sin', 'tan', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**'])
         constants = ', '.join(['pi'])
 
-        info_params = {"format": True, "variables": variables, "operators": operators, "constants": constants}
-        with open('pl_symbolic_input.mustache','r') as f:
-            info = chevron.render(f,info_params).strip()
-        with open('pl_symbolic_input.mustache','r') as f:
-            info_params.pop("format",None)
-            info_params["shortformat"] = True
-            shortinfo = chevron.render(f,info_params).strip()
+        info_params = {'format': True, 'variables': variables, 'operators': operators, 'constants': constants}
+        with open('pl_symbolic_input.mustache', 'r') as f:
+            info = chevron.render(f, info_params).strip()
+        with open('pl_symbolic_input.mustache', 'r') as f:
+            info_params.pop('format', None)
+            info_params['shortformat'] = True
+            shortinfo = chevron.render(f, info_params).strip()
 
         html_params = {'question': True, 'name': name, 'editable': editable, 'info': info, 'shortinfo': shortinfo}
         if raw_submitted_answer is not None:
             html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
-        with open('pl_symbolic_input.mustache','r') as f:
-            html = chevron.render(f,html_params).strip()
+        with open('pl_symbolic_input.mustache', 'r') as f:
+            html = chevron.render(f, html_params).strip()
 
-    elif data["panel"] == "submission":
-        parse_error = data["format_errors"].get(name, None)
+    elif data['panel'] == 'submission':
+        parse_error = data['format_errors'].get(name, None)
         html_params = {'submission': True, 'parse_error': parse_error}
         if parse_error is None:
-            a_sub = data["submitted_answers"][name]
+            a_sub = data['submitted_answers'][name]
             a_sub = convert_string_to_sympy(a_sub, variables)
-            html_params["a_sub"] = sympy.latex(a_sub)
+            html_params['a_sub'] = sympy.latex(a_sub)
         else:
-            raw_submitted_answer = data["raw_submitted_answers"].get(name, None)
+            raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             if raw_submitted_answer is not None:
                 html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
-        with open('pl_symbolic_input.mustache','r') as f:
-            html = chevron.render(f,html_params).strip()
+        with open('pl_symbolic_input.mustache', 'r') as f:
+            html = chevron.render(f, html_params).strip()
 
-    elif data["panel"] == "answer":
-        a_tru = data["correct_answers"].get(name, None)
+    elif data['panel'] == 'answer':
+        a_tru = data['correct_answers'].get(name, None)
         if a_tru is not None:
             a_tru = convert_string_to_sympy(a_tru, variables)
             html_params = {'answer': True, 'a_tru': sympy.latex(a_tru)}
-            with open('pl_symbolic_input.mustache','r') as f:
-                html = chevron.render(f,html_params).strip()
+            with open('pl_symbolic_input.mustache', 'r') as f:
+                html = chevron.render(f, html_params).strip()
         else:
-            html = ""
+            html = ''
 
     else:
-        raise Exception("Invalid panel type: %s" % data["panel"])
+        raise Exception('Invalid panel type: %s' % data['panel'])
 
     return html
 
+
 def parse(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, "answers_name")
-    variables = pl.get_string_attrib(element, "variables", None)
+    name = pl.get_string_attrib(element, 'answers_name')
+    variables = pl.get_string_attrib(element, 'variables', None)
 
     # Get submitted answer or return parse_error if it does not exist
-    a_sub = data["submitted_answers"].get(name,None)
+    a_sub = data['submitted_answers'].get(name, None)
     if not a_sub:
-        data["format_errors"][name] = 'No submitted answer.'
-        data["submitted_answers"][name] = None
+        data['format_errors'][name] = 'No submitted answer.'
+        data['submitted_answers'][name] = None
         return data
 
     try:
@@ -93,35 +96,36 @@ def parse(element_html, element_index, data):
         a_sub = convert_string_to_sympy(a_sub, variables)
 
         # Store result as a string.
-        data["submitted_answers"][name] = str(a_sub)
+        data['submitted_answers'][name] = str(a_sub)
     except:
-        data["format_errors"][name] = "Invalid format."
-        data["submitted_answers"][name] = None
+        data['format_errors'][name] = 'Invalid format.'
+        data['submitted_answers'][name] = None
         return data
 
     return data
 
+
 def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, "answers_name")
+    name = pl.get_string_attrib(element, 'answers_name')
 
     # Get weight
-    weight = pl.get_integer_attrib(element, "weight", 1)
+    weight = pl.get_integer_attrib(element, 'weight', 1)
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
-    a_tru = data["correct_answers"].get(name,None)
+    a_tru = data['correct_answers'].get(name, None)
     if a_tru is None:
         return data
 
     # Get submitted answer (if it does not exist, score is zero)
-    a_sub = data["submitted_answers"].get(name,None)
+    a_sub = data['submitted_answers'].get(name, None)
     if a_sub is None:
-        data["partial_scores"][name] = {"score": 0, "weight": weight}
+        data['partial_scores'][name] = {'score': 0, 'weight': weight}
         return data
 
     # Parse both correct and submitted answer (will throw an error on fail).
-    variables = pl.get_string_attrib(element, "variables", None)
+    variables = pl.get_string_attrib(element, 'variables', None)
     a_tru = convert_string_to_sympy(a_tru, variables)
     a_sub = convert_string_to_sympy(a_sub, variables)
 
@@ -129,9 +133,9 @@ def grade(element_html, element_index, data):
     correct = a_tru.equals(a_sub)
 
     if correct:
-        data["partial_scores"][name] = {"score": 1, "weight": weight}
+        data['partial_scores'][name] = {'score': 1, 'weight': weight}
     else:
-        data["partial_scores"][name] = {"score": 0, "weight": weight}
+        data['partial_scores'][name] = {'score': 0, 'weight': weight}
 
     return data
 
@@ -151,7 +155,7 @@ def grade(element_html, element_index, data):
 # associated PR: https://github.com/sympy/sympy/pull/12524 but it is
 # unclear when/if they will be merged. We should check once sympy 1.2
 # is released and see whether we can switch to using
-# `sympify(...,safe=True)`.
+# `sympify(..., safe=True)`.
 #
 # For examples of the type of attacks that we are avoiding:
 # https://nedbatchelder.com/blog/201206/eval_really_is_dangerous.html
@@ -179,6 +183,7 @@ def grade(element_html, element_index, data):
 # A similar (but more complex) approach to us:
 #     https://github.com/newville/asteval
 
+
 class Visitor(ast.NodeVisitor):
     def visit(self, node):
         if not isinstance(node, self.whitelist):
@@ -192,7 +197,8 @@ class Visitor(ast.NodeVisitor):
     # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
     whitelist = (ast.Module, ast.Expr, ast.Load, ast.Expression, ast.Call, ast.Name, ast.Num, ast.UnaryOp, ast.UAdd, ast.USub, ast.BinOp, ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod, ast.Pow)
 
-def evaluate(expr, locals = {}):
+
+def evaluate(expr, locals={}):
     if any(elem in expr for elem in '\n#'):
         raise ValueError(expr)
     try:
@@ -202,10 +208,11 @@ def evaluate(expr, locals = {}):
     except Exception:
         raise ValueError(expr)
 
-def convert_string_to_sympy(a,variables):
+
+def convert_string_to_sympy(a, variables):
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In python, only the latter can be used.
-    a = a.replace('^','**')
+    a = a.replace('^', '**')
 
     # Define a list of valid expressions and their mapping to sympy
     locals_for_eval = {'cos': sympy.cos, 'sin': sympy.sin, 'tan': sympy.tan, 'exp': sympy.exp, 'log': sympy.log, 'sqrt': sympy.sqrt, 'pi': sympy.pi}
@@ -223,22 +230,23 @@ def convert_string_to_sympy(a,variables):
     # is an integer, for example, it needs to be converted to sympy.
     return sympy.sympify(a)
 
+
 def test(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, "answers_name")
-    weight = pl.get_integer_attrib(element, "weight", 1)
+    name = pl.get_string_attrib(element, 'answers_name')
+    weight = pl.get_integer_attrib(element, 'weight', 1)
 
     result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
     if result == 'correct':
-        data["raw_submitted_answers"][name] = data["correct_answers"][name]
-        data["partial_scores"][name] = {"score": 1, "weight": weight}
+        data['raw_submitted_answers'][name] = data['correct_answers'][name]
+        data['partial_scores'][name] = {'score': 1, 'weight': weight}
     elif result == 'incorrect':
-        data["raw_submitted_answers"][name] = data["correct_answers"][name]+' + {:d}'.format(random.randint(1,100))
-        data["partial_scores"][name] = {"score": 0, "weight": weight}
+        data['raw_submitted_answers'][name] = data['correct_answers'][name] + ' + {:d}'.format(random.randint(1, 100))
+        data['partial_scores'][name] = {'score': 0, 'weight': weight}
     elif result == 'invalid':
-        if random.choice([True,False]):
-            data["raw_submitted_answers"][name] = 'complete garbage'
-            data["format_errors"][name] = "Invalid format."
+        if random.choice([True, False]):
+            data['raw_submitted_answers'][name] = 'complete garbage'
+            data['format_errors'][name] = 'Invalid format.'
 
         # FIXME: add more invalid choices
     else:
