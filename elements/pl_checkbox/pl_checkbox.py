@@ -21,6 +21,7 @@ def prepare(element_html, element_index, data):
                 correct_answers.append(answer_tuple)
             else:
                 incorrect_answers.append(answer_tuple)
+            index += 1
 
     len_correct = len(correct_answers)
     len_incorrect = len(incorrect_answers)
