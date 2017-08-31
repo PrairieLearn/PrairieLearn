@@ -35,7 +35,7 @@ Access restriction | courseInstance | assessment | Meaning | Example
 `uids`             | ✓ | ✓ | Require one of the UIDs in the array to access.                     | `"uids": ["mwest@illinois.edu", "zilles@illinois.edu"]`
 `startDate`        | ✓ | ✓ | Only allow access after this date.                                  | `"startDate": "2015-01-19T00:00:01"`
 `endDate`          | ✓ | ✓ | Only access access before this date.                                | `"endDate": "2015-05-13T23:59:59"`
-`institution`      | ✓ |   | Only people from this institution ("UIUC" or "Any").                | `"institution": "UIUC"`
+`institution`      | ✓ |   | Only people from this institution ("UIUC", "ZJUI", or "Any").       | `"institution": "UIUC"`
 `mode`             |   | ✓ | Only allow access from this server mode.                            | `"mode": "Exam"`
 `credit`           |   | ✓ | Maximum credit as percentage of full credit (can be more than 100). | `"credit": 100`
 `timeLimitMin`     |   | ✓ | Time limit in minutes to complete an assessment (only for Exams).   | `"timeLimitMin": 60`

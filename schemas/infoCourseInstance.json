@@ -62,7 +62,7 @@
                     },
                     "institution" : {
                         "description": "The institution from which access is permitted (default: UIUC).",
-                        "enum": ["UIUC", "Any"]
+                        "enum": ["UIUC", "ZJUI", "Any"]
                     }
                 }
             }
