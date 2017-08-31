@@ -173,6 +173,28 @@ Attribute | Type | Default | description
 `answers_name` | string | \_file | Variable name to store data in. **For externally graded questions, you should rely on the default.**
 `file_names` | CSV list | "" | List of files that should and must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes.
 
+## `pl_file_editor` element
+
+```html
+<pl_file_editor
+  file_name="fib.py"
+  ace_mode="ace/mode/python"
+  ace_theme="ace/theme/monokai"
+>
+def fib(n):
+    pass
+</pl_file_editor>
+```
+
+Provides an in-broswer file editor that's compatible with the other file elements
+and external grading system.
+
+Attribute | Type | Default | description
+--- | --- | --- | ---
+`file_name` | string | - | The name of this file; will be used to store this file in the `_files` submitted answer
+`ace_mode` | string | None | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).
+`ace_theme` | string | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).
+
 ## `pl_external_grader_results` element
 
 ```html
