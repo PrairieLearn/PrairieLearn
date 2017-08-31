@@ -1,9 +1,7 @@
-import lxml.html
-from html import escape
-import chevron
-import to_precision
 import prairielearn as pl
-import json
+import lxml.html
+import chevron
+
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -13,10 +11,9 @@ def prepare(element_html, element_index, data):
 
     return data
 
-def render(element_html, element_index, data):
-    element = lxml.html.fragment_fromstring(element_html)
 
-    if data["panel"] == "submission":
+def render(element_html, element_index, data):
+    if data['panel'] == 'submission':
         html_params = {'submission': True, 'graded': True, 'uuid': pl.get_uuid()}
 
         feedback = data['feedback']
@@ -65,12 +62,6 @@ def render(element_html, element_index, data):
         with open('pl_external_grader_results.mustache', 'r') as f:
             html = chevron.render(f, html_params).strip()
     else:
-        html = ""
+        html = ''
 
     return html
-
-def parse(element_html, element_index, data):
-    return data
-
-def grade(element_html, element_index, data):
-    return data

@@ -57,6 +57,7 @@
     },
     "scripts": {
         "test": "nyc --reporter=lcov mocha tests/index.js",
-        "lint": "eslint --ext js \"**/*.js\""
+        "lint-js": "eslint --ext js \"**/*.js\"",
+        "lint-python": "python3.6 -m flake8 ./"
     }
 }

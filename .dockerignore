@@ -15,6 +15,7 @@
 !pages/
 !public/
 !question-servers/
+!requirements.txt
 !server.js
 !schemas/
 !sprocs/

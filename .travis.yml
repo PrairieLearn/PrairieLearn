@@ -12,6 +12,7 @@ services:
 cache:
   directories:
     - node_modules
+  pip: true
 branches:
   only:
   - master
@@ -31,13 +32,16 @@ script:
   - npm install
 
   # Install python packages
-  - pip3 install numpy scipy matplotlib pandas sympy lxml chevron
+  - pip3 install -r requirements.txt
 
   # Run JS tests
   - npm test
 
   # Run JS linter
-  - npm run lint -s
+  - npm run lint-js -s
+
+  # Run Python linter
+  - npm run lint-python -s
 
 after_success:
   cat ./coverage/lcov.info | coveralls

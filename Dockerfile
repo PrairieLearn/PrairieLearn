@@ -1,5 +1,7 @@
 FROM centos:7
 
+COPY requirements.txt /PrairieLearn/requirements.txt
+
 RUN yum -y install \
     epel-release \
     https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/pgdg-centos96-9.6-3.noarch.rpm \
@@ -11,7 +13,7 @@ RUN yum -y install \
     && yum install -y https://centos7.iuscommunity.org/ius-release.rpm \
     && yum install -y python36u python36u-pip \
     && ln -s /usr/bin/python3.6 /usr/bin/python3 \
-    && python3.6 -m pip install numpy scipy matplotlib pandas sympy lxml chevron
+    && python3.6 -m pip install -r /PrairieLearn/requirements.txt
 
 # NOTE: Modify .dockerignore to whitelist files/directories to copy.
 COPY . /PrairieLearn/
