@@ -11,32 +11,8 @@ var sqlLoader = require('../../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 var externalGradingSocket = require('../../lib/external-grading-socket');
 
-// FIXME move this to lib/assessment.js for better code reuse; pull the nice
-// error-handling logic from messageQueue.js into this function as well
 function processResults(data) {
-    let gradingResult;
-    if (!data.succeeded || !data.results) {
-        gradingResult = {
-            gradingId: data.job_id,
-            grading: {
-                startTime: data.start_time || null,
-                endTime: data.end_time || null,
-                score: 0,
-                feedback: data
-            }
-        };
-    } else {
-        gradingResult = {
-            gradingId: data.job_id,
-            grading: {
-                startTime: data.start_time || null,
-                endTime: data.end_time || null,
-                score: data.results.score,
-                feedback: data
-            }
-        };
-    }
-
+    const gradingResult = assessment.makeGradingResult(data);
     assessment.processGradingResult(gradingResult);
 }
 
@@ -82,7 +58,7 @@ router.post('/', function(req, res, next) {
             };
             new AWS.S3().getObject(params, (err, data) => {
                 if (ERR(err, (err) => logger.error(err))) return;
-                processResults(JSON.parse(data.Body));
+                processResults(data.Body);
             });
         }
 
