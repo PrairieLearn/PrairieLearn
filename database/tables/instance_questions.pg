@@ -15,6 +15,7 @@ columns
     points: double precision default 0
     points_in_grading: double precision default 0
     points_list: double precision[]
+    points_list_original: double precision[]
     score_perc: double precision default 0
     score_perc_in_grading: double precision default 0
     status: enum_instance_question_status default 'unanswered'::enum_instance_question_status
