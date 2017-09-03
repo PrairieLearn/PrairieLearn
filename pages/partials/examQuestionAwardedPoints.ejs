@@ -1,13 +1,3 @@
-<%
-    getStringFromFloat = function(v) {
-        vAsString = String(v);
-        vAsFixed = (Math.floor(v*100)/100).toFixed(2);
-        if (vAsString.length <= vAsFixed.length) {
-            return vAsString;
-        } else {
-            return vAsFixed;
-        }
-    }
-%>
+<% include('pointsFormatter'); %>
 
 <%= getStringFromFloat(points) %> <small>/<span class="text-muted"><%= max_points %></span></small>
