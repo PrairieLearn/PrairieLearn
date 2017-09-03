@@ -1,8 +1,20 @@
+<%
+    getStringFromFloat = function(v) {
+        vAsString = String(v);
+        vAsFixed = (Math.floor(v*100)/100).toFixed(2);
+        if (vAsString.length <= vAsFixed.length) {
+            return vAsString;
+        } else {
+            return vAsFixed;
+        }
+    }
+%>
+
 <% if (!open || (points_list.length == 0)) { %>
     —
 <% } else if (points_list.length == 1) { %>
-    <%= points_list[0] %>
+    <%= getStringFromFloat(points_list[0]) %>
 <% } else { %>
-    <%= points_list[0] %>,
-    <small><span class="text-muted"><%= points_list.slice(1).join(', ') %></span></small>
+    <%= getStringFromFloat(points_list[0]) %>,
+    <small><span class="text-muted"><%= getStringFromFloat(points_list.slice(1)) %></span></small>
 <% } %>
