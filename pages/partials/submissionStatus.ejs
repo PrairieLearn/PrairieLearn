@@ -83,8 +83,8 @@
     <span class="label label-warning">partially correct: <%= Math.floor(submission.score * 100) %>%</span>
 <% } else { %>
     <% if ((typeof submission.v2_score !== 'undefined') && (submission.v2_score !== null) && (submission.v2_score >= 0.01)) { %>
-        <span class="label label-success">correct: 100% (rounded down from <%= Math.floor(submission.v2_score * 100) %>%)</span>
+        <span class="label label-danger">incorrect: 0% (rounded down from <%= Math.floor(submission.v2_score * 100) %>%)</span>
     <% } else { %>
-        <span class="label label-success">correct: 100%</span>
+        <span class="label label-danger">incorrect: 0%</span>
     <% } %>
 <% } %>
