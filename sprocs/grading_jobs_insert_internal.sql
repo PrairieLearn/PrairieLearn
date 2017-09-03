@@ -9,6 +9,7 @@ CREATE OR REPLACE FUNCTION
         IN new_format_errors jsonb,
         IN new_partial_scores jsonb,
         IN new_score double precision,
+        IN new_v2_score double precision,
         IN new_feedback jsonb,
         IN new_submitted_answer jsonb,
         IN new_params jsonb,
@@ -58,6 +59,7 @@ BEGIN
         format_errors = new_format_errors,
         partial_scores = new_partial_scores,
         score = new_score,
+        v2_score = new_v2_score,
         correct = (new_score >= 0.5),
         feedback = new_feedback,
         submitted_answer = new_submitted_answer,
@@ -78,10 +80,10 @@ BEGIN
     -- insert the grading job
 
     INSERT INTO grading_jobs AS gj
-        (submission_id,     score,     correct,     feedback,
+        (submission_id,     score,     v2_score, correct,     feedback,
             partial_scores, auth_user_id,  grading_method)
     VALUES
-        (submission_id, new_score, new_correct, new_feedback,
+        (submission_id, new_score, new_v2_score, new_correct, new_feedback,
         new_partial_scores, authn_user_id, grading_method)
     RETURNING gj.*
     INTO grading_job;
