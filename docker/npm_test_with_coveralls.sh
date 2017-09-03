@@ -3,4 +3,4 @@
 cd /PrairieLearn
 docker/start_postgres.sh
 npm test
-cat ./coverage/lcov.info | coveralls
+cat ./coverage/lcov.info | ./node_modules/.bin/coveralls
