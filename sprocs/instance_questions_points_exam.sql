@@ -27,7 +27,7 @@ BEGIN
     -- Update points (instance_question will be closed when number_attempts exceeds bound,
     -- so we don't have to worry about accessing a non-existent entry in points_list_original,
     -- but use coalesce just to be safe)
-    points := coalesce(iq.points, 0) + (coalesce(iq.points_list_original[coalesce(iq.number_attempts, 0)+1], 0) * GREATEST(0, submission_score - coalesce(iq.highest_submission_score, 0)));
+    points := iq.points + iq.points_list_original[iq.number_attempts+1] * GREATEST(0, submission_score - coalesce(iq.highest_submission_score, 0)));
 
     -- Update score_perc
     score_perc := points / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
@@ -48,8 +48,8 @@ BEGIN
             status := 'incorrect';
             current_value := iq.points_list[1];
             points_list := array[]::double precision[];
-            FOR i in 1..(cardinality(iq.points_list_original)-(coalesce(iq.number_attempts, 0)+1)) LOOP
-                points_list[i] := iq.points_list_original[coalesce(iq.number_attempts,0)+i+1] * (1 - highest_submission_score);
+            FOR i in 1..(cardinality(iq.points_list_original)-(iq.number_attempts+1)) LOOP
+                points_list[i] := iq.points_list_original[iq.number_attempts+i+1] * (1 - highest_submission_score);
             END LOOP;
         ELSE
             open := FALSE;
