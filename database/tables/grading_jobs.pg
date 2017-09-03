@@ -16,6 +16,7 @@ columns
     partial_scores: jsonb
     score: double precision
     submission_id: bigint not null
+    v2_score: double precision
 
 indexes
     grading_jobs_pkey: PRIMARY KEY (id)
