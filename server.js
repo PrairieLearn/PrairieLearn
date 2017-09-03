@@ -380,7 +380,7 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            messageQueue.init(assessment.processGradingResult, function(err) {
+            messageQueue.init(assessment, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
