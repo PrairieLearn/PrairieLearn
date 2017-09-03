@@ -72,7 +72,7 @@ module.exports = {
         };
         callback(null, [], data);
     },
-    
+
     getFile: function(filename, variant, question, course, callback) {
         module.exports.loadServer(question, course, function(err, server) {
             if (ERR(err, callback)) return;
@@ -132,7 +132,8 @@ module.exports = {
                 return ERR(error.addData(err, data), callback);
             }
             const data = {
-                score: grading.score,
+                score: ((grading.score >= 0.5) ? 1 : 0),
+                v2_score: grading.score,
                 feedback: grading.feedback,
                 partial_scores: {},
                 submitted_answer: submission.submitted_answer,
