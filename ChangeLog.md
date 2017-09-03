@@ -1,6 +1,8 @@
 
 # ChangeLog
 
+  * Add better and faster docker re-builds (Jake Bailey).
+
   * Add `ZJUI` as a institution option (Matt West).
 
   * Add python linter (Nathan Walters).
