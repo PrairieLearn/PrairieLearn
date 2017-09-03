@@ -14,6 +14,10 @@ def prepare(element_html, element_index, data):
     optional_attribs = ['ace_mode', 'ace_theme', 'editor_config_function']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
+    if '_required_file_names' not in data['params']:
+        data['params']['_required_file_names'] = []
+    data['params']['_required_file_names'].append(pl.get_string_attrib(element, 'file_name'))
+
     return data
 
 

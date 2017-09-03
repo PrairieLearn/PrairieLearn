@@ -14,16 +14,30 @@ def get_file_names_as_array(raw_file_names):
         return row
 
 
+def add_error(data, error_string):
+    if '_files' not in data['format_errors']:
+        data['format_errors']['_files'] = []
+    data['format_errors']['_files'].append(error_string)
+
+
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['file_names']
-    optional_attribs = ['answers_name']
+    optional_attribs = []
     pl.check_attribs(element, required_attribs, optional_attribs)
+
+    if '_required_file_names' not in data['params']:
+        data['params']['_required_file_names'] = []
+    file_names = get_file_names_as_array(pl.get_string_attrib(element, 'file_names'))
+    data['params']['_required_file_names'].extend(file_names)
 
     return data
 
 
 def render(element_html, element_index, data):
+    if data['panel'] != 'question':
+        return ''
+
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers_name', '_files')
     uuid = pl.get_uuid()
@@ -64,15 +78,13 @@ def parse(element_html, element_index, data):
     # Get submitted answer or return parse_error if it does not exist
     files = data['submitted_answers'].get(name, None)
     if not files:
-        data['format_errors'][name] = 'No submitted answer.'
-        data['submitted_answers'][name] = None
+        add_error(data, 'No submitted answer.')
         return data
 
     try:
         data['submitted_answers'][name] = json.loads(files)
     except ValueError:
-        data['format_errors'][name] = 'Could not parse submitted files.'
-        data['submitted_answers'][name] = None
+        add_error(data, 'Could not parse submitted files.')
 
     # Validate that all required files are present
     if data['submitted_answers'][name] is not None:
@@ -81,6 +93,6 @@ def parse(element_html, element_index, data):
         missing_files = [x for x in required_file_names if x not in submitted_file_names]
 
         if len(missing_files) > 0:
-            data['format_errors'][name] = 'The following required files were missing: ' + ', '.join(missing_files)
+            add_error(data, 'The following required files were missing: ' + ', '.join(missing_files))
 
     return data
