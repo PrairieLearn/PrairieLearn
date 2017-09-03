@@ -49,7 +49,7 @@ BEGIN
     -- ######################################################################
     -- update the submission
 
-    new_correct = (new_score >= 0.5);
+    new_correct = (new_score >= 1.0);
 
     UPDATE submissions AS s
     SET
@@ -60,7 +60,7 @@ BEGIN
         partial_scores = new_partial_scores,
         score = new_score,
         v2_score = new_v2_score,
-        correct = (new_score >= 0.5),
+        correct = new_correct,
         feedback = new_feedback,
         submitted_answer = new_submitted_answer,
         grading_method = main.grading_method
