@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+  * Add `ZJUI` as a institution option (Matt West).
+
+  * Add python linter (Nathan Walters).
+
   * Add ESLint for style checking and fix related issues (Nathan Walters).
 
   * Add test coverage reporting with `coverage.io` (Nathan Walters).
