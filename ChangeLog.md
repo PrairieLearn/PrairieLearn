@@ -18,6 +18,8 @@
 
   * Shift most `exampleCourse` to the external `pl-template` repository.
 
+  * Fix external graders with invalid submissions (Nathan Walters).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
