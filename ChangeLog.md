@@ -1,6 +1,8 @@
 
 # ChangeLog
 
+  * Add new exam grading UX with no buttons on overview page (Matt West).
+
   * Add better and faster docker re-builds (Jake Bailey).
 
   * Add `ZJUI` as a institution option (Matt West).
