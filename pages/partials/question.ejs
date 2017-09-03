@@ -56,9 +56,10 @@
   <form class="question-form" name="question-form" method="POST">
     <div class="panel panel-primary question-block">
       <div class="panel-heading">
-        <% if (typeof instance_question_info == 'undefined') { %>
+        <% // FIXME: horrible hack to detect whether we should show the question title %>
+        <% if (typeof instance_question_info == 'undefined') { // here we are a question on a student exam page %>
         <h3 class="panel-title"><%= question.title %></h3>
-        <% } else { %>
+        <% } else { // here we are a question on a student homework page or an instructor page %>
         <h3 class="panel-title"><%= instance_question_info.question_number %>. <%= question.title %></h3>
         <% } %>
       </div>
