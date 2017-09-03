@@ -8,10 +8,10 @@ DECLARE
     new_values record;
     new_instance_question instance_questions%ROWTYPE;
 BEGIN
-    -- how many points could we get if the answer was correct?
+    -- how many points could we get if the answer was fully correct?
     SELECT *
     INTO new_values
-    FROM instance_questions_points(instance_question_id, TRUE); -- set correct=TRUE
+    FROM instance_questions_points(instance_question_id, 1);
 
     UPDATE instance_questions AS iq
     SET

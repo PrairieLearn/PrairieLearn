@@ -23,6 +23,15 @@ WHERE
     AND aset.abbreviation = 'E'
     AND a.number = '1';
 
+-- BLOCK select_instance_question_addVectors
+SELECT iq.*
+FROM
+    instance_questions AS iq
+    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+    JOIN questions AS q ON (q.id = aq.question_id)
+WHERE
+    q.qid = 'addVectors';
+
 -- BLOCK insert_ps_course_link
 WITH
 insert_course_result AS (

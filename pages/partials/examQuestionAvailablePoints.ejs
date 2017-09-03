@@ -1,0 +1,8 @@
+<% if (!open || (points_list.length == 0)) { %>
+    —
+<% } else if (points_list.length == 1) { %>
+    <%= points_list[0] %>
+<% } else { %>
+    <%= points_list[0] %>,
+    <small><span class="text-muted"><%= points_list.slice(1).join(', ') %></span></small>
+<% } %>

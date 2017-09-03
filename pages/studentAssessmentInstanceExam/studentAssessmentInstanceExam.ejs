@@ -65,27 +65,24 @@
           <h3 class="panel-title"><%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %></h3>
         </div>
 
-        <!-- ######################################################################################### -->
-        <!-- ######################################################################################### -->
-        <!-- ######################################################################################### -->
-        <!-- ######################################################################################### -->
-        <% if (assessment_instance.open) { %>
-
         <div class="panel-body">
 
           <div class="well well-sm small-bottom-margin">
             <div class="row">
-              <div class="col-md-2 col-sm-12 col-xs-12">
-                  <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
+              <div class="col-md-3 col-sm-6">
+                Total points: <%= assessment_instance.points %>/<%= assessment_instance.max_points %>
               </div>
-              <div class="col-md-10 col-sm-12 col-xs-12">
-                <p class="no-bottom-margin">
-                  <small>
-                    Clicking “Finish assessment” will compute your
-                    final score and reveal the true answer for all
-                    questions, if available.
-                  </small>
-                </p>
+              <div class="col-md-3 col-sm-6">
+                <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
+              </div>
+              <div class="col-md-6 col-sm-12">
+                <div class="pull-right">
+                  <% if (assessment_instance.open) { %>
+                  Assessment is <strong>open</strong> and you can answer questions
+                  <% } else { %>
+                  Assessment is <strong>closed</strong> and you cannot answer questions
+                  <% } %>
+                </div>
               </div>
             </div> <!-- row -->
           </div> <!-- well -->
@@ -115,129 +112,46 @@
           </div> <!-- well -->
           <% } %>
 
-          <div class="well well-sm no-bottom-margin">
-            <div class="row">
-              <div class="col-xs-12">
-                <p class="no-bottom-margin"><small>To do this
-                    assessment, go to each question and save an answer
-                    for it. At any time you can use the blue “Grade
-                    and continue” button below to grade all currently
-                    saved answers. The assessment will be
-                    automatically “finished” six hours after the
-                    last answer submission. The “Current value” of
-                    each question is the maximum points that could be
-                    earned now for a correct answer, while the
-                    “Awarded points” is how many points you have
-                    actually received for the question. To try an
-                    incorrect question again, save a new answer for it
-                    and regrade. Questions with zero remaining
-                    attempts cannot be tried again. The total points
-                    is the sum of all question points.</small></p>
-              </div>
-            </div> <!-- row -->
-          </div> <!-- well -->
-
         </div> <!-- panel-body -->
 
         <table class="table table-condensed table-hover">
           <thead>
             <tr>
               <th>Question</th>
-              <th class="cell-center">Current value</th>
-              <th class="cell-center">Remaining points</th>
-              <th class="cell-center">Status</th>
-              <th class="cell-center">Awarded points</th>
+              <th class="cell-center">
+                Best submission
+                <%- include('../partials/examQuestionHelpBestSubmission'); %>
+              </th>
+              <th class="cell-center">
+                Available points
+                <%- include('../partials/examQuestionHelpAvailablePoints'); %>
+              </th>
+              <th class="cell-center">
+                Awarded points
+                <%- include('../partials/examQuestionHelpAwardedPoints'); %>
+              </th>
             </tr>
           </thead>
           <tbody>
-            <% questions.forEach(function(question) { %>
-            <% if (question.start_new_zone && question.zone_title) { %>
+            <% instance_questions.forEach(function(instance_question) { %>
+            <% if (instance_question.start_new_zone && instance_question.zone_title) { %>
             <tr>
-              <th colspan="5"><%= question.zone_title %></th>
+              <th colspan="5"><%= instance_question.zone_title %></th>
             </tr>
             <% } %>
             <tr>
               <td>
-                <a href="<%= urlPrefix %>/instance_question/<%= question.id %>/">
-                  <%= question.question_number %>. <%= question.question_title %>
+                <a href="<%= urlPrefix %>/instance_question/<%= instance_question.id %>/">
+                  Question <%= instance_question.question_number %>
                 </a>
               </td>
-              <td class="cell-center"><%= question.current_value %></td>
-              <td class="cell-center"><%= question.remaining_points %></td>
-              <td class="cell-center"><%- include('../partials/examQuestionStatus', {status: question.status}); %></td>
-              <td class="cell-center"><%= question.points %>/<%= question.max_points %></td>
-            </tr>
-            <% }); %>
-            <tr>
-              <td colspan="4"></td>
-              <td class="cell-center">
-                <form name="grade-form" method="POST">
-                  <input type="hidden" name="__action" value="grade">
-                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                  <button type="submit" class="btn btn-primary">Grade and continue</button>
-                </form>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- ######################################################################################### -->
-        <!-- ######################################################################################### -->
-        <!-- ######################################################################################### -->
-        <!-- ######################################################################################### -->
-        <% } else { %> <!-- assessment_instance.open -->
-
-        <div class="panel-body">
-
-          <div class="well well-sm small-bottom-margin">
-            <div class="row">
-              <div class="col-md-3 col-sm-6 col-xs-12">
-                Total points: <%= assessment_instance.points %>/<%= assessment_instance.max_points %>
-              </div>
-              <div class="col-md-3 col-sm-6 col-xs-12">
-                <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
-              </div>
-              <div class="col-md-6 col-sm-12 col-xs-12">
-                Time completed: <%= assessment_instance.closed_at %>
-              </div>
-            </div> <!-- row -->
-          </div> <!-- well -->
-
-        </div> <!-- panel-body -->
-
-        <table class="table table-condensed table-hover">
-          <thead>
-            <tr>
-              <th>Question</th>
-              <th class="cell-center">Number of attempts</th>
-              <th class="cell-center">Awarded points</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% questions.forEach(function(question) { %>
-            <% if (question.start_new_zone && question.zone_title) { %>
-            <tr>
-              <th colspan="3"><%= question.zone_title %></th>
-            </tr>
-            <% } %>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/instance_question/<%= question.id %>/">
-                  <%= question.question_number %>. <%= question.question_title %>
-                </a>
-              </td>
-              <td class="cell-center"><%= question.number_attempts %></td>
-              <td class="cell-center"><%= question.points %>/<%= question.max_points %></td>
+              <td class="cell-center"><%- include('../partials/examQuestionScore', {instance_question}); %></td>
+              <td class="cell-center"><%- include('../partials/examQuestionAvailablePoints', {open: assessment_instance.open && instance_question.open, points_list: instance_question.points_list}); %></td>
+              <td class="cell-center"><%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %></td>
             </tr>
             <% }); %>
           </tbody>
         </table>
-
-        <!-- ######################################################################################### -->
-        <!-- ######################################################################################### -->
-        <!-- ######################################################################################### -->
-        <!-- ######################################################################################### -->
-        <% } %> <!-- assessment_instance.open -->
       </div>
     </div>
   </body>

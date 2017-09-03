@@ -23,8 +23,8 @@
             "title": "Hard questions",
             "questions": [
                 {"id": "addNumbers",       "points": [5, 3, 1]},
-                {"id": "addVectors",       "points": [10, 4]},
-                {"id": "fossilFuelsRadio", "points": [20, 11, 7, 2]}
+                {"id": "addVectors",       "points": [11, 9]},
+                {"id": "fossilFuelsRadio", "points": [17, 13, 7, 2]}
             ]
         }
     ],

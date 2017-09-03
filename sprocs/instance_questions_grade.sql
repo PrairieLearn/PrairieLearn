@@ -1,7 +1,9 @@
+DROP FUNCTION IF EXISTS instance_questions_grade(bigint,boolean,bigint);
+
 CREATE OR REPLACE FUNCTION
     instance_questions_grade(
         instance_question_id bigint,
-        correct boolean,
+        IN submission_score DOUBLE PRECISION,
         authn_user_id bigint
     ) RETURNS VOID
 AS $$
@@ -11,7 +13,7 @@ DECLARE
 BEGIN
     SELECT *
     INTO new_values
-    FROM instance_questions_points(instance_question_id, correct);
+    FROM instance_questions_points(instance_question_id, submission_score);
 
     UPDATE instance_questions AS iq
     SET
@@ -21,7 +23,9 @@ BEGIN
         points_in_grading = 0,
         score_perc = new_values.score_perc,
         score_perc_in_grading = 0,
+        highest_submission_score = new_values.highest_submission_score,
         current_value = new_values.current_value,
+        points_list = new_values.points_list,
         number_attempts = iq.number_attempts + 1
     WHERE
         iq.id = instance_question_id;
