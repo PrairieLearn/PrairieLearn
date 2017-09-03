@@ -23,15 +23,23 @@ BEGIN
     SELECT * INTO aq FROM assessment_questions WHERE id = iq.assessment_question_id;
 
     max_points := COALESCE(aq.max_points, 0);
-    highest_submission_score := greatest(submission_score, coalesce(highest_submission_score, 0));
 
-    correct := (submission_score >= 0.5);
+    -- Update points (instance_question will be closed when number_attempts exceeds bound,
+    -- so we don't have to worry about accessing a non-existent entry in points_list_original,
+    -- but use coalesce just to be safe)
+    points := coalesce(iq.points, 0) + (coalesce(iq.points_list_original[coalesce(iq.number_attempts, 0)+1], 0) * GREATEST(0, submission_score - coalesce(iq.highest_submission_score, 0)));
 
+    -- Update score_perc
+    score_perc := points / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
+
+    -- Update highest_submission_score
+    highest_submission_score := GREATEST(submission_score, coalesce(iq.highest_submission_score, 0));
+
+    -- Decide if done or not and update points_list
+    correct := (submission_score >= 1.0);
     IF correct THEN
         open := FALSE;
         status := 'complete';
-        points := coalesce(iq.points_list[1], 0); -- coalesce is just for safety
-        score_perc := points / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
         current_value := NULL;
         points_list := array[]::double precision[];
     ELSE
@@ -39,15 +47,16 @@ BEGIN
             open := TRUE;
             status := 'incorrect';
             current_value := iq.points_list[1];
-            points_list := iq.points_list[2:cardinality(iq.points_list)];
+            points_list := array[]::double precision[];
+            FOR i in 1..(cardinality(iq.points_list_original)-(coalesce(iq.number_attempts, 0)+1)) LOOP
+                points_list[i] := iq.points_list_original[coalesce(iq.number_attempts,0)+i+1] * (1 - highest_submission_score);
+            END LOOP;
         ELSE
             open := FALSE;
             status := 'complete';
             current_value := NULL;
             points_list := array[]::double precision[];
         END IF;
-        points := 0;
-        score_perc := 0;
     END IF;
 END;
 $$ LANGUAGE plpgsql STABLE;
