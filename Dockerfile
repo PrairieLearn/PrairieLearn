@@ -9,8 +9,6 @@ RUN yum -y install \
         postgresql96-server \
         postgresql96-contrib \
         nodejs \
-        scipy \
-        sympy \
         python36u \
         python36u-pip \
     && yum clean all \
@@ -21,7 +19,7 @@ RUN yum -y install \
 # Install Python/NodeJS dependencies before copying code to limit download size
 # when code changes.
 COPY requirements.txt package.json /PrairieLearn/
-RUN python3.6 -m pip install --no-cache-dir -r /PrairieLearn/requirements.txt \
+RUN python3 -m pip install --no-cache-dir -r /PrairieLearn/requirements.txt \
     && cd /PrairieLearn \
     && npm install \
     && npm cache clean

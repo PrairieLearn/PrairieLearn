@@ -2,7 +2,10 @@
 *
 
 # whitelist things to copy
+!.eslintignore
+!.eslintrc.json
 !cron/
+!database/
 !doc/
 !docker/
 !elements/
@@ -17,7 +20,9 @@
 !question-servers/
 !requirements.txt
 !server.js
+!setup.cfg
 !schemas/
 !sprocs/
 !sync/
+!tests/
 !webhooks/

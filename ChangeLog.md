@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __next version__ - XXXX-XX-XX
+
+  * Add Travis CI running the docker image for consistency (Matt West).
+
   * Add better and faster docker re-builds (Jake Bailey).
 
   * Add `ZJUI` as a institution option (Matt West).
