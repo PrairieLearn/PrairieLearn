@@ -70,7 +70,8 @@
           <div class="well well-sm small-bottom-margin">
             <div class="row">
               <div class="col-md-3 col-sm-6">
-                Total points: <%= assessment_instance.points %>/<%= assessment_instance.max_points %>
+                    <% include('../partials/pointsFormatter'); %>
+                    Total points: <%= getStringFromFloat(assessment_instance.points) %>/<%= getStringFromFloat(assessment_instance.max_points) %>
               </div>
               <div class="col-md-3 col-sm-6">
                 <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
