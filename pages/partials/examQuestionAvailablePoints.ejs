@@ -9,32 +9,24 @@
     <small><span class="text-muted"><%= getStringFromFloat(points_list.slice(1)) %></span></small>
 <% } %>
 
-<a class="btn btn-default btn-xs" type="button" data-toggle="popover" data-html="true" data-content="placeholder text" data-placement="auto bottom" data-trigger="focus" tabindex="0">
-        <i class="fa fa-question-circle" aria-hidden="true"></i>
-</a>
+<% if (open) { %>
+    <!-- Compute the best submission score, 0 if no submissions -->
+    <% let best; %>
+    <% if (typeof highest_submission_score !== 'undefined') { %>
+        <% best = Math.floor(highest_submission_score*100); %>
+    <% } else { %>
+        <% best = 0; %>
+    <% } %>
 
+    <!-- Create popover with info about what will happen on next submission -->
+    <a class="btn btn-default btn-xs" type="button" data-toggle="popover" data-html="true" data-content="<%= include('examQuestionAvailablePointsInfo', {bestScore: best, pointsAvailable: points_list[0]}) %>" data-placement="auto left" data-trigger="focus" tabindex="0">
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+    </a>
 
-<!-- Compute the best submission score, 0 if no submissions -->
-<% let best; %>
-<% if (typeof highest_submission_score !== 'undefined') { %>
-    <% best = Math.floor(highest_submission_score*100); %>
-<% } else { %>
-    <% best = 0; %>
+    <!-- Enable popover -->
+    <script>
+        $(document).ready(function(){
+            $('[data-toggle="popover"]').popover({container: 'body'});
+        });
+    </script>
 <% } %>
-
-<!--  -->
-<% if (best > 0) { %>
-    <p>If you score lower than <%= best %>% on your next submission, then you will be awarded 0 points.</p>
-    <p>If you score higher than <%= best %>% on your next submission, then you will be awarded</p><p>$\qquad\left(\dfrac{\text{s}-<%= best %>}{100}\right)\cdot <%= getStringFromFloat(points_list[0]) %>$</p><p>points, where $s$ is your score.</p>
-    <p>If you score 100% on your next submission, in particular, then you will be awarded the full <%= getStringFromFloat(points_list[0]) %> points.</p>
-<% } else { %>
-    something else
-<% } %>
-
-
-
-<script>
-    $(document).ready(function(){
-        $('[data-toggle="popover"]').popover({container: 'body'});
-    });
-</script>

@@ -62,7 +62,6 @@
                 <tr>
                   <td>Best submission:</td>
                   <td><%- include('../partials/examQuestionScore', {instance_question}); %></td>
-                  <td><%- include('../partials/examQuestionHelpBestSubmission'); %></td>
                 </tr>
                 <tr>
                   <td>Available points:</td>
@@ -71,7 +70,6 @@
                 <tr>
                   <td>Awarded points:</td>
                   <td><%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: assessment_question.max_points}); %></td>
-                  <td><%- include('../partials/examQuestionHelpAwardedPoints'); %></td>
                 </tr>
               </tbody>
             </table>
