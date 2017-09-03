@@ -12,6 +12,9 @@ notifications:
 before_install:
   - docker build -t pltest .
 script:
-  - docker run -it -e COVERALLS_SERVICE_NAME=${COVERALLS_SERVICE_NAME} -e COVERALLS_REPO_TOKEN=${COVERALLS_REPO_TOKEN} -e COVERALLS_SERVICE_JOB_ID=${COVERALLS_SERVICE_JOB_ID} -e COVERALLS_RUN_AT=${COVERALLS_RUN_AT} pltest /PrairieLearn/docker/npm_test_with_coveralls.sh
+  - docker run -it --name=npm_test_container pltest /PrairieLearn/docker/npm_test.sh
+  - docker cp npm_test_container:/PrairieLearn/coverage .
   - docker run -it pltest /PrairieLearn/docker/lint_js.sh
   - docker run -it pltest /PrairieLearn/docker/lint_python.sh
+after_success:
+  - cat ./coverage/lcov.info | coveralls
