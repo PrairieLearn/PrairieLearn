@@ -230,6 +230,17 @@ table.two-column-description-no-header tr td:first-of-type {
     width: 5%;
 }
 
+table.two-column-description-no-header-with-help tr td:first-of-type {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    width: 5%;
+}
+
+table.two-column-description-no-header-with-help tr td:last-of-type {
+    width: 1%;
+}
+
 .panel.pastsubmission-block > .panel-heading {
     display: flex;
     align-items: center;

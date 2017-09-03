@@ -76,11 +76,13 @@
                 <%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %>
               </div>
               <div class="col-md-6 col-sm-12">
-                <% if (assessment_instance.open) { %>
-                Assessment is open and you can answer questions
-                <% } else { %>
-                Assessment is closed and you cannot answer questions
-                <% } %>
+                <div class="pull-right">
+                  <% if (assessment_instance.open) { %>
+                  Assessment is <strong>open</strong> and you can answer questions
+                  <% } else { %>
+                  Assessment is <strong>closed</strong> and you cannot answer questions
+                  <% } %>
+                </div>
               </div>
             </div> <!-- row -->
           </div> <!-- well -->
@@ -116,9 +118,18 @@
           <thead>
             <tr>
               <th>Question</th>
-              <th class="cell-center">Best submission</th>
-              <th class="cell-center">Available points</th>
-              <th class="cell-center">Awarded points</th>
+              <th class="cell-center">
+                Best submission
+                <%- include('../partials/examQuestionHelpBestSubmission'); %>
+              </th>
+              <th class="cell-center">
+                Available points
+                <%- include('../partials/examQuestionHelpAvailablePoints'); %>
+              </th>
+              <th class="cell-center">
+                Awarded points
+                <%- include('../partials/examQuestionHelpAwardedPoints'); %>
+              </th>
             </tr>
           </thead>
           <tbody>
@@ -141,16 +152,6 @@
             <% }); %>
           </tbody>
         </table>
-
-        <div class="panel-footer">
-          <p>
-            <small>
-              The <strong>Best submission</strong> shows the percentage score of the best submitted answer, or whether the question is <strong>unanswered</strong>, has a <strong>saved</strong> but ungraded answer, or is in <strong>grading</strong>.
-              The <strong>Available points</strong> is a list of points that would be earned for a correct answer on the next attempt, on the next two attempts, etc.
-              The <strong>Awarded points</strong> shows the actual number of points already earned for a question, as a fraction of the maximum possible points.
-            </small>
-          </p>
-        </div>
       </div>
     </div>
   </body>
