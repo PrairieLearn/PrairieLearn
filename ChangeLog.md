@@ -34,6 +34,8 @@
 
   * Fix rendering glitch in instructor question table (Matt West).
 
+  * Fix instructor closing of assessment instances (Matt West).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
