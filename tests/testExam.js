@@ -16,25 +16,29 @@ const locals = {};
 
 // sorted alphabetically by qid
 const questionsArray = [
-    {qid: 'addNumbers', type: 'Freeform'},
-    {qid: 'addVectors', type: 'Calculation'},
-    {qid: 'fossilFuelsRadio', type: 'Calculation'},
-    {qid: 'partialCredit1', type: 'Freeform'},
-    {qid: 'partialCredit2', type: 'Freeform'},
-    {qid: 'partialCredit3', type: 'Freeform'},
+    {qid: 'addNumbers', type: 'Freeform', maxPoints: 5},
+    {qid: 'addVectors', type: 'Calculation', maxPoints: 11},
+    {qid: 'fossilFuelsRadio', type: 'Calculation', maxPoints: 17},
+    {qid: 'partialCredit1', type: 'Freeform', maxPoints: 19},
+    {qid: 'partialCredit2', type: 'Freeform', maxPoints: 9},
+    {qid: 'partialCredit3', type: 'Freeform', maxPoints: 13},
 ];
 
 const questions = _.keyBy(questionsArray, 'qid');
 
 const assessmentMaxPoints = 74;
 
-const partialGradingTests = [
+// each outer entry is a whole exam session
+// each inner entry is a list of question submissions
+//     score: value to submit, will be the percentage score for the submission
+//     sub_points: additional points awarded for this submission (NOT total points for the question)
+const partialCreditTests = [
     [
-        {qid: 'partialCredit1', ans: '24', sub: 0.24, points: 19*0.24},
-        {qid: 'partialCredit2', ans: '0', sub: 0, points: 0},
-        {qid: 'partialCredit2', ans: '14', sub: 0.14, points: 9*0.14},
-        {qid: 'partialCredit2', ans: '8', sub: 0.14, points: 9*0.14},
-        {qid: 'partialCredit2', ans: '27', sub: 0.27, points: 9*0.14 + 5*(0.27-0.14)},
+        {qid: 'partialCredit1', score: 24, sub_points: 19*0.24},
+        {qid: 'partialCredit2', score: 0,  sub_points: 0},
+        {qid: 'partialCredit2', score: 14, sub_points: 7*0.14},
+        {qid: 'partialCredit2', score: 8,  sub_points: 0},
+        {qid: 'partialCredit2', score: 27, sub_points: 3*(0.27-0.14)},
     ],
 ];
 
@@ -60,6 +64,7 @@ describe('Exam assessment', function() {
                 locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/instance_question';
                 locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
                 locals.isStudentPage = true;
+                locals.totalPoints = 0;
             });
         });
 
@@ -67,10 +72,11 @@ describe('Exam assessment', function() {
             it('should have cleared data', function() {
                 questionsArray.forEach(function(question) {
                     for (var prop in question) {
-                        if (prop != 'qid' && prop != 'type') {
+                        if (prop != 'qid' && prop != 'type' && prop != 'maxPoints') {
                             delete question[prop];
                         }
                     }
+                    question.points = 0;
                 });
             });
         });
@@ -201,7 +207,7 @@ describe('Exam assessment', function() {
                 });
             });
             questionsArray.forEach(function(question, i) {
-                it(`should have question #${i} as QID ${question.qid}`, function() {
+                it(`should have question #${i+1} as QID ${question.qid}`, function() {
                     question.id = locals.instance_questions[i].id;
                     assert.equal(locals.instance_questions[i].qid, question.qid);
                 });
@@ -724,14 +730,60 @@ describe('Exam assessment', function() {
         });
     });
 
-const partialGradingTests = [
-    [
-        {qid: 'partialCredit1', ans: '24', sub: 0.24, points: 19*0.24},
-        {qid: 'partialCredit2', ans: '0', sub: 0, points: 0},
-        {qid: 'partialCredit2', ans: '14', sub: 0.14, points: 9*0.14},
-        {qid: 'partialCredit2', ans: '8', sub: 0.14, points: 9*0.14},
-        {qid: 'partialCredit2', ans: '27', sub: 0.27, points: 9*0.14 + 5*(0.27-0.14)},
-    ],
-];
+    partialCreditTests.forEach(function(partialCreditTest, iPartialCreditTest) {
 
+        describe(`partial credit test #${iPartialCreditTest+1}`, function() {
+            describe('server', function() {
+                it('should shut down', function(callback) {
+                    var that = this;
+                    // pass "this" explicitly to enable this.timeout() calls
+                    helperServer.after.call(that, function(err) {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                });
+                it('should start up', function(callback) {
+                    var that = this;
+                    // pass "this" explicitly to enable this.timeout() calls
+                    helperServer.before.call(that, function(err) {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                });
+            });
+
+            startExam();
+
+            partialCreditTest.forEach(function(questionTest, iQuestionTest) {
+                describe(`grade answer number #${iQuestionTest+1} for question ${questionTest.qid} with score ${questionTest.score}`, function() {
+                    describe('setting up the submission data', function() {
+                        it('should succeed', function() {
+                            locals.shouldHaveButtons = ['grade', 'save'];
+                            locals.postAction = 'grade';
+                            locals.question = questions[questionTest.qid];
+                            locals.question.points += questionTest.sub_points;
+                            locals.totalPoints += questionTest.sub_points;
+                            locals.expectedResult = {
+                                submission_score: questionTest.score / 100,
+                                submission_correct: (questionTest.score >= 50),
+                                instance_question_points: locals.question.points,
+                                instance_question_score_perc: locals.question.points/locals.question.maxPoints * 100,
+                                assessment_instance_points: locals.totalPoints,
+                                assessment_instance_score_perc: locals.totalPoints/assessmentMaxPoints * 100,
+                            };
+                            locals.getSubmittedAnswer = function(_variant) {
+                                return {
+                                    s: String(questionTest.score),
+                                };
+                            };
+                        });
+                    });
+                    helperQuestion.getInstanceQuestion(locals);
+                    helperQuestion.postInstanceQuestion(locals);
+                    helperQuestion.checkQuestionScore(locals);
+                    helperQuestion.checkAssessmentScore(locals);
+                });
+            });
+        });
+    });
 });
