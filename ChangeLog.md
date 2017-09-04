@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add docker image for external graders with clang (Nathan Walters).
+
   * Add new exam grading UX with no buttons on overview page (Matt West).
 
   * Add Travis CI running the docker image for consistency (Matt West).
