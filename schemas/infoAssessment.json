@@ -68,12 +68,6 @@
             "description": "Whether to keep the value of a question constant after a student solves it correctly.",
             "type": "boolean",
             "default": false
-        },
-        "triesPerVariant": {
-            "description": "The maximum number of graded submissions allowed for each question instance.",
-            "type": "number",
-            "default": 1
-
         }
     },
     "definitions": {
@@ -160,6 +154,11 @@
                     "type": "integer",
                     "minimum": 0,
                     "default": 1
+                },
+                "triesPerVariant": {
+                    "description": "The maximum number of graded submissions allowed for each question instance.",
+                    "type": "number",
+                    "default": 1
                 }
             }
         },
@@ -169,7 +168,12 @@
                 "points": {"$ref": "#/definitions/points"},
                 "maxPoints": {"$ref": "#/definitions/points"},
                 "id": {"$ref": "#/definitions/questionId"},
-                "forceMaxPoints": {"$ref": "#/definitions/forceMaxPoints"}
+                "forceMaxPoints": {"$ref": "#/definitions/forceMaxPoints"},
+                "triesPerVariant": {
+                    "description": "The maximum number of graded submissions allowed for each question instance.",
+                    "type": "number",
+                    "default": 1
+                }
             }
         },
         "points": {
