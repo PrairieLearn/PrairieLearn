@@ -56,8 +56,8 @@
   <form class="question-form" name="question-form" method="POST">
     <div class="panel panel-primary question-block">
       <div class="panel-heading">
-        <% // FIXME: horrible hack to detect whether we should show the question title %>
-        <% if (typeof instance_question_info == 'undefined') { // here we are a question on a student exam page %>
+        <% // should we show the question title %>
+        <% if (question_context == 'student_exam') { // here we are a question on a student exam page %>
         <h3 class="panel-title"><%= question.title %></h3>
         <% } else { // here we are a question on a student homework page or an instructor page %>
         <h3 class="panel-title"><%= instance_question_info.question_number %>. <%= question.title %></h3>
@@ -67,7 +67,7 @@
         <%- questionHtml %>
       </div>
       <div class="panel-footer">
-        <% if (showTrueAnswer) { %>
+        <% if (showTrueAnswer && (question_context == 'student_exam')) { %>
         This question is complete and cannot be answered again.
         <% } else { %>
         <div class="row">
@@ -90,7 +90,7 @@
   </form>
   <% } %>
 
-  
+
   <% if (question.type != 'Freeform') { %>
   <div class="panel panel-primary question-block">
     <div class="panel-heading">
@@ -105,7 +105,7 @@
     </div>
     <form class="question-form" name="question-form" method="POST">
       <div class="panel-footer">
-        <% if (showTrueAnswer) { %>
+        <% if (showTrueAnswer && (question_context == 'student_exam')) { %>
         This question is complete and cannot be answered again.
         <% } else { %>
         <div class="row">
