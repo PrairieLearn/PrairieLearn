@@ -1,8 +1,0 @@
-{
-    "uuid": "a08c8668-c1d7-4d4f-982f-1e9d021e601c",
-    "title": "Addition of vectors in Cartesian coordinates (with partial correctness)",
-    "topic": "Vectors",
-    "tags": ["numeric"],
-    "clientFiles": ["client.js", "question.html", "answer.html", "submission.html", "fig1.png"],
-    "type": "Calculation"
-}

@@ -24,8 +24,7 @@
                 {"id": "addVectors",                 "points": [10, 5, 1]},
                 {"id": "fibonacciEditor",            "points": [10, 5, 1]},
                 {"id": "ballToss2",                  "points": [10, 5, 1]},
-                {"id": "positionTimeGraph",          "points": [10]},
-                {"id": "addVectorsPartiallyCorrect", "points": [10, 5, 1]}
+                {"id": "positionTimeGraph",          "points": [10]}
             ]
         }
     ]

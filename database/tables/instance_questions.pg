@@ -9,7 +9,7 @@ columns
     highest_submission_score: double precision
     id: bigint not null default nextval('instance_questions_id_seq'::regclass)
     number: integer
-    number_attempts: integer default 0
+    number_attempts: integer not null default 0
     open: boolean default true
     order_by: integer default floor((random() * (1000000)::double precision))
     points: double precision default 0

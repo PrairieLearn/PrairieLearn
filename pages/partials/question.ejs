@@ -56,11 +56,14 @@
   <form class="question-form" name="question-form" method="POST">
     <div class="panel panel-primary question-block">
       <div class="panel-heading">
-        <% // should we show the question title %>
-        <% if (question_context == 'student_exam') { // here we are a question on a student exam page %>
-        <h3 class="panel-title"><%= question.title %></h3>
-        <% } else { // here we are a question on a student homework page or an instructor page %>
-        <h3 class="panel-title"><%= instance_question_info.question_number %>. <%= question.title %></h3>
+        <% if (question_context == 'student_homework') { %>
+            <h3 class="panel-title"><%= instance_question_info.question_number %>. <%= question.title %></h3>
+        <% } else if (question_context == 'student_exam') { %>
+            <!-- FIXME: insert question number properly -->
+        <% } else if (question_context == 'instructor') { %>
+            <h3 class="panel-title"><%= question.title %></h3>
+        <% } else { %>
+            <% throw Error('unknown question_context: ' + question_context); %>
         <% } %>
       </div>
       <div class="panel-body question-body">
@@ -94,11 +97,15 @@
   <% if (question.type != 'Freeform') { %>
   <div class="panel panel-primary question-block">
     <div class="panel-heading">
-      <% if (typeof instance_question_info == 'undefined') { %>
-      <h3 class="panel-title"><%= question.title %></h3>
-      <% } else { %>
-      <h3 class="panel-title"><%= instance_question_info.question_number %>. <%= question.title %></h3>
-      <% } %>
+        <% if (question_context == 'student_homework') { %>
+            <h3 class="panel-title"><%= instance_question_info.question_number %>. <%= question.title %></h3>
+        <% } else if (question_context == 'student_exam') { %>
+            <!-- FIXME: insert question number properly -->
+        <% } else if (question_context == 'instructor') { %>
+            <h3 class="panel-title"><%= question.title %></h3>
+        <% } else { %>
+            <% throw Error('unknown question_context: ' + question_context); %>
+        <% } %>
     </div>
     <div class="panel-body question-body">
       <%- questionHtml %>
