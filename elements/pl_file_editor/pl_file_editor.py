@@ -2,10 +2,17 @@ import prairielearn as pl
 import lxml.html
 import chevron
 import base64
+import hashlib
 
 
 def get_answer_name(file_name):
-    return '_file_editor_{0}'.format(file_name)
+    return '_file_editor_{0}'.format(hashlib.sha1(file_name.encode('utf-8')).hexdigest())
+
+
+def add_format_error(data, error_string):
+    if '_files' not in data['format_errors']:
+        data['format_errors']['_files'] = []
+    data['format_errors']['_files'].append(error_string)
 
 
 def prepare(element_html, element_index, data):
@@ -22,6 +29,9 @@ def prepare(element_html, element_index, data):
 
 
 def render(element_html, element_index, data):
+    if data['panel'] != 'question':
+        return ''
+
     element = lxml.html.fragment_fromstring(element_html)
     file_name = pl.get_string_attrib(element, 'file_name', '')
     answer_name = get_answer_name(file_name)
@@ -65,8 +75,7 @@ def parse(element_html, element_index, data):
     # Get submitted answer or return parse_error if it does not exist
     file_contents = data['submitted_answers'].get(answer_name, None)
     if not file_contents:
-        data['format_errors'][answer_name] = 'No submitted answer.'
-        data['submitted_answers'][answer_name] = None
+        add_format_error(data, 'No submitted answer for {0}'.format(file_name))
         return data
 
     if data['submitted_answers'].get('_files', None) is None:
@@ -81,6 +90,6 @@ def parse(element_html, element_index, data):
             'contents': file_contents
         })
     else:
-        data['format_errors'][answer_name] = '_files was present but was not an array.'
+        add_format_error(data, '_files was present but was not an array.')
 
     return data

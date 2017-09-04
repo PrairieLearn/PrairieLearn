@@ -7,16 +7,15 @@ $(function() {
     }
 });
 
-window.PLFileUpload = function(wrapperId, options) {
-    this.uuid = options.uuid;
+window.PLFileUpload = function(uuid, options) {
+    this.uuid = uuid;
     this.files = options.files || [];
     this.acceptedFiles = options.acceptedFiles || [];
-    this.previewOnly = options.previewOnly || false;
 
-    this.elementId = wrapperId;
-    this.element = $(wrapperId);
+    var elementId = '#file-upload-' + uuid;
+    this.element = $(elementId);
     if (!this.element) {
-        throw new Error('File upload element ' + wrapperId + ' was not found!');
+        throw new Error('File upload element ' + elementId + ' was not found!');
     }
 
     this.syncFilesToHiddenInput();
@@ -150,20 +149,16 @@ window.PLFileUpload.prototype.renderFileList = function() {
         $file.append($fileStatusContainer);
         var $fileStatusContainerLeft = $('<div class="file-status-container-left"></div>');
         $fileStatusContainer.append($fileStatusContainerLeft);
-        if (!that.previewOnly) {
-            if (fileData) {
-                $fileStatusContainerLeft.append('<i class="file-status-icon fa fa-check-circle" aria-hidden="true"></i>');
-            } else {
-                $fileStatusContainerLeft.append('<i class="file-status-icon fa fa-circle-o" aria-hidden="true"></i>');
-            }
+        if (fileData) {
+            $fileStatusContainerLeft.append('<i class="file-status-icon fa fa-check-circle" aria-hidden="true"></i>');
+        } else {
+            $fileStatusContainerLeft.append('<i class="file-status-icon fa fa-circle-o" aria-hidden="true"></i>');
         }
         $fileStatusContainerLeft.append(fileName);
-        if (!that.previewOnly) {
-            if (!fileData) {
-                $fileStatusContainerLeft.append('<p class="file-status">not uploaded</p>');
-            } else {
-                $fileStatusContainerLeft.append('<p class="file-status">uploaded</p>');
-            }
+        if (!fileData) {
+            $fileStatusContainerLeft.append('<p class="file-status">not uploaded</p>');
+        } else {
+            $fileStatusContainerLeft.append('<p class="file-status">uploaded</p>');
         }
         if (fileData) {
             var $preview = $('<div class="file-preview collapse" id="file-preview-' + uuid + '-' + index + '"><pre><code></code></pre></div>');

@@ -4,6 +4,7 @@ import chevron
 import json
 from io import StringIO
 import csv
+import hashlib
 
 
 def get_file_names_as_array(raw_file_names):
@@ -14,7 +15,13 @@ def get_file_names_as_array(raw_file_names):
         return row
 
 
-def add_error(data, error_string):
+# Each pl_file_upload element is uniquely identified by the SHA1 hash of its
+# file_names attribute
+def get_answer_name(file_names):
+    return '_file_upload_{0}'.format(hashlib.sha1(file_names.encode('utf-8')).hexdigest())
+
+
+def add_format_error(data, error_string):
     if '_files' not in data['format_errors']:
         data['format_errors']['_files'] = []
     data['format_errors']['_files'].append(error_string)
@@ -39,60 +46,59 @@ def render(element_html, element_index, data):
         return ''
 
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name', '_files')
     uuid = pl.get_uuid()
-    file_names = json.dumps(get_file_names_as_array(pl.get_string_attrib(element, 'file_names', '')))
+    raw_file_names = pl.get_string_attrib(element, 'file_names', '')
+    file_names = get_file_names_as_array(raw_file_names)
+    file_names_json = json.dumps(file_names)
+    answer_name = get_answer_name(raw_file_names)
 
-    html_params = {'name': name, 'file_names': file_names, 'uuid': uuid}
+    html_params = {'name': answer_name, 'file_names': file_names_json, 'uuid': uuid}
 
-    files = data['submitted_answers'].get(name, None)
+    files = data['submitted_answers'].get('_files', None)
     if files is not None:
+        # Filter out any files not part of this element's file_names
+        filtered_files = [x for x in files if x.get('name', '') in file_names]
         html_params['has_files'] = True
-        html_params['files'] = json.dumps(files)
+        html_params['files'] = json.dumps(filtered_files)
     else:
         html_params['has_files'] = False
 
-    if data['panel'] == 'question':
-        html_params['question'] = True
-        with open('pl_file_upload.mustache', 'r') as f:
-            html = chevron.render(f, html_params).strip()
-
-    elif data['panel'] == 'submission':
-        html_params['submission'] = True
-
-        parse_error = data['format_errors'].get(name, None)
-        html_params['parse_error'] = parse_error
-
-        with open('pl_file_upload.mustache', 'r') as f:
-            html = chevron.render(f, html_params).strip()
-    else:
-        html = ''
+    with open('pl_file_upload.mustache', 'r') as f:
+        html = chevron.render(f, html_params).strip()
 
     return html
 
 
 def parse(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name', '_files')
+    raw_file_names = pl.get_string_attrib(element, 'file_names', '')
+    answer_name = get_answer_name(raw_file_names)
 
     # Get submitted answer or return parse_error if it does not exist
-    files = data['submitted_answers'].get(name, None)
+    files = data['submitted_answers'].get(answer_name, None)
     if not files:
-        add_error(data, 'No submitted answer.')
+        add_format_error(data, 'No submitted answer for file upload.')
         return data
 
     try:
-        data['submitted_answers'][name] = json.loads(files)
+        parsed_files = json.loads(files)
     except ValueError:
-        add_error(data, 'Could not parse submitted files.')
+        add_format_error(data, 'Could not parse submitted files.')
+
+    if data['submitted_answers'].get('_files', None) is None:
+        data['submitted_answers']['_files'] = parsed_files
+    elif isinstance(data['submitted_answers'].get('_files', None), list):
+        data['submitted_answers']['_files'].extend(files)
+    else:
+        add_format_error(data, '_files was present but was not an array.')
 
     # Validate that all required files are present
-    if data['submitted_answers'][name] is not None:
+    if parsed_files is not None:
         required_file_names = get_file_names_as_array(pl.get_string_attrib(element, 'file_names', ''))
-        submitted_file_names = map(lambda x: x.get('name', ''), data['submitted_answers'][name])
+        submitted_file_names = map(lambda x: x.get('name', ''), parsed_files)
         missing_files = [x for x in required_file_names if x not in submitted_file_names]
 
         if len(missing_files) > 0:
-            add_error(data, 'The following required files were missing: ' + ', '.join(missing_files))
+            add_format_error(data, 'The following required files were missing: ' + ', '.join(missing_files))
 
     return data

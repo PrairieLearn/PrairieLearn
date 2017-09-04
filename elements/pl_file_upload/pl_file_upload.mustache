@@ -3,11 +3,9 @@ $(function() {
   // Turn off Dropzone autodiscover; we'll configure it manually
   window.Dropzone.autoDiscover = false;
 
-  var ELEMENT_ID = "#file-upload-{{uuid}}";
   var UUID = "{{uuid}}";
 
-  new window.PLFileUpload(ELEMENT_ID, {
-    uuid: UUID,
+  new window.PLFileUpload(UUID, {
     acceptedFiles: {{&file_names}}
     {{#has_files}}, files: {{&files}}{{/has_files}}
   });

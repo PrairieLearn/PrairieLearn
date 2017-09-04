@@ -1,7 +1,12 @@
 /* eslint-env browser,jquery */
 /* global ace */
 window.PLFileEditor = function(uuid, options) {
-    this.element = $('#file-editor-' + uuid);
+    var elementId = '#file-editor-' + uuid;
+    this.element = $(elementId);
+    if (!this.element) {
+        throw new Error('File upload element ' + elementId + ' was not found!');
+    }
+
     this.inputElement = this.element.find('input');
     this.editorElement = this.element.find('.editor');
     this.editor = ace.edit(this.editorElement.get(0));
