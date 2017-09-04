@@ -45,6 +45,11 @@ app.set('view engine', 'ejs');
 
 config.devMode = (app.get('env') == 'development');
 
+app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPrefix = '/pl'; next();});
+app.use(function(req, res, next) {res.locals.navbarType = 'plain'; next();});
+app.use(function(req, res, next) {res.locals.devMode = config.devMode; next();});
+app.use(function(req, res, next) {res.locals.is_administrator = false; next();});
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
@@ -57,9 +62,6 @@ app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax
 var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 app.use(function(req, res, next) {res.locals.response_id = _.times(12, function() {return _.sample(chars);}).join(''); next();});
 app.use(require('./middlewares/logResponse')); // defers to end of response
-app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPrefix = '/pl'; next();});
-app.use(function(req, res, next) {res.locals.navbarType = 'plain'; next();});
-app.use(function(req, res, next) {res.locals.devMode = config.devMode; next();});
 app.use(require('./middlewares/cors'));
 app.use(require('./middlewares/date'));
 app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));
