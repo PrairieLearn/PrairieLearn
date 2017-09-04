@@ -33,57 +33,69 @@ const assessmentMaxPoints = 74;
 //     score: value to submit, will be the percentage score for the submission
 //     action: 'save' or 'grade'
 //     sub_points: additional points awarded for this submission (NOT total points for the question)
-//     succeed: true or false
+//     open: true or false
 const partialCreditTests = [
     [
         // answer every question correctly immediately
-        {qid: 'partialCredit1', action: 'grade', score: 100, succeed: true, sub_points: 19},
-        {qid: 'partialCredit2', action: 'grade', score: 100, succeed: true, sub_points: 9},
-        {qid: 'partialCredit3', action: 'grade', score: 100, succeed: true, sub_points: 13},
+        {qid: 'partialCredit1', action: 'grade', score: 100, open: true,  sub_points: 19},
+        {qid: 'partialCredit2', action: 'grade', score: 100, open: true,  sub_points: 9},
+        {qid: 'partialCredit3', action: 'grade', score: 100, open: true,  sub_points: 13},
+        {qid: 'partialCredit1', action: 'grade', score: 100, open: false, sub_points: 0},
+        {qid: 'partialCredit2', action: 'grade', score: 100, open: false, sub_points: 0},
+        {qid: 'partialCredit3', action: 'grade', score: 100, open: false, sub_points: 0},
     ],
     [
         // answer questions correctly on the second try
-        {qid: 'partialCredit1', action: 'grade', score: 100, succeed: true, sub_points: 19},
-        {qid: 'partialCredit2', action: 'grade', score: 37,  succeed: true, sub_points: 9*0.37},
-        {qid: 'partialCredit2', action: 'grade', score: 100, succeed: true, sub_points: 7*(1-0.37)},
-        {qid: 'partialCredit3', action: 'grade', score: 71,  succeed: true, sub_points: 13*0.71},
-        {qid: 'partialCredit3', action: 'grade', score: 100, succeed: true, sub_points: 13*(1-0.71)},
+        {qid: 'partialCredit1', action: 'grade', score: 100, open: true,  sub_points: 19},
+        {qid: 'partialCredit2', action: 'grade', score: 37,  open: true,  sub_points: 9*0.37},
+        {qid: 'partialCredit2', action: 'grade', score: 100, open: true,  sub_points: 7*(1-0.37)},
+        {qid: 'partialCredit3', action: 'grade', score: 71,  open: true,  sub_points: 13*0.71},
+        {qid: 'partialCredit3', action: 'grade', score: 100, open: true,  sub_points: 13*(1-0.71)},
+        {qid: 'partialCredit1', action: 'save',  score: 100, open: false, sub_points: 0},
+        {qid: 'partialCredit2', action: 'save',  score: 100, open: false, sub_points: 0},
+        {qid: 'partialCredit3', action: 'save',  score: 100, open: false, sub_points: 0},
     ],
     [
         // use all the attempts for each question
-        {qid: 'partialCredit1', action: 'save',  score: 100, succeed: true, sub_points: 0},
-        {qid: 'partialCredit1', action: 'grade', score: 24,  succeed: true, sub_points: 19*0.24},
-        {qid: 'partialCredit2', action: 'grade', score: 0,   succeed: true, sub_points: 0},
-        {qid: 'partialCredit2', action: 'save',  score: 97,  succeed: true, sub_points: 0},
-        {qid: 'partialCredit2', action: 'grade', score: 14,  succeed: true, sub_points: 7*0.14},
-        {qid: 'partialCredit2', action: 'grade', score: 8,   succeed: true, sub_points: 0},
-        {qid: 'partialCredit2', action: 'save',  score: 0,   succeed: true, sub_points: 0},
-        {qid: 'partialCredit2', action: 'grade', score: 27,  succeed: true, sub_points: 3*(0.27-0.14)},
-        {qid: 'partialCredit3', action: 'save',  score: 100, succeed: true, sub_points: 0},
-        {qid: 'partialCredit3', action: 'grade', score: 63,  succeed: true, sub_points: 13*0.63},
-        {qid: 'partialCredit3', action: 'grade', score: 63,  succeed: true, sub_points: 0},
-        {qid: 'partialCredit3', action: 'grade', score: 64,  succeed: true, sub_points: 8*(0.64-0.63)},
-        {qid: 'partialCredit3', action: 'save',  score: 72,  succeed: true, sub_points: 0},
-        {qid: 'partialCredit3', action: 'grade', score: 7,   succeed: true, sub_points: 0},
-        {qid: 'partialCredit3', action: 'grade', score: 97,  succeed: true, sub_points: 0.1*(0.97-0.64)},
+        {qid: 'partialCredit1', action: 'save',  score: 100, open: true,  sub_points: 0},
+        {qid: 'partialCredit1', action: 'grade', score: 24,  open: true,  sub_points: 19*0.24},
+        {qid: 'partialCredit1', action: 'save',  score: 90,  open: false, sub_points: 0},
+        {qid: 'partialCredit2', action: 'grade', score: 0,   open: true,  sub_points: 0},
+        {qid: 'partialCredit2', action: 'save',  score: 97,  open: true,  sub_points: 0},
+        {qid: 'partialCredit2', action: 'grade', score: 14,  open: true,  sub_points: 7*0.14},
+        {qid: 'partialCredit2', action: 'grade', score: 8,   open: true,  sub_points: 0},
+        {qid: 'partialCredit2', action: 'save',  score: 0,   open: true,  sub_points: 0},
+        {qid: 'partialCredit2', action: 'grade', score: 27,  open: true,  sub_points: 3*(0.27-0.14)},
+        {qid: 'partialCredit2', action: 'grade', score: 27,  open: false, sub_points: 0},
+        {qid: 'partialCredit3', action: 'save',  score: 100, open: true,  sub_points: 0},
+        {qid: 'partialCredit3', action: 'grade', score: 63,  open: true,  sub_points: 13*0.63},
+        {qid: 'partialCredit3', action: 'grade', score: 63,  open: true,  sub_points: 0},
+        {qid: 'partialCredit3', action: 'grade', score: 64,  open: true,  sub_points: 8*(0.64-0.63)},
+        {qid: 'partialCredit3', action: 'save',  score: 72,  open: true,  sub_points: 0},
+        {qid: 'partialCredit3', action: 'grade', score: 7,   open: true,  sub_points: 0},
+        {qid: 'partialCredit3', action: 'grade', score: 97,  open: true,  sub_points: 0.1*(0.97-0.64)},
+        {qid: 'partialCredit3', action: 'save',  score: 14,  open: false, sub_points: 0},
     ],
     [
         // same as above, but in an interspersed order
-        {qid: 'partialCredit2', action: 'save',  score: 97,  succeed: true, sub_points: 0},
-        {qid: 'partialCredit3', action: 'grade', score: 63,  succeed: true, sub_points: 13*0.63},
-        {qid: 'partialCredit3', action: 'save',  score: 100, succeed: true, sub_points: 0},
-        {qid: 'partialCredit2', action: 'grade', score: 0,   succeed: true, sub_points: 0},
-        {qid: 'partialCredit1', action: 'save',  score: 100, succeed: true, sub_points: 0},
-        {qid: 'partialCredit3', action: 'grade', score: 63,  succeed: true, sub_points: 0},
-        {qid: 'partialCredit2', action: 'grade', score: 14,  succeed: true, sub_points: 7*0.14},
-        {qid: 'partialCredit2', action: 'save',  score: 0,   succeed: true, sub_points: 0},
-        {qid: 'partialCredit3', action: 'save',  score: 72,  succeed: true, sub_points: 0},
-        {qid: 'partialCredit1', action: 'grade', score: 24,  succeed: true, sub_points: 19*0.24},
-        {qid: 'partialCredit3', action: 'grade', score: 64,  succeed: true, sub_points: 8*(0.64-0.63)},
-        {qid: 'partialCredit3', action: 'grade', score: 7,   succeed: true, sub_points: 0},
-        {qid: 'partialCredit2', action: 'grade', score: 8,   succeed: true, sub_points: 0},
-        {qid: 'partialCredit3', action: 'grade', score: 97,  succeed: true, sub_points: 0.1*(0.97-0.64)},
-        {qid: 'partialCredit2', action: 'grade', score: 27,  succeed: true, sub_points: 3*(0.27-0.14)},
+        {qid: 'partialCredit2', action: 'save',  score: 97,  open: true,  sub_points: 0},
+        {qid: 'partialCredit3', action: 'grade', score: 63,  open: true,  sub_points: 13*0.63},
+        {qid: 'partialCredit3', action: 'save',  score: 100, open: true,  sub_points: 0},
+        {qid: 'partialCredit2', action: 'grade', score: 0,   open: true,  sub_points: 0},
+        {qid: 'partialCredit1', action: 'save',  score: 100, open: true,  sub_points: 0},
+        {qid: 'partialCredit3', action: 'grade', score: 63,  open: true,  sub_points: 0},
+        {qid: 'partialCredit2', action: 'grade', score: 14,  open: true,  sub_points: 7*0.14},
+        {qid: 'partialCredit2', action: 'save',  score: 0,   open: true,  sub_points: 0},
+        {qid: 'partialCredit3', action: 'save',  score: 72,  open: true,  sub_points: 0},
+        {qid: 'partialCredit1', action: 'grade', score: 24,  open: true,  sub_points: 19*0.24},
+        {qid: 'partialCredit3', action: 'grade', score: 64,  open: true,  sub_points: 8*(0.64-0.63)},
+        {qid: 'partialCredit3', action: 'grade', score: 7,   open: true,  sub_points: 0},
+        {qid: 'partialCredit2', action: 'grade', score: 8,   open: true,  sub_points: 0},
+        {qid: 'partialCredit1', action: 'save',  score: 90,  open: false, sub_points: 0},
+        {qid: 'partialCredit3', action: 'grade', score: 97,  open: true,  sub_points: 0.1*(0.97-0.64)},
+        {qid: 'partialCredit2', action: 'grade', score: 27,  open: true,  sub_points: 3*(0.27-0.14)},
+        {qid: 'partialCredit3', action: 'save',  score: 14,  open: false, sub_points: 0},
+        {qid: 'partialCredit2', action: 'grade', score: 27,  open: false, sub_points: 0},
     ],
 ];
 
@@ -803,7 +815,11 @@ describe('Exam assessment', function() {
                 describe(`${questionTest.action} answer number #${iQuestionTest+1} for question ${questionTest.qid} with score ${questionTest.score}`, function() {
                     describe('setting up the submission data', function() {
                         it('should succeed', function() {
-                            locals.shouldHaveButtons = ['grade', 'save'];
+                            if (questionTest.open) {
+                                locals.shouldHaveButtons = ['grade', 'save'];
+                            } else {
+                                locals.shouldHaveButtons = [];
+                            }
                             locals.postAction = questionTest.action;
                             locals.question = questions[questionTest.qid];
                             locals.question.points += questionTest.sub_points;
@@ -824,12 +840,10 @@ describe('Exam assessment', function() {
                         });
                     });
                     helperQuestion.getInstanceQuestion(locals);
-                    if (questionTest.succeed) {
+                    if (questionTest.open) {
                         helperQuestion.postInstanceQuestion(locals);
                         helperQuestion.checkQuestionScore(locals);
                         helperQuestion.checkAssessmentScore(locals);
-                    } else {
-                        helperQuestion.postInstanceQuestionAndFail(locals);
                     }
                 });
             });
