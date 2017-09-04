@@ -9,6 +9,7 @@ CREATE OR REPLACE FUNCTION
         IN new_format_errors jsonb DEFAULT NULL,
         IN new_partial_scores jsonb DEFAULT NULL,
         IN new_score double precision DEFAULT NULL,
+        IN new_v2_score double precision DEFAULT NULL,
         IN new_feedback jsonb DEFAULT NULL,
         IN new_submitted_answer jsonb DEFAULT NULL,
         IN new_params jsonb DEFAULT NULL,
@@ -40,7 +41,7 @@ BEGIN
     IF grading_method = 'Internal' THEN
         grading_job := grading_jobs_insert_internal(submission_id, authn_user_id,
                             new_gradable, new_broken, new_format_errors, new_partial_scores,
-                            new_score, new_feedback, new_submitted_answer,
+                            new_score, new_v2_score, new_feedback, new_submitted_answer,
                             new_params, new_true_answer);
     ELSIF grading_method = 'External' OR grading_method = 'Manual' THEN
         grading_job := grading_jobs_insert_external_manual(submission_id, authn_user_id);

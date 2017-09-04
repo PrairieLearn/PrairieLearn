@@ -54,12 +54,13 @@ BEGIN
     WITH
     inserted_instance_questions AS (
         INSERT INTO instance_questions AS iq
-            (authn_user_id, assessment_instance_id, assessment_question_id, current_value, points_list)
+            (authn_user_id, assessment_instance_id, assessment_question_id, current_value, points_list, points_list_original)
         SELECT
              authn_user_id,
              assessment_instance_id,
              assessment_question_id,
              coalesce(aq.init_points, aq.points_list[1], 0),
+             aq.points_list,
              aq.points_list
         FROM
             select_assessment_questions(assessment_id, assessment_instance_id) AS aq

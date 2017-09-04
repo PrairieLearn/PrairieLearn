@@ -1,0 +1,11 @@
+<% if (bestScore > 0) { %>
+    <p>If you score lower than <%= bestScore %>% on your next submission, then you will be awarded an additional 0 points.</p>
+    <hr>
+    <p>If you score between <%= bestScore %>% and 100% on your next submission, then you will be awarded an additional</p><p><pre>(<%= getStringFromFloat(pointsAvailable) %> * (score - <%= bestScore %>)/100)</pre></p><p>points.</p>
+    <hr>
+    <p>If you score 100% on your next submission, then you will be awarded an additional <%= getStringFromFloat(pointsAvailable) %> points.</p>
+<% } else { %>
+    <p>If you score between <%= bestScore %>% and 100% on your next submission, then you will be awarded an additional</p><p><pre>(<%= getStringFromFloat(pointsAvailable) %> * score / 100)</pre></p><p>points.</p>
+    <hr>
+    <p>If you score 100% on your next submission, then you will be awarded an additional <%= getStringFromFloat(pointsAvailable) %> points.</p>
+<% } %>
