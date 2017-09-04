@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add `<pl_file_preview>` element (Nathan Walters).
+
   * Add docker image for external graders with clang (Nathan Walters).
 
   * Add new exam grading UX with no buttons on overview page (Matt West).
@@ -27,6 +29,10 @@
   * Shift most `exampleCourse` to the external `pl-template` repository.
 
   * Fix external graders with invalid submissions (Nathan Walters).
+
+  * Fix handling of too-large file uploads (Matt West).
+
+  * Fix rendering glitch in instructor question table (Matt West).
 
 * __2.10.1__ - 2017-05-24
 
