@@ -1,0 +1,38 @@
+<div id="file-preview-{{uuid}}">
+  {{#errors}}
+  <div class="alert alert-danger"><strong>Error:</strong> {{.}}</div>
+  {{/errors}}
+  <div class="file-upload-status" style="margin-top: 1ex;">
+    <div class="panel panel-default">
+      <div class="panel-heading"><h4 class="panel-title">Files</h4></div>
+      {{#has_files}}
+      <ul class="list-group">
+        {{#files}}
+        <li class="list-group-item" data-file="{{name}}">
+          <div class="file-status-container has-preview collapsed" data-toggle="collapse" data-target="#file-preview-contents-{{uuid}}-{{index}}">
+            <div class="file-status-container-left">
+              <i class="file-status-icon fa fa-check-circle" aria-hidden="true"></i>
+              {{name}}
+              <p class="file-status">uploaded</p>
+            </div>
+            <div class="file-status-container-right">
+              <button type="button" class="btn btn-default btn-xs file-preview-button">
+                <span class="file-preview-icon glyphicon glyphicon-chevron-down"></span>
+              </button>
+            </div>
+          </div>
+          <div class="file-preview collapse" id="file-preview-contents-{{uuid}}-{{index}}">
+            <pre><code>{{contents}}</code></pre>
+          </div>
+        </li>
+        {{/files}}
+      </ul>
+      {{/has_files}}
+      {{^has_files}}
+      <div class="panel-body">
+        No files were present in this submission.
+      </div>
+      {{/has_files}}
+    </div>
+  </div>
+</div>
