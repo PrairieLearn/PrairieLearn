@@ -31,47 +31,58 @@ const assessmentMaxPoints = 74;
 // each outer entry is a whole exam session
 // each inner entry is a list of question submissions
 //     score: value to submit, will be the percentage score for the submission
+//     action: 'save' or 'grade'
 //     sub_points: additional points awarded for this submission (NOT total points for the question)
 const partialCreditTests = [
     [
         // answer every question correctly immediately
-        {qid: 'partialCredit1', score: 100, sub_points: 19},
-        {qid: 'partialCredit2', score: 100, sub_points: 9},
-        {qid: 'partialCredit3', score: 100, sub_points: 13},
-    ],
-    [
-        // use all the attempts for each question
-        {qid: 'partialCredit1', score: 24,  sub_points: 19*0.24},
-        {qid: 'partialCredit2', score: 0,   sub_points: 0},
-        {qid: 'partialCredit2', score: 14,  sub_points: 7*0.14},
-        {qid: 'partialCredit2', score: 8,   sub_points: 0},
-        {qid: 'partialCredit2', score: 27,  sub_points: 3*(0.27-0.14)},
-        {qid: 'partialCredit3', score: 63,  sub_points: 13*0.63},
-        {qid: 'partialCredit3', score: 63,  sub_points: 0},
-        {qid: 'partialCredit3', score: 64,  sub_points: 8*(0.64-0.63)},
-        {qid: 'partialCredit3', score: 7,   sub_points: 0},
-        {qid: 'partialCredit3', score: 97,  sub_points: 0.1*(0.97-0.64)},
-    ],
-    [
-        // same as above, but in an interspersed order
-        {qid: 'partialCredit3', score: 63,  sub_points: 13*0.63},
-        {qid: 'partialCredit2', score: 0,   sub_points: 0},
-        {qid: 'partialCredit3', score: 63,  sub_points: 0},
-        {qid: 'partialCredit2', score: 14,  sub_points: 7*0.14},
-        {qid: 'partialCredit1', score: 24,  sub_points: 19*0.24},
-        {qid: 'partialCredit3', score: 64,  sub_points: 8*(0.64-0.63)},
-        {qid: 'partialCredit3', score: 7,   sub_points: 0},
-        {qid: 'partialCredit2', score: 8,   sub_points: 0},
-        {qid: 'partialCredit3', score: 97,  sub_points: 0.1*(0.97-0.64)},
-        {qid: 'partialCredit2', score: 27,  sub_points: 3*(0.27-0.14)},
+        {qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 19},
+        {qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 9},
+        {qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 13},
     ],
     [
         // answer questions correctly on the second try
-        {qid: 'partialCredit1', score: 100, sub_points: 19},
-        {qid: 'partialCredit2', score: 37,  sub_points: 9*0.37},
-        {qid: 'partialCredit2', score: 100, sub_points: 7*(1-0.37)},
-        {qid: 'partialCredit3', score: 71,  sub_points: 13*0.71},
-        {qid: 'partialCredit3', score: 100, sub_points: 13*(1-0.71)},
+        {qid: 'partialCredit1', action: 'grade', score: 100, sub_points: 19},
+        {qid: 'partialCredit2', action: 'grade', score: 37,  sub_points: 9*0.37},
+        {qid: 'partialCredit2', action: 'grade', score: 100, sub_points: 7*(1-0.37)},
+        {qid: 'partialCredit3', action: 'grade', score: 71,  sub_points: 13*0.71},
+        {qid: 'partialCredit3', action: 'grade', score: 100, sub_points: 13*(1-0.71)},
+    ],
+    [
+        // use all the attempts for each question
+        {qid: 'partialCredit1', action: 'save',  score: 100, sub_points: 0},
+        {qid: 'partialCredit1', action: 'grade', score: 24,  sub_points: 19*0.24},
+        {qid: 'partialCredit2', action: 'grade', score: 0,   sub_points: 0},
+        {qid: 'partialCredit2', action: 'save',  score: 97,  sub_points: 0},
+        {qid: 'partialCredit2', action: 'grade', score: 14,  sub_points: 7*0.14},
+        {qid: 'partialCredit2', action: 'grade', score: 8,   sub_points: 0},
+        {qid: 'partialCredit2', action: 'save',  score: 0,   sub_points: 0},
+        {qid: 'partialCredit2', action: 'grade', score: 27,  sub_points: 3*(0.27-0.14)},
+        {qid: 'partialCredit3', action: 'save',  score: 100, sub_points: 0},
+        {qid: 'partialCredit3', action: 'grade', score: 63,  sub_points: 13*0.63},
+        {qid: 'partialCredit3', action: 'grade', score: 63,  sub_points: 0},
+        {qid: 'partialCredit3', action: 'grade', score: 64,  sub_points: 8*(0.64-0.63)},
+        {qid: 'partialCredit3', action: 'save',  score: 72,  sub_points: 0},
+        {qid: 'partialCredit3', action: 'grade', score: 7,   sub_points: 0},
+        {qid: 'partialCredit3', action: 'grade', score: 97,  sub_points: 0.1*(0.97-0.64)},
+    ],
+    [
+        // same as above, but in an interspersed order
+        {qid: 'partialCredit2', action: 'save',  score: 97,  sub_points: 0},
+        {qid: 'partialCredit3', action: 'grade', score: 63,  sub_points: 13*0.63},
+        {qid: 'partialCredit3', action: 'save',  score: 100, sub_points: 0},
+        {qid: 'partialCredit2', action: 'grade', score: 0,   sub_points: 0},
+        {qid: 'partialCredit1', action: 'save',  score: 100, sub_points: 0},
+        {qid: 'partialCredit3', action: 'grade', score: 63,  sub_points: 0},
+        {qid: 'partialCredit2', action: 'grade', score: 14,  sub_points: 7*0.14},
+        {qid: 'partialCredit2', action: 'save',  score: 0,   sub_points: 0},
+        {qid: 'partialCredit3', action: 'save',  score: 72,  sub_points: 0},
+        {qid: 'partialCredit1', action: 'grade', score: 24,  sub_points: 19*0.24},
+        {qid: 'partialCredit3', action: 'grade', score: 64,  sub_points: 8*(0.64-0.63)},
+        {qid: 'partialCredit3', action: 'grade', score: 7,   sub_points: 0},
+        {qid: 'partialCredit2', action: 'grade', score: 8,   sub_points: 0},
+        {qid: 'partialCredit3', action: 'grade', score: 97,  sub_points: 0.1*(0.97-0.64)},
+        {qid: 'partialCredit2', action: 'grade', score: 27,  sub_points: 3*(0.27-0.14)},
     ],
 ];
 
@@ -792,13 +803,13 @@ describe('Exam assessment', function() {
                     describe('setting up the submission data', function() {
                         it('should succeed', function() {
                             locals.shouldHaveButtons = ['grade', 'save'];
-                            locals.postAction = 'grade';
+                            locals.postAction = questionTest.action;
                             locals.question = questions[questionTest.qid];
                             locals.question.points += questionTest.sub_points;
                             locals.totalPoints += questionTest.sub_points;
                             locals.expectedResult = {
-                                submission_score: questionTest.score / 100,
-                                submission_correct: (questionTest.score == 100),
+                                submission_score: (questionTest.action == 'save') ? null : (questionTest.score / 100),
+                                submission_correct: (questionTest.action == 'save') ? null : (questionTest.score == 100),
                                 instance_question_points: locals.question.points,
                                 instance_question_score_perc: locals.question.points/locals.question.maxPoints * 100,
                                 assessment_instance_points: locals.totalPoints,
