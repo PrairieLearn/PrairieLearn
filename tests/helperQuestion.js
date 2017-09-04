@@ -374,7 +374,7 @@ module.exports = {
                     assessment_id: locals.assessment_id,
                     __csrf_token: locals.__csrf_token,
                 };
-                request.post({url: locals.instructorAssessmentUrl, form: form, followAllRedirects: true}, function (error, response) {
+                request.post({url: locals.instructorAssessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
                         return callback(error);
                     }
@@ -443,7 +443,7 @@ module.exports = {
                         __csrf_token: locals.__csrf_token,
                     };
                     var questionUrl = locals.questionBaseUrl + '/' + locals.question.id;
-                    request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, _body) {
+                    request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                         if (error) {
                             return callback(error);
                         }

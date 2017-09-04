@@ -312,7 +312,7 @@ describe('Exam assessment', function() {
             it('should parse', function() {
                 locals.$ = cheerio.load(page);
             });
-            questionsArray.forEach(function(question, i) {
+            questionsArray.forEach(function(question) {
                 it(`should link to ${question.qid} question`, function() {
                     const urlTail = '/pl/course_instance/1/instance_question/' + question.id + '/';
                     question.url = locals.siteUrl + urlTail;
