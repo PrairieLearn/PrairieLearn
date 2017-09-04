@@ -2,12 +2,12 @@
 INSERT INTO assessments
         (uuid,  tid,  type,  number,  order_by,  title,  config,  multiple_instance,  shuffle_questions,
          max_points,  auto_close, deleted_at, course_instance_id,  text,
-         assessment_set_id)
+         assessment_set_id, constant_question_value)
 (
     SELECT
         $uuid, $tid, $type, $number, $order_by, $title, $config, $multiple_instance, $shuffle_questions,
         $max_points, $auto_close, NULL,      $course_instance_id, $text,
-        COALESCE((SELECT id FROM assessment_sets WHERE name = $set_name AND course_id = $course_id), NULL)
+        COALESCE((SELECT id FROM assessment_sets WHERE name = $set_name AND course_id = $course_id), NULL), $constant_question_value
 )
 ON CONFLICT (uuid) DO UPDATE
 SET
@@ -23,7 +23,8 @@ SET
     max_points = EXCLUDED.max_points,
     deleted_at = EXCLUDED.deleted_at,
     text = EXCLUDED.text,
-    assessment_set_id = EXCLUDED.assessment_set_id
+    assessment_set_id = EXCLUDED.assessment_set_id,
+    constant_question_value = EXCLUDED.constant_question_value
 WHERE
     assessments.course_instance_id = $course_instance_id
 RETURNING id;
@@ -152,13 +153,9 @@ WHERE
 
 -- BLOCK insert_assessment_question
 INSERT INTO assessment_questions AS aq
-    (number,  max_points,  init_points,  points_list, force_max_points,
-    deleted_at,  assessment_id,  question_id, alternative_group_id,
-    number_in_alternative_group)
+    (number, max_points, init_points, points_list, force_max_points, tries_per_variant, deleted_at,  assessment_id, question_id, alternative_group_id, number_in_alternative_group)
 VALUES
-    ($number, $max_points, $init_points, $points_list::double precision[], $force_max_points,
-    NULL,       $assessment_id, $question_id, $alternative_group_id,
-    $number_in_alternative_group)
+    ($number, $max_points, $init_points, $points_list::double precision[], $force_max_points, $tries_per_variant, NULL, $assessment_id, $question_id, $alternative_group_id, $number_in_alternative_group)
 ON CONFLICT (question_id, assessment_id) DO UPDATE
 SET
     number = EXCLUDED.number,
@@ -166,6 +163,7 @@ SET
     points_list = EXCLUDED.points_list,
     init_points = EXCLUDED.init_points,
     force_max_points = EXCLUDED.force_max_points,
+    tries_per_variant = EXCLUDED.tries_per_variant,
     deleted_at = EXCLUDED.deleted_at,
     alternative_group_id = EXCLUDED.alternative_group_id,
     number_in_alternative_group = EXCLUDED.number_in_alternative_group,
