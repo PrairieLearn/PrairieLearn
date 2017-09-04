@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add support for partial credit in exams (Tim Bretl).
+
   * Add `<pl_file_preview>` element (Nathan Walters).
 
   * Add docker image for external graders with clang (Nathan Walters).
