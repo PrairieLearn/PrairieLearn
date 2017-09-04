@@ -14,13 +14,6 @@ var helperQuestion = require('./helperQuestion');
 
 const locals = {};
 
-locals.siteUrl = 'http://localhost:' + config.serverPort;
-locals.baseUrl = locals.siteUrl + '/pl';
-locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
-locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/instance_question';
-locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
-locals.isStudentPage = true;
-
 // sorted alphabetically by qid
 const questionsArray = [
     {qid: 'addNumbers', type: 'Freeform'},
@@ -30,9 +23,20 @@ const questionsArray = [
     {qid: 'partialCredit2', type: 'Freeform'},
     {qid: 'partialCredit3', type: 'Freeform'},
 ];
+
 const questions = _.keyBy(questionsArray, 'qid');
 
 const assessmentMaxPoints = 74;
+
+const partialGradingTests = [
+    [
+        {qid: 'partialCredit1', ans: '24', sub: 0.24, points: 19*0.24},
+        {qid: 'partialCredit2', ans: '0', sub: 0, points: 0},
+        {qid: 'partialCredit2', ans: '14', sub: 0.14, points: 9*0.14},
+        {qid: 'partialCredit2', ans: '8', sub: 0.14, points: 9*0.14},
+        {qid: 'partialCredit2', ans: '27', sub: 0.27, points: 9*0.14 + 5*(0.27-0.14)},
+    ],
+];
 
 describe('Exam assessment', function() {
     this.timeout(5000);
@@ -42,165 +46,197 @@ describe('Exam assessment', function() {
 
     var res, page, elemList;
 
-    describe('1. the database', function() {
-        it('should contain E1', function(callback) {
-            sqldb.queryOneRow(sql.select_e1, [], function(err, result) {
-                if (ERR(err, callback)) return;
-                locals.assessment_id = result.rows[0].id;
-                callback(null);
+    var startExam = function() {
+        describe('the locals object', function() {
+            it('should be cleared', function() {
+                for (var prop in locals) {
+                    delete locals[prop];
+                }
+            });
+            it('should be initialized', function() {
+                locals.siteUrl = 'http://localhost:' + config.serverPort;
+                locals.baseUrl = locals.siteUrl + '/pl';
+                locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
+                locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/instance_question';
+                locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
+                locals.isStudentPage = true;
             });
         });
-    });
 
-    describe('2. GET ' + locals.assessmentsUrl, function() {
-        it('should load successfully', function(callback) {
-            request(locals.assessmentsUrl, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                res = response;
-                page = body;
-                callback(null);
+        describe('the questions', function() {
+            it('should have cleared data', function() {
+                questionsArray.forEach(function(question) {
+                    for (var prop in question) {
+                        if (prop != 'qid' && prop != 'type') {
+                            delete question[prop];
+                        }
+                    }
+                });
             });
         });
-        it('should parse', function() {
-            locals.$ = cheerio.load(page);
-        });
-        it('should contain E1', function() {
-            elemList = locals.$('td a:contains("Exam for automatic test suite")');
-            assert.lengthOf(elemList, 1);
-        });
-        it('should have the correct link for E1', function() {
-            locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
-            assert.equal(locals.assessmentUrl, locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id + '/');
-        });
-    });
 
-    describe('3. GET to assessment URL', function() {
-        it('should load successfully', function(callback) {
-            request(locals.assessmentUrl, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                res = response;
-                page = body;
-                callback(null);
+        describe('1. the database', function() {
+            it('should contain E1', function(callback) {
+                sqldb.queryOneRow(sql.select_e1, [], function(err, result) {
+                    if (ERR(err, callback)) return;
+                    locals.assessment_id = result.rows[0].id;
+                    callback(null);
+                });
             });
         });
-        it('should parse', function() {
-            locals.$ = cheerio.load(page);
-        });
-        it('should contain "Please wait"', function() {
-            elemList = locals.$('p.lead:contains("Please wait")');
-            assert.lengthOf(elemList, 1);
-        });
-        it('should contain "Exam 1"', function() {
-            elemList = locals.$('p.lead strong:contains("Exam 1")');
-            assert.lengthOf(elemList, 1);
-        });
-        it('should contain "TPL 101"', function() {
-            elemList = locals.$('p.lead strong:contains("TPL 101")');
-            assert.lengthOf(elemList, 1);
-        });
-        it('should have a CSRF token', function() {
-            elemList = locals.$('form input[name="__csrf_token"]');
-            assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
-            locals.__csrf_token = elemList[0].attribs.value;
-            assert.isString(locals.__csrf_token);
-        });
-    });
 
-    describe('4. POST to assessment URL', function() {
-        it('should load successfully', function(callback) {
-            var form = {
-                __action: 'newInstance',
-                __csrf_token: locals.__csrf_token,
-            };
-            locals.preStartTime = Date.now();
-            request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                locals.postStartTime = Date.now();
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                res = response;
-                page = body;
-                callback(null);
+        describe('2. GET to assessments URL', function() {
+            it('should load successfully', function(callback) {
+                request(locals.assessmentsUrl, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    res = response;
+                    page = body;
+                    callback(null);
+                });
             });
-        });
-        it('should parse', function() {
-            locals.$ = cheerio.load(page);
-        });
-        it('should redirect to the correct path', function() {
-            locals.assessmentInstanceUrl = locals.siteUrl + res.req.path;
-            assert.equal(res.req.path, '/pl/course_instance/1/assessment_instance/1');
-        });
-        it('should create one assessment_instance', function(callback) {
-            sqldb.query(sql.select_assessment_instances, [], function(err, result) {
-                if (ERR(err, callback)) return;
-                if (result.rowCount != 1) {
-                    return callback(new Error('expected one assessment_instance, got: ' + result.rowCount));
-                }
-                locals.assessment_instance = result.rows[0];
-                callback(null);
+            it('should parse', function() {
+                locals.$ = cheerio.load(page);
             });
-        });
-        it('should have the correct assessment_instance.assessment_id', function() {
-            assert.equal(locals.assessment_instance.assessment_id, locals.assessment_id);
-        });
-        it(`should create ${questionsArray.length} instance_questions`, function(callback) {
-            sqldb.query(sql.select_instance_questions, [], function(err, result) {
-                if (ERR(err, callback)) return;
-                if (result.rowCount != questionsArray.length) {
-                    return callback(new Error(`expected ${questionsArray.length} instance_questions, got: ` + result.rowCount));
-                }
-                locals.instance_questions = result.rows;
-                callback(null);
-            });
-        });
-        questionsArray.forEach(function(question, i) {
-            it(`should have question #${i} as QID ${question.qid}`, function() {
-                question.id = locals.instance_questions[i].id;
-                assert.equal(locals.instance_questions[i].qid, question.qid);
-            });
-        });
-    });
-
-    describe('5. GET to assessment_instance URL', function() {
-        it('should load successfully', function(callback) {
-            request(locals.assessmentInstanceUrl, function (error, response, body) {
-                if (error) {
-                    return callback(error);
-                }
-                if (response.statusCode != 200) {
-                    return callback(new Error('bad status: ' + response.statusCode));
-                }
-                res = response;
-                page = body;
-                callback(null);
-            });
-        });
-        it('should parse', function() {
-            locals.$ = cheerio.load(page);
-        });
-        questionsArray.forEach(function(question, i) {
-            it(`should link to ${question.qid} question`, function() {
-                const urlTail = '/pl/course_instance/1/instance_question/' + question.id + '/';
-                question.url = locals.siteUrl + urlTail;
-                elemList = locals.$(`td a[href="${urlTail}"]`);
+            it('should contain E1', function() {
+                elemList = locals.$('td a:contains("Exam for automatic test suite")');
                 assert.lengthOf(elemList, 1);
             });
+            it('should have the correct link for E1', function() {
+                locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
+                assert.equal(locals.assessmentUrl, locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id + '/');
+            });
         });
-    });
+
+        describe('3. GET to assessment URL', function() {
+            it('should load successfully', function(callback) {
+                request(locals.assessmentUrl, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    res = response;
+                    page = body;
+                    callback(null);
+                });
+            });
+            it('should parse', function() {
+                locals.$ = cheerio.load(page);
+            });
+            it('should contain "Please wait"', function() {
+                elemList = locals.$('p.lead:contains("Please wait")');
+                assert.lengthOf(elemList, 1);
+            });
+            it('should contain "Exam 1"', function() {
+                elemList = locals.$('p.lead strong:contains("Exam 1")');
+                assert.lengthOf(elemList, 1);
+            });
+            it('should contain "TPL 101"', function() {
+                elemList = locals.$('p.lead strong:contains("TPL 101")');
+                assert.lengthOf(elemList, 1);
+            });
+            it('should have a CSRF token', function() {
+                elemList = locals.$('form input[name="__csrf_token"]');
+                assert.lengthOf(elemList, 1);
+                assert.deepProperty(elemList[0], 'attribs.value');
+                locals.__csrf_token = elemList[0].attribs.value;
+                assert.isString(locals.__csrf_token);
+            });
+        });
+
+        describe('4. POST to assessment URL', function() {
+            it('should load successfully', function(callback) {
+                var form = {
+                    __action: 'newInstance',
+                    __csrf_token: locals.__csrf_token,
+                };
+                locals.preStartTime = Date.now();
+                request.post({url: locals.assessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    locals.postStartTime = Date.now();
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    res = response;
+                    page = body;
+                    callback(null);
+                });
+            });
+            it('should parse', function() {
+                locals.$ = cheerio.load(page);
+            });
+            it('should redirect to the correct path', function() {
+                locals.assessmentInstanceUrl = locals.siteUrl + res.req.path;
+                assert.equal(res.req.path, '/pl/course_instance/1/assessment_instance/1');
+            });
+            it('should create one assessment_instance', function(callback) {
+                sqldb.query(sql.select_assessment_instances, [], function(err, result) {
+                    if (ERR(err, callback)) return;
+                    if (result.rowCount != 1) {
+                        return callback(new Error('expected one assessment_instance, got: ' + result.rowCount));
+                    }
+                    locals.assessment_instance = result.rows[0];
+                    callback(null);
+                });
+            });
+            it('should have the correct assessment_instance.assessment_id', function() {
+                assert.equal(locals.assessment_instance.assessment_id, locals.assessment_id);
+            });
+            it(`should create ${questionsArray.length} instance_questions`, function(callback) {
+                sqldb.query(sql.select_instance_questions, [], function(err, result) {
+                    if (ERR(err, callback)) return;
+                    if (result.rowCount != questionsArray.length) {
+                        return callback(new Error(`expected ${questionsArray.length} instance_questions, got: ` + result.rowCount));
+                    }
+                    locals.instance_questions = result.rows;
+                    callback(null);
+                });
+            });
+            questionsArray.forEach(function(question, i) {
+                it(`should have question #${i} as QID ${question.qid}`, function() {
+                    question.id = locals.instance_questions[i].id;
+                    assert.equal(locals.instance_questions[i].qid, question.qid);
+                });
+            });
+        });
+
+        describe('5. GET to assessment_instance URL', function() {
+            it('should load successfully', function(callback) {
+                request(locals.assessmentInstanceUrl, function (error, response, body) {
+                    if (error) {
+                        return callback(error);
+                    }
+                    if (response.statusCode != 200) {
+                        return callback(new Error('bad status: ' + response.statusCode));
+                    }
+                    res = response;
+                    page = body;
+                    callback(null);
+                });
+            });
+            it('should parse', function() {
+                locals.$ = cheerio.load(page);
+            });
+            questionsArray.forEach(function(question, i) {
+                it(`should link to ${question.qid} question`, function() {
+                    const urlTail = '/pl/course_instance/1/instance_question/' + question.id + '/';
+                    question.url = locals.siteUrl + urlTail;
+                    elemList = locals.$(`td a[href="${urlTail}"]`);
+                    assert.lengthOf(elemList, 1);
+                });
+            });
+        });
+    };
+
+    startExam();
 
     describe('6. save correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
@@ -687,4 +723,15 @@ describe('Exam assessment', function() {
             helperQuestion.checkAssessmentScore(locals);
         });
     });
+
+const partialGradingTests = [
+    [
+        {qid: 'partialCredit1', ans: '24', sub: 0.24, points: 19*0.24},
+        {qid: 'partialCredit2', ans: '0', sub: 0, points: 0},
+        {qid: 'partialCredit2', ans: '14', sub: 0.14, points: 9*0.14},
+        {qid: 'partialCredit2', ans: '8', sub: 0.14, points: 9*0.14},
+        {qid: 'partialCredit2', ans: '27', sub: 0.27, points: 9*0.14 + 5*(0.27-0.14)},
+    ],
+];
+
 });
