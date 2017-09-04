@@ -21,9 +21,18 @@ locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/instance_question';
 locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
 locals.isStudentPage = true;
 
-const addNumbers = {qid: 'addNumbers', type: 'Freeform'};
-const addVectors = {qid: 'addVectors', type: 'Calculation'};
-const fossilFuelsRadio = {qid: 'fossilFuelsRadio', type: 'Calculation'};
+// sorted alphabetically by qid
+const questionsArray = [
+    {qid: 'addNumbers', type: 'Freeform'},
+    {qid: 'addVectors', type: 'Calculation'},
+    {qid: 'fossilFuelsRadio', type: 'Calculation'},
+    {qid: 'partialCredit1', type: 'Freeform'},
+    {qid: 'partialCredit2', type: 'Freeform'},
+    {qid: 'partialCredit3', type: 'Freeform'},
+];
+const questions = _.keyBy(questionsArray, 'qid');
+
+const assessmentMaxPoints = 73;
 
 describe('Exam assessment', function() {
     this.timeout(5000);
@@ -148,27 +157,21 @@ describe('Exam assessment', function() {
         it('should have the correct assessment_instance.assessment_id', function() {
             assert.equal(locals.assessment_instance.assessment_id, locals.assessment_id);
         });
-        it('should create three instance_questions', function(callback) {
+        it(`should create ${questionsArray.length} instance_questions`, function(callback) {
             sqldb.query(sql.select_instance_questions, [], function(err, result) {
                 if (ERR(err, callback)) return;
-                if (result.rowCount != 3) {
-                    return callback(new Error('expected three instance_questions, got: ' + result.rowCount));
+                if (result.rowCount != questionsArray.length) {
+                    return callback(new Error(`expected ${questionsArray.length} instance_questions, got: ` + result.rowCount));
                 }
                 locals.instance_questions = result.rows;
                 callback(null);
             });
         });
-        it('should have the correct first question', function() {
-            addNumbers.id = locals.instance_questions[0].id;
-            assert.equal(locals.instance_questions[0].qid, addNumbers.qid);
-        });
-        it('should have the correct second question', function() {
-            addVectors.id = locals.instance_questions[1].id;
-            assert.equal(locals.instance_questions[1].qid, addVectors.qid);
-        });
-        it('should have the correct third question', function() {
-            fossilFuelsRadio.id = locals.instance_questions[2].id;
-            assert.equal(locals.instance_questions[2].qid, fossilFuelsRadio.qid);
+        questionsArray.forEach(function(question, i) {
+            it(`should have question #${i} as QID ${question.qid}`, function() {
+                question.id = locals.instance_questions[i].id;
+                assert.equal(locals.instance_questions[i].qid, question.qid);
+            });
         });
     });
 
@@ -189,23 +192,13 @@ describe('Exam assessment', function() {
         it('should parse', function() {
             locals.$ = cheerio.load(page);
         });
-        it('should link to addNumbers question', function() {
-            const urlTail = '/pl/course_instance/1/instance_question/' + addNumbers.id + '/';
-            addNumbers.url = locals.siteUrl + urlTail;
-            elemList = locals.$(`td a[href="${urlTail}"]`);
-            assert.lengthOf(elemList, 1);
-        });
-        it('should link to addVectors question', function() {
-            const urlTail = '/pl/course_instance/1/instance_question/' + addVectors.id + '/';
-            addVectors.url = locals.siteUrl + urlTail;
-            elemList = locals.$(`td a[href="${urlTail}"]`);
-            assert.lengthOf(elemList, 1);
-        });
-        it('should link to fossilFuelsRadio question', function() {
-            const urlTail = '/pl/course_instance/1/instance_question/' + fossilFuelsRadio.id + '/';
-            fossilFuelsRadio.url = locals.siteUrl + urlTail;
-            elemList = locals.$(`td a[href="${urlTail}"]`);
-            assert.lengthOf(elemList, 1);
+        questionsArray.forEach(function(question, i) {
+            it(`should link to ${question.qid} question`, function() {
+                const urlTail = '/pl/course_instance/1/instance_question/' + question.id + '/';
+                question.url = locals.siteUrl + urlTail;
+                elemList = locals.$(`td a[href="${urlTail}"]`);
+                assert.lengthOf(elemList, 1);
+            });
         });
     });
 
@@ -214,14 +207,14 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
                 locals.postAction = 'save';
-                locals.question = addVectors;
+                locals.question = questions.addVectors;
                 locals.expectedResult = {
                     submission_score: null,
                     submission_correct: null,
                     instance_question_points: 0,
                     instance_question_score_perc: 0/11 * 100,
                     assessment_instance_points: 0,
-                    assessment_instance_score_perc: 0/33 * 100,
+                    assessment_instance_score_perc: 0/assessmentMaxPoints * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -233,6 +226,8 @@ describe('Exam assessment', function() {
         });
         helperQuestion.getInstanceQuestion(locals);
         helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkQuestionScore(locals);
+        helperQuestion.checkAssessmentScore(locals);
     });
 
     describe('7. grade incorrect answer to question addVectors', function() {
@@ -240,14 +235,14 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
                 locals.postAction = 'grade';
-                locals.question = addVectors;
+                locals.question = questions.addVectors;
                 locals.expectedResult = {
                     submission_score: 0,
                     submission_correct: false,
                     instance_question_points: 0,
                     instance_question_score_perc: 0/11 * 100,
                     assessment_instance_points: 0,
-                    assessment_instance_score_perc: 0/33 * 100,
+                    assessment_instance_score_perc: 0/assessmentMaxPoints * 100,
                 };
                 locals.getSubmittedAnswer = function(_variant) {
                     return {
@@ -259,6 +254,8 @@ describe('Exam assessment', function() {
         });
         helperQuestion.getInstanceQuestion(locals);
         helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkQuestionScore(locals);
+        helperQuestion.checkAssessmentScore(locals);
     });
 
     describe('8. grade incorrect answer to question addNumbers', function() {
@@ -266,14 +263,14 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
                 locals.postAction = 'grade';
-                locals.question = addNumbers;
+                locals.question = questions.addNumbers;
                 locals.expectedResult = {
                     submission_score: 0,
                     submission_correct: false,
                     instance_question_points: 0,
                     instance_question_score_perc: 0/5 * 100,
                     assessment_instance_points: 0,
-                    assessment_instance_score_perc: 0/33 * 100,
+                    assessment_instance_score_perc: 0/assessmentMaxPoints * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -284,6 +281,8 @@ describe('Exam assessment', function() {
         });
         helperQuestion.getInstanceQuestion(locals);
         helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkQuestionScore(locals);
+        helperQuestion.checkAssessmentScore(locals);
     });
 
     describe('9. grade incorrect answer to question fossilFuelsRadio', function() {
@@ -291,14 +290,14 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
                 locals.postAction = 'grade';
-                locals.question = fossilFuelsRadio;
+                locals.question = questions.fossilFuelsRadio;
                 locals.expectedResult = {
                     submission_score: 0,
                     submission_correct: false,
                     instance_question_points: 0,
                     instance_question_score_perc: 0/17 * 100,
                     assessment_instance_points: 0,
-                    assessment_instance_score_perc: 0/33 * 100,
+                    assessment_instance_score_perc: 0/assessmentMaxPoints * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -309,6 +308,8 @@ describe('Exam assessment', function() {
         });
         helperQuestion.getInstanceQuestion(locals);
         helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkQuestionScore(locals);
+        helperQuestion.checkAssessmentScore(locals);
     });
 
     describe('10. grade invalid answer to question addNumbers', function() {
@@ -316,14 +317,14 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
                 locals.postAction = 'grade';
-                locals.question = addNumbers;
+                locals.question = questions.addNumbers;
                 locals.expectedResult = {
                     submission_score: null,
                     submission_correct: null,
                     instance_question_points: 0,
                     instance_question_score_perc: 0/17 * 100,
                     assessment_instance_points: 0,
-                    assessment_instance_score_perc: 0/33 * 100,
+                    assessment_instance_score_perc: 0/assessmentMaxPoints * 100,
                 };
                 locals.getSubmittedAnswer = function(_variant) {
                     return {
@@ -334,6 +335,8 @@ describe('Exam assessment', function() {
         });
         helperQuestion.getInstanceQuestion(locals);
         helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkQuestionScore(locals);
+        helperQuestion.checkAssessmentScore(locals);
         describe('check the submission is not gradable', function() {
             it('should succeed', function(callback) {
                 sqldb.queryOneRow(sql.select_last_submission, [], function(err, result) {
@@ -357,7 +360,7 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
                 locals.postAction = 'save';
-                locals.question = addNumbers;
+                locals.question = questions.addNumbers;
                 locals.getSubmittedAnswer = function(variant) {
                     return {
                         c: variant.true_answer.c - 1,
@@ -367,6 +370,8 @@ describe('Exam assessment', function() {
         });
         helperQuestion.getInstanceQuestion(locals);
         helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkQuestionScore(locals);
+        helperQuestion.checkAssessmentScore(locals);
     });
 
     describe('12. break the addNumbers variant', function() {
@@ -374,7 +379,7 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
                 locals.postAction = 'save';
-                locals.question = addNumbers;
+                locals.question = questions.addNumbers;
             });
         });
         helperQuestion.getInstanceQuestion(locals);
@@ -397,7 +402,7 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = [];
                 locals.postAction = 'save';
-                locals.question = addNumbers;
+                locals.question = questions.addNumbers;
             });
         });
         helperQuestion.getInstanceQuestion(locals);
@@ -425,7 +430,7 @@ describe('Exam assessment', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
-                locals.question = addNumbers;
+                locals.question = questions.addNumbers;
             });
         });
         helperQuestion.getInstanceQuestion(locals);
@@ -442,14 +447,14 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
                 locals.postAction = 'grade';
-                locals.question = addNumbers;
+                locals.question = questions.addNumbers;
                 locals.expectedResult = {
                     submission_score: 1,
                     submission_correct: true,
-                    instance_question_points: 0,
+                    instance_question_points: 3,
                     instance_question_score_perc: 3/5 * 100,
                     assessment_instance_points: 3,
-                    assessment_instance_score_perc: 3/33 * 100,
+                    assessment_instance_score_perc: 3/assessmentMaxPoints * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -460,12 +465,14 @@ describe('Exam assessment', function() {
         });
         helperQuestion.getInstanceQuestion(locals);
         helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkQuestionScore(locals);
+        helperQuestion.checkAssessmentScore(locals);
     });
 
     describe('16. save correct answer to saved question addNumbers page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.question = addNumbers;
+                locals.question = questions.addNumbers;
                 locals.postAction = 'save';
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -488,14 +495,14 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
                 locals.postAction = 'save';
-                locals.question = fossilFuelsRadio;
+                locals.question = questions.fossilFuelsRadio;
                 locals.expectedResult = {
                     submission_score: 0,
                     submission_correct: false,
                     instance_question_points: 0,
                     instance_question_score_perc: 0/17 * 100,
                     assessment_instance_points: 3,
-                    assessment_instance_score_perc: 3/33 * 100,
+                    assessment_instance_score_perc: 3/assessmentMaxPoints * 100,
                 };
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -506,13 +513,15 @@ describe('Exam assessment', function() {
         });
         helperQuestion.getInstanceQuestion(locals);
         helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkQuestionScore(locals);
+        helperQuestion.checkAssessmentScore(locals);
     });
 
     describe('18. load question addVectors page and save data for later submission', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
-                locals.question = addVectors;
+                locals.question = questions.addVectors;
             });
         });
         helperQuestion.getInstanceQuestion(locals);
@@ -529,14 +538,14 @@ describe('Exam assessment', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
                 locals.postAction = 'grade';
-                locals.question = addVectors;
+                locals.question = questions.addVectors;
                 locals.expectedResult = {
                     submission_score: 0,
                     submission_correct: false,
                     instance_question_points: 0,
                     instance_question_score_perc: 0/11 * 100,
                     assessment_instance_points: 3,
-                    assessment_instance_score_perc: 3/33 * 100,
+                    assessment_instance_score_perc: 3/assessmentMaxPoints * 100,
                 };
                 locals.getSubmittedAnswer = function(_variant) {
                     return {
@@ -548,12 +557,14 @@ describe('Exam assessment', function() {
         });
         helperQuestion.getInstanceQuestion(locals);
         helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkQuestionScore(locals);
+        helperQuestion.checkAssessmentScore(locals);
     });
 
     describe('20. submit correct answer to saved question addVectors page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.question = addVectors;
+                locals.question = questions.addVectors;
                 locals.postAction = 'save';
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -576,7 +587,7 @@ describe('Exam assessment', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
-                locals.question = fossilFuelsRadio;
+                locals.question = questions.fossilFuelsRadio;
             });
         });
         helperQuestion.getInstanceQuestion(locals);
@@ -600,7 +611,7 @@ describe('Exam assessment', function() {
     describe('23. save correct answer to saved question fossilFuelsRadio page', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
-                locals.question = fossilFuelsRadio;
+                locals.question = questions.fossilFuelsRadio;
                 locals.postAction = 'save';
                 locals.getSubmittedAnswer = function(variant) {
                     return {
@@ -631,7 +642,7 @@ describe('Exam assessment', function() {
         describe('check the regrading succeeded', function() {
             describe('setting up the expected question addNumbers results', function() {
                 it('should succeed', function() {
-                    locals.question = addNumbers;
+                    locals.question = questions.addNumbers;
                     locals.expectedResult = {
                         submission_score: 1,
                         submission_correct: true,
@@ -643,7 +654,7 @@ describe('Exam assessment', function() {
             helperQuestion.checkQuestionScore(locals);
             describe('setting up the expected question addVectors results', function() {
                 it('should succeed', function() {
-                    locals.question = addVectors;
+                    locals.question = questions.addVectors;
                     locals.expectedResult = {
                         submission_score: 0,
                         submission_correct: false,
@@ -655,7 +666,7 @@ describe('Exam assessment', function() {
             helperQuestion.checkQuestionScore(locals);
             describe('setting up the expected question fossilFuelsRadio results', function() {
                 it('should succeed', function() {
-                    locals.question = fossilFuelsRadio;
+                    locals.question = questions.fossilFuelsRadio;
                     locals.expectedResult = {
                         submission_score: null,
                         submission_correct: null,
@@ -669,7 +680,7 @@ describe('Exam assessment', function() {
                 it('should succeed', function() {
                     locals.expectedResult = {
                         assessment_instance_points: 14,
-                        assessment_instance_score_perc: 14/33 * 100,
+                        assessment_instance_score_perc: 14/assessmentMaxPoints * 100,
                     };
                 });
             });

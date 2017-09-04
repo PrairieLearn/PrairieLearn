@@ -23,6 +23,8 @@
 
   * Add documentation clarification on `"role": "Student"` access.
 
+  * Split installing documentation into separate method sections (Matt West).
+
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
     and `tests/sync/*`) (Nathan Walters).
 
