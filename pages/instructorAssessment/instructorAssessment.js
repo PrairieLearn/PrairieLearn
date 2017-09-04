@@ -643,20 +643,10 @@ router.post('/', function(req, res, next) {
             res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'close') {
-        let params = {
-            assessment_id: res.locals.assessment.id,
-            assessment_instance_id: req.body.assessment_instance_id,
-            authz_data: res.locals.authz_data,
-        };
-        sqldb.queryOneRow(sql.select_finish_data, params, function(err, result) {
+        var close = true;
+        assessment.gradeAssessmentInstance(req.body.assessment_instance_id, res.locals.authn_user.user_id, close, function(err) {
             if (ERR(err, next)) return;
-            var assessment_type = result.rows[0].assessment_type;
-            var credit = result.rows[0].credit;
-            var finish = true;
-            assessment.gradeAssessmentInstance(assessment_type, req.body.assessment_instance_id, res.locals.authn_user.user_id, credit, finish, function(err) {
-                if (ERR(err, next)) return;
-                res.redirect(req.originalUrl);
-            });
+            res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'delete') {
         let params = [
