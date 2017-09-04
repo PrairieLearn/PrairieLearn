@@ -19,6 +19,7 @@ columns
     score_perc: double precision default 0
     score_perc_in_grading: double precision default 0
     status: enum_instance_question_status default 'unanswered'::enum_instance_question_status
+    variants_points_list: double precision[]
 
 indexes
     instance_questions_pkey: PRIMARY KEY (id)

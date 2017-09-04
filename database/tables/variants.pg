@@ -6,6 +6,7 @@ columns
     first_duration: interval
     id: bigint not null default nextval('variants_id_seq'::regclass)
     instance_question_id: bigint
+    num_tries: integer default 0
     number: integer
     open: boolean default true
     options: jsonb
