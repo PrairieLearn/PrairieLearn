@@ -63,6 +63,17 @@
             "description": "Array of \"zones\" in the assessment, each containing questions that can be randomized within the zone.",
             "type": "array",
             "items": {"$ref": "#/definitions/zone"}
+        },
+        "constantQuestionValue": {
+            "description": "Whether to keep the value of a question constant after a student solves it correctly.",
+            "type": "boolean",
+            "default": false
+        },
+        "triesPerVariant": {
+            "description": "The maximum number of graded submissions allowed for each question instance.",
+            "type": "number",
+            "default": 1
+
         }
     },
     "definitions": {
