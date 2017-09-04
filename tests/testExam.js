@@ -32,7 +32,7 @@ const questionsArray = [
 ];
 const questions = _.keyBy(questionsArray, 'qid');
 
-const assessmentMaxPoints = 73;
+const assessmentMaxPoints = 74;
 
 describe('Exam assessment', function() {
     this.timeout(5000);
@@ -497,8 +497,8 @@ describe('Exam assessment', function() {
                 locals.postAction = 'save';
                 locals.question = questions.fossilFuelsRadio;
                 locals.expectedResult = {
-                    submission_score: 0,
-                    submission_correct: false,
+                    submission_score: null,
+                    submission_correct: null,
                     instance_question_points: 0,
                     instance_question_score_perc: 0/17 * 100,
                     assessment_instance_points: 3,
