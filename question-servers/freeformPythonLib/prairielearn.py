@@ -317,5 +317,6 @@ def is_correct_scalar_sf(a_sub, a_tru, digits=2, eps_digits=3):
     # Check if submitted answer is in bounds
     return (a_sub > lower_bound) & (a_sub < upper_bound)
 
+
 def get_uuid():
     return str(uuid.uuid4())

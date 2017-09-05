@@ -42,6 +42,8 @@
 
   * Fix spurious "question is complete" bug (Tim Bretl).
 
+  * Fix bug in sigfig method of comparison when correct answer is zero (Tim Bretl).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
