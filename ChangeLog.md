@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add support for partial credit in exams (Tim Bretl).
+
   * Add `<pl_file_preview>` element (Nathan Walters).
 
   * Add docker image for external graders with clang (Nathan Walters).
@@ -22,6 +24,8 @@
   * Add test coverage reporting with `coverage.io` (Nathan Walters).
 
   * Add documentation clarification on `"role": "Student"` access.
+
+  * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
     and `tests/sync/*`) (Nathan Walters).

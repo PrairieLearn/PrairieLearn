@@ -20,7 +20,7 @@ module.exports = {
                         return callback(error);
                     }
                     if (response.statusCode != 200) {
-                        return callback(new Error('bad status: ' + response.statusCode));
+                        return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                     }
                     page = body;
                     callback(null);
@@ -176,7 +176,7 @@ module.exports = {
                     }
                     locals.postEndTime = Date.now();
                     if (response.statusCode != 200) {
-                        return callback(new Error('bad status: ' + response.statusCode));
+                        return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                     }
                     page = body;
                     callback(null);
@@ -198,10 +198,6 @@ module.exports = {
             });
             it('should have the correct submission.variant_id', function() {
                 assert.equal(locals.submission.variant_id, locals.variant.id);
-            });
-            it('should not be graded', function() {
-                assert.equal(locals.submission.points, null);
-                assert.equal(locals.submission.score_perc, null);
             });
             it('should not be broken if Freeform', function() {
                 if (locals.question.type != 'Freeform') return;
@@ -354,7 +350,7 @@ module.exports = {
                         return callback(error);
                     }
                     if (response.statusCode != 200) {
-                        return callback(new Error('bad status: ' + response.statusCode));
+                        return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                     }
                     page = body;
                     callback(null);
@@ -378,12 +374,12 @@ module.exports = {
                     assessment_id: locals.assessment_id,
                     __csrf_token: locals.__csrf_token,
                 };
-                request.post({url: locals.instructorAssessmentUrl, form: form, followAllRedirects: true}, function (error, response) {
+                request.post({url: locals.instructorAssessmentUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                     if (error) {
                         return callback(error);
                     }
                     if (response.statusCode != 200) {
-                        return callback(new Error('bad status: ' + response.statusCode));
+                        return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                     }
                     callback(null);
                 });
@@ -447,12 +443,12 @@ module.exports = {
                         __csrf_token: locals.__csrf_token,
                     };
                     var questionUrl = locals.questionBaseUrl + '/' + locals.question.id;
-                    request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, _body) {
+                    request.post({url: questionUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                         if (error) {
                             return callback(error);
                         }
                         if (response.statusCode != 200) {
-                            return callback(new Error('bad status: ' + response.statusCode));
+                            return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
                         }
                         callback(null);
                     });
