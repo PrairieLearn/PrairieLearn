@@ -40,6 +40,8 @@
 
   * Fix instructor closing of assessment instances (Matt West).
 
+  * Fix spurious "question is complete" bug (Tim Bretl).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
