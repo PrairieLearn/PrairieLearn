@@ -18,6 +18,7 @@ DECLARE
     iq instance_questions%ROWTYPE;
     aq assessment_questions%ROWTYPE;
     correct boolean;
+    is_constant_question_value boolean;
 BEGIN
     SELECT * INTO iq FROM instance_questions WHERE id = instance_question_id;
     SELECT * INTO aq FROM assessment_questions WHERE id = iq.assessment_question_id;
@@ -28,17 +29,31 @@ BEGIN
     open := TRUE;
     points_list := NULL;
 
+    -- get property that says if we should change current_value or not
+    SELECT constant_question_value INTO is_constant_question_value FROM assessments WHERE id = aq.assessment_id;
+
     correct := (submission_score >= 0.5);
 
     IF correct THEN
         points := least(iq.points + iq.current_value, aq.max_points);
         score_perc := points / (CASE WHEN aq.max_points > 0 THEN aq.max_points ELSE 1 END) * 100;
-        current_value := least(iq.current_value + aq.init_points, aq.max_points);
+
+        IF NOT is_constant_question_value THEN
+            current_value := least(iq.current_value + aq.init_points, aq.max_points);
+        ELSE
+            current_value := iq.current_value;
+        END IF;
+
         status := 'correct';
     ELSE
         points := iq.points;
         score_perc := iq.score_perc;
-        current_value := aq.init_points;
+
+        IF NOT is_constant_question_value THEN
+            current_value := aq.init_points;
+        ELSE
+            current_value := iq.current_value;
+        END IF;
 
         -- use current status unless it's 'unanswered'
         status := iq.status;
