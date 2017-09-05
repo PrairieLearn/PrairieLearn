@@ -56,7 +56,7 @@ BEGIN
         grading_started_at = start_time,
         grading_finished_at = finish_time,
         score = grading_jobs_process_external.score,
-        correct = (grading_jobs_process_external.score >= 0.5), -- FIXME: delete
+        correct = (grading_jobs_process_external.score >= 1.0),
         feedback = grading_jobs_process_external.feedback
     WHERE id = grading_job_id
     RETURNING *
