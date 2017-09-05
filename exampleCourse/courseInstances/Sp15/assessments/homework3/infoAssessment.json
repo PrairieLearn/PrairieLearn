@@ -4,7 +4,7 @@
     "title": "Homework to test partial credit",
     "set": "Homework",
     "number": "3",
-    "constantQuestionValue": true,
+    "constantQuestionValue": false,
     "allowAccess": [
         {
             "mode": "Public",
@@ -34,16 +34,9 @@
     "zones": [
         {
             "questions": [
-                {"id": "addVectors",                 "points": 1, "maxPoints": 5, "triesPerVariant": 2},
-                {"id": "fossilFuelsRadio",           "points": 2, "maxPoints": 10},
-                {"id": "ballToss2",                  "points": 2, "maxPoints": 10},
-                {"id": "positionTimeGraph",          "points": 2, "maxPoints": 10},
-                {"id": "multiplyTwoMatrices",        "points": 2, "maxPoints": 10},
-                {"id": "multiplyTwoNumbers",         "points": 2, "maxPoints": 10, "triesPerVariant": 3},
-                {"id": "downloadFile",               "points": 2, "maxPoints": 10},
-                {"id": "customElement",              "points": 1, "maxPoints": 1},
-                {"id": "differentiatePolynomial",    "points": 2, "maxPoints": 10},
-                {"id": "functionValueFromPlot",      "points": 2, "maxPoints": 10}
+                {"id": "partialCredit1",             "points": 1, "maxPoints": 5},
+                {"id": "partialCredit2",           "points": 2, "maxPoints": 10},
+                {"id": "partialCredit3",                  "points": 2, "maxPoints": 10}
             ]
         }
     ]
