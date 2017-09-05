@@ -11,6 +11,7 @@ CREATE OR REPLACE FUNCTION
         OUT highest_submission_score DOUBLE PRECISION,
         OUT current_value DOUBLE PRECISION,
         OUT points_list DOUBLE PRECISION[],
+        OUT variants_points_list DOUBLE PRECISION[],
         OUT max_points DOUBLE PRECISION
     )
 AS $$
@@ -21,6 +22,9 @@ DECLARE
 BEGIN
     SELECT * INTO iq FROM instance_questions WHERE id = instance_question_id;
     SELECT * INTO aq FROM assessment_questions WHERE id = iq.assessment_question_id;
+
+    -- exams don't use this, so just copy whatever was there before
+    variants_points_list := iq.variants_points_list;
 
     max_points := COALESCE(aq.max_points, 0);
 

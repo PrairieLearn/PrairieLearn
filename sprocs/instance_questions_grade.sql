@@ -26,6 +26,7 @@ BEGIN
         highest_submission_score = new_values.highest_submission_score,
         current_value = new_values.current_value,
         points_list = new_values.points_list,
+        variants_points_list = new_values.variants_points_list,
         number_attempts = iq.number_attempts + 1
     WHERE
         iq.id = instance_question_id;
