@@ -36,7 +36,8 @@
             "questions": [
                 {"id": "partialCredit1",             "points": 1, "maxPoints": 5},
                 {"id": "partialCredit2",           "points": 2, "maxPoints": 10},
-                {"id": "partialCredit3",                  "points": 2, "maxPoints": 10}
+                {"id": "partialCredit3",                  "points": 2, "maxPoints": 10, "triesPerVariant": 3},
+                {"id": "partialCredit4_v2",                  "points": 2, "maxPoints": 10}
             ]
         }
     ]
