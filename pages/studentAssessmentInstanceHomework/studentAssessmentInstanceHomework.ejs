@@ -43,7 +43,7 @@
                     any order. Questions can be repeated and not all
                     questions must be completed. Answering a question
                     correctly will increase its score by its current
-                    value, and will also increase its value. Answering
+                    value<%= (assessment.constant_question_value ? '.' : ', and will also increase its value.') %> Answering
                     a question incorrectly will reset its value. Total
                     points is the sum of all question
                     points.</small></p>

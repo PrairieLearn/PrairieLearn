@@ -4,7 +4,7 @@
     "title": "Homework to test partial credit",
     "set": "Homework",
     "number": "3",
-    "constantQuestionValue": false,
+    "constantQuestionValue": true,
     "allowAccess": [
         {
             "mode": "Public",
