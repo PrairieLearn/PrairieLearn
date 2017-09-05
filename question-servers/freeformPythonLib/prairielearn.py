@@ -305,7 +305,10 @@ def is_correct_scalar_dd(a_sub, a_tru, digits=2, eps_digits=3):
 
 def is_correct_scalar_sf(a_sub, a_tru, digits=2, eps_digits=3):
     # Get bounds on submitted answer
-    n = -int(np.floor(np.log10(np.abs(a_tru)))) + (digits - 1)
+    if (a_tru == 0):
+        n = digits
+    else:
+        n = -int(np.floor(np.log10(np.abs(a_tru)))) + (digits - 1)
     m = 10**n
     eps = 10**-(n + eps_digits)
     lower_bound = (np.floor(m * (a_tru - eps)) / m) - eps
@@ -313,11 +316,6 @@ def is_correct_scalar_sf(a_sub, a_tru, digits=2, eps_digits=3):
 
     # Check if submitted answer is in bounds
     return (a_sub > lower_bound) & (a_sub < upper_bound)
-
-
-def get_digits_for_sf(a, digits):
-    return -int(np.floor(np.log10(a))) + (digits - 1)
-
 
 def get_uuid():
     return str(uuid.uuid4())
