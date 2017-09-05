@@ -51,6 +51,10 @@
                   <td><%- include('../partials/questionValue', {value: instance_question.current_value});  %></td>
                 </tr>
                 <tr>
+                  <td>Awarded:</td>
+                  <td><%- include('../partials/questionAwardedPoints', {awarded_points: instance_question.variants_points_list, init_points: assessment_question.init_points});  %></td>
+                </tr>
+                <tr>
                   <td>Points:</td>
                   <td><%- include('../partials/questionPointsOfMax', {points: instance_question.points, max_points: assessment_question.max_points}); %></td>
                 </tr>
