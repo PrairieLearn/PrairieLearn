@@ -44,6 +44,8 @@
 
   * Fix bug in sigfig method of comparison when correct answer is zero (Tim Bretl).
 
+  * Fix bug in pl_file_upload where students could upload arbitrary files (Nathan Walters).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
