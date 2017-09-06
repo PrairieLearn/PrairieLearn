@@ -132,7 +132,7 @@
             <div class="col-sm-6">
                 <% if (showGradeButton) { %>
                     <% if (question_context == 'student_homework') { %>
-                        <button class="btn btn-primary question-grade" name="__action" value="grade">Grade
+                        <button class="btn btn-primary question-grade">Grade
                             <% if ((assessment_question.tries_per_variant - variant.num_tries) > 1) { %>
                                 <span class="badge">
                                     <%= String(assessment_question.tries_per_variant - variant.num_tries) %>
