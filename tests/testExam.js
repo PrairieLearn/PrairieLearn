@@ -131,7 +131,7 @@ describe('Exam assessment', function() {
 
     var res, page, elemList;
 
-    var startExam = function() {
+    var startAssessment = function() {
         describe('the locals object', function() {
             it('should be cleared', function() {
                 for (var prop in locals) {
@@ -323,7 +323,7 @@ describe('Exam assessment', function() {
         });
     };
 
-    startExam();
+    startAssessment();
 
     describe('6. save correct answer to question addVectors', function() {
         describe('setting up the submission data', function() {
@@ -833,7 +833,7 @@ describe('Exam assessment', function() {
                 });
             });
 
-            startExam();
+            startAssessment();
 
             partialCreditTest.forEach(function(questionTest, iQuestionTest) {
                 describe(`${questionTest.action} answer number #${iQuestionTest+1} for question ${questionTest.qid} with score ${questionTest.score}`, function() {

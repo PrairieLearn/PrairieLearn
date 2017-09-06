@@ -39,7 +39,9 @@ const assessmentMaxPoints = 84;
 const partialCreditTests = [
     [
         // answer every question correctly immediately
-        {qid: 'partialCredit1', action: 'grade',             score: 0,   sub_points: 0},
+        {qid: 'partialCredit1', action: 'grade',             score: 100, sub_points: 1},
+        {qid: 'partialCredit2', action: 'grade',             score: 100, sub_points: 2},
+        {qid: 'partialCredit3', action: 'grade',             score: 100, sub_points: 3},
     ],
 ];
 
@@ -877,6 +879,99 @@ describe('Homework assessment', function() {
                 });
             });
             helperQuestion.checkAssessmentScore(locals);
+        });
+    });
+
+    partialCreditTests.forEach(function(partialCreditTest, iPartialCreditTest) {
+
+        describe(`partial credit test #${iPartialCreditTest+1}`, function() {
+            describe('server', function() {
+                it('should shut down', function(callback) {
+                    var that = this;
+                    // pass "this" explicitly to enable this.timeout() calls
+                    helperServer.after.call(that, function(err) {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                });
+                it('should start up', function(callback) {
+                    var that = this;
+                    // pass "this" explicitly to enable this.timeout() calls
+                    helperServer.before.call(that, function(err) {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                });
+            });
+
+            startAssessment();
+
+            partialCreditTest.forEach(function(questionTest, iQuestionTest) {
+                describe(`${questionTest.action} answer number #${iQuestionTest+1} for question ${questionTest.qid} with score ${questionTest.score}`, function() {
+                    describe('setting up the submission data', function() {
+                        it('should succeed', function() {
+                            if (questionTest.action == 'check-closed') {
+                                locals.shouldHaveButtons = [];
+                            } else {
+                                locals.shouldHaveButtons = ['grade', 'save'];
+                            }
+                            locals.postAction = questionTest.action;
+                            locals.question = questions[questionTest.qid];
+                            locals.question.points += questionTest.sub_points;
+                            locals.totalPoints += questionTest.sub_points;
+                            locals.expectedResult = {
+                                submission_score: (questionTest.action == 'save') ? null : (questionTest.score / 100),
+                                submission_correct: (questionTest.action == 'save') ? null : (questionTest.score == 100),
+                                instance_question_points: locals.question.points,
+                                instance_question_score_perc: locals.question.points/locals.question.maxPoints * 100,
+                                assessment_instance_points: locals.totalPoints,
+                                assessment_instance_score_perc: locals.totalPoints/assessmentMaxPoints * 100,
+                            };
+                            locals.getSubmittedAnswer = function(_variant) {
+                                return {
+                                    s: String(questionTest.score),
+                                };
+                            };
+                        });
+                    });
+                    if (questionTest.action == 'store') {
+                        helperQuestion.getInstanceQuestion(locals);
+                        describe('saving submission data', function() {
+                            it('should succeed', function() {
+                                locals.question.savedVariant = _.clone(locals.variant);
+                                locals.question.questionSavedCsrfToken = locals.__csrf_token;
+                            });
+                        });
+                    } else if (questionTest.action == 'save-stored-fail') {
+                        describe('restoring submission data', function() {
+                            it('should succeed', function() {
+                                locals.postAction = 'save';
+                                locals.variant = _.clone(locals.question.savedVariant);
+                                locals.__csrf_token = locals.question.questionSavedCsrfToken;
+                            });
+                        });
+                        helperQuestion.postInstanceQuestionAndFail(locals);
+                    } else if (questionTest.action == 'grade-stored-fail') {
+                        describe('restoring submission data', function() {
+                            it('should succeed', function() {
+                                locals.postAction = 'grade';
+                                locals.variant = _.clone(locals.question.savedVariant);
+                                locals.__csrf_token = locals.question.questionSavedCsrfToken;
+                            });
+                        });
+                        helperQuestion.postInstanceQuestionAndFail(locals);
+                    } else if (questionTest.action == 'check-closed') {
+                        helperQuestion.getInstanceQuestion(locals);
+                    } else if (questionTest.action == 'save' || questionTest.action == 'grade') {
+                        helperQuestion.getInstanceQuestion(locals);
+                        helperQuestion.postInstanceQuestion(locals);
+                        helperQuestion.checkQuestionScore(locals);
+                        helperQuestion.checkAssessmentScore(locals);
+                    } else {
+                        throw Error('unknown action: ' + questionTest.action);
+                    }
+                });
+            });
         });
     });
 });
