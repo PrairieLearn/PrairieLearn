@@ -1,4 +1,5 @@
 DROP FUNCTION IF EXISTS instance_questions_points_exam(bigint,boolean);
+DROP FUNCTION IF EXISTS instance_questions_points_exam(bigint,double precision);
 
 CREATE OR REPLACE FUNCTION
     instance_questions_points_exam(

@@ -1,4 +1,5 @@
 DROP FUNCTION IF EXISTS instance_questions_points_homework(bigint,boolean);
+DROP FUNCTION IF EXISTS instance_questions_points_homework(bigint,double precision);
 
 CREATE OR REPLACE FUNCTION
     instance_questions_points_homework(
