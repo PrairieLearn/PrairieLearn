@@ -1,3 +1,5 @@
+DROP FUNCTION IF EXISTS variants_update_after_grading(bigint);
+
 CREATE OR REPLACE FUNCTION
     variants_update_after_grading(
         variant_id bigint,
