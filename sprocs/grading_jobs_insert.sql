@@ -1,5 +1,7 @@
 DROP FUNCTION IF EXISTS grading_jobs_insert(bigint,bigint,boolean,jsonb,jsonb,double precision,jsonb,jsonb,jsonb,jsonb);
 
+DROP FUNCTION IF EXISTS grading_jobs_insert(bigint,bigint,boolean,boolean,jsonb,jsonb,double precision,jsonb,jsonb,jsonb,jsonb);
+
 CREATE OR REPLACE FUNCTION
     grading_jobs_insert (
         IN submission_id bigint,
