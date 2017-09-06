@@ -23,7 +23,7 @@ def render(element_html, element_index, data):
                 raise Exception('No value in data["params"] for variable %s in matrix_output element' % var_name)
             html += pl.inner_html(child) \
                 + ' = ' \
-                + pl.numpy_to_matlab(np.array(var_data), ndigits=digits) + ';' \
+                + pl.numpy_to_matlab((var_data if np.isscalar(var_data) else np.array(var_data)), ndigits=digits) + ';' \
                 + '\n'
     html += '</pre>'
     return html

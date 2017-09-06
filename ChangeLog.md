@@ -47,6 +47,8 @@
   * Fix bug in pl_file_upload where students could upload arbitrary files (Nathan Walters).
 
   * Fix render bug on exams for questions without points (Matt West).
+  
+  * Fix bug that prevented scalars from being rendered by `pl_matrix_output` (Tim Bretl).
 
 * __2.10.1__ - 2017-05-24
 
