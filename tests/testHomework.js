@@ -38,10 +38,13 @@ const assessmentMaxPoints = 84;
 //     open: true or false
 const partialCreditTests = [
     [
-        // answer every question correctly immediately
+        // answer every question correctly
         {qid: 'partialCredit1', action: 'grade',             score: 100, sub_points: 1},
         {qid: 'partialCredit2', action: 'grade',             score: 100, sub_points: 2},
         {qid: 'partialCredit3', action: 'grade',             score: 100, sub_points: 3},
+        {qid: 'partialCredit1', action: 'grade',             score: 100, sub_points: 2},
+        {qid: 'partialCredit2', action: 'grade',             score: 100, sub_points: 4},
+        {qid: 'partialCredit3', action: 'grade',             score: 100, sub_points: 6},
     ],
 ];
 
