@@ -46,6 +46,8 @@
 
   * Fix bug in pl_file_upload where students could upload arbitrary files (Nathan Walters).
 
+  * Fix render bug on exams for questions without points (Matt West).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
