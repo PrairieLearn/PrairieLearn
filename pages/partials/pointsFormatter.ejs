@@ -1,5 +1,9 @@
 <%
     getStringFromFloat = function(v) {
+        if (v == null) {
+            return '—';
+        }
+
         var getStringFromSingleFloat = function(v) {
             vAsString = String(v);
             vAsFixed = (Math.floor(v*100)/100).toFixed(2);
