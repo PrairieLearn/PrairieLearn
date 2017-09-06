@@ -82,6 +82,25 @@ const partialCreditTests = [
         {qid: 'partialCredit2', action: 'grade',             score: 100, sub_points: 0},
         {qid: 'partialCredit3', action: 'grade',             score: 100, sub_points: 0},
     ],
+    [
+        // test partial credit on question without retries
+        {qid: 'partialCredit1', action: 'grade',             score: 15,  sub_points: 0.15},
+        {qid: 'partialCredit1', action: 'grade',             score: 11,  sub_points: 0},
+        {qid: 'partialCredit1', action: 'grade',             score: 34,  sub_points: (0.34-0.15)},
+        {qid: 'partialCredit1', action: 'grade',             score: 99,  sub_points: (0.99-0.34)},
+        {qid: 'partialCredit1', action: 'grade',             score: 87,  sub_points: 0},
+        {qid: 'partialCredit1', action: 'grade',             score: 100, sub_points: (1-0.99)},
+        {qid: 'partialCredit1', action: 'grade',             score: 85,  sub_points: 0.85},
+        {qid: 'partialCredit1', action: 'grade',             score: 85,  sub_points: 0},
+        {qid: 'partialCredit1', action: 'grade',             score: 84,  sub_points: 0},
+        {qid: 'partialCredit1', action: 'grade',             score: 100, sub_points: (1-0.85)},
+        {qid: 'partialCredit1', action: 'grade',             score: 100, sub_points: 2},
+        {qid: 'partialCredit1', action: 'grade',             score: 0,   sub_points: 0},
+        {qid: 'partialCredit1', action: 'grade',             score: 100, sub_points: 1},
+        {qid: 'partialCredit1', action: 'grade',             score: 53,  sub_points: 0.53},
+        {qid: 'partialCredit1', action: 'grade',             score: 100, sub_points: (1-0.53)},
+        {qid: 'partialCredit1', action: 'grade',             score: 100, sub_points: 0},
+    ],
 ];
 
 describe('Homework assessment', function() {
