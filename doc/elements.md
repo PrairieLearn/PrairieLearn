@@ -50,7 +50,7 @@ Attribute | Type | Default | Description
 `max_correct` | integer | special | The maximum number of correct answers to display. Defaults to displaying all correct answers.
 `fixed_order` | boolean | false | Disable the randomization of answer order.
 
-A `pl_multiple_choice` element displays a subset of the answers in a random order as checkboxes.
+A `pl_checkbox` element displays a subset of the answers in a random order as checkboxes.
 
 An `pl_answer` element inside a `pl_multiple_choice` element has attributes:
 
