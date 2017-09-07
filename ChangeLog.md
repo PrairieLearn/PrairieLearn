@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add help text to Exam assessment instance page (Tim Bretl).
+
   * Add support for partial credit in exams (Tim Bretl).
 
   * Add `<pl_file_preview>` element (Nathan Walters).
@@ -47,6 +49,8 @@
   * Fix bug in pl_file_upload where students could upload arbitrary files (Nathan Walters).
 
   * Fix render bug on exams for questions without points (Matt West).
+
+  * Fix assessment authorization when mode is NULL (Matt West).
 
 * __2.10.1__ - 2017-05-24
 

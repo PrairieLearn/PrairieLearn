@@ -54,7 +54,7 @@ BEGIN
         reservation reservations;
     BEGIN
         -- only needed for Exams when we care about the date
-        EXIT schedule_access WHEN assessment_access_rule.mode != 'Exam';
+        EXIT schedule_access WHEN assessment_access_rule.mode IS DISTINCT FROM 'Exam';
         EXIT schedule_access WHEN NOT use_date_check;
 
         -- is there a corresponding PrairieSchedule course?
