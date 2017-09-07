@@ -92,13 +92,13 @@ def parse(element_html, element_index, data):
     if data['submitted_answers'].get('_files', None) is None:
         data['submitted_answers']['_files'] = parsed_files
     elif isinstance(data['submitted_answers'].get('_files', None), list):
-        data['submitted_answers']['_files'].extend(files)
+        data['submitted_answers']['_files'].extend(parsed_files)
     else:
         add_format_error(data, '_files was present but was not an array.')
 
     # Validate that all required files are present
     if parsed_files is not None:
-        submitted_file_names = map(lambda x: x.get('name', ''), parsed_files)
+        submitted_file_names = [x.get('name', '') for x in parsed_files]
         missing_files = [x for x in required_file_names if x not in submitted_file_names]
 
         if len(missing_files) > 0:

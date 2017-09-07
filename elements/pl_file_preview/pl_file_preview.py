@@ -21,21 +21,13 @@ def render(element_html, element_index, data):
 
     # Fetch the list of required files for this question
     required_file_names = data['params'].get('_required_file_names', [])
+    html_params['required_files'] = required_file_names
 
     # Fetch any submitted files
     submitted_files = data['submitted_answers'].get('_files', [])
 
-    # Check for any missing files
-    submitted_file_names = map(lambda x: x.get('name', ''), submitted_files)
-    missing_files = [x for x in required_file_names if x not in submitted_file_names]
-
-    # Construct an array of errors, including format error from the file input elements
-    errors = data['format_errors'].get('_files', [])
-
-    if len(missing_files) > 0:
-        errors.append('The following required files were missing: {0}'.format(', '.join(missing_files)))
-
-    html_params['errors'] = errors
+    # Pass through format errors from the file input elements
+    html_params['errors'] = data['format_errors'].get('_files', [])
 
     # Decode and reshape files into a useful form
     if len(submitted_files) > 0:
