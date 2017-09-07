@@ -140,7 +140,7 @@ def get_float_attrib(element, name, *args):
 # real-valued numpy array. It returns A as a MATLAB-formatted string.
 def numpy_to_matlab(A, ndigits=2, wtype='f'):
     if np.isscalar(A):
-        A_str = '{:.{indigits}{iwtype}};'.format(A, indigits=ndigits, iwtype=wtype)
+        A_str = '{:.{indigits}{iwtype}}'.format(A, indigits=ndigits, iwtype=wtype)
         return A_str
     else:
         s = A.shape

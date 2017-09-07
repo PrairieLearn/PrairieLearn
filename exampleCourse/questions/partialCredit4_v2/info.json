@@ -1,0 +1,8 @@
+{
+    "uuid": "a4f9bda4-3701-4d6b-9b21-e680ebe70bf6",
+    "title": "Partial credit 4",
+    "topic": "Algebra",
+    "tags": ["tbretl", "fa17", "tpl101"],
+    "clientFiles": ["client.js", "question.html", "answer.html", "submission.html"],
+    "type": "Calculation"
+}

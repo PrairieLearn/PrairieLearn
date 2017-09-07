@@ -10,6 +10,7 @@ columns
     number_in_alternative_group: integer
     points_list: double precision[]
     question_id: bigint not null
+    tries_per_variant: integer default 1
 
 indexes
     assessment_questions_pkey: PRIMARY KEY (id)

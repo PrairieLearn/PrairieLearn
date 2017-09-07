@@ -75,11 +75,24 @@
         <% } else { %>
         <div class="row">
           <div class="col-sm-6">
-            <% if (showGradeButton) { %><button class="btn btn-primary" name="__action" value="grade">Grade</button><% } %>
+              <% if (showGradeButton) { %>
+                  <% if (question_context == 'student_homework') { %>
+                      <button class="btn btn-primary question-grade" name="__action" value="grade">Grade
+                          <% if ((assessment_question.tries_per_variant - variant.num_tries) > 1) { %>
+                              <span class="badge">
+                                  <%= String(assessment_question.tries_per_variant - variant.num_tries) %>
+                                  tries left
+                              </span>
+                          <% } %>
+                      </button>
+                  <% } else { %>
+                      <button class="btn btn-primary question-grade" name="__action" value="grade">Grade</button>
+                  <% } %>
+              <% } %>
           </div>
           <div class="col-sm-6">
             <span class="pull-right">
-              <% if (showSaveButton) { %><button class="btn btn-info" name="__action" value="save">Save</button><% } %>
+              <% if (showSaveButton) { %><button class="btn btn-info question-save" name="__action" value="save">Save</button><% } %>
               <input type="hidden" name="__variant_id" value="<%= variant.id %>">
               <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
               <% if (showNewVariantButton) { %><a href="<%= newVariantUrl %>" class="btn btn-primary">New variant</a><% } %>
@@ -116,9 +129,22 @@
         This question is complete and cannot be answered again.
         <% } else { %>
         <div class="row">
-          <div class="col-sm-6">
-            <% if (showGradeButton) { %><button class="btn btn-primary question-grade">Grade</button><% } %>
-          </div>
+            <div class="col-sm-6">
+                <% if (showGradeButton) { %>
+                    <% if (question_context == 'student_homework') { %>
+                        <button class="btn btn-primary question-grade">Grade
+                            <% if ((assessment_question.tries_per_variant - variant.num_tries) > 1) { %>
+                                <span class="badge">
+                                    <%= String(assessment_question.tries_per_variant - variant.num_tries) %>
+                                    tries left
+                                </span>
+                            <% } %>
+                        </button>
+                    <% } else { %>
+                        <button class="btn btn-primary question-grade">Grade</button>
+                    <% } %>
+                <% } %>
+            </div>
           <div class="col-sm-6">
             <span class="pull-right">
               <% if (showSaveButton) { %><button class="btn btn-info question-save">Save</button><% } %>

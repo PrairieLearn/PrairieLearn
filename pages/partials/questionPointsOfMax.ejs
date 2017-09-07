@@ -1,3 +1,5 @@
+<% include('pointsFormatter'); %>
+
 <% if (points == 0) { %>
 <span class="label label-danger">
 <% } else if (points < max_points) { %>
@@ -5,5 +7,5 @@
 <% } else { %>
 <span class="label label-success">
 <% } %>
-<%= points %>/<%= max_points %>
+<%= getStringFromFloat(points) %>/<%= getStringFromFloat(max_points) %>
 </span>

@@ -68,6 +68,7 @@ module.exports = {
                         course_id: courseInfo.courseId,
                         set_name: dbAssessment.set,
                         text: dbAssessment.text,
+                        constant_question_value: _.has(dbAssessment, 'constantQuestionValue') ? dbAssessment.constantQuestionValue : false,
                     };
                     sqldb.query(sql.insert_assessment, params, function(err, result) {
                         if (ERR(err, callback)) return;
@@ -216,6 +217,7 @@ module.exports = {
                             points: question.points || dbQuestion.points,
                             forceMaxPoints: _.has(question, 'forceMaxPoints') ? question.forceMaxPoints
                                 : (_.has(dbQuestion, 'forceMaxPoints') ? dbQuestion.forceMaxPoints : false),
+                            triesPerVariant: _.has(question, 'triesPerVariant') ? question.triesPerVariant : (_.has(dbQuestion, 'triesPerVariant') ? dbQuestion.triesPerVariant : 1),
                         };
                     });
                 } else if (_(dbQuestion).has('id')) {
@@ -225,6 +227,7 @@ module.exports = {
                             maxPoints: dbQuestion.maxPoints,
                             points: dbQuestion.points,
                             forceMaxPoints: _.has(dbQuestion, 'forceMaxPoints') ? dbQuestion.forceMaxPoints : false,
+                            triesPerVariant: _.has(dbQuestion, 'triesPerVariant') ? dbQuestion.triesPerVariant : 1,
                         }
                     ];
                 } else {
@@ -233,6 +236,7 @@ module.exports = {
 
                 for (var i = 0; i < alternatives.length; i++) {
                     var question = alternatives[i];
+
                     if (dbAssessment.type == 'Exam') {
                         if (question.maxPoints != undefined) {
                             return callback(error.make(400, 'Cannot specify "maxPoints" for a question in an "Exam" assessment',
@@ -280,7 +284,7 @@ module.exports = {
                     async.eachSeries(alternatives, function(alternative, callback) {
                         iAssessmentQuestion++;
                         iInAlternativeGroup++;
-                        that.syncAssessmentQuestion(alternative.qid, alternative.maxPoints, alternative.pointsList, alternative.initPoints, alternative.forceMaxPoints, iInAlternativeGroup, iAssessmentQuestion, assessmentId, alternative_group_id, courseInfo, function(err, assessmentQuestionId) {
+                        that.syncAssessmentQuestion(alternative.qid, alternative.maxPoints, alternative.pointsList, alternative.initPoints, alternative.forceMaxPoints, alternative.triesPerVariant, iInAlternativeGroup, iAssessmentQuestion, assessmentId, alternative_group_id, courseInfo, function(err, assessmentQuestionId) {
                             if (ERR(err, callback)) return;
                             assessmentQuestionIds.push(assessmentQuestionId);
                             callback(null);
@@ -318,7 +322,7 @@ module.exports = {
         });
     },
 
-    syncAssessmentQuestion: function(qid, maxPoints, pointsList, initPoints, forceMaxPoints, iInAlternativeGroup, iAssessmentQuestion, assessmentId, alternative_group_id, courseInfo, callback) {
+    syncAssessmentQuestion: function(qid, maxPoints, pointsList, initPoints, forceMaxPoints, triesPerVariant, iInAlternativeGroup, iAssessmentQuestion, assessmentId, alternative_group_id, courseInfo, callback) {
         var params = {
             qid: qid,
             course_id: courseInfo.courseId,
@@ -335,6 +339,7 @@ module.exports = {
                 points_list: pointsList,
                 init_points: initPoints,
                 force_max_points: forceMaxPoints,
+                tries_per_variant: triesPerVariant,
                 assessment_id: assessmentId,
                 question_id: questionId,
                 alternative_group_id: alternative_group_id,

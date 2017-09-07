@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add support for partial credit in Homeworks (Tim Bretl).
+
   * Add help text to Exam assessment instance page (Tim Bretl).
 
   * Add support for partial credit in exams (Tim Bretl).
@@ -51,6 +53,8 @@
   * Fix render bug on exams for questions without points (Matt West).
 
   * Fix assessment authorization when mode is NULL (Matt West).
+
+  * Fix bug that prevented scalars from being rendered by `pl_matrix_output` (Tim Bretl).
 
 * __2.10.1__ - 2017-05-24
 

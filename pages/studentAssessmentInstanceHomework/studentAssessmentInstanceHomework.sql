@@ -15,7 +15,8 @@ SELECT
     q.title AS question_title,
     aq.max_points,
     qo.row_order,
-    qo.question_number
+    qo.question_number,
+    aq.init_points
 FROM
     instance_questions AS iq
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)

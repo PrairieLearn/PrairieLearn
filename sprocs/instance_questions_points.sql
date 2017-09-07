@@ -1,4 +1,5 @@
 DROP FUNCTION IF EXISTS instance_questions_points(bigint,boolean);
+DROP FUNCTION IF EXISTS instance_questions_points(bigint,double precision);
 
 CREATE OR REPLACE FUNCTION
     instance_questions_points(
@@ -11,6 +12,7 @@ CREATE OR REPLACE FUNCTION
         OUT highest_submission_score DOUBLE PRECISION,
         OUT current_value DOUBLE PRECISION,
         OUT points_list DOUBLE PRECISION[],
+        OUT variants_points_list DOUBLE PRECISION[],
         OUT max_points DOUBLE PRECISION
     ) AS $$
 DECLARE
@@ -34,11 +36,11 @@ BEGIN
     CASE type
         WHEN 'Exam' THEN
             SELECT * INTO open, status, points, score_perc, highest_submission_score,
-                current_value, points_list, max_points
+                current_value, points_list, variants_points_list, max_points
             FROM instance_questions_points_exam(instance_question_id, submission_score);
         WHEN 'Homework' THEN
             SELECT * INTO open, status, points, score_perc, highest_submission_score,
-                current_value, points_list, max_points
+                current_value, points_list, variants_points_list, max_points
             FROM instance_questions_points_homework(instance_question_id, submission_score);
         ELSE
             RAISE EXCEPTION 'Unknown assessment type: %', type;

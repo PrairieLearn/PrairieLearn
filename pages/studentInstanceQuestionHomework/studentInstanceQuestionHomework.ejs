@@ -44,14 +44,18 @@
           </div>
           <div class="panel panel-default">
             <div class="panel-heading"><h3 class="panel-title">Question <%= instance_question.question_number %></h3></div>
-            <table class="table table-condensed">
+            <table class="table table-condensed two-column-description-no-header">
               <tbody>
                 <tr>
                   <td>Value:</td>
                   <td><%- include('../partials/questionValue', {value: instance_question.current_value});  %></td>
                 </tr>
                 <tr>
-                  <td>Points:</td>
+                  <td>History:</td>
+                  <td><%- include('../partials/questionAwardedPoints', {awarded_points: instance_question.variants_points_list, init_points: assessment_question.init_points});  %></td>
+                </tr>
+                <tr>
+                  <td>Awarded points:</td>
                   <td><%- include('../partials/questionPointsOfMax', {points: instance_question.points, max_points: assessment_question.max_points}); %></td>
                 </tr>
               </tbody>
