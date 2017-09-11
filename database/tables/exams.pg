@@ -1,6 +1,9 @@
 columns
     course_id: bigint not null
     exam_id: bigint not null default nextval('exams_exam_id_seq'::regclass)
+    exam_string: text not null
+    first_date: text not null
+    last_date: text not null
 
 indexes
     exams_pkey: PRIMARY KEY (exam_id)

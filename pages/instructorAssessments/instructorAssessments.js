@@ -50,7 +50,7 @@ router.get('/', function(req, res, next) {
                         } else {
                             return summary;
                         }
-                    }, "");
+                    }, '');
 
                     if (row.exam_server == "") {
                         if (linked) {

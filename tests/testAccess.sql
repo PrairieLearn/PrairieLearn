@@ -40,8 +40,8 @@ insert_course_result AS (
     VALUES (1, 1)
 )
 INSERT INTO exams
-        (exam_id, course_id)
-VALUES (1, 1);
+        (exam_id, course_id, exam_string, first_date, last_date)
+VALUES (1, 1, 'test exam', '1980-01-01', '1980-01-03');
 
 -- BLOCK insert_ps_reservation
 INSERT INTO reservations
