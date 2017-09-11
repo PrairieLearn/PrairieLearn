@@ -52,7 +52,7 @@ router.get('/', function(req, res, next) {
                         }
                     }, '');
 
-                    if (row.exam_server == "") {
+                    if (row.exam_server == '') {
                         if (linked) {
                             row.exam_server = 'Not found';
                         } else {
