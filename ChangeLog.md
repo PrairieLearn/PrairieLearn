@@ -29,6 +29,8 @@
 
   * Add documentation clarification on `"role": "Student"` access.
 
+  * Add more core libraries (backbone, PrairieDraw, etc) (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
