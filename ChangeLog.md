@@ -34,6 +34,8 @@
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
     and `tests/sync/*`) (Nathan Walters).
 
+  * Remove cookie-clearing on error page (Matt West).
+
   * Shift most `exampleCourse` to the external `pl-template` repository.
 
   * Fix external graders with invalid submissions (Nathan Walters).

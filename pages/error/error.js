@@ -5,13 +5,6 @@ var jsonStringifySafe = require('json-stringify-safe');
 var logger = require('../../lib/logger');
 
 module.exports = function(err, req, res, _next) {
-    // clear all cookies in case something was misconfigured, except in the case of 404s
-    if (err.status != 404) {
-        _(req.cookies).each(function(value, key) {
-            res.clearCookie(key);
-        });
-    }
-
     var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
     var errorId = _.times(12, function() {return _.sample(chars);}).join('');
 
