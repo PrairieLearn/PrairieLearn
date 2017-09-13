@@ -1,0 +1,9 @@
+{
+    "uuid": "2640fd22-e1f7-4f7a-91e9-6bf9e4ad27f1",
+    "title": "Fibonacci function with file upload, manual grading",
+    "topic": "Functions",
+    "tags": ["code"],
+    "type": "v3",
+    "singleVariant": true,
+    "gradingMethod": "Manual"
+}
