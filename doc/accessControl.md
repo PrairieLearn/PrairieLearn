@@ -159,6 +159,33 @@ The above `allowAccess` rules are appropriate for a `infoCourseInstance.json` fi
 
 The above `allowAccess` directive is appropriate for an `Exam` assessment, and means that this assessment is available under three different circumstances and always for full credit. First, users who are at least a `TA` can access the assessment in `Public` mode during the whole of Fall semester. Second, any user can access this assessment in `Exam` mode from Sept 7th to Sept 10th. Third, there are two specific students who have access to take the exam on Sept 12th.
 
+## Exam with remote students example
+
+```json
+"allowAccess": [
+    {
+        "role": "TA",
+        "credit": 100
+    },
+    {
+        "mode": "Exam",
+        "credit": 100,
+        "startDate": "2014-09-07T00:00:01",
+        "endDate": "2014-09-10T23:59:59"
+    },
+    {
+        "uids": ["student1@illinois.edu", "student2@illinois.edu"],
+        "credit": 100,
+        "startDate": "2014-09-07T00:00:01",
+        "endDate": "2014-09-10T23:59:59",
+        "timeLimitMin": 50
+    }
+],
+```
+
+The above `allowAccess` directive is appropriate for an `Exam` being taken by on-campus students in the CBTF and by remote students. First, TAs can access the assessment at any time. Second, anyone (i.e., on-campus students) can access the assessment in the CBTF (`"mode": "Exam"`) for full credit between Sept 7th to Sept 10th. Third, a defined set of students (remote students) can take the exam for full credit between the same dates. For the off-campus students we set a time limit (50 minutes). For on-campus students no time limit should be given because the time limit is enforced by the CBTF proctors.
+
+
 ## Homework example
 
 ```json
