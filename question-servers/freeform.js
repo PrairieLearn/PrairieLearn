@@ -604,6 +604,10 @@ module.exports = {
             data.options.client_files_course_url = locals.clientFilesCourseUrl;
             data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
 
+            // Put key paths in data.options
+            data.options.question_path = context.question_dir;
+            data.options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
+
             module.exports.processQuestion('render', pc, data, context, (err, courseErrs, _data, html, _fileData, renderedElementNames) => {
                 if (ERR(err, callback)) return;
                 callback(null, courseErrs, html, renderedElementNames);
