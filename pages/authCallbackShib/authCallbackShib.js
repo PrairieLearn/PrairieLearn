@@ -31,7 +31,7 @@ router.get('/', function(req, res, next) {
         };
         var pl_authn = csrf.generateToken(tokenData, config.secretKey);
         res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});
-        if (req.query.redirect) res.redirect(req.query.redirect);
+        if (req.query.redirect) return res.redirect(req.query.redirect);
         res.redirect(res.locals.plainUrlPrefix);
     });
 });
