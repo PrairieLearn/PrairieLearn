@@ -31,6 +31,10 @@
 
   * Add more core libraries (backbone, PrairieDraw, etc) (Matt West).
 
+  * Add hiding of "Grade" button for manual grading (Matt West).
+
+  * Add docs example of mixed on-campus and remote exam (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
