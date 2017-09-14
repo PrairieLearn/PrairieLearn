@@ -12,7 +12,7 @@ var https = require('https');
 
 var logger = require('./lib/logger');
 var config = require('./lib/config');
-var messageQueue = require('./lib/messageQueue');
+var externalGrader = require('./lib/externalGrader');
 var externalGradingSocket = require('./lib/external-grading-socket');
 var assessment = require('./lib/assessment');
 var sqldb = require('./lib/sqldb');
@@ -382,7 +382,7 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            messageQueue.init(assessment, function(err) {
+            externalGrader.init(assessment, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
