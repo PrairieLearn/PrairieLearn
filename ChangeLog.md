@@ -60,6 +60,8 @@
 
   * Fix bug that prevented scalars from being rendered by `pl_matrix_output` (Tim Bretl).
 
+  * Fix bug that prevented unicode minus from being parsed by `pl_matrix_output` and `pl_number_input` (Tim Bretl).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
