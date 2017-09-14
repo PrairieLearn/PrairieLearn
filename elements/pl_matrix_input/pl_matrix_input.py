@@ -110,6 +110,9 @@ def parse(element_html, element_index, data):
         data['submitted_answers'][name] = None
         return data
 
+    # Replace unicode minus with hyphen minus wherever it occurs
+    a_sub = a_sub.replace(u'\u2212', '-')
+
     # Convert submitted answer to numpy array (return parse_error on failure)
     (a_sub_parsed, parse_error) = pl.matlab_to_numpy(a_sub)
     if a_sub_parsed is None:
