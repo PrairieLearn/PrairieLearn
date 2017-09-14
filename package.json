@@ -33,6 +33,8 @@
         "mongodb": "2.2.x",
         "mustache": "2.3.0",
         "numeric": "1.2.x",
+        "passport": "0.4.x",
+        "passport-azure-ad": "3.0.x",
         "pg": "6.1.x",
         "request": "2.81.x",
         "requirejs": "2.3.x",
