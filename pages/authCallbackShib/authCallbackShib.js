@@ -6,7 +6,7 @@ var config = require('../../lib/config');
 var csrf = require('../../lib/csrf');
 var sqldb = require('../../lib/sqldb');
 
-router.get('/', function(req, res, next) {
+router.get('/:action?/:target(*)?', function(req, res, next) {
     var authUid = null;
     var authName = null;
     var authUin = null;
@@ -31,7 +31,7 @@ router.get('/', function(req, res, next) {
         };
         var pl_authn = csrf.generateToken(tokenData, config.secretKey);
         res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});
-        if (req.query.redirect) return res.redirect(req.query.redirect);
+        if (req.params.action == 'redirect') return res.redirect(req.params.target);
         res.redirect(res.locals.plainUrlPrefix);
     });
 });
