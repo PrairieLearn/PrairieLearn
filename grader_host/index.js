@@ -35,53 +35,55 @@ if (!QUEUE_URL) {
         }
         QUEUE_URL = data.QueueUrl;
         receiveAndHandleMessage();
-    })
+    });
 } else {
     // Immediately start pulling from the QueueUrl
     receiveAndHandleMessage();
 }
 
 function receiveAndHandleMessage() {
-    const params = {
-        MaxNumberOfMessages: 1,
-        QueueUrl: QUEUE_URL,
-        WaitTimeSeconds: 20
-    }
-    console.log('Waiting for message...');
-    sqs.receiveMessage(params, (err, data) => {
-        if (err) {
-            console.error(err);
-        } else {
-            if (!data.Messages) {
-                console.log('Request timed out! Retrying...');
-                receiveAndHandleMessage();
-            } else {
-
-                var deleteParams = {
-                    QueueUrl: QUEUE_URL,
-                    ReceiptHandle: data.Messages[0].ReceiptHandle
-                };
-                sqs.deleteMessage(deleteParams, (err) => {
-                    if (err) {
-                        console.log(`Error deleting message with receipt token ${data.Messages[0].ReceiptHandle}`)
-                    }
-                    console.log(data);
-                    try {
-                        const messageBody = data.Messages[0].Body;//.replace(/\//g, '\\/');
-                        console.log(messageBody);
-                        const parsedBody = JSON.parse(messageBody);
-                        handleMessage(parsedBody, (err) => {
-                            ERR(err, (err) => console.error(err));
-                            receiveAndHandleMessage();
-                        });
-                    } catch (e) {
-                        console.error(e);
-                        receiveAndHandleMessage();
-                    }
-                });
-            }
+    async.waterfall([
+        (callback) => {
+            const params = {
+                MaxNumberOfMessages: 1,
+                QueueUrl: QUEUE_URL,
+                WaitTimeSeconds: 20
+            };
+            console.log('Waiting for message...');
+            sqs.receiveMessage(params, (err, data) => {
+                if (ERR(err, callback)) return;
+                if (!data.Messages) {
+                    return callback(new Error('No message present!'));
+                }
+                try {
+                    const messageBody = data.Messages[0].Body;
+                    const receiptHandle = data.Messages[0].ReceiptHandle;
+                    return callback(null, receiptHandle, JSON.parse(messageBody));
+                } catch (e) {
+                    return callback(e);
+                }
+            });
+        },
+        (receiptHandle, parsedMessage, callback) => {
+            handleMessage(parsedMessage, (err) => {
+                if (ERR(err, callback)) return;
+                return callback(null, receiptHandle);
+            });
+        },
+        (receiptHandle, callback) => {
+            const deleteParams = {
+                QueueUrl: QUEUE_URL,
+                ReceiptHandle: receiptHandle
+            };
+            sqs.deleteMessage(deleteParams, (err) => {
+                if (ERR(err, callback)) return;
+                return callback(null);
+            });
         }
-    })
+    ], (err) => {
+        if (ERR(err, (err) => console.error(err)));
+        receiveAndHandleMessage();
+    });
 }
 
 function handleMessage(messageBody, callback) {
