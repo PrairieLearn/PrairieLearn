@@ -19,6 +19,8 @@ router.all('/', function(req, res, next) {
         if (ERR(err, next)) return;
         if (!user) return next(new Error('Login failed'));
 
+        console.log('user', user, 'info', info);
+        logger.info({user, info});
         var params = [
             user.email,       // uid
             user.displayName, // name
