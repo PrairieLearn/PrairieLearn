@@ -18,13 +18,14 @@ def render(element_html, element_index, data):
 
         feedback = data['feedback']
         html_params['graded'] = bool(feedback)
-        html_params['succeeded'] = bool(feedback.get('succeeded', None))
+        html_params['grading_succeeded'] = bool(feedback.get('succeeded', None))
 
         results = feedback.get('results', None)
         if results:
-            html_params['score'] = format(results.get('score') * 100, '.2f').rstrip('0').rstrip('.')
-            html_params['achieved_max_points'] = (results['score'] == 1.0)
-            html_params['results_color'] = '#4CAF50' if (results['score'] == 1.0) else '#F44336'
+            html_params['succeeded'] = bool(results.get('succeeded', None))
+            html_params['score'] = format(results.get('score', 0) * 100, '.2f').rstrip('0').rstrip('.')
+            html_params['achieved_max_points'] = (results.get('score', 0) == 1.0)
+            html_params['results_color'] = '#4CAF50' if (results.get('score', 0) == 1.0) else '#F44336'
             html_params['has_message'] = bool(results.get('message', False))
             html_params['message'] = results.get('message', None)
             html_params['has_output'] = bool(results.get('output', False))

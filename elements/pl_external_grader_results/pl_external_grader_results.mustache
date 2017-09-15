@@ -1,9 +1,9 @@
 {{#graded}}
 <div class="pl-external-grader-results">
-  {{^succeeded}}
+  {{^grading_succeeded}}
     <h3>UNIDENTIFIED ERROR</h3>
-  {{/succeeded}}
-  {{#succeeded}}
+  {{/grading_succeeded}}
+  {{#grading_succeeded}}
     <h3>Score:
       <span style="color: {{results_color}}"
       {{#points}}
@@ -75,6 +75,6 @@
         </div>
       {{/tests}}
     {{/has_tests}}
-  {{/succeeded}}
+  {{/grading_succeeded}}
 </div>
 {{/graded}}
