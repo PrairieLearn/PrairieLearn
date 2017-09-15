@@ -1,0 +1,25 @@
+{
+  "name": "pl-grader",
+  "version": "1.0.0",
+  "description": "PrairieLearn's grading agent",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nwalters512/PrairieLearn-grader.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/nwalters512/PrairieLearn-grader/issues"
+  },
+  "homepage": "https://github.com/nwalters512/PrairieLearn-grader#readme",
+  "dependencies": {
+    "async": "^2.5.0",
+    "async-stacktrace": "0.0.2",
+    "aws-sdk": "^2.116.0",
+    "dockerode": "^2.5.1"
+  }
+}
