@@ -7,7 +7,8 @@ var config = require('../../lib/config');
 var csrf = require('../../lib/csrf');
 var sqldb = require('../../lib/sqldb');
 
-router.any('/', function(req, res, next) {
+// FIXME: do we need "all" below for both "get" and "post", or just one of them?
+router.all('/', function(req, res, next) {
     passport.authenticate('azuread-openidconnect', function(err, user, info) {
         if (ERR(err, next)) return;
         if (!user) return next(new Error('Login failed'));
