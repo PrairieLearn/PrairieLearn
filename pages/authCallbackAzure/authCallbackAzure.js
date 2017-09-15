@@ -10,7 +10,12 @@ var sqldb = require('../../lib/sqldb');
 
 // FIXME: do we need "all" below for both "get" and "post", or just one of them?
 router.all('/', function(req, res, next) {
-    passport.authenticate('azuread-openidconnect', function(err, user, info) {
+    const authData = {
+        response: res,
+        failureRedirect: '/pl',
+        session: false,
+    };
+    passport.authenticate('azuread-openidconnect', authData, function(err, user, info) {
         if (ERR(err, next)) return;
         if (!user) return next(new Error('Login failed'));
 
