@@ -137,6 +137,8 @@ function handleMessage(messageBody, callback) {
                 env.push(`AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}`);
                 env.push(`AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}`);
                 env.push(`AWS_DEFAULT_REGION=${AWS_REGION}`);
+            } else {
+                env.push('AWS_DEFAULT_REGION=us-east-2')
             }
             console.log(env);
             docker.createContainer({
