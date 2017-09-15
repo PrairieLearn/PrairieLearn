@@ -3,7 +3,6 @@ var passport = require('passport');
 var express = require('express');
 var router = express.Router();
 
-var logger = require('../../lib/logger');
 var config = require('../../lib/config');
 var csrf = require('../../lib/csrf');
 var sqldb = require('../../lib/sqldb');
@@ -15,12 +14,10 @@ router.all('/', function(req, res, next) {
         failureRedirect: '/pl',
         session: false,
     };
-    passport.authenticate('azuread-openidconnect', authData, function(err, user, info) {
+    passport.authenticate('azuread-openidconnect', authData, function(err, user, _info) {
         if (ERR(err, next)) return;
         if (!user) return next(new Error('Login failed'));
 
-        console.log('user', user, 'info', info);
-        logger.info({user, info});
         var params = [
             user.upn,         // uid
             user.displayName, // name

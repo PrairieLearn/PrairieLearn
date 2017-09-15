@@ -1,10 +1,6 @@
-var ERR = require('async-stacktrace');
 var passport = require('passport');
 var express = require('express');
 var router = express.Router();
-
-var logger = require('../../lib/logger');
-var config = require('../../lib/config');
 
 router.get('/', function(req, res, next) {
     const authData = {
