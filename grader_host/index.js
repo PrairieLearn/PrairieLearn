@@ -16,6 +16,7 @@ if (fs.existsSync('./aws-config.json')) {
 } else {
     DEV_MODE = false;
     console.log('Missing aws-config.json; this shouldn\'t matter when running in production');
+    AWS.config.update({region: 'us-east-2'});
 }
 
 const sqs = new AWS.SQS();
@@ -29,6 +30,7 @@ if (!QUEUE_URL) {
     sqs.getQueueUrl(params, (err, data) => {
         if (err) {
             console.error(`Unable to fetch url for queue "${QUEUE_NAME}"`);
+            console.error(err);
             process.exit(1);
         }
         QUEUE_URL = data.QueueUrl;
