@@ -22,7 +22,7 @@ router.all('/', function(req, res, next) {
         console.log('user', user, 'info', info);
         logger.info({user, info});
         var params = [
-            user.email,       // uid
+            user.upn,         // uid
             user.displayName, // name
             null,             // uin
             'azure',          // provider
