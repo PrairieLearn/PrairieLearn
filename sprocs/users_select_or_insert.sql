@@ -27,7 +27,7 @@ BEGIN
         RETURNING * INTO u;
 
         INSERT INTO audit_logs (table_name, row_id, action,   new_state)
-        VALUES                 ('users',      u.id, 'insert', to_jsonb(u));
+        VALUES                 ('users', u.user_id, 'insert', to_jsonb(u));
     END IF;
 
     -- update user data as needed
@@ -43,7 +43,7 @@ BEGIN
             parameters,
             old_state, new_state)
         VALUES
-            ('users', 'name', u.id, 'update',
+            ('users', 'name', u.user_id, 'update',
             jsonb_build_object('name', name),
             to_jsonb(u), to_jsonb(new_u));
     END IF;
@@ -59,7 +59,7 @@ BEGIN
             parameters,
             old_state, new_state)
         VALUES
-            ('users', 'uin', u.id, 'update',
+            ('users', 'uin', u.user_id, 'update',
             jsonb_build_object('uin', uin),
             to_jsonb(u), to_jsonb(new_u));
     END IF;
@@ -75,7 +75,7 @@ BEGIN
             parameters,
             old_state, new_state)
         VALUES
-            ('users', 'provider', u.id, 'update',
+            ('users', 'provider', u.user_id, 'update',
             jsonb_build_object('provider', provider),
             to_jsonb(u), to_jsonb(new_u));
     END IF;
