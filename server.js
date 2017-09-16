@@ -7,6 +7,7 @@ var async = require('async');
 var express = require('express');
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
+var passport = require('passport');
 var http = require('http');
 var https = require('https');
 
@@ -50,9 +51,35 @@ app.use(function(req, res, next) {res.locals.navbarType = 'plain'; next();});
 app.use(function(req, res, next) {res.locals.devMode = config.devMode; next();});
 app.use(function(req, res, next) {res.locals.is_administrator = false; next();});
 
+if (!config.devMode) {
+    var OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
+    const azureConfig = {
+        identityMetadata: config.azureIdentityMetadata,
+        clientID: config.azureClientID,
+        responseType: config.azureResponseType,
+        responseMode: config.azureResponseMode,
+        redirectUrl: config.azureRedirectUrl,
+        allowHttpForRedirectUrl: config.azureAllowHttpForRedirectUrl,
+        clientSecret: config.azureClientSecret,
+        validateIssuer: config.azureValidateIssuer,
+        isB2C: config.azureIsB2C,
+        issuer: config.azureIssuer,
+        passReqToCallback: config.azurePassReqToCallback,
+        scope: config.azureScope,
+        loggingLevel: config.azureLoggingLevel,
+        nonceLifetime: config.azureNonceLifetime,
+        nonceMaxAmount: config.azureNonceMaxAmount,
+        useCookieInsteadOfSession: config.azureUseCookieInsteadOfSession,
+        cookieEncryptionKeys: config.azureCookieEncryptionKeys,
+        clockSkew: config.azureClockSkew,
+    };
+    passport.use(new OIDCStrategy(azureConfig, function(iss, sub, profile, accessToken, refreshToken, done) {return done(null, profile);}));
+}
+
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: false}));
 app.use(cookieParser());
+app.use(passport.initialize());
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax')));
@@ -67,6 +94,8 @@ app.use(require('./middlewares/date'));
 app.use('/pl/oauth2login', require('./pages/authLoginOAuth2/authLoginOAuth2'));
 app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOAuth2'));
 app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
+app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
+app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
 app.use(require('./middlewares/logRequest'));

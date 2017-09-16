@@ -38,6 +38,11 @@ BEGIN
                 available := FALSE;
             END IF;
         END IF;
+        IF course_instance_access_rule.institution = 'ZJUI' THEN
+            IF uid !~ '^.+@zju\.edu\.cn' THEN
+                available := FALSE;
+            END IF;
+        END IF;
     END IF;
 
     RETURN available;
