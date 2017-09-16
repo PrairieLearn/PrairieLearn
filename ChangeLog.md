@@ -35,6 +35,8 @@
 
   * Add docs example of mixed on-campus and remote exam (Matt West).
 
+  * Add Azure AD authentication (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
