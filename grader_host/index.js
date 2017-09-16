@@ -62,24 +62,31 @@ function receiveAndHandleMessage() {
     const sqs = new AWS.SQS();
     async.waterfall([
         (callback) => {
-            const params = {
-                MaxNumberOfMessages: 1,
-                QueueUrl: config.queueUrl,
-                WaitTimeSeconds: 20
-            };
-            sqs.receiveMessage(params, (err, data) => {
+            async.doUntil((done) => {
+                const params = {
+                    MaxNumberOfMessages: 1,
+                    QueueUrl: config.queueUrl,
+                    WaitTimeSeconds: 20
+                };
+                sqs.receiveMessage(params, (err, data) => {
+                    if (ERR(err, done)) return;
+                    if (!data.Messages) {
+                        return done(null, null);
+                    }
+                    logger.info('Received job!');
+                    try {
+                        const messageBody = data.Messages[0].Body;
+                        const receiptHandle = data.Messages[0].ReceiptHandle;
+                        return done(null, receiptHandle, JSON.parse(messageBody));
+                    } catch (e) {
+                        return done(e);
+                    }
+                });
+            }, (result) => {
+                return !!result;
+            }, (err, receiptHandle, messageBody) => {
                 if (ERR(err, callback)) return;
-                if (!data.Messages) {
-                    return callback(new Error('No message present!'));
-                }
-                logger.info('Received job!');
-                try {
-                    const messageBody = data.Messages[0].Body;
-                    const receiptHandle = data.Messages[0].ReceiptHandle;
-                    return callback(null, receiptHandle, JSON.parse(messageBody));
-                } catch (e) {
-                    return callback(e);
-                }
+                callback(null, receiptHandle, messageBody);
             });
         },
         (receiptHandle, parsedMessage, callback) => {
