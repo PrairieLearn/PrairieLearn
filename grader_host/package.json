@@ -20,6 +20,10 @@
     "async": "^2.5.0",
     "async-stacktrace": "0.0.2",
     "aws-sdk": "^2.116.0",
-    "dockerode": "^2.5.1"
+    "dockerode": "^2.5.1",
+    "winston": "^2.3.1"
+  },
+  "devDependencies": {
+    "eslint": "^4.7.0"
   }
 }

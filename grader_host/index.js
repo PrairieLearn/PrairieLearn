@@ -4,57 +4,75 @@ const ERR = require('async-stacktrace');
 const Docker = require('dockerode');
 const AWS = require('aws-sdk');
 
-let DEV_MODE, AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, AWS_REGION;
+const logger = require('./lib/logger');
 
-if (fs.existsSync('./aws-config.json')) {
-    DEV_MODE = true;
-    AWS.config.loadFromPath('./aws-config.json');
-    awsConfig = JSON.parse(fs.readFileSync('./aws-config.json'));
-    AWS_ACCESS_KEY_ID = awsConfig.accessKeyId;
-    AWS_SECRET_ACCESS_KEY = awsConfig.secretAccessKey;
-    AWS_REGION = awsConfig.region;
-} else {
-    DEV_MODE = false;
-    console.log('Missing aws-config.json; this shouldn\'t matter when running in production');
-    AWS.config.update({region: 'us-east-2'});
-}
+const config = {};
 
-const sqs = new AWS.SQS();
-
-const QUEUE_NAME = process.env.QUEUE_NAME || 'grading';
-let QUEUE_URL = process.env.QUEUE_URL;
-if (!QUEUE_URL) {
-    const params = {
-        QueueName: QUEUE_NAME
-    };
-    sqs.getQueueUrl(params, (err, data) => {
-        if (err) {
-            console.error(`Unable to fetch url for queue "${QUEUE_NAME}"`);
-            console.error(err);
-            process.exit(1);
+async.series([
+    (callback) => {
+        fs.readFile('./aws-config.json', (err, awsConfig) => {
+            if (err) {
+                logger.log('Missing aws-config.json; this shouldn\'t matter when running in production');
+                config.devMode = false;
+                AWS.config.update({'region': 'us-east-2'});
+            } else {
+                logger.log('Loading AWS config from aws-config.json');
+                config.devMode = true;
+                AWS.config.loadFromPath('./aws-config.json');
+                config.awsAccessKeyId = awsConfig.accessKeyId;
+                config.awsSecretAccessKey = awsConfig.secretAccessKey;
+                config.awsRegion = awsConfig.region;
+            }
+            callback(null);
+        });
+    },
+    (callback) => {
+        config.queueName = process.env.QUEUE_NAME || 'grading';
+        if (process.env.QUEUE_URL) {
+            logger.info(`Using queue url from QUEUE_URL environment variable: ${process.env.QUEUE_URL}`);
+            config.queueUrl = process.env.QUEUE_URL;
+            callback(null);
+        } else {
+            logger.info(`Loading url for queue "${config.queueName}"`);
+            const sqs = new AWS.SQS();
+            const params = {
+                QueueName: config.queueName
+            };
+            sqs.getQueueUrl(params, (err, data) => {
+                if (err) {
+                    logger.error(`Unable to load url for queue "${config.queueName}"`);
+                    logger.error(err);
+                    process.exit(1);
+                }
+                config.queueUrl = data.QueueUrl;
+                logger.info(`Loaded url for queue "${config.queueName}": ${config.queueUrl}`);
+                callback(null);
+            });
         }
-        QUEUE_URL = data.QueueUrl;
+    },
+    (callback) => {
+        logger.info('Initialization complete! Beginning to process jobs.');
         receiveAndHandleMessage();
-    });
-} else {
-    // Immediately start pulling from the QueueUrl
-    receiveAndHandleMessage();
-}
+        callback(null);
+    }
+]);
+
 
 function receiveAndHandleMessage() {
+    const sqs = new AWS.SQS();
     async.waterfall([
         (callback) => {
             const params = {
                 MaxNumberOfMessages: 1,
-                QueueUrl: QUEUE_URL,
+                QueueUrl: config.queueUrl,
                 WaitTimeSeconds: 20
             };
-            console.log('Waiting for message...');
             sqs.receiveMessage(params, (err, data) => {
                 if (ERR(err, callback)) return;
                 if (!data.Messages) {
                     return callback(new Error('No message present!'));
                 }
+                logger.info('Received job!');
                 try {
                     const messageBody = data.Messages[0].Body;
                     const receiptHandle = data.Messages[0].ReceiptHandle;
@@ -72,7 +90,7 @@ function receiveAndHandleMessage() {
         },
         (receiptHandle, callback) => {
             const deleteParams = {
-                QueueUrl: QUEUE_URL,
+                QueueUrl: config.queueUrl,
                 ReceiptHandle: receiptHandle
             };
             sqs.deleteMessage(deleteParams, (err) => {
@@ -81,13 +99,12 @@ function receiveAndHandleMessage() {
             });
         }
     ], (err) => {
-        if (ERR(err, (err) => console.error(err)));
+        if (ERR(err, (err) => logger.error(err)));
         receiveAndHandleMessage();
     });
 }
 
 function handleMessage(messageBody, callback) {
-    console.log(messageBody);
     const {
         jobId,
         image,
@@ -111,15 +128,15 @@ function handleMessage(messageBody, callback) {
         (callback) => {
             docker.pull(image, (err, stream) => {
                 if (err) {
-                    console.warn(`Error pulling "${image}" image; attempting to fall back to cached version.`);
-                    console.warn(err);
+                    logger.warn(`Error pulling "${image}" image; attempting to fall back to cached version.`);
+                    logger.warn(err);
                 }
 
                 docker.modem.followProgress(stream, (err) => {
                     if (ERR(err, callback)) return;
                     callback(null);
                 }, (output) => {
-                    console.info(output);
+                    logger.info(output);
                 });
             });
         },
@@ -133,14 +150,13 @@ function handleMessage(messageBody, callback) {
                 `WEBHOOK_URL=${webhookUrl}`,
                 `CSRF_TOKEN=${csrfToken}`,
             ];
-            if (DEV_MODE) {
-                env.push(`AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}`);
-                env.push(`AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}`);
-                env.push(`AWS_DEFAULT_REGION=${AWS_REGION}`);
+            if (config.devMode) {
+                env.push(`AWS_ACCESS_KEY_ID=${config.awsAccessKeyId}`);
+                env.push(`AWS_SECRET_ACCESS_KEY=${config.awsSecretAccessKey}`);
+                env.push(`AWS_DEFAULT_REGION=${config.awsRegion}`);
             } else {
-                env.push('AWS_DEFAULT_REGION=us-east-2')
+                env.push('AWS_DEFAULT_REGION=us-east-2');
             }
-            console.log(env);
             docker.createContainer({
                 Image: image,
                 AttachStdout: true,
@@ -179,10 +195,6 @@ function handleMessage(messageBody, callback) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
-        },
-        (callback) => {
-            console.log('We\'re done, yay!');
-            callback();
         },
     ], (err) => {
         if (ERR(err, callback)) return;
