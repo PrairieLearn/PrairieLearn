@@ -51,7 +51,7 @@ async.series([
         }
     },
     (callback) => {
-        logger.info('Initialization complete! Beginning to process jobs.');
+        logger.info('Initialization complete; beginning to process jobs');
         receiveAndHandleMessage();
         callback(null);
     }
@@ -62,6 +62,7 @@ function receiveAndHandleMessage() {
     const sqs = new AWS.SQS();
     async.waterfall([
         (callback) => {
+            logger.info('Waiting for next job');
             async.doUntil((done) => {
                 const params = {
                     MaxNumberOfMessages: 1,
@@ -135,7 +136,7 @@ function handleMessage(messageBody, callback) {
         (callback) => {
             docker.pull(image, (err, stream) => {
                 if (err) {
-                    logger.warn(`Error pulling "${image}" image; attempting to fall back to cached version.`);
+                    logger.warn(`Error pulling "${image}" image; attempting to fall back to cached version`);
                     logger.warn(err);
                 }
 
