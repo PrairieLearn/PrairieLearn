@@ -39,6 +39,8 @@
 
   * Add ZJU institution checking from ID (Matt West).
 
+  * Add logout support for multiple authentication providers (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,

@@ -88,6 +88,7 @@ app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax
 // response_id is logged on request, response, and error to link them together
 var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 app.use(function(req, res, next) {res.locals.response_id = _.times(12, function() {return _.sample(chars);}).join(''); next();});
+app.use(function(req, res, next) {res.locals.config = config; next();});
 app.use(require('./middlewares/logResponse')); // defers to end of response
 app.use(require('./middlewares/cors'));
 app.use(require('./middlewares/date'));
