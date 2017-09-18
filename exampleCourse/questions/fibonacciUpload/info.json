@@ -2,7 +2,7 @@
     "uuid": "83967c97-5bde-4373-bd0b-8e575abd909e",
     "title": "Fibonacci function with file upload, external grading",
     "topic": "Functions",
-    "tags": ["code"],
+    "tags": ["code", "v3"],
     "type": "v3",
     "singleVariant": true,
     "gradingMethod": "External",
