@@ -41,6 +41,8 @@
 
   * Add logout support for multiple authentication providers (Matt West).
 
+  * Add PrairieGrader for external grading (Nathan Walters).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
