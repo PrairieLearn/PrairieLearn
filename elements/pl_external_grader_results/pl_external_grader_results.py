@@ -24,8 +24,8 @@ def render(element_html, element_index, data):
         if results:
             html_params['succeeded'] = bool(results.get('succeeded', None))
             html_params['score'] = format(results.get('score', 0) * 100, '.2f').rstrip('0').rstrip('.')
-            html_params['achieved_max_points'] = (results.get('score', 0) == 1.0)
-            html_params['results_color'] = '#4CAF50' if (results.get('score', 0) == 1.0) else '#F44336'
+            html_params['achieved_max_points'] = (results.get('score', 0) >= 1.0)
+            html_params['results_color'] = '#4CAF50' if (results.get('score', 0) >= 1.0) else '#F44336'
             html_params['has_message'] = bool(results.get('message', False))
             html_params['message'] = results.get('message', None)
             html_params['has_output'] = bool(results.get('output', False))
