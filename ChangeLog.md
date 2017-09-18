@@ -66,6 +66,8 @@
 
   * Fix bug that prevented unicode minus from being parsed by `pl_matrix_output` and `pl_number_input` (Tim Bretl).
 
+  * Fix external grading score display when score is missing (Nathan Walters).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
