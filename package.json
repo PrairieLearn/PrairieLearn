@@ -55,6 +55,7 @@
         "mocha": "3.2.x",
         "nyc": "10.3.x",
         "request": "2.79.x",
+        "tmp": "0.0.33",
         "yargs": "8.0.1"
     },
     "scripts": {

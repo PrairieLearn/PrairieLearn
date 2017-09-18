@@ -6,14 +6,14 @@ var AWS = require('aws-sdk');
 var config = require('../../lib/config');
 var logger = require('../../lib/logger');
 var assessment = require('../../lib/assessment');
+var externalGraderCommon = require('../../lib/externalGraderCommon');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 var externalGradingSocket = require('../../lib/external-grading-socket');
 
 function processResults(data) {
-    const gradingResult = assessment.makeGradingResult(data);
-    assessment.processGradingResult(gradingResult);
+    assessment.processGradingResult(externalGraderCommon.makeGradingResult(data));
 }
 
 router.post('/', function(req, res, next) {

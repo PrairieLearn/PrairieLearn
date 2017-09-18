@@ -10,6 +10,7 @@ BEGIN
     FROM
         grading_jobs
     WHERE
-        grading_requested_at >= NOW() - '1 day'::INTERVAL;
+        grading_requested_at >= NOW() - '1 day'::INTERVAL
+        AND grading_method = 'External';
 END;
 $$ LANGUAGE plpgsql STABLE;
