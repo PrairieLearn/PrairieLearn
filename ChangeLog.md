@@ -43,6 +43,8 @@
 
   * Add PrairieGrader for external grading (Nathan Walters).
 
+  * Add redirect handler to enable assessment deep links (Dave Mussulman).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
