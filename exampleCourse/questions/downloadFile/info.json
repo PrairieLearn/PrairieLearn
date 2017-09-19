@@ -2,6 +2,6 @@
     "uuid": "aa97c8da-ad3d-4cf1-b54c-740315d27961",
     "title": "File download example question",
     "topic": "Test",
-    "tags": ["tbretl"],
+    "tags": ["tbretl", "v3"],
     "type": "v3"
 }

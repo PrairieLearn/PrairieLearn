@@ -2,7 +2,7 @@
     "uuid": "fda347fe-aa48-4606-a7cb-e4fff580b4a6",
     "title": "Fibonacci function with in-browser editor, external grading",
     "topic": "Functions",
-    "tags": ["code"],
+    "tags": ["code", "v3"],
     "type": "v3",
     "singleVariant": true,
     "gradingMethod": "External",

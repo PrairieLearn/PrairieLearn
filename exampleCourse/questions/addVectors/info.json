@@ -2,7 +2,7 @@
     "uuid": "6eec62b7-1ffa-459b-89f3-5ccb772359bc",
     "title": "Addition of vectors in Cartesian coordinates",
     "topic": "Vectors",
-    "tags": ["numeric"],
+    "tags": ["numeric", "v2"],
     "clientFiles": ["client.js", "question.html", "answer.html", "submission.html", "fig1.png"],
     "type": "Calculation"
 }
