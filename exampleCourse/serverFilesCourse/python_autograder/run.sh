@@ -8,7 +8,7 @@
 JOB_DIR='/grade/'
 # the other directories
 STUDENT_DIR=$JOB_DIR'student/'
-AG_DIR=$JOB_DIR'shared/python_autograder/'
+AG_DIR=$JOB_DIR'serverFilesCourse/python_autograder/'
 TEST_DIR=$JOB_DIR'tests/'
 OUT_DIR=$JOB_DIR'results/'
 

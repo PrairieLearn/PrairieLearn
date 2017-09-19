@@ -96,6 +96,14 @@
                         "description": "A single file or directory that will be copied to the external grader.",
                         "type": "string"
                     }
+                },
+                "serverFilesCourse": {
+                    "description": "The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/",
+                    "type": "array",
+                    "items": {
+                        "description": "A single file or directory that will be copied to the external grader.",
+                        "type": "string"
+                    }
                 }
             }
         }

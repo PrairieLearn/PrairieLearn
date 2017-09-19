@@ -2,7 +2,6 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var async = require('async');
 
-var logger = require('../lib/logger');
 var courseDB = require('../lib/course-db');
 var sqldb = require('../lib/sqldb');
 
@@ -32,7 +31,7 @@ module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) 
             function(callback) {logger.info("Syncing topics from git repository to database..."); callback(null);},
             syncTopics.sync.bind(null, course.courseInfo),
             function(callback) {logger.info("Syncing questions from git repository to database..."); callback(null);},
-            syncQuestions.sync.bind(null, course.courseInfo, course.questionDB),
+            syncQuestions.sync.bind(null, course.courseInfo, course.questionDB, logger),
             function(callback) {logger.info("Syncing tags from git repository to database..."); callback(null);},
             syncTags.sync.bind(null, course.courseInfo, course.questionDB),
             function(callback) {logger.info("Syncing assessment sets from git repository to database..."); callback(null);},
