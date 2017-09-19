@@ -11,6 +11,7 @@ RUN yum -y install \
         nodejs \
         python36u \
         python36u-pip \
+        gcc \
     && yum clean all \
     && mkdir /var/postgres && chown postgres:postgres /var/postgres \
     && su postgres -c "/usr/pgsql-9.6/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log" \
