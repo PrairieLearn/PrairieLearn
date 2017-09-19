@@ -45,12 +45,25 @@
 
   * Add redirect handler to enable assessment deep links (Dave Mussulman).
 
+  * Add `pycryptodome` for authenticated question data (Jake Bailey).
+
+  * Add `v2` and `v3` tags to exampleCourse questions (Dave Mussulman).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
     and `tests/sync/*`) (Nathan Walters).
 
   * Remove cookie-clearing on error page (Matt West).
+
+  * Remove old unused Python caller code (Tim Bretl).
+
+  * Remove AWS Batch external grader (Nathan Walters).
+
+  * Change `externalGradingOptions.files` to `.serverFilesCourse`
+    (Nathan Walters).
+
+  * Change Python question code timeout from 5 s to 20 s (Tim Bretl).
 
   * Shift most `exampleCourse` to the external `pl-template` repository.
 
@@ -77,6 +90,8 @@
   * Fix bug that prevented unicode minus from being parsed by `pl_matrix_output` and `pl_number_input` (Tim Bretl).
 
   * Fix external grading score display when score is missing (Nathan Walters).
+
+  * Fix handling of image pull fails for external grading (Nathan Walters).
 
 * __2.10.1__ - 2017-05-24
 
