@@ -10,7 +10,7 @@ var sqlLoader = require('../../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = {
-    sync: function(courseInfo, questionDB, callback) {
+    sync: function(courseInfo, questionDB, jobLogger, callback) {
         var questionIds = [];
         logger.debug('Syncing questions');
         async.series([
@@ -44,6 +44,18 @@ module.exports = {
             function(callback) {
                 async.forEachOfSeries(questionDB, function(q, qid, callback) {
                     logger.debug('Syncing question ' + qid);
+                    let external_grading_files = null;
+                    if (q.externalGradingOptions) {
+                        const opts = q.externalGradingOptions;
+                        if (opts.files && opts.serverFilesCourse) {
+                            return callback(new Error(`Question ${qid} cannot use both externalGradingOptions.files and externalGradingOptions.serverFilesCourse`));
+                        } else if (opts.files) {
+                            jobLogger.warn(`WARNING: Question ${qid} uses externalGradingOptions.files, which will be deprecated in favor of externalGradingOptions.serverFilesCourse`);
+                            external_grading_files = opts.files;
+                        } else if (opts.serverFilesCourse) {
+                            external_grading_files = opts.serverFilesCourse;
+                        }
+                    }
                     var params = {
                         uuid: q.uuid,
                         qid: qid,
@@ -58,7 +70,7 @@ module.exports = {
                         single_variant: !!q.singleVariant,
                         external_grading_enabled: (q.externalGradingOptions && q.externalGradingOptions.enabled),
                         external_grading_image: (q.externalGradingOptions && q.externalGradingOptions.image),
-                        external_grading_files: (q.externalGradingOptions && q.externalGradingOptions.files),
+                        external_grading_files: external_grading_files,
                         external_grading_entrypoint: (q.externalGradingOptions && q.externalGradingOptions.entrypoint),
                     };
                     sqldb.queryOneRow(sql.insert_question, params, function(err, result) {
