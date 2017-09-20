@@ -119,8 +119,8 @@ module.exports = {
     reloadElementsForCourse(course, callback) {
         module.exports.loadElements(path.join(course.path, 'elements'), 'course', (err, elements) => {
             if (ERR(err, callback)) return;
-            courseElementsCache[course.id] = elements;
-            callback(null, courseElementsCache[course.id]);
+            courseElementsCache[course.courseId] = elements;
+            callback(null, courseElementsCache[course.courseId]);
         });
     },
 
