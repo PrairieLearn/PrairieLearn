@@ -93,6 +93,10 @@
 
   * Fix handling of image pull fails for external grading (Nathan Walters).
 
+  * Fix options for v3 questions (Jake Bailey).
+
+  * Fix course element reloading on sync (Nathan Walters).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
