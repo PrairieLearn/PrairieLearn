@@ -28,7 +28,7 @@ module.exports = {
         });
     },
 
-    render: function(renderSelection, variant, question, submission, submissions, course, locals, callback) {
+    render: function(renderSelection, variant, question, submission, submissions, course, course_instance, locals, callback) {
         const htmls = {
             extraHeadersHtml: '',
             questionHtml: '',

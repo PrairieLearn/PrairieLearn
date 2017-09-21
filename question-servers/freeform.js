@@ -615,7 +615,7 @@ module.exports = {
         });
     },
 
-    render: function(renderSelection, variant, question, submission, submissions, course, locals, callback) {
+    render: function(renderSelection, variant, question, submission, submissions, course, course_instance, locals, callback) {
         const htmls = {
             extraHeadersHtml: '',
             questionHtml: '',
@@ -757,12 +757,12 @@ module.exports = {
                     const styleUrls = [];
                     dependencies.coreStyles.forEach((file) => styleUrls.push(`/stylesheets/${file}`));
                     dependencies.coreScripts.forEach((file) => coreScriptUrls.push(`/javascripts/${file}`));
-                    dependencies.clientFilesCourseStyles.forEach((file) => styleUrls.push(`/pl/course_instance/${course.id}/clientFilesCourse/${file}`));
-                    dependencies.clientFilesCourseScripts.forEach((file) => scriptUrls.push(`/pl/course_instance/${course.id}/clientFilesCourse/${file}`));
+                    dependencies.clientFilesCourseStyles.forEach((file) => styleUrls.push(`/pl/course_instance/${course_instance.id}/clientFilesCourse/${file}`));
+                    dependencies.clientFilesCourseScripts.forEach((file) => scriptUrls.push(`/pl/course_instance/${course_instance.id}/clientFilesCourse/${file}`));
                     dependencies.coreElementStyles.forEach((file) => styleUrls.push(`/pl/static/elements/${file}`));
                     dependencies.coreElementScripts.forEach((file) => scriptUrls.push(`/pl/static/elements/${file}`));
-                    dependencies.courseElementStyles.forEach((file) => styleUrls.push(`/pl/course_instance/${course.id}/elements/${file}`));
-                    dependencies.courseElementScripts.forEach((file) => scriptUrls.push(`/pl/course_instance/${course.id}/elements/${file}`));
+                    dependencies.courseElementStyles.forEach((file) => styleUrls.push(`/pl/course_instance/${course_instance.id}/elements/${file}`));
+                    dependencies.courseElementScripts.forEach((file) => scriptUrls.push(`/pl/course_instance/${course_instance.id}/elements/${file}`));
                     const headerHtmls = [
                         ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
                         // It's important that any library-style scripts come first
