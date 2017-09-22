@@ -346,7 +346,7 @@ WITH all_file_submissions AS (
             WHEN s.submitted_answer ? '_files' THEN f.file->>'name'
         END) as filename,
         (CASE
-            WHEN s.submitted_answer ? 'fileData' THEN v.params->>'fileData'
+            WHEN s.submitted_answer ? 'fileData' THEN s.submitted_answer->>'fileData'
             WHEN s.submitted_answer ? '_files' THEN f.file->>'contents'
         END) as contents
     FROM
@@ -358,7 +358,7 @@ WITH all_file_submissions AS (
         JOIN questions AS q ON (q.id = aq.question_id)
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
-        JOIN (
+        LEFT JOIN (
             SELECT
                 id,
                 jsonb_array_elements(submitted_answer->'_files') AS file
