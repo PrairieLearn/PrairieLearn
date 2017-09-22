@@ -99,6 +99,8 @@
 
   * Fix course element file loading (Matt West).
 
+  * Fix file downloads as zip for v2 questions (Matt West).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
