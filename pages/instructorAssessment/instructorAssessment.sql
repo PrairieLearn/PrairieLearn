@@ -1,14 +1,16 @@
 -- BLOCK questions
 WITH issue_count AS (
     SELECT
-        i.question_id,
+        q.id AS question_id,
         count(*) AS open_issue_count
-    FROM issues AS i
+    FROM
+        issues AS i
+        JOIN questions AS q ON (q.id = i.question_id)
     WHERE
-        i.course_id = $course_id
+        i.assessment_id = $assessment_id
         AND i.course_caused
         AND i.open
-    GROUP BY i.question_id
+    GROUP BY q.id
 )
 SELECT
     aq.*,q.qid,q.title,row_to_json(top) AS topic,

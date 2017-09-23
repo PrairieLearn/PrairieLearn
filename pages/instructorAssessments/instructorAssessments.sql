@@ -5,9 +5,7 @@ WITH issue_count AS (
         count(*) AS open_issue_count
     FROM
         assessments AS a
-        JOIN assessment_questions AS aq ON (aq.assessment_id = a.id)
-        JOIN questions AS q ON (q.id = aq.question_id)
-        JOIN issues AS i ON (i.question_id = q.id)
+        JOIN issues AS i ON (i.assessment_id = a.id)
     WHERE
         a.course_instance_id = $course_instance_id
         AND i.course_caused
