@@ -19,14 +19,12 @@ DECLARE
     real_user_id bigint;
     new_number integer;
     assessment_instance_id bigint;
-    new_instance_question_id bigint;
 BEGIN
     -- The caller must have provided either instance_question_id or
     -- the (question_id, user_id). If instance_question_id is not
     -- NULL, then we use it to look up the other two. Otherwise we
     -- just use them.
 
-    
     IF instance_question_id IS NOT NULL THEN
         PERFORM instance_questions_lock(instance_question_id);
 
@@ -53,9 +51,6 @@ BEGIN
 
         new_number := coalesce(new_number + 1, 1);
 
-        -- If the variant is NOT broken, copy instance_question_id into new_instance_question_id.
-        -- Otherwise, leave new_instance_question_id as NULL to detach the variant from the assessment instance.
-        IF NOT broken THEN new_instance_question_id := instance_question_id; END If;
     ELSE
         -- we weren't given an instance_question_id, so we must have
         -- question_id and user_id
@@ -70,7 +65,7 @@ BEGIN
         (instance_question_id,      question_id,      user_id,
         number,     variant_seed, params, true_answer, options, broken, authn_user_id)
     VALUES
-        (new_instance_question_id, real_question_id, real_user_id,
+        (instance_question_id, real_question_id, real_user_id,
         new_number, variant_seed, params, true_answer, options, broken, authn_user_id)
     RETURNING *
     INTO variant;
