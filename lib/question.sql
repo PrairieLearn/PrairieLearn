@@ -1,16 +1,16 @@
--- BLOCK select_errors
+-- BLOCK select_issues
 SELECT
-    e.*,
-    format_date_full(e.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date
+    i.*,
+    format_date_full(i.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date
 FROM
-    errors AS e
-    LEFT JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
-    JOIN pl_courses AS c ON (c.id = e.course_id)
+    issues AS i
+    LEFT JOIN course_instances AS ci ON (ci.id = i.course_instance_id)
+    JOIN pl_courses AS c ON (c.id = i.course_id)
 WHERE
-    e.variant_id = $variant_id
-    AND e.course_caused
+    i.variant_id = $variant_id
+    AND i.course_caused
 ORDER BY
-    e.date;
+    i.date;
 
 -- BLOCK select_submissions
 SELECT
@@ -37,7 +37,7 @@ WHERE
 ORDER BY
     s.date DESC;
 
--- BLOCK select_errors_for_variant
-SELECT e.*
-FROM errors AS e
-WHERE e.variant_id = $variant_id;
+-- BLOCK select_issues_for_variant
+SELECT i.*
+FROM issues AS i
+WHERE i.variant_id = $variant_id;

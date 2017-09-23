@@ -3,47 +3,47 @@
   <div hidden="true" class="question-data"><%= questionJsonBase64 %></div>
   <% } %>
 
-  <% errors.forEach(function(error, iError) { %>
+  <% issues.forEach(function(issue, iIssue) { %>
   <div class="panel panel-danger">
     <div class="panel-heading">
-      <h3 class="panel-title">Error</h3>
+      <h3 class="panel-title">Issue</h3>
     </div>
 
     <table class="table table-condensed table-hover two-column-description">
       <tbody>
         <% if (devMode || authz_data.has_instructor_view) { %>
-        <tr><th>Student message:</th><td><%= error.student_message %></td></tr>
-        <tr><th>Instructor message:</th><td><%= error.instructor_message %></td></tr>
+        <tr><th>Student message:</th><td><%= issue.student_message %></td></tr>
+        <tr><th>Instructor message:</th><td><%= issue.instructor_message %></td></tr>
         <% } else { %>
-        <tr><th>Message:</th><td><%= error.student_message %></td></tr>
+        <tr><th>Message:</th><td><%= issue.student_message %></td></tr>
         <% } %>
-        <tr><th>ID:</th><td><%= error.display_id %></td></tr>
-        <tr><th>Date:</th><td><%= error.formatted_date %></td></tr>
+        <tr><th>ID:</th><td><%= issue.display_id %></td></tr>
+        <tr><th>Date:</th><td><%= issue.formatted_date %></td></tr>
       </tbody>
     </table>
 
     <% if (devMode || authz_data.has_instructor_view || is_administrator) { %>
     <div class="panel-body">
-      <% if (is_administrator && error.system_data.courseErrData ) { %>
+      <% if (is_administrator && issue.system_data.courseErrData ) { %>
       <p><strong>Console log:</strong>
-        <pre><%= error.system_data.courseErrData.outputBoth %></pre>
+        <pre><%= issue.system_data.courseErrData.outputBoth %></pre>
         <% } %>
       <p><strong>Associated data:</strong>
-        <a class="btn btn-xs btn-default" role="button" data-toggle="collapse" href="#error-course-data-<%= iError %>" aria-expanded="false" aria-controls="#error-course-data-<%= iError %>">
+        <a class="btn btn-xs btn-default" role="button" data-toggle="collapse" href="#issue-course-data-<%= iIssue %>" aria-expanded="false" aria-controls="#issue-course-data-<%= iIssue %>">
           Show/hide
         </a>
       </p>
-      <div class="collapse" id="error-course-data-<%= iError %>">
-        <pre><%= JSON.stringify(error.course_data, null, '    ') %></pre>
+      <div class="collapse" id="issue-course-data-<%= iIssue %>">
+        <pre><%= JSON.stringify(issue.course_data, null, '    ') %></pre>
       </div>
       <% if (is_administrator) { %>
       <p><strong>System data:</strong>
-        <a class="btn btn-xs btn-default" role="button" data-toggle="collapse" href="#error-system-data-<%= iError %>" aria-expanded="false" aria-controls="#error-system-data-<%= iError %>">
+        <a class="btn btn-xs btn-default" role="button" data-toggle="collapse" href="#issue-system-data-<%= iIssue %>" aria-expanded="false" aria-controls="#issue-system-data-<%= iIssue %>">
           Show/hide
         </a>
       </p>
-      <div class="collapse" id="error-system-data-<%= iError %>">
-        <pre><%= JSON.stringify(error.system_data, null, '    ') %></pre>
+      <div class="collapse" id="issue-system-data-<%= iIssue %>">
+        <pre><%= JSON.stringify(issue.system_data, null, '    ') %></pre>
       </div>
       <% } %>
     </div>

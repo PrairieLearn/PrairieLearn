@@ -652,7 +652,7 @@ Variable | Allow new `instance_questions` | Allow new `variants` | Allow new `su
 Error level | Caused | Stored | Reported | Effect
 --- | --- | --- | --- | ---
 System errors | Internal PrairieLearn errors | On-disk logs | Error page | Operation is blocked. Data is not saved to the database.
-Question errors | Errors in question code | `errors` table | Error panels on the question page | `variant.broken` or `submission.broken` set to `true`. Operation completes, but future operations are blocked.
+Question errors | Errors in question code | `issues` table | Issue panels on the question page | `variant.broken` or `submission.broken` set to `true`. Operation completes, but future operations are blocked.
 Student errors | Invalid data submitted by the student (unparsable or ungradable) | `submission.gradable` set to `false` and details are stored in `submission.format_errors` | Inside the rendered submission panel | The submission is not assigned a score and no further action is taken (e.g., points are changed for the instance question). The student can resubmit to correct the error.
 
 * The important variables involved in tracking question errors are:
@@ -661,14 +661,14 @@ Variable | Error level | Description
 --- | --- | ---
 `variant.broken` | Question error | Set to `true` if there were question code errors in generating the variant. Such a variant will be not have `render()` functions called, but will instead be displayed as `This question is broken`.
 `submission.broken` | Question error | Set to `true` if there question code errors in parsing or grading the variant. After `submission.broken` is `true`, no further actions will be taken with the submission.
-`errors` table | Question error | Rows are inserted to record the details of the errors that caused `variant.broken` or `submission.broken` to be set to `true`.
+`issues` table | Question error | Rows are inserted to record the details of the errors that caused `variant.broken` or `submission.broken` to be set to `true`.
 `submisison.gradable` | Student error | Whether this submission can be given a score. Set to `false` if format errors in the `submitted_answer` were encountered during either parsing or grading.
 `submission.format_errors` | Student error | Details on any errors during parsing or grading. Should be set to something meaningful if `gradable = false` to explain what was wrong with the submitted answer.
 `submission.graded_at` | None | NULL if grading has not yet occurred, otherwise a timestamp.
 `submission.score` | None | Final score for the submission. Only used if `gradable = true` and `graded_at` is not NULL.
 `submission.feedback` | None | Feedback generated during grading. Only used if `gradable = true` and `graded_at` is not NULL.
 
-* Note that `submission.format_errors` stores information about student errors, while the `errors` table stores information about question code errors.
+* Note that `submission.format_errors` stores information about student errors, while the `issues` table stores information about question code errors.
 
 * The question flow is shown in the diagram below (also as a [PDF image](question-flow.pdf)).
 

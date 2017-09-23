@@ -1,17 +1,17 @@
 -- BLOCK select_assessments
-WITH error_count AS (
+WITH issue_count AS (
     SELECT
         a.id AS assessment_id,
-        count(*) AS open_error_count
+        count(*) AS open_issue_count
     FROM
         assessments AS a
         JOIN assessment_questions AS aq ON (aq.assessment_id = a.id)
         JOIN questions AS q ON (q.id = aq.question_id)
-        JOIN errors AS e ON (e.question_id = q.id)
+        JOIN issues AS i ON (i.question_id = q.id)
     WHERE
         a.course_instance_id = $course_instance_id
-        AND e.course_caused
-        AND e.open
+        AND i.course_caused
+        AND i.open
     GROUP BY a.id
 )
 SELECT
@@ -43,7 +43,7 @@ SELECT
     aset.color,
     (aset.abbreviation || a.number) as label,
     (lag(aset.id) OVER (PARTITION BY aset.id ORDER BY a.order_by, a.id) IS NULL) AS start_new_set,
-    coalesce(ec.open_error_count, 0) AS open_error_count
+    coalesce(ic.open_issue_count, 0) AS open_issue_count
 FROM
     assessments AS a
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -51,7 +51,7 @@ FROM
     LEFT JOIN LATERAL assessments_stats(a.id) AS tstats ON TRUE
     LEFT JOIN LATERAL assessments_duration_stats(a.id) AS dstats ON TRUE
     LEFT JOIN LATERAL authz_assessment(a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
-    LEFT JOIN error_count AS ec ON (ec.assessment_id = a.id)
+    LEFT JOIN issue_count AS ic ON (ic.assessment_id = a.id)
 WHERE
     ci.id = $course_instance_id
     AND a.deleted_at IS NULL

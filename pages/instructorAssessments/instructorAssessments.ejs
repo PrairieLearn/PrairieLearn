@@ -39,7 +39,7 @@
               </td>
               <td>
                 <a href="<%= urlPrefix %>/assessment/<%= row.id %>/"><%= row.title %></a>
-                <%- include('../partials/errorBadge', {count: row.open_error_count}); %>
+                <%- include('../partials/issueBadge', {count: row.open_issue_count}); %>
               </td>
               <td><%= row.tid %></td>
 

@@ -1,25 +1,25 @@
 -- BLOCK questions
-WITH error_count AS (
+WITH issue_count AS (
     SELECT
-        e.question_id,
-        count(*) AS open_error_count
-    FROM errors AS e
+        i.question_id,
+        count(*) AS open_issue_count
+    FROM issues AS i
     WHERE
-        e.course_id = $course_id
-        AND e.course_caused
-        AND e.open
-    GROUP BY e.question_id
+        i.course_id = $course_id
+        AND i.course_caused
+        AND i.open
+    GROUP BY i.question_id
 )
 SELECT
     q.*,
-    coalesce(error_count.open_error_count, 0) AS open_error_count,
+    coalesce(issue_count.open_issue_count, 0) AS open_issue_count,
     row_to_json(top) AS topic,
     tags_for_question(q.id) AS tags,
     assessments_format_for_question(q.id, $course_instance_id) AS assessments
 FROM
     questions AS q
     JOIN topics AS top ON (top.id = q.topic_id)
-    LEFT JOIN error_count ON (error_count.question_id = q.id)
+    LEFT JOIN issue_count ON (issue_count.question_id = q.id)
 WHERE
     q.course_id IN (
         SELECT ci.course_id
@@ -27,7 +27,7 @@ WHERE
         WHERE ci.id = $course_instance_id
     )
     AND q.deleted_at IS NULL
-GROUP BY q.id, top.id, error_count.open_error_count
+GROUP BY q.id, top.id, issue_count.open_issue_count
 ORDER BY top.number, q.title;
 
 -- BLOCK tags

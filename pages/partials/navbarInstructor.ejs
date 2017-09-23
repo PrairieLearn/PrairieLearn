@@ -33,7 +33,7 @@
 
         <li <% if (navPage == "assessments") { %>class="active"<% } %>><a href="<%= urlPrefix %>/assessments">Assessments</a></li>
         <li <% if (navPage == "questions")   { %>class="active"<% } %>><a href="<%= urlPrefix %>/questions">Questions</a></li>
-        <li <% if (navPage == "errors")      { %>class="active"<% } %>><a href="<%= urlPrefix %>/errors">Errors <%- include('errorBadge', {count: navbarOpenErrorCount, suppressLink: true}) %></a></li>
+        <li <% if (navPage == "issues")      { %>class="active"<% } %>><a href="<%= urlPrefix %>/issues">Issues <%- include('issueBadge', {count: navbarOpenIssueCount, suppressLink: true}) %></a></li>
         <li <% if (navPage == "gradebook")   { %>class="active"<% } %>><a href="<%= urlPrefix %>/gradebook">Gradebook</a></li>
 
         <% if (authz_data.has_course_permission_view) { %>

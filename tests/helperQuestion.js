@@ -478,11 +478,11 @@ module.exports = {
                 it('should be successful', function() {
                     assert.equal(locals.job_sequence_status, 'Success');
                 });
-                it('should produce no errors', function(callback) {
-                    sqldb.query(sql.select_errors_for_last_variant, [], (err, result) => {
+                it('should produce no issues', function(callback) {
+                    sqldb.query(sql.select_issues_for_last_variant, [], (err, result) => {
                         if (ERR(err, callback)) return;
                         if (result.rowCount > 0) {
-                            callback(new Error(`found ${result.rowCount} errors (expected zero errors):\n`
+                            callback(new Error(`found ${result.rowCount} issues (expected zero issues):\n`
                                                + JSON.stringify(result.rows, null, '    ')));
                             return;
                         }

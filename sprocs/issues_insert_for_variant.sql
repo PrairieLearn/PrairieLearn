@@ -1,7 +1,7 @@
-DROP FUNCTION IF EXISTS errors_insert_for_variant(bigint,text,boolean,jsonb,jsonb,bigint);
+DROP FUNCTION IF EXISTS issues_insert_for_variant(bigint,text,boolean,jsonb,jsonb,bigint);
 
 CREATE OR REPLACE FUNCTION
-    errors_insert_for_variant(
+    issues_insert_for_variant(
         variant_id bigint,
         student_message text,
         instructor_message text,
@@ -38,9 +38,9 @@ BEGIN
 
     IF NOT FOUND THEN RAISE EXCEPTION 'invalid variant_id'; END IF;
 
-    display_id := errors_generate_display_id();
+    display_id := issues_generate_display_id();
 
-    INSERT INTO errors
+    INSERT INTO issues
         (display_id, student_message, instructor_message, course_caused, course_data, system_data, authn_user_id,
         course_id, course_instance_id, question_id, assessment_id, user_id, variant_id)
     VALUES

@@ -1,6 +1,6 @@
 <form method="POST">
     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-    <input type="hidden" name="error_id" value="<%= error_id %>">
+    <input type="hidden" name="issue_id" value="<%= issue_id %>">
     <% if (open) { %>
         <span class="label label-danger">Open</span>
         <button class="btn btn-xs btn-default" name="__action" value="close"><i class="fa fa-times" aria-hidden="true"></i></button>

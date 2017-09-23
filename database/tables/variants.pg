@@ -29,6 +29,6 @@ foreign-key constraints
     variants_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
-    errors: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE SET NULL
+    issues: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE SET NULL
     submissions: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
     variant_view_logs: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE

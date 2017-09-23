@@ -13,7 +13,7 @@ SELECT *
 FROM job_sequences
 WHERE id = $job_sequence_id;
 
--- BLOCK select_errors_for_last_variant
+-- BLOCK select_issues_for_last_variant
 WITH last_variant AS (
     SELECT *
     FROM variants
@@ -22,6 +22,6 @@ WITH last_variant AS (
 )
 SELECT *
 FROM
-    errors,
+    issues,
     last_variant
 WHERE variant_id = last_variant.id;

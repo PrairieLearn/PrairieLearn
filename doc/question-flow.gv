@@ -8,7 +8,7 @@ digraph question_flow {
     node [style=filled, fillcolor=moccasin];
 
     start [label="Start"];
-    display_broken [label="update errors table\ldisplay error code to student"];
+    display_broken [label="update issues table\ldisplay issue code to student"];
     display_editable [label="question displayed to student\lwith submit button"];
     display_uneditable [label="question displayed to student\lwithout submit button"];
     submission_received [label="submission received"];
