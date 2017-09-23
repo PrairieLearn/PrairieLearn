@@ -15,6 +15,7 @@ def generate(data):
 
     # Add result to params and correct_answers
     data["params"]["z"] = z
+    data["params"]["z_tex"] = '{:.2f}'.format(z)
     data["correct_answers"]["zmag"] = zmag
-    
+
     return data

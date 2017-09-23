@@ -1,5 +1,16 @@
 <pl_question_panel>
-  <p> What is the magnitude of the complex number ${{params.z}}$? </p>
+    <p>
+        Consider the complex number $z={{params.z_tex}}$.
+    </p>
+    <hr>
+    <pl_matrix_output digits="2">
+        <variable params_name="z">z</variable>
+    </pl_matrix_output>
+    <hr>
+    <p>
+        What is the magnitude of $z$?
+    </p>
+    <hr>
 </pl_question_panel>
 
-<p>$\| {{params.z}} \| = $ <pl_number_input answers_name="zmag" comparison="sigfig" digits="3" />
+<p>$|z| = $ <pl_number_input answers_name="zmag" comparison="sigfig" digits="3" />
