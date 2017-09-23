@@ -16,6 +16,7 @@
 # Exceptions are not caught and so will trigger a process exit with non-zero exit code (signaling an error)
 
 import sys, os, json, importlib, copy, base64, io, matplotlib
+from python_helper_jsonify import *
 matplotlib.use('PDF')
 
 saved_path = copy.copy(sys.path)
@@ -56,6 +57,9 @@ with open(3, 'w', encoding='utf-8') as outf:
         if hasattr(mod, fcn):
             # call the desired function in the loaded module
             method = getattr(mod, fcn)
+            for arg in args:
+                if isinstance(arg, dict):
+                    decode_from_json(arg)
             val = method(*args)
 
             if fcn=="file":
@@ -72,6 +76,9 @@ with open(3, 'w', encoding='utf-8') as outf:
                 # if this next call does not work, it will throw an error, because
                 # the thing returned by file() does not have the correct format
                 val = base64.b64encode(val).decode()
+            elif isinstance(val, dict):
+                encode_to_json(val)
+
 
             output = {"present": True, "val": val}
         else:
