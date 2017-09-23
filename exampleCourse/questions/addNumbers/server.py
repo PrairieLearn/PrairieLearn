@@ -6,7 +6,6 @@ def generate(data):
     b = random.randint(5, 10)
     data["params"]["a"] = a
     data["params"]["b"] = b
-    raise Exception("my error")
 
     c = a + b
     data["correct_answers"]["c"] = c
