@@ -16,6 +16,7 @@
     <span class="input-group col-xs-5">
         <input name="{{name}}" type="text" class="form-control" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
         <span class="input-group-btn" id="basic-addon1">
+            {{#suffix}}<span type="text" class="btn btn-default" disabled>{{suffix}}</span>{{/suffix}}
             <a class="btn btn-default" type="button" data-toggle="popover" data-html="true" title="Number" data-content="{{info}}" data-placement="auto left" data-trigger="focus" tabindex="0">
                 <i class="fa fa-question-circle" aria-hidden="true"></i>
             </a>

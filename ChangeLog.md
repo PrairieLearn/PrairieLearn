@@ -101,6 +101,8 @@
 
   * Fix file downloads as zip for v2 questions (Matt West).
 
+  * Fix `pl_number_input` to allow suffix for units with `display=inline` (Tim Bretl).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
