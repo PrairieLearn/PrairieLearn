@@ -4,24 +4,31 @@
   "description": "PrairieLearn's grading agent",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "eslint --ext js \"**/*.js\""
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/nwalters512/PrairieLearn-grader.git"
+    "url": "git+https://github.com/PrairieLearn/PrairieGrader.git"
   },
   "author": "",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/nwalters512/PrairieLearn-grader/issues"
+    "url": "https://github.com/PrairieLearn/PrairieGrader/issues"
   },
-  "homepage": "https://github.com/nwalters512/PrairieLearn-grader#readme",
+  "homepage": "https://github.com/PrairieLearn/PrairieGrader#readme",
   "dependencies": {
+    "ajv": "^5.2.2",
     "async": "^2.5.0",
     "async-stacktrace": "0.0.2",
     "aws-sdk": "^2.116.0",
+    "byline": "^5.0.0",
     "dockerode": "^2.5.1",
-    "winston": "^2.3.1"
+    "fs-extra": "^4.0.2",
+    "node-fetch": "^1.7.3",
+    "tmp": "0.0.33",
+    "winston": "^2.3.1",
+    "winston-aws-cloudwatch": "^1.6.0"
   },
   "devDependencies": {
     "eslint": "^4.7.0"
