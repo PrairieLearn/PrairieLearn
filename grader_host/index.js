@@ -219,28 +219,11 @@ function runJob(info, callback) {
 
     async.waterfall([
         (callback) => {
-            const env = [
-                `JOB_ID=${jobId}`,
-                `ENTRYPOINT=${entrypoint}`,
-                `S3_JOBS_BUCKET=${s3JobsBucket}`,
-                `S3_RESULTS_BUCKET=${s3ResultsBucket}`,
-                `S3_ARCHIVES_BUCKET=${s3ArchivesBucket}`,
-                `WEBHOOK_URL=${webhookUrl}`,
-                `CSRF_TOKEN=${csrfToken}`,
-            ];
-            if (config.devMode) {
-                env.push(`AWS_ACCESS_KEY_ID=${config.awsConfig.accessKeyId}`);
-                env.push(`AWS_SECRET_ACCESS_KEY=${config.awsConfig.secretAccessKey}`);
-                env.push(`AWS_DEFAULT_REGION=${config.awsConfig.region}`);
-            } else {
-                env.push('AWS_DEFAULT_REGION=us-east-2');
-            }
             docker.createContainer({
                 Image: image,
                 AttachStdout: true,
                 AttachStderr: true,
                 Tty: true,
-                Env: env,
                 HostConfig: {
                     Binds: [
                         `${tempDir}:/grade`
@@ -351,7 +334,8 @@ function uploadResults(info, callback) {
             job: {
                 jobId,
                 s3ResultsBucket,
-                webhookUrl
+                webhookUrl,
+                csrfToken
             }
         },
         runJob: results
@@ -383,6 +367,9 @@ function uploadResults(info, callback) {
                 };
                 fetch(webhookUrl, {
                     method: 'POST',
+                    headers: {
+                        'x-csrf-token': csrfToken
+                    },
                     body: JSON.stringify(webhookResults)
                 }).then(() => callback(null)).catch((err) => {
                     return ERR(err, callback);
