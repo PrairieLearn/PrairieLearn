@@ -12,8 +12,8 @@ var sqlLoader = require('../../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 var externalGradingSocket = require('../../lib/external-grading-socket');
 
-function processResults(data) {
-    assessment.processGradingResult(externalGraderCommon.makeGradingResult(data));
+function processResults(jobId, data) {
+    assessment.processGradingResult(externalGraderCommon.makeGradingResult(jobId, data));
 }
 
 router.post('/', function(req, res, next) {
@@ -47,7 +47,7 @@ router.post('/', function(req, res, next) {
 
         if (data.data) {
             // We have the data!
-            processResults(data.data);
+            processResults(data.job_id, data.data);
 
         } else {
             // We should fetch it from S3, and then process it
@@ -56,9 +56,9 @@ router.post('/', function(req, res, next) {
                 Key: `job_${data.job_id}.json`,
                 ResponseContentType: 'application/json',
             };
-            new AWS.S3().getObject(params, (err, data) => {
+            new AWS.S3().getObject(params, (err, s3Data) => {
                 if (ERR(err, (err) => logger.error(err))) return;
-                processResults(data.Body);
+                processResults(data.job_id, s3Data.Body);
             });
         }
 

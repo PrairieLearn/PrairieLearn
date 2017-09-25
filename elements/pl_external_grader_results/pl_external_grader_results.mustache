@@ -1,7 +1,13 @@
 {{#graded}}
 <div class="pl-external-grader-results">
   {{^grading_succeeded}}
-    <h3>UNIDENTIFIED ERROR</h3>
+    <h3>Grading failed!</h3>
+    {{#message}}
+      <pre class="terminal-output termial-output-question-panel"><code>{{message}}</code></pre>
+    {{/message}}
+    {{^message}}
+      <pre class="terminal-output termial-output-question-panel"><code>Unknown error; please contact course staff.</code></pre>
+    {{/message}}
   {{/grading_succeeded}}
   {{#grading_succeeded}}
     <h3>Score:
@@ -27,7 +33,7 @@
         <div class="panel-group">
           <div class="panel panel-default">
             <div class="panel-heading"><h4 class="panel-title">Output</h4></div>
-            <pre class="terminal-output termial-output-question-panel"><code>{{output}}</code></pre>
+            <pre class="terminal-output termial-output-question-panel"><code>{{output}}
           </div>
         </div>
       {{/has_output}}

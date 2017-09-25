@@ -10,6 +10,7 @@
         "enabled": true,
         "image": "prairielearn/centos7-base",
         "serverFilesCourse": ["python_autograder/"],
-        "entrypoint": "/grade/serverFilesCourse/python_autograder/run.sh"
+        "entrypoint": "/grade/serverFilesCourse/python_autograder/run.sh",
+        "timeout": 5
     }
 }
