@@ -49,9 +49,7 @@ function handleMessage(messageBody, logger, done) {
                 s3: new AWS.S3(),
                 logger: logger,
                 startTime: new Date().toISOString(),
-                job: {
-                    ...messageBody
-                }
+                job: messageBody
             };
             callback(null, context);
         },
