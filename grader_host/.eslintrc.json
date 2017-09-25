@@ -5,6 +5,12 @@
         "mocha": true
     },
     "extends": "eslint:recommended",
+    "parserOptions": {
+        "ecmaFeatures": {
+          "experimentalObjectRestSpread": true
+
+        }
+    },
     "rules": {
         "handle-callback-err": "error",
         "quotes": ["error", "single"],

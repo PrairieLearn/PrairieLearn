@@ -28,7 +28,6 @@ async.series([
     () => {
         globalLogger.info('Initialization complete; beginning to process jobs');
         queueReceiver(config.queueUrl, (message, logger, fail, success) => {
-            globalLogger.info('Received job! Handling...');
             handleMessage(message, logger, (err) => {
                 if (ERR(err, fail)) return;
                 success();
@@ -37,132 +36,188 @@ async.series([
     }
 ]);
 
-function handleMessage(messageBody, logger, done) {
-    const {
-        jobId,
-        image,
-        entrypoint,
-        s3JobsBucket,
-        s3ResultsBucket,
-        s3ArchivesBucket,
-        webhookUrl,
-        csrfToken
-    } = messageBody;
 
-    logger.info(`Grading job ${jobId}...`);
+function handleMessage(messageBody, logger, done) {
+    logger.info(`Grading job ${messageBody.jobId}!`);
     logger.info(messageBody);
 
-    const docker = new Docker();
-    const s3 = new AWS.S3();
-
-    const startTime = new Date().toISOString();
-
-    let tempFile, tempDir, tempArchive, fileCleanup, dirCleanup, archiveCleanup;
-    const results = {};
-
-    async.waterfall([
-        (callback) => {
-            // We'll parallelize the fetching of the docker image and the
-            // loading of the job data
-            async.parallel([
-                (callback) => {
-                    async.series([
-                        (callback) => {
-                            logger.info('Setting up temp file');
-                            tmp.file((err, file, fd, cleanupCallback) => {
-                                if (ERR(err, callback)) return;
-                                tempFile = file;
-                                fileCleanup = cleanupCallback;
-                                callback(null);
-                            });
-                        },
-                        (callback) => {
-                            logger.info('Setting up temp dir');
-                            tmp.dir({
-                                prefix: `job_${jobId}_`,
-                                unsafeCleanup: true
-                            }, (err, dir, cleanupCallback) => {
-                                if (ERR(err, callback)) return;
-                                tempDir = dir;
-                                dirCleanup = cleanupCallback;
-                                callback(null);
-                            });
-                        },
-                        (callback) => {
-                            logger.info('Loading job files');
-                            const params = {
-                                Bucket: s3JobsBucket,
-                                Key: `job_${jobId}.tar.gz`
-                            };
-                            s3.getObject(params).createReadStream()
-                            .on('error', (err) => {
-                                return ERR(err, callback);
-                            }).on('end', () => {
-                                callback(null);
-                            }).pipe(fs.createWriteStream(tempFile));
-                        },
-                        (callback) => {
-                            logger.info('Unzipping files');
-                            exec(`tar -xf ${tempFile} -C ${tempDir}`, (err) => {
-                                if (ERR(err, callback)) return;
-                                fileCleanup();
-                                callback(null);
-                            });
-                        },
-                        (callback) => {
-                            logger.info('Making entrypoint executable');
-                            exec(`chmod +x ${path.join(tempDir, entrypoint.slice(6))}`, (err) => {
-                                if (err) {
-                                    logger.error('Could not make file executable');
-                                }
-                                callback(null);
-                            });
-                        }
-                    ], (err) => {
-                        if (ERR(err, callback)) return;
-                        callback(null);
-                    });
-                },
-                (callback) => {
-                    async.series([
-                        (callback) => {
-                            logger.info('Pinging docker');
-                            docker.ping((err) => {
-                                if (ERR(err, callback)) return;
-                                callback(null);
-                            });
-                        },
-                        (callback) => {
-                            const repository = util.parseRepositoryTag(image);
-                            const params = {
-                                fromImage: repository.repository,
-                                tag: repository.tag || 'latest'
-                            };
-
-                            docker.createImage(params, (err, stream) => {
-                                if (err) {
-                                    logger.warn(`Error pulling "${image}" image; attempting to fall back to cached version`);
-                                    logger.warn(err);
-                                }
-
-                                docker.modem.followProgress(stream, (err) => {
-                                    if (ERR(err, callback)) return;
-                                    callback(null);
-                                }, (output) => {
-                                    logger.info(output);
-                                });
-                            });
-                        },
-                    ], (err) => {
-                        if (ERR(err, callback)) return;
-                        callback(null);
-                    });
+    async.auto({
+        context: function(callback) {
+            logger.info('Creating context for job execution');
+            const context = {
+                docker: new Docker(),
+                s3: new AWS.S3(),
+                logger: logger,
+                startTime: new Date().toISOString(),
+                job: {
+                    ...messageBody
                 }
-            ], (err) => {
+            };
+            callback(null, context);
+        },
+        initDocker: ['context', initDocker],
+        initFiles: ['context', initFiles],
+        runJob: ['initDocker', 'initFiles', runJob],
+        uploadResults: ['runJob', uploadResults],
+        uploadArchive: ['runJob', uploadArchive],
+        cleanup: ['uploadResults', 'uploadArchive', function(results, callback) {
+            logger.info('Removing temporary directories');
+            results.initFiles.tempDirCleanup();
+            callback(null);
+        }]
+    }, (err) => {
+        if (ERR(err, done)) return;
+        done(null);
+    });
+}
+
+function initDocker(info, callback) {
+    const {
+        context: {
+            logger,
+            docker,
+            job: {
+                image
+            }
+        }
+    } = info;
+
+    async.series([
+        (callback) => {
+            logger.info('Pinging docker');
+            docker.ping((err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
         },
+        (callback) => {
+            const repository = util.parseRepositoryTag(image);
+            const params = {
+                fromImage: repository.repository,
+                tag: repository.tag || 'latest'
+            };
+
+            docker.createImage(params, (err, stream) => {
+                if (err) {
+                    logger.warn(`Error pulling "${image}" image; attempting to fall back to cached version`);
+                    logger.warn(err);
+                }
+
+                docker.modem.followProgress(stream, (err) => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                }, (output) => {
+                    logger.info(output);
+                });
+            });
+        },
+    ], (err) => {
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
+}
+
+function initFiles(info, callback) {
+    const {
+        context: {
+            logger,
+            s3,
+            job: {
+                jobId,
+                s3JobsBucket,
+                entrypoint
+            }
+        }
+    } = info;
+
+    let jobArchiveFile, jobArchiveFileCleanup;
+    const files = {};
+
+    async.series([
+        (callback) => {
+            logger.info('Setting up temp file');
+            tmp.file((err, file, fd, cleanup) => {
+                if (ERR(err, callback)) return;
+                jobArchiveFile = file;
+                jobArchiveFileCleanup = cleanup;
+                callback(null);
+            });
+        },
+        (callback) => {
+            logger.info('Setting up temp dir');
+            tmp.dir({
+                prefix: `job_${jobId}_`,
+                unsafeCleanup: true
+            }, (err, dir, cleanup) => {
+                if (ERR(err, callback)) return;
+                files.tempDir = dir;
+                files.tempDirCleanup = cleanup;
+                callback(null);
+            });
+        },
+        (callback) => {
+            logger.info('Loading job files');
+            const params = {
+                Bucket: s3JobsBucket,
+                Key: `job_${jobId}.tar.gz`
+            };
+            s3.getObject(params).createReadStream()
+            .on('error', (err) => {
+                return ERR(err, callback);
+            }).on('end', () => {
+                callback(null);
+            }).pipe(fs.createWriteStream(jobArchiveFile));
+        },
+        (callback) => {
+            logger.info('Unzipping files');
+            exec(`tar -xf ${jobArchiveFile} -C ${files.tempDir}`, (err) => {
+                if (ERR(err, callback)) return;
+                jobArchiveFileCleanup();
+                callback(null);
+            });
+        },
+        (callback) => {
+            logger.info('Making entrypoint executable');
+            exec(`chmod +x ${path.join(files.tempDir, entrypoint.slice(6))}`, (err) => {
+                if (err) {
+                    logger.error('Could not make file executable; continuing execution anyways');
+                }
+                callback(null);
+            });
+        }
+    ], (err) => {
+        if (ERR(err, callback)) return;
+        callback(null, files);
+    });
+}
+
+function runJob(info, callback) {
+    const {
+        context: {
+            docker,
+            logger,
+            startTime,
+            job: {
+                jobId,
+                image,
+                entrypoint,
+                s3JobsBucket,
+                s3ResultsBucket,
+                s3ArchivesBucket,
+                webhookUrl,
+                csrfToken
+            }
+        },
+        initFiles: {
+            tempDir
+        }
+    } = info;
+
+    let results = {};
+
+    logger.info('Launching Docker container to run grading job');
+
+    async.waterfall([
         (callback) => {
             const env = [
                 `JOB_ID=${jobId}`,
@@ -220,6 +275,7 @@ function handleMessage(messageBody, logger, done) {
         (container, callback) => {
             container.wait((err) => {
                 if (ERR(err, callback)) return;
+                logger.info('Grading job completed');
                 callback(null, container);
             });
         },
@@ -263,98 +319,116 @@ function handleMessage(messageBody, logger, done) {
                 results.results = null;
                 callback(null);
             }
+        }
+    ], (err) => {
+        if (ERR(err, callback)) return;
+        callback(null, results);
+    });
+}
+
+function uploadResults(info, callback) {
+    const {
+        context: {
+            logger,
+            s3,
+            job: {
+                jobId,
+                s3ResultsBucket,
+                webhookUrl
+            }
         },
+        runJob: results
+    } = info;
+
+    async.series([
         (callback) => {
-            async.parallel([
-                (callback) => {
-                    async.series([
-                        (callback) => {
-                            // Now we can send the results back to S3
-                            logger.info(`Uploading results.json to S3 bucket ${s3ResultsBucket}`);
-                            const params = {
-                                Bucket: s3ResultsBucket,
-                                Key: `job_${jobId}.json`,
-                                Body: new Buffer(JSON.stringify(results), 'binary')
-                            };
-                            s3.putObject(params, (err) => {
-                                if (ERR(err, callback)) return;
-                                callback(null);
-                            });
-                        },
-                        (callback) => {
-                            // Let's send the results back to PrairieLearn now; the archive will
-                            // be uploaded later
-                            if (webhookUrl) {
-                                logger.info('Pinging webhook with results');
-                                const webhookResults = {
-                                    data: results,
-                                    event: 'grading_result',
-                                    job_id: jobId
-                                };
-                                fetch(webhookUrl, {
-                                    method: 'POST',
-                                    body: JSON.stringify(webhookResults)
-                                }).then(() => callback(null)).catch((err) => {
-                                    return ERR(err, callback);
-                                });
-                            } else {
-                                callback(null);
-                            }
-                        }
-                    ], (err) => {
-                        if (ERR(err, callback)) return;
-                        callback(null);
-                    });
-                },
-                (callback) => {
-                    async.series([
-                        // Now we can upload the archive of the /grade directory
-                        (callback) => {
-                            logger.info('Creating temp file for archive');
-                            tmp.file((err, file, fd, cleanup) => {
-                                if (ERR(err, callback)) return;
-                                tempArchive = file;
-                                archiveCleanup = cleanup;
-                                callback(null);
-                            });
-                        },
-                        (callback) => {
-                            logger.info('Building archive');
-                            exec(`tar -zcf ${tempArchive} ${tempDir}`, (err) => {
-                                if (ERR(err, callback)) return;
-                                callback(null);
-                            });
-                        },
-                        (callback) => {
-                            logger.info(`Uploading archive to s3 bucket ${s3ArchivesBucket}`);
-                            const params = {
-                                Bucket: s3ArchivesBucket,
-                                Key: `job_${jobId}.tar.gz`,
-                                Body: fs.createReadStream(tempArchive)
-                            };
-                            s3.upload(params, (err) => {
-                                if (ERR(err, callback)) return;
-                                callback(null);
-                            });
-                        },
-                    ], (err) => {
-                        if (ERR(err, callback)) return;
-                        callback(null);
-                    });
-                }
-            ], (err) => {
+            // Now we can send the results back to S3
+            logger.info(`Uploading results.json to S3 bucket ${s3ResultsBucket}`);
+            const params = {
+                Bucket: s3ResultsBucket,
+                Key: `job_${jobId}.json`,
+                Body: new Buffer(JSON.stringify(results), 'binary')
+            };
+            s3.putObject(params, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
         },
         (callback) => {
-            logger.info('Removing temporary directories');
-            dirCleanup();
-            archiveCleanup();
-            callback(null);
+            // Let's send the results back to PrairieLearn now; the archive will
+            // be uploaded later
+            if (webhookUrl) {
+                logger.info('Pinging webhook with results');
+                const webhookResults = {
+                    data: results,
+                    event: 'grading_result',
+                    job_id: jobId
+                };
+                fetch(webhookUrl, {
+                    method: 'POST',
+                    body: JSON.stringify(webhookResults)
+                }).then(() => callback(null)).catch((err) => {
+                    return ERR(err, callback);
+                });
+            } else {
+                callback(null);
+            }
         }
     ], (err) => {
-        if (ERR(err, done)) return;
-        done(null);
+        if (ERR(err, callback)) return;
+        callback(null);
+    });
+}
+
+function uploadArchive(results, callback) {
+    const {
+        context: {
+            logger,
+            s3,
+            job: {
+                jobId,
+                s3ArchivesBucket
+            }
+        },
+        initFiles: {
+            tempDir
+        }
+    } = results;
+
+    let tempArchive, tempArchiveCleanup;
+    async.series([
+        // Now we can upload the archive of the /grade directory
+        (callback) => {
+            logger.info('Creating temp file for archive');
+            tmp.file((err, file, fd, cleanup) => {
+                if (ERR(err, callback)) return;
+                tempArchive = file;
+                tempArchiveCleanup = cleanup;
+                callback(null);
+            });
+        },
+        (callback) => {
+            logger.info('Building archive');
+            exec(`tar -zcf ${tempArchive} ${tempDir}`, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            logger.info(`Uploading archive to s3 bucket ${s3ArchivesBucket}`);
+            const params = {
+                Bucket: s3ArchivesBucket,
+                Key: `job_${jobId}.tar.gz`,
+                Body: fs.createReadStream(tempArchive)
+            };
+            s3.upload(params, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+    ], (err) => {
+        if (ERR(err, callback)) return;
+        tempArchiveCleanup && tempArchiveCleanup();
+        callback(null);
     });
 }
