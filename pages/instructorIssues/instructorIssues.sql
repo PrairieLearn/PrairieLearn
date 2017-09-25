@@ -29,7 +29,8 @@ SELECT
     u.uid AS user_uid,
     i.student_message,
     i.variant_id,
-    i.open
+    i.open,
+    i.manually_reported
 FROM
     issues AS i
     JOIN pl_courses AS c ON (c.id = i.course_id)

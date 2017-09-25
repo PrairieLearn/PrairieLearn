@@ -6,7 +6,13 @@
   <% issues.forEach(function(issue, iIssue) { %>
   <div class="panel panel-danger">
     <div class="panel-heading">
-      <h3 class="panel-title">Issue</h3>
+      <h3 class="panel-title">
+        <% if (issue.manually_reported) { %>
+        Manually reported issue
+        <% } else { %>
+        Issue
+        <% } %>
+      </h3>
     </div>
 
     <table class="table table-condensed table-hover two-column-description">

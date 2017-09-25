@@ -37,21 +37,19 @@
         <table class="table table-condensed table-hover two-column-description">
           <tbody>
             <tr>
-              <th>Number of issues</th>
-              <td><%= issueCount %></td>
-            </tr>
-            <tr>
-              <th>Open issues</th>
+              <th>Number of issues:</th>
               <td>
                 <% if (openCount > 0) { %>
                 <%- include('../partials/issueBadge', {count: openCount}) %>
                 <% } else { %>
                 0
                 <% } %>
+                open,
+                <%= closedCount %> closed
               </td>
             </tr>
             <tr>
-              <th>Actions</th>
+              <th>Actions:</th>
               <td>
                 <a class="btn btn-xs btn-default" role="button"
                    data-toggle="modal" data-target="#closeAllIssuesModal">
@@ -117,7 +115,18 @@
                 <% } %>
               </td>
               <td><%= row.user_uid || '—' %></td>
-              <td><%= row.student_message || '—' %></td>
+              <td>
+                <% if (row.manually_reported) { %><i>Manually reported:</i><% } %>
+                <% if (row.student_message == null || row.student_message.length == 0) { %>
+                —
+                <% } else if (row.manually_reported && row.student_message.length > 30) { %>
+                <%= row.student_message.substring(0, 31) %>…
+                <% } else if (!row.manually_reported && row.student_message.length > 50) { %>
+                <%= row.student_message.substring(0, 51) %>…
+                <% } else { %>
+                <%= row.student_message %>
+                <% } %>
+              </td>
               <td>
                 <% if (row.variant_id) { %>
                 <a href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>" class="btn btn-xs btn-primary">View</a>

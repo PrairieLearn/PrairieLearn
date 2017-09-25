@@ -6,9 +6,6 @@ var router = express.Router();
 var error = require('../../lib/error');
 var question = require('../../lib/question');
 var sqldb = require('../../lib/sqldb');
-var sqlLoader = require('../../lib/sql-loader');
-
-var sql = sqlLoader.loadSqlEquiv(__filename);
 
 function processSubmission(req, res, callback) {
     let variant_id, submitted_answer;
@@ -107,17 +104,7 @@ router.get('/', function(req, res, next) {
     // req.query.variant_id might be undefined, which will generate a new variant
     question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
         if (ERR(err, next)) return;
-
-        var params = {
-            instance_question_id: res.locals.instance_question.id,
-            user_id: res.locals.user.user_id,
-        };
-        sqldb.query(sql.select_issues, params, (err, result) => {
-            if (ERR(err, next)) return;
-            res.locals.issues = result.rows;
-
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-        });
+        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
 
