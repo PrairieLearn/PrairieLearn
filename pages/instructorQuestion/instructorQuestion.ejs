@@ -54,8 +54,9 @@
               <th>Assessments</th>
               <td><%- include('../partials/assessments', {assessments: assessments}); %></td>
             </tr>
+            <% if (question.type == 'Freeform') { %>
             <tr>
-              <th>Actions</th>
+              <th>Tests</th>
               <td>
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
@@ -68,6 +69,7 @@
                 </form>
               </td>
             </tr>
+            <% } %>
           </tbody>
         </table>
       </div>
