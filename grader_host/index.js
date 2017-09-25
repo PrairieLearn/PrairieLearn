@@ -199,11 +199,6 @@ function runJob(info, callback) {
                 jobId,
                 image,
                 entrypoint,
-                s3JobsBucket,
-                s3ResultsBucket,
-                s3ArchivesBucket,
-                webhookUrl,
-                csrfToken,
                 timeout
             }
         },
@@ -368,6 +363,7 @@ function uploadResults(info, callback) {
                 fetch(webhookUrl, {
                     method: 'POST',
                     headers: {
+                        'Content-Type': 'application/json',
                         'x-csrf-token': csrfToken
                     },
                     body: JSON.stringify(webhookResults)
