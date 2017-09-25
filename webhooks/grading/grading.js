@@ -65,7 +65,7 @@ router.post('/', function(req, res, next) {
         res.status(200);
         res.send();
     } else {
-        return next(new Error('Unknown event'));
+        return next(new Error(`Unknown grading event: ${data.event}`));
     }
 });
 
