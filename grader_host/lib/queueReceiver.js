@@ -95,7 +95,7 @@ module.exports = function(queueUrl, receiveCallback) {
                 });
             }
         ], (err) => {
-            if (ERR(err, (err) => logger.error(err)));
+            if (ERR(err, (err) => globalLogger.error(err)));
             next();
         });
     });

@@ -3,7 +3,7 @@
     "title": "Grading Queue Message",
     "description": "A message describing a grading job to be run.",
     "type": "object",
-    "additionalProperties": false,
+    "additionalProperties": true,
     "required": [
         "jobId",
         "image",
@@ -24,6 +24,10 @@
         "entrypoint": {
             "description": "The script that will be run to start this job.",
             "type": "string"
+        },
+        "timeout": {
+            "description": "The number of seconds after which the grading job will timeout.",
+            "type": "integer"
         },
         "s3JobsBucket": {
             "description": "The AWS S3 bucket to fetch this job from.",

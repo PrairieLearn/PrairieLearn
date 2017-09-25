@@ -205,7 +205,8 @@ function runJob(info, callback) {
                 s3ResultsBucket,
                 s3ArchivesBucket,
                 webhookUrl,
-                csrfToken
+                csrfToken,
+                timeout
             }
         },
         initFiles: {
@@ -214,6 +215,7 @@ function runJob(info, callback) {
     } = info;
 
     let results = {};
+    let jobTimeout = timeout || 30;
 
     logger.info('Launching Docker container to run grading job');
 
@@ -273,7 +275,12 @@ function runJob(info, callback) {
             });
         },
         (container, callback) => {
+            const timeoutId = setTimeout(() => {
+                results.timedOut = true;
+                container.kill();
+            }, jobTimeout * 1000);
             container.wait((err) => {
+                clearTimeout(timeoutId);
                 if (ERR(err, callback)) return;
                 logger.info('Grading job completed');
                 callback(null, container);
@@ -282,7 +289,7 @@ function runJob(info, callback) {
         (container, callback) => {
             container.inspect((err, data) => {
                 if (ERR(err, callback)) return;
-                results.succeeded = (data.State.ExitCode == 0);
+                results.succeeded = (!results.timedOut && data.State.ExitCode == 0);
                 callback(null, container);
             });
         },
@@ -293,10 +300,7 @@ function runJob(info, callback) {
             });
         },
         (callback) => {
-            logger.info('Constructing results object');
-            results.job_id = jobId;
-            results.start_time = startTime;
-            results.end_time = new Date().toISOString();
+            logger.info('Reading course results');
             // Now that the job has completed, let's extract the results
             // First up: results.json
             if (results.succeeded) {
@@ -310,19 +314,34 @@ function runJob(info, callback) {
                             results.succeeded = true;
                         } catch (e) {
                             logger.error('Could not parse results.json');
+                            logger.error(e);
                             results.succeeded = false;
+                            results.message = 'Could not parse the grading results.';
                         }
                         callback(null);
                     }
                 });
             } else {
+                if (results.timedOut) {
+                    results.message = `Grading timed out after ${timeout} seconds.`;
+                }
                 results.results = null;
                 callback(null);
             }
         }
     ], (err) => {
-        if (ERR(err, callback)) return;
-        callback(null, results);
+        results.job_id = jobId;
+        results.start_time = startTime;
+        results.end_time = new Date().toISOString();
+
+        if (err) {
+            results.end_time = new Date().toISOString();
+            results.succeeded = false;
+            results.message = err.toString();
+            return callback(null, results);
+        } else {
+            return callback(null, results);
+        }
     });
 }
 
