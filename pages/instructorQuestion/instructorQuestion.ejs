@@ -72,6 +72,24 @@
             <% } %>
           </tbody>
         </table>
+        <div class="panel-footer">
+          <button class="btn btn-xs btn-default" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
+            Report an issue with this question
+          </button>
+          <div class="collapse" id="issueCollapse">
+            <hr />
+            <form method="POST">
+              <div class="form-group">
+                <textarea class="form-control" rows="5" name="description" placeholder="Describe the issue"></textarea>
+              </div>
+              <input type="hidden" name="__variant_id" value="<%= variant.id %>">
+              <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+              <div class="form-group text-right">
+                <button class="btn btn-small btn-warning" name="__action" value="report_issue">Report issue
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
 
       <%- include('../partials/question', {question_context: 'instructor'}); %>
