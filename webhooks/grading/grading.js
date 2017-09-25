@@ -65,6 +65,8 @@ router.post('/', function(req, res, next) {
         res.status(200);
         res.send();
     } else {
+        logger.error('Invalid grading event received:');
+        logger.error(data);
         return next(new Error(`Unknown grading event: ${data.event}`));
     }
 });
