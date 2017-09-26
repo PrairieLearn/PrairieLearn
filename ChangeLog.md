@@ -109,6 +109,8 @@
 
   * Fix bug that prevented numbers from being converted in sympy equivalents in symbolic input parser (Tim Bretl).
 
+  * Fix bug that prevented use of multiple symbols in `pl_symbolic_input` (Tim Bretl).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
