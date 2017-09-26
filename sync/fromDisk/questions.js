@@ -72,6 +72,7 @@ module.exports = {
                         external_grading_image: (q.externalGradingOptions && q.externalGradingOptions.image),
                         external_grading_files: external_grading_files,
                         external_grading_entrypoint: (q.externalGradingOptions && q.externalGradingOptions.entrypoint),
+                        external_grading_timeout: (q.externalGradingOptions && q.externalGradingOptions.timeout)
                     };
                     sqldb.queryOneRow(sql.insert_question, params, function(err, result) {
                         if (ERR(err, callback)) return;

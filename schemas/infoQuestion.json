@@ -104,6 +104,10 @@
                         "description": "A single file or directory that will be copied to the external grader.",
                         "type": "string"
                     }
+                },
+                "timeout": {
+                    "description": "The number of seconds after which the grading job will timeout.",
+                    "type": "integer"
                 }
             }
         }
