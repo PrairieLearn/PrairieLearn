@@ -49,6 +49,8 @@
 
   * Add `v2` and `v3` tags to exampleCourse questions (Dave Mussulman).
 
+  * Add `externalGradingOptions.timeout` parameter (Nathan Walters).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
