@@ -67,6 +67,8 @@
 
   * Shift most `exampleCourse` to the external `pl-template` repository.
 
+  * Shift symbolic input parser to `lib/python_helper_sympy.py` (Tim Bretl).
+
   * Fix external graders with invalid submissions (Nathan Walters).
 
   * Fix handling of too-large file uploads (Matt West).
@@ -102,6 +104,10 @@
   * Fix file downloads as zip for v2 questions (Matt West).
 
   * Fix `pl_number_input` to allow suffix for units with `display=inline` (Tim Bretl).
+
+  * Fix symbolic input parser to eliminate use of `sympy.sympify` (Tim Bretl).
+
+  * Fix bug that prevented numbers from being converted in sympy equivalents in symbolic input parser (Tim Bretl).
 
 * __2.10.1__ - 2017-05-24
 
