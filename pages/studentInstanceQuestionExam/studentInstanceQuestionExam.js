@@ -53,6 +53,7 @@ function processSubmission(req, res, callback) {
 }
 
 function processIssue(req, res, callback) {
+    if (!res.locals.assessment.allow_issue_reporting) return callback(new Error('Issue reporting not permitted for this assessment'));
     const description = req.body.description;
     if (!_.isString(description) || description.length == 0) {
         return callback(new Error('A description of the issue must be provided'));

@@ -53,6 +53,8 @@
 
   * Add "Report an issue" button on questions (Matt West).
 
+  * Add `allowIssueReporting` assessment option, default false (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,

@@ -1,4 +1,5 @@
 columns
+    allow_issue_reporting: boolean default false
     assessment_set_id: bigint
     auto_close: boolean default true
     config: jsonb

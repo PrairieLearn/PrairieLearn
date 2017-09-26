@@ -61,6 +61,7 @@
                 </tr>
               </tbody>
             </table>
+            <% if (assessment.allow_issue_reporting) { %>
             <div class="panel-footer">
               <button class="btn btn-xs btn-default" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
                 Report an issue with this question
@@ -79,6 +80,7 @@
                 </form>
               </div>
             </div>
+            <% } %>
           </div>
 
           <p class="text-center">

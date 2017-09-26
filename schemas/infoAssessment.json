@@ -31,6 +31,11 @@
             "type": "string",
             "required": true
         },
+        "allowIssueReporting": {
+            "description": "Whether to allow students to report issues for assessment questions",
+            "type": "boolean",
+            "default": false
+        },
         "multipleInstance": {
             "description": "Whether to allow students to create additional instances of the assessment",
             "type": "boolean",
