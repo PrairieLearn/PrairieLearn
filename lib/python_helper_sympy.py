@@ -51,16 +51,6 @@ class ReplaceNumbers(ast.NodeTransformer):
             return ast.Call(func=ast.Name(id='_Integer', ctx=ast.Load()), args=[node], keywords=[])
         elif isinstance(node.n, float):
             return ast.Call(func=ast.Name(id='_Float', ctx=ast.Load()), args=[node], keywords=[])
-        elif isinstance(node.n, complex):
-            # The node is a complex number. It should have zero real part. If it
-            # has non-zero real part, we are confused and will simply return the
-            # node without modification.
-            if (node.n.real != 0):
-                return node
-            elif node.n.imag.is_integer():
-                return ast.BinOp(left=ast.Call(func=ast.Name(id='_Integer', ctx=ast.Load()), args=[ast.Num(node.n.imag)], keywords=[]), op=ast.Mult(), right=ast.Name(id='_I', ctx=ast.Load()))
-            else:
-                return ast.BinOp(left=ast.Call(func=ast.Name(id='_Float', ctx=ast.Load()), args=[ast.Num(node.n.imag)], keywords=[]), op=ast.Mult(), right=ast.Name(id='_I', ctx=ast.Load()))
         return node
 
 class CheckWhiteList(ast.NodeVisitor):
@@ -84,7 +74,7 @@ def evaluate(expr, locals={}):
         node = ast.parse(expr.strip(), mode='eval')
         # Check that all AST expressions are on a whitelist
         CheckWhiteList().visit(node)
-        # Replace all numbers (int, float, complex) with sympy equivalents
+        # Replace all int and float (not complex) numbers with sympy equivalents
         node = ReplaceNumbers().visit(node)
         # Clean up lineno and col_offset attributes
         ast.fix_missing_locations(node)
@@ -96,7 +86,7 @@ def evaluate(expr, locals={}):
 
 def convert_string_to_sympy(a, variables):
     # Define a list of valid expressions and their mapping to sympy
-    locals_for_eval = {'cos': sympy.cos, 'sin': sympy.sin, 'tan': sympy.tan, 'exp': sympy.exp, 'log': sympy.log, 'sqrt': sympy.sqrt, 'pi': sympy.pi, '_Integer': sympy.Integer, '_Float': sympy.Float, '_I': sympy.I}
+    locals_for_eval = {'cos': sympy.cos, 'sin': sympy.sin, 'tan': sympy.tan, 'exp': sympy.exp, 'log': sympy.log, 'sqrt': sympy.sqrt, 'pi': sympy.pi, '_Integer': sympy.Integer, '_Float': sympy.Float}
 
     # If there is a list of variables, add each one to the list of expressions
     if variables is not None:
