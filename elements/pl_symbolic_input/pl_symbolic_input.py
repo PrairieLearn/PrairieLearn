@@ -6,12 +6,14 @@ import sympy
 import random
 from python_helper_sympy import convert_string_to_sympy
 
+
 def get_variables_list(variables_string):
     if variables_string is not None:
         variables_list = [variable.strip() for variable in variables_string.split(',')]
         return variables_list
     else:
         return []
+
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
