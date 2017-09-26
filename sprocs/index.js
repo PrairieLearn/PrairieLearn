@@ -94,6 +94,7 @@ module.exports = {
             'grading_jobs_stats_day.sql',
             'errors_generate_display_id.sql',
             'errors_insert_for_variant.sql',
+            'errors_insert_for_assessment.sql',
             'errors_update_open.sql',
             'errors_update_open_all.sql',
             'variants_lock.sql',
@@ -105,6 +106,7 @@ module.exports = {
             'variants_select_for_assessment_instance_grading.sql',
             'variants_update_after_grading.sql',
             'variants_ensure_open.sql',
+            'variants_unlink.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

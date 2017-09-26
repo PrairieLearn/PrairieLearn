@@ -103,9 +103,15 @@
                 —
                 <% } %>
               </td>
-              <td><%= row.question_qid %></td>
-              <td><%= row.user_uid %></td>
-              <td><%= row.student_message %></td>
+              <td>
+                <% if (row.question_qid) { %>
+                <%= row.question_qid %>
+                <% } else { %>
+                —
+                <% } %>
+              </td>
+              <td><%= row.user_uid || '—' %></td>
+              <td><%= row.student_message || '—' %></td>
               <td>
                 <% if (row.variant_id) { %>
                 <a href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>" class="btn btn-xs btn-primary">View</a>

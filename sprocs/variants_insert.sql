@@ -50,6 +50,7 @@ BEGIN
         WHERE v.instance_question_id = variants_insert.instance_question_id;
 
         new_number := coalesce(new_number + 1, 1);
+
     ELSE
         -- we weren't given an instance_question_id, so we must have
         -- question_id and user_id
