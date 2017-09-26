@@ -14,6 +14,7 @@ Each assessment is a single directory in the `assessments` folder. The directory
     "title": "Coordinates and Vectors",
     "set": "Quiz",
     "number": "2",
+    "allowIssueReporting": true,
     "allowAccess": [],
     "zones": []
 }
@@ -94,6 +95,10 @@ For practice exams it is often desirable to make a *multiple instance* assessmen
 ## Auto-closing Exam assessments
 
 By default Exam assessments will auto-close after six hours of inactivity by the student. This generally means that you don't need to explicity close exams that students accidentally did not close when they were done. If you want to prevent auto-closing then you can set `"autoClose": false` as a top-level option in the `infoAssessment.json` file.
+
+## Issue reporting
+
+To allow students to report issues with questions (incorrect answers, unclear wording, etc), set the `"allowIssueReporting": true` property in the `infoAssessment.json` file. This option defaults to false. When issue reporting is allowed, students see a button labeled "Report an issue with this question" and they can submit a short text form. Course staff see any reported issues show up on the "Issues" tab.
 
 ## Access control
 
