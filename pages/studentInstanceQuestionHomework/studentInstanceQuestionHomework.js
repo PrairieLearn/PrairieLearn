@@ -78,7 +78,7 @@ function processIssue(req, res, callback) {
             callback(null, variant_id);
         });
     });
-};
+}
 
 router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();

@@ -73,7 +73,7 @@ function processIssue(req, res, callback) {
             callback(null, variant_id);
         });
     });
-};
+}
 
 router.post('/', function(req, res, next) {
     if (req.body.__action == 'grade' || req.body.__action == 'save') {
