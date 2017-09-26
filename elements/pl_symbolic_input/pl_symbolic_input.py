@@ -6,6 +6,12 @@ import sympy
 import random
 from python_helper_sympy import convert_string_to_sympy
 
+def get_variables_list(variables_string):
+    if variables_string is not None:
+        variables_list = [variable.strip() for variable in variables_string.split(',')]
+        return variables_list
+    else:
+        return []
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -26,7 +32,8 @@ def prepare(element_html, element_index, data):
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers_name')
-    variables = pl.get_string_attrib(element, 'variables', None)
+    variables_string = pl.get_string_attrib(element, 'variables', None)
+    variables = get_variables_list(variables_string)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -35,7 +42,7 @@ def render(element_html, element_index, data):
         operators = ', '.join(['cos', 'sin', 'tan', 'exp', 'log', 'sqrt', '( )', '+', '-', '*', '/', '^', '**'])
         constants = ', '.join(['pi'])
 
-        info_params = {'format': True, 'variables': variables, 'operators': operators, 'constants': constants}
+        info_params = {'format': True, 'variables': variables_string, 'operators': operators, 'constants': constants}
         with open('pl_symbolic_input.mustache', 'r') as f:
             info = chevron.render(f, info_params).strip()
         with open('pl_symbolic_input.mustache', 'r') as f:
@@ -66,7 +73,8 @@ def render(element_html, element_index, data):
     elif data['panel'] == 'answer':
         a_tru = data['correct_answers'].get(name, None)
         if a_tru is not None:
-            a_tru = convert_string_to_sympy(a_tru, variables)
+            if isinstance(a_tru, str):
+                a_tru = convert_string_to_sympy(a_tru, variables)
             html_params = {'answer': True, 'a_tru': sympy.latex(a_tru)}
             with open('pl_symbolic_input.mustache', 'r') as f:
                 html = chevron.render(f, html_params).strip()
@@ -82,7 +90,7 @@ def render(element_html, element_index, data):
 def parse(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers_name')
-    variables = pl.get_string_attrib(element, 'variables', None)
+    variables = get_variables_list(pl.get_string_attrib(element, 'variables', None))
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
@@ -129,8 +137,9 @@ def grade(element_html, element_index, data):
         return data
 
     # Parse both correct and submitted answer (will throw an error on fail).
-    variables = pl.get_string_attrib(element, 'variables', None)
-    a_tru = convert_string_to_sympy(a_tru, variables)
+    variables = get_variables_list(pl.get_string_attrib(element, 'variables', None))
+    if isinstance(a_tru, str):
+        a_tru = convert_string_to_sympy(a_tru, variables)
     a_sub = convert_string_to_sympy(a_sub, variables)
 
     # Check equality
