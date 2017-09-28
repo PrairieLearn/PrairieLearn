@@ -1,6 +1,6 @@
 {
   "name": "pl-grader",
-  "version": "1.0.0",
+  "version": "0.0.3",
   "description": "PrairieLearn's grading agent",
   "main": "index.js",
   "scripts": {
