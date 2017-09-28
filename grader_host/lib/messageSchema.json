@@ -1,0 +1,53 @@
+{
+    "$schema": "http://json-schema.org/draft-06/schema#",
+    "title": "Grading Queue Message",
+    "description": "A message describing a grading job to be run.",
+    "type": "object",
+    "additionalProperties": true,
+    "required": [
+        "jobId",
+        "image",
+        "entrypoint",
+        "s3JobsBucket",
+        "s3ResultsBucket",
+        "s3ArchivesBucket"
+    ],
+    "properties": {
+        "jobId": {
+            "description": "The unique ID for this job.",
+            "type": "string"
+        },
+        "image": {
+            "description": "The image that this job will be executed in.",
+            "type": "string"
+        },
+        "entrypoint": {
+            "description": "The script that will be run to start this job.",
+            "type": "string"
+        },
+        "timeout": {
+            "description": "The number of seconds after which the grading job will timeout.",
+            "type": "integer"
+        },
+        "s3JobsBucket": {
+            "description": "The AWS S3 bucket to fetch this job from.",
+            "type": "string"
+        },
+        "s3ResultsBucket": {
+            "description": "The AWS S3 bucket to upload results to.",
+            "type": "string"
+        },
+        "s3ArchivesBucket": {
+            "description": "The AWS S3 bucket to upload the archives for this job to.",
+            "type": "string"
+        },
+        "webhookUrl": {
+            "description": "The URL to send results to.",
+            "type": "string"
+        },
+        "csrfToken": {
+            "description": "The CSRF token to pass when sending results to the webhook.",
+            "type": "string"
+        }
+    }
+}
