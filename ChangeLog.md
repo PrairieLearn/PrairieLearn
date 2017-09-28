@@ -51,6 +51,10 @@
 
   * Add `externalGradingOptions.timeout` parameter (Nathan Walters).
 
+  * Add "Report an issue" button on questions (Matt West).
+
+  * Add `allowIssueReporting` assessment option, default false (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
@@ -66,6 +70,8 @@
     (Nathan Walters).
 
   * Change Python question code timeout from 5 s to 20 s (Tim Bretl).
+
+  * Change "Errors" tab to "Issues" (Matt West).
 
   * Shift most `exampleCourse` to the external `pl-template` repository.
 
@@ -114,6 +120,10 @@
   * Fix bug that prevented numbers from being converted in sympy equivalents in symbolic input parser (Tim Bretl).
 
   * Fix bug that prevented use of multiple symbols in `pl_symbolic_input` (Tim Bretl).
+
+  * Fix inoperable "Test" buttons for non-v3 questions by hiding them (Matt West).
+
+  * Fix inaccurate issue counts on assessments (Matt West).
 
 * __2.10.1__ - 2017-05-24
 

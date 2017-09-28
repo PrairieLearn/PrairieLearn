@@ -33,7 +33,7 @@
             <tr>
               <td>
                 <a href="<%= urlPrefix %>/question/<%= question.id %>/"><%= question.title %></a>
-                <%- include('../partials/errorBadge', {count: question.open_error_count, errorQid: question.qid}); %>
+                <%- include('../partials/issueBadge', {count: question.open_issue_count, issueQid: question.qid}); %>
               </td>
               <td><%= question.qid %></td>
               <td><%- include('../partials/topic', {topic: question.topic}); %></td>

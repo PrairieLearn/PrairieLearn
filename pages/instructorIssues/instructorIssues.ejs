@@ -4,17 +4,17 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
-    <%- include('../partials/navbar', {navPage: 'errors'}); %>
+    <%- include('../partials/navbar', {navPage: 'issues'}); %>
     <div id="content" class="container">
 
-      <div class="modal fade" id="closeAllErrorsModal" tabindex="-1" role="dialog" aria-labelledby="closeAllErrors">
+      <div class="modal fade" id="closeAllIssuesModal" tabindex="-1" role="dialog" aria-labelledby="closeAllIssues">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
-              <h4 class="modal-title" id="closeAllErrorsModalLabel">Close all errors</h4>
+              <h4 class="modal-title" id="closeAllIssuesModalLabel">Close all issues</h4>
             </div>
             <div class="modal-body">
-              Are you sure you want to close all errors? This cannot
+              Are you sure you want to close all issues? This cannot
               be undone.
             </div>
             <div class="modal-footer">
@@ -31,25 +31,29 @@
 
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title">Errors</h3>
+          <h3 class="panel-title">Issues</h3>
         </div>
 
         <table class="table table-condensed table-hover two-column-description">
           <tbody>
             <tr>
-              <th>Number of errors</th>
-              <td><%= errorCount %></td>
+              <th>Number of issues:</th>
+              <td>
+                <% if (openCount > 0) { %>
+                <%- include('../partials/issueBadge', {count: openCount}) %>
+                <% } else { %>
+                0
+                <% } %>
+                open,
+                <%= closedCount %> closed
+              </td>
             </tr>
             <tr>
-              <th>Open errors</th>
-              <td><%- include('../partials/errorBadge', {count: openCount}) %></td>
-            </tr>
-            <tr>
-              <th>Actions</th>
+              <th>Actions:</th>
               <td>
                 <a class="btn btn-xs btn-default" role="button"
-                   data-toggle="modal" data-target="#closeAllErrorsModal">
-                  <i class="fa fa-times" aria-hidden="true"></i> Close all errors
+                   data-toggle="modal" data-target="#closeAllIssuesModal">
+                  <i class="fa fa-times" aria-hidden="true"></i> Close all issues
                 </a>
               </td>
             </tr>
@@ -64,7 +68,7 @@
                 <span class="input-group-addon" id="basic-addon3">Filter:</span>
                 <input type="text" class="form-control" disabled value="QID:<%= filterQid %>">
                 <span class="input-group-btn">
-                  <a class="btn btn-primary" type="button" href="<%= urlPrefix %>/errors">
+                  <a class="btn btn-primary" type="button" href="<%= urlPrefix %>/issues">
                     <i class="fa fa-times" aria-hidden="true"></i>
                     Clear
                   </a>
@@ -111,13 +115,24 @@
                 <% } %>
               </td>
               <td><%= row.user_uid || '—' %></td>
-              <td><%= row.student_message || '—' %></td>
+              <td>
+                <% if (row.manually_reported) { %><i>Manually reported:</i><% } %>
+                <% if (row.student_message == null || row.student_message.length == 0) { %>
+                —
+                <% } else if (row.manually_reported && row.student_message.length > 30) { %>
+                <%= row.student_message.substring(0, 31) %>…
+                <% } else if (!row.manually_reported && row.student_message.length > 50) { %>
+                <%= row.student_message.substring(0, 51) %>…
+                <% } else { %>
+                <%= row.student_message %>
+                <% } %>
+              </td>
               <td>
                 <% if (row.variant_id) { %>
                 <a href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>" class="btn btn-xs btn-primary">View</a>
                 <% } %>
               </td>
-              <td><%- include('../partials/errorStatus', {open: row.open, error_id: row.error_id}) %></td>
+              <td><%- include('../partials/issueStatus', {open: row.open, issue_id: row.issue_id}) %></td>
             </tr>
             <% }); %>
           </tbody>

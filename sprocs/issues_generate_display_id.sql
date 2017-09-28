@@ -1,5 +1,5 @@
 CREATE OR REPLACE FUNCTION
-    errors_generate_display_id() RETURNS text
+    issues_generate_display_id() RETURNS text
 AS $$
 DECLARE
     minval double precision := 1e5;

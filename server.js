@@ -153,7 +153,7 @@ app.use(/^\/pl\/course_instance\/[0-9]+\/instructor\/effectiveUser(\/?.*)$/, fun
 app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/authzCourseInstanceHasInstructorView'));
 app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id + '/instructor'; next();});
 app.use('/pl/course_instance/:course_instance_id/instructor', function(req, res, next) {res.locals.navbarType = 'instructor'; next();});
-app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/selectOpenErrorCount'));
+app.use('/pl/course_instance/:course_instance_id/instructor', require('./middlewares/selectOpenIssueCount'));
 
 // Serve element statics
 app.use('/pl/static/elements', require('./pages/elementFiles/elementFiles'));
@@ -180,7 +180,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/gradebook', require('./pages/instructorGradebook/instructorGradebook'));
 app.use('/pl/course_instance/:course_instance_id/instructor/questions', require('./pages/instructorQuestions/instructorQuestions'));
-app.use('/pl/course_instance/:course_instance_id/instructor/errors', require('./pages/instructorErrors/instructorErrors'));
+app.use('/pl/course_instance/:course_instance_id/instructor/issues', require('./pages/instructorIssues/instructorIssues'));
 app.use('/pl/course_instance/:course_instance_id/instructor/syncs', require('./pages/courseSyncs/courseSyncs'));
 app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));

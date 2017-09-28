@@ -27,7 +27,7 @@ digraph prairielearn_tables {
     alternative_groups [style=filled, fillcolor=honeydew1]
     zones [style=filled, fillcolor=honeydew1]
 
-    errors [style=filled, fillcolor=lavender]
+    issues [style=filled, fillcolor=lavender]
     enrollments [style=filled, fillcolor=lavender]
     assessment_instances [style=filled, fillcolor=lavender]
     instance_questions [style=filled, fillcolor=lavender]
@@ -63,7 +63,7 @@ digraph prairielearn_tables {
     zones -> { assessments }
     alternative_groups -> { zones }
 
-    errors -> { variants } [style=dashed]
+    issues -> { variants } [style=dashed]
     enrollments -> { users; course_instances }
     assessment_instances -> { assessments; users }
     instance_questions -> { assessment_questions; assessment_instances }

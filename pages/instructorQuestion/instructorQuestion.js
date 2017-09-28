@@ -47,6 +47,34 @@ function processSubmission(req, res, callback) {
     });
 }
 
+function processIssue(req, res, callback) {
+    const description = req.body.description;
+    if (!_.isString(description) || description.length == 0) {
+        return callback(new Error('A description of the issue must be provided'));
+    }
+
+    const variant_id = req.body.__variant_id;
+    sqldb.callOneRow('variants_ensure_question', [variant_id, res.locals.question.id], (err, _result) => {
+        if (ERR(err, callback)) return;
+
+        const course_data = _.pick(res.locals, ['variant', 'question', 'course_instance', 'course']);
+        const params = [
+            variant_id,
+            description, // student message
+            'instructor-reported issue', // instructor message
+            true, // manually_reported
+            true, // course_caused
+            course_data,
+            {}, // system_data
+            res.locals.authn_user.user_id,
+        ];
+        sqldb.call('issues_insert_for_variant', params, (err) => {
+            if (ERR(err, callback)) return;
+            callback(null, variant_id);
+        });
+    });
+}
+
 router.post('/', function(req, res, next) {
     if (req.body.__action == 'grade' || req.body.__action == 'save') {
         processSubmission(req, res, function(err, variant_id) {
@@ -67,6 +95,12 @@ router.post('/', function(req, res, next) {
         question.startTestQuestion(count, showDetails, res.locals.question, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+        });
+    } else if (req.body.__action == 'report_issue') {
+        processIssue(req, res, function(err, variant_id) {
+            if (ERR(err, next)) return;
+            res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id
+                         + '/?variant_id=' + variant_id);
         });
     } else {
         return next(new Error('unknown __action: ' + req.body.__action));

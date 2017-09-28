@@ -312,7 +312,7 @@ module.exports = {
     },
 
     processQuestionHtml: function(phase, pc, data, context, callback) {
-        const courseErrs = [];
+        const courseIssues = [];
         const origData = JSON.parse(JSON.stringify(data));
         const renderedElementNames = [];
 
@@ -320,19 +320,19 @@ module.exports = {
 
         const checkErr = module.exports.checkData(data, origData, phase);
         if (checkErr) {
-            const courseErr = new Error('Invalid state before ' + phase + ': ' + checkErr);
-            courseErr.fatal = true;
-            courseErrs.push(courseErr);
-            return callback(null, courseErrs, data, '', fileData);
+            const courseIssue = new Error('Invalid state before ' + phase + ': ' + checkErr);
+            courseIssue.fatal = true;
+            courseIssues.push(courseIssue);
+            return callback(null, courseIssues, data, '', fileData);
         }
 
         const htmlFilename = path.join(context.question_dir, 'question.html');
         this.execTemplate(htmlFilename, data, (err, html, $) => {
             if (err) {
-                const courseErr = new Error(htmlFilename + ': ' + err.toString());
-                courseErr.fatal = true;
-                courseErrs.push(courseErr);
-                return callback(null, courseErrs, data, '', fileData);
+                const courseIssue = new Error(htmlFilename + ': ' + err.toString());
+                courseIssue.fatal = true;
+                courseIssues.push(courseIssue);
+                return callback(null, courseIssues, data, '', fileData);
             }
 
             const questionElements = new Set([..._.keys(coreElementsCache), ..._.keys(context.course_elements)]).values();
@@ -347,28 +347,28 @@ module.exports = {
                     this.elementFunction(pc, phase, elementName, $, element, index, data, context, (err, ret_val, consoleLog) => {
                         if (err) {
                             const elementFile = module.exports.getElementFilename(elementName, context);
-                            const courseErr = new Error(elementFile + ': Error calling ' + phase + '(): ' + err.toString());
-                            courseErr.data = err.data;
-                            courseErr.fatal = true;
-                            courseErrs.push(courseErr);
-                            return callback(courseErr);
+                            const courseIssue = new Error(elementFile + ': Error calling ' + phase + '(): ' + err.toString());
+                            courseIssue.data = err.data;
+                            courseIssue.fatal = true;
+                            courseIssues.push(courseIssue);
+                            return callback(courseIssue);
                         }
                         if (_.isString(consoleLog) && consoleLog.length > 0) {
                             const elementFile = module.exports.getElementFilename(elementName, context);
-                            const courseErr = new Error(elementFile + ': output logged on console during ' + phase + '()');
-                            courseErr.data = {outputBoth: consoleLog};
-                            courseErr.fatal = false;
-                            courseErrs.push(courseErr);
+                            const courseIssue = new Error(elementFile + ': output logged on console during ' + phase + '()');
+                            courseIssue.data = {outputBoth: consoleLog};
+                            courseIssue.fatal = false;
+                            courseIssues.push(courseIssue);
                         }
 
                         if (phase == 'render') {
                             if (!_.isString(ret_val)) {
                                 const elementFile = module.exports.getElementFilename(elementName, context);
-                                const courseErr = new Error(elementFile + ': Error calling ' + phase + '(): return value is not a string');
-                                courseErr.data = {ret_val};
-                                courseErr.fatal = true;
-                                courseErrs.push(courseErr);
-                                return callback(courseErr);
+                                const courseIssue = new Error(elementFile + ': Error calling ' + phase + '(): return value is not a string');
+                                courseIssue.data = {ret_val};
+                                courseIssue.fatal = true;
+                                courseIssues.push(courseIssue);
+                                return callback(courseIssue);
                             }
                             $(element).replaceWith(ret_val);
                         } else if (phase == 'file') {
@@ -381,10 +381,10 @@ module.exports = {
                                 if (fileData.length > 0) {
                                     // If fileData already has non-zero length, throw an error
                                     const elementFile = module.exports.getElementFilename(elementName, context);
-                                    const courseErr = new Error(elementFile + ': Error calling ' + phase + '(): attempting to overwrite non-empty fileData');
-                                    courseErr.fatal = true;
-                                    courseErrs.push(courseErr);
-                                    return callback(courseErr);
+                                    const courseIssue = new Error(elementFile + ': Error calling ' + phase + '(): attempting to overwrite non-empty fileData');
+                                    courseIssue.fatal = true;
+                                    courseIssues.push(courseIssue);
+                                    return callback(courseIssue);
                                 } else {
                                     // If not, replace fileData with buffer
                                     fileData = buf;
@@ -395,10 +395,10 @@ module.exports = {
                             const checkErr = module.exports.checkData(data, origData, phase);
                             if (checkErr) {
                                 const elementFile = module.exports.getElementFilename(elementName, context);
-                                const courseErr = new Error(elementFile + ': Invalid state after ' + phase + '(): ' + checkErr);
-                                courseErr.fatal = true;
-                                courseErrs.push(courseErr);
-                                return callback(courseErr);
+                                const courseIssue = new Error(elementFile + ': Invalid state after ' + phase + '(): ' + checkErr);
+                                courseIssue.fatal = true;
+                                courseIssues.push(courseIssue);
+                                return callback(courseIssue);
                             }
                         }
 
@@ -424,38 +424,38 @@ module.exports = {
                     data.feedback = {};
                 }
 
-                callback(null, courseErrs, data, $.html(), fileData, renderedElementNames);
+                callback(null, courseIssues, data, $.html(), fileData, renderedElementNames);
             });
         });
     },
 
     processQuestionServer: function(phase, pc, data, html, fileData, context, callback) {
-        const courseErrs = [];
+        const courseIssues = [];
         const origData = JSON.parse(JSON.stringify(data));
 
         const checkErr = module.exports.checkData(data, origData, phase);
         if (checkErr) {
-            const courseErr = new Error('Invalid state before calling server.' + phase + '(): ' + checkErr);
-            courseErr.fatal = true;
-            courseErrs.push(courseErr);
-            return callback(null, courseErrs, data, '');
+            const courseIssue = new Error('Invalid state before calling server.' + phase + '(): ' + checkErr);
+            courseIssue.fatal = true;
+            courseIssues.push(courseIssue);
+            return callback(null, courseIssues, data, '');
         }
 
         this.execPythonServer(pc, phase, data, html, context, (err, ret_val, consoleLog) => {
             if (err) {
                 const serverFile = path.join(context.question_dir, 'server.py');
-                const courseErr = new Error(serverFile + ': Error calling ' + phase + '(): ' + err.toString());
-                courseErr.data = err.data;
-                courseErr.fatal = true;
-                courseErrs.push(courseErr);
-                return callback(null, courseErrs, data);
+                const courseIssue = new Error(serverFile + ': Error calling ' + phase + '(): ' + err.toString());
+                courseIssue.data = err.data;
+                courseIssue.fatal = true;
+                courseIssues.push(courseIssue);
+                return callback(null, courseIssues, data);
             }
             if (_.isString(consoleLog) && consoleLog.length > 0) {
                 const serverFile = path.join(context.question_dir, 'server.py');
-                const courseErr = new Error(serverFile + ': output logged on console');
-                courseErr.data = {outputBoth: consoleLog};
-                courseErr.fatal = false;
-                courseErrs.push(courseErr);
+                const courseIssue = new Error(serverFile + ': output logged on console');
+                courseIssue.data = {outputBoth: consoleLog};
+                courseIssue.fatal = false;
+                courseIssues.push(courseIssue);
             }
 
             if (phase == 'render') {
@@ -470,10 +470,10 @@ module.exports = {
                     if (fileData.length > 0) {
                         // If fileData already has non-zero length, throw an error
                         const serverFile = path.join(context.question_dir, 'server.py');
-                        const courseErr = new Error(serverFile + ': Error calling ' + phase + '(): attempting to overwrite non-empty fileData');
-                        courseErr.fatal = true;
-                        courseErrs.push(courseErr);
-                        return callback(null, courseErrs, data);
+                        const courseIssue = new Error(serverFile + ': Error calling ' + phase + '(): attempting to overwrite non-empty fileData');
+                        courseIssue.fatal = true;
+                        courseIssues.push(courseIssue);
+                        return callback(null, courseIssues, data);
                     } else {
                         // If not, replace fileData with a copy of buffer
                         fileData = Buffer.from(buf);
@@ -485,31 +485,31 @@ module.exports = {
             const checkErr = module.exports.checkData(data, origData, phase);
             if (checkErr) {
                 const serverFile = path.join(context.question_dir, 'server.py');
-                const courseErr = new Error(serverFile + ': Invalid state after ' + phase + '(): ' + checkErr);
-                courseErr.fatal = true;
-                courseErrs.push(courseErr);
-                return callback(null, courseErrs, data);
+                const courseIssue = new Error(serverFile + ': Invalid state after ' + phase + '(): ' + checkErr);
+                courseIssue.fatal = true;
+                courseIssues.push(courseIssue);
+                return callback(null, courseIssues, data);
             }
 
-            callback(null, courseErrs, data, html, fileData);
+            callback(null, courseIssues, data, html, fileData);
         });
     },
 
     processQuestion: function(phase, pc, data, context, callback) {
         if (phase == 'generate') {
-            module.exports.processQuestionServer(phase, pc, data, '', Buffer.from(''), context, (err, courseErrs, data, html, fileData) => {
+            module.exports.processQuestionServer(phase, pc, data, '', Buffer.from(''), context, (err, courseIssues, data, html, fileData) => {
                 if (ERR(err, callback)) return;
-                callback(null, courseErrs, data, html, fileData);
+                callback(null, courseIssues, data, html, fileData);
             });
         } else {
-            module.exports.processQuestionHtml(phase, pc, data, context, (err, courseErrs, data, html, fileData, renderedElementNames) => {
+            module.exports.processQuestionHtml(phase, pc, data, context, (err, courseIssues, data, html, fileData, renderedElementNames) => {
                 if (ERR(err, callback)) return;
-                const hasFatalError = _.some(_.map(courseErrs, 'fatal'));
-                if (hasFatalError) return callback(null, courseErrs, data, html, fileData);
-                module.exports.processQuestionServer(phase, pc, data, html, fileData, context, (err, ret_courseErrs, data, html, fileData) => {
+                const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
+                if (hasFatalError) return callback(null, courseIssues, data, html, fileData);
+                module.exports.processQuestionServer(phase, pc, data, html, fileData, context, (err, ret_courseIssues, data, html, fileData) => {
                     if (ERR(err, callback)) return;
-                    courseErrs.push(...ret_courseErrs);
-                    callback(null, courseErrs, data, html, fileData, renderedElementNames);
+                    courseIssues.push(...ret_courseIssues);
+                    callback(null, courseIssues, data, html, fileData, renderedElementNames);
                 });
             });
         }
@@ -527,14 +527,14 @@ module.exports = {
                 options: _.defaults({}, course.options, question.options),
             };
             const pc = new codeCaller.PythonCaller();
-            module.exports.processQuestion('generate', pc, data, context, (err, courseErrs, data, _html, _fileData, _renderedElementNames) => {
+            module.exports.processQuestion('generate', pc, data, context, (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
                 pc.done();
                 if (ERR(err, callback)) return;
                 const ret_vals = {
                     params: data.params,
                     true_answer: data.correct_answers,
                 };
-                callback(null, courseErrs, ret_vals);
+                callback(null, courseIssues, ret_vals);
             });
         });
     },
@@ -553,14 +553,14 @@ module.exports = {
                 options: _.get(variant, 'options', {}),
             };
             const pc = new codeCaller.PythonCaller();
-            module.exports.processQuestion('prepare', pc, data, context, (err, courseErrs, data, _html, _fileData, _renderedElementNames) => {
+            module.exports.processQuestion('prepare', pc, data, context, (err, courseIssues, data, _html, _fileData, _renderedElementNames) => {
                 pc.done();
                 if (ERR(err, callback)) return;
                 const ret_vals = {
                     params: data.params,
                     true_answer: data.correct_answers,
                 };
-                callback(null, courseErrs, ret_vals);
+                callback(null, courseIssues, ret_vals);
             });
         });
     },
@@ -608,9 +608,9 @@ module.exports = {
             data.options.question_path = context.question_dir;
             data.options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
 
-            module.exports.processQuestion('render', pc, data, context, (err, courseErrs, _data, html, _fileData, renderedElementNames) => {
+            module.exports.processQuestion('render', pc, data, context, (err, courseIssues, _data, html, _fileData, renderedElementNames) => {
                 if (ERR(err, callback)) return;
-                callback(null, courseErrs, html, renderedElementNames);
+                callback(null, courseIssues, html, renderedElementNames);
             });
         });
     },
@@ -623,15 +623,15 @@ module.exports = {
             answerHtml: '',
         };
         let allRenderedElementNames = [];
-        const courseErrs = [];
+        const courseIssues = [];
         const pc = new codeCaller.PythonCaller();
         async.series([
             // FIXME: suppprt 'header'
             (callback) => {
                 if (!renderSelection.question) return callback(null);
-                module.exports.renderPanel('question', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html, renderedElementNames) => {
+                module.exports.renderPanel('question', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames) => {
                     if (ERR(err, callback)) return;
-                    courseErrs.push(...ret_courseErrs);
+                    courseIssues.push(...ret_courseIssues);
                     htmls.questionHtml = html;
                     allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
                     callback(null);
@@ -640,9 +640,9 @@ module.exports = {
             (callback) => {
                 if (!renderSelection.submissions) return callback(null);
                 async.mapSeries(submissions, (submission, callback) => {
-                    module.exports.renderPanel('submission', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html, renderedElementNames) => {
+                    module.exports.renderPanel('submission', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames) => {
                         if (ERR(err, callback)) return;
-                        courseErrs.push(...ret_courseErrs);
+                        courseIssues.push(...ret_courseIssues);
                         allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
                         callback(null, html);
                     });
@@ -654,9 +654,9 @@ module.exports = {
             },
             (callback) => {
                 if (!renderSelection.answer) return callback(null);
-                module.exports.renderPanel('answer', pc, variant, question, submission, course, locals, (err, ret_courseErrs, html, renderedElementNames) => {
+                module.exports.renderPanel('answer', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames) => {
                     if (ERR(err, callback)) return;
-                    courseErrs.push(...ret_courseErrs);
+                    courseIssues.push(...ret_courseIssues);
                     htmls.answerHtml = html;
                     allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
                     callback(null);
@@ -742,10 +742,10 @@ module.exports = {
                                         }
                                     }
                                 } else {
-                                    const courseErr = new Error(`Error getting dependencies for ${elementName}: "${type}" is not an array`);
-                                    courseErr.data = {elementDependencies};
-                                    courseErr.fatal = true;
-                                    courseErrs.push(courseErr);
+                                    const courseIssue = new Error(`Error getting dependencies for ${elementName}: "${type}" is not an array`);
+                                    courseIssue.data = {elementDependencies};
+                                    courseIssue.fatal = true;
+                                    courseIssues.push(courseIssue);
                                 }
                             }
                         }
@@ -776,7 +776,7 @@ module.exports = {
         ], (err) => {
             pc.done();
             if (ERR(err, callback)) return;
-            callback(null, courseErrs, htmls);
+            callback(null, courseIssues, htmls);
         });
     },
 
@@ -795,10 +795,10 @@ module.exports = {
                 filename: filename,
             };
             const pc = new codeCaller.PythonCaller();
-            module.exports.processQuestion('file', pc, data, context, (err, courseErrs, _data, _html, fileData) => {
+            module.exports.processQuestion('file', pc, data, context, (err, courseIssues, _data, _html, fileData) => {
                 pc.done();
                 if (ERR(err, callback)) return;
-                callback(null, courseErrs, fileData);
+                callback(null, courseIssues, fileData);
             });
         });
     },
@@ -821,7 +821,7 @@ module.exports = {
                 gradable: _.get(submission, 'gradable', true),
             };
             const pc = new codeCaller.PythonCaller();
-            module.exports.processQuestion('parse', pc, data, context, (err, courseErrs, data, _html, _fileData) => {
+            module.exports.processQuestion('parse', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
                 pc.done();
                 if (ERR(err, callback)) return;
                 if (_.size(data.format_errors) > 0) data.gradable = false;
@@ -833,7 +833,7 @@ module.exports = {
                     format_errors: data.format_errors,
                     gradable: data.gradable,
                 };
-                callback(null, courseErrs, ret_vals);
+                callback(null, courseIssues, ret_vals);
             });
         });
     },
@@ -860,7 +860,7 @@ module.exports = {
                 gradable: submission.gradable,
             };
             const pc = new codeCaller.PythonCaller();
-            module.exports.processQuestion('grade', pc, data, context, (err, courseErrs, data, _html, _fileData) => {
+            module.exports.processQuestion('grade', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
                 pc.done();
                 if (ERR(err, callback)) return;
                 if (_.size(data.format_errors) > 0) data.gradable = false;
@@ -875,7 +875,7 @@ module.exports = {
                     feedback: data.feedback,
                     gradable: data.gradable,
                 };
-                callback(null, courseErrs, ret_vals);
+                callback(null, courseIssues, ret_vals);
             });
         });
     },
@@ -900,7 +900,7 @@ module.exports = {
                 gradable: true,
             };
             const pc = new codeCaller.PythonCaller();
-            module.exports.processQuestion('test', pc, data, context, (err, courseErrs, data, _html, _fileData) => {
+            module.exports.processQuestion('test', pc, data, context, (err, courseIssues, data, _html, _fileData) => {
                 pc.done();
                 if (ERR(err, callback)) return;
                 if (_.size(data.format_errors) > 0) data.gradable = false;
@@ -913,7 +913,7 @@ module.exports = {
                     score: data.score,
                     gradable: data.gradable,
                 };
-                callback(null, courseErrs, ret_vals);
+                callback(null, courseIssues, ret_vals);
             });
         });
     },

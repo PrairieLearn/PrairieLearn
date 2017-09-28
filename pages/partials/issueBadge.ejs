@@ -1,9 +1,9 @@
 <% if (count > 0) { %>
     <% if (!(typeof suppressLink != 'undefined' && suppressLink)) { %>
-        <% if (typeof errorQid != 'undefined') { %>
-            <a href="<%= urlPrefix %>/errors?qid=<%= errorQid %>">
+        <% if (typeof issueQid != 'undefined') { %>
+            <a href="<%= urlPrefix %>/issues?qid=<%= issueQid %>">
         <% } else { %>
-            <a href="<%= urlPrefix %>/errors">
+            <a href="<%= urlPrefix %>/issues">
         <% } %>
     <% } %>
     <span class="badge progress-bar-danger"><%= count %></span>

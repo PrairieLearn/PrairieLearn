@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION
-    errors_update_open (
-        error_id bigint,
+    issues_update_open (
+        issue_id bigint,
         new_open boolean,
         course_id bigint,
         authn_user_id bigint
@@ -11,17 +11,17 @@ DECLARE
 BEGIN
     SELECT e.open
     INTO old_open
-    FROM errors AS e
+    FROM issues AS e
     WHERE
-        e.id = error_id
+        e.id = issue_id
         AND e.course_caused
-        AND e.course_id = errors_update_open.course_id;
+        AND e.course_id = issues_update_open.course_id;
 
-    IF NOT FOUND THEN RAISE EXCEPTION 'bad error_id % for course_id %', error_id, course_id; END IF;
+    IF NOT FOUND THEN RAISE EXCEPTION 'bad issue_id % for course_id %', issue_id, course_id; END IF;
 
-    UPDATE errors AS e
+    UPDATE issues AS e
     SET open = new_open
-    WHERE e.id = error_id;
+    WHERE e.id = issue_id;
 
     INSERT INTO audit_logs
         (authn_user_id, course_id,
@@ -29,7 +29,7 @@ BEGIN
         parameters, old_state, new_state)
     VALUES
         (authn_user_id, course_id,
-        'errors',  'open', error_id, 'update',
+        'issues',  'open', issue_id, 'update',
         jsonb_build_object('open', new_open),
         jsonb_build_object('open', old_open),
         jsonb_build_object('open', new_open));

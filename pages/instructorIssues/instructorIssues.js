@@ -16,14 +16,14 @@ router.get('/', function(req, res, next) {
     var params = {
         course_id: res.locals.course.id,
     };
-    sqldb.query(sql.errors_count, params, function(err, result) {
+    sqldb.query(sql.issues_count, params, function(err, result) {
         if (ERR(err, next)) return;
-        if (result.rowCount != 2) return next(new Error('unable to obtain error count, rowCount = ' + result.rowCount));
+        if (result.rowCount != 2) return next(new Error('unable to obtain issue count, rowCount = ' + result.rowCount));
         res.locals.closedCount = result.rows[0].count;
         res.locals.openCount = result.rows[1].count;
-        res.locals.errorCount = res.locals.closedCount + res.locals.openCount;
+        res.locals.issueCount = res.locals.closedCount + res.locals.openCount;
 
-        _.assign(res.locals, paginate.pages(req.query.page, res.locals.errorCount, pageSize));
+        _.assign(res.locals, paginate.pages(req.query.page, res.locals.issueCount, pageSize));
         
         var params = {
             course_id: res.locals.course.id,
@@ -31,7 +31,7 @@ router.get('/', function(req, res, next) {
             limit: pageSize,
             qid: req.query.qid,
         };
-        sqldb.query(sql.select_errors, params, function(err, result) {
+        sqldb.query(sql.select_issues, params, function(err, result) {
             if (ERR(err, next)) return;
 
             res.locals.rows = result.rows;
@@ -45,23 +45,23 @@ router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_edit) return next();
     if (req.body.__action == 'open') {
         let params = [
-            req.body.error_id,
+            req.body.issue_id,
             true, // open status
             res.locals.course.id,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('errors_update_open', params, function(err, _result) {
+        sqldb.call('issues_update_open', params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'close') {
         let params = [
-            req.body.error_id,
+            req.body.issue_id,
             false, // open status
             res.locals.course.id,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('errors_update_open', params, function(err, _result) {
+        sqldb.call('issues_update_open', params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
@@ -71,7 +71,7 @@ router.post('/', function(req, res, next) {
             res.locals.course.id,
             res.locals.authn_user.user_id,
         ];
-        sqldb.call('errors_update_open_all', params, function(err, _result) {
+        sqldb.call('issues_update_open_all', params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });

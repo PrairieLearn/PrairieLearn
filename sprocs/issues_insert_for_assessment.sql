@@ -1,7 +1,7 @@
-DROP FUNCTION IF EXISTS errors_insert_for_assessment(bigint,text,text,boolean,jsonb,jsonb,bigint,bigint);
+DROP FUNCTION IF EXISTS issues_insert_for_assessment(bigint,text,text,boolean,jsonb,jsonb,bigint,bigint);
 
 CREATE OR REPLACE FUNCTION
-    errors_insert_for_assessment(
+    issues_insert_for_assessment(
         assessment_id bigint,
         student_message text,
         instructor_message text,
@@ -30,9 +30,9 @@ BEGIN
 
     IF NOT FOUND THEN RAISE EXCEPTION 'invalid assessment_id'; END IF;
 
-    display_id := errors_generate_display_id();
+    display_id := issues_generate_display_id();
 
-    INSERT INTO errors
+    INSERT INTO issues
         (display_id, student_message, instructor_message, course_caused, course_data, system_data, authn_user_id,
         course_id, course_instance_id, assessment_id, user_id)
     VALUES
