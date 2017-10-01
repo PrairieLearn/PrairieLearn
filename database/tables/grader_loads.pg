@@ -1,0 +1,11 @@
+columns
+    average_jobs: double precision not null
+    date: timestamp with time zone not null default now()
+    id: bigint not null default nextval('grader_loads_id_seq'::regclass)
+    instance_id: text not null
+    max_jobs: double precision not null
+    queue_name: text not null
+
+indexes
+    grader_loads_pkey: PRIMARY KEY (id)
+    grader_loads_instance_id_key: UNIQUE (instance_id)
