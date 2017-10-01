@@ -13,17 +13,43 @@ const globalLogger = require('./lib/logger');
 const config = require('./lib/config');
 const queueReceiver = require('./lib/queueReceiver');
 const util = require('./lib/util');
+const load = require('./lib/load');
+const sqldb = require('./lib/sqldb');
 
+config.devMode = (process.env.NODE_ENV != 'production');
 
 async.series([
     (callback) => {
-        config.loadConfig((err) => {
-            if (ERR(err, callback)) {
-                globalLogger.error('Failed to load config; exiting process');
-                process.exit(1);
-            }
+        if (!config.reportLoad) return callback(null);
+        var pgConfig = {
+            host: config.postgresqlHost,
+            database: config.postgresqlDatabase,
+            user: config.postgresqlUser,
+            password: config.postgresqlPassword,
+            max: 2,
+            idleTimeoutMillis: 30000,
+        };
+        globalLogger.verbose('Connecting to database ' + pgConfig.postgresqlUser + '@' + pgConfig.host + ':' + pgConfig.database);
+        var idleErrorHandler = function(err) {
+            globalLogger.error('idle client error', err);
+        };
+        sqldb.init(pgConfig, idleErrorHandler, function(err) {
+            if (ERR(err, callback)) return;
+            globalLogger.verbose('Successfully connected to database');
             callback(null);
         });
+    },
+    (callback) => {
+        config.loadConfig((err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+    (callback) => {
+        if (!config.reportLoad) return callback(null);
+        const maxJobs = 1;
+        load.init(maxJobs, config.reportIntervalSec, config.instanceId);
+        callback(null);
     },
     () => {
         globalLogger.info('Initialization complete; beginning to process jobs');
@@ -34,12 +60,15 @@ async.series([
             });
         });
     }
-]);
-
+], (err) => {
+    globalLogger.error(String(err));
+    process.exit(1);
+});
 
 function handleMessage(messageBody, logger, done) {
     logger.info(`Grading job ${messageBody.jobId}!`);
     logger.info(messageBody);
+    load.startJob();
 
     async.auto({
         context: function(callback) {
@@ -64,6 +93,7 @@ function handleMessage(messageBody, logger, done) {
             callback(null);
         }]
     }, (err) => {
+        load.endJob();
         if (ERR(err, done)) return;
         done(null);
     });
