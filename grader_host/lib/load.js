@@ -1,21 +1,22 @@
 const logger = require('./logger');
 const sqldb = require('./sqldb');
+const config = require('./config');
 const sql = require('./sql-loader').loadSqlEquiv(__filename);
 
 var initialized = false;
-var currentJobs, maxJobs, reportIntervalSec, instanceId, lastEstimateTime, lastIncrementTime, integratedLoad;
+var currentJobs, maxJobs, lastEstimateTimeMS, lastIncrementTimeMS, integratedLoad;
 
 module.exports = {
-    init(newMaxJobs, newReportIntervalSec, newInstanceId) {
+    init(newMaxJobs) {
         maxJobs = newMaxJobs;
-        reportIntervalSec = newReportIntervalSec;
-        instanceId = newInstanceId;
-        lastEstimateTime = Date.now();
+        const nowMS = Date.now();
+        lastEstimateTimeMS = nowMS;
+        lastIncrementTimeMS = nowMS;
         integratedLoad = 0;
         currentJobs = 0;
         maxJobs = newMaxJobs;
         initialized = true;
-        setTimeout(this._reportLoad, config.reportIntervalSec * 1000);
+        this._reportLoad();
     },
 
     startJob() {
@@ -34,35 +35,35 @@ module.exports = {
 
     _getAndResetLoadEstimate() {
         this._addIntegratedLoad();
-        const now = Date.now();
-        const deltaSeconds = (now - lastEstimateTime) / 1000;
-        const loadEstimate = totalLoad / deltaSeconds;
+        const nowMS = Date.now();
+        const deltaSeconds = Math.max(1, nowMS - lastEstimateTimeMS) / 1000;
+        const loadEstimate = integratedLoad / deltaSeconds;
 
         // reset stats
-        lastEstimateTime = now;
-        lastIncrementTime = now;
+        lastEstimateTimeMS = nowMS;
+        lastIncrementTimeMS = nowMS;
         integratedLoad = 0;
 
         return loadEstimate;
     },
 
     _addIntegratedLoad() {
-        const now = Date.now();
-        const delta = (now - lastIncrementTime) / 1000;
+        const nowMS = Date.now();
+        const delta = Math.max(1, nowMS - lastIncrementTimeMS) / 1000;
         integratedLoad += delta * currentJobs;
-        lastIncrementTime = now;
+        lastIncrementTimeMS = nowMS;
     },
 
     _reportLoad() {
         var params = {
-            instance_id: instanceId,
+            instance_id: config.instanceId,
             queue_name: config.queueName,
             average_jobs: this._getAndResetLoadEstimate(),
             max_jobs: maxJobs,
         };
         sqldb.query(sql.insert_load, params, (err) => {
             if (err) logger.error(String(err));
-            setTimeout(this._reportLoad, config.reportIntervalSec * 1000);
+            setTimeout(this._reportLoad.bind(this), config.reportIntervalSec * 1000);
         });
     },
 };

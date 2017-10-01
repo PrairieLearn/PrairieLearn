@@ -6,7 +6,7 @@ const Docker = require('dockerode');
 const AWS = require('aws-sdk');
 const { exec } = require('child_process');
 const path = require('path');
-const fetch = require('node-fetch');
+const request = require('request');
 const byline = require('byline');
 
 const globalLogger = require('./lib/logger');
@@ -16,9 +16,13 @@ const util = require('./lib/util');
 const load = require('./lib/load');
 const sqldb = require('./lib/sqldb');
 
-config.devMode = (process.env.NODE_ENV != 'production');
-
 async.series([
+    (callback) => {
+        config.loadConfig((err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
     (callback) => {
         if (!config.reportLoad) return callback(null);
         var pgConfig = {
@@ -29,26 +33,21 @@ async.series([
             max: 2,
             idleTimeoutMillis: 30000,
         };
-        globalLogger.verbose('Connecting to database ' + pgConfig.postgresqlUser + '@' + pgConfig.host + ':' + pgConfig.database);
+        console.log('pgConfig', pgConfig);
+        globalLogger.info('Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database);
         var idleErrorHandler = function(err) {
             globalLogger.error('idle client error', err);
         };
         sqldb.init(pgConfig, idleErrorHandler, function(err) {
             if (ERR(err, callback)) return;
-            globalLogger.verbose('Successfully connected to database');
-            callback(null);
-        });
-    },
-    (callback) => {
-        config.loadConfig((err) => {
-            if (ERR(err, callback)) return;
+            globalLogger.info('Successfully connected to database');
             callback(null);
         });
     },
     (callback) => {
         if (!config.reportLoad) return callback(null);
         const maxJobs = 1;
-        load.init(maxJobs, config.reportIntervalSec, config.instanceId);
+        load.init(maxJobs);
         callback(null);
     },
     () => {
@@ -381,28 +380,20 @@ function uploadResults(info, callback) {
             });
         },
         (callback) => {
+            if (!webhookUrl) return callback(null);
             // Let's send the results back to PrairieLearn now; the archive will
             // be uploaded later
-            if (webhookUrl) {
-                logger.info('Pinging webhook with results');
-                const webhookResults = {
-                    data: results,
-                    event: 'grading_result',
-                    job_id: jobId
-                };
-                fetch(webhookUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-csrf-token': csrfToken
-                    },
-                    body: JSON.stringify(webhookResults)
-                }).then(() => callback(null)).catch((err) => {
-                    return ERR(err, callback);
-                });
-            } else {
+            logger.info('Pinging webhook with results');
+            const webhookResults = {
+                data: results,
+                event: 'grading_result',
+                job_id: jobId,
+                __csrf_token: csrfToken,
+            };
+            request.post({method: 'POST', url: webhookUrl, json: true, body: webhookResults}, function (err, response, body) {
+                if (ERR(err, callback)) return;
                 callback(null);
-            }
+            });
         }
     ], (err) => {
         if (ERR(err, callback)) return;
