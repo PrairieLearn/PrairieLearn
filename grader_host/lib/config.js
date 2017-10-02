@@ -56,6 +56,10 @@ config.loadConfig = function(callback) {
             callback(null);
         },
         (callback) => {
+            config.tmpDir = process.env.TMP_DIR; // may be undefined
+            callback(null);
+        },
+        (callback) => {
             config.queueName = process.env.QUEUE_NAME || 'grading';
             if (process.env.QUEUE_URL) {
                 logger.info(`Using queue url from QUEUE_URL environment variable: ${process.env.QUEUE_URL}`);

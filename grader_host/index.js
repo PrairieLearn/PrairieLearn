@@ -1,4 +1,5 @@
 const ERR = require('async-stacktrace');
+const _ = require('lodash');
 const fs = require('fs-extra');
 const async = require('async');
 const tmp = require('tmp');
@@ -33,7 +34,6 @@ async.series([
             max: 2,
             idleTimeoutMillis: 30000,
         };
-        console.log('pgConfig', pgConfig);
         globalLogger.info('Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database);
         var idleErrorHandler = function(err) {
             globalLogger.error('idle client error', err);
@@ -158,12 +158,13 @@ function initFiles(info, callback) {
     } = info;
 
     let jobArchiveFile, jobArchiveFileCleanup;
+    const tmpOptions = config.tmpDir ? {dir: config.tmpDir} : {};
     const files = {};
 
     async.series([
         (callback) => {
             logger.info('Setting up temp file');
-            tmp.file((err, file, fd, cleanup) => {
+            tmp.file(tmpOptions, (err, file, fd, cleanup) => {
                 if (ERR(err, callback)) return;
                 jobArchiveFile = file;
                 jobArchiveFileCleanup = cleanup;
@@ -172,10 +173,10 @@ function initFiles(info, callback) {
         },
         (callback) => {
             logger.info('Setting up temp dir');
-            tmp.dir({
+            tmp.dir(_.defaults({
                 prefix: `job_${jobId}_`,
-                unsafeCleanup: true
-            }, (err, dir, cleanup) => {
+                unsafeCleanup: true,
+            }, tmpOptions), (err, dir, cleanup) => {
                 if (ERR(err, callback)) return;
                 files.tempDir = dir;
                 files.tempDirCleanup = cleanup;
