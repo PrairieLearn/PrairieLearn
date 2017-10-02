@@ -1,52 +1,98 @@
 var ERR = require('async-stacktrace');
 var async = require('async');
+var _ = require('lodash');
 
 var logger = require('../lib/logger');
 var config = require('../lib/config');
 
-var autoFinishExams = require('./autoFinishExams');
-var errorAbandonedJobs = require('./errorAbandonedJobs');
-var sendExternalGraderStats = require('./sendExternalGraderStats');
-
 module.exports = {
-    init: function(callback) {
-        var that = module.exports;
-        logger.verbose('initializing cron', {cronIntervalMS: config.cronIntervalMS});
-        that.runJobs();
+    init(callback) {
+        const jobs = [
+            {
+                name: 'autoFinishExams',
+                module: require('./autoFinishExams'),
+                intervalSec: config.cronIntervalAutoFinishExamsSec,
+            },
+            {
+                name: 'errorAbandonedJobs',
+                module: require('./errorAbandonedJobs'),
+                intervalSec: config.cronIntervalErrorAbandonedJobsSec,
+            },
+            {
+                name: 'sendExternalGraderStats',
+                module: require('./sendExternalGraderStats'),
+                intervalSec: 'daily',
+            },
+            {
+                name: 'externalGraderLoad',
+                module: require('./externalGraderLoad'),
+                intervalSec: config.cronIntervalExternalGraderLoadSec,
+            },
+        ];
+        logger.verbose('initializing cron', _.map(jobs, j => _.pick(j, ['name', 'intervalSec'])));
+
+        const jobsByPeriodSec = _.groupBy(jobs, 'intervalSec');
+        _.forEach(jobsByPeriodSec, (jobsList, intervalSec) => {
+            if (intervalSec == 'daily') {
+                this.queueDailyJobs(jobsList);
+            } else {
+                this.queueJobs(jobsList, intervalSec);
+            }
+        });
         callback(null);
     },
 
-    runJobs: function() {
-        var that = module.exports;
-        logger.verbose('cron jobs starting');
-        async.eachSeries([
-            ['autoFinishExams', autoFinishExams],
-            ['errorAbandonedJobs', errorAbandonedJobs],
-            ['sendExternalGraderStats', sendExternalGraderStats]
-        ], function(item, callback) {
-            var title = item[0];
-            var cronModule = item[1];
-            if (typeof cronModule.shouldRun === 'function') {
-                if (!cronModule.shouldRun(Date.now(), config.cronIntervalMS)) {
-                    return callback(null);
-                }
-            }
+    queueJobs(jobsList, intervalSec) {
+        const that = this;
+        function queueRun() {
+            that.runJobs(jobsList, () => {
+                setTimeout(queueRun, intervalSec * 1000);
+            });
+        }
+        setTimeout(queueRun, intervalSec * 1000);
+    },
 
+    queueDailyJobs(jobsList) {
+        const that = this;
+        function timeToNextMS() {
+            const now = new Date();
+            const midnight = (new Date(now)).setHours(0,0,0,0);
+            const sinceMidnightMS = now - midnight;
+            const cronDailyMS = config.cronDailySec * 1000;
+            const dayMS = 24 * 60 * 60 * 1000;
+            var tMS = (cronDailyMS - sinceMidnightMS + dayMS) % dayMS;
+            if (tMS < 0) {
+                logger.error('negative tMS', {now, midnight, sinceMidnightMS, cronDailyMS, dayMS, tMS});
+                tMS = 24 * 60 * 60 * 1000;
+            }
+            return tMS;
+        }
+        function queueRun() {
+            that.runJobs(jobsList, () => {
+                setTimeout(queueRun, timeToNextMS());
+            });
+        }
+        setTimeout(queueRun, timeToNextMS());
+    },
+
+    runJobs(jobsList, callback) {
+        logger.verbose('cron jobs starting');
+        async.eachSeries(jobsList, (job, callback) => {
             var startTime = new Date();
-            cronModule.run(function(err) {
+            job.module.run((err) => {
                 var endTime = new Date();
                 var elapsedTimeMS = endTime - startTime;
-                if (ERR(err, function() {})) {
-                    logger.error('cron: ' + title + ' failure, duration: ' + elapsedTimeMS + ' ms',
+                if (ERR(err, () => {})) {
+                    logger.error('cron: ' + job.name + ' failure, duration: ' + elapsedTimeMS + ' ms',
                                  {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
                 } else {
-                    logger.verbose('cron: ' + title + ' success, duration: ' + elapsedTimeMS + ' ms');
+                    logger.verbose('cron: ' + job.name + ' success, duration: ' + elapsedTimeMS + ' ms');
                 }
                 callback(null); // don't return error as we want to do all cron jobs even if one fails
             });
-        }, function() {
+        }, () => {
             logger.verbose('cron jobs finished');
-            setTimeout(that.runJobs, config.cronIntervalMS);
+            callback(null);
         });
     },
 };
