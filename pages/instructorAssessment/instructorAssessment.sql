@@ -11,10 +11,11 @@ WITH issue_count AS (
         AND i.course_caused
         AND i.open
     GROUP BY q.id
-), question_scores AS (
+),
+question_scores AS (
     SELECT
         aq.question_id,
-        avg(aq.mean_score) AS question_score
+        avg(aq.mean_question_score) AS question_score
     FROM
         assessment_questions AS aq
     GROUP BY
@@ -33,7 +34,7 @@ SELECT
     (lag(z.id) OVER (PARTITION BY z.id ORDER BY aq.number) IS NULL) AS start_new_zone,
     (lag(ag.id) OVER (PARTITION BY ag.id ORDER BY aq.number) IS NULL) AS start_new_alternative_group,
     assessments_format_for_question(q.id,ci.id,a.id) AS other_assessments,
-    coalesce(ic.open_issue_count, 0) AS open_issue_count
+    coalesce(ic.open_issue_count, 0) AS open_issue_count,
     question_scores.question_score AS avg_question_score_perc
 FROM
     assessment_questions AS aq

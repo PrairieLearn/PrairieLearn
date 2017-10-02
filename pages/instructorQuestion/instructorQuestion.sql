@@ -3,6 +3,7 @@ SELECT
     aset.name || ' ' || a.number || ': ' || title AS title,
     ci.short_name AS course_title,
     a.id AS assessment_id,
+    a.type AS type,
     aset.color,
     (aset.abbreviation || a.number) as label,
     admin_assessment_question_number(aq.id) as number,

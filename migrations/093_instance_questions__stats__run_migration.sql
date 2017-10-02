@@ -1,18 +1,59 @@
+CREATE OR REPLACE FUNCTION migration_064_multiply(IN x DOUBLE PRECISION[], IN y DOUBLE PRECISION[], OUT result DOUBLE PRECISION[])
+AS $$
+BEGIN
+    SELECT array_agg(xi * yi) INTO result FROM unnest(x, y) as tmp (xi,yi);
+END;
+$$ LANGUAGE plpgsql IMMUTABLE;
+
 CREATE OR REPLACE FUNCTION
-    instance_questions_calculate_stats(
+    migration_064_calculate_incremental_submission_score_array(
+        submission_score_array double precision[]
+    ) returns double precision[]
+AS $$
+DECLARE
+    incremental_submission_score_array double precision[];
+    array_index integer := 1;
+    max_submission_score double precision;
+    submission_score double precision;
+BEGIN
+    LOOP
+        submission_score := submission_score_array[array_index];
+
+        IF (array_index = 1) THEN
+            incremental_submission_score_array[1] = submission_score;
+            max_submission_score := submission_score;
+        ELSE
+
+            IF (submission_score > max_submission_score) THEN
+                incremental_submission_score_array[array_index] := submission_score - max_submission_score;
+                max_submission_score := submission_score;
+            ELSE
+                incremental_submission_score_array[array_index] := 0;
+            END IF;
+        END IF;
+
+        EXIT WHEN array_index = array_length(submission_score_array, 1);
+        array_index := array_index + 1;
+    END LOOP;
+
+    RETURN incremental_submission_score_array;
+END;
+$$ LANGUAGE plpgsql VOLATILE;
+
+CREATE OR REPLACE FUNCTION
+    migration_064_calculate_stats_for_instance_question(
         instance_question_id_var bigint
     ) RETURNS VOID
 AS $$
 BEGIN
     WITH more_info AS (
         SELECT
-            aq.assessment_id,
-            aq.question_id,
-            a.course_instance_id,
-            aq.id AS assessment_question_id
+            iq.id AS instance_question_id,
+            a.course_instance_id
         FROM
             instance_questions AS iq
-            JOIN assessments AS a ON (a.id = iq.assessment_id)
+            JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+            JOIN assessments AS a ON (a.id = ai.assessment_id)
         WHERE
             iq.id = instance_question_id_var
     ),
@@ -32,8 +73,9 @@ BEGIN
             instance_questions AS iq
             JOIN assessment_instances AS ai ON (iq.assessment_instance_id = ai.id)
             JOIN user_roles ON (user_roles.user_id = ai.user_id)
+            JOIN more_info ON TRUE
         WHERE
-            iq.id = instance_question_id_var
+            iq.id = more_info.instance_question_id
             AND user_roles.role = 'Student'
     ),
     relevant_submissions AS (
@@ -76,8 +118,8 @@ BEGIN
             attempts.max_submission_score AS max_submission_score,
             attempts.average_submission_score AS average_submission_score,
             attempts.submission_scores AS submission_score_array,
-            calculate_incremental_submission_score_array(attempts.submission_scores) AS incremental_submission_score_array,
-            dot(calculate_incremental_submission_score_array(attempts.submission_scores), iq.points_list) AS incremental_submission_points_array
+            migration_064_calculate_incremental_submission_score_array(attempts.submission_scores) AS incremental_submission_score_array,
+            migration_064_multiply(migration_064_calculate_incremental_submission_score_array(attempts.submission_scores), iq.points_list) AS incremental_submission_points_array
         FROM
             relevant_instance_questions AS iq
             JOIN attempts ON (iq.id = attempts.instance_question_id)
@@ -101,3 +143,10 @@ BEGIN
         iq.id = iq_stats.instance_question_id;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
+
+SELECT migration_064_calculate_stats_for_instance_question(iq.id)
+FROM instance_questions AS iq;
+
+DROP FUNCTION migration_064_multiply(DOUBLE PRECISION[], DOUBLE PRECISION[]);
+DROP FUNCTION migration_064_calculate_incremental_submission_score_array(DOUBLE PRECISION[]);
+DROP FUNCTION migration_064_calculate_stats_for_instance_question(BIGINT);
