@@ -2,14 +2,32 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
+var csvStringify = require('csv').stringify;
 
 var async = require('async');
 var error = require('../../lib/error');
 var question = require('../../lib/question');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
+var debug = require('debug')('prairielearn:instructorQuestion');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
+
+var sanitizeName = function(name) {
+    return name.replace(/[^a-zA-Z0-9]/g, '_');
+};
+
+var filenames = function(locals) {
+    var prefix = sanitizeName(locals.course.short_name)
+        + '_'
+        + sanitizeName(locals.course_instance.short_name)
+        + '_'
+        + sanitizeName(locals.question.qid + '')
+        + '_';
+    return {
+        assessmentStatsCsvFilename:       prefix + 'assessment_stats.csv',
+    };
+};
 
 function processSubmission(req, res, callback) {
     let variant_id, submitted_answer;
@@ -113,6 +131,11 @@ router.post('/', function(req, res, next) {
 
 router.get('/', function(req, res, next) {
     async.series([
+        function(callback) {
+            debug('set filenames');
+            _.assign(res.locals, filenames(res.locals));
+            callback(null);
+        },
         (callback) => {
             sqldb.query(sql.assessment_question_stats, {question_id: res.locals.question.id}, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -129,6 +152,20 @@ router.get('/', function(req, res, next) {
             // res.locals.question_attempts_before_giving_up_histogram = res.locals.result.question_attempts_before_giving_up_histogram;
             // res.locals.question_attempts_histogram_hw = res.locals.result.question_attempts_histogram_hw;
             // res.locals.question_attempts_before_giving_up_histogram_hw = res.locals.result.question_attempts_before_giving_up_histogram_hw;
+            callback(null);
+        },
+        function(callback) {
+            res.locals.ifNotNullThen = function (x, y) {
+                if (x !== null) {
+                    return y(x);
+                }
+            };
+            res.locals.parseFloatOne = function(x) {
+                return parseFloat(x).toFixed(1);
+            };
+            res.locals.parseFloatTwo = function(x) {
+                return parseFloat(x).toFixed(2);
+            };
             callback(null);
         },
         (callback) => {
@@ -159,4 +196,66 @@ router.get('/', function(req, res, next) {
     });
 });
 
+router.get('/:filename', function(req, res, next) {
+    _.assign(res.locals, filenames(res.locals));
+
+    if (req.params.filename === res.locals.assessmentStatsCsvFilename) {
+        sqldb.query(sql.assessment_question_stats, {question_id: res.locals.question.id}, function(err, result) {
+            if (ERR(err, next)) return;
+            var questionStatsList = result.rows;
+            var csvData = [];
+            var csvHeaders = ['Course instance', 'Assessment'];
+            Object.keys(res.locals.stat_descriptions).forEach(key => {
+                csvHeaders.push(res.locals.stat_descriptions[key].non_html_title);
+            });
+
+            csvData.push(csvHeaders);
+
+            _(questionStatsList).each(function(questionStats) {
+                var questionStatsData = [];
+                questionStatsData.push(questionStats.course_title);
+                questionStatsData.push(questionStats.label);
+                questionStatsData.push(questionStats.mean_question_score);
+                questionStatsData.push(questionStats.question_score_variance);
+                questionStatsData.push(questionStats.discrimination);
+                questionStatsData.push(questionStats.some_submission_perc);
+                questionStatsData.push(questionStats.some_perfect_submission_perc);
+                questionStatsData.push(questionStats.some_nonzero_submission_perc);
+                questionStatsData.push(questionStats.average_first_submission_score);
+                questionStatsData.push(questionStats.first_submission_score_variance);
+                questionStatsData.push(questionStats.first_submission_score_hist);
+                questionStatsData.push(questionStats.average_last_submission_score);
+                questionStatsData.push(questionStats.last_submission_score_variance);
+                questionStatsData.push(questionStats.last_submission_score_hist);
+                questionStatsData.push(questionStats.average_max_submission_score);
+                questionStatsData.push(questionStats.max_submission_score_variance);
+                questionStatsData.push(questionStats.max_submission_score_hist);
+                questionStatsData.push(questionStats.average_average_submission_score);
+                questionStatsData.push(questionStats.average_submission_score_variance);
+                questionStatsData.push(questionStats.average_submission_score_hist);
+                questionStatsData.push(questionStats.submission_score_array_averages);
+                questionStatsData.push(questionStats.incremental_submission_score_array_averages);
+                questionStatsData.push(questionStats.incremental_submission_points_array_averages);
+                questionStatsData.push(questionStats.average_number_submissions);
+                questionStatsData.push(questionStats.number_submissions_variance);
+                questionStatsData.push(questionStats.number_submissions_hist);
+                questionStatsData.push(questionStats.quintile_question_scores);
+
+                _(questionStats.quintile_scores).each(function(perc) {
+                    questionStatsData.push(perc);
+                });
+
+                csvData.push(questionStatsData);
+            });
+
+            csvStringify(csvData, function(err, csv) {
+                if (ERR(err, next)) return;
+                res.attachment(req.params.filename);
+                res.send(csv);
+            });
+        });
+    } else {
+        next(new Error('Unknown filename: ' + req.params.filename));
+    }
+});
 module.exports = router;

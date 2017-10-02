@@ -66,12 +66,6 @@ BEGIN
         GROUP BY
             u.user_id
     ),
-    number_attempts AS (
-        SELECT
-            avg(iq.number_attempts) AS average_number_attempts
-        FROM
-            relevant_instance_questions AS iq
-    ),
     question_scores_by_user AS (
         SELECT
             ai.user_id,
@@ -116,84 +110,97 @@ BEGIN
         FROM
             quintile_scores
     ),
-    aq_stats1 AS (
+    instance_question_stats_by_user AS (
         SELECT
-            greatest(0, least(100, avg(question_scores_by_user.user_score_perc))) AS mean_score_per_question,
-            greatest(0, least(100, corr(question_scores_by_user.user_score_perc, assessment_scores_by_user.user_score_perc) * 100.0)) as discrimination
+            ai.user_id,
+            avg(iq.score_perc) AS user_score_perc,
+            100 * count(iq.id) FILTER (WHERE iq.some_submission = TRUE) / count(iq.id) AS some_submission_perc,
+            100 * count(iq.id) FILTER (WHERE iq.some_perfect_submission = TRUE) / count(iq.id) AS some_perfect_submission_perc,
+            100 * count(iq.id) FILTER (WHERE iq.some_nonzero_submission = TRUE) / count(iq.id) AS some_nonzero_submission_perc,
+            avg(iq.first_submission_score) AS first_submission_score,
+            avg(iq.last_submission_score) AS last_submission_score,
+            avg(iq.max_submission_score) AS max_submission_score,
+            avg(iq.average_submission_score) AS average_submission_score,
+            array_avg(iq.submission_score_array) AS submission_score_array,
+            array_avg(iq.incremental_submission_score_array) AS incremental_submission_score_array,
+            array_avg(iq.incremental_submission_points_array) AS incremental_submission_points_array,
+            avg(iq.number_attempts) AS number_submissions
+        FROM
+            relevant_instance_questions AS iq
+            JOIN assessment_instances AS ai ON (iq.assessment_instance_id = ai.id)
+        GROUP BY
+            ai.user_id
+    ),
+    aq_stats AS (
+        SELECT
+            greatest(0, least(100, avg(iq_stats_by_user.user_score_perc))) AS mean_question_score,
+            sqrt(var_pop(iq_stats_by_user.user_score_perc)) AS question_score_variance,
+            greatest(0, least(100, corr(question_scores_by_user.user_score_perc, assessment_scores_by_user.user_score_perc) * 100.0)) as discrimination,
+            avg(iq_stats_by_user.some_submission_perc) AS some_submission_perc,
+            avg(iq_stats_by_user.some_perfect_submission_perc) AS some_perfect_submission_perc,
+            avg(iq_stats_by_user.some_nonzero_submission_perc) AS some_nonzero_submission_perc,
+            avg(iq_stats_by_user.first_submission_score) AS average_first_submission_score,
+            sqrt(var_pop(iq_stats_by_user.first_submission_score)) AS first_submission_score_variance,
+            histogram(iq_stats_by_user.first_submission_score, 0, 1, 10) AS first_submission_score_hist,
+            avg(iq_stats_by_user.last_submission_score) AS average_last_submission_score,
+            sqrt(var_pop(iq_stats_by_user.last_submission_score)) AS last_submission_score_variance,
+            histogram(iq_stats_by_user.last_submission_score, 0, 1, 10) AS last_submission_score_hist,
+            avg(iq_stats_by_user.max_submission_score) AS average_max_submission_score,
+            sqrt(var_pop(iq_stats_by_user.max_submission_score)) AS max_submission_score_variance,
+            histogram(iq_stats_by_user.max_submission_score, 0, 1, 10) AS max_submission_score_hist,
+            avg(iq_stats_by_user.average_submission_score) AS average_average_submission_score,
+            sqrt(var_pop(iq_stats_by_user.average_submission_score)) AS average_submission_score_variance,
+            histogram(iq_stats_by_user.average_submission_score, 0, 1, 10) AS average_submission_score_hist,
+            array_avg(iq_stats_by_user.submission_score_array) AS submission_score_array_averages,
+            array_var(iq_stats_by_user.submission_score_array) AS submission_score_array_variances,
+            array_avg(iq_stats_by_user.incremental_submission_score_array) AS incremental_submission_score_array_averages,
+            array_var(iq_stats_by_user.incremental_submission_score_array) AS incremental_submission_score_array_variances,
+            array_avg(iq_stats_by_user.incremental_submission_points_array) AS incremental_submission_points_array_averages,
+            array_var(iq_stats_by_user.incremental_submission_points_array) AS incremental_submission_points_array_variances,
+            avg(iq_stats_by_user.number_submissions) AS average_number_submissions,
+            var_pop(iq_stats_by_user.number_submissions) AS number_submissions_variance,
+            histogram(iq_stats_by_user.number_submissions, 0, 10, 10) AS number_submissions_hist
         FROM
             relevant_users AS u
             JOIN question_scores_by_user ON (question_scores_by_user.user_id = u.user_id)
             JOIN assessment_scores_by_user ON (assessment_scores_by_user.user_id = u.user_id)
-    ),
-    aq_stats2 AS (
-        SELECT
-            aq.id AS assessment_question_id,
-            100 * avg(iq.some_correct_submission::int) AS perc_some_correct_submission,
-            100 * avg(iq.first_attempt_correct::int) AS perc_correct_on_first_attempt,
-            100 * avg(iq.last_attempt_correct::int) AS perc_correct_on_last_attempt,
-            100 * avg(iq.some_submission::int) AS perc_question_attempted,
-            avg(iq.average_success_rate) AS average_success_rate,
-            histogram(iq.average_success_rate, 0, 100, 10) AS average_success_rate_hist,
-            avg(iq.length_of_incorrect_streak)
-                FILTER (WHERE iq.some_correct_submission = TRUE)
-                AS average_length_of_incorrect_streak_over_students_with_some_correct_submission,
-            histogram(iq.length_of_incorrect_streak, 0, 10, 10)
-                FILTER (WHERE iq.some_correct_submission = TRUE)
-                AS length_of_incorrect_streak_hist_over_students_with_some_correct_submission,
-            avg(iq.length_of_incorrect_streak)
-                FILTER (WHERE iq.some_correct_submission = FALSE)
-                AS average_length_of_incorrect_streak_over_students_with_no_correct_submission,
-            histogram(iq.length_of_incorrect_streak, 0, 10, 10)
-                FILTER (WHERE iq.some_correct_submission = FALSE)
-                AS length_of_incorrect_streak_hist_over_students_with_no_correct_submission
-
-        FROM
-            relevant_instance_questions AS iq
-            JOIN assessment_questions AS aq ON iq.assessment_question_id = aq.id
-        GROUP BY
-            aq.id
-    ),
-    num_attempts_histogram AS (
-        SELECT
-            iq.assessment_question_id,
-            histogram(iq.number_attempts, 1, 10, 10) as num_attempts_histogram
-        FROM
-            relevant_instance_questions AS iq
-        WHERE
-            iq.number_attempts != 0
-        GROUP BY
-            iq.assessment_question_id
-    ),
-    all_stats AS (
-        SELECT
-            *
-        FROM
-            aq_stats2
-            JOIN aq_stats1 ON TRUE
-            JOIN quintile_scores_as_array ON TRUE
-            JOIN num_attempts_histogram ON TRUE
-            JOIN number_attempts ON TRUE
+            JOIN instance_question_stats_by_user AS iq_stats_by_user ON (iq_stats_by_user.user_id = u.user_id)
     )
-    UPDATE assessment_questions AS aq
+    UPDATE
+        assessment_questions AS aq
     SET
-        mean_score = all_stats.mean_score_per_question,
-        discrimination = all_stats.discrimination,
-        average_number_attempts = all_stats.average_number_attempts,
-        quintile_scores = all_stats.quintile_scores,
-        some_correct_submission_perc = all_stats.perc_some_correct_submission,
-        first_attempt_correct_perc = all_stats.perc_correct_on_first_attempt,
-        last_attempt_correct_perc = all_stats.perc_correct_on_last_attempt,
-        some_submission_perc = all_stats.perc_question_attempted,
-        average_of_average_success_rates = all_stats.average_success_rate,
-        average_success_rate_hist = all_stats.average_success_rate_hist,
-        average_length_of_incorrect_streak_with_some_correct_submission = all_stats.average_length_of_incorrect_streak_over_students_with_some_correct_submission,
-        length_of_incorrect_streak_hist_with_some_correct_submission = all_stats.length_of_incorrect_streak_hist_over_students_with_some_correct_submission,
-        average_length_of_incorrect_streak_with_no_correct_submission = all_stats.average_length_of_incorrect_streak_over_students_with_no_correct_submission,
-        length_of_incorrect_streak_hist_with_no_correct_submission = all_stats.length_of_incorrect_streak_hist_over_students_with_no_correct_submission,
-        num_attempts_hist = all_stats.num_attempts_histogram
+        mean_question_score = aq_stats.mean_question_score,
+        question_score_variance = aq_stats.question_score_variance,
+        discrimination = aq_stats.discrimination,
+        quintile_question_scores = quintile_scores_as_array.quintile_scores,
+        some_submission_perc = aq_stats.some_submission_perc,
+        some_perfect_submission_perc = aq_stats.some_perfect_submission_perc,
+        some_nonzero_submission_perc = aq_stats.some_nonzero_submission_perc,
+        average_first_submission_score = aq_stats.average_first_submission_score,
+        first_submission_score_variance = aq_stats.first_submission_score_variance,
+        first_submission_score_hist = aq_stats.first_submission_score_hist,
+        average_last_submission_score = aq_stats.average_last_submission_score,
+        last_submission_score_variance = aq_stats.last_submission_score_variance,
+        last_submission_score_hist = aq_stats.last_submission_score_hist,
+        average_max_submission_score = aq_stats.average_max_submission_score,
+        max_submission_score_variance = aq_stats.max_submission_score_variance,
+        max_submission_score_hist = aq_stats.max_submission_score_hist,
+        average_average_submission_score = aq_stats.average_average_submission_score,
+        average_submission_score_variance = aq_stats.average_submission_score_variance,
+        average_submission_score_hist = aq_stats.average_submission_score_hist,
+        submission_score_array_averages = aq_stats.submission_score_array_averages,
+        submission_score_array_variances = aq_stats.submission_score_array_variances,
+        incremental_submission_score_array_averages = aq_stats.incremental_submission_score_array_averages,
+        incremental_submission_score_array_variances = aq_stats.incremental_submission_score_array_variances,
+        incremental_submission_points_array_averages = aq_stats.incremental_submission_points_array_averages,
+        incremental_submission_points_array_variances = aq_stats.incremental_submission_points_array_variances,
+        average_number_submissions = aq_stats.average_number_submissions,
+        number_submissions_variance = aq_stats.number_submissions_variance,
+        number_submissions_hist = aq_stats.number_submissions_hist
     FROM
-        all_stats
+        aq_stats
         JOIN more_info ON TRUE
+        JOIN quintile_scores_as_array ON TRUE
     WHERE
         aq.id = more_info.assessment_question_id;
 
