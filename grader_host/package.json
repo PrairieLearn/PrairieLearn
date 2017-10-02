@@ -26,6 +26,7 @@
     "dockerode": "^2.5.1",
     "fs-extra": "^4.0.2",
     "pg": "6.1.x",
+    "lodash": "4.17.x",
     "request": "2.81.x",
     "tmp": "0.0.33",
     "winston": "^2.3.1",
