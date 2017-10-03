@@ -62,6 +62,8 @@
   * Add maximum statistics for grading jobs (Matt West).
 
   * Add index on `grading_jobs.date` to speed up statistics (Matt West).
+  
+  * Add `to_json()` and `from_json()` to `prairielearn.py` to help JSON serialize standard types (Tim Bretl).
 
   * Split installing documentation into separate method sections (Matt West).
 
