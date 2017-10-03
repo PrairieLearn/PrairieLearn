@@ -79,7 +79,7 @@ def render(element_html, element_index, data):
         with open('pl_number_input.mustache', 'r') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'answer':
-        a_tru = data['correct_answers'].get(name, None)
+        a_tru = pl.from_json(data['correct_answers'].get(name, None))
         if a_tru is not None:
 
             # Get comparison parameters
@@ -143,7 +143,7 @@ def grade(element_html, element_index, data):
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
-    a_tru = data['correct_answers'].get(name, None)
+    a_tru = pl.from_json(data['correct_answers'].get(name, None))
     if a_tru is None:
         return data
 
@@ -187,7 +187,7 @@ def test(element_html, element_index, data):
 
     # FIXME: randomize tests
 
-    data['raw_submitted_answers'][name] = '%f' % data['correct_answers'][name]
+    data['raw_submitted_answers'][name] = '%f' % pl.from_json(data['correct_answers'][name])
     data['partial_scores'][name] = {'score': 1, 'weight': weight}
 
     return data

@@ -73,7 +73,7 @@ def render(element_html, element_index, data):
             html = chevron.render(f, html_params).strip()
 
     elif data['panel'] == 'answer':
-        a_tru = data['correct_answers'].get(name, None)
+        a_tru = pl.from_json(data['correct_answers'].get(name, None))
         if a_tru is not None:
             if isinstance(a_tru, str):
                 a_tru = convert_string_to_sympy(a_tru, variables)
@@ -128,7 +128,7 @@ def grade(element_html, element_index, data):
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
-    a_tru = data['correct_answers'].get(name, None)
+    a_tru = pl.from_json(data['correct_answers'].get(name, None))
     if a_tru is None:
         return data
 
@@ -162,10 +162,10 @@ def test(element_html, element_index, data):
 
     result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
     if result == 'correct':
-        data['raw_submitted_answers'][name] = data['correct_answers'][name]
+        data['raw_submitted_answers'][name] = str(pl.from_json(data['correct_answers'][name]))
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
     elif result == 'incorrect':
-        data['raw_submitted_answers'][name] = data['correct_answers'][name] + ' + {:d}'.format(random.randint(1, 100))
+        data['raw_submitted_answers'][name] = str(pl.from_json(data['correct_answers'][name])) + ' + {:d}'.format(random.randint(1, 100))
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
     elif result == 'invalid':
         if random.choice([True, False]):

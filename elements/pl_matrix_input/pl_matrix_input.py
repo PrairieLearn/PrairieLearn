@@ -64,7 +64,7 @@ def render(element_html, element_index, data):
 
     elif data['panel'] == 'answer':
         # Get true answer - do nothing if it does not exist
-        a_tru = data['correct_answers'].get(name, None)
+        a_tru = pl.from_json(data['correct_answers'].get(name, None))
         if a_tru is not None:
             a_tru = np.array(a_tru)
 
@@ -135,7 +135,7 @@ def grade(element_html, element_index, data):
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
-    a_tru = data['correct_answers'].get(name, None)
+    a_tru = pl.from_json(data['correct_answers'].get(name, None))
     if a_tru is None:
         return data
     # Convert true answer to numpy
