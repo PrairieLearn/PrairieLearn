@@ -1,4 +1,10 @@
-function histmini(selector, data, options) {
+
+function toPercentages(data) {
+    const total = data.reduce((sum, value) => sum + value);
+    return data.map(val => val / total);
+}
+
+function histmini(selector, data, options, barChart) {
     options = options || {};
     _.defaults(options, {
         width: 100,
@@ -32,7 +38,7 @@ function histmini(selector, data, options) {
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    svg.selectAll(".bar")
+    var barConfiguration = svg.selectAll(".bar")
         .data(data)
         .enter().append("rect")
         .attr("class", "bar")
@@ -40,6 +46,11 @@ function histmini(selector, data, options) {
         .attr("y", function(d, i) {return y(d);})
         .attr("width", function(d, i) {return x.rangeBand();})
         .attr("height", function(d, i) {return y(0) - y(d);});
+
+    var colors = ["blue", "red", "green", "yellow", "orange", "purple"];
+    if (barChart) {
+        barConfiguration.style("fill", function(d, i) { return colors[i % 6]; });
+    }
 
     svg.append("line")
         .attr({x1: 0, y1: 0, x2: width, y2: 0, "class": "x axis"})

@@ -1,16 +1,31 @@
 columns
     alternative_group_id: bigint
     assessment_id: bigint not null
+    average_length_of_incorrect_streak_with_no_correct_submission: double precision
+    average_length_of_incorrect_streak_with_some_correct_submission: double precision
+    average_number_attempts: double precision
+    average_of_average_success_rates: double precision
+    average_success_rate_hist: integer[]
     deleted_at: timestamp with time zone
+    discrimination: double precision
+    first_attempt_correct_perc: double precision
     force_max_points: boolean default false
     id: bigint not null default nextval('assessment_questions_id_seq'::regclass)
     init_points: double precision
+    last_attempt_correct_perc: double precision
+    length_of_incorrect_streak_hist_with_no_correct_submission: integer[]
+    length_of_incorrect_streak_hist_with_some_correct_submission: integer[]
     max_points: double precision
+    mean_score: double precision
+    num_attempts_hist: integer[]
     number: integer
     number_in_alternative_group: integer
     points_list: double precision[]
     question_id: bigint not null
     tries_per_variant: integer default 1
+    quintile_scores: double precision[]
+    some_correct_submission_perc: double precision
+    some_submission_perc: double precision
 
 indexes
     assessment_questions_pkey: PRIMARY KEY (id)

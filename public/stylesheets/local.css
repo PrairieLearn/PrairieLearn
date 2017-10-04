@@ -156,6 +156,11 @@ line.axis {
     fill: #5bc0de;
 }
 
+.outlineBarRed {
+    stroke: #fff;
+    fill: #FF0000;
+}
+
 .boxBar {
     stroke: #000;
     fill: #5bc0de;
