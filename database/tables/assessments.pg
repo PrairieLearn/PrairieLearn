@@ -8,11 +8,13 @@ columns
     deleted_at: timestamp with time zone
     id: bigint not null default nextval('assessments_id_seq'::regclass)
     max_points: double precision
+    mode: enum_mode
     multiple_instance: boolean
     number: text
     obj: jsonb
     order_by: integer
     shuffle_questions: boolean default false
+    stats_last_updated: timestamp with time zone
     text: text
     tid: text
     title: text
