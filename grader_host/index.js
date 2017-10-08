@@ -391,7 +391,7 @@ function uploadResults(info, callback) {
                 job_id: jobId,
                 __csrf_token: csrfToken,
             };
-            request.post({method: 'POST', url: webhookUrl, json: true, body: webhookResults}, function (err, response, body) {
+            request.post({method: 'POST', url: webhookUrl, json: true, body: webhookResults}, function (err, _response, _body) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

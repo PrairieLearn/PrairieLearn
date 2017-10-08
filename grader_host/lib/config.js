@@ -40,7 +40,7 @@ config.loadConfig = function(callback) {
                 if (response.statusCode != 200) {
                     return callback(new Error('Bad status getting instance-id: ' + response.statusCode + '\n' + body));
                 }
-                match = /(i-[a-f0-9]+)/.exec(body);
+                const match = /(i-[a-f0-9]+)/.exec(body);
                 if (match == null) return callback(new Error('could not find instance-id in: ' + body));
                 config.instanceId = match[0];
                 callback(null);
