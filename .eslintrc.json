@@ -7,7 +7,7 @@
     "extends": "eslint:recommended",
     "rules": {
         "handle-callback-err": "error",
-        "quotes": ["error", "single"],
+        "quotes": ["error", "single", {"avoidEscape": true, "allowTemplateLiterals": true}],
         "semi": ["error", "always"],
         "no-unused-vars": ["error", {"args": "after-used", "argsIgnorePattern": "^_"}]
     }

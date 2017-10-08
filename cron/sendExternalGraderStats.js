@@ -1,5 +1,6 @@
 const ERR = require('async-stacktrace');
 
+const config = require('../lib/config');
 const logger = require('../lib/logger');
 const opsbot = require('../lib/opsbot');
 const sqldb = require('../lib/sqldb');
@@ -7,40 +8,33 @@ const sqldb = require('../lib/sqldb');
 module.exports = {};
 
 module.exports.run = (callback) => {
-    sqldb.call('grading_jobs_stats_day', [], function(err, result) {
+    if (!opsbot.canSendMessages()) return callback(null);
+    sqldb.callOneRow('grading_jobs_stats_day', [], function(err, result) {
         if (ERR(err, callback)) return;
         const {
             count,
-            average_duration,
-            total_duration
+            delta_total,
+            delta_submitted_at,
+            delta_started_at,
+            delta_finished_at,
+            delta_final,
         } = result.rows[0];
 
-        let msg = '_Autograder stats, past 24 hours_\n';
+        let msg = `_External grading stats, past 24 hours:_ *${config.externalGradingSqsQueueName}*\n`;
         msg +=    `Count: *${count}*\n`;
-        msg +=    `Average duration: *${Number(average_duration).toFixed(1)}s*\n`;
-        msg +=    `Total duration: *${Number(total_duration).toFixed(0)}s*\n`;
+        msg +=    `Average duration: *${Number(delta_total).toFixed(2)} s*\n`;
+        msg +=    `Composed of:\n`;
+        msg +=    `    Avg time to submit: *${Number(delta_submitted_at).toFixed(2)} s*\n`;
+        msg +=    `    Avg time to queue: *${Number(delta_started_at).toFixed(2)} s*\n`;
+        msg +=    `    Avg time to execute: *${Number(delta_finished_at).toFixed(2)} s*\n`;
+        msg +=    `    Avg time to report: *${Number(delta_final).toFixed(2)} s*\n`;
 
         opsbot.sendMessage(msg, (err, res, body) => {
             if (ERR(err, callback)) return;
             if (res.statusCode != 200) {
-                logger.error('Error posting external grading stats to slack [status code ${res.statusCode}]');
-                logger.error(body);
+                logger.error('Error posting external grading stats to slack [status code ${res.statusCode}]', body);
             }
             callback(null);
         });
     });
-};
-
-// Both given in ms
-module.exports.shouldRun = (currentTime, cronInterval) => {
-    // Only run if we have a place to send the message
-    if (!opsbot.canSendMessages()) {
-        return false;
-    }
-
-    // Corresponds to 2am UTC (9pm central)
-    const desiredTime = 3 * 60 * 60 * 1000;
-    // Computes time of day in milliseconds since midnight
-    const dayTime = currentTime % (24 * 60 * 60 * 1000);
-    return (desiredTime <= dayTime && dayTime <= desiredTime + cronInterval);
 };

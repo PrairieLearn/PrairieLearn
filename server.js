@@ -383,7 +383,7 @@ if (config.startServer) {
                 max: 10,
                 idleTimeoutMillis: 30000,
             };
-            logger.verbose('Connecting to database ' + pgConfig.postgresqlUser + '@' + pgConfig.host + ':' + pgConfig.database);
+            logger.verbose('Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database);
             var idleErrorHandler = function(err) {
                 logger.error('idle client error', err);
             };
