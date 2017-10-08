@@ -1,4 +1,5 @@
 const ERR = require('async-stacktrace');
+const _ = require('lodash');
 const fs = require('fs-extra');
 const async = require('async');
 const tmp = require('tmp');
@@ -6,24 +7,48 @@ const Docker = require('dockerode');
 const AWS = require('aws-sdk');
 const { exec } = require('child_process');
 const path = require('path');
-const fetch = require('node-fetch');
+const request = require('request');
 const byline = require('byline');
 
 const globalLogger = require('./lib/logger');
 const config = require('./lib/config');
 const queueReceiver = require('./lib/queueReceiver');
 const util = require('./lib/util');
-
+const load = require('./lib/load');
+const sqldb = require('./lib/sqldb');
 
 async.series([
     (callback) => {
         config.loadConfig((err) => {
-            if (ERR(err, callback)) {
-                globalLogger.error('Failed to load config; exiting process');
-                process.exit(1);
-            }
+            if (ERR(err, callback)) return;
             callback(null);
         });
+    },
+    (callback) => {
+        if (!config.reportLoad) return callback(null);
+        var pgConfig = {
+            host: config.postgresqlHost,
+            database: config.postgresqlDatabase,
+            user: config.postgresqlUser,
+            password: config.postgresqlPassword,
+            max: 2,
+            idleTimeoutMillis: 30000,
+        };
+        globalLogger.info('Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database);
+        var idleErrorHandler = function(err) {
+            globalLogger.error('idle client error', err);
+        };
+        sqldb.init(pgConfig, idleErrorHandler, function(err) {
+            if (ERR(err, callback)) return;
+            globalLogger.info('Successfully connected to database');
+            callback(null);
+        });
+    },
+    (callback) => {
+        if (!config.reportLoad) return callback(null);
+        const maxJobs = 1;
+        load.init(maxJobs);
+        callback(null);
     },
     () => {
         globalLogger.info('Initialization complete; beginning to process jobs');
@@ -34,12 +59,15 @@ async.series([
             });
         });
     }
-]);
-
+], (err) => {
+    globalLogger.error(String(err));
+    process.exit(1);
+});
 
 function handleMessage(messageBody, logger, done) {
     logger.info(`Grading job ${messageBody.jobId}!`);
     logger.info(messageBody);
+    load.startJob();
 
     async.auto({
         context: function(callback) {
@@ -64,6 +92,7 @@ function handleMessage(messageBody, logger, done) {
             callback(null);
         }]
     }, (err) => {
+        load.endJob();
         if (ERR(err, done)) return;
         done(null);
     });
@@ -129,12 +158,13 @@ function initFiles(info, callback) {
     } = info;
 
     let jobArchiveFile, jobArchiveFileCleanup;
+    const tmpOptions = config.tmpDir ? {dir: config.tmpDir} : {};
     const files = {};
 
     async.series([
         (callback) => {
             logger.info('Setting up temp file');
-            tmp.file((err, file, fd, cleanup) => {
+            tmp.file(tmpOptions, (err, file, fd, cleanup) => {
                 if (ERR(err, callback)) return;
                 jobArchiveFile = file;
                 jobArchiveFileCleanup = cleanup;
@@ -143,10 +173,10 @@ function initFiles(info, callback) {
         },
         (callback) => {
             logger.info('Setting up temp dir');
-            tmp.dir({
+            tmp.dir(_.defaults({
                 prefix: `job_${jobId}_`,
-                unsafeCleanup: true
-            }, (err, dir, cleanup) => {
+                unsafeCleanup: true,
+            }, tmpOptions), (err, dir, cleanup) => {
                 if (ERR(err, callback)) return;
                 files.tempDir = dir;
                 files.tempDirCleanup = cleanup;
@@ -351,28 +381,20 @@ function uploadResults(info, callback) {
             });
         },
         (callback) => {
+            if (!webhookUrl) return callback(null);
             // Let's send the results back to PrairieLearn now; the archive will
             // be uploaded later
-            if (webhookUrl) {
-                logger.info('Pinging webhook with results');
-                const webhookResults = {
-                    data: results,
-                    event: 'grading_result',
-                    job_id: jobId
-                };
-                fetch(webhookUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-csrf-token': csrfToken
-                    },
-                    body: JSON.stringify(webhookResults)
-                }).then(() => callback(null)).catch((err) => {
-                    return ERR(err, callback);
-                });
-            } else {
+            logger.info('Pinging webhook with results');
+            const webhookResults = {
+                data: results,
+                event: 'grading_result',
+                job_id: jobId,
+                __csrf_token: csrfToken,
+            };
+            request.post({method: 'POST', url: webhookUrl, json: true, body: webhookResults}, function (err, response, body) {
+                if (ERR(err, callback)) return;
                 callback(null);
-            }
+            });
         }
     ], (err) => {
         if (ERR(err, callback)) return;

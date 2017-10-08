@@ -25,7 +25,9 @@
     "byline": "^5.0.0",
     "dockerode": "^2.5.1",
     "fs-extra": "^4.0.2",
-    "node-fetch": "^1.7.3",
+    "pg": "6.1.x",
+    "lodash": "4.17.x",
+    "request": "2.81.x",
     "tmp": "0.0.33",
     "winston": "^2.3.1",
     "winston-aws-cloudwatch": "^1.6.0"
