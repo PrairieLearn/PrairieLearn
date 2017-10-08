@@ -25,7 +25,7 @@ module.exports.run = function(callback) {
                     Dimensions: dimensions,
                     StorageResolution: 1,
                     Timestamp: stats.timestamp_formatted,
-                    Unit: "Count",
+                    Unit: 'Count',
                     Value: stats.instance_count,
                 },
                 {
@@ -33,7 +33,7 @@ module.exports.run = function(callback) {
                     Dimensions: dimensions,
                     StorageResolution: 1,
                     Timestamp: stats.timestamp_formatted,
-                    Unit: "Count",
+                    Unit: 'Count',
                     Value: stats.current_jobs,
                 },
                 {
@@ -41,7 +41,7 @@ module.exports.run = function(callback) {
                     Dimensions: dimensions,
                     StorageResolution: 1,
                     Timestamp: stats.timestamp_formatted,
-                    Unit: "Count",
+                    Unit: 'Count',
                     Value: stats.max_jobs,
                 },
                 {
@@ -49,13 +49,13 @@ module.exports.run = function(callback) {
                     Dimensions: dimensions,
                     StorageResolution: 1,
                     Timestamp: stats.timestamp_formatted,
-                    Unit: "Percent",
+                    Unit: 'Percent',
                     Value: stats.load_perc,
                 },
             ],
             Namespace: 'Grader',
         };
-        cloudwatch.putMetricData(params, function(err, data) {
+        cloudwatch.putMetricData(params, function(err, _data) {
             if (ERR(err, callback)) return;
             callback(null);
         });
