@@ -55,6 +55,10 @@
 
   * Add `allowIssueReporting` assessment option, default false (Matt West).
 
+  * Add more statistics for external grader instances (Matt West).
+
+  * Add "generating" animation to "Start assessment" button (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
