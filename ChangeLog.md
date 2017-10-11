@@ -129,6 +129,8 @@
 
   * Fix inaccurate issue counts on assessments (Matt West).
 
+  * Fix exam auto-closing issue with legacy assessment instances (Matt West).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
