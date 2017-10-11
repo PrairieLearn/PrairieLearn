@@ -57,12 +57,10 @@ BEGIN
             open := TRUE;
             status := 'incorrect';
             current_value := iq.points_list[1];
-            IF iq.points_list_original IS NOT NULL THEN -- hack to deal with old malformed instance questions in the DB
-                points_list := array[]::double precision[];
-                FOR i in 1..(cardinality(iq.points_list_original)-(iq.number_attempts+1)) LOOP
-                    points_list[i] := iq.points_list_original[iq.number_attempts+i+1] * (1 - highest_submission_score);
-                END LOOP;
-            END IF;
+            points_list := array[]::double precision[];
+            FOR i in 1..(cardinality(iq.points_list_original)-(iq.number_attempts+1)) LOOP
+                points_list[i] := iq.points_list_original[iq.number_attempts+i+1] * (1 - highest_submission_score);
+            END LOOP;
         ELSE
             open := FALSE;
             status := 'complete';
