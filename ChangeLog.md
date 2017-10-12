@@ -61,6 +61,8 @@
 
   * Add maximum statistics for grading jobs (Matt West).
 
+  * Add index on `grading_jobs.date` to speed up statistics (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
