@@ -1,4 +1,5 @@
 DROP FUNCTION IF EXISTS grading_jobs_stats_day();
+DROP FUNCTION IF EXISTS grading_jobs_stats_day(bigint,double precision,double precision,double precision,double precision,double precision);
 
 CREATE OR REPLACE FUNCTION
     grading_jobs_stats_day(
@@ -7,22 +8,27 @@ CREATE OR REPLACE FUNCTION
         OUT delta_submitted_at double precision,
         OUT delta_started_at double precision,
         OUT delta_finished_at double precision,
-        OUT delta_final double precision
+        OUT delta_final double precision,
+        OUT max_total double precision,
+        OUT max_submitted_at double precision,
+        OUT max_started_at double precision,
+        OUT max_finished_at double precision,
+        OUT max_final double precision
     )
 AS $$
 BEGIN
     WITH recent_jobs AS (
         SELECT
-            extract(epoch from (graded_at - grading_requested_at)) AS delta_total,
-            extract(epoch from (grading_submitted_at - grading_requested_at)) AS delta_submitted_at,
-            extract(epoch from (grading_started_at - grading_submitted_at)) AS delta_started_at,
-            extract(epoch from (grading_finished_at - grading_started_at)) AS delta_finished_at,
-            extract(epoch from (graded_at - grading_finished_at)) AS delta_final
+            extract(epoch from (gj.graded_at - gj.grading_requested_at)) AS delta_total,
+            extract(epoch from (gj.grading_submitted_at - gj.grading_requested_at)) AS delta_submitted_at,
+            extract(epoch from (gj.grading_started_at - gj.grading_submitted_at)) AS delta_started_at,
+            extract(epoch from (gj.grading_finished_at - gj.grading_started_at)) AS delta_finished_at,
+            extract(epoch from (gj.graded_at - gj.grading_finished_at)) AS delta_final
         FROM
-            grading_jobs
+            grading_jobs as gj
         WHERE
-            grading_requested_at >= now() - '1 day'::interval
-            AND grading_method = 'External'
+            gj.date >= now() - '1 day'::interval
+            AND gj.grading_method = 'External'
     )
     SELECT
         count(*)::bigint,
@@ -30,14 +36,24 @@ BEGIN
         coalesce(avg(rj.delta_submitted_at), 0)::double precision,
         coalesce(avg(rj.delta_started_at), 0)::double precision,
         coalesce(avg(rj.delta_finished_at), 0)::double precision,
-        coalesce(avg(rj.delta_final), 0)::double precision
+        coalesce(avg(rj.delta_final), 0)::double precision,
+        coalesce(max(rj.delta_total), 0)::double precision,
+        coalesce(max(rj.delta_submitted_at), 0)::double precision,
+        coalesce(max(rj.delta_started_at), 0)::double precision,
+        coalesce(max(rj.delta_finished_at), 0)::double precision,
+        coalesce(max(rj.delta_final), 0)::double precision
     INTO
         count,
         delta_total,
         delta_submitted_at,
         delta_started_at,
         delta_finished_at,
-        delta_final
+        delta_final,
+        max_total,
+        max_submitted_at,
+        max_started_at,
+        max_finished_at,
+        max_final
     FROM
         recent_jobs AS rj;
 END;

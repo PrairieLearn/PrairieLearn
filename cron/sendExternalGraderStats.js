@@ -18,16 +18,27 @@ module.exports.run = (callback) => {
             delta_started_at,
             delta_finished_at,
             delta_final,
+            max_total,
+            max_submitted_at,
+            max_started_at,
+            max_finished_at,
+            max_final,
         } = result.rows[0];
 
         let msg = `_External grading stats, past 24 hours:_ *${config.externalGradingSqsQueueName}*\n`;
         msg +=    `Count: *${count}*\n`;
-        msg +=    `Average duration: *${Number(delta_total).toFixed(2)} s*\n`;
-        msg +=    `Composed of:\n`;
-        msg +=    `    Avg time to submit: *${Number(delta_submitted_at).toFixed(2)} s*\n`;
-        msg +=    `    Avg time to queue: *${Number(delta_started_at).toFixed(2)} s*\n`;
-        msg +=    `    Avg time to execute: *${Number(delta_finished_at).toFixed(2)} s*\n`;
-        msg +=    `    Avg time to report: *${Number(delta_final).toFixed(2)} s*\n`;
+        msg +=    `Average total duration: *${Number(delta_total).toFixed(2)} s*\n`;
+        msg +=    `Individual averages:\n`;
+        msg +=    `    Average time to submit: *${Number(delta_submitted_at).toFixed(2)} s*\n`;
+        msg +=    `    Average time to queue: *${Number(delta_started_at).toFixed(2)} s*\n`;
+        msg +=    `    Average time to execute: *${Number(delta_finished_at).toFixed(2)} s*\n`;
+        msg +=    `    Average time to report: *${Number(delta_final).toFixed(2)} s*\n`;
+        msg +=    `Maximum total duration: *${Number(max_total).toFixed(2)} s*\n`;
+        msg +=    `Individual maximums:\n`;
+        msg +=    `    Maximum time to submit: *${Number(max_submitted_at).toFixed(2)} s*\n`;
+        msg +=    `    Maximum time to queue: *${Number(max_started_at).toFixed(2)} s*\n`;
+        msg +=    `    Maximum time to execute: *${Number(max_finished_at).toFixed(2)} s*\n`;
+        msg +=    `    Maximum time to report: *${Number(max_final).toFixed(2)} s*\n`;
 
         opsbot.sendMessage(msg, (err, res, body) => {
             if (ERR(err, callback)) return;

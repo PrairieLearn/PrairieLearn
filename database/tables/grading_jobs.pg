@@ -20,6 +20,7 @@ columns
 
 indexes
     grading_jobs_pkey: PRIMARY KEY (id)
+    grading_jobs_date_idx: null
     grading_jobs_submission_id_idx: null
 
 foreign-key constraints
