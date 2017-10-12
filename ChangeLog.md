@@ -59,6 +59,8 @@
 
   * Add "generating" animation to "Start assessment" button (Matt West).
 
+  * Add maximum statistics for grading jobs (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
