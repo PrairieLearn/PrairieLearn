@@ -137,6 +137,8 @@
 
   * Fix double-click handling on question buttons (Matt West).
 
+  * Fix one broken exam from blocking other exams auto-closing (Matt West).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.

@@ -19,7 +19,9 @@ module.exports.run = function(callback) {
             var authn_user_id = null; // graded by the system
             var closeExam = true; // close the exam after grading it
             assessment.gradeAssessmentInstance(examItem.assessment_instance_id, authn_user_id, closeExam, function(err) {
-                if (ERR(err, callback)) return;
+                if (ERR(err, () => {})) {
+                    logger.error('Error finishing exam', {examItem, err});
+                }
                 callback(null);
             });
         }, function(err) {
