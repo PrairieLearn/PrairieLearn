@@ -18,6 +18,16 @@ cd PrairieLearn
 npm install
 ```
 
+* Create the file `PrairieLearn/config.json`:
+
+```json
+{
+    "courseDirs": [
+        "exampleCourse"
+    ]
+}
+```
+
 * Run it with:
 
 ```sh
@@ -33,4 +43,3 @@ docker run -it --rm -p 3000:3000 -v /path/to/course:/course prairielearn/prairie
 ```
 
 This can be used to, e.g., run scripts distributed with PrairieLearn.
-
