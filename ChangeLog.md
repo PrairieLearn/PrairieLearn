@@ -69,6 +69,8 @@
 
   * Add new UINs for dev users to avoid conflicts in production DB (Matt West).
 
+  * Add `partialCredit` option for v2 questions (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,

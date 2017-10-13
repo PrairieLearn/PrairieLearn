@@ -3,6 +3,12 @@
 
 **WARNING**: This page describes the old PrairieLearn question format, as used in v1 and v2. This question format will be supported indefinitely, but it is strongly recommended that all new questions be written in the [v3 format](questionFormat).
 
+## Partial credit
+
+By default all v1/v2 questions do not award partial credit. That is, a student either gets zero points or full points for the question. The question grading function (see below) can generate a fractional score in the range 0 to 1, but this is then rounded to 0 or 1 to give no points or full points. Scores below 0.5 are rounded down to 0, while scores equal to or above 0.5 are rounded up to 1. For example, if a question grading function returns 0.3 for a 10-point question, then this will result in zero points, while a grading score of 0.7 for the same question would give 10 points.
+
+To give actual partial credit for a question set `"partialCredit": true` in the `info.json` file for the question. This will make a score of 0.3 on a 10-point question award 3 points, for example.
+
 ## Question types for v1/v2 format
 
 Questions in PrairieLearn v1/v2 can have the following types.

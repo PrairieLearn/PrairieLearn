@@ -23,12 +23,13 @@ const questionsArray = [
     {qid: 'partialCredit1', type: 'Freeform', maxPoints: 6},
     {qid: 'partialCredit2', type: 'Freeform', maxPoints: 7},
     {qid: 'partialCredit3', type: 'Freeform', maxPoints: 11},
-    {qid: 'partialCredit4_v2', type: 'Freeform', maxPoints: 13},
+    {qid: 'partialCredit4_v2', type: 'Calculation', maxPoints: 13},
+    {qid: 'partialCredit5_v2_partial', type: 'Calculation', maxPoints: 12},
 ];
 
 const questions = _.keyBy(questionsArray, 'qid');
 
-const assessmentMaxPoints = 84;
+const assessmentMaxPoints = 96;
 
 // each outer entry is a whole exam session
 // each inner entry is a list of question submissions
@@ -128,6 +129,13 @@ const partialCreditTests = [
         {qid: 'partialCredit2', action: 'grade',             score: 82,  sub_points: 1},
         {qid: 'partialCredit2', action: 'grade',             score: 100, sub_points: 0},
         {qid: 'partialCredit2', action: 'grade',             score: 100, sub_points: 0},
+    ],
+    [
+        // test partial credit on v2 questions
+        {qid: 'partialCredit4_v2', action: 'grade',             score: 34,  submission_score: 0,   sub_points: 0},
+        {qid: 'partialCredit4_v2', action: 'grade',             score: 68,  submission_score: 100, sub_points: 4},
+        {qid: 'partialCredit5_v2_partial', action: 'grade',     score: 27,  sub_points: 5*0.27},
+        {qid: 'partialCredit5_v2_partial', action: 'grade',     score: 56,  sub_points: 5*(0.56-0.27)},
     ],
 ];
 
@@ -1005,9 +1013,10 @@ describe('Homework assessment', function() {
                             locals.question = questions[questionTest.qid];
                             locals.question.points += questionTest.sub_points;
                             locals.totalPoints += questionTest.sub_points;
+                            const submission_score = (questionTest.submission_score == null) ? questionTest.score : questionTest.submission_score;
                             locals.expectedResult = {
-                                submission_score: (questionTest.action == 'save') ? null : (questionTest.score / 100),
-                                submission_correct: (questionTest.action == 'save') ? null : (questionTest.score == 100),
+                                submission_score: (questionTest.action == 'save') ? null : (submission_score / 100),
+                                submission_correct: (questionTest.action == 'save') ? null : (submission_score == 100),
                                 instance_question_points: locals.question.points,
                                 instance_question_score_perc: locals.question.points/locals.question.maxPoints * 100,
                                 assessment_instance_points: locals.totalPoints,

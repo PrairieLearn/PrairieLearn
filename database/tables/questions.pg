@@ -12,6 +12,7 @@ columns
     id: bigint not null default nextval('questions_id_seq'::regclass)
     number: integer
     options: jsonb
+    partial_credit: boolean default true
     qid: text
     single_variant: boolean default false
     template_directory: text
