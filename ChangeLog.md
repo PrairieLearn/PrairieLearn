@@ -139,6 +139,8 @@
 
   * Fix one broken exam from blocking other exams auto-closing (Matt West).
 
+  * Fix v2 questions `clientCode` path on Exam assessments (Matt West).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
