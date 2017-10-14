@@ -13,6 +13,7 @@ DECLARE
     total_points DOUBLE PRECISION;
     total_points_in_grading DOUBLE PRECISION;
     max_points DOUBLE PRECISION;
+    current_score_perc DOUBLE PRECISION;
     max_possible_points DOUBLE PRECISION;
     max_possible_score_perc DOUBLE PRECISION;
 BEGIN
@@ -24,6 +25,10 @@ BEGIN
     FROM assessment_instances AS ai
     WHERE ai.id = assessment_instance_id;
 
+    SELECT ai.score_perc INTO current_score_perc
+    FROM assessment_instances AS ai
+    WHERE ai.id = assessment_instance_id;
+
     -- #########################################################################
     -- awarded points and score_perc
 
@@ -31,12 +36,16 @@ BEGIN
     points := least(total_points, max_points);
 
     -- compute the score as a percentage, applying credit bonus/limits
-    score_perc := points / max_points * 100;
+    score_perc := points
+        / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
     IF credit < 100 THEN
         score_perc := least(score_perc, credit);
     ELSIF (credit > 100) AND (points = max_points) THEN
         score_perc := credit;
     END IF;
+
+    -- no matter what, don't decrease the score_perc
+    score_perc := greatest(score_perc, current_score_perc);
 
     -- #########################################################################
     -- in_grading versions of points and score_perc
@@ -48,13 +57,17 @@ BEGIN
     total_points_in_grading := max_possible_points - points;
 
     -- compute max achieveable score_perc if all grading points are awarded
-    max_possible_score_perc := max_possible_points / max_points * 100;
+    max_possible_score_perc := max_possible_points
+        / (CASE WHEN max_points > 0 THEN max_points ELSE 1 END) * 100;
     IF credit < 100 THEN
         max_possible_score_perc := least(max_possible_score_perc, credit);
     ELSIF (credit > 100) AND (max_possible_points = max_points) THEN
         max_possible_score_perc := credit;
     END IF;
     
+    -- no matter what, don't decrease the achieveable score_perc below new score_perc
+    max_possible_score_perc := greatest(max_possible_score_perc, score_perc);
+
     -- compute score_perc_in_grading
     score_perc_in_grading := max_possible_score_perc - score_perc;
 

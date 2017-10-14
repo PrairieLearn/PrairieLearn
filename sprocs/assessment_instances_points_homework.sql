@@ -26,10 +26,8 @@ BEGIN
         AND aq.deleted_at IS NULL;
 
     SELECT ai.max_points INTO max_points
-    FROM
-        assessment_instances AS ai
-    WHERE
-        ai.id = assessment_instance_id;
+    FROM assessment_instances AS ai
+    WHERE ai.id = assessment_instance_id;
 
     SELECT ai.score_perc INTO current_score_perc
     FROM assessment_instances AS ai
