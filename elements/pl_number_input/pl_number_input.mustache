@@ -12,9 +12,28 @@
 </script>
 
 {{#inline}}
-<span class="form-inline">
+<!-- <span class="form-inline has-feedback">
     <span class="input-group col-xs-5">
-        <input name="{{name}}" type="text" class="form-control" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
+        <span style="position:relative">
+            <input name="emailAddress" type="text" class="form-control" value="">
+            <span class="glyphicon glyphicon-remove form-control-feedback"></span>
+        </span>
+        <span class="input-group-btn" id="basic-addon1">
+            <button id="button-send" type="submit" class="btn btn-primary">Go!</button>
+        </span>
+    </span>
+</span> -->
+
+
+
+<span class="form-inline">
+    <span class="input-group {{#correct}}has-success{{/correct}} {{#partial}}has-warning{{/partial}} {{#incorrect}}has-error{{/incorrect}} has-feedback">
+        <span style="position:relative">
+            <input name="{{name}}" type="text" class="form-control" size="35" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
+            {{#correct}}<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>{{/correct}}
+            {{#partial}}<span class="form-control-feedback" aria-hidden="true"><span class="label label-warning">{{partial}}%</span></span>{{/partial}}
+            {{#incorrect}}<span class="glyphicon glyphicon-remove form-control-feedback" aria-hidden="true"></span>{{/incorrect}}
+        </span>
         <span class="input-group-btn" id="basic-addon1">
             {{#suffix}}<span type="text" class="btn btn-default" disabled>{{suffix}}</span>{{/suffix}}
             <a class="btn btn-default" type="button" data-toggle="popover" data-html="true" title="Number" data-content="{{info}}" data-placement="auto left" data-trigger="focus" tabindex="0">
@@ -23,6 +42,7 @@
         </span>
     </span>
 </span>
+
 {{/inline}}
 
 {{#block}}
