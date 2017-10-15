@@ -54,7 +54,8 @@ def render(element_html, element_index, data):
             shortinfo = chevron.render(f, info_params).strip()
 
         html_params = {'question': True, 'name': name, 'label': label, 'suffix': suffix, 'editable': editable, 'info': info, 'shortinfo': shortinfo}
-        html_params['partial'] = 25
+        # html_params['partial'] = 25
+        
         if display == 'inline':
             html_params['inline'] = True
         elif display == 'block':

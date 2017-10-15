@@ -31,7 +31,7 @@
         <span style="position:relative">
             <input name="{{name}}" type="text" class="form-control" size="35" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
             {{#correct}}<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>{{/correct}}
-            {{#partial}}<span class="form-control-feedback" aria-hidden="true"><span class="label label-warning">{{partial}}%</span></span>{{/partial}}
+            {{#partial}}<span class="form-control-feedback" aria-hidden="true"><span class="label label-warning small">{{partial}}%</span></span>{{/partial}}
             {{#incorrect}}<span class="glyphicon glyphicon-remove form-control-feedback" aria-hidden="true"></span>{{/incorrect}}
         </span>
         <span class="input-group-btn" id="basic-addon1">
