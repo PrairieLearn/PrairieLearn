@@ -41,7 +41,7 @@ BEGIN
         INTO    total_points,   total_points_in_grading
         FROM instance_questions AS iq
         WHERE iq.assessment_instance_id = assessment_instances_points.assessment_instance_id;
-    ELSE
+    ELSIF assessment_type = 'Homework' THEN
         -- for Homeworks, drop deleted questions
         SELECT sum(iq.points), sum(iq.points_in_grading)
         INTO    total_points,   total_points_in_grading
@@ -51,6 +51,8 @@ BEGIN
         WHERE
             iq.assessment_instance_id = assessment_instances_points.assessment_instance_id
             AND aq.deleted_at IS NULL;
+    ELSE
+        RAISE EXCEPTION 'Unknown assessment_type: %', assessment_type;
     END IF;
 
     SELECT ai.max_points INTO max_points
