@@ -33,8 +33,6 @@ module.exports = {
             'assessments_format.sql',
             'assessments_format_for_question.sql',
             'tags_for_question.sql',
-            'assessment_instances_points_homework.sql',
-            'assessment_instances_points_exam.sql',
             'assessment_instances_points.sql',
             'random_unique.sql',
             'question_order.sql',

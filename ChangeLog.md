@@ -141,6 +141,8 @@
 
   * Fix v2 questions `clientCode` path on Exam assessments (Matt West).
 
+  * Fix decreased Exams scores with reduced credit (Matt West).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
