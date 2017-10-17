@@ -27,12 +27,9 @@
 
 
 <span class="form-inline">
-    <span class="input-group {{#correct}}has-success{{/correct}} {{#partial}}has-warning{{/partial}} {{#incorrect}}has-error{{/incorrect}} has-feedback">
+    <span class="input-group">
         <span style="position:relative">
             <input name="{{name}}" type="text" class="form-control" size="35" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
-            {{#correct}}<span class="glyphicon glyphicon-ok form-control-feedback" aria-hidden="true"></span>{{/correct}}
-            {{#partial}}<span class="form-control-feedback" aria-hidden="true"><span class="label label-warning small">{{partial}}%</span></span>{{/partial}}
-            {{#incorrect}}<span class="glyphicon glyphicon-remove form-control-feedback" aria-hidden="true"></span>{{/incorrect}}
         </span>
         <span class="input-group-btn" id="basic-addon1">
             {{#suffix}}<span type="text" class="btn btn-default" disabled>{{suffix}}</span>{{/suffix}}
@@ -41,11 +38,15 @@
             </a>
         </span>
     </span>
+    {{#correct}}<span class="label label-success">100%</span>{{/correct}}
+    {{#partial}}<span class="label label-warning">{{partial}}%</span>{{/partial}}
+    {{#incorrect}}<span class="label label-danger">0%</span>{{/incorrect}}
 </span>
 
 {{/inline}}
 
 {{#block}}
+<div class="form">
 <div class="input-group">
     {{#label}}<label class="input-group-addon">{{label}}</label>{{/label}}
     <input name="{{name}}" type="text" class="form-control" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} placeholder="{{shortinfo}}" />
@@ -54,8 +55,12 @@
         <a class="btn btn-default" type="button" data-toggle="popover" data-html="true" title="Number" data-content="{{info}}" data-placement="auto left" data-trigger="focus" tabindex="0">
                 <i class="fa fa-question-circle" aria-hidden="true"></i>
         </a>
+        {{#incorrect}}<span type="text" class="btn btn-default" disabled><span class="label label-success">100%</span></span>{{/incorrect}}
+        {{#partial}}<span class="label label-warning">{{partial}}%</span>{{/partial}}
+        {{#incorrect}}<span type="text" class="label label-danger">0%</span>{{/incorrect}}
     </div>
 </div>
+<div>
 {{/block}}
 {{/question}}
 

@@ -55,7 +55,8 @@ def render(element_html, element_index, data):
 
         html_params = {'question': True, 'name': name, 'label': label, 'suffix': suffix, 'editable': editable, 'info': info, 'shortinfo': shortinfo}
         # html_params['partial'] = 25
-        
+        html_params['incorrect'] = True
+
         if display == 'inline':
             html_params['inline'] = True
         elif display == 'block':
