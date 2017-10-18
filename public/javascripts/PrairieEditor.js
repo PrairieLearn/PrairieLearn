@@ -1,6 +1,7 @@
 /**
  * PrairieEditor is currently a simple jQuery script that sets up ace editors
- * and configures a save button for each file.
+ * and configures a save button for each file. It also previews the question by
+ * asynchronously rendering variants and grading submissions.
  */
 $(function() {
 
@@ -16,10 +17,8 @@ $(function() {
         xhr.setRequestHeader("Content-Type", "application/json");
 
         xhr.onreadystatechange = function() {
-            if (xhr.readyState == 4 && xhr.status == 200) {
-                if (onComplete)
-                    onComplete(xhr.responseText);
-            }
+            if (xhr.readyState == 4 && xhr.status == 200 && onComplete != null)
+                onComplete(xhr.responseText);
         };
 
         if (data)
@@ -54,15 +53,19 @@ $(function() {
         // When the save button is clicked
         saveButton.click(function() {
 
+            // asynchronously save the file content
             post({
                 action: 'save',
                 file: fileName,
                 content: editor.getValue()
             },
             function(response) {
+                // Reset the save button to be disabled (until the next edit)
                 saveButton.attr('disabled', true);
                 if (response != 'error') {
                     currentContent = editor.getValue();
+
+                    // Refresh the question preview
                     generatePreview();
                 }
             });
@@ -70,7 +73,10 @@ $(function() {
         })
     });
 
+    // A div where previews are placed
     var preview = $('#preview');
+
+    // Generates a new preview by asynchronously rendering a question variant
     function generatePreview() {
         post({ action: 'preview' }, function(response) {
             updatePreview(response);
@@ -78,18 +84,26 @@ $(function() {
     };
 
     function updatePreview(value) {
+        // Update the html of the preview area with the given value
+        // and queue a MathJax update to typset any math equations
         preview.html(value);
         MathJax.Hub.Queue(["Typeset", MathJax.Hub, "preview"]);
 
+        // Get the form element that was added to the preview
         var form = preview.find('form');
 
+        //
         form.submit(function(ev) {
             ev.preventDefault();
             ev.stopPropagation();
         });
 
+        // Hide the save and edit button in the form
         preview.find('.question-save').hide();
         preview.find('.question-edit').hide();
+
+        // When the grade button is clicked, asynchronously reload with the
+        // graded variant html preview
         preview.find('.question-grade').click(function() {
             post({
                 action: 'grade',
@@ -98,6 +112,8 @@ $(function() {
                 updatePreview(response);
             });
         });
+
+        // When a new variant is requested, generate a new preview
         preview.find('.question-new-variant').click(function(e) {
             e.stopPropagation();
             e.preventDefault();
@@ -109,77 +125,3 @@ $(function() {
     $('#new-preview').click(generatePreview);
     generatePreview();
 });
-//
-// $(function() {
-//
-//     //var questionPath = "<%= %>";
-//
-//     $('.question-container .nav-link').click(function() {
-//         var panel = $(this).attr('href').substring(1);
-//         window.location.hash = panel.substring(0, panel.indexOf('-'));
-//
-//         if (! initialized[panel] && $('#' + panel).data('editable')) {
-//             initialized[panel] = true;
-//             $('#' + panel + '-editor').css('height', '400px');
-//             var editor = ace.edit(panel + '-editor');
-//             editor.$blockScrolling = Infinity;
-//             window.editor = editor;
-//
-//             editor.setTheme("ace/theme/monokai");
-//             editor.getSession().setMode("ace/mode/" + panel.substring(panel.indexOf('-') + 1));
-//
-//             var currentValue = editor.getValue();
-//             $('#' + panel + ' .save-button')
-//             .attr('disabled', 'true');
-//             editor.getSession().on('change', function() {
-//                 $('#' + panel + ' .save-button').attr('disabled',
-//                 editor.getValue() == currentValue);
-//             });
-//
-//             $('#' + panel + ' a[data-insert]').each(function() {
-//                 var insertItem = $(this);
-//                 var insertHtml = insertItem.data('insert');
-//                 var cursor = insertHtml.indexOf('|');
-//                 if (cursor >= 0) {
-//                     insertHtml = insertHtml.substring(0, cursor) +
-//                     insertHtml.substring(cursor + 1);
-//                 }
-//
-//                 insertItem.click(function() {
-//                     var curPos = editor.getCursorPosition();
-//                     editor.getSession().insert(curPos, insertHtml);
-//                     if (cursor >= 0) {
-//                         //curPos.column = curPos.column - cursor;
-//                         editor.moveCursorTo(curPos.row, curPos.column - 5);
-//                     }
-//                     editor.focus();
-//                 });
-//
-//             });
-//
-//             $('#' + panel + ' .save-button > i').hide();
-//             $('#' + panel + ' .save-button').click(function() {
-//                 var button = $(this);
-//                 button.attr('disabled', 'true');
-//
-//                 var xhr = new XMLHttpRequest();
-//                 xhr.open("POST", document.URL, true);
-//                 xhr.setRequestHeader('x-csrf-token', csrfToken);
-//                 xhr.setRequestHeader("Content-Type", "application/json");
-//
-//                 xhr.onreadystatechange = function() {
-//                     if(xhr.readyState == 4 && xhr.status == 200) {
-//                         console.log(xhr.responseText);
-//                         button.attr('disabled', 'false');
-//                         currentValue = editor.getValue();
-//                     }
-//                 };
-//
-//                 xhr.send(JSON.stringify({
-//                     file: panel,
-//                     value: editor.getValue()
-//                 }));
-//             });
-//         }
-//     });
-// });
