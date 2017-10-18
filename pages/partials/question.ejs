@@ -98,7 +98,7 @@
               <% if (showSaveButton) { %><button class="btn btn-info question-save" name="__action" value="save">Save</button><% } %>
               <input type="hidden" name="__variant_id" value="<%= variant.id %>">
               <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-              <% if ((devMode || authz_data.has_instructor_view) && urlPrefix.indexOf('/instructor') > 0) { %><a href="<%= urlPrefix %>/question/<%= question.id %>/edit" class="btn btn-success question-edit">Edit</a><% } %>
+              <% if ((devMode || authz_data.has_instructor_edit) && urlPrefix.indexOf('/instructor') > 0) { %><a href="<%= urlPrefix %>/question/<%= question.id %>/edit" class="btn btn-success question-edit">Edit</a><% } %>
               <% if (showNewVariantButton) { %><a href="<%= newVariantUrl %>" class="btn btn-primary question-new-variant">New variant</a><% } %>
               <% if (showTryAgainButton) { %><a href="<%= tryAgainUrl %>" class="btn btn-primary">Try question again</a><% } %>
             </span>
