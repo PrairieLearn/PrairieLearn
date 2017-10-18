@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+    <script type="text/x-mathjax-config">MathJax.Hub.Config({ tex2jax: { inlineMath: [['$','$'], ['\\(','\\)']] }});</script>
+    <script type="text/javascript" src="/MathJax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script type="text/javascript" src="/javascripts/socket.io.js"></script>
+    <script>
+      document.urlPrefix = '<%= urlPrefix %>';
+      document.csrfToken = '<%= __csrf_token %>';
+    </script>
+    <% if (question.type != 'Freeform') { %>
+    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
+    <script type="text/javascript" src="/javascripts/require.js"></script>
+    <script type="text/javascript" src="/localscripts/question.js"></script>
+    <script type="text/javascript" src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
+    <% } %>
+
+    <script src="/javascripts/ace/ace.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/javascripts/ace/mode-javascript.js" type="text/javascript" charset="utf-8"></script>
+    <script src="/javascripts/ace/mode-python.js" type="text/javascript" charset="utf-8"></script>
+
+    <script src="/javascripts/PrairieEditor.js"></script>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: ''}); %>
+    <div id="content" class="container">
+
+      <div class="question-container tex2jax_ignore">
+        <div class="panel panel-primary">
+          <div class="panel-heading">
+            Edit <%= question.qid %> (question.html)
+            <div class="pull-right" style="margin-top:-6px;margin-right:-12px;">
+              <div class="btn-group">
+                <button type="button" class="btn btn-info dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                  Insert <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu">
+                  <li><a href="#">Multiple choice</a></li>
+                  <li><a href="#">Checkboxes</a></li>
+                  <li><a href="#">Number input</a></li>
+                  <li><a href="#">Matrix output</a></li>
+                  <li role="separator" class="divider"></li>
+                  <li><a href="#">File download</a></li>
+                  <li><a href="#">File upload</a></li>
+                  <li><a href="#">File editor</a></li>
+                  <li role="separator" class="divider"></li>
+                  <li><a href="#">Image</a></li>
+                  <li><a href="#">Panel</a></li>
+                  <li><a href="#">External grader</a></li>
+                </ul>
+              </div>
+              <button class="btn btn-success" id="save-question" disabled>
+                Save
+              </button>
+              <button class="btn btn-success" id="new-preview">
+                Preview
+              </button>
+            </div>
+          </div>
+          <div class="panel-body" style="padding:0px">
+            <div id="question-editor" data-edit="question.html"
+                 data-mode="html" data-save="save-question"
+                 style="height:400px"><%= questionHtml %></div>
+          </div>
+        </div>
+
+        <div id="preview" class="tex2jax_process">
+        </div>
+        
+        <div class="panel panel-primary">
+          <div class="panel-heading">
+            Generate and grade <%= question.qid %> (server.py)
+            <div class="pull-right" style="margin-top:-6px;margin-right:-12px;">
+              <button class="btn btn-success" id="save-grader">
+                Save
+              </button>
+            </div>
+          </div>
+          <div class="panel-body" style="padding:0px">
+            <div id="grader" data-edit="server.py"
+                 data-mode="python" data-save="save-grader"
+                 style="height:400px"><%= serverPython %></div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </body>
+</html>

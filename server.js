@@ -178,6 +178,10 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
     require('./middlewares/selectAndAuthzInstructorQuestion'),
     require('./pages/instructorQuestion/instructorQuestion'),
 ]);
+app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/edit', [
+    require('./middlewares/selectAndAuthzInstructorQuestion'),
+    require('./pages/instructorQuestionEditor/instructorQuestionEditor')
+]);
 app.use('/pl/course_instance/:course_instance_id/instructor/gradebook', require('./pages/instructorGradebook/instructorGradebook'));
 app.use('/pl/course_instance/:course_instance_id/instructor/questions', require('./pages/instructorQuestions/instructorQuestions'));
 app.use('/pl/course_instance/:course_instance_id/instructor/errors', require('./pages/instructorErrors/instructorErrors'));
