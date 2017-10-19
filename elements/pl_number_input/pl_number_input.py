@@ -54,8 +54,21 @@ def render(element_html, element_index, data):
             shortinfo = chevron.render(f, info_params).strip()
 
         html_params = {'question': True, 'name': name, 'label': label, 'suffix': suffix, 'editable': editable, 'info': info, 'shortinfo': shortinfo}
-        # html_params['partial'] = 25
-        html_params['incorrect'] = True
+
+        partial_score = data['partial_scores'].get(name, {'score': None, 'feedback': None})
+        score = partial_score.get('score', None)
+        feedback = partial_score.get('feedback', None)  # FIXME: do something with this (e.g., put it in the info popover)
+        if score is not None:
+            try:
+                score = float(score)
+                if score >= 1:
+                    html_params['correct'] = True
+                elif score > 0:
+                    html_params['partial'] = math.floor(score * 100)
+                else:
+                    html_params['incorrect'] = True
+            except:
+                raise ValueError('invalid score' + score)
 
         if display == 'inline':
             html_params['inline'] = True
@@ -79,6 +92,22 @@ def render(element_html, element_index, data):
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             if raw_submitted_answer is not None:
                 html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+
+        partial_score = data['partial_scores'].get(name, {'score': None, 'feedback': None})
+        score = partial_score.get('score', None)
+        feedback = partial_score.get('feedback', None)  # FIXME: do something with this (e.g., put it in the info popover)
+        if score is not None:
+            try:
+                score = float(score)
+                if score >= 1:
+                    html_params['correct'] = True
+                elif score > 0:
+                    html_params['partial'] = math.floor(score * 100)
+                else:
+                    html_params['incorrect'] = True
+            except:
+                raise ValueError('invalid score' + score)
+        
         with open('pl_number_input.mustache', 'r') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'answer':
