@@ -1,6 +1,7 @@
 import prairielearn as pl
 import lxml.html
 import random
+import math
 
 
 def prepare(element_html, element_index, data):
@@ -115,9 +116,8 @@ def render(element_html, element_index, data):
             html += item
         if inline:
             html = '<p>\n' + html + '</p>\n'
-        partial_score = data['partial_scores'].get(name, {'score': None, 'feedback': None})
+        partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
-        feedback = partial_score.get('feedback', None)  # FIXME: do something with this
         if score is not None:
             try:
                 score = float(score)

@@ -2,6 +2,7 @@ import prairielearn as pl
 import lxml.html
 from html import escape
 import numpy as np
+import math
 import chevron
 
 
@@ -45,9 +46,8 @@ def render(element_html, element_index, data):
 
         html_params = {'question': True, 'name': name, 'label': label, 'editable': editable, 'info': info, 'shortinfo': shortinfo}
 
-        partial_score = data['partial_scores'].get(name, {'score': None, 'feedback': None})
+        partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
-        feedback = partial_score.get('feedback', None)  # FIXME: do something with this (e.g., put it in the info popover)
         if score is not None:
             try:
                 score = float(score)
@@ -76,9 +76,8 @@ def render(element_html, element_index, data):
             if raw_submitted_answer is not None:
                 html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
 
-        partial_score = data['partial_scores'].get(name, {'score': None, 'feedback': None})
+        partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
-        feedback = partial_score.get('feedback', None)  # FIXME: do something with this (e.g., put it in the info popover)
         if score is not None:
             try:
                 score = float(score)
