@@ -15,7 +15,7 @@
 <span class="form-inline">
     {{#label}}<span type="text">{{label}}</span>{{/label}}
     <span class="input-group">
-        <span style="position:relative">
+        <span>
             <input name="{{name}}" type="text" class="form-control" size="35" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
         </span>
         <span class="input-group-btn" id="basic-addon1">
