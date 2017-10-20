@@ -4,6 +4,7 @@ import math
 
 use_pl_variable_score = False
 
+
 def prepare(element_html, element_index, data):
     if not use_pl_variable_score:
         return data
