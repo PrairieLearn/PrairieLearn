@@ -2,7 +2,7 @@ const winston = require('winston');
 const CloudWatchTransport = require('winston-aws-cloudwatch');
 
 const globalLogger = require('./logger');
-const config = require('./config');
+const config = require('./config').config;
 
 module.exports = function(options) {
     const {
@@ -23,8 +23,7 @@ module.exports = function(options) {
         })
     ];
 
-    if (config.devMode) {
-        globalLogger.info('Adding console logger to CloudWatch logger');
+    if (config.useConsoleLoggingForJobs) {
         transports.push(new (winston.transports.Console)({timestamp: true, colorize: true}));
     }
 

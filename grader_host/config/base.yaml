@@ -1,0 +1,49 @@
+properties:
+  # Feature enable/disable
+  useEc2MetadataService:
+    default: true
+    envVar: USE_EC2_METADATA_SERVICE
+  useCloudWatchLogging:
+    default: false
+    envVar: USE_CLOUDWATCH_LOGGING
+  useConsoleLoggingForJobs:
+    default: false
+    envVar: USE_CONSOLE_LOGGING_FOR_JOBS
+
+  # CloudWatch logging
+  globalLogGroup:
+    default: 'grading-instances-debug'
+    envVar: GLOBAL_LOG_GROUP
+  jobLogGroup:
+    default: 'grading-jobs-debug'
+    envVar: JOB_LOG_GROUP
+
+  # Load reporting config
+  reportLoad:
+    default: false
+    envVar: REPORT_LOAD
+  reportIntervalSec:
+    default: 10
+    envVar: REPORT_INTERVAL_SEC
+
+  # Queue config
+  queueName:
+    default: 'grading'
+    envVar: QUEUE_NAME
+  queueUrl:
+    default: null
+    envVar: QUEUE_URL
+
+  # Postgres config
+  postgresqlHost:
+    default: 'localhost'
+    envVar: PG_HOST
+  postgresqlDatabase:
+    default: 'postgres'
+    envVar: PG_DATABASE
+  postgresqlUser:
+    default: 'grader'
+    envVar: PG_USER
+  postgresqlPassword:
+    default: 'grader_password'
+    envVar: PG_PASSWORD

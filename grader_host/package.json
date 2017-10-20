@@ -4,7 +4,7 @@
   "description": "PrairieLearn's grading agent",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "NODE_ENV=test jest",
     "lint": "eslint --ext js \"**/*.js\""
   },
   "repository": {
@@ -18,21 +18,23 @@
   },
   "homepage": "https://github.com/PrairieLearn/PrairieGrader#readme",
   "dependencies": {
-    "ajv": "^5.2.2",
+    "ajv": "^5.2.3",
     "async": "^2.5.0",
     "async-stacktrace": "0.0.2",
-    "aws-sdk": "^2.116.0",
+    "aws-sdk": "^2.134.0",
     "byline": "^5.0.0",
-    "dockerode": "^2.5.1",
+    "dockerode": "^2.5.2",
     "fs-extra": "^4.0.2",
+    "js-yaml": "^3.10.0",
+    "lodash": "^4.17.4",
     "pg": "6.1.x",
-    "lodash": "4.17.x",
     "request": "2.81.x",
     "tmp": "0.0.33",
-    "winston": "^2.3.1",
+    "winston": "^2.4.0",
     "winston-aws-cloudwatch": "^1.6.0"
   },
   "devDependencies": {
-    "eslint": "^4.7.0"
+    "eslint": "^4.9.0",
+    "jest": "^21.2.1"
   }
 }

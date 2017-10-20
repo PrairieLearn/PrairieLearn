@@ -1,6 +1,6 @@
 const logger = require('./logger');
 const sqldb = require('./sqldb');
-const config = require('./config');
+const config = require('./config').config;
 const sql = require('./sql-loader').loadSqlEquiv(__filename);
 
 var initialized = false;
@@ -62,7 +62,7 @@ module.exports = {
             max_jobs: maxJobs,
         };
         sqldb.query(sql.insert_load, params, (err) => {
-            if (err) logger.error(String(err));
+            if (err) logger.error('Error reporting load: ' + String(err));
             setTimeout(this._reportLoad.bind(this), config.reportIntervalSec * 1000);
         });
     },

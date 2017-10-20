@@ -1,5 +1,4 @@
 const ERR = require('async-stacktrace');
-const _ = require('lodash');
 const fs = require('fs-extra');
 const async = require('async');
 const tmp = require('tmp');
@@ -11,15 +10,17 @@ const request = require('request');
 const byline = require('byline');
 
 const globalLogger = require('./lib/logger');
-const config = require('./lib/config');
-const queueReceiver = require('./lib/queueReceiver');
+const jobLogger = require('./lib/jobLogger');
+const configManager = require('./lib/config');
+const config = require('./lib/config').config;
+const receiveFromQueue = require('./lib/receiveFromQueue');
 const util = require('./lib/util');
 const load = require('./lib/load');
 const sqldb = require('./lib/sqldb');
 
 async.series([
     (callback) => {
-        config.loadConfig((err) => {
+        configManager.loadConfig((err) => {
             if (ERR(err, callback)) return;
             callback(null);
         });
@@ -52,10 +53,16 @@ async.series([
     },
     () => {
         globalLogger.info('Initialization complete; beginning to process jobs');
-        queueReceiver(config.queueUrl, (message, logger, fail, success) => {
-            handleMessage(message, logger, (err) => {
-                if (ERR(err, fail)) return;
-                success();
+        const sqs = new AWS.SQS();
+        async.forever((next) => {
+            receiveFromQueue(sqs, config.queueUrl, (job, fail, success) => {
+                handleJob(job, (err) => {
+                    if (ERR(err, fail)) return;
+                    success();
+                });
+            }, (err) => {
+                if (ERR(err, (err) => globalLogger.error(err)));
+                next();
             });
         });
     }
@@ -64,23 +71,35 @@ async.series([
     process.exit(1);
 });
 
-function handleMessage(messageBody, logger, done) {
-    logger.info(`Grading job ${messageBody.jobId}!`);
-    logger.info(messageBody);
+function handleJob(job, done) {
     load.startJob();
 
+    const logGroup = config.jobLogGroup;
+    const logStream = `job_${job.jobId}_${new Date().getTime()}`;
+
+    const loggerOptions = {
+        groupName: logGroup,
+        streamName: logStream
+    };
+
+    const logger = jobLogger(loggerOptions);
+    globalLogger.info(`Logging job ${job.jobId} to CloudWatch: ${logGroup}/${logStream}`);
+
+    const context = {
+        docker: new Docker(),
+        s3: new AWS.S3(),
+        startTime: new Date().toISOString(),
+        logger,
+        logGroup,
+        logStream,
+        job
+    };
+
+    logger.info(`Running job ${job.jobId}!`);
+    logger.info(job);
+
     async.auto({
-        context: function(callback) {
-            logger.info('Creating context for job execution');
-            const context = {
-                docker: new Docker(),
-                s3: new AWS.S3(),
-                logger: logger,
-                startTime: new Date().toISOString(),
-                job: messageBody
-            };
-            callback(null, context);
-        },
+        context: (callback) => callback(null, context),
         initDocker: ['context', initDocker],
         initFiles: ['context', initFiles],
         runJob: ['initDocker', 'initFiles', runJob],
@@ -118,6 +137,7 @@ function initDocker(info, callback) {
             });
         },
         (callback) => {
+            logger.info(`Pulling latest version of "${image}" image`);
             const repository = util.parseRepositoryTag(image);
             const params = {
                 fromImage: repository.repository,
@@ -158,13 +178,12 @@ function initFiles(info, callback) {
     } = info;
 
     let jobArchiveFile, jobArchiveFileCleanup;
-    const tmpOptions = config.tmpDir ? {dir: config.tmpDir} : {};
     const files = {};
 
     async.series([
         (callback) => {
             logger.info('Setting up temp file');
-            tmp.file(tmpOptions, (err, file, fd, cleanup) => {
+            tmp.file((err, file, fd, cleanup) => {
                 if (ERR(err, callback)) return;
                 jobArchiveFile = file;
                 jobArchiveFileCleanup = cleanup;
@@ -173,10 +192,10 @@ function initFiles(info, callback) {
         },
         (callback) => {
             logger.info('Setting up temp dir');
-            tmp.dir(_.defaults({
+            tmp.dir({
                 prefix: `job_${jobId}_`,
                 unsafeCleanup: true,
-            }, tmpOptions), (err, dir, cleanup) => {
+            }, (err, dir, cleanup) => {
                 if (ERR(err, callback)) return;
                 files.tempDir = dir;
                 files.tempDirCleanup = cleanup;
@@ -276,6 +295,7 @@ function runJob(info, callback) {
         },
         (container, callback) => {
             container.start((err) => {
+                logger.info('Container started!');
                 if (ERR(err, callback)) return;
                 callback(null, container);
             });
@@ -285,16 +305,21 @@ function runJob(info, callback) {
                 results.timedOut = true;
                 container.kill();
             }, jobTimeout * 1000);
+            logger.info('Waiting for container to complete');
             container.wait((err) => {
                 clearTimeout(timeoutId);
                 if (ERR(err, callback)) return;
-                logger.info('Grading job completed');
                 callback(null, container);
             });
         },
         (container, callback) => {
             container.inspect((err, data) => {
                 if (ERR(err, callback)) return;
+                if (results.timedOut) {
+                    logger.info('Container timed out');
+                } else {
+                    logger.info(`Container exited with exit code ${data.State.ExitCode}`);
+                }
                 results.succeeded = (!results.timedOut && data.State.ExitCode == 0);
                 callback(null, container);
             });
@@ -336,6 +361,8 @@ function runJob(info, callback) {
             }
         }
     ], (err) => {
+        if (ERR(err, (err) => logger.error(err)));
+
         results.job_id = jobId;
         results.start_time = startTime;
         results.end_time = new Date().toISOString();
