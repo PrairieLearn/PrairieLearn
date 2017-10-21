@@ -124,6 +124,10 @@ CREATE OR REPLACE FUNCTION online_var_ffunc(
 DECLARE
     result DOUBLE PRECISION[];
 BEGIN
+    IF STATE IS NULL THEN
+        RETURN NULL;
+    END IF;
+
     FOR i in 1..array_length(state, 1) LOOP
         result[i] = state[i].variance;
     END LOOP;
