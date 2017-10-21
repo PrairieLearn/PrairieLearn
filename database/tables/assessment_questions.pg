@@ -1,31 +1,44 @@
 columns
     alternative_group_id: bigint
     assessment_id: bigint not null
-    average_length_of_incorrect_streak_with_no_correct_submission: double precision
-    average_length_of_incorrect_streak_with_some_correct_submission: double precision
-    average_number_attempts: double precision
-    average_of_average_success_rates: double precision
-    average_success_rate_hist: integer[]
+    average_average_submission_score: double precision
+    average_first_submission_score: double precision
+    average_last_submission_score: double precision
+    average_max_submission_score: double precision
+    average_number_submissions: double precision
+    average_submission_score_hist: double precision[]
+    average_submission_score_variance: double precision
     deleted_at: timestamp with time zone
     discrimination: double precision
-    first_attempt_correct_perc: double precision
+    first_submission_score_hist: double precision[]
+    first_submission_score_variance: double precision
     force_max_points: boolean default false
     id: bigint not null default nextval('assessment_questions_id_seq'::regclass)
+    incremental_submission_points_array_averages: double precision[]
+    incremental_submission_points_array_variances: double precision[]
+    incremental_submission_score_array_averages: double precision[]
+    incremental_submission_score_array_variances: double precision[]
     init_points: double precision
-    last_attempt_correct_perc: double precision
-    length_of_incorrect_streak_hist_with_no_correct_submission: integer[]
-    length_of_incorrect_streak_hist_with_some_correct_submission: integer[]
+    last_submission_score_hist: double precision[]
+    last_submission_score_variance: double precision
     max_points: double precision
-    mean_score: double precision
-    num_attempts_hist: integer[]
+    max_submission_score_hist: double precision[]
+    max_submission_score_variance: double precision
+    mean_question_score: double precision
     number: integer
     number_in_alternative_group: integer
+    number_submissions_hist: double precision[]
+    number_submissions_variance: double precision
     points_list: double precision[]
     question_id: bigint not null
-    tries_per_variant: integer default 1
-    quintile_scores: double precision[]
-    some_correct_submission_perc: double precision
+    question_score_variance: double precision
+    quintile_question_scores: double precision[]
+    some_nonzero_submission_perc: double precision
+    some_perfect_submission_perc: double precision
     some_submission_perc: double precision
+    submission_score_array_averages: double precision[]
+    submission_score_array_variances: double precision[]
+    tries_per_variant: integer default 1
 
 indexes
     assessment_questions_pkey: PRIMARY KEY (id)

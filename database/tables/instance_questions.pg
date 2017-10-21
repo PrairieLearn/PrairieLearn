@@ -2,16 +2,18 @@ columns
     assessment_instance_id: bigint not null
     assessment_question_id: bigint not null
     authn_user_id: bigint
-    average_success_rate: double precision
+    average_submission_score: double precision
     created_at: timestamp with time zone default now()
     current_value: double precision
     duration: interval default '00:00:00'::interval
-    first_attempt_correct: boolean
     first_duration: interval
+    first_submission_score: double precision
     highest_submission_score: double precision
     id: bigint not null default nextval('instance_questions_id_seq'::regclass)
-    last_attempt_correct: boolean
-    length_of_incorrect_streak: integer
+    incremental_submission_points_array: double precision[]
+    incremental_submission_score_array: double precision[]
+    last_submission_score: double precision
+    max_submission_score: double precision
     number: integer
     number_attempts: integer not null default 0
     open: boolean default true
@@ -22,9 +24,11 @@ columns
     points_list_original: double precision[]
     score_perc: double precision default 0
     score_perc_in_grading: double precision default 0
-    some_correct_submission: boolean
+    some_nonzero_submission: boolean
+    some_perfect_submission: boolean
     some_submission: boolean
     status: enum_instance_question_status default 'unanswered'::enum_instance_question_status
+    submission_score_array: double precision[]
     variants_points_list: double precision[] not null default ARRAY[]::double precision[]
 
 indexes
