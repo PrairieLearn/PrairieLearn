@@ -12,7 +12,8 @@ BEGIN
             aq.id AS assessment_question_id
         FROM
             instance_questions AS iq
-            JOIN assessments AS a ON (a.id = iq.assessment_id)
+            JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+            JOIN assessments AS a ON (a.id = aq.assessment_id)
         WHERE
             iq.id = instance_question_id_var
     ),
