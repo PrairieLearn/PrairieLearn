@@ -78,7 +78,7 @@ BEGIN
             attempts.average_submission_score AS average_submission_score,
             attempts.submission_scores AS submission_score_array,
             calculate_incremental_submission_score_array(attempts.submission_scores) AS incremental_submission_score_array,
-            dot(calculate_incremental_submission_score_array(attempts.submission_scores), iq.points_list) AS incremental_submission_points_array
+            array_product(calculate_incremental_submission_score_array(attempts.submission_scores), iq.points_list) AS incremental_submission_points_array
         FROM
             relevant_instance_questions AS iq
             JOIN attempts ON (iq.id = attempts.instance_question_id)
