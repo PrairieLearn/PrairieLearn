@@ -5,6 +5,7 @@ RUN yum -y install \
         https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/pgdg-centos96-9.6-3.noarch.rpm \
         https://rpm.nodesource.com/pub_7.x/el/7/x86_64/nodesource-release-el7-1.noarch.rpm \
         https://centos7.iuscommunity.org/ius-release.rpm \
+    && yum -y update \
     && yum -y install \
         postgresql96-server \
         postgresql96-contrib \
@@ -32,4 +33,5 @@ RUN chmod +x /PrairieLearn/docker/init.sh \
     && mv /PrairieLearn/docker/config.json /PrairieLearn \
     && mkdir /course
 
+HEALTHCHECK CMD curl --fail http://localhost:3000/pl/webhooks/ping || exit 1
 CMD /PrairieLearn/docker/init.sh
