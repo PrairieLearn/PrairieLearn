@@ -102,12 +102,10 @@ To allow students to report issues with questions (incorrect answers, unclear wo
 
 When issue reporting is allowed, students see a button labeled "Report an issue with this question" and they can submit a short text form.
 
-![Report an issue button](assessment-report1.png)
-![Describe the issue](assessment-report2.png)
+![Report an issue button](assessment-report1.png) ![Describe the issue](assessment-report2.png)
 
 Course staff see any reported issues show up on the "Issues" tab.
 
-![Issues tab](assessment-report3.png)
 ![Issue report](assessment-report4.png)
 
 ## Access control
