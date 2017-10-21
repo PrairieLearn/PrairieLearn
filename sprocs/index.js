@@ -11,7 +11,8 @@ module.exports = {
     init: function(callback) {
         logger.verbose('Starting DB stored procedure initialization');
         async.eachSeries([
-            'dot.sql',
+            'array_dot.sql',
+            'array_product.sql',
             'histogram.sql',
             'array_histogram.sql',
             'format_interval.sql',
