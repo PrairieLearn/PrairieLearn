@@ -103,7 +103,7 @@ DECLARE
     prev_state_i mean_and_var_and_index;
     prev_index INTEGER;
 BEGIN
-    new_length := GREATEST(array_length(prev_state, 1), array_length(input, 1));
+    new_length := GREATEST(array_length(prev_state, 1), COALESCE(array_length(input, 1), 0));
     prev_index := prev_state[1].index;
     FOR i in 1..new_length LOOP
         IF prev_index IS NULL THEN
@@ -111,7 +111,7 @@ BEGIN
         ELSE
             prev_state_i := COALESCE(prev_state[i], ROW(0, 0, prev_index)::mean_and_var_and_index);
         END IF;
-        new_state[i] := array_var_sfunc(prev_state_i, COALESCE(input[i], 0));
+        new_state[i] := online_var_sfunc(prev_state_i, COALESCE(input[i], 0));
     END LOOP;
 
     RETURN new_state;
