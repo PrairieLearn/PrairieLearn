@@ -1,0 +1,8 @@
+parent: base
+properties:
+  useEc2MetadataService:
+    default: true
+  useCloudWatchLogging:
+    default: true
+  reportLoad:
+    default: true
