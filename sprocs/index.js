@@ -115,7 +115,8 @@ module.exports = {
             'multiply.sql',
             'array_and_number.sql',
             'array_avg.sql',
-            'array_var.sql'
+            'array_var.sql',
+            'dot.sql'
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

@@ -6,13 +6,12 @@ AS $$
 BEGIN
     WITH more_info AS (
         SELECT
-            aq.assessment_id,
-            aq.question_id,
-            a.course_instance_id,
-            aq.id AS assessment_question_id
+            iq.id AS instance_question_id,
+            a.course_instance_id
         FROM
             instance_questions AS iq
-            JOIN assessments AS a ON (a.id = iq.assessment_id)
+            JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+            JOIN assessments AS a ON (a.id = ai.assessment_id)
         WHERE
             iq.id = instance_question_id_var
     ),
@@ -77,7 +76,7 @@ BEGIN
             attempts.average_submission_score AS average_submission_score,
             attempts.submission_scores AS submission_score_array,
             calculate_incremental_submission_score_array(attempts.submission_scores) AS incremental_submission_score_array,
-            dot(calculate_incremental_submission_score_array(attempts.submission_scores), iq.points_list) AS incremental_submission_points_array
+            multiply(calculate_incremental_submission_score_array(attempts.submission_scores), iq.points_list) AS incremental_submission_points_array
         FROM
             relevant_instance_questions AS iq
             JOIN attempts ON (iq.id = attempts.instance_question_id)
