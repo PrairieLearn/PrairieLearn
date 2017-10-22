@@ -2,6 +2,7 @@ import prairielearn as pl
 import lxml.html
 from html import escape
 import numpy as np
+import math
 import chevron
 
 
@@ -44,6 +45,21 @@ def render(element_html, element_index, data):
             shortinfo = chevron.render(f, info_params).strip()
 
         html_params = {'question': True, 'name': name, 'label': label, 'editable': editable, 'info': info, 'shortinfo': shortinfo}
+
+        partial_score = data['partial_scores'].get(name, {'score': None})
+        score = partial_score.get('score', None)
+        if score is not None:
+            try:
+                score = float(score)
+                if score >= 1:
+                    html_params['correct'] = True
+                elif score > 0:
+                    html_params['partial'] = math.floor(score * 100)
+                else:
+                    html_params['incorrect'] = True
+            except:
+                raise ValueError('invalid score' + score)
+
         if raw_submitted_answer is not None:
             html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
         with open('pl_matrix_input.mustache', 'r') as f:
@@ -59,6 +75,21 @@ def render(element_html, element_index, data):
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             if raw_submitted_answer is not None:
                 html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+
+        partial_score = data['partial_scores'].get(name, {'score': None})
+        score = partial_score.get('score', None)
+        if score is not None:
+            try:
+                score = float(score)
+                if score >= 1:
+                    html_params['correct'] = True
+                elif score > 0:
+                    html_params['partial'] = math.floor(score * 100)
+                else:
+                    html_params['incorrect'] = True
+            except:
+                raise ValueError('invalid score' + score)
+
         with open('pl_matrix_input.mustache', 'r') as f:
             html = chevron.render(f, html_params).strip()
 

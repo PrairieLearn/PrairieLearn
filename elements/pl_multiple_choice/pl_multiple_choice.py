@@ -1,6 +1,7 @@
 import prairielearn as pl
 import lxml.html
 import random
+import math
 
 
 def prepare(element_html, element_index, data):
@@ -77,6 +78,7 @@ def render(element_html, element_index, data):
     inline = pl.get_boolean_attrib(element, 'inline', False)
 
     submitted_key = data['submitted_answers'].get(name, None)
+    correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -91,11 +93,29 @@ def render(element_html, element_index, data):
                 + ' />\n' \
                 + '    (' + answer['key'] + ') ' + answer['html'] + '\n' \
                 + '  </label>\n'
+            if submitted_key == answer['key']:
+                if correct_key == answer['key']:
+                    item = item + '<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
+                else:
+                    item = item + '<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
             if not inline:
                 item = '<div class="radio">\n' + item + '</div>\n'
             html += item
         if inline:
             html = '<p>\n' + html + '</p>\n'
+        partial_score = data['partial_scores'].get(name, {'score': None})
+        score = partial_score.get('score', None)
+        if score is not None:
+            try:
+                score = float(score)
+                if score >= 1:
+                    html = html + '&nbsp;<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
+                elif score > 0:
+                    html = html + '&nbsp;<span class="label label-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
+                else:
+                    html = html + '&nbsp;<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
+            except:
+                raise ValueError('invalid score' + score)
     elif data['panel'] == 'submission':
         # FIXME: handle parse errors?
         if submitted_key is None:
@@ -106,6 +126,19 @@ def render(element_html, element_index, data):
                 html = 'ERROR: Invalid submitted value selected: %s' % submitted_key  # FIXME: escape submitted_key
             else:
                 html = '(%s) %s' % (submitted_key, submitted_html)
+                partial_score = data['partial_scores'].get(name, {'score': None})
+                score = partial_score.get('score', None)
+                if score is not None:
+                    try:
+                        score = float(score)
+                        if score >= 1:
+                            html = html + '&nbsp;<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
+                        elif score > 0:
+                            html = html + '&nbsp;<span class="label label-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
+                        else:
+                            html = html + '&nbsp;<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
+                    except:
+                        raise ValueError('invalid score' + score)
     elif data['panel'] == 'answer':
         correct_answer = data['correct_answers'].get(name, None)
         if correct_answer is None:

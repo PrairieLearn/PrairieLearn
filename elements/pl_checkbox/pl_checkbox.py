@@ -1,6 +1,7 @@
 import prairielearn as pl
 import lxml.html
 import random
+import math
 
 
 def prepare(element_html, element_index, data):
@@ -89,6 +90,9 @@ def render(element_html, element_index, data):
     if isinstance(submitted_keys, str):
         submitted_keys = [submitted_keys]
 
+    correct_answer_list = data['correct_answers'].get(name, [])
+    correct_keys = [answer['key'] for answer in correct_answer_list]
+
     if data['panel'] == 'question':
         editable = data['editable']
 
@@ -102,11 +106,29 @@ def render(element_html, element_index, data):
                 + ' />\n' \
                 + '    (' + answer['key'] + ') ' + answer['html'].strip() + '\n' \
                 + '  </label>\n'
+            if answer['key'] in submitted_keys:
+                if answer['key'] in correct_keys:
+                    item = item + '<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
+                else:
+                    item = item + '<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
             if not inline:
                 item = '<div class="checkbox">\n' + item + '</div>\n'
             html += item
         if inline:
             html = '<p>\n' + html + '</p>\n'
+        partial_score = data['partial_scores'].get(name, {'score': None})
+        score = partial_score.get('score', None)
+        if score is not None:
+            try:
+                score = float(score)
+                if score >= 1:
+                    html = html + '&nbsp;<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
+                elif score > 0:
+                    html = html + '&nbsp;<span class="label label-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
+                else:
+                    html = html + '&nbsp;<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
+            except:
+                raise ValueError('invalid score' + score)
     elif data['panel'] == 'submission':
         if len(submitted_keys) == 0:
             html = 'No selected answers'
@@ -119,6 +141,10 @@ def render(element_html, element_index, data):
                     item = 'ERROR: Invalid submitted value selected: %s' % submitted_key
                 else:
                     item = '(%s) %s' % (submitted_key, submitted_html)
+                    if submitted_key in correct_keys:
+                        item = item + '&nbsp;<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
+                    else:
+                        item = item + '&nbsp;<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
                 if inline:
                     item = '<span>' + item + '</span>\n'
                 else:
@@ -128,6 +154,19 @@ def render(element_html, element_index, data):
                 html = ', '.join(html_list) + '\n'
             else:
                 html = '\n'.join(html_list) + '\n'
+            partial_score = data['partial_scores'].get(name, {'score': None})
+            score = partial_score.get('score', None)
+            if score is not None:
+                try:
+                    score = float(score)
+                    if score >= 1:
+                        html = html + '&nbsp;<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
+                    elif score > 0:
+                        html = html + '&nbsp;<span class="label label-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
+                    else:
+                        html = html + '&nbsp;<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
+                except:
+                    raise ValueError('invalid score' + score)
     elif data['panel'] == 'answer':
         correct_answer_list = data['correct_answers'].get(name, [])
         if len(correct_answer_list) == 0:

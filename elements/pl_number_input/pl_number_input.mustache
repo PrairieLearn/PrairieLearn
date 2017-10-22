@@ -13,15 +13,21 @@
 
 {{#inline}}
 <span class="form-inline">
-    <span class="input-group col-xs-5">
-        <input name="{{name}}" type="text" class="form-control" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
+    {{#label}}<span type="text">{{label}}</span>{{/label}}
+    <span class="input-group">
+        <span>
+            <input name="{{name}}" type="text" class="form-control" size="35" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
+        </span>
         <span class="input-group-btn" id="basic-addon1">
-            {{#suffix}}<span type="text" class="btn btn-default" disabled>{{suffix}}</span>{{/suffix}}
             <a class="btn btn-default" type="button" data-toggle="popover" data-html="true" title="Number" data-content="{{info}}" data-placement="auto left" data-trigger="focus" tabindex="0">
                 <i class="fa fa-question-circle" aria-hidden="true"></i>
+                {{#correct}}&nbsp;<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+                {{#partial}}&nbsp;<span class="label label-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+                {{#incorrect}}&nbsp;<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
             </a>
         </span>
     </span>
+    {{#suffix}}<span type="text">{{suffix}}</span>{{/suffix}}
 </span>
 {{/inline}}
 
@@ -32,7 +38,10 @@
     <div class="input-group-btn">
         {{#suffix}}<span type="text" class="btn btn-default" disabled>{{suffix}}</span>{{/suffix}}
         <a class="btn btn-default" type="button" data-toggle="popover" data-html="true" title="Number" data-content="{{info}}" data-placement="auto left" data-trigger="focus" tabindex="0">
-                <i class="fa fa-question-circle" aria-hidden="true"></i>
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+            {{#correct}}&nbsp;<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+            {{#partial}}&nbsp;<span class="label label-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+            {{#incorrect}}&nbsp;<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
         </a>
     </div>
 </div>
@@ -61,6 +70,9 @@
 {{#label}}<span>{{label}}</span>{{/label}}
 <samp>{{a_sub}}</samp>
 {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{#correct}}<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+{{#partial}}<span class="label label-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+{{#incorrect}}<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 {{/parse_error}}
 {{/submission}}
 
