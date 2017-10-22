@@ -2,6 +2,110 @@ import lxml.html
 import to_precision
 import numpy as np
 import uuid
+import sympy
+from python_helper_sympy import convert_string_to_sympy
+
+
+def to_json(v):
+    """to_json(v)
+
+    If v has a standard type that cannot be json serialized, it is replaced with
+    a {'_type':..., '_value':...} pair that can be json serialized:
+
+        complex -> '_type': 'complex'
+        non-complex ndarray (assumes each element can be json serialized) -> '_type': 'ndarray'
+        complex ndarray -> '_type': 'complex_ndarray'
+        sympy.Expr (i.e., any scalar sympy expression) -> '_type': 'sympy'
+        sympy.Matrix -> '_type': 'sympy_matrix'
+
+    This function does not try to preserve information like the dtype of an
+    ndarray or the assumptions on variables in a sympy expression.
+
+    If v can be json serialized or does not have a standard type, then it is
+    returned without change.
+    """
+
+    if np.isscalar(v) and np.iscomplexobj(v):
+        return {'_type': 'complex', '_value': {'real': v.real, 'imag': v.imag}}
+    elif isinstance(v, np.ndarray):
+        if np.isrealobj(v):
+            return {'_type': 'ndarray', '_value': v.tolist()}
+        elif np.iscomplexobj(v):
+            return {'_type': 'complex_ndarray', '_value': {'real': v.real.tolist(), 'imag': v.imag.tolist()}}
+    elif isinstance(v, sympy.Expr):
+        s = [str(a) for a in v.free_symbols]
+        return {'_type': 'sympy', '_value': str(v), '_variables': s}
+    elif isinstance(v, sympy.Matrix):
+        s = [str(a) for a in v.free_symbols]
+        num_rows, num_cols = v.shape
+        M = []
+        for i in range(0, num_rows):
+            row = []
+            for j in range(0, num_cols):
+                row.append(str(v[i, j]))
+            M.append(row)
+        return {'_type': 'sympy_matrix', '_value': M, '_variables': s, '_shape': [num_rows, num_cols]}
+    else:
+        return v
+
+
+def from_json(v):
+    """from_json(v)
+
+    If v has the format {'_type':..., '_value':...} as would have been created
+    using to_json(...), then it is replaced:
+
+        '_type': 'complex' -> complex
+        '_type': 'ndarray' -> non-complex ndarray
+        '_type': 'complex_ndarray' -> complex ndarray
+        '_type': 'sympy' -> sympy.Expr
+        '_type': 'sympy_matrix' -> sympy.Matrix
+
+    This function does not try to recover information like the dtype of an
+    ndarray or the assumptions on variables in a sympy expression.
+
+    If v does not have the format {'_type':..., '_value':...}, then it is
+    returned without change.
+    """
+
+    if isinstance(v, dict):
+        if '_type' in v:
+            if v['_type'] == 'complex':
+                if ('_value' in v) and ('real' in v['_value']) and ('imag' in v['_value']):
+                    return complex(v['_value']['real'], v['_value']['imag'])
+                else:
+                    raise Exception('variable of type complex should have value with real and imaginary pair')
+            elif v['_type'] == 'ndarray':
+                if ('_value' in v):
+                    return np.array(v['_value'])
+                else:
+                    raise Exception('variable of type ndarray should have value')
+            elif v['_type'] == 'complex_ndarray':
+                if ('_value' in v) and ('real' in v['_value']) and ('imag' in v['_value']):
+                    return np.array(v['_value']['real']) + np.array(v['_value']['imag']) * 1j
+                else:
+                    raise Exception('variable of type complex_ndarray should have value with real and imaginary pair')
+            elif v['_type'] == 'sympy':
+                if ('_value' in v) and ('_variables' in v):
+                    return convert_string_to_sympy(v['_value'], v['_variables'])
+                else:
+                    raise Exception('variable of type sympy should have value and variables')
+            elif v['_type'] == 'sympy_matrix':
+                if ('_value' in v) and ('_variables' in v) and ('_shape' in v):
+                    value = v['_value']
+                    variables = v['_variables']
+                    shape = v['_shape']
+                    M = sympy.Matrix.zeros(shape[0], shape[1])
+                    for i in range(0, shape[0]):
+                        for j in range(0, shape[1]):
+                            M[i, j] = convert_string_to_sympy(value[i][j], variables)
+                    return M
+                else:
+                    raise Exception('variable of type sympy_matrix should have value, variables, and shape')
+            else:
+                raise Exception('variable has unknown type {:s}'.format(v['_type']))
+
+    return v
 
 
 def inner_html(element):
