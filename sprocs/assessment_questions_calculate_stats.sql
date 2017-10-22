@@ -1,6 +1,6 @@
 CREATE OR REPLACE FUNCTION
     assessment_questions_calculate_stats (
-        assessment_question_id_var bigint
+        assessment_question_id_param bigint
     ) RETURNS VOID
 AS $$
 BEGIN
@@ -14,7 +14,7 @@ BEGIN
             assessment_questions AS aq
             JOIN assessments AS a ON (a.id = aq.assessment_id)
         WHERE
-            aq.id = assessment_question_id_var
+            aq.id = assessment_question_id_param
     ),
     user_roles AS (
         SELECT
@@ -24,15 +24,6 @@ BEGIN
             users AS u
             JOIN more_info ON TRUE
             JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = more_info.course_instance_id)
-    ),
-    relevant_assessments AS (
-        SELECT
-            a.*
-        FROM
-            assessments AS a
-            JOIN more_info ON TRUE
-        WHERE
-            a.id = more_info.assessment_id
     ),
     relevant_assessment_instances AS (
         SELECT
@@ -79,7 +70,7 @@ BEGIN
     assessment_scores_by_user AS (
         SELECT
             ai.user_id,
-            avg(ai.score_perc) AS user_score_perc
+            max(ai.score_perc) AS user_score_perc
         FROM
             relevant_assessment_instances AS ai
         GROUP BY
