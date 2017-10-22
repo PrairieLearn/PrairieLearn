@@ -7,7 +7,7 @@ DECLARE
     sums DOUBLE PRECISION[];
     len INTEGER;
 BEGIN
-    len = GREATEST(array_length(input, 1), array_length(state.arr, 1));
+    len := GREATEST(COALESCE(array_length(input, 1), 0), array_length(state.arr, 1));
     FOR i IN 1..len LOOP
         sums[i] := COALESCE(state.arr[i], 0) + COALESCE(input[i], 0);
     END LOOP;
