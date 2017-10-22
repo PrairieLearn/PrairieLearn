@@ -27,12 +27,12 @@ module.exports = function(req, res, next) {
     if (config.authType === 'none') {
         var authUid = 'dev@illinois.edu';
         var authName = 'Dev User';
-        var authUin = '123456789';
+        var authUin = '000000000';
 
         if (req.cookies.pl_test_user == 'test_student') {
             authUid = 'student@illinois.edu';
             authName = 'Student User';
-            authUin = '314156295';
+            authUin = '000000001';
         }
         let params = {
             uid: authUid,
