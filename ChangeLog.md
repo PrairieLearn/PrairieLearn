@@ -62,8 +62,10 @@
   * Add maximum statistics for grading jobs (Matt West).
 
   * Add index on `grading_jobs.date` to speed up statistics (Matt West).
-  
+
   * Add `to_json()` and `from_json()` to `prairielearn.py` to help JSON serialize standard types (Tim Bretl).
+
+  * Add build-time system updates to Docker image (Jake Bailey).
 
   * Split installing documentation into separate method sections (Matt West).
 
@@ -75,6 +77,8 @@
   * Remove old unused Python caller code (Tim Bretl).
 
   * Remove AWS Batch external grader (Nathan Walters).
+
+  * Remove the need for `<pl_variable_score>` in questions (Tim Bretl).
 
   * Change `externalGradingOptions.files` to `.serverFilesCourse`
     (Nathan Walters).
