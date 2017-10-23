@@ -175,7 +175,7 @@ config.loadConfig = function(callback) {
             // Initialize CloudWatch logging if it's enabled
             if (exportedConfig.useCloudWatchLogging) {
                 const groupName = exportedConfig.globalLogGroup;
-                const streamName = exportedConfig.machineId;
+                const streamName = exportedConfig.instanceId;
                 logger.initCloudWatchLogging(groupName, streamName);
                 logger.info(`CloudWatch logging enabled! Logging to ${groupName}/${streamName}`);
             }
