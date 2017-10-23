@@ -13,6 +13,7 @@ module.exports = {
         async.eachSeries([
             'array_dot.sql',
             'array_product.sql',
+            'array_increments_above_max.sql',
             'array_and_number.sql',
             'array_avg.sql',
             'array_var.sql',
