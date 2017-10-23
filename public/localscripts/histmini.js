@@ -1,10 +1,7 @@
 
-function toPercentages(data) {
-    const total = data.reduce((sum, value) => sum + value);
-    return data.map(val => val / total);
-}
+function histmini(selector, data, options) {
+    if (!_.isArray(data) || data.length == 0) return;
 
-function histmini(selector, data, options, barChart) {
     options = options || {};
     _.defaults(options, {
         width: 100,
@@ -13,7 +10,13 @@ function histmini(selector, data, options, barChart) {
         xmax: 100,
         ymin: 0,
         ymax: "auto",
+        normalize: false,
     });
+
+    if (options.normalize) {
+        const total = data.reduce((sum, value) => sum + value);
+        data = data.map(val => val / total);
+    }
 
     var margin = {top: 1, right: 1, bottom: 1, left: 1},
         width = options.width - margin.left - margin.right,
@@ -46,11 +49,6 @@ function histmini(selector, data, options, barChart) {
         .attr("y", function(d, i) {return y(d);})
         .attr("width", function(d, i) {return x.rangeBand();})
         .attr("height", function(d, i) {return y(0) - y(d);});
-
-    var colors = ["blue", "red", "green", "yellow", "orange", "purple"];
-    if (barChart) {
-        barConfiguration.style("fill", function(d, i) { return colors[i % 6]; });
-    }
 
     svg.append("line")
         .attr({x1: 0, y1: 0, x2: width, y2: 0, "class": "x axis"})

@@ -323,6 +323,13 @@
 
         <% if (assessment_stat.number > 0) { %>
         <div class="panel-body">
+          <p>
+            <a class="btn btn-xs btn-default" role="button"
+               data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
+                <i class="fa fa-refresh" aria-hidden="true"></i> Recalculate statistics
+            </a>
+            Last calculated: <%= stats_last_updated %>
+          </p>
           <div id="difficultyDiscriminationScatter" class="scatter"></div>
           <script>
             $(function() {
@@ -364,6 +371,16 @@
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Question statistics</h3>
+        </div>
+
+        <div class="panel-body">
+          <p>
+            <a class="btn btn-xs btn-default" role="button"
+               data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
+                <i class="fa fa-refresh" aria-hidden="true"></i> Recalculate statistics
+            </a>
+            Last calculated: <%= stats_last_updated %>
+          </p>
         </div>
 
         <table id="questionsTable" class="table table-condensed table-hover tablesorter">
@@ -433,7 +450,7 @@
 
         <% if (assessment_stat.number > 0) { %>
         <div class="panel-body">
-          <div id="scoreHistsByDateDiv" style="border: 1px solid black; overflow-x: scroll; overflow-y: hidden;"></div>
+          <div id="scoreHistsByDateDiv" style="overflow-x: scroll; overflow-y: hidden;"></div>
           <script>
             $(function() {
                 var data = [<% assessment_score_histogram_by_date.forEach(function(day) {
@@ -535,9 +552,9 @@
             <tbody>
             <% questions.forEach(function(row, i) { %>
             <tr>
-              <td>
+              <td style="white-space: nowrap;">
                 <a href="<%= urlPrefix %>/question/<%= row.question_id %>/">
-                    <%= row.number %>. <%= row.title %>
+                    <%= row.number %>. <%= row.qid %>
                 </a>
               </td>
               <td class="cell-center">
@@ -637,41 +654,38 @@
               </td>
               <script>
                     $(function() {
-                        function drawHistogram(data, idBase, percentages, barchart, ymax) {
-                            if (data && data.length > 0) {
-                                if (percentages) {
-                                    data = toPercentages(data);
-                                }
-                                var options = {
-                                    width: 60,
-                                    height: 20,
-                                    ymax: 1
-                                };
-                                if (ymax) {
-                                    options.ymax = ymax;
-                                }
-                                histmini("#" + idBase + "<%= i %>", data, options, barchart);
-                            }
-                        }
-
-                        function fill(arr) {
-                            <% if (row.points_list) { %>
-                                const pointsListSize = <%= row.points_list.length %>;
-                                return arr.concat(new Array(pointsListSize - arr.length).fill(0));
-                            <% } else { %>
-                               return arr;
-                            <% } %>
-                        }
-
-                        drawHistogram([<%= row.first_submission_score_hist %>], "firstSubmissionScoreHist", true);
-                        drawHistogram([<%= row.last_submission_score_hist %>], "lastSubmissionScoreHist", true);
-                        drawHistogram([<%= row.max_submission_score_hist %>], "maxSubmissionScoreHist", true);
-                        drawHistogram([<%= row.average_submission_score_hist %>], "averageSubmissionScoreHist", true);
-                        drawHistogram(fill([<%= row.submission_score_array_averages %>]), "submissionScoreArray", false, true);
-                        drawHistogram(fill([<%= row.incremental_submission_score_array_averages %>]), "incrementalSubmissionScoreArray", false, true);
-                        drawHistogram([<%= row.incremental_submission_points_array_averages %>], "incrementalSubmissionPointsArray", false, true, <%= row.max_points %>);
-                        drawHistogram([<%= row.number_submissions_hist %>], "numberSubmissionsHist", true);
-                        drawHistogram([<%= row.quintile_question_scores %>], "quintileQuestionScoresHist", false, false, 100);
+                        const options = {
+                            width: 60,
+                            height: 20,
+                            ymax: 1
+                        };
+                        histmini("#firstSubmissionScoreHist<%= i %>",
+                                 [<%= row.first_submission_score_hist %>],
+                                 _.defaults({normalize: true}, options));
+                        histmini("#lastSubmissionScoreHist<%= i %>",
+                                 [<%= row.last_submission_score_hist %>],
+                                 _.defaults({normalize: true}, options));
+                        histmini("#maxSubmissionScoreHist<%= i %>",
+                                 [<%= row.max_submission_score_hist %>],
+                                 _.defaults({normalize: true}, options));
+                        histmini("#averageSubmissionScoreHist<%= i %>",
+                                 [<%= row.average_submission_score_hist %>],
+                                 _.defaults({normalize: true}, options));
+                        histmini("#submissionScoreArray<%= i %>",
+                                 [<%= row.submission_score_array_averages %>],
+                                 options);
+                        histmini("#incrementalSubmissionScoreArray<%= i %>",
+                                 [<%= row.incremental_submission_score_array_averages %>],
+                                 options);
+                        histmini("#incrementalSubmissionPointsArray<%= i %>",
+                                 [<%= row.incremental_submission_points_array_averages %>],
+                                 _.defaults({ymax: <%= row.max_points %>}, options));
+                        histmini("#numberSubmissionsHist<%= i %>",
+                                 [<%= row.number_submissions_hist %>],
+                                 _.defaults({normalize: true}, options));
+                        histmini("#quintileQuestionScoresHist<%= i %>",
+                                 [<%= row.quintile_question_scores %>],
+                                 _.defaults({ymax: 100}, options));
                     });
                 </script>
             </tr>
@@ -694,16 +708,17 @@
                 </li>
               <% }); %>
             </ul>
+            <p>
+              In the case that a student takes this assessment multiple
+              times (e.g., if this assessment is a practice exam), we
+              are calculating the above statistics by first averaging
+              over all assessment instances for each student, then
+              averaging over students.
+            </p>
+            <p class="no-bottom-margin">
+              μ<sub>Incr. Sub. Points Array</sub> is only available for exams.
+            </p>
           </small>
-          <p class="no-bottom-margin">
-            <b>
-              * In the rare case that a student takes this assessment multiple times (e.g. if this assessment is a
-              practice exam), we are calculating the above statistics by first averaging submission statistics over all
-              assessment instances for the student.
-              <br/>
-              * μ<sub>Incr. Sub. Points Array</sub> is only available for exams.
-            </b>
-          </p>
 
         </div>
       </div>
