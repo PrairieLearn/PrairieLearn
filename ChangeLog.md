@@ -67,6 +67,8 @@
 
   * Add build-time system updates to Docker image (Jake Bailey).
 
+  * Add new UINs for dev users to avoid conflicts in production DB (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
