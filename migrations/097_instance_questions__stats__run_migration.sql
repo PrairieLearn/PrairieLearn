@@ -79,7 +79,7 @@ BEGIN
         average_submission_score = average_submission_score_var,
         submission_score_array = submission_score_array_var,
         incremental_submission_score_array = incremental_submission_score_array_var,
-        incremental_submission_points_array = migration_097_array_product(incremental_submission_score_array_var, iq.points_list)
+        incremental_submission_points_array = migration_097_array_product(incremental_submission_score_array_var, iq.points_list_original)
     WHERE iq.id = instance_question_id_param;
 END
 $$ LANGUAGE plpgsql VOLATILE;
