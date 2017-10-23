@@ -169,28 +169,28 @@
                   row.color %> btn-xs" role="button"><%= row.label %></a>
               </td>
               <td class="cell-center">
-                  <%= ifNotNullThen(row.mean_question_score, parseFloatOne) %>
+                  <%= formatFloat(row.mean_question_score, 1) %>
               </td>
               <td class="cell-center">
-                  <%= ifNotNullThen(row.question_score_variance, parseFloatOne) %>
+                  <%= formatFloat(row.question_score_variance, 1) %>
               </td>
               <td class="cell-center">
-                  <%= ifNotNullThen(row.discrimination, parseFloatOne) %>
+                  <%= formatFloat(row.discrimination, 1) %>
               </td>
               <td class="cell-center">
-                  <%= ifNotNullThen(row.some_submission_perc, parseFloatOne) %>
+                  <%= formatFloat(row.some_submission_perc, 1) %>
               </td>
               <td class="cell-center">
-                  <%= ifNotNullThen(row.some_perfect_submission_perc, parseFloatOne) %>
+                  <%= formatFloat(row.some_perfect_submission_perc, 1) %>
               </td>
               <td class="cell-center">
-                  <%= ifNotNullThen(row.some_nonzero_submission_perc, parseFloatOne) %>
+                  <%= formatFloat(row.some_nonzero_submission_perc, 1) %>
               </td>
               <td class="cell-center">
-                  <%= ifNotNullThen(row.average_first_submission_score, parseFloatTwo) %>
+                  <%= formatFloat(row.average_first_submission_score, 2) %>
               </td>
               <td class="cell-center">
-                  <%= ifNotNullThen(row.first_submission_score_variance, parseFloatTwo) %>
+                  <%= formatFloat(row.first_submission_score_variance, 2) %>
               </td>
               <td class="cell-center">
                   <% if (row.first_submission_score_hist !== null) { %>
@@ -198,10 +198,10 @@
                   <% } %>
               </td>
               <td class="cell-center">
-                  <%= ifNotNullThen(row.average_last_submission_score, parseFloatTwo) %>
+                  <%= formatFloat(row.average_last_submission_score, 2) %>
               </td>
               <td class="cell-center">
-                  <%= ifNotNullThen(row.last_submission_score_variance, parseFloatTwo) %>
+                  <%= formatFloat(row.last_submission_score_variance, 2) %>
               </td>
               <td class="cell-center">
                   <% if (row.last_submission_score_hist !== null) { %>
@@ -209,10 +209,10 @@
                   <% } %>
               </td>
               <td class="cell-center">
-                  <%= ifNotNullThen(row.average_max_submission_score, parseFloatTwo) %>
+                  <%= formatFloat(row.average_max_submission_score, 2) %>
               </td>
               <td class="cell-center">
-                  <%= ifNotNullThen(row.max_submission_score_variance, parseFloatTwo) %>
+                  <%= formatFloat(row.max_submission_score_variance, 2) %>
               </td>
               <td class="cell-center">
                   <% if (row.max_submission_score_hist !== null) { %>
@@ -220,10 +220,10 @@
                   <% } %>
               </td>
               <td class="cell-center">
-                  <%= ifNotNullThen(row.average_average_submission_score, parseFloatTwo) %>
+                  <%= formatFloat(row.average_average_submission_score, 2) %>
               </td>
               <td class="cell-center">
-                  <%= ifNotNullThen(row.average_submission_score_variance, parseFloatTwo) %>
+                  <%= formatFloat(row.average_submission_score_variance, 2) %>
               </td>
               <td class="cell-center">
                   <% if (row.average_submission_score_hist !== null) { %>
@@ -250,10 +250,10 @@
                 <% } %>
               </td>
               <td class="cell-center">
-                  <%= ifNotNullThen(row.average_number_submissions, parseFloatTwo) %>
+                  <%= formatFloat(row.average_number_submissions, 2) %>
               </td>
               <td class="cell-center">
-                  <%= ifNotNullThen(row.number_submissions_variance, parseFloatTwo) %>
+                  <%= formatFloat(row.number_submissions_variance, 2) %>
               </td>
               <td class="cell-center">
                   <% if (row.number_submissions_hist !== null) { %>
@@ -266,43 +266,40 @@
                   <% } %>
               </td>
               <script>
-                  $(function() {
-                      function drawHistogram(data, idBase, percentages, barchart, ymax) {
-                          if (data && data.length > 0) {
-                              if (percentages) {
-                                  data = toPercentages(data);
-                              }
-                              var options = {
-                                  width: 60,
-                                  height: 20,
-                                  ymax: 1
-                              };
-                              if (ymax) {
-                                  options.ymax = ymax;
-                              }
-                              histmini("#" + idBase + "<%= i %>", data, options, barchart);
-                          }
-                      }
-
-                      function fill(arr) {
-                          <% if (row.points_list) { %>
-                            const pointsListSize = <%= row.points_list.length %>;
-                            return arr.concat(new Array(pointsListSize - arr.length).fill(0));
-                          <% } else { %>
-                            return arr;
-                          <% } %>
-                      }
-
-                      drawHistogram([<%= row.first_submission_score_hist %>], "firstSubmissionScoreHist", true);
-                      drawHistogram([<%= row.last_submission_score_hist %>], "lastSubmissionScoreHist", true);
-                      drawHistogram([<%= row.max_submission_score_hist %>], "maxSubmissionScoreHist", true);
-                      drawHistogram([<%= row.average_submission_score_hist %>], "averageSubmissionScoreHist", true);
-                      drawHistogram(fill([<%= row.submission_score_array_averages %>]), "submissionScoreArray", false, true);
-                      drawHistogram(fill([<%= row.incremental_submission_score_array_averages %>]), "incrementalSubmissionScoreArray", false, true);
-                      drawHistogram([<%= row.incremental_submission_points_array_averages %>], "incrementalSubmissionPointsArray", false, true, <%= row.max_points %>);
-                      drawHistogram([<%= row.number_submissions_hist %>], "numberSubmissionsHist", true);
-                      drawHistogram([<%= row.quintile_question_scores %>], "quintileQuestionScoresHist", false, false, 100);
-                  });
+                $(function() {
+                    const options = {
+                        width: 60,
+                        height: 20,
+                        ymax: 1
+                    };
+                    histmini("#firstSubmissionScoreHist<%= i %>",
+                             [<%= row.first_submission_score_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#lastSubmissionScoreHist<%= i %>",
+                             [<%= row.last_submission_score_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#maxSubmissionScoreHist<%= i %>",
+                             [<%= row.max_submission_score_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#averageSubmissionScoreHist<%= i %>",
+                             [<%= row.average_submission_score_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#submissionScoreArray<%= i %>",
+                             [<%= row.submission_score_array_averages %>],
+                             options);
+                    histmini("#incrementalSubmissionScoreArray<%= i %>",
+                             [<%= row.incremental_submission_score_array_averages %>],
+                             options);
+                    histmini("#incrementalSubmissionPointsArray<%= i %>",
+                             [<%= row.incremental_submission_points_array_averages %>],
+                             _.defaults({ymax: <%= row.max_points %>}, options));
+                    histmini("#numberSubmissionsHist<%= i %>",
+                             [<%= row.number_submissions_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#quintileQuestionScoresHist<%= i %>",
+                             [<%= row.quintile_question_scores %>],
+                             _.defaults({ymax: 100}, options));
+                });
               </script>
             </tr>
             <% }); %>
@@ -324,16 +321,14 @@
               </li>
                 <% }); %>
             </ul>
+            <p class="no-bottom-margin">
+              In the case that a student takes this assessment multiple
+              times (e.g., if this assessment is a practice exam), we
+              are calculating the above statistics by first averaging
+              over all assessment instances for each student, then
+              averaging over students.
+            </p>
           </small>
-          <p class="no-bottom-margin">
-            <b>
-              * In the rare case that a student takes an assessment multiple times (e.g. if the assessment is a
-              practice exam), we are calculating the above statistics by first averaging submission statistics over all
-              assessment instances for the student. <br/>
-              * μ<sub>Incr. Sub. Points Array</sub> is only available for exams.
-            </b>
-          </p>
-
         </div>
       </div>
 

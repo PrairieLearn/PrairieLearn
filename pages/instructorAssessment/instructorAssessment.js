@@ -136,20 +136,6 @@ router.get('/', function(req, res, next) {
                 callback(null);
             });
         },
-        function(callback) {
-            res.locals.ifNotNullThen = function (x, y) {
-                if (x !== null) {
-                    return y(x);
-                }
-            };
-            res.locals.parseFloatOne = function(x) {
-                return parseFloat(x).toFixed(1);
-            };
-            res.locals.parseFloatTwo = function(x) {
-                return parseFloat(x).toFixed(2);
-            };
-            callback(null);
-        },
     ], function(err) {
         if (ERR(err, next)) return;
         debug('render page');
