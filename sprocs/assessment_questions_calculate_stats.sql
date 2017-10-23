@@ -3,39 +3,21 @@ CREATE OR REPLACE FUNCTION
         assessment_question_id_param bigint
     ) RETURNS VOID
 AS $$
+DECLARE
+    assessment_id_var bigint;
+    question_id_var bigint;
+    course_instance_id_var bigint;
 BEGIN
-    WITH more_info AS (
-        SELECT
-            aq.assessment_id,
-            aq.question_id,
-            a.course_instance_id,
-            aq.id AS assessment_question_id
-        FROM
-            assessment_questions AS aq
-            JOIN assessments AS a ON (a.id = aq.assessment_id)
-        WHERE
-            aq.id = assessment_question_id_param
-    ),
-    user_roles AS (
-        SELECT
-            u.user_id,
-            e.role
-        FROM
-            users AS u
-            JOIN more_info ON TRUE
-            JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = more_info.course_instance_id)
-    ),
-    relevant_assessment_instances AS (
-        SELECT
-            ai.*
-        FROM
-            assessment_instances AS ai
-            JOIN user_roles ON user_roles.user_id = ai.user_id
-            JOIN more_info ON TRUE
-        WHERE
-            ai.assessment_id = more_info.assessment_id
-            AND user_roles.role = 'Student'
-    ),
+    -- load parent objects IDs
+
+    SELECT aq.assessment_id,     aq.question_id,     a.course_instance_id
+    INTO      assessment_id_var,    question_id_var,   course_instance_id_var
+    FROM
+        assessment_questions AS aq
+        JOIN assessments AS a ON (a.id = aq.assessment_id)
+    WHERE aq.id = assessment_question_id_param;
+
+
     relevant_instance_questions AS (
         SELECT
             iq.*
@@ -45,7 +27,7 @@ BEGIN
             JOIN assessment_instances AS ai ON (iq.assessment_instance_id = ai.id)
             JOIN user_roles ON user_roles.user_id = ai.user_id
         WHERE
-            iq.assessment_question_id = more_info.assessment_question_id
+            iq.assessment_question_id = assessment_question_id_param
             AND user_roles.role = 'Student'
     ),
     relevant_users AS (
@@ -57,49 +39,49 @@ BEGIN
         GROUP BY
             u.user_id
     ),
+
+
+
+    WITH
+    relevant_assessment_instances AS (
+        SELECT ai.*
+        FROM
+            assessment_instances AS ai
+            JOIN enrollments AS e ON (e.user_id = ai.user_id)
+        WHERE
+            e.course_instance_id = course_instance_id_var
+            AND e.role = 'Student'
+    ),
     question_scores_by_user AS (
         SELECT
             ai.user_id,
-            avg(iq.score_perc) AS user_score_perc
+            avg(iq.score_perc) AS score_perc
         FROM
-            relevant_instance_questions AS iq
-            JOIN assessment_instances AS ai ON (iq.assessment_instance_id = ai.id)
-        GROUP BY
-            ai.user_id
+            relevant_assessment_instances AS ai
+            JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
+        GROUP BY ai.user_id
     ),
     assessment_scores_by_user AS (
         SELECT
             ai.user_id,
-            max(ai.score_perc) AS user_score_perc
-        FROM
-            relevant_assessment_instances AS ai
-        GROUP BY
-            ai.user_id
+            max(ai.score_perc) AS score_perc
+        FROM relevant_assessment_instances AS ai
+        GROUP BY ai.user_id
     ),
     user_quintiles AS (
         SELECT
             assessment_scores_by_user.user_id,
             ntile(5) OVER (
-                ORDER BY assessment_scores_by_user.user_score_perc
+                ORDER BY assessment_scores_by_user.score_perc
             ) as quintile
-        FROM
-            assessment_scores_by_user
+        FROM assessment_scores_by_user
     ),
     quintile_scores AS (
-        SELECT
-            avg(question_scores_by_user.user_score_perc) AS quintile_score
+        SELECT avg(question_scores_by_user.score_perc) AS quintile_score
         FROM
             question_scores_by_user
             JOIN user_quintiles ON (user_quintiles.user_id = question_scores_by_user.user_id)
-        GROUP BY
-            user_quintiles.quintile
-        ORDER BY
-            user_quintiles.quintile
-    ),
-    quintile_scores_as_array AS (
-        SELECT array_agg(quintile_scores.quintile_score) AS quintile_scores
-        FROM
-            quintile_scores
+        GROUP BY user_quintiles.quintile
     ),
     instance_question_stats_by_user AS (
         SELECT
@@ -119,14 +101,13 @@ BEGIN
         FROM
             relevant_instance_questions AS iq
             JOIN assessment_instances AS ai ON (iq.assessment_instance_id = ai.id)
-        GROUP BY
-            ai.user_id
+        GROUP BY ai.user_id
     ),
     aq_stats AS (
         SELECT
             greatest(0, least(100, avg(iq_stats_by_user.user_score_perc))) AS mean_question_score,
             sqrt(var_pop(iq_stats_by_user.user_score_perc)) AS question_score_variance,
-            greatest(0, least(100, corr(question_scores_by_user.user_score_perc, assessment_scores_by_user.user_score_perc) * 100.0)) as discrimination,
+            greatest(0, least(100, corr(question_scores_by_user.score_perc, assessment_scores_by_user.score_perc) * 100.0)) as discrimination,
             avg(iq_stats_by_user.some_submission_perc) AS some_submission_perc,
             avg(iq_stats_by_user.some_perfect_submission_perc) AS some_perfect_submission_perc,
             avg(iq_stats_by_user.some_nonzero_submission_perc) AS some_nonzero_submission_perc,
@@ -163,7 +144,7 @@ BEGIN
         mean_question_score = aq_stats.mean_question_score,
         question_score_variance = aq_stats.question_score_variance,
         discrimination = aq_stats.discrimination,
-        quintile_question_scores = quintile_scores_as_array.quintile_scores,
+        quintile_question_scores = array(quintile_scores),
         some_submission_perc = aq_stats.some_submission_perc,
         some_perfect_submission_perc = aq_stats.some_perfect_submission_perc,
         some_nonzero_submission_perc = aq_stats.some_nonzero_submission_perc,
@@ -190,10 +171,7 @@ BEGIN
         number_submissions_hist = aq_stats.number_submissions_hist
     FROM
         aq_stats
-        JOIN more_info ON TRUE
-        JOIN quintile_scores_as_array ON TRUE
     WHERE
-        aq.id = more_info.assessment_question_id;
-
+        aq.id = assessment_question_id_param;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
