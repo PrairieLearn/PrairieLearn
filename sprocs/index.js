@@ -13,6 +13,9 @@ module.exports = {
         async.eachSeries([
             'array_dot.sql',
             'array_product.sql',
+            'array_and_number.sql',
+            'array_avg.sql',
+            'array_var.sql',
             'histogram.sql',
             'array_histogram.sql',
             'format_interval.sql',
@@ -115,13 +118,7 @@ module.exports = {
             'grader_loads_current.sql',
             'assessment_questions_calculate_stats_for_assessment.sql',
             'assessment_questions_calculate_stats.sql',
-            'length_of_incorrect_streak.sql',
             'instance_questions_calculate_stats.sql',
-            'calculate_incremental_submission_score_array.sql',
-            'multiply.sql',
-            'array_and_number.sql',
-            'array_avg.sql',
-            'array_var.sql'
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
