@@ -18,7 +18,7 @@ BEGIN
         coalesce(bool_or(s.score != 0), FALSE),
         array_agg(s.score ORDER BY s.date),
         max(s.score),
-        avg(s.score),
+        avg(s.score)
     INTO
         some_submission_var,
         some_perfect_submission_var,
