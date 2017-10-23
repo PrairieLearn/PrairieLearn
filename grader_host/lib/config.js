@@ -149,7 +149,7 @@ config.loadConfig = function(callback) {
                 } else {
                     logger.info('Loading AWS config from aws-config.json');
                     AWS.config.loadFromPath('./aws-config.json');
-                    exportedConfig.awsConfig = awsConfig;
+                    exportedConfig.awsConfig = JSON.parse(awsConfig);
                 }
                 callback(null);
             });

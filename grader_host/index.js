@@ -22,6 +22,8 @@ async.series([
     (callback) => {
         configManager.loadConfig((err) => {
             if (ERR(err, callback)) return;
+            globalLogger.info('Config loaded:');
+            globalLogger.info(JSON.stringify(config, null, 2));
             callback(null);
         });
     },
