@@ -102,7 +102,7 @@ var stat_descriptions = {
     INCREMENTAL_SUBMISSION_SCORE_POINTS_AVERAGES: {
         title: 'μ<sub>Incr. Sub. Points Array</sub>',
         non_html_title:'Incr. Sub. Points Array average',
-        description: '(incremental submission points array): The average incremental submission points gain (over students that had at least one submission) for the 1st submission, 2nd submission, etc. arr[n] = The incremental points gained by submitting the nth submission.',
+        description: '(incremental submission points array): The average incremental submission points gain (over students that had at least one submission) for the 1st submission, 2nd submission, etc. arr[n] = The incremental points gained by submitting the nth submission. Only available for exams.',
     },
     AVERAGE_NUMBER_SUBMISSIONS: {
         title: 'μ<sub>Num. Sub.</sub>',
