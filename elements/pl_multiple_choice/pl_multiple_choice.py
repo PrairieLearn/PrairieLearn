@@ -81,16 +81,18 @@ def render(element_html, element_index, data):
     correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)
 
     if data['panel'] == 'question':
-        editable = data['editable']
+
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
+        if (score is not None):
+            data['editable'] = False
 
         html = ''
         for answer in answers:
             item = '  <label' + (' class="radio-inline"' if inline else '') + '>\n' \
                 + '    <input type="radio"' \
                 + ' name="' + name + '" value="' + answer['key'] + '"' \
-                + ('' if editable else ' disabled') \
+                + ('' if data['editable'] else ' disabled') \
                 + (' checked ' if (submitted_key == answer['key']) else '') \
                 + ' />\n' \
                 + '    (' + answer['key'] + ') ' + answer['html'] + '\n' \

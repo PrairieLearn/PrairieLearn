@@ -94,16 +94,18 @@ def render(element_html, element_index, data):
     correct_keys = [answer['key'] for answer in correct_answer_list]
 
     if data['panel'] == 'question':
-        editable = data['editable']
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
+
+        if (score is not None):
+            data['editable'] = False
 
         html = ''
         for answer in display_answers:
             item = '  <label' + (' class="checkbox-inline"' if inline else '') + '>\n' \
                 + '    <input type="checkbox"' \
                 + ' name="' + name + '" value="' + answer['key'] + '"' \
-                + ('' if editable else ' disabled') \
+                + ('' if data['editable'] else ' disabled') \
                 + (' checked ' if (answer['key'] in submitted_keys) else '') \
                 + ' />\n' \
                 + '    (' + answer['key'] + ') ' + answer['html'].strip() + '\n' \
