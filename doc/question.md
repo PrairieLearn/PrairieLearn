@@ -56,6 +56,11 @@ The `info.json` file for each question defines properties of the question. For e
 - `clientFiles` (optional) lists the files that the client (student's webbrowser) can access. Anything in here should be considered viewable by the student.
 - `type` specifies the question format and should be `"v3"` for the current PrairieLearn question format.
 
+## Partial credit
+
+By default all v3 questions award partial credit. For example, if there are two numeric answers in a question and only one of them is correct then the student will be awarded 50% of the available points.
+
+To disable partial credit for a question, set `"partialCredit": false` in the `info.json` file for the question. This will mean that the question will either give 0% or 100%, and it will only give 100% if every element on the page is fully correct.
 
 ## Question `server.py`
 
