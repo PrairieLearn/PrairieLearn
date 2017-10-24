@@ -56,15 +56,22 @@ module.exports = {
                             external_grading_files = opts.serverFilesCourse;
                         }
                     }
-                    if ((q.type == 'v3') && (q.partialCredit != null)) {
-                        return callback(new Error(`Question ${qid} has type "v3" and so cannot specify "partialCredit" (it automatically uses partial credit)`));
+                    let partialCredit;
+                    if (q.partialCredit != null) {
+                        partialCredit = q.partialCredit;
+                    } else {
+                        if (q.type == 'v3') {
+                            partialCredit = true;
+                        } else {
+                            partialCredit = false;
+                        }
                     }
                     var params = {
                         uuid: q.uuid,
                         qid: qid,
                         type: (q.type == 'v3') ? 'Freeform' : q.type,
                         title: q.title,
-                        partial_credit: (q.type == 'v3') ? true : !!q.partialCredit,
+                        partial_credit: partialCredit,
                         template_directory: q.template,
                         options: q.options,
                         client_files: q.clientFiles || [],

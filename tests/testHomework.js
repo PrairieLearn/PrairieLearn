@@ -25,11 +25,12 @@ const questionsArray = [
     {qid: 'partialCredit3', type: 'Freeform', maxPoints: 11},
     {qid: 'partialCredit4_v2', type: 'Calculation', maxPoints: 13},
     {qid: 'partialCredit5_v2_partial', type: 'Calculation', maxPoints: 12},
+    {qid: 'partialCredit6_no_partial', type: 'Freeform', maxPoints: 8},
 ];
 
 const questions = _.keyBy(questionsArray, 'qid');
 
-const assessmentMaxPoints = 96;
+const assessmentMaxPoints = 104;
 
 // each outer entry is a whole exam session
 // each inner entry is a list of question submissions
@@ -818,7 +819,119 @@ describe('Homework assessment', function() {
         helperQuestion.checkAssessmentScore(locals);
     });
 
-    describe('20. test downloading files', function() {
+    describe('20. submit incorrect answers to question partialCredit6_no_partial', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.shouldHaveButtons = ['grade', 'save'];
+                locals.postAction = 'grade';
+                locals.question = questions.partialCredit6_no_partial;
+                locals.expectedResult = {
+                    submission_score: 0,
+                    submission_correct: false,
+                    instance_question_points: 0,
+                    instance_question_score_perc: 0/8 * 100,
+                    assessment_instance_points: 26,
+                    assessment_instance_score_perc: 26/assessmentMaxPoints * 100,
+                };
+                locals.getSubmittedAnswer = function(_variant) {
+                    return {
+                        s1: 45,
+                        s2: 80,
+                    };
+                };
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkQuestionScore(locals);
+        helperQuestion.checkAssessmentScore(locals);
+    });
+
+    describe('21. submit first partially correct answers to question partialCredit6_no_partial', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.shouldHaveButtons = ['grade', 'save'];
+                locals.postAction = 'grade';
+                locals.question = questions.partialCredit6_no_partial;
+                locals.expectedResult = {
+                    submission_score: 0,
+                    submission_correct: false,
+                    instance_question_points: 0,
+                    instance_question_score_perc: 0/8 * 100,
+                    assessment_instance_points: 26,
+                    assessment_instance_score_perc: 26/assessmentMaxPoints * 100,
+                };
+                locals.getSubmittedAnswer = function(_variant) {
+                    return {
+                        s1: 100,
+                        s2: 99,
+                    };
+                };
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkQuestionScore(locals);
+        helperQuestion.checkAssessmentScore(locals);
+    });
+
+    describe('21. submit second partially correct answers to question partialCredit6_no_partial', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.shouldHaveButtons = ['grade', 'save'];
+                locals.postAction = 'grade';
+                locals.question = questions.partialCredit6_no_partial;
+                locals.expectedResult = {
+                    submission_score: 0,
+                    submission_correct: false,
+                    instance_question_points: 0,
+                    instance_question_score_perc: 0/8 * 100,
+                    assessment_instance_points: 26,
+                    assessment_instance_score_perc: 26/assessmentMaxPoints * 100,
+                };
+                locals.getSubmittedAnswer = function(_variant) {
+                    return {
+                        s1: 37,
+                        s2: 100,
+                    };
+                };
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkQuestionScore(locals);
+        helperQuestion.checkAssessmentScore(locals);
+    });
+
+    describe('22. submit correct answers to question partialCredit6_no_partial', function() {
+        describe('setting up the submission data', function() {
+            it('should succeed', function() {
+                locals.shouldHaveButtons = ['grade', 'save'];
+                locals.postAction = 'grade';
+                locals.question = questions.partialCredit6_no_partial;
+                locals.expectedResult = {
+                    submission_score: 1,
+                    submission_correct: true,
+                    instance_question_points: 3,
+                    instance_question_score_perc: 3/8 * 100,
+                    assessment_instance_points: 29,
+                    assessment_instance_score_perc: 29/assessmentMaxPoints * 100,
+                };
+                locals.getSubmittedAnswer = function(_variant) {
+                    return {
+                        s1: 100,
+                        s2: 100,
+                    };
+                };
+            });
+        });
+        helperQuestion.getInstanceQuestion(locals);
+        helperQuestion.postInstanceQuestion(locals);
+        helperQuestion.checkQuestionScore(locals);
+        helperQuestion.checkAssessmentScore(locals);
+    });
+
+    describe('23. test downloading files', function() {
         describe('setting up the submission data', function() {
             it('should succeed', function() {
                 locals.shouldHaveButtons = ['grade', 'save'];
@@ -917,7 +1030,7 @@ describe('Homework assessment', function() {
         });
     });
 
-    describe('21. regrading', function() {
+    describe('24. regrading', function() {
         describe('change max_points', function() {
             it('should succeed', function(callback) {
                 sqldb.query(sql.update_max_points, [], function(err, _result) {
