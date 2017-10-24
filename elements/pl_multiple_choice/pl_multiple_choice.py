@@ -82,6 +82,8 @@ def render(element_html, element_index, data):
 
     if data['panel'] == 'question':
         editable = data['editable']
+        partial_score = data['partial_scores'].get(name, {'score': None})
+        score = partial_score.get('score', None)
 
         html = ''
         for answer in answers:
@@ -93,18 +95,17 @@ def render(element_html, element_index, data):
                 + ' />\n' \
                 + '    (' + answer['key'] + ') ' + answer['html'] + '\n' \
                 + '  </label>\n'
-            if submitted_key == answer['key']:
-                if correct_key == answer['key']:
-                    item = item + '<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
-                else:
-                    item = item + '<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
+            if score is not None:
+                if submitted_key == answer['key']:
+                    if correct_key == answer['key']:
+                        item = item + '<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
+                    else:
+                        item = item + '<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
             if not inline:
                 item = '<div class="radio">\n' + item + '</div>\n'
             html += item
         if inline:
             html = '<p>\n' + html + '</p>\n'
-        partial_score = data['partial_scores'].get(name, {'score': None})
-        score = partial_score.get('score', None)
         if score is not None:
             try:
                 score = float(score)
