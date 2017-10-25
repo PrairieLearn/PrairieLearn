@@ -69,7 +69,7 @@
 
   * Add new UINs for dev users to avoid conflicts in production DB (Matt West).
 
-  * Add `partialCredit` option for v2 questions (Matt West).
+  * Add `partialCredit` question option (Matt West).
 
   * Split installing documentation into separate method sections (Matt West).
 
