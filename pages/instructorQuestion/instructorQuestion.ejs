@@ -32,7 +32,9 @@
             </tr>
             <tr>
               <th>QID</th>
-              <td><%= question.qid %></td>
+              <td><%= question.qid %> 
+                  <% if (question.GHLink) { %><a target="_blank" href="<%= question.GHLink %>">View on GitHub</a><% } %>
+              </td>
             </tr>
             <tr>
               <th>Type</th>
