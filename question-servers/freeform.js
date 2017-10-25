@@ -413,15 +413,24 @@ module.exports = {
                 ERR(err, () => {});
 
                 if (phase == 'grade' || phase == 'test') {
-                    let total_weight = 0, total_weight_score = 0;
-                    _.each(data.partial_scores, value => {
-                        const score = _.get(value, 'score', 0);
-                        const weight = _.get(value, 'weight', 1);
-                        total_weight += weight;
-                        total_weight_score += weight * score;
-                    });
-                    data.score = total_weight_score / (total_weight == 0 ? 1 : total_weight);
-                    data.feedback = {};
+                    if (context.question.partial_credit) {
+                        let total_weight = 0, total_weight_score = 0;
+                        _.each(data.partial_scores, value => {
+                            const score = _.get(value, 'score', 0);
+                            const weight = _.get(value, 'weight', 1);
+                            total_weight += weight;
+                            total_weight_score += weight * score;
+                        });
+                        data.score = total_weight_score / (total_weight == 0 ? 1 : total_weight);
+                        data.feedback = {};
+                    } else {
+                        let score = 0;
+                        if (_.size(data.partial_scores) > 0 && _.every(data.partial_scores, value => _.get(value, 'score', 0) >= 1)) {
+                            score = 1;
+                        }
+                        data.score = score;
+                        data.feedback = {};
+                    }
                 }
 
                 callback(null, courseIssues, data, $.html(), fileData, renderedElementNames);

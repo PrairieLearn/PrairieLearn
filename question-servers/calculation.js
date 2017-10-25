@@ -131,8 +131,14 @@ module.exports = {
                 err.status = 500;
                 return ERR(error.addData(err, data), callback);
             }
+
+            let score = grading.score;
+            if (!question.partial_credit) {
+                // legacy Calculation questions round the score to 0 or 1 (with 0.5 rounding up)
+                score = (grading.score >= 0.5) ? 1 : 0;
+            }
             const data = {
-                score: ((grading.score >= 0.5) ? 1 : 0),
+                score: score,
                 v2_score: grading.score,
                 feedback: grading.feedback,
                 partial_scores: {},

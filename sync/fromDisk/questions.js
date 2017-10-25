@@ -56,11 +56,22 @@ module.exports = {
                             external_grading_files = opts.serverFilesCourse;
                         }
                     }
+                    let partialCredit;
+                    if (q.partialCredit != null) {
+                        partialCredit = q.partialCredit;
+                    } else {
+                        if (q.type == 'v3') {
+                            partialCredit = true;
+                        } else {
+                            partialCredit = false;
+                        }
+                    }
                     var params = {
                         uuid: q.uuid,
                         qid: qid,
                         type: (q.type == 'v3') ? 'Freeform' : q.type,
                         title: q.title,
+                        partial_credit: partialCredit,
                         template_directory: q.template,
                         options: q.options,
                         client_files: q.clientFiles || [],
