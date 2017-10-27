@@ -1,6 +1,7 @@
 columns
     auth_user_id: bigint
     date: timestamp with time zone default now()
+    grading_job_id: bigint
     id: bigint not null default nextval('question_score_logs_id_seq'::regclass)
     instance_question_id: bigint not null
     max_points: double precision
@@ -13,4 +14,5 @@ indexes
 
 foreign-key constraints
     question_score_logs_auth_user_id_fkey: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    question_score_logs_grading_job_id_fkey: FOREIGN KEY (grading_job_id) REFERENCES grading_jobs(id) ON UPDATE CASCADE ON DELETE CASCADE
     question_score_logs_instance_question_id_fkey: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
