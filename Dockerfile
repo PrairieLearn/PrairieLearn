@@ -12,6 +12,7 @@ RUN yum -y install \
         nodejs \
         python36u \
         python36u-pip \
+        python36u-devel \
         gcc \
     && yum clean all \
     && mkdir /var/postgres && chown postgres:postgres /var/postgres \
