@@ -6,14 +6,34 @@ CREATE OR REPLACE FUNCTION
     instance_questions_grade(
         instance_question_id bigint,
         submission_score DOUBLE PRECISION,
-        authn_user_id bigint,
-        grading_job_id bigint DEFAULT NULL
+        grading_job_id bigint,
+        authn_user_id bigint
     ) RETURNS VOID
 AS $$
 DECLARE
+    instance_question_open boolean;
     new_values record;
     new_instance_question instance_questions%ROWTYPE;
 BEGIN
+    SELECT iq.open INTO instance_question_open
+    FROM instance_questions AS iq WHERE iq.id = instance_question_id;
+
+    IF NOT instance_question_open THEN
+        -- this shouldn't happen, so log an error
+        PERFORM issues_insert_for_variant(
+            v.id, 'Submission when instance question is closed', '', false,
+            false, jsonb_build_object('grading_job_id', grading_job_id),
+            '{}'::jsonb, instance_questions_grade.authn_user_id)
+        FROM
+            grading_jobs AS gj
+            JOIN submissions AS s ON (s.id = gj.submission_id)
+            JOIN variants AS v ON (v.id = s.variant_id)
+        WHERE
+            gj.id = grading_job_id;
+
+        RETURN;
+    END IF;
+
     SELECT *
     INTO new_values
     FROM instance_questions_points(instance_question_id, submission_score);
