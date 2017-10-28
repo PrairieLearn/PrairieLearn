@@ -13,7 +13,10 @@ columns
     grading_started_at: timestamp with time zone
     grading_submitted_at: timestamp with time zone
     id: bigint not null default nextval('grading_jobs_id_seq'::regclass)
+    output: text
     partial_scores: jsonb
+    s3_bucket: text
+    s3_root_key: text
     score: double precision
     submission_id: bigint not null
     v2_score: double precision
