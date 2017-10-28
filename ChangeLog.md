@@ -155,6 +155,8 @@
 
   * Fix premature answer display for `pl_multiple_choice` and `pl_checkbox` (Matt West).
 
+  * Fix broken popovers in student exam questions (Tim Bretl).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
