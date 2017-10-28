@@ -1,10 +1,13 @@
 DROP FUNCTION IF EXISTS instance_questions_grade(bigint,boolean,bigint);
+DROP FUNCTION IF EXISTS instance_questions_grade(bigint,double precision,bigint);
+DROP FUNCTION IF EXISTS instance_questions_grade(bigint,double precision,bigint,bigint);
 
 CREATE OR REPLACE FUNCTION
     instance_questions_grade(
         instance_question_id bigint,
-        IN submission_score DOUBLE PRECISION,
-        authn_user_id bigint
+        submission_score DOUBLE PRECISION,
+        authn_user_id bigint,
+        grading_job_id bigint DEFAULT NULL
     ) RETURNS VOID
 AS $$
 DECLARE
@@ -33,9 +36,9 @@ BEGIN
 
     INSERT INTO question_score_logs
         (instance_question_id, auth_user_id,  max_points,
-                   points,            score_perc)
+                   points,            score_perc, grading_job_id)
     VALUES
         (instance_question_id, authn_user_id, new_values.max_points,
-        new_values.points, new_values.score_perc);
+        new_values.points, new_values.score_perc, grading_job_id);
 END;
 $$ LANGUAGE plpgsql VOLATILE;
