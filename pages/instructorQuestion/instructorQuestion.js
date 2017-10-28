@@ -111,6 +111,12 @@ router.get('/', function(req, res, next) {
     // req.query.variant_id might be undefined, which will generate a new variant
     question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
         if (ERR(err, next)) return;
+
+        locals.questionGHLink = null;
+        var GHfound = locals.course.repository.match(/^git@github.com:(.+?)(.git)?$/);
+        if (GHfound) {
+            locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/questions/' + locals.question.qid;
+        }
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
