@@ -77,6 +77,7 @@ digraph prairielearn_tables {
     grading_jobs -> { submissions }
     assessment_score_logs -> { assessment_instances }
     question_score_logs -> { instance_questions }
+    question_score_logs -> { grading_jobs } [style=dashed]
     variant_view_logs -> { variants }
     assessment_view_logs -> { assessment_instances }
 

@@ -75,7 +75,7 @@ BEGIN
 
     PERFORM variants_update_after_grading(variant_id, grading_job.correct);
     IF assessment_instance_id IS NOT NULL THEN
-        PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.auth_user_id);
+        PERFORM instance_questions_grade(instance_question_id, grading_job.score, grading_job.id, grading_job.auth_user_id);
         PERFORM assessment_instances_grade(assessment_instance_id, grading_job.auth_user_id, credit);
     END IF;
 END;
