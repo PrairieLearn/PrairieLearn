@@ -76,24 +76,19 @@ async.series([
 function handleJob(job, done) {
     load.startJob();
 
-    const logGroup = config.jobLogGroup;
-    const logStream = `job_${job.jobId}_${new Date().getTime()}`;
-
     const loggerOptions = {
-        groupName: logGroup,
-        streamName: logStream
+        bucket: job.s3Bucket,
+        rootKey: job.s3RootKey
     };
 
     const logger = jobLogger(loggerOptions);
-    globalLogger.info(`Logging job ${job.jobId} to CloudWatch: ${logGroup}/${logStream}`);
+    globalLogger.info(`Logging job ${job.jobId} to S3: ${job.s3Bucket}/${job.s3RootKey}`);
 
     const context = {
         docker: new Docker(),
         s3: new AWS.S3(),
         startTime: new Date().toISOString(),
         logger,
-        logGroup,
-        logStream,
         job
     };
 
@@ -173,7 +168,8 @@ function initFiles(info, callback) {
             s3,
             job: {
                 jobId,
-                s3JobsBucket,
+                s3Bucket,
+                s3RootKey,
                 entrypoint
             }
         }
@@ -207,8 +203,8 @@ function initFiles(info, callback) {
         (callback) => {
             logger.info('Loading job files');
             const params = {
-                Bucket: s3JobsBucket,
-                Key: `job_${jobId}.tar.gz`
+                Bucket: s3Bucket,
+                Key: `${s3RootKey}/job.tar.gz`
             };
             s3.getObject(params).createReadStream()
             .on('error', (err) => {
@@ -341,6 +337,7 @@ function runJob(info, callback) {
                     if (err) {
                         logger.error('Could not read results.json');
                         results.succeeded = false;
+                        results.message = 'Could not read grading results.';
                     } else {
                         try {
                             results.results = JSON.parse(data);
@@ -370,7 +367,6 @@ function runJob(info, callback) {
         results.end_time = new Date().toISOString();
 
         if (err) {
-            results.end_time = new Date().toISOString();
             results.succeeded = false;
             results.message = err.toString();
             return callback(null, results);
@@ -387,7 +383,8 @@ function uploadResults(info, callback) {
             s3,
             job: {
                 jobId,
-                s3ResultsBucket,
+                s3Bucket,
+                s3RootKey,
                 webhookUrl,
                 csrfToken
             }
@@ -398,10 +395,10 @@ function uploadResults(info, callback) {
     async.series([
         (callback) => {
             // Now we can send the results back to S3
-            logger.info(`Uploading results.json to S3 bucket ${s3ResultsBucket}`);
+            logger.info(`Uploading results.json to S3 bucket ${s3Bucket}/${s3RootKey}`);
             const params = {
-                Bucket: s3ResultsBucket,
-                Key: `job_${jobId}.json`,
+                Bucket: s3Bucket,
+                Key: `${s3RootKey}/results.json`,
                 Body: new Buffer(JSON.stringify(results), 'binary')
             };
             s3.putObject(params, (err) => {
@@ -437,8 +434,8 @@ function uploadArchive(results, callback) {
             logger,
             s3,
             job: {
-                jobId,
-                s3ArchivesBucket
+                s3Bucket,
+                s3RootKey
             }
         },
         initFiles: {
@@ -466,10 +463,10 @@ function uploadArchive(results, callback) {
             });
         },
         (callback) => {
-            logger.info(`Uploading archive to s3 bucket ${s3ArchivesBucket}`);
+            logger.info(`Uploading archive to s3 bucket ${s3Bucket}/${s3RootKey}`);
             const params = {
-                Bucket: s3ArchivesBucket,
-                Key: `job_${jobId}.tar.gz`,
+                Bucket: s3Bucket,
+                Key: `${s3RootKey}/archive.tar.gz`,
                 Body: fs.createReadStream(tempArchive)
             };
             s3.upload(params, (err) => {

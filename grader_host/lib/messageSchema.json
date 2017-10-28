@@ -8,9 +8,8 @@
         "jobId",
         "image",
         "entrypoint",
-        "s3JobsBucket",
-        "s3ResultsBucket",
-        "s3ArchivesBucket"
+        "s3Bucket",
+        "s3RootKey"
     ],
     "properties": {
         "jobId": {
@@ -29,16 +28,12 @@
             "description": "The number of seconds after which the grading job will timeout.",
             "type": "integer"
         },
-        "s3JobsBucket": {
-            "description": "The AWS S3 bucket to fetch this job from.",
+        "s3Bucket": {
+            "description": "The AWS S3 bucket containing this job's files.",
             "type": "string"
         },
-        "s3ResultsBucket": {
-            "description": "The AWS S3 bucket to upload results to.",
-            "type": "string"
-        },
-        "s3ArchivesBucket": {
-            "description": "The AWS S3 bucket to upload the archives for this job to.",
+        "s3RootKey": {
+            "description": "The root key for th job's files.",
             "type": "string"
         },
         "webhookUrl": {
