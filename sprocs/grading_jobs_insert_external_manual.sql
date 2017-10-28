@@ -46,7 +46,7 @@ BEGIN
         WHERE
             v.id = main.variant_id
             AND gj.submission_id = s.id
-            AND gj.graded_at = NULL
+            AND gj.graded_at IS NULL
             AND gj.grading_requested_at IS NOT NULL
             AND gj.grading_request_canceled_at IS NULL
         RETURNING gj.*
