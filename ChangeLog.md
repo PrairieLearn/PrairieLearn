@@ -157,6 +157,8 @@
 
   * Fix broken popovers in student exam questions (Tim Bretl).
 
+  * Fix canceling of grading jobs on a new submission (Matt West).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
