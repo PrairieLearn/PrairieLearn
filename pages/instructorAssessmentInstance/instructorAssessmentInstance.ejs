@@ -13,6 +13,10 @@
   <body>
     <%- include('../partials/navbar', {navPage: ''}); %>
     <div id="content" class="container">
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+      
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title">
@@ -28,6 +32,25 @@
             <tr><th>Name</th><td><%= instance_user.name %></td></tr>
             <tr><th>Role</th><td><%= instance_enrollment.role %></td></tr>
             <tr><th>Instance</th><td><%= assessment_instance.number %></td></tr>
+            <tr>
+              <th>Points</th>
+              <td>
+                <% include('../partials/pointsFormatter'); %>
+                <%= getStringFromFloat(assessment_instance.points) %>
+                <small>/<span class="text-muted"><%= getStringFromFloat(assessment_instance.max_points) %></span></small>
+                <% if (authz_data.has_instructor_edit) { %>
+                <a id="editTotalPoints"
+                   tabindex="0" class="btn btn-xs btn-default" role="button"
+                   data-toggle="popover" data-container="body"
+                   data-html="true" data-placement="auto" title="Change total points"
+                   data-content="<%= include('editTotalPointsForm',
+                                 {id: 'editTotalPoints'}); %>"
+                   data-trigger="manual" onclick="$(this).popover('show')">
+                  <i class="fa fa-pencil" aria-hidden="true"></i>
+                </a>
+                <% } %>
+              </td>
+            </tr>
             <tr><th>Score</th><td><%- include('../partials/scorebar', {score: assessment_instance.score_perc}); %></td></tr>
             <tr><th>Duration</th><td><%= assessment_instance_duration %></td></tr>
           </tbody>
@@ -37,6 +60,66 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">
+            <%= assessment_instance_label %>
+            Questions:
+            <%= instance_user.name %> (<%= instance_user.uid %>)
+        </div>
+
+        <table class="table table-condensed table-hover">
+          <thead>
+            <tr>
+              <th>Question</th>
+              <th class="cell-center">
+                Awarded points
+              </th>
+              <th class="cell-center">
+                Percentage score
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            <% instance_questions.forEach(function(instance_question, i_instance_question) { %>
+            <% if (instance_question.start_new_zone && instance_question.zone_title) { %>
+            <tr>
+              <th colspan="4"><%= instance_question.zone_title %></th>
+            </tr>
+            <% } %>
+            <tr>
+              <td>
+                <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instance_question/<%= instance_question.id %>/">
+                  <%= instance_question.question_number %>.
+                  <%= instance_question.question_title %>
+                </a>
+                (<a href="<%= urlPrefix %>/question/<%= instance_question.question_id %>/"><%= instance_question.qid %></a>)
+              </td>
+              <td class="cell-center">
+                <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>
+                <% if (authz_data.has_instructor_edit) { %>
+                <a id="editQuestionPoints<%= i_instance_question %>"
+                   tabindex="0" class="btn btn-xs btn-default" role="button"
+                   data-toggle="popover" data-container="body"
+                   data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> points"
+                   data-content="<%= include('editQuestionPointsForm',
+                                 {id: 'editQuestionPoints' + i_instance_question,
+                                 instance_question: instance_question}); %>"
+                   data-trigger="manual" onclick="$(this).popover('show')">
+                  <i class="fa fa-pencil" aria-hidden="true"></i>
+                </a>
+                <% } %>
+              </td>
+              <td class="cell-center"><%- include('../partials/scorebar', {score: instance_question.score_perc}); %></td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+      
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title">
@@ -98,6 +181,9 @@
         </div>
       </div>
 
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+      
     </div>
   </body>
 </html>

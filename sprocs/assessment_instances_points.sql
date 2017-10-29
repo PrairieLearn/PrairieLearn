@@ -1,9 +1,11 @@
 DROP FUNCTION IF EXISTS assessment_points(bigint,integer);
+DROP FUNCTION IF EXISTS assessment_points(bigint,integer,boolean);
 
 CREATE OR REPLACE FUNCTION
     assessment_instances_points(
         IN assessment_instance_id bigint,
         IN credit INTEGER,
+        IN allow_decrease BOOLEAN DEFAULT FALSE,
         OUT points DOUBLE PRECISION,
         OUT points_in_grading DOUBLE PRECISION,
         OUT score_perc DOUBLE PRECISION,
@@ -78,8 +80,10 @@ BEGIN
         score_perc := credit;
     END IF;
 
-    -- no matter what, don't decrease the score_perc
-    score_perc := greatest(score_perc, current_score_perc);
+    IF NOT allow_decrease THEN
+        -- no matter what, don't decrease the score_perc
+        score_perc := greatest(score_perc, current_score_perc);
+    END IF;
 
     -- #########################################################################
     -- in_grading versions of points and score_perc
@@ -99,8 +103,10 @@ BEGIN
         max_possible_score_perc := credit;
     END IF;
     
-    -- no matter what, don't decrease the achieveable score_perc below new score_perc
-    max_possible_score_perc := greatest(max_possible_score_perc, score_perc);
+    IF NOT allow_decrease THEN
+        -- no matter what, don't decrease the achieveable score_perc below new score_perc
+        max_possible_score_perc := greatest(max_possible_score_perc, score_perc);
+    END IF;
 
     -- compute score_perc_in_grading
     score_perc_in_grading := max_possible_score_perc - score_perc;

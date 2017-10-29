@@ -32,11 +32,17 @@ router.get('/', function(req, res, next) {
         res.locals.assessment_instance_duration = result.rows[0].assessment_instance_duration;
 
         var params = {assessment_instance_id: res.locals.assessment_instance.id};
-        sqldb.query(sql.select_log, params, function(err, result) {
+        sqldb.query(sql.select_instance_questions, params, function(err, result) {
             if (ERR(err, next)) return;
-            res.locals.log = result.rows;
+            res.locals.instance_questions = result.rows;
 
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            var params = {assessment_instance_id: res.locals.assessment_instance.id};
+            sqldb.query(sql.select_log, params, function(err, result) {
+                if (ERR(err, next)) return;
+                res.locals.log = result.rows;
+
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            });
         });
     });
 });
@@ -67,6 +73,33 @@ router.get('/:filename', function(req, res, next) {
         });
     } else {
         next(new Error('Unknown filename: ' + req.params.filename));
+    }
+});
+
+router.post('/', function(req, res, next) {
+    if (!res.locals.authz_data.has_instructor_edit) return next();
+    if (req.body.__action == 'edit_total_points') {
+        let params = [
+            req.body.assessment_instance_id,
+            req.body.points,
+            res.locals.authn_user.user_id,
+        ];
+        sqldb.call('assessment_instances_update_points', params, function(err, _result) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action == 'edit_question_points') {
+        let params = [
+            req.body.instance_question_id,
+            req.body.points,
+            res.locals.authn_user.user_id,
+        ];
+        sqldb.call('instance_questions_update_points', params, function(err, _result) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else {
+        return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
 });
 
