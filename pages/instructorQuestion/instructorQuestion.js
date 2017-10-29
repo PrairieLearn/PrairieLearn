@@ -112,10 +112,12 @@ router.get('/', function(req, res, next) {
     question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
         if (ERR(err, next)) return;
 
-        locals.questionGHLink = null;
-        var GHfound = locals.course.repository.match(/^git@github.com:(.+?)(.git)?$/);
-        if (GHfound) {
-            locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/questions/' + locals.question.qid;
+        res.locals.questionGHLink = null;
+        if (res.locals.course.repository) {
+            var GHfound = res.locals.course.repository.match(/^git@github.com:(.+?)(.git)?$/);
+            if (GHfound) {
+                res.locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/questions/' + res.locals.question.qid;
+            }
         }
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
