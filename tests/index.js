@@ -7,6 +7,7 @@ require('./testSyncCourseInfo');
 require('./testGetHomepage');
 require('./testQuestions');
 require('./testInstructorQuestions');
+require('./testInstructorAssessment');
 require('./testHomework');
 require('./testExam');
 require('./testAccess');
