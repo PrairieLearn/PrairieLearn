@@ -87,7 +87,7 @@ window.PLFileUpload.prototype.saveSubmittedFile = function(name, contents) {
     if (idx === -1) {
         this.files.push({
             name: name,
-            contents: contents
+            contents: contents,
         });
     } else {
         this.files[idx].contents = contents;
