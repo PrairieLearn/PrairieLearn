@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: ''}); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Grading Job <%= job_id %></h3>
+        </div>
+
+        <table class="table table-condensed table-hover two-column-description">
+          <tbody>
+            <tr>
+              <th>Question</th>
+              <td><%= question_qid %></td>
+            </tr>
+            <tr>
+              <th>User</th>
+              <td><%= user_uid %></td>
+            </tr>
+            <tr>
+              <th>Requested at</th>
+              <td><%= formatted_grading_requested_at %></td>
+            </tr>
+            <tr>
+              <th>Submitted at</th>
+              <td><%= formatted_grading_submitted_at %></td>
+            </tr>
+            <tr>
+              <th>Started at</th>
+              <td><%= formatted_grading_started_at %></td>
+            </tr>
+            <tr>
+              <th>Finished at</th>
+              <td><%= formatted_grading_finished_at %></td>
+            </tr>
+            <tr>
+              <th>Graded at</th>
+              <td><%= formatted_graded_at %></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Job Output</h3>
+        </div>
+        <div class="panel-body">
+          <% if (job_output) { %>
+          <pre><%= job_output %></pre>
+          <% } else { %>
+          No output was captured for this grading job.
+          <% } %>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
