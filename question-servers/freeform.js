@@ -97,7 +97,7 @@ module.exports = {
                     if (ERR(err, callback)) return;
                     return callback(null, elements);
                 });
-            }
+            },
         ], (err, elements) => {
             if (ERR(err, callback)) return;
             return callback(null, elements);
@@ -685,7 +685,7 @@ module.exports = {
                         courseElementStyles: [],
                         courseElementScripts: [],
                         clientFilesCourseStyles: [],
-                        clientFilesCourseScripts: []
+                        clientFilesCourseScripts: [],
                     };
 
                     // Gather dependencies for all rendered elements
@@ -740,7 +740,7 @@ module.exports = {
                             'coreElementStyles',
                             'coreElementScripts',
                             'courseElementStyles',
-                            'courseElementScripts'
+                            'courseElementScripts',
                         ];
                         for (const type of depdendencyTypes) {
                             if (_.has(elementDependencies, type)) {
@@ -776,12 +776,12 @@ module.exports = {
                         ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
                         // It's important that any library-style scripts come first
                         ...coreScriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
-                        ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`)
+                        ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
                     ];
                     htmls.extraHeadersHtml = headerHtmls.join('\n');
                     callback(null);
                 });
-            }
+            },
         ], (err) => {
             pc.done();
             if (ERR(err, callback)) return;

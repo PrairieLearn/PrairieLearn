@@ -325,7 +325,7 @@ module.exports.startServer = function(callback) {
         var options = {
             key: fs.readFileSync('/etc/pki/tls/private/localhost.key'),
             cert: fs.readFileSync('/etc/pki/tls/certs/localhost.crt'),
-            ca: [fs.readFileSync('/etc/pki/tls/certs/server-chain.crt')]
+            ca: [fs.readFileSync('/etc/pki/tls/certs/server-chain.crt')],
         };
         server = https.createServer(options, app);
         server.listen(config.serverPort);
@@ -454,7 +454,7 @@ if (config.startServer) {
               if (ERR(err, callback)) return;
               callback(null);
           });
-        }
+        },
     ], function(err, data) {
         if (err) {
             logger.error('Error initializing PrairieLearn server:', err, data);

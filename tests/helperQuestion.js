@@ -61,7 +61,7 @@ module.exports = {
             it('should have the variant in the DB if has grade or save button', function(callback) {
                 if (!locals.shouldHaveButtons.includes('grade') && !locals.shouldHaveButtons.includes('save')) return callback(null);
                 var params = {
-                    variant_id: locals.variant_id
+                    variant_id: locals.variant_id,
                 };
                 sqldb.queryOneRow(sql.select_variant, params, function(err, result) {
                     if (ERR(err, callback)) return;

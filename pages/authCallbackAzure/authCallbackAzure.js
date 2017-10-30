@@ -27,7 +27,7 @@ router.all('/', function(req, res, next) {
         sqldb.call('users_select_or_insert', params, (err, result) => {
             if (ERR(err, next)) return;
             var tokenData = {
-                user_id: result.rows[0].user_id
+                user_id: result.rows[0].user_id,
             };
             var pl_authn = csrf.generateToken(tokenData, config.secretKey);
             res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});

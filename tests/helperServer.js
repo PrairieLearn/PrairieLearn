@@ -63,7 +63,7 @@ module.exports = {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
-            }
+            },
         ], function(err) {
             if (ERR(err, callback)) return;
             callback(null);
