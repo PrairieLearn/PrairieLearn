@@ -71,6 +71,8 @@
 
   * Add `partialCredit` question option (Matt West).
 
+  * Add jsPlumb library from PL v1 (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,

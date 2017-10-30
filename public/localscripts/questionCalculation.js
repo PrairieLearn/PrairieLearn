@@ -24,6 +24,12 @@ requirejs.config({
         'sha1': {
             exports: 'Sha1',
         },
+        'jquery-ui': {
+            deps: ['jquery']
+        },
+        'jquery.jsPlumb': {
+            deps: ['jquery', 'jquery-ui']
+        },
     },
     config: {
         text: {
