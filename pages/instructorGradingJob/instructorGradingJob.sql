@@ -4,6 +4,7 @@ SELECT
     gj.output AS job_output,
     format_date_full_compact_ms(gj.grading_requested_at, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_grading_requested_at,
     format_date_full_compact_ms(gj.grading_submitted_at, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_grading_submitted_at,
+    format_date_full_compact_ms(gj.grading_received_at, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_grading_received_at,
     format_date_full_compact_ms(gj.grading_started_at, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_grading_started_at,
     format_date_full_compact_ms(gj.grading_finished_at, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_grading_finished_at,
     format_date_full_compact_ms(gj.graded_at, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_graded_at,
