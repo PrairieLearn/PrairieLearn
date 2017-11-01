@@ -73,6 +73,8 @@
 
   * Add jsPlumb library from PL v1 (Matt West).
 
+  * Add ability to de-link course instances from PrairieSchedule (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,

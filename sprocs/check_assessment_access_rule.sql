@@ -11,6 +11,8 @@ CREATE OR REPLACE FUNCTION
         IN use_date_check BOOLEAN, -- use a separate flag for safety, rather than having 'date = NULL' indicate this
         OUT authorized boolean
     ) AS $$
+DECLARE
+    ps_linked boolean;
 BEGIN
     authorized := TRUE;
 
@@ -68,6 +70,15 @@ BEGIN
         WHERE
             a.id = assessment_access_rule.assessment_id;
         EXIT schedule_access WHEN NOT FOUND; -- no linked PS course, skip this check
+
+        -- do we actually want to enforce PrairieSchedule linking?
+        SELECT ci.ps_linked INTO ps_linked
+        FROM
+            assessments AS a
+            JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+        WHERE
+            a.id = assessment_access_rule.assessment_id;
+        EXIT schedule_access WHEN NOT ps_linked; -- don't want linking, skip this check
 
         -- is there a current checked-in reservation?
         SELECT r.*
