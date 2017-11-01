@@ -284,7 +284,7 @@ function runJob(info, callback) {
                 stderr: true,
             }, (err, stream) => {
                 if (ERR(err, callback)) return;
-                const out = byline(stream);
+                const out = byline(stream, { keepEmptyLines: true });
                 out.on('data', (line) => {
                     logger.info(`container> ${line.toString('utf8')}`);
                 });
