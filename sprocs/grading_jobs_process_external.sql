@@ -3,6 +3,7 @@ CREATE OR REPLACE FUNCTION
         grading_job_id bigint,
         score double precision,
         feedback jsonb,
+        received_time timestamptz,
         start_time timestamptz,
         finish_time timestamptz
     ) RETURNS void
@@ -53,6 +54,7 @@ BEGIN
     UPDATE grading_jobs
     SET
         graded_at = now(),
+        grading_received_at = received_time,
         grading_started_at = start_time,
         grading_finished_at = finish_time,
         score = grading_jobs_process_external.score,
