@@ -75,6 +75,8 @@
 
   * Add ability to de-link course instances from PrairieSchedule (Matt West).
 
+  * Add explicit POST size limit of 200 KiB (Matt West).
+
   * Add size limits for grading jobs (100 KiB) (Nathan Walters).
 
   * Split installing documentation into separate method sections (Matt West).
