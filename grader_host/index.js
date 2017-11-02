@@ -75,6 +75,7 @@ async.series([
 
 function handleJob(job, done) {
     load.startJob();
+    const receivedTime = new Date().toISOString();
 
     const loggerOptions = {
         bucket: job.s3Bucket,
@@ -87,7 +88,7 @@ function handleJob(job, done) {
     const context = {
         docker: new Docker(),
         s3: new AWS.S3(),
-        startTime: new Date().toISOString(),
+        receivedTime,
         logger,
         job
     };
@@ -241,7 +242,7 @@ function runJob(info, callback) {
         context: {
             docker,
             logger,
-            startTime,
+            receivedTime,
             job: {
                 jobId,
                 image,
@@ -293,8 +294,9 @@ function runJob(info, callback) {
         },
         (container, callback) => {
             container.start((err) => {
-                logger.info('Container started!');
                 if (ERR(err, callback)) return;
+                logger.info('Container started!');
+                results.start_time = new Date().toISOString();
                 callback(null, container);
             });
         },
@@ -307,6 +309,7 @@ function runJob(info, callback) {
             container.wait((err) => {
                 clearTimeout(timeoutId);
                 if (ERR(err, callback)) return;
+                results.end_time = new Date().toISOString();
                 callback(null, container);
             });
         },
@@ -363,8 +366,7 @@ function runJob(info, callback) {
         if (ERR(err, (err) => logger.error(err)));
 
         results.job_id = jobId;
-        results.start_time = startTime;
-        results.end_time = new Date().toISOString();
+        results.received_time = receivedTime;
 
         if (err) {
             results.succeeded = false;
