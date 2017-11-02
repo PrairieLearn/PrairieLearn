@@ -342,6 +342,15 @@ function runJob(info, callback) {
                         logger.error('Could not read results.json');
                         results.succeeded = false;
                     } else {
+                        if (Buffer.byteLength(data) > 100 * 1024) {
+                            // Cap output at 100KB
+                            results.succeeded = false;
+                            results.message = 'The grading results were larger than 100KB. ' +
+                            'Try removing print statements from your code to reduce the output size. ' +
+                            'If the problem persists, please contact course staff or a proctor.';
+                            return callback(null);
+                        }
+
                         try {
                             results.results = JSON.parse(data);
                             results.succeeded = true;
@@ -351,6 +360,7 @@ function runJob(info, callback) {
                             results.succeeded = false;
                             results.message = 'Could not parse the grading results.';
                         }
+
                         callback(null);
                     }
                 });
