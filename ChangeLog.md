@@ -77,6 +77,8 @@
 
   * Add explicit POST size limit of 200 KiB (Matt West).
 
+  * Add size limits for grading jobs (100 KiB) (Nathan Walters).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
