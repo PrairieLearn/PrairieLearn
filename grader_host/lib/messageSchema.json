@@ -14,7 +14,7 @@
     "properties": {
         "jobId": {
             "description": "The unique ID for this job.",
-            "type": "string"
+            "type": ["string", "integer"]
         },
         "image": {
             "description": "The image that this job will be executed in.",

@@ -19,7 +19,8 @@ module.exports = function(options) {
 
     const transports = [
         new (winston.transports.File)({
-            stream: s3LoggerStream
+            stream: s3LoggerStream,
+            json: false
         })
     ];
 
