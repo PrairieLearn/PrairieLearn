@@ -82,6 +82,32 @@ WITH event_log AS (
     UNION
     (
         SELECT
+            3.5 AS event_order,
+            'External grading results'::TEXT AS event_name,
+            'blue1'::TEXT AS event_color,
+            gj.graded_at AS date,
+            u.user_id AS auth_user_id,
+            u.uid AS auth_user_uid,
+            q.qid,
+            q.id AS question_id,
+            v.id as variant_id,
+            v.number as variant_number,
+            to_jsonb(gj.*) AS data
+        FROM
+            grading_jobs AS gj
+            JOIN submissions AS s ON (s.id = gj.submission_id)
+            JOIN variants AS v ON (v.id = s.variant_id)
+            JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+            JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+            JOIN questions AS q ON (q.id = aq.question_id)
+            LEFT JOIN users AS u ON (u.user_id = s.auth_user_id)
+        WHERE
+            iq.assessment_instance_id = $assessment_instance_id
+            AND gj.grading_method = 'External'
+    )
+    UNION
+    (
+        SELECT
             4 AS event_order,
             'Grade submission'::TEXT AS event_name,
             'orange3'::TEXT AS event_color,
