@@ -343,9 +343,9 @@ function runJob(info, callback) {
                         results.succeeded = false;
                     } else {
                         if (Buffer.byteLength(data) > 100 * 1024) {
-                            // Cap output at 100KB
+                            // Cap output at 100 KiB
                             results.succeeded = false;
-                            results.message = 'The grading results were larger than 100KB. ' +
+                            results.message = 'The grading results were larger than 100 KiB. ' +
                             'Try removing print statements from your code to reduce the output size. ' +
                             'If the problem persists, please contact course staff or a proctor.';
                             return callback(null);
