@@ -76,8 +76,8 @@ if (!config.devMode) {
     passport.use(new OIDCStrategy(azureConfig, function(iss, sub, profile, accessToken, refreshToken, done) {return done(null, profile);}));
 }
 
-app.use(bodyParser.json({limit: '200kb'}));
-app.use(bodyParser.urlencoded({extended: false, limit: '200kb'}));
+app.use(bodyParser.json({limit: 200 * 1024}));
+app.use(bodyParser.urlencoded({extended: false, limit: 200 * 1024}));
 app.use(cookieParser());
 app.use(passport.initialize());
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
