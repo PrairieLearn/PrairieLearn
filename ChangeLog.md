@@ -75,6 +75,8 @@
 
   * Add ability to de-link course instances from PrairieSchedule (Matt West).
 
+  * Add explicit POST size limit of 200 KiB (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
