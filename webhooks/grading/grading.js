@@ -1,16 +1,16 @@
-var ERR = require('async-stacktrace');
-var express = require('express');
-var async = require('async');
-var router = express.Router();
-var AWS = require('aws-sdk');
+const ERR = require('async-stacktrace');
+const express = require('express');
+const async = require('async');
+const router = express.Router();
+const AWS = require('aws-sdk');
 
-var logger = require('../../lib/logger');
-var assessment = require('../../lib/assessment');
-var externalGraderCommon = require('../../lib/externalGraderCommon');
-var sqldb = require('../../lib/sqldb');
-var sqlLoader = require('../../lib/sql-loader');
-var sql = sqlLoader.loadSqlEquiv(__filename);
-var externalGradingSocket = require('../../lib/external-grading-socket');
+const logger = require('../../lib/logger');
+const assessment = require('../../lib/assessment');
+const externalGraderCommon = require('../../lib/externalGraderCommon');
+const sqldb = require('../../lib/sqldb');
+const sqlLoader = require('../../lib/sql-loader');
+const sql = sqlLoader.loadSqlEquiv(__filename);
+const externalGradingSocket = require('../../lib/external-grading-socket');
 
 function processResults(jobId, data) {
     assessment.processGradingResult(externalGraderCommon.makeGradingResult(jobId, data));

@@ -1,7 +1,6 @@
 -- BLOCK select_job
 SELECT
-    gj.id AS job_id,
-    gj.output AS job_output,
+    to_jsonb(gj.*) AS grading_job,
     format_date_full_compact_ms(gj.grading_requested_at, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_grading_requested_at,
     format_date_full_compact_ms(gj.grading_submitted_at, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_grading_submitted_at,
     format_date_full_compact_ms(gj.grading_received_at, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_grading_received_at,

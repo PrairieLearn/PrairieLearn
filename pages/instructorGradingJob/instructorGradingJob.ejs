@@ -8,7 +8,7 @@
     <div id="content" class="container">
       <div class="panel panel-primary">
         <div class="panel-heading">
-          <h3 class="panel-title">Grading Job <%= job_id %></h3>
+          <h3 class="panel-title">Grading Job <%= grading_job.id %></h3>
         </div>
 
         <table class="table table-condensed table-hover two-column-description">
@@ -54,13 +54,74 @@
           <h3 class="panel-title">Job Output</h3>
         </div>
         <div class="panel-body">
-          <% if (job_output) { %>
-          <pre><%= job_output %></pre>
+          <% if (grading_job.s3_bucket && grading_job.s3_root_key) { %>
+            These logs were pulled from AWS S3 at the time PrairieLearn received
+            the results of this job. Because logs are uploaded asynchronously,
+            it's possible that some lines are missing. If you suspect that's
+            the case, you should download <code>output.log</code> below.
+          <% } %>
+          <% if (grading_job.output) { %>
+          <pre><%= grading_job.output %></pre>
           <% } else { %>
           No output was captured for this grading job.
           <% } %>
         </div>
       </div>
+
+      <% if (grading_job.s3_bucket && grading_job.s3_root_key) { %>
+        <div class="panel panel-primary">
+          <div class="panel-heading">
+            <h3 class="panel-title">Downloads</h3>
+          </div>
+          <table class="table table-condensed table-hover">
+            <thead>
+              <tr>
+                <th>File</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/job.tar.gz">job.tar.gz</a>
+                </td>
+                <td>
+                  Contains all files necessary for grading; this is what
+                  is mounted to <code>/grade</code> when you job is run.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/archive.tar.gz">archive.tar.gz</a>
+                </td>
+                <td>
+                  A snapshot of <code>/grade</code> after your job has been executed.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/results.json">results.json</a>
+                </td>
+                <td>
+                  Contains the PrairieLearn-generated results, which includes the
+                  contents of your <code>results.json</code> as well as some
+                  PrairieLearn metadata.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/output.log">output.log</a>
+                </td>
+                <td>
+                  Contains the raw output from stdout/stderr for your job.
+                  Lines beginning with <code>container &gt;</code> are from
+                  your container; the rest are diagnostic logs from PrairieLearn.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
     </div>
   </body>
 </html>
