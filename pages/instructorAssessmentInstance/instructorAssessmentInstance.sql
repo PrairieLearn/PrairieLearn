@@ -104,6 +104,7 @@ WITH event_log AS (
         WHERE
             iq.assessment_instance_id = $assessment_instance_id
             AND gj.grading_method = 'External'
+            AND gj.graded_at IS NOT NULL
     )
     UNION
     (
