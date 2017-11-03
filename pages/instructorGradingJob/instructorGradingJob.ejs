@@ -49,27 +49,6 @@
         </table>
       </div>
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Job Output</h3>
-        </div>
-        <div class="panel-body">
-          <% if (grading_job.s3_bucket && grading_job.s3_root_key) { %>
-            These logs were pulled from AWS S3 at the time PrairieLearn received
-            the results of this job. Because logs are uploaded asynchronously,
-            it's possible that some lines are missing. If you suspect that's
-            the case, you should download <code>output.log</code> below. The
-            logs visible here are also truncated to 10KB; the full contents
-            are available via the link below.
-          <% } %>
-          <% if (grading_job.output) { %>
-          <pre><%= grading_job.output %></pre>
-          <% } else { %>
-          No output was captured for this grading job.
-          <% } %>
-        </div>
-      </div>
-
       <% if (grading_job.s3_bucket && grading_job.s3_root_key) { %>
         <div class="panel panel-primary">
           <div class="panel-heading">
@@ -89,7 +68,7 @@
                 </td>
                 <td>
                   Contains all files necessary for grading; this is what
-                  is mounted to <code>/grade</code> when you job is run.
+                  is mounted to <code>/grade</code> when your job is run.
                 </td>
               </tr>
               <tr>
@@ -124,6 +103,29 @@
           </table>
         </div>
       <% } %>
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Job Output</h3>
+        </div>
+        <div class="panel-body">
+          <% if (grading_job.s3_bucket && grading_job.s3_root_key) { %>
+            These logs were pulled from AWS S3 at the time PrairieLearn received
+            the results of this job. Because logs are uploaded asynchronously,
+            it's possible that some lines are missing. If you suspect that's
+            the case, you should download the full set of logs. Also note that the
+            logs visible here are also truncated to 10KB.
+          <% } %>
+          <% if (grading_job.output) { %>
+          <pre><%= grading_job.output %></pre>
+          <% } else { %>
+          No output was captured for this grading job.
+          <% } %>
+        </div>
+        <div class="panel-footer">
+          <a class="btn btn-primary" href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/output.log">Download full log</a>
+        </div>
+      </div>
     </div>
   </body>
 </html>
