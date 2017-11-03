@@ -58,7 +58,9 @@
             These logs were pulled from AWS S3 at the time PrairieLearn received
             the results of this job. Because logs are uploaded asynchronously,
             it's possible that some lines are missing. If you suspect that's
-            the case, you should download <code>output.log</code> below.
+            the case, you should download <code>output.log</code> below. The
+            logs visible here are also truncated to 10KB; the full contents
+            are available via the link below.
           <% } %>
           <% if (grading_job.output) { %>
           <pre><%= grading_job.output %></pre>
