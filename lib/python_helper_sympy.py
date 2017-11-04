@@ -86,7 +86,27 @@ def evaluate(expr, locals={}):
 
 def convert_string_to_sympy(a, variables):
     # Define a list of valid expressions and their mapping to sympy
-    locals_for_eval = {'cos': sympy.cos, 'sin': sympy.sin, 'tan': sympy.tan, 'exp': sympy.exp, 'log': sympy.log, 'sqrt': sympy.sqrt, 'pi': sympy.pi, '_Integer': sympy.Integer, '_Float': sympy.Float}
+    #
+    # If we wanted to allow floating-point numbers in symbolic expressions, we
+    # would add this to locals_for_eval:
+    #
+    #   '_Float': sympy.Float
+    #
+    # We don't want to allow floating-point numbers, though. They make checking
+    # for equality problematic. For example:
+    #
+    #   (2*pi)**(0.5)
+    #
+    # is parsed as
+    #
+    #   1.4142135623731*pi**0.5
+    #
+    # and is not considered the same as
+    #
+    #   sqrt(2*pi)
+    #
+    # If a floating-point number is present, evaluate will throw an exception.
+    locals_for_eval = {'cos': sympy.cos, 'sin': sympy.sin, 'tan': sympy.tan, 'exp': sympy.exp, 'log': sympy.log, 'sqrt': sympy.sqrt, 'pi': sympy.pi, '_Integer': sympy.Integer}
 
     # If there is a list of variables, add each one to the list of expressions
     if variables is not None:
@@ -95,8 +115,3 @@ def convert_string_to_sympy(a, variables):
 
     # Do the conversion
     return evaluate(a, locals_for_eval)
-
-
-# # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
-# # for exponentiation. In python, only the latter can be used.
-# a = a.replace('^', '**')

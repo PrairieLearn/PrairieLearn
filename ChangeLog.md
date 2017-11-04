@@ -169,6 +169,8 @@
 
   * Fix canceling of grading jobs on a new submission (Matt West).
 
+  * Fix symbolic expression parsing bug by disallowing floating-point numbers (Tim Bretl).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
