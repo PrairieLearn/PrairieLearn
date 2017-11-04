@@ -79,6 +79,8 @@
 
   * Add size limits for grading jobs (100 KiB) (Nathan Walters).
 
+  * Add linting for trailing commas (Nathan Walters).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,

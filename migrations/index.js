@@ -75,13 +75,13 @@ module.exports.init = function(callback) {
                             // Record the migration
                             const params = {
                                 filename: file.filename,
-                                index: file.index
+                                index: file.index,
                             };
                             sqldb.query(sql.insert_migration, params, (err, _result) => {
                                 if (ERR(err, callback)) return;
                                 callback(null);
                             });
-                        }
+                        },
                     ], (err) => {
                         if (ERR(err, callback)) return;
                         callback(null);

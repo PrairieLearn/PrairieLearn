@@ -37,21 +37,21 @@ async.series([
     (callback) => {
         logger.info(`Creating S3 bucket for jobs (${jobsBucketName})...`);
         const params = {
-            Bucket: jobsBucketName
+            Bucket: jobsBucketName,
         };
         S3.createBucket(params, callback);
     },
     (callback) => {
         logger.info(`Creating S3 bucket for results (${resultsBucketName})...`);
         const params = {
-            Bucket: resultsBucketName
+            Bucket: resultsBucketName,
         };
         S3.createBucket(params, callback);
     },
     (callback) => {
         logger.info(`Creating S3 bucket for archives (${archivesBucketName})...`);
         const params = {
-            Bucket: archivesBucketName
+            Bucket: archivesBucketName,
         };
         S3.createBucket(params, callback);
     },
@@ -67,13 +67,13 @@ async.series([
     (callback) => {
         // Populate a submission with files
         submission.submitted_answer = {
-            _files: []
+            _files: [],
         };
         fs.readFile(path.join(__dirname, 'fib.py'), (err, contents) => {
             if (ERR(err, callback)) return;
             submission.submitted_answer._files.push({
                 name: 'fib.py',
-                contents: new Buffer(contents).toString('base64')
+                contents: new Buffer(contents).toString('base64'),
             });
             callback(null);
         });
@@ -84,11 +84,11 @@ async.series([
         const configOverrides = {
             externalGradingJobsS3Bucket: jobsBucketName,
             externalGradingResultsS3Bucket: resultsBucketName,
-            externalGradingArchivesS3Bucket: archivesBucketName
+            externalGradingArchivesS3Bucket: archivesBucketName,
         };
         async.times(COUNT, (n, next) => {
             const gradingJob = {
-                id: n
+                id: n,
             };
             const request = grader.handleGradingRequest(gradingJob, submission, null, question, course, configOverrides);
             request.on('submit', () => {
@@ -165,23 +165,23 @@ async.series([
         (callback) => {
             logger.info('Deleting S3 bucket for jobs...');
             const params = {
-                Bucket: jobsBucketName
+                Bucket: jobsBucketName,
             };
             S3.deleteBucket(params, callback);
         },
         (callback) => {
             logger.info('Deleting S3 bucket for results...');
             const params = {
-                Bucket: resultsBucketName
+                Bucket: resultsBucketName,
             };
             S3.deleteBucket(params, callback);
         },
         (callback) => {
             logger.info('Deleting S3 bucket for archives...');
             const params = {
-                Bucket: archivesBucketName
+                Bucket: archivesBucketName,
             };
             S3.deleteBucket(params, callback);
-        }
+        },
     ]);
 });
