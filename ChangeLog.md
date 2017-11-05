@@ -171,6 +171,8 @@
 
   * Fix symbolic expression parsing bug by disallowing floating-point numbers (Tim Bretl).
 
+  * Fix handling of broken questions on Homeworks (Matt West).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
