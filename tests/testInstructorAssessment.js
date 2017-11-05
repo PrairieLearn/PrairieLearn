@@ -172,4 +172,162 @@ describe('Instructor assessment editing', function() {
             assert.equal(locals.instructorAssessmentInstanceUrl, locals.instructorBaseUrl + '/assessment_instance/1');
         });
     });
+
+    describe('6. GET to instructor assessment instance URL', function() {
+        it('should load successfully', function(callback) {
+            request(locals.instructorAssessmentInstanceUrl, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                res = response;
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse', function() {
+            locals.$ = cheerio.load(page);
+        });
+    });
+
+    describe('7. edit-question-points form', function() {
+        it('should exist', function() {
+            elemList = locals.$('#instanceQuestionList td:contains("addNumbers") ~ td .editQuestionPointsButton');
+            assert.lengthOf(elemList, 1);
+        });
+        it('should have data-content', function() {
+            assert.isString(elemList[0].attribs['data-content']);
+        });
+        it('data-content should parse', function() {
+            locals.data$ = cheerio.load(elemList[0].attribs['data-content']);
+        });
+        it('data-content should have a CSRF token', function() {
+            elemList = locals.data$('form input[name="__csrf_token"]');
+            assert.lengthOf(elemList, 1);
+            assert.deepProperty(elemList[0], 'attribs.value');
+            locals.__csrf_token = elemList[0].attribs.value;
+            assert.isString(locals.__csrf_token);
+        });
+        it('data-content should have an __action', function() {
+            elemList = locals.data$('form input[name="__action"]');
+            assert.lengthOf(elemList, 1);
+            assert.deepProperty(elemList[0], 'attribs.value');
+            locals.__action = elemList[0].attribs.value;
+            assert.isString(locals.__action);
+            assert.equal(locals.__action, 'edit_question_points');
+        });
+        it('data-content should have an instance_question_id', function() {
+            elemList = locals.data$('form input[name="instance_question_id"]');
+            assert.lengthOf(elemList, 1);
+            assert.deepProperty(elemList[0], 'attribs.value');
+            locals.instance_question_id = Number.parseInt(elemList[0].attribs.value);
+        });
+        it('data-content should have a points input', function() {
+            elemList = locals.data$('form input[name="points"]');
+            assert.lengthOf(elemList, 1);
+        });
+    });
+
+    describe('8. POST to instructor assessment instance URL to set question points', function() {
+        it('should load successfully', function(callback) {
+            const form = {
+                __action: locals.__action,
+                __csrf_token: locals.__csrf_token,
+                instance_question_id: locals.instance_question_id,
+                points: 4,
+            };
+            request.post({url: locals.instructorAssessmentInstanceUrl, form: form, followAllRedirects: true}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                locals.postEndTime = Date.now();
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse', function() {
+            locals.$ = cheerio.load(page);
+        });
+        it('should update the total points correctly', function() {
+            elemList = locals.$('#total-points');
+            assert.lengthOf(elemList, 1);
+            const totalPoints = Number.parseInt(elemList[0].children[0].data);
+            assert.equal(totalPoints, 15);
+        });
+    });
+
+    describe('9. edit-total-points form', function() {
+        it('should exist', function() {
+            elemList = locals.$('#editTotalPointsButton');
+            assert.lengthOf(elemList, 1);
+        });
+        it('should have data-content', function() {
+            assert.isString(elemList[0].attribs['data-content']);
+        });
+        it('data-content should parse', function() {
+            locals.data$ = cheerio.load(elemList[0].attribs['data-content']);
+        });
+        it('data-content should have a CSRF token', function() {
+            elemList = locals.data$('form input[name="__csrf_token"]');
+            assert.lengthOf(elemList, 1);
+            assert.deepProperty(elemList[0], 'attribs.value');
+            locals.__csrf_token = elemList[0].attribs.value;
+            assert.isString(locals.__csrf_token);
+        });
+        it('data-content should have an __action', function() {
+            elemList = locals.data$('form input[name="__action"]');
+            assert.lengthOf(elemList, 1);
+            assert.deepProperty(elemList[0], 'attribs.value');
+            locals.__action = elemList[0].attribs.value;
+            assert.isString(locals.__action);
+            assert.equal(locals.__action, 'edit_total_points');
+        });
+        it('data-content should have the correct assessment_instance_id', function() {
+            elemList = locals.data$('form input[name="assessment_instance_id"]');
+            assert.lengthOf(elemList, 1);
+            assert.deepProperty(elemList[0], 'attribs.value');
+            const assessment_instance_id = Number.parseInt(elemList[0].attribs.value);
+            assert.equal(assessment_instance_id, 1);
+        });
+        it('data-content should have a points input', function() {
+            elemList = locals.data$('form input[name="points"]');
+            assert.lengthOf(elemList, 1);
+        });
+    });
+
+    describe('10. POST to instructor assessment instance URL to set total points', function() {
+        it('should load successfully', function(callback) {
+            const form = {
+                __action: locals.__action,
+                __csrf_token: locals.__csrf_token,
+                assessment_instance_id: 1,
+                points: 7,
+            };
+            request.post({url: locals.instructorAssessmentInstanceUrl, form: form, followAllRedirects: true}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                locals.postEndTime = Date.now();
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse', function() {
+            locals.$ = cheerio.load(page);
+        });
+        it('should update the total points correctly', function() {
+            elemList = locals.$('#total-points');
+            assert.lengthOf(elemList, 1);
+            const totalPoints = Number.parseInt(elemList[0].children[0].data);
+            assert.equal(totalPoints, 7);
+        });
+    });
 });
