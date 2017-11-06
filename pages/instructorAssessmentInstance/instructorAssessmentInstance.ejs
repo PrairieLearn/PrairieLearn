@@ -36,7 +36,7 @@
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
-      
+
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title">
@@ -72,7 +72,11 @@
               <td><button class="btn btn-xs btn-<%= row.event_color %>"><%= row.event_name %></button></td>
               <td><% if (row.qid) { %><a href="<%= urlPrefix %>/question/<%= row.question_id %>/"><%= row.qid %></a><% } %></td>
               <td><% if (row.question_id && row.variant_id) { %><%= row.variant_number %><% } %></td>
+              <% if (row.event_name != 'External grading results') { %>
               <td style="word-break: break-all;"><%= (row.data != null) ? JSON.stringify(row.data) : null %></td>
+              <% } else { %>
+              <td><a class="btn btn-primary" href="<%= urlPrefix %>/grading_job/<%= row.data.id %>">View grading job <%= row.data.id %></td>
+              <% } %>
             </tr>
             <% }); %>
           </tbody>

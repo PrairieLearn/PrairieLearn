@@ -83,6 +83,8 @@
 
   * Add GitHub link to instructor question view (Dave Mussulman).
 
+  * Add instructor view of external grading logs (Nathan Walters).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,

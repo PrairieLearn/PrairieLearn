@@ -12,13 +12,13 @@ DatabaseError.prototype = Object.create(Error.prototype);
 DatabaseError.prototype.constructor = DatabaseError;
 
 describe('database', function() {
-    this.timeout(5000);
+    this.timeout(20000);
 
     before('set up testing database', helperDb.beforeOnlyCreate);
     after('tear down testing database', helperDb.after);
 
     it('should match the database described in /database', function(done) {
-        this.timeout(10000);
+        this.timeout(20000);
         const options = {
             outputFormat: 'string',
             coloredOutput: process.stdout.isTTY,

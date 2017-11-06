@@ -7,7 +7,7 @@ var logger = require('./dummyLogger');
 var courseDir = 'exampleCourse';
 
 describe('courseDB.loadFullCourse()', function() {
-    this.timeout(5000);
+    this.timeout(20000);
 
     var course;
     before('load course from disk', function(callback) {

@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: ''}); %>
+    <div id="content" class="container">
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Grading Job <%= grading_job.id %></h3>
+        </div>
+
+        <table class="table table-condensed table-hover two-column-description">
+          <tbody>
+            <tr>
+              <th>Question</th>
+              <td><%= question_qid %></td>
+            </tr>
+            <tr>
+              <th>User</th>
+              <td><%= user_uid %></td>
+            </tr>
+            <tr>
+              <th>Requested at</th>
+              <td><%= formatted_grading_requested_at %></td>
+            </tr>
+            <tr>
+              <th>Submitted at</th>
+              <td><%= formatted_grading_submitted_at %></td>
+            </tr>
+            <tr>
+              <th>Received at</th>
+              <td><%= formatted_grading_received_at %></td>
+            </tr>
+            <tr>
+              <th>Started at</th>
+              <td><%= formatted_grading_started_at %></td>
+            </tr>
+            <tr>
+              <th>Finished at</th>
+              <td><%= formatted_grading_finished_at %></td>
+            </tr>
+            <tr>
+              <th>Graded at</th>
+              <td><%= formatted_graded_at %></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <% if (grading_job.s3_bucket && grading_job.s3_root_key) { %>
+        <div class="panel panel-primary">
+          <div class="panel-heading">
+            <h3 class="panel-title">Downloads</h3>
+          </div>
+          <table class="table table-condensed table-hover">
+            <thead>
+              <tr>
+                <th>File</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/job.tar.gz">job.tar.gz</a>
+                </td>
+                <td>
+                  Contains all files necessary for grading; this is what
+                  is mounted to <code>/grade</code> when your job is run.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/archive.tar.gz">archive.tar.gz</a>
+                </td>
+                <td>
+                  A snapshot of <code>/grade</code> after your job has been executed.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/results.json">results.json</a>
+                </td>
+                <td>
+                  Contains the PrairieLearn-generated results, which includes the
+                  contents of your <code>results.json</code> as well as some
+                  PrairieLearn metadata.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/output.log">output.log</a>
+                </td>
+                <td>
+                  Contains the raw output from stdout/stderr for your job.
+                  Lines beginning with <code>container &gt;</code> are from
+                  your container; the rest are diagnostic logs from PrairieLearn.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Job Output</h3>
+        </div>
+        <div class="panel-body">
+          <% if (grading_job.s3_bucket && grading_job.s3_root_key) { %>
+            These logs were pulled from AWS S3 at the time PrairieLearn received
+            the results of this job. Because logs are uploaded asynchronously,
+            it's possible that some lines are missing. If you suspect that's
+            the case, you should download the full set of logs. Also note that the
+            logs visible here are also truncated to 10KB.
+          <% } %>
+          <% if (grading_job.output) { %>
+          <pre><%= grading_job.output %></pre>
+          <% } else { %>
+          No output was captured for this grading job.
+          <% } %>
+        </div>
+        <div class="panel-footer">
+          <a class="btn btn-primary" href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/output.log">Download full log</a>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
