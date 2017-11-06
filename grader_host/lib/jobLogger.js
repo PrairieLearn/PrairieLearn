@@ -1,25 +1,26 @@
 const winston = require('winston');
-const CloudWatchTransport = require('winston-aws-cloudwatch');
+const S3StreamLogger = require('s3-streamlogger').S3StreamLogger;
 
 const globalLogger = require('./logger');
 const config = require('./config').config;
 
 module.exports = function(options) {
     const {
-        groupName,
-        streamName
+        bucket,
+        rootKey
     } = options;
 
+    const s3LoggerStream = new S3StreamLogger({
+        bucket,
+        folder: rootKey,
+        name_format: 'output.log', // No need to rotate, all logs go to same file
+        upload_every: 1000 // Most jobs are short-lived, so push every 1s
+    });
+
     const transports = [
-        new (CloudWatchTransport)({
-            level: 'info',
-            logGroupName: groupName,
-            logStreamName: streamName,
-            createLogGroup: true,
-            createLogStream: true,
-            submissionInterval: 1000,
-            batchSize: 30,
-            awsConfig: config.awsConfig
+        new (winston.transports.File)({
+            stream: s3LoggerStream,
+            json: false
         })
     ];
 
@@ -30,7 +31,7 @@ module.exports = function(options) {
     const logger = new (winston.Logger)({ transports });
 
     logger.on('error', (err) => {
-        globalLogger.error(`Error sending logs to ${streamName} in group ${groupName}`);
+        globalLogger.error(`Error sending logs to ${bucket}/${rootKey}/output.log`);
         globalLogger.error(err);
     });
 
