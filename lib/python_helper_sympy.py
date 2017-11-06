@@ -1,5 +1,20 @@
 import sympy
 import ast
+import sys
+
+class Error(Exception):
+    def __init__(self, lineno, col_offset):
+        self.lineno = lineno
+        self.col_offset = col_offset
+
+class HasFloatError(Error):
+    pass
+
+class HasComplexError(Error):
+    pass
+
+class NotOnWhitelistError(Error):
+    pass
 
 # Safe evaluation of user input to convert from string to sympy expression.
 #
@@ -50,13 +65,22 @@ class ReplaceNumbers(ast.NodeTransformer):
         if isinstance(node.n, int):
             return ast.Call(func=ast.Name(id='_Integer', ctx=ast.Load()), args=[node], keywords=[])
         elif isinstance(node.n, float):
-            return ast.Call(func=ast.Name(id='_Float', ctx=ast.Load()), args=[node], keywords=[])
+            print(node)
+            print(str(node))
+            raise HasFloatError(node.lineno, node.col_offset)
+            # raise ValueError(node)
+            # return ast.Call(func=ast.Name(id='_Float', ctx=ast.Load()), args=[node], keywords=[])
+        elif isinstance(node.n, complex):
+            raise HasComplexError(node.lineno, node.col_offset)
         return node
 
 class CheckWhiteList(ast.NodeVisitor):
     def visit(self, node):
         if not isinstance(node, self.whitelist):
-            raise ValueError(node)
+            print(type(node))
+            print(dir(node))
+            print(node.body)
+            raise NotOnWhitelistError(node.lineno, node.col_offset)
         return super().visit(node)
 
     # Be very careful about adding to the list below. In particular,
@@ -66,23 +90,37 @@ class CheckWhiteList(ast.NodeVisitor):
     # http://blog.delroth.net/2013/03/escaping-a-python-sandbox-ndh-2013-quals-writeup/
     whitelist = (ast.Module, ast.Expr, ast.Load, ast.Expression, ast.Call, ast.Name, ast.Num, ast.UnaryOp, ast.UAdd, ast.USub, ast.BinOp, ast.Add, ast.Sub, ast.Mult, ast.Div, ast.Mod, ast.Pow)
 
+class CheckCalls(ast.NodeVisitor):
+    def visit_Call(self, node):
+        if isinstance(node.func, ast.Name):
+            print(node.func.id)
+            print(node.func.id in ['cos', 'sin', 'atan'])
+        self.generic_visit(node)
+
 def evaluate(expr, locals={}):
     if any(elem in expr for elem in '\n#'):
         raise ValueError(expr)
-    try:
-        # Convert string to AST
-        node = ast.parse(expr.strip(), mode='eval')
-        # Check that all AST expressions are on a whitelist
-        CheckWhiteList().visit(node)
-        # Replace all int and float (not complex) numbers with sympy equivalents
-        node = ReplaceNumbers().visit(node)
-        # Clean up lineno and col_offset attributes
-        ast.fix_missing_locations(node)
-        # Convert AST to code and evaluate it with no global expressions and with
-        # a whitelist of local expressions
-        return eval(compile(node, '<ast>', 'eval'), {'__builtins__': None}, locals)
-    except Exception:
-        raise ValueError(expr)
+
+    # Convert string to AST
+    print("ast.parse")
+    node = ast.parse(expr.strip(), mode='eval')
+
+    CheckCalls().visit(node)
+
+
+    # Check that all AST expressions are on a whitelist
+    print("CheckWhiteList")
+    CheckWhiteList().visit(node)
+    # Replace all int and float (not complex) numbers with sympy equivalents
+    print("ReplaceNumbers")
+    node = ReplaceNumbers().visit(node)
+    # Clean up lineno and col_offset attributes
+    print("fix_missing_locations")
+    ast.fix_missing_locations(node)
+    # Convert AST to code and evaluate it with no global expressions and with
+    # a whitelist of local expressions
+    print("eval")
+    return eval(compile(node, '<ast>', 'eval'), {'__builtins__': None}, locals)
 
 def convert_string_to_sympy(a, variables):
     # Define a list of valid expressions and their mapping to sympy
@@ -115,3 +153,35 @@ def convert_string_to_sympy(a, variables):
 
     # Do the conversion
     return evaluate(a, locals_for_eval)
+
+def point_to_error(s, ind, w):
+    w_left = ind - max(0, ind-w)
+    w_right = min(ind+w, len(s)) - ind
+    # i0 = max(0, ind-w))
+    # i1 = min(ind+w, len(s))
+    print(w_left, w_right)
+    print(s[ind-w_left:ind+w_right])
+    print(' '*w_left + '^' + ' '*w_right)
+    print(s[max(0, ind-w):min(ind+w, len(s))])
+
+
+if __name__ == "__main__":
+    # execute only if run as a script
+    try:
+        print(convert_string_to_sympy(sys.argv[1], sys.argv[2]))
+    except HasFloatError as err:
+        point_to_error(sys.argv[1], err.col_offset, 8)
+    except Exception as err:
+        print(err)
+        print(dir(err))
+        print(err.with_traceback)
+    # except HasFloatError as err:
+    #     print("hello")
+        # print(sys.argv[1])
+        # point_to_error(sys.argv[1], err.lineno, 4)
+        # print(sys.argv[1][err.lineno])
+    # except Exception as inst:
+    #     raise ValueError("another one")
+    #     print(type(inst))
+    #     print(inst.args)
+    #     print(inst)
