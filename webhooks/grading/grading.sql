@@ -7,7 +7,7 @@ WHERE
 
 -- BLOCK get_job_details
 SELECT
-    CASE WHEN graded_at IS NULL THEN FALSE ELSE TRUE END was_graded,
+    (graded_at IS NOT NULL) AS was_graded,
     s3_bucket AS s3_bucket,
     s3_root_key AS s3_root_key
 FROM
