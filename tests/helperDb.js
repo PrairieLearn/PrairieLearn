@@ -16,7 +16,7 @@ module.exports = {
     before: function(callback) {
         // long timeout because DROP DATABASE might take a long time to error
         // if other processes have an open connection to that database
-        this.timeout(10000);
+        this.timeout(20000);
         var client;
         async.series([
             function(callback) {
@@ -83,7 +83,7 @@ module.exports = {
     },
 
     after: function(callback) {
-        this.timeout(10000);
+        this.timeout(20000);
         var client;
         async.series([
             function(callback) {
@@ -122,7 +122,7 @@ module.exports = {
     beforeOnlyCreate: function(callback) {
         // long timeout because DROP DATABASE might take a long time to error
         // if other processes have an open connection to that database
-        this.timeout(10000);
+        this.timeout(20000);
         var client;
         async.series([
             function(callback) {
