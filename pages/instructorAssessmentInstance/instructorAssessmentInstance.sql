@@ -4,12 +4,16 @@ SELECT
     q.title,
     q.id AS question_id,
     admin_assessment_question_number(aq.id) as number,
-    iq.some_correct_submission,
-    iq.first_attempt_correct,
-    iq.last_attempt_correct,
     iq.some_submission,
-    iq.average_success_rate,
-    iq.length_of_incorrect_streak
+    iq.some_perfect_submission,
+    iq.some_nonzero_submission,
+    iq.first_submission_score,
+    iq.last_submission_score,
+    iq.max_submission_score,
+    iq.average_submission_score,
+    iq.submission_score_array,
+    iq.incremental_submission_points_array,
+    iq.incremental_submission_score_array
 FROM
     instance_questions AS iq
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)

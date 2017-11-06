@@ -47,12 +47,13 @@
           <tr>
             <th>Instance question ID</th>
             <th>Question</th>
-            <th>Some correct submission</th>
-            <th>First attempt correct</th>
-            <th>Last attempt correct</th>
             <th>Some submission</th>
-            <th>Average success rate (%) </th>
-            <th>Length of incorrect streak</th>
+            <th>Some perfect submission</th>
+            <th>Some nonzero submission</th>
+            <th>First submission score</th>
+            <th>Last submission score</th>
+            <th>Max submission score</th>
+            <th>Average submission score</th>
           </tr>
           </thead>
           <tbody>
@@ -64,12 +65,13 @@
                   <%= row.number %>. <%= row.title %>
               </a>
             </td>
-            <td><%= row.some_correct_submission %></td>
-            <td><%= row.first_attempt_correct %></td>
-            <td><%= row.last_attempt_correct %></td>
             <td><%= row.some_submission %></td>
-            <td><%= row.average_success_rate %></td>
-            <td><%= row.length_of_incorrect_streak %></td>
+            <td><%= row.some_perfect_submission %></td>
+            <td><%= row.some_nonzero_submission %></td>
+            <td><%= row.first_submission_score %></td>
+            <td><%= row.last_submission_score %></td>
+            <td><%= row.max_submission_score %></td>
+            <td><%= row.average_submission_score %></td>
           </tr>
           <% }); %>
           </tbody>
