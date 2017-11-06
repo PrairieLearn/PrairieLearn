@@ -64,7 +64,7 @@ router.post('/', function(req, res, next) {
                 // Check if we've already received results for this job and
                 // ignore them if we have
                 const params = {
-                    grading_job_id: jobId
+                    grading_job_id: jobId,
                 };
                 sqldb.queryOneRow(sql.get_job_details, params, (err, result) => {
                     if (err) {
@@ -109,25 +109,25 @@ router.post('/', function(req, res, next) {
                             Bucket: s3Bucket,
                             Key: `${s3RootKey}/output.log`,
                             ResponseContentType: 'text/plain',
-                            Range: `bytes=0-${10*1024}` // Only store first 10KB
+                            Range: `bytes=0-${10*1024}`, // Only store first 10KB
                         };
                         new AWS.S3().getObject(params, (err, s3Data) => {
                             if (ERR(err, (err) => logger.error(err))) return;
                             const outputParams = {
                                 grading_job_id: jobId,
-                                output: s3Data.Body
+                                output: s3Data.Body,
                             };
                             sqldb.query(sql.update_job_output, outputParams, (err, _result) => {
                                 if (ERR(err, (err) => logger.error(err))) return;
                                 callback(null);
                             });
                         });
-                    }
+                    },
                 ], (err) => {
                     if (ERR(err, callback)) return;
                     return callback(null);
                 });
-            }
+            },
         ], (err) => {
             if (ERR(err, (err) => logger.error(err))) return;
         });

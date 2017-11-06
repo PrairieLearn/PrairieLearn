@@ -27,7 +27,7 @@ const allowedFiles = [
     'job.tar.gz',
     'archive.tar.gz',
     'output.log',
-    'results.json'
+    'results.json',
 ];
 
 router.get('/:job_id/:file', (req, res, next) => {
