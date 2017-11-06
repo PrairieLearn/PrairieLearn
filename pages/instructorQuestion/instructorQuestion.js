@@ -111,6 +111,19 @@ router.get('/', function(req, res, next) {
     // req.query.variant_id might be undefined, which will generate a new variant
     question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
         if (ERR(err, next)) return;
+
+        res.locals.questionGHLink = null;
+        if (res.locals.course.repository) {
+            const GHfound = res.locals.course.repository.match(/^git@github.com:\/?(.+?)(\.git)?\/?$/);
+            if (GHfound) {
+                if (GHfound[1] == 'PrairieLearn/PrairieLearn') {
+                    // this is exampleCourse, so handle it specially
+                    res.locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/exampleCourse/questions/' + res.locals.question.qid;
+                } else {
+                    res.locals.questionGHLink = 'https://github.com/' + GHfound[1] + '/tree/master/questions/' + res.locals.question.qid;
+                }
+            }
+        }
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
