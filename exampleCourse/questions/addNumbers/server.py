@@ -7,7 +7,10 @@ def generate(data):
     data["params"]["a"] = a
     data["params"]["b"] = b
 
-    c = a + b
-    data["correct_answers"]["c"] = c
+
+    x = 10
+    y = 20
+    data["correct_answers"]["x"] = x
+    data["correct_answers"]["y"] = y
 
     return data

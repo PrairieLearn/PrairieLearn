@@ -57,6 +57,7 @@ module.exports = {
             (callback) => {
                 // Read all files in the given path
                 fs.readdir(sourceDir, (err, files) => {
+
                     if (err && err.code === 'ENOENT') {
                         // Directory doesn't exist, most likely a course with not elements
                         // Proceed with an empty array
