@@ -98,6 +98,8 @@
 
   * Add more feedback when submission to `pl_symbolic_input` has invalid format (Tim Bretl).
 
+  * Add detailed question statistics (Paras Sud).
+
   * Add visible logging for incremental DB migrations (Matt West).
 
   * Split installing documentation into separate method sections (Matt West).
