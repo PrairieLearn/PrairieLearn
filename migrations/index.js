@@ -14,6 +14,7 @@ module.exports = {};
 
 module.exports.init = function(callback) {
     logger.verbose('Starting DB schema migration');
+    let noExistingMigrations = false;
 
     async.waterfall([
         (callback) => {
@@ -27,7 +28,12 @@ module.exports.init = function(callback) {
             // First, fetch the index of the last applied migration
             sqldb.queryOneRow(sql.get_last_migration, [], (err, results) => {
                 if (ERR(err, callback)) return;
-                callback(null, results.rows[0].last_migration || -1);
+                let last_migration = results.rows[0].last_migration;
+                if (last_migration == null) {
+                    last_migration = -1;
+                    noExistingMigrations = true;
+                }
+                callback(null, last_migration);
             });
         },
         (last_migration, callback) => {
@@ -55,7 +61,12 @@ module.exports.init = function(callback) {
             async.eachSeries(
                 files,
                 (file, callback) => {
-                    logger.verbose('Processing ' + file.filename);
+                    if (noExistingMigrations) {
+                        // if we are running all the migrations then log at a lower level
+                        logger.verbose('Running migration ' + file.filename);
+                    } else {
+                        logger.info('Running migration ' + file.filename);
+                    }
                     async.waterfall([
                         (callback) => {
                             fs.readFile(path.join(__dirname, file.filename), 'utf8', (err, sql) => {
