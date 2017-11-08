@@ -702,7 +702,7 @@ router.post('/', function(req, res, next) {
         });
     } else if (req.body.postAction == 'refresh_stats') {
         var params = [
-            req.body.assessment_id
+            req.body.assessment_id,
         ];
         sqldb.call('assessment_questions_calculate_stats_for_assessment', params, function(err) {
           if (ERR(err, next)) return;

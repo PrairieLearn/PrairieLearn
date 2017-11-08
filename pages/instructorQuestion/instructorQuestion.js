@@ -131,7 +131,7 @@ router.post('/', function(req, res, next) {
 
 router.get('/', function(req, res, next) {
     async.series([
-        function(callback) {
+        (callback) => {
             debug('set filenames');
             _.assign(res.locals, filenames(res.locals));
             callback(null);
@@ -152,20 +152,6 @@ router.get('/', function(req, res, next) {
             // res.locals.question_attempts_before_giving_up_histogram = res.locals.result.question_attempts_before_giving_up_histogram;
             // res.locals.question_attempts_histogram_hw = res.locals.result.question_attempts_histogram_hw;
             // res.locals.question_attempts_before_giving_up_histogram_hw = res.locals.result.question_attempts_before_giving_up_histogram_hw;
-            callback(null);
-        },
-        function(callback) {
-            res.locals.ifNotNullThen = function (x, y) {
-                if (x !== null) {
-                    return y(x);
-                }
-            };
-            res.locals.parseFloatOne = function(x) {
-                return parseFloat(x).toFixed(1);
-            };
-            res.locals.parseFloatTwo = function(x) {
-                return parseFloat(x).toFixed(2);
-            };
             callback(null);
         },
         (callback) => {
