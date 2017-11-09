@@ -16,9 +16,6 @@
                     case 'grading':
                         label = 'Grading in progress ' + spinner;
                         break;
-                    case 'processing':
-                        label = 'Processing results ' + spinner;
-                        break;
                     case 'graded':
                         label = 'Graded!'
                         break;
@@ -27,8 +24,6 @@
                         break;
                 }
                 display.html(label);
-                var reload = $('#grading-<%= submission.grading_job_id %>-reload');
-                status == 'graded' ? reload.show() : reload.hide();
             }
 
             if (io) {
