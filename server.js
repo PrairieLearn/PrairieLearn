@@ -381,7 +381,7 @@ if (config.startServer) {
                 database: config.postgresqlDatabase,
                 host: config.postgresqlHost,
                 password: config.postgresqlPassword,
-                max: 10,
+                max: 100,
                 idleTimeoutMillis: 30000,
             };
             logger.verbose('Connecting to database ' + pgConfig.user + '@' + pgConfig.host + ':' + pgConfig.database);

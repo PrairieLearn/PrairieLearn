@@ -105,6 +105,8 @@
 
   * Change "Errors" tab to "Issues" (Matt West).
 
+  * Change max DB connections from 10 to 100 (Matt West).
+
   * Shift most `exampleCourse` to the external `pl-template` repository.
 
   * Shift symbolic input parser to `lib/python_helper_sympy.py` (Tim Bretl).
