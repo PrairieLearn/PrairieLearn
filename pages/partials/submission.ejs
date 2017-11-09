@@ -1,0 +1,51 @@
+<!-- Live updating external grading results -->
+<% if (submission.grading_method == 'External' && submission.graded_at == null) { %>
+  <script>
+    $(document).ready(function() {
+      var socket = io('/external-grading');
+      var grading_job_id = <%= submission.grading_job_id %>;
+      var urlPrefix = '<%= urlPrefix %>';
+
+      socket.emit('getStatus', {grading_job_id: <%= submission.grading_job_id %>}, function (msg) {
+        if (msg.status == 'graded') {
+          fetchResults();
+        }
+      });
+
+      socket.on('change:status', function(msg) {
+        if (msg.status == 'graded') {
+          fetchResults();
+        }
+      });
+
+      var resultsLoaded = false;
+
+      function fetchResults() {
+        if (resultsLoaded) return;
+        socket.emit('getResults', {grading_job_id: grading_job_id, urlPrefix: urlPrefix}, function(msg) {
+          if (msg.results) {
+            $('#submission-<%= submissionIdx %>').hide().html(msg.results).fadeIn('slow');
+            resultsLoaded = true;
+          }
+        });
+      }
+    });
+  </script>
+<% } %>
+
+<div class="panel panel-info pastsubmission-block" id="submission-<%= submissionIdx %>">
+  <div class="panel-heading">
+    <h3 class="panel-title">
+      Submitted answer
+      <% if (submissionCount > 1) { %>
+      <%= submissionCount - submissionIdx %>
+      <% } %>
+    </h3>
+    <%- include('submissionStatus', {submission: submission}); %>
+    <small>Submitted at <%- submission.formatted_date %></small>
+  </div>
+
+  <div class="panel-body submission-body" id="submission-<%= submissionIdx %>-body">
+    <%- submissionHtml %>
+  </div>
+</div>

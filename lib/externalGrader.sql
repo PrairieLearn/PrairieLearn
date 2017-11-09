@@ -20,3 +20,10 @@ SET
     grading_submitted_at = $grading_submitted_at
 WHERE
     gj.id = $grading_job_id;
+
+-- BLOCK update_grading_started_time
+UPDATE grading_jobs AS gj
+SET
+    grading_started_at = $grading_started_at
+WHERE
+    gj.id = $grading_job_id;

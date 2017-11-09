@@ -212,22 +212,8 @@
 
   <% if (showSubmissions) { %>
   <div class="panel-group">
-    <% submissions.forEach(function(submission, iSubmission) { %>
-    <div class="panel panel-info pastsubmission-block">
-      <div class="panel-heading">
-        <h3 class="panel-title">
-          Submitted answer
-          <% if (submissions.length > 1) { %>
-          <%= submissions.length - iSubmission %>
-          <% } %>
-        </h3>
-        <%- include('../partials/submissionStatus', {submission: submission}); %>
-        <small>Submitted at <%- submission.formatted_date %></small>
-      </div>
-      <div class="panel-body submission-body" id="submission-<%= iSubmission %>-body">
-        <%- submissionHtmls[iSubmission] %>
-      </div>
-    </div>
+    <% submissions.forEach(function(submission, idx) { %>
+      <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionIdx: idx, submissionHtml: submissionHtmls[idx]}); %>
     <% }); %>
   </div>
   <% } %>

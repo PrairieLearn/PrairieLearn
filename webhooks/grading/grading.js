@@ -10,7 +10,7 @@ const externalGraderCommon = require('../../lib/externalGraderCommon');
 const sqldb = require('../../lib/sqldb');
 const sqlLoader = require('../../lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
-const externalGradingSocket = require('../../lib/external-grading-socket');
+const externalGradingSocket = require('../../lib/externalGradingSocket');
 
 function processResults(jobId, data) {
     assessment.processGradingResult(externalGraderCommon.makeGradingResult(jobId, data));
@@ -37,7 +37,7 @@ router.post('/', function(req, res, next) {
 
         sqldb.queryOneRow(sql.update_grading_start_time, params, (err, _result) => {
             if (ERR(err, (err) => logger.error(err))) return;
-            externalGradingSocket.gradingLogStatusUpdated(jobId);
+            externalGradingSocket.gradingJobStatusUpdated(jobId);
         });
 
         res.status(200);
