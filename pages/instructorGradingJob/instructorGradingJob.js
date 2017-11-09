@@ -4,7 +4,6 @@ const express = require('express');
 const router = express.Router();
 const AWS = require('aws-sdk');
 
-const logger = require('../../lib/logger');
 const sqldb = require('../../lib/sqldb');
 const sqlLoader = require('../../lib/sql-loader');
 
@@ -30,7 +29,7 @@ const allowedFiles = [
     'results.json',
 ];
 
-router.get('/:job_id/:file', (req, res, next) => {
+router.get('/:job_id/file/:file', (req, res, next) => {
     const file = req.params.file;
     if (allowedFiles.indexOf(file) == -1) {
         return next(new Error(`Unknown file ${file}`));
@@ -52,7 +51,6 @@ router.get('/:job_id/:file', (req, res, next) => {
             Bucket: grading_job.s3_bucket,
             Key: `${grading_job.s3_root_key}/${file}`,
         };
-        logger.info(params);
         res.attachment(file);
         new AWS.S3().getObject(params).createReadStream()
         .on('error', (err) => {

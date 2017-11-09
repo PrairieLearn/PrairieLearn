@@ -64,7 +64,7 @@
             <tbody>
               <tr>
                 <td>
-                  <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/job.tar.gz">job.tar.gz</a>
+                  <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/file/job.tar.gz">job.tar.gz</a>
                 </td>
                 <td>
                   Contains all files necessary for grading; this is what
@@ -73,7 +73,7 @@
               </tr>
               <tr>
                 <td>
-                  <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/archive.tar.gz">archive.tar.gz</a>
+                  <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/file/archive.tar.gz">archive.tar.gz</a>
                 </td>
                 <td>
                   A snapshot of <code>/grade</code> after your job has been executed.
@@ -81,7 +81,7 @@
               </tr>
               <tr>
                 <td>
-                  <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/results.json">results.json</a>
+                  <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/file/results.json">results.json</a>
                 </td>
                 <td>
                   Contains the PrairieLearn-generated results, which includes the
@@ -91,7 +91,7 @@
               </tr>
               <tr>
                 <td>
-                  <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/output.log">output.log</a>
+                  <a href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/file/output.log">output.log</a>
                 </td>
                 <td>
                   Contains the raw output from stdout/stderr for your job.
@@ -110,20 +110,27 @@
         </div>
         <div class="panel-body">
           <% if (grading_job.s3_bucket && grading_job.s3_root_key) { %>
-            These logs were pulled from AWS S3 at the time PrairieLearn received
-            the results of this job. Because logs are uploaded asynchronously,
-            it's possible that some lines are missing. If you suspect that's
-            the case, you should download the full set of logs. Also note that the
-            logs visible here are also truncated to 10KB.
-          <% } %>
-          <% if (grading_job.output) { %>
-          <pre><%= grading_job.output %></pre>
+          <script>
+            $.get('<%= urlPrefix %>/grading_job/<%= grading_job.id %>/file/output.log')
+            .done(function(data) {
+              $('#job-output-loading').hide();
+              $('#job-output').text(data);
+              $('#job-output').show();
+            }).fail(function() {
+              $('#job-output-loading').hide();
+              $('#job-output').text('Unable to load grader results');
+              $('#job-output').show();
+            });
+          </script>
+          <pre id="job-output" style="display: none;"></pre>
+          <i class="fa fa-spinner fa-spin fa-2x" id="job-output-loading" style="width: 100%; text-align: center;"></i>
           <% } else { %>
-          No output was captured for this grading job.
+          <% if (grading_job.output) { %>
+          <pre id="job-output"><%= grading_job.output %></pre>
+          <% } else { %>
+          <pre>No output was captured for this grading job.</pre>
           <% } %>
-        </div>
-        <div class="panel-footer">
-          <a class="btn btn-primary" href="<%= urlPrefix %>/grading_job/<%= grading_job.id %>/output.log">Download full log</a>
+          <% } %>
         </div>
       </div>
     </div>
