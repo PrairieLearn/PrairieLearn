@@ -10,6 +10,11 @@ var cookieParser = require('cookie-parser');
 var passport = require('passport');
 var http = require('http');
 var https = require('https');
+var blocked = require('blocked-at');
+
+blocked((time, stack) => {
+  console.log(`BLOCKED-AT: Blocked for ${time}ms, operation started here:`, stack)
+}, {threshold: 1000}); // threshold in milliseconds
 
 var logger = require('./lib/logger');
 var config = require('./lib/config');
