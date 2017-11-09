@@ -1,14 +1,14 @@
-var ERR = require('async-stacktrace');
-var async = require('async');
-var _ = require('lodash');
-var fs = require('fs-extra');
-var path = require('path');
-var mustache = require('mustache');
-var cheerio = require('cheerio');
+const ERR = require('async-stacktrace');
+const async = require('async');
+const _ = require('lodash');
+const fs = require('fs-extra');
+const path = require('path');
+const mustache = require('mustache');
+const cheerio = require('cheerio');
 
-var logger = require('../lib/logger');
-var codeCaller = require('../lib/code-caller');
-var jsonLoader = require('../lib/json-load');
+const logger = require('../lib/logger');
+const codeCaller = require('../lib/code-caller');
+const jsonLoader = require('../lib/json-load');
 
 // Maps core element names to element info
 let coreElementsCache = {};
@@ -276,7 +276,7 @@ module.exports = {
             if (!editPhases.includes(phase)) {
                 if (!_.has(origData, prop)) return '"' + prop + '" is missing from "origData"';
                 if (!_.isEqual(data[prop], origData[prop])) {
-                    return `data.${prop} has been illegally modified, new value: "${data[prop]}", original value: "${origData[prop]}"`;
+                    return `data.${prop} has been illegally modified, new value: "${JSON.stringify(data[prop])}", original value: "${JSON.stringify(origData[prop])}"`;
                 }
             }
             checked.push(prop);

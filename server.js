@@ -14,7 +14,7 @@ var https = require('https');
 var logger = require('./lib/logger');
 var config = require('./lib/config');
 var externalGrader = require('./lib/externalGrader');
-var externalGradingSocket = require('./lib/external-grading-socket');
+var externalGradingSocket = require('./lib/externalGradingSocket');
 var assessment = require('./lib/assessment');
 var sqldb = require('./lib/sqldb');
 var migrations = require('./migrations');
@@ -40,8 +40,8 @@ if (config.startServer) {
     }
 }
 
-var app = express();
-app.set('views', __dirname);
+const app = express();
+app.set('views', path.join(__dirname, 'pages'));
 app.set('view engine', 'ejs');
 
 config.devMode = (app.get('env') == 'development');
@@ -470,4 +470,4 @@ if (config.startServer) {
     });
 }
 
-//module.exports = app;
+module.exports.app = app;
