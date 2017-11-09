@@ -21,9 +21,9 @@ SET
 WHERE
     gj.id = $grading_job_id;
 
--- BLOCK update_grading_started_time
+-- BLOCK update_grading_received_time
 UPDATE grading_jobs AS gj
 SET
-    grading_started_at = $grading_started_at
+    grading_received_at = $grading_received_at
 WHERE
     gj.id = $grading_job_id;
