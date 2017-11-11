@@ -46,7 +46,8 @@ router.get('/:filename', function(req, res, next) {
 
                 var csvHeaders = ['UID', 'Name', 'Role'].concat(_.map(courseAssessments, 'label'));
                 var csvData = _.map(userScores, function(row) {
-                    return [row.uid, row.user_name, row.role].concat(row.score_percs);
+                    const score_percs = _.map(row.scores, s => s.score_perc);
+                    return [row.uid, row.user_name, row.role].concat(score_percs);
                 });
                 csvData.splice(0, 0, csvHeaders);
                 csvStringify(csvData, function(err, csv) {

@@ -33,12 +33,14 @@
                 <td><%= row.uid %></td>
                 <td><%= row.user_name %></td>
                 <td><%= row.role %></td>
-                <% row.score_percs.forEach(function(score_perc) { %>
+                <% row.scores.forEach(function(score) { %>
                 <td>
-                  <% if (score_perc == null) { %>
+                  <% if (score.score_perc == null) { %>
                   —
                   <% } else { %>
-                  <%= Math.floor(score_perc) %>%
+                  <a href="<%= urlPrefix %>/assessment_instance/<%= score.assessment_instance_id %>">
+                    <%= Math.floor(score.score_perc) %>%
+                  </a>
                   <% } %>
                 </td>
                 <% }); %>

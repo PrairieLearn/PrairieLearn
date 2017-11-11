@@ -25,28 +25,33 @@ course_assessments AS (
     AND a.course_instance_id = $course_instance_id
 ),
 course_scores AS (
-    SELECT ai.user_id, a.id AS assessment_id, max(ai.score_perc) AS score_perc
+    SELECT DISTINCT ON (ai.user_id, a.id)
+        ai.user_id, a.id AS assessment_id, ai.score_perc, ai.id AS assessment_instance_id
     FROM
         assessment_instances AS ai
         JOIN assessments AS a ON (a.id = ai.assessment_id)
     WHERE
         a.course_instance_id = $course_instance_id
-    GROUP BY
-        ai.user_id, a.id
+    ORDER BY
+        ai.user_id, a.id, ai.score_perc, ai.id
 ),
 scores AS (
     SELECT u.user_id,u.uid,u.user_name,u.role,
         a.id AS assessment_id,a.assessment_order_by,a.assessment_set_number,
-        s.score_perc
+        s.score_perc, s.assessment_instance_id
     FROM
         course_users AS u
         CROSS JOIN course_assessments AS a
         LEFT JOIN course_scores AS s ON (s.user_id = u.user_id AND s.assessment_id = a.id)
 )
 SELECT user_id,uid,user_name,role,
-    ARRAY_AGG(score_perc
-          ORDER BY (assessment_set_number, assessment_order_by, assessment_id)
-    ) AS score_percs
+    ARRAY_AGG(
+        json_build_object(
+            'score_perc', score_perc,
+            'assessment_instance_id', assessment_instance_id
+        )
+        ORDER BY (assessment_set_number, assessment_order_by, assessment_id)
+    ) AS scores
 FROM scores
 GROUP BY user_id,uid,user_name,role
 ORDER BY role DESC, uid;

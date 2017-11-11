@@ -93,7 +93,7 @@
                   <%= instance_question.question_number %>.
                   <%= instance_question.question_title %>
                 </a>
-                (<a href="<%= urlPrefix %>/question/<%= instance_question.question_id %>/"><%= instance_question.qid %></a>)
+                (QID: <a href="<%= urlPrefix %>/question/<%= instance_question.question_id %>/"><%= instance_question.qid %></a>)
               </td>
               <td class="cell-center">
                 <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>
