@@ -1,5 +1,4 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
@@ -9,7 +8,7 @@ var sqldb = require('../lib/sqldb');
 var sqlLoader = require('../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-var page, elemList;
+var res, page, elemList;
 
 module.exports = {
     startExam(locals, questionsArray) {

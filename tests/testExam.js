@@ -1,10 +1,7 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var assert = require('chai').assert;
-var request = require('request');
-var cheerio = require('cheerio');
 
-var config = require('../lib/config');
 var sqldb = require('../lib/sqldb');
 var sqlLoader = require('../lib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
@@ -130,7 +127,7 @@ describe('Exam assessment', function() {
     before('set up testing server', helperServer.before);
     after('shut down testing server', helperServer.after);
 
-    var res, page, elemList;
+    var elemList;
 
     helperAssessment.startExam(locals, questionsArray);
 

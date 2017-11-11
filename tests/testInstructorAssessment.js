@@ -1,11 +1,7 @@
-var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
-
-var config = require('../lib/config');
-var sqldb = require('../lib/sqldb');
 
 var helperServer = require('./helperServer');
 var helperQuestion = require('./helperQuestion');
@@ -33,7 +29,7 @@ describe('Instructor assessment editing', function() {
     before('set up testing server', helperServer.before);
     after('shut down testing server', helperServer.after);
 
-    var res, page, elemList;
+    var page, elemList;
 
     helperAssessment.startExam(locals, questionsArray);
 
@@ -128,7 +124,6 @@ describe('Instructor assessment editing', function() {
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                res = response;
                 page = body;
                 callback(null);
             });
@@ -155,7 +150,6 @@ describe('Instructor assessment editing', function() {
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                res = response;
                 page = body;
                 callback(null);
             });
@@ -182,7 +176,6 @@ describe('Instructor assessment editing', function() {
                 if (response.statusCode != 200) {
                     return callback(new Error('bad status: ' + response.statusCode));
                 }
-                res = response;
                 page = body;
                 callback(null);
             });
