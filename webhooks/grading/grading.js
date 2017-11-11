@@ -79,54 +79,26 @@ router.post('/', function(req, res, next) {
                 });
             },
             (callback) => {
-                // Load results and output simultaneously
-                async.parallel([
-                    (callback) => {
-                        // It's possible that the results data was specified in the body;
-                        // if that's the case, we can process it directly. Otherwise, we
-                        // have to download it from S3 first.
-                        if (data.data) {
-                            // We have the data!
-                            processResults(jobId, data.data);
+                // It's possible that the results data was specified in the body;
+                // if that's the case, we can process it directly. Otherwise, we
+                // have to download it from S3 first.
+                if (data.data) {
+                    // We have the data!
+                    processResults(jobId, data.data);
 
-                        } else {
-                            // We should fetch it from S3, and then process it
-                            const params = {
-                                Bucket: s3Bucket,
-                                Key: `${s3RootKey}/results.json`,
-                                ResponseContentType: 'application/json',
-                            };
-                            new AWS.S3().getObject(params, (err, s3Data) => {
-                                if (ERR(err, (err) => logger.error(err))) return;
-                                processResults(jobId, s3Data.Body);
-                                callback(null);
-                            });
-                        }
-                    },
-                    (callback) => {
-                        // Load job output
-                        const params = {
-                            Bucket: s3Bucket,
-                            Key: `${s3RootKey}/output.log`,
-                            ResponseContentType: 'text/plain',
-                            Range: `bytes=0-${10*1024}`, // Only store first 10KB
-                        };
-                        new AWS.S3().getObject(params, (err, s3Data) => {
-                            if (ERR(err, (err) => logger.error(err))) return;
-                            const outputParams = {
-                                grading_job_id: jobId,
-                                output: s3Data.Body,
-                            };
-                            sqldb.query(sql.update_job_output, outputParams, (err, _result) => {
-                                if (ERR(err, (err) => logger.error(err))) return;
-                                callback(null);
-                            });
-                        });
-                    },
-                ], (err) => {
-                    if (ERR(err, callback)) return;
-                    return callback(null);
-                });
+                } else {
+                    // We should fetch it from S3, and then process it
+                    const params = {
+                        Bucket: s3Bucket,
+                        Key: `${s3RootKey}/results.json`,
+                        ResponseContentType: 'application/json',
+                    };
+                    new AWS.S3().getObject(params, (err, s3Data) => {
+                        if (ERR(err, (err) => logger.error(err))) return;
+                        processResults(jobId, s3Data.Body);
+                        callback(null);
+                    });
+                }
             },
         ], (err) => {
             if (ERR(err, (err) => logger.error(err))) return;

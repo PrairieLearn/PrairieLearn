@@ -87,6 +87,8 @@
 
   * Add legacy file path fallback to `clientFilesCourse` (Matt West).
 
+  * Add full grading job log display from S3 (Nathan Walters).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
