@@ -102,6 +102,8 @@
 
   * Remove the need for `<pl_variable_score>` in questions (Tim Bretl).
 
+  * Remove detailed AzureAD logging (Matt West).
+
   * Change `externalGradingOptions.files` to `.serverFilesCourse`
     (Nathan Walters).
 
