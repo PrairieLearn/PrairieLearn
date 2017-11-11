@@ -1,11 +1,11 @@
-<form name="edit-total-points-form" method="POST">
-  <input type="hidden" name="__action" value="edit_total_points">
+<form name="edit-total-score-perc-form" method="POST">
+  <input type="hidden" name="__action" value="edit_total_score_perc">
   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
   <input type="hidden" name="assessment_instance_id" value="<%= assessment_instance.id %>">
   <div class="form-group">
     <div class="input-group">
-      <input type="text" class="form-control" name="points" value="<%= assessment_instance.points %>">
-      <span class="input-group-addon">/<%= assessment_instance.max_points %></span>
+      <input type="text" class="form-control" name="score_perc" value="<%= assessment_instance.score_perc %>">
+      <span class="input-group-addon">%</span>
     </div>
   </div>
   <p><small>This change will be overwritten if further questions are answered by the student.</small></p>
