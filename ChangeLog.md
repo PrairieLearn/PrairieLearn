@@ -85,6 +85,8 @@
 
   * Add instructor view of external grading logs (Nathan Walters).
 
+  * Add legacy file path fallback to `clientFilesCourse` (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
