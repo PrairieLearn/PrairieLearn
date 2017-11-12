@@ -40,18 +40,18 @@
                   <% } else { %>
                   <a href="<%= urlPrefix %>/assessment_instance/<%= score.assessment_instance_id %>">
                     <%= Math.floor(score.score_perc) %>%
-                    <% if (authz_data.has_instructor_edit) { %>
-                    <a id="editTotalScorePercButton<%= iRow %>-<%= iScore %>"
-                       tabindex="0" class="btn btn-xs btn-default" role="button"
-                       data-toggle="popover" data-container="body"
-                       data-html="true" data-placement="auto" title="Change total percentage score"
-                       data-content="<%= include('editTotalScorePercForm',
-                                     {id: 'editTotalScorePercButton' + iRow + '-' + iScore,
-                                     score_perc: score.score_perc,
-                                     assessment_instance_id: score.assessment_instance_id}); %>"
-                       data-trigger="manual" onclick="$(this).popover('show')">
-                      <i class="fa fa-pencil" aria-hidden="true"></i>
-                    </a>
+                  </a>
+                  <% if (authz_data.has_instructor_edit) { %>
+                  <a id="editTotalScorePercButton<%= iRow %>-<%= iScore %>"
+                     tabindex="0" class="btn btn-xs btn-default editTotalScorePercButton" role="button"
+                     data-toggle="popover" data-container="body"
+                     data-html="true" data-placement="auto" title="Change total percentage score"
+                     data-content="<%= include('editTotalScorePercForm',
+                                   {id: 'editTotalScorePercButton' + iRow + '-' + iScore,
+                                   score_perc: score.score_perc,
+                                   assessment_instance_id: score.assessment_instance_id}); %>"
+                     data-trigger="manual" onclick="$(this).popover('show')">
+                    <i class="fa fa-pencil" aria-hidden="true"></i>
                     <% } %>
                   </a>
                   <% } %>

@@ -24,6 +24,7 @@ module.exports = {
                 locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
                 locals.instructorBaseUrl = locals.courseInstanceBaseUrl + '/instructor';
                 locals.instructorAssessmentsUrl = locals.instructorBaseUrl + '/assessments';
+                locals.instructorGradebookUrl = locals.instructorBaseUrl + '/gradebook';
                 locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/instance_question';
                 locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
                 locals.isStudentPage = true;

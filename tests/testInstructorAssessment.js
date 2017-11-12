@@ -22,6 +22,8 @@ const questionsArray = [
 const questions = _.keyBy(questionsArray, 'qid');
 
 const assessmentMaxPoints = 74;
+const assessmentSetScorePerc = 37;
+const assessmentSetScorePerc2 = 83;
 
 describe('Instructor assessment editing', function() {
     this.timeout(5000);
@@ -438,7 +440,7 @@ describe('Instructor assessment editing', function() {
                 __action: locals.__action,
                 __csrf_token: locals.__csrf_token,
                 assessment_instance_id: 1,
-                score_perc: 37,
+                score_perc: assessmentSetScorePerc,
             };
             request.post({url: locals.instructorAssessmentInstanceUrl, form: form, followAllRedirects: true}, function (error, response, body) {
                 if (error) {
@@ -459,7 +461,105 @@ describe('Instructor assessment editing', function() {
             elemList = locals.$('#total-points');
             assert.lengthOf(elemList, 1);
             const totalPoints = Number.parseFloat(elemList[0].children[0].data);
-            assert.equal(totalPoints, 0.37 * assessmentMaxPoints);
+            assert.equal(totalPoints, assessmentSetScorePerc / 100 * assessmentMaxPoints);
+        });
+    });
+
+    describe('15. GET to instructor gradebook URL', function() {
+        it('should load successfully', function(callback) {
+            request(locals.instructorGradebookUrl, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse', function() {
+            locals.$ = cheerio.load(page);
+        });
+        it('should contain a row for the dev user', function() {
+            elemList = locals.$('tr td:contains("dev@illinois.edu")');
+            assert.lengthOf(elemList, 1);
+        });
+        it('should contain the assessment instance column with the correct score', function() {
+            elemList = locals.$('tr td:contains("dev@illinois.edu") ~ td a:contains("' + assessmentSetScorePerc + '%")');
+            assert.lengthOf(elemList, 1);
+        });
+        it('should have the correct link for the assessment instance', function() {
+            locals.instructorAssessmentInstanceUrl = locals.siteUrl + elemList[0].attribs.href;
+            assert.equal(locals.instructorAssessmentInstanceUrl, locals.instructorBaseUrl + '/assessment_instance/1');
+        });
+    });
+
+    describe('16. edit-total-score-perc form', function() {
+        it('should exist', function() {
+            elemList = locals.$('tr td:contains("dev@illinois.edu") ~ td a.editTotalScorePercButton');
+            assert.lengthOf(elemList, 1);
+        });
+        it('should have data-content', function() {
+            assert.isString(elemList[0].attribs['data-content']);
+        });
+        it('data-content should parse', function() {
+            locals.data$ = cheerio.load(elemList[0].attribs['data-content']);
+        });
+        it('data-content should have a CSRF token', function() {
+            elemList = locals.data$('form input[name="__csrf_token"]');
+            assert.lengthOf(elemList, 1);
+            assert.deepProperty(elemList[0], 'attribs.value');
+            locals.__csrf_token = elemList[0].attribs.value;
+            assert.isString(locals.__csrf_token);
+        });
+        it('data-content should have an __action', function() {
+            elemList = locals.data$('form input[name="__action"]');
+            assert.lengthOf(elemList, 1);
+            assert.deepProperty(elemList[0], 'attribs.value');
+            locals.__action = elemList[0].attribs.value;
+            assert.isString(locals.__action);
+            assert.equal(locals.__action, 'edit_total_score_perc');
+        });
+        it('data-content should have the correct assessment_instance_id', function() {
+            elemList = locals.data$('form input[name="assessment_instance_id"]');
+            assert.lengthOf(elemList, 1);
+            assert.deepProperty(elemList[0], 'attribs.value');
+            const assessment_instance_id = Number.parseInt(elemList[0].attribs.value);
+            assert.equal(assessment_instance_id, 1);
+        });
+        it('data-content should have a score_perc input', function() {
+            elemList = locals.data$('form input[name="score_perc"]');
+            assert.lengthOf(elemList, 1);
+        });
+    });
+
+    describe('16. POST to instructor gradebook URL to set total score_perc', function() {
+        it('should load successfully', function(callback) {
+            const form = {
+                __action: locals.__action,
+                __csrf_token: locals.__csrf_token,
+                assessment_instance_id: 1,
+                score_perc: assessmentSetScorePerc2,
+            };
+            request.post({url: locals.instructorGradebookUrl, form: form, followAllRedirects: true}, function (error, response, body) {
+                if (error) {
+                    return callback(error);
+                }
+                locals.postEndTime = Date.now();
+                if (response.statusCode != 200) {
+                    return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
+                }
+                page = body;
+                callback(null);
+            });
+        });
+        it('should parse', function() {
+            locals.$ = cheerio.load(page);
+        });
+        it('should contain the assessment instance column with the correctly updated score', function() {
+            elemList = locals.$('tr td:contains("dev@illinois.edu") ~ td a:contains("' + assessmentSetScorePerc2 + '%")');
+            assert.lengthOf(elemList, 1);
         });
     });
 });
