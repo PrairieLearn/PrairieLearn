@@ -62,4 +62,21 @@ router.get('/:filename', function(req, res, next) {
     }
 });
 
+router.post('/', function(req, res, next) {
+    if (!res.locals.authz_data.has_instructor_edit) return next();
+    if (req.body.__action == 'edit_total_score_perc') {
+        let params = [
+            req.body.assessment_instance_id,
+            req.body.score_perc,
+            res.locals.authn_user.user_id,
+        ];
+        sqldb.call('assessment_instances_update_score_perc', params, function(err, _result) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else {
+        return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
+    }
+});
+
 module.exports = router;

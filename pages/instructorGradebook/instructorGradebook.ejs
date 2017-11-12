@@ -15,7 +15,7 @@
           Download <a href="<%= urlPrefix %>/gradebook/<%= csvFilename %>"><%= csvFilename %></a>
         </div>
 
-        <div class="table-responsive">
+        <div class="table-responsive table-no-wrap">
           <table class="table table-condensed table-hover">
             <thead>
               <tr>
@@ -28,18 +28,31 @@
               </tr>
             </thead>
             <tbody>
-              <% user_scores.forEach(function(row) { %>
+              <% user_scores.forEach(function(row, iRow) { %>
               <tr>
                 <td><%= row.uid %></td>
                 <td><%= row.user_name %></td>
                 <td><%= row.role %></td>
-                <% row.scores.forEach(function(score) { %>
+                <% row.scores.forEach(function(score, iScore) { %>
                 <td>
                   <% if (score.score_perc == null) { %>
                   —
                   <% } else { %>
                   <a href="<%= urlPrefix %>/assessment_instance/<%= score.assessment_instance_id %>">
                     <%= Math.floor(score.score_perc) %>%
+                    <% if (authz_data.has_instructor_edit) { %>
+                    <a id="editTotalScorePercButton<%= iRow %>-<%= iScore %>"
+                       tabindex="0" class="btn btn-xs btn-default" role="button"
+                       data-toggle="popover" data-container="body"
+                       data-html="true" data-placement="auto" title="Change total percentage score"
+                       data-content="<%= include('editTotalScorePercForm',
+                                     {id: 'editTotalScorePercButton' + iRow + '-' + iScore,
+                                     score_perc: score.score_perc,
+                                     assessment_instance_id: score.assessment_instance_id}); %>"
+                       data-trigger="manual" onclick="$(this).popover('show')">
+                      <i class="fa fa-pencil" aria-hidden="true"></i>
+                    </a>
+                    <% } %>
                   </a>
                   <% } %>
                 </td>
