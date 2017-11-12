@@ -11,12 +11,6 @@ ORDER BY (aset.number, a.order_by, a.id);
 
 -- BLOCK user_scores
 WITH
-course_users AS (
-    SELECT u.user_id,u.uid,u.name AS user_name,e.role
-    FROM users AS u
-    JOIN enrollments AS e ON (e.user_id = u.user_id)
-    WHERE e.course_instance_id = $course_instance_id
-),
 course_assessments AS (
     SELECT a.id,a.order_by AS assessment_order_by,aset.number AS assessment_set_number
     FROM assessments AS a
@@ -34,6 +28,18 @@ course_scores AS (
         a.course_instance_id = $course_instance_id
     ORDER BY
         ai.user_id, a.id, ai.score_perc, ai.id
+),
+user_ids AS (
+    (SELECT DISTINCT user_id FROM course_scores)
+    UNION
+    (SELECT user_id FROM enrollments WHERE course_instance_id = $course_instance_id)
+),
+course_users AS (
+    SELECT u.user_id,u.uid,u.name AS user_name,coalesce(e.role, 'None'::enum_role) AS role
+    FROM
+        user_ids
+        JOIN users AS u ON (u.user_id = user_ids.user_id)
+        LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = $course_instance_id)
 ),
 scores AS (
     SELECT u.user_id,u.uid,u.user_name,u.role,
