@@ -89,6 +89,16 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
+    } else if (req.body.__action == 'edit_total_score_perc') {
+        let params = [
+            req.body.assessment_instance_id,
+            req.body.score_perc,
+            res.locals.authn_user.user_id,
+        ];
+        sqldb.call('assessment_instances_update_score_perc', params, function(err, _result) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
     } else if (req.body.__action == 'edit_question_points') {
         let params = [
             req.body.instance_question_id,
@@ -96,6 +106,16 @@ router.post('/', function(req, res, next) {
             res.locals.authn_user.user_id,
         ];
         sqldb.call('instance_questions_update_points', params, function(err, _result) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else if (req.body.__action == 'edit_question_score_perc') {
+        let params = [
+            req.body.instance_question_id,
+            req.body.score_perc,
+            res.locals.authn_user.user_id,
+        ];
+        sqldb.call('instance_questions_update_score_perc', params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
