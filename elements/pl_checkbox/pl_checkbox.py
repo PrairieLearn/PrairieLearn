@@ -201,6 +201,7 @@ def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers_name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
+    partial_credit = pl.get_boolean_attrib(element, 'partial_credit', False)
 
     submitted_keys = data['submitted_answers'].get(name, [])
     correct_answer_list = data['correct_answers'].get(name, [])
@@ -208,13 +209,11 @@ def grade(element_html, element_index, data):
 
     submittedSet = set(submitted_keys)
     correctSet = set(correct_keys)
-    if len(submittedSet - correctSet) > 0:
-        score = 0
-    else:
+    score = 0
+    if partial_credit and len(submittedSet - correctSet) == 0:
         score = 1.0*len(submittedSet)/len(correctSet)
-    # score = 0
-    # if set(submitted_keys) == set(correct_keys):
-    #     score = 1
+    elif submittedSet == correctSet:
+        score = 1
 
     data['partial_scores'][name] = {'score': score, 'weight': weight}
     return data
