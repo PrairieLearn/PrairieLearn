@@ -28,13 +28,13 @@
 
         <table class="table table-condensed table-hover two-column-description">
           <tbody>
-            <tr><th>UID</th><td><%= instance_user.uid %></td></tr>
-            <tr><th>Name</th><td><%= instance_user.name %></td></tr>
-            <tr><th>Role</th><td><%= instance_enrollment.role %></td></tr>
-            <tr><th>Instance</th><td><%= assessment_instance.number %></td></tr>
+            <tr><th>UID</th><td colspan="2"><%= instance_user.uid %></td></tr>
+            <tr><th>Name</th><td colspan="2"><%= instance_user.name %></td></tr>
+            <tr><th>Role</th><td colspan="2"><%= instance_enrollment.role %></td></tr>
+            <tr><th>Instance</th><td colspan="2"><%= assessment_instance.number %></td></tr>
             <tr>
               <th>Points</th>
-              <td>
+              <td colspan="2">
                 <% include('../partials/pointsFormatter'); %>
                 <span id="total-points"><%= getStringFromFloat(assessment_instance.points) %></span>
                 <small>/<span id="total-max-points" class="text-muted"><%= getStringFromFloat(assessment_instance.max_points) %></span></small>
@@ -53,8 +53,10 @@
             </tr>
             <tr>
               <th>Score</th>
-              <td>
+              <td style="width: 20%;">
                 <%- include('../partials/scorebar', {score: assessment_instance.score_perc}); %>
+              </td>
+              <td style="width: 100%;">
                 <% if (authz_data.has_instructor_edit) { %>
                 <a id="editTotalScorePercButton"
                    tabindex="0" class="btn btn-xs btn-default" role="button"
@@ -68,7 +70,7 @@
                 <% } %>
               </td>
             </tr>
-            <tr><th>Duration</th><td><%= assessment_instance_duration %></td></tr>
+            <tr><th>Duration</th><td colspan="2"><%= assessment_instance_duration %></td></tr>
           </tbody>
         </table>
       </div>
@@ -91,7 +93,7 @@
               <th class="cell-center">
                 Awarded points
               </th>
-              <th class="cell-center">
+              <th class="cell-center" colspan="2">
                 Percentage score
               </th>
             </tr>
@@ -128,6 +130,8 @@
               </td>
               <td class="cell-center">
                 <%- include('../partials/scorebar', {score: instance_question.score_perc}); %>
+              </td>
+              <td style="width: 1em;">
                 <% if (authz_data.has_instructor_edit) { %>
                 <a id="editQuestionScorePerc<%= i_instance_question %>"
                    tabindex="0" class="btn btn-xs btn-default editQuestionScorePercButton" role="button"
