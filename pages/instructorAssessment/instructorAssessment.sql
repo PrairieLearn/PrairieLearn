@@ -232,7 +232,7 @@ FROM assessments_duration_stats($assessment_id) AS ads;
 -- BLOCK select_assessment_instances
 SELECT
     (aset.name || ' ' || a.number) AS assessment_label,
-    u.user_id, u.uid, u.name, e.role,
+    u.user_id, u.uid, u.name, coalesce(e.role, 'None'::enum_role) AS role,
     substring(u.uid from '^[^@]+') AS username,
     ai.score_perc, ai.points, ai.max_points,
     ai.number,ai.id AS assessment_instance_id,ai.open,
@@ -257,7 +257,7 @@ FROM
 WHERE
     a.id = $assessment_id
 ORDER BY
-    e.role DESC NULLS FIRST, u.uid, u.user_id, ai.number, ai.id;
+    e.role DESC, u.uid, u.user_id, ai.number, ai.id;
 
 
 -- BLOCK select_regrading_job_sequences

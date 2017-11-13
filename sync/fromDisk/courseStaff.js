@@ -14,7 +14,12 @@ module.exports = {
         var staffIds = [];
         // load Instructors and TAs
         logger.debug('Syncing Instructors and TAs');
-        async.forEachOfSeries(courseInstance.userRoles || {}, function(role, uid, callback) {
+        const userRoles = courseInstance.userRoles || {};
+        if (config.devMode) {
+            // Make the dev user an instructor
+            userRoles['dev@illinois.edu'] = 'Instructor';
+        }
+        async.forEachOfSeries(userRoles, function(role, uid, callback) {
             if (role !== "Instructor" && role !== "TA") return callback(null);
             logger.debug('Syncing ' + uid);
             var params = {uid: uid};

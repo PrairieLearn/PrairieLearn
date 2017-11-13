@@ -4,6 +4,7 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
+var error = require('../../lib/error');
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
 
@@ -46,7 +47,8 @@ router.get('/:filename', function(req, res, next) {
 
                 var csvHeaders = ['UID', 'Name', 'Role'].concat(_.map(courseAssessments, 'label'));
                 var csvData = _.map(userScores, function(row) {
-                    return [row.uid, row.user_name, row.role].concat(row.score_percs);
+                    const score_percs = _.map(row.scores, s => s.score_perc);
+                    return [row.uid, row.user_name, row.role].concat(score_percs);
                 });
                 csvData.splice(0, 0, csvHeaders);
                 csvStringify(csvData, function(err, csv) {
@@ -58,6 +60,23 @@ router.get('/:filename', function(req, res, next) {
         });
     } else {
         next(new Error('Unknown filename: ' + req.params.filename));
+    }
+});
+
+router.post('/', function(req, res, next) {
+    if (!res.locals.authz_data.has_instructor_edit) return next();
+    if (req.body.__action == 'edit_total_score_perc') {
+        let params = [
+            req.body.assessment_instance_id,
+            req.body.score_perc,
+            res.locals.authn_user.user_id,
+        ];
+        sqldb.call('assessment_instances_update_score_perc', params, function(err, _result) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
+    } else {
+        return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));
     }
 });
 

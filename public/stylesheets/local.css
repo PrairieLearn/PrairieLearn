@@ -253,3 +253,11 @@ table.two-column-description-no-header-with-help tr td:last-of-type {
 .panel.pastsubmission-block > .panel-title {
     display: inline-block;
 }
+
+.table-no-wrap th {
+    white-space: nowrap;
+}
+
+.table-no-wrap td {
+    white-space: nowrap;
+}

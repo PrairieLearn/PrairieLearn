@@ -1,9 +1,13 @@
+DROP FUNCTION IF EXISTS assessment_instances_grade(bigint,bigint,integer,boolean);
+DROP FUNCTION IF EXISTS assessment_instances_grade(bigint,bigint,integer,boolean,boolean);
+
 CREATE OR REPLACE FUNCTION
     assessment_instances_grade(
         IN assessment_instance_id bigint,
         IN authn_user_id bigint,
         IN credit integer DEFAULT NULL,
         IN only_log_if_score_updated boolean DEFAULT FALSE,
+        IN allow_decrease boolean DEFAULT FALSE,
         OUT updated boolean,
         OUT new_points double precision,
         OUT new_score_perc double precision
@@ -40,7 +44,7 @@ BEGIN
 
     SELECT *
     INTO new_values
-    FROM assessment_instances_points(assessment_instance_id, use_credit);
+    FROM assessment_instances_points(assessment_instance_id, use_credit, allow_decrease);
 
     UPDATE assessment_instances AS ai
     SET
