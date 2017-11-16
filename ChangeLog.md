@@ -92,6 +92,8 @@
   * Add instructor editing of total points and question points for assessment
     instances (Matt West).
 
+  * Add `addBinary` example question (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
