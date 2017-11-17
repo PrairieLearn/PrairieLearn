@@ -4,6 +4,7 @@ import chevron
 import to_precision
 import math
 import prairielearn as pl
+import numpy as np
 
 
 def prepare(element_html, element_index, data):
@@ -157,7 +158,10 @@ def parse(element_html, element_index, data):
 
     # Convert to float
     try:
-        data['submitted_answers'][name] = float(a_sub)
+        a_sub_float = float(a_sub)
+        if not np.isfinite(a_sub_float):
+            raise ValueError('submitted answer must be a finite real number but was either "inf" or "nan"')
+        data['submitted_answers'][name] = a_sub_float
     except ValueError:
         data['format_errors'][name] = 'Invalid format (not a real number).'
         data['submitted_answers'][name] = None
