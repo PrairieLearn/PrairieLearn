@@ -191,7 +191,7 @@
   * Fix symbolic expression parsing bug by disallowing floating-point numbers (Tim Bretl).
 
   * Fix handling of broken questions on Homeworks (Matt West).
-  
+
   * Fix handling of `inf` and `nan` submissions in `pl_number_input` (Tim Bretl).
 
   * Fix server crash in grading job handling (Nathan Walters).
