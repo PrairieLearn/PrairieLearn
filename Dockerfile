@@ -14,6 +14,7 @@ RUN yum -y install \
         python36u-pip \
         python36u-devel \
         gcc \
+        make \
     && yum clean all \
     && mkdir /var/postgres && chown postgres:postgres /var/postgres \
     && su postgres -c "/usr/pgsql-9.6/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log" \

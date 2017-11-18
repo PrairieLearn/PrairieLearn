@@ -94,6 +94,8 @@
 
   * Add `addBinary` example question (Matt West).
 
+  * Add `make` to the Docker container (Dave Mussulman).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
