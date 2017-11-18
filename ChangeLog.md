@@ -194,6 +194,8 @@
   
   * Fix handling of `inf` and `nan` submissions in `pl_number_input` (Tim Bretl).
 
+  * Fix server crash in grading job handling (Nathan Walters).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
