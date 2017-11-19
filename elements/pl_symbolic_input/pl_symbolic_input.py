@@ -5,7 +5,8 @@ import chevron
 import sympy
 import random
 import math
-from python_helper_sympy import *
+import python_helper_sympy as phs
+
 
 def get_variables_list(variables_string):
     if variables_string is not None:
@@ -78,7 +79,7 @@ def render(element_html, element_index, data):
         html_params = {'submission': True, 'parse_error': parse_error}
         if parse_error is None:
             a_sub = data['submitted_answers'][name]
-            a_sub = convert_string_to_sympy(a_sub, variables)
+            a_sub = phs.convert_string_to_sympy(a_sub, variables)
             html_params['a_sub'] = sympy.latex(a_sub)
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
@@ -106,7 +107,7 @@ def render(element_html, element_index, data):
         a_tru = pl.from_json(data['correct_answers'].get(name, None))
         if a_tru is not None:
             if isinstance(a_tru, str):
-                a_tru = convert_string_to_sympy(a_tru, variables)
+                a_tru = phs.convert_string_to_sympy(a_tru, variables)
             html_params = {'answer': True, 'a_tru': sympy.latex(a_tru)}
             with open('pl_symbolic_input.mustache', 'r') as f:
                 html = chevron.render(f, html_params).strip()
@@ -140,50 +141,50 @@ def parse(element_html, element_index, data):
         a_sub = a_sub.strip()
 
         # Convert safely to sympy
-        a_sub = convert_string_to_sympy(a_sub, variables)
+        a_sub = phs.convert_string_to_sympy(a_sub, variables)
 
         # Store result as a string.
         data['submitted_answers'][name] = str(a_sub)
-    except HasFloatError as err:
+    except phs.HasFloatError as err:
         s = 'Your answer contains the floating-point number ' + str(err.n) + '. '
         s += 'All numbers must be expressed as integers (or ratios of integers). '
-        s += '<br><br><pre>' + point_to_error(a_sub, err.offset) + '</pre>'
+        s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
-    except HasComplexError as err:
+    except phs.HasComplexError as err:
         s = 'Your answer contains the complex number ' + str(err.n) + '. '
         s += 'All numbers must be expressed as integers (or ratios of integers). '
-        s += '<br><br><pre>' + point_to_error(a_sub, err.offset) + '</pre>'
+        s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
-    except HasInvalidExpressionError as err:
+    except phs.HasInvalidExpressionError as err:
         s = 'Your answer has an invalid expression. '
-        s += '<br><br><pre>' + point_to_error(a_sub, err.offset) + '</pre>'
+        s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
-    except HasInvalidFunctionError as err:
+    except phs.HasInvalidFunctionError as err:
         s = 'Your answer calls an invalid function "' + err.text + '". '
-        s += '<br><br><pre>' + point_to_error(a_sub, err.offset) + '</pre>'
+        s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
-    except HasInvalidVariableError as err:
+    except phs.HasInvalidVariableError as err:
         s = 'Your answer refers to an invalid variable "' + err.text + '". '
-        s += '<br><br><pre>' + point_to_error(a_sub, err.offset) + '</pre>'
+        s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
-    except HasParseError as err:
+    except phs.HasParseError as err:
         s = 'Your answer has a syntax error. '
-        s += '<br><br><pre>' + point_to_error(a_sub, err.offset) + '</pre>'
+        s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
-    except HasEscapeError as err:
+    except phs.HasEscapeError as err:
         s = 'Your answer must not contain the character "\\". '
-        s += '<br><br><pre>' + point_to_error(a_sub, err.offset) + '</pre>'
+        s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
-    except HasCommentError as err:
+    except phs.HasCommentError as err:
         s = 'Your answer must not contain the character "#". '
-        s += '<br><br><pre>' + point_to_error(a_sub, err.offset) + '</pre>'
+        s += '<br><br><pre>' + phs.point_to_error(a_sub, err.offset) + '</pre>'
         data['format_errors'][name] = s
         data['submitted_answers'][name] = None
     except Exception as err:
@@ -215,8 +216,8 @@ def grade(element_html, element_index, data):
     # Parse both correct and submitted answer (will throw an error on fail).
     variables = get_variables_list(pl.get_string_attrib(element, 'variables', None))
     if isinstance(a_tru, str):
-        a_tru = convert_string_to_sympy(a_tru, variables)
-    a_sub = convert_string_to_sympy(a_sub, variables)
+        a_tru = phs.convert_string_to_sympy(a_tru, variables)
+    a_sub = phs.convert_string_to_sympy(a_sub, variables)
 
     # Check equality
     correct = a_tru.equals(a_sub)
