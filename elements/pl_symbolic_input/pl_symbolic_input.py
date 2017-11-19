@@ -5,8 +5,7 @@ import chevron
 import sympy
 import random
 import math
-from python_helper_sympy import convert_string_to_sympy
-
+from python_helper_sympy import *
 
 def get_variables_list(variables_string):
     if variables_string is not None:
@@ -137,15 +136,59 @@ def parse(element_html, element_index, data):
         # for exponentiation. In python, only the latter can be used.
         a_sub = a_sub.replace('^', '**')
 
-        # Convert submitted answer safely to sympy
+        # Strip whitespace
+        a_sub = a_sub.strip()
+
+        # Convert safely to sympy
         a_sub = convert_string_to_sympy(a_sub, variables)
 
         # Store result as a string.
         data['submitted_answers'][name] = str(a_sub)
-    except:
+    except HasFloatError as err:
+        s = 'Your answer contains the floating-point number ' + str(err.n) + '. '
+        s += 'All numbers must be expressed as integers (or ratios of integers). '
+        s += '<br><br><pre>' + point_to_error(a_sub, err.offset) + '</pre>'
+        data['format_errors'][name] = s
+        data['submitted_answers'][name] = None
+    except HasComplexError as err:
+        s = 'Your answer contains the complex number ' + str(err.n) + '. '
+        s += 'All numbers must be expressed as integers (or ratios of integers). '
+        s += '<br><br><pre>' + point_to_error(a_sub, err.offset) + '</pre>'
+        data['format_errors'][name] = s
+        data['submitted_answers'][name] = None
+    except HasInvalidExpressionError as err:
+        s = 'Your answer has an invalid expression. '
+        s += '<br><br><pre>' + point_to_error(a_sub, err.offset) + '</pre>'
+        data['format_errors'][name] = s
+        data['submitted_answers'][name] = None
+    except HasInvalidFunctionError as err:
+        s = 'Your answer calls an invalid function "' + err.text + '". '
+        s += '<br><br><pre>' + point_to_error(a_sub, err.offset) + '</pre>'
+        data['format_errors'][name] = s
+        data['submitted_answers'][name] = None
+    except HasInvalidVariableError as err:
+        s = 'Your answer refers to an invalid variable "' + err.text + '". '
+        s += '<br><br><pre>' + point_to_error(a_sub, err.offset) + '</pre>'
+        data['format_errors'][name] = s
+        data['submitted_answers'][name] = None
+    except HasParseError as err:
+        s = 'Your answer has a syntax error. '
+        s += '<br><br><pre>' + point_to_error(a_sub, err.offset) + '</pre>'
+        data['format_errors'][name] = s
+        data['submitted_answers'][name] = None
+    except HasEscapeError as err:
+        s = 'Your answer must not contain the character "\\". '
+        s += '<br><br><pre>' + point_to_error(a_sub, err.offset) + '</pre>'
+        data['format_errors'][name] = s
+        data['submitted_answers'][name] = None
+    except HasCommentError as err:
+        s = 'Your answer must not contain the character "#". '
+        s += '<br><br><pre>' + point_to_error(a_sub, err.offset) + '</pre>'
+        data['format_errors'][name] = s
+        data['submitted_answers'][name] = None
+    except Exception as err:
         data['format_errors'][name] = 'Invalid format.'
         data['submitted_answers'][name] = None
-        return data
 
     return data
 

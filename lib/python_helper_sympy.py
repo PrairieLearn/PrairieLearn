@@ -2,36 +2,6 @@ import sympy
 import ast
 import sys
 
-class Error(Exception):
-    def __init__(self, offset):
-        self.offset = offset
-
-class HasFloatError(Error):
-    pass
-
-class HasComplexError(Error):
-    pass
-
-class HasInvalidExpressionError(Error):
-    pass
-
-class HasInvalidFunctionError(Error):
-    pass
-
-class HasInvalidVariableError(Error):
-    pass
-
-class HasParseError(Error):
-    pass
-
-class HasEscapeError(Error):
-    pass
-
-class HasCommentError(Error):
-    pass
-
-
-
 # Safe evaluation of user input to convert from string to sympy expression.
 #
 # Adapted from:
@@ -76,14 +46,50 @@ class HasCommentError(Error):
 # A similar (but more complex) approach to us:
 #     https://github.com/newville/asteval
 
+class Error(Exception):
+    def __init__(self, offset):
+        self.offset = offset
+
+class HasFloatError(Error):
+    def __init__(self, offset, n):
+        super(HasFloatError, self).__init__(offset)
+        self.n = n
+
+class HasComplexError(Error):
+    def __init__(self, offset, n):
+        super(HasComplexError, self).__init__(offset)
+        self.n = n
+
+class HasInvalidExpressionError(Error):
+    pass
+
+class HasInvalidFunctionError(Error):
+    def __init__(self, offset, text):
+        super(HasInvalidFunctionError, self).__init__(offset)
+        self.text = text
+
+class HasInvalidVariableError(Error):
+    def __init__(self, offset, text):
+        super(HasInvalidVariableError, self).__init__(offset)
+        self.text = text
+
+class HasParseError(Error):
+    pass
+
+class HasEscapeError(Error):
+    pass
+
+class HasCommentError(Error):
+    pass
+
 class CheckNumbers(ast.NodeTransformer):
     def visit_Num(self, node):
         if isinstance(node.n, int):
             return ast.Call(func=ast.Name(id='_Integer', ctx=ast.Load()), args=[node], keywords=[])
         elif isinstance(node.n, float):
-            raise HasFloatError(node.col_offset)
+            raise HasFloatError(node.col_offset, node.n)
         elif isinstance(node.n, complex):
-            raise HasComplexError(node.col_offset)
+            raise HasComplexError(node.col_offset, node.n)
         return node
 
 class CheckWhiteList(ast.NodeVisitor):
@@ -96,23 +102,24 @@ class CheckWhiteList(ast.NodeVisitor):
             raise HasInvalidExpressionError(node.col_offset)
         return super().visit(node)
 
-class CheckLocals(ast.NodeVisitor):
-    def __init__(self, locals_for_eval):
-        self.functions = locals_for_eval['functions']
-        self.variables = locals_for_eval['variables']
-
+class CheckFunctions(ast.NodeVisitor):
+    def __init__(self, functions):
+        self.functions = functions
     def visit_Call(self, node):
         if isinstance(node.func, ast.Name):
             if node.func.id not in self.functions:
                 node = get_parent_with_location(node)
-                raise HasInvalidFunctionError(node.col_offset)
+                raise HasInvalidFunctionError(node.col_offset, node.func.id)
         self.generic_visit(node)
 
+class CheckVariables(ast.NodeVisitor):
+    def __init__(self, variables):
+        self.variables = variables
     def visit_Name(self, node):
         if isinstance(node.ctx, ast.Load):
             if node.id not in self.variables:
                 node = get_parent_with_location(node)
-                raise HasInvalidVariableError(node.col_offset)
+                raise HasInvalidVariableError(node.col_offset, node.id)
         self.generic_visit(node)
 
 def get_parent_with_location(node):
@@ -142,8 +149,21 @@ def evaluate(expr, locals_for_eval={}):
         for child in ast.iter_child_nodes(node):
             child.parent = node
 
-    # Disallow functions or variables/constants that are not in locals_for_eval
-    CheckLocals(locals_for_eval).visit(root)
+    # Disallow functions that are not in locals_for_eval
+    CheckFunctions(locals_for_eval['functions']).visit(root)
+
+    # Disallow variables that are not in locals_for_eval
+    #
+    #   It is tricky to distinguish between ast.Name nodes that actually contain
+    #   the names of variables and those that contain other things (e.g., the
+    #   names of functions). To avoid having to think about this, we checked
+    #   the names of functions first, and are now checking *both* the names
+    #   of functions *and* the names of variables. We know that, at this point,
+    #   any names not in the whitelist will be names of invalid variables only.
+    #
+    #   This implementation could certainly be improved.
+    #
+    CheckVariables({**locals_for_eval['functions'], **locals_for_eval['variables']}).visit(root)
 
     # Disallow AST nodes that are not in whitelist
     #
@@ -182,11 +202,10 @@ def convert_string_to_sympy(a, variables):
     # Do the conversion
     return evaluate(a, locals_for_eval)
 
-
-
-
-
-
+def point_to_error(s, ind, w = 5):
+    w_left = ind - max(0, ind-w)
+    w_right = min(ind+w, len(s)) - ind
+    return s[ind-w_left:ind+w_right] + '\n' + ' '*w_left + '^' + ' '*w_right
 
 
 
@@ -195,17 +214,17 @@ def convert_string_to_sympy(a, variables):
 
 # FIXME: remove everything below this line
 
-def point_to_error(s, ind, w):
-    w_left = ind - max(0, ind-w)
-    w_right = min(ind+w, len(s)) - ind
-    # i0 = max(0, ind-w))
-    # i1 = min(ind+w, len(s))
-    print('\n --- point_to_error: start ---')
-    # print(w_left, w_right)
-    print(s[ind-w_left:ind+w_right])
-    print(' '*w_left + '^' + ' '*w_right)
-    # print(s[max(0, ind-w):min(ind+w, len(s))])
-    print(' ---  point_to_error: end  ---\n')
+# def point_to_error(s, ind, w):
+#     w_left = ind - max(0, ind-w)
+#     w_right = min(ind+w, len(s)) - ind
+#     # i0 = max(0, ind-w))
+#     # i1 = min(ind+w, len(s))
+#     print('\n --- point_to_error: start ---')
+#     # print(w_left, w_right)
+#     print(s[ind-w_left:ind+w_right])
+#     print(' '*w_left + '^' + ' '*w_right)
+#     # print(s[max(0, ind-w):min(ind+w, len(s))])
+#     print(' ---  point_to_error: end  ---\n')
 
 def get_variables_list(variables_string):
     if variables_string is not None:
@@ -219,19 +238,19 @@ if __name__ == "__main__":
     try:
         print(convert_string_to_sympy(sys.argv[1], get_variables_list(sys.argv[2])))
     except HasFloatError as err:
-        point_to_error(sys.argv[1], err.offset, 8)
+        print(point_to_error(sys.argv[1], err.offset, 8))
     except HasComplexError as err:
-        point_to_error(sys.argv[1], err.offset, 8)
+        print(point_to_error(sys.argv[1], err.offset, 8))
     except HasInvalidExpressionError as err:
-        point_to_error(sys.argv[1], err.offset, 8)
+        print(point_to_error(sys.argv[1], err.offset, 8))
     except HasInvalidFunctionError as err:
-        point_to_error(sys.argv[1], err.offset, 8)
+        print(point_to_error(sys.argv[1], err.offset, 8))
     except HasParseError as err:
-        point_to_error(sys.argv[1], err.offset, 8)
+        print(point_to_error(sys.argv[1], err.offset, 8))
     except HasEscapeError as err:
-        point_to_error(sys.argv[1], err.offset, 8)
+        print(point_to_error(sys.argv[1], err.offset, 8))
     except HasCommentError as err:
-        point_to_error(sys.argv[1], err.offset, 8)
+        print(point_to_error(sys.argv[1], err.offset, 8))
     except Exception as err:
         print("\n")
         print(err.offset)
