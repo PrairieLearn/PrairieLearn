@@ -95,6 +95,8 @@
   * Add `addBinary` example question (Matt West).
 
   * Add `make` to the Docker container (Dave Mussulman).
+  
+  * Add more feedback when submission to `pl_symbolic_input` has invalid format (Tim Bretl).
 
   * Split installing documentation into separate method sections (Matt West).
 
