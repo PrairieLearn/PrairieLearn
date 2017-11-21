@@ -16,7 +16,7 @@ const qids = [
     'addNumbers',
     'ballToss2',
     'customElement',
-    // FIXME: 'differentiatePolynomial',
+    'differentiatePolynomial',
     'downloadFile',
     // FIXME: 'fibonacciUpload',
     'functionValueFromPlot',

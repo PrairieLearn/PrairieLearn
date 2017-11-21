@@ -243,11 +243,51 @@ def test(element_html, element_index, data):
         data['raw_submitted_answers'][name] = str(pl.from_json(data['correct_answers'][name])) + ' + {:d}'.format(random.randint(1, 100))
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
     elif result == 'invalid':
-        if random.choice([True, False]):
-            data['raw_submitted_answers'][name] = 'complete garbage'
-            data['format_errors'][name] = 'Invalid format.'
-
-        # FIXME: add more invalid choices
+        invalid_type = random.choice(['float', 'complex', 'expression', 'function', 'variable', 'syntax', 'escape', 'comment'])
+        if invalid_type == 'float':
+            data['raw_submitted_answers'][name] = 'x + 1.234'
+            s = 'Your answer contains the floating-point number ' + str(1.234) + '. '
+            s += 'All numbers must be expressed as integers (or ratios of integers). '
+            s += '<br><br><pre>' + phs.point_to_error('x + 1.234', 4) + '</pre>'
+            data['format_errors'][name] = s
+        elif invalid_type == 'complex':
+            data['raw_submitted_answers'][name] = 'x + (1+2j)'
+            s = 'Your answer contains the complex number ' + str(2j) + '. '
+            s += 'All numbers must be expressed as integers (or ratios of integers). '
+            s += '<br><br><pre>' + phs.point_to_error('x + (1+2j)', 7) + '</pre>'
+            data['format_errors'][name] = s
+        elif invalid_type == 'expression':
+            data['raw_submitted_answers'][name] = '1 and 0'
+            s = 'Your answer has an invalid expression. '
+            s += '<br><br><pre>' + phs.point_to_error('1 and 0', 0) + '</pre>'
+            data['format_errors'][name] = s
+        elif invalid_type == 'function':
+            data['raw_submitted_answers'][name] = 'atan(x)'
+            s = 'Your answer calls an invalid function "' + 'atan' + '". '
+            s += '<br><br><pre>' + phs.point_to_error('atan(x)', 0) + '</pre>'
+            data['format_errors'][name] = s
+        elif invalid_type == 'variable':
+            data['raw_submitted_answers'][name] = 'x + y'
+            s = 'Your answer refers to an invalid variable "' + 'y' + '". '
+            s += '<br><br><pre>' + phs.point_to_error('x + y', 4) + '</pre>'
+            data['format_errors'][name] = s
+        elif invalid_type == 'syntax':
+            data['raw_submitted_answers'][name] = 'x +* 1'
+            s = 'Your answer has a syntax error. '
+            s += '<br><br><pre>' + phs.point_to_error('x +* 1', 4) + '</pre>'
+            data['format_errors'][name] = s
+        elif invalid_type == 'escape':
+            data['raw_submitted_answers'][name] = 'x + 1\\n'
+            s = 'Your answer must not contain the character "\\". '
+            s += '<br><br><pre>' + phs.point_to_error('x + 1\\n', 5) + '</pre>'
+            data['format_errors'][name] = s
+        elif invalid_type == 'comment':
+            data['raw_submitted_answers'][name] = 'x # some text'
+            s = 'Your answer must not contain the character "#". '
+            s += '<br><br><pre>' + phs.point_to_error('x # some text', 2) + '</pre>'
+            data['format_errors'][name] = s
+        else:
+            raise Exception('invalid invalid_type: %s' % invalid_type)
     else:
         raise Exception('invalid result: %s' % result)
 
