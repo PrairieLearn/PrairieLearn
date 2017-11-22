@@ -49,6 +49,7 @@ SELECT
     to_jsonb(v) AS variant,
     to_jsonb(iq) AS instance_question,
     to_jsonb(q) AS question,
+    to_jsonb(aq) AS assessment_question,
     to_jsonb(a) AS assessment,
     to_jsonb(c) AS course,
     gj.id AS grading_job_id,
@@ -71,6 +72,7 @@ FROM
     LEFT JOIN variants AS v ON (v.id = s.variant_id)
     LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
     LEFT JOIN questions AS q ON (q.id = v.question_id)
+    LEFT JOIN assessment_questions AS aq ON (iq.assessment_question_id = aq.id)
     LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
     LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
