@@ -50,6 +50,7 @@ SELECT
     to_jsonb(iq) AS instance_question,
     to_jsonb(q) AS question,
     to_jsonb(aq) AS assessment_question,
+    to_jsonb(ai) AS assessment_instance,
     to_jsonb(a) AS assessment,
     to_jsonb(c) AS course,
     gj.id AS grading_job_id,
