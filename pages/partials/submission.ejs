@@ -23,9 +23,16 @@
       function fetchResults() {
         if (resultsLoaded) return;
         socket.emit('getResults', {grading_job_id: grading_job_id, urlPrefix: urlPrefix}, function(msg) {
-          if (msg.results) {
-            $('#submission-<%= submissionIdx %>').hide().html(msg.results).fadeIn('slow');
+          if (msg.submissionPanel) {
+            $('#submission-<%= submissionIdx %>').replaceWith(function() {
+              return $(msg.submissionPanel).fadeIn('slow');
+            });
             resultsLoaded = true;
+          }
+          if (msg.scorePanel) {
+            $('#score-panel').replaceWith(function() {
+              return $(msg.scorePanel).fadeIn('slow');
+            });
           }
         });
       }
@@ -38,7 +45,7 @@
     <h3 class="panel-title">
       Submitted answer
       <% if (submissionCount > 1) { %>
-      <%= submissionCount - submissionIdx %>
+      <%= submissionIdx %>
       <% } %>
     </h3>
     <%- include('submissionStatus', {submission: submission}); %>

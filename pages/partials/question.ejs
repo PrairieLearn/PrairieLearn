@@ -213,7 +213,7 @@
   <% if (showSubmissions) { %>
   <div class="panel-group">
     <% submissions.forEach(function(submission, idx) { %>
-      <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionIdx: idx, submissionHtml: submissionHtmls[idx]}); %>
+      <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionIdx: submissions.length - idx, submissionHtml: submissionHtmls[idx]}); %>
     <% }); %>
   </div>
   <% } %>
