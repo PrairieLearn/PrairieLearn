@@ -42,7 +42,7 @@ SELECT i.*
 FROM issues AS i
 WHERE i.variant_id = $variant_id;
 
--- BLOCK select_grading_job_info
+-- BLOCK select_submission_info
 SELECT
     to_jsonb(gj) AS grading_job,
     to_jsonb(s) AS submission,
@@ -79,4 +79,10 @@ FROM
     LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     LEFT JOIN pl_courses AS c ON (c.id = q.course_id)
 WHERE
-    gj.id = $grading_job_id;
+    s.id = $submission_id
+    AND gj.id = (
+        SELECT MAX(gj2.id)
+        FROM submissions AS s
+        LEFT JOIN grading_jobs AS gj2 ON (gj2.submission_id = s.id)
+        WHERE s.id = $submission_id
+    );

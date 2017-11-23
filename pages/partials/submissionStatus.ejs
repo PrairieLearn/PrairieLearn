@@ -1,52 +1,3 @@
-<% if (submission.grading_method == 'External' && submission.graded_at == null) { %>
-    <script>
-        $(document).ready(function() {
-            // Expects a status string from sprocs/grading_job_status.sql
-            function updateStatus(status) {
-                var display = $('#grading-<%= submission.grading_job_id %>');
-                var label;
-                var spinner = '<i class="fa fa-refresh fa-spin fa-fw"></i>';
-                switch (status) {
-                    case 'requested':
-                        label = 'Grading requested ' + spinner;
-                        break;
-                    case 'queued':
-                        label = 'Queued for grading ' + spinner;
-                        break;
-                    case 'grading':
-                        label = 'Grading in progress ' + spinner;
-                        break;
-                    case 'graded':
-                        label = 'Graded!'
-                        break;
-                    default:
-                        label = 'UNKNOWN STATUS';
-                        break;
-                }
-                display.html(label);
-            }
-
-            if (io) {
-                var socket = io('/external-grading');
-
-                socket.on('change:status', function(msg) {
-                    updateStatus(msg.status);
-                });
-
-                socket.emit('getStatus', {grading_job_id: <%= submission.grading_job_id %>}, function (msg) {
-                    updateStatus(msg.status);
-                });
-            } else {
-                console.log('socket.io not present on this webpage');
-            }
-
-            // Immediately render with status known from the server; this will be
-            // updated as soon as new data comes in via the socket
-            updateStatus('<%= submission.grading_job_status %>');
-        });
-    </script>
-<% } %>
-
 <% if (submission.graded_at == null) { %>
     <% if (submission.grading_requested_at == null) { %>
         <% if (submission.gradable) { %>
@@ -56,7 +7,7 @@
         <% } %>
     <% } else { %>
         <% if (submission.grading_method == 'External') { %>
-            <span id="grading-<%= submission.grading_job_id %>" class="label label-default"></span>
+            <span id="grading-status-<%= submission.id %>" class="label label-default"></span>
         <% } else if (submission.grading_method == 'Manual') { %>
             <span class="label label-default">waiting for manual grading</span>
         <% } else { %>
