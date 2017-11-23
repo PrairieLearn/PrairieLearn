@@ -1,46 +1,5 @@
-<!-- Live updating external grading results -->
-<% if (submission.grading_method == 'External' && submission.graded_at == null) { %>
-  <script>
-    $(document).ready(function() {
-      var socket = io('/external-grading');
-      var grading_job_id = <%= submission.grading_job_id %>;
-      var urlPrefix = '<%= urlPrefix %>';
-
-      socket.emit('getStatus', {grading_job_id: <%= submission.grading_job_id %>}, function (msg) {
-        if (msg.status == 'graded') {
-          fetchResults();
-        }
-      });
-
-      socket.on('change:status', function(msg) {
-        if (msg.status == 'graded') {
-          fetchResults();
-        }
-      });
-
-      var resultsLoaded = false;
-
-      function fetchResults() {
-        if (resultsLoaded) return;
-        socket.emit('getResults', {grading_job_id: grading_job_id, urlPrefix: urlPrefix}, function(msg) {
-          if (msg.submissionPanel) {
-            $('#submission-<%= submissionIdx %>').replaceWith(function() {
-              return $(msg.submissionPanel).fadeIn('slow');
-            });
-            resultsLoaded = true;
-          }
-          if (msg.scorePanel) {
-            $('#score-panel').replaceWith(function() {
-              return $(msg.scorePanel).fadeIn('slow');
-            });
-          }
-        });
-      }
-    });
-  </script>
-<% } %>
-
-<div class="panel panel-info pastsubmission-block" id="submission-<%= submissionIdx %>">
+<!-- Keeping "graded" state in the DOM is bad, yet here we are. -->
+<div class="panel panel-info pastsubmission-block" data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>">
   <div class="panel-heading">
     <h3 class="panel-title">
       Submitted answer
@@ -52,7 +11,7 @@
     <small>Submitted at <%- submission.formatted_date %></small>
   </div>
 
-  <div class="panel-body submission-body" id="submission-<%= submissionIdx %>-body">
+  <div class="panel-body submission-body">
     <%- submissionHtml %>
   </div>
 </div>
