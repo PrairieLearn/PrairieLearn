@@ -2,7 +2,8 @@
 <script>
   $(function() {
     var socket = io('/external-grading');
-    var variantId = <%= variant.id %>;
+    var variantId = '<%= variant.id %>';
+    var variantToken = '<%= variantToken %>';
     var urlPrefix = '<%= urlPrefix %>';
 
     // Render initial grading states into the DOM
@@ -12,7 +13,7 @@
       updateStatus(submissionId, status);
     });
 
-    socket.emit('init', {variant_id: variantId}, function(msg) {
+    socket.emit('init', {variant_id: variantId, variant_token: variantToken}, function(msg) {
       handleStatusChange(msg);
     });
 
@@ -43,7 +44,12 @@
     }
 
     function fetchResults(submissionId) {
-      socket.emit('getResults', {submission_id: submissionId, url_prefix: urlPrefix}, function(msg) {
+      socket.emit('getResults', {
+        variant_id: variantId,
+        variant_token: variantToken,
+        submission_id: submissionId,
+        url_prefix: urlPrefix,
+      }, function(msg) {
         if (msg.submissionPanel) {
           $('#submission-' + submissionId).replaceWith(function() {
             return $(msg.submissionPanel).fadeIn('slow');
