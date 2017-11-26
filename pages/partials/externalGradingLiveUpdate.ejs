@@ -50,9 +50,14 @@
           });
           resultsLoaded = true;
         }
-        if (msg.scorePanel) {
-          $('#score-panel').replaceWith(function() {
-            return $(msg.scorePanel).fadeIn('slow');
+        if (msg.questionScorePanel) {
+          $('#question-score-panel').replaceWith(function() {
+            return $(msg.questionScorePanel).fadeIn('slow');
+          });
+        }
+        if (msg.assessmentScorePanel) {
+          $('#assessment-score-panel').replaceWith(function() {
+            return $(msg.assessmentScorePanel).fadeIn('slow');
           });
         }
       });

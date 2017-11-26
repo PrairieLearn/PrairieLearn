@@ -27,21 +27,7 @@
         <!-- SIDEBAR ---------------------------------------------------------------------->
         <div class="col-md-3 col-sm-4 col-xs-12">
 
-          <div class="panel panel-default">
-            <div class="panel-heading"><h3 class="panel-title"><a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/"><%= assessment_set.name %> <%= assessment.number %></a></h3></div>
-            <table class="table table-condensed">
-              <tbody>
-                <tr>
-                  <td>Total points:</td>
-                  <td><%= assessment_instance.points %>/<%= assessment_instance.max_points %></td>
-                </tr>
-                <tr>
-                  <td>Score:</td>
-                  <td><%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <%- include('../partials/assessmentScorePanel') %>
 
           <%- include('../partials/questionScorePanel') %>
 
