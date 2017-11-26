@@ -202,6 +202,7 @@ def grade(element_html, element_index, data):
     name = pl.get_string_attrib(element, 'answers_name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
     partial_credit = pl.get_boolean_attrib(element, 'partial_credit', False)
+    number_answers = len(data['params'][name])
 
     submitted_keys = data['submitted_answers'].get(name, [])
     correct_answer_list = data['correct_answers'].get(name, [])
@@ -209,11 +210,21 @@ def grade(element_html, element_index, data):
 
     submittedSet = set(submitted_keys)
     correctSet = set(correct_keys)
+
+    # partial credit version 1
+    # score = 0
+    # if partial_credit and len(submittedSet - correctSet) == 0:
+    #     score = 1.0 * len(submittedSet) / len(correctSet)
+    # elif submittedSet == correctSet:
+    #     score = 1
+
+    # partial credit version 2
     score = 0
-    if partial_credit and len(submittedSet - correctSet) == 0:
-        score = 1.0 * len(submittedSet) / len(correctSet)
-    elif submittedSet == correctSet:
+    if partial_credit == False and submittedSet == correctSet:
         score = 1
+    elif partial_credit:
+        number_wrong = len(submittedSet - correctSet) + len(correctSet - submittedSet)
+        score = 1 - 1.0 * number_wrong / number_answers
 
     data['partial_scores'][name] = {'score': score, 'weight': weight}
     return data
