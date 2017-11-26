@@ -1,5 +1,5 @@
 -- BLOCK select_submissions_for_variant
-SELECT
+SELECT DISTINCT ON (s.id)
     s.id AS id,
     gj.id AS grading_job_id,
     grading_job_status(gj.id) AS grading_job_status
@@ -8,7 +8,10 @@ FROM
     JOIN variants AS v ON (v.id = s.variant_id)
     LEFT JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
 WHERE
-    v.id = $variant_id;
+    v.id = $variant_id
+ORDER BY
+    s.id,
+    gj.id DESC;
 
 -- BLOCK select_submission_for_grading_job
 SELECT
