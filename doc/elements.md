@@ -99,7 +99,19 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `params_name` | string | — | Name of variable in `data['params']` to display.
 
-Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `. Each variable will be suffixed by `;`. Each variable will appear on its own line.
+This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB or python (the user can switch between the two). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
+
+Here is an example of MATLAB format:
+```
+A = [1.23; 4.56];
+```
+
+Here is an example of python format:
+```
+import numpy as np
+
+A = np.array([[1.23], [4.56]])
+```
 
 
 ## `pl_figure` element
