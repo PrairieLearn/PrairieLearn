@@ -19,11 +19,7 @@ BEGIN
         RETURN 'graded';
     END IF;
 
-    IF job.grading_finished_at IS NOT NULL THEN
-        RETURN 'processing';
-    END IF;
-
-    IF job.grading_started_at IS NOT NULL THEN
+    IF job.grading_received_at IS NOT NULL THEN
         RETURN 'grading';
     END IF;
 

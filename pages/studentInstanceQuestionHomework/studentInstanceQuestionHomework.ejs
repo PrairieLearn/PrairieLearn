@@ -27,61 +27,9 @@
         <!-- SIDEBAR ---------------------------------------------------------------------->
         <div class="col-md-3 col-sm-4 col-xs-12">
 
-          <div class="panel panel-default">
-            <div class="panel-heading"><h3 class="panel-title"><a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/"><%= assessment_set.name %> <%= assessment.number %></a></h3></div>
-            <table class="table table-condensed">
-              <tbody>
-                <tr>
-                  <td>Total points:</td>
-                  <td><%= assessment_instance.points %>/<%= assessment_instance.max_points %></td>
-                </tr>
-                <tr>
-                  <td>Score:</td>
-                  <td><%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %></td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          <%- include('../partials/assessmentScorePanel') %>
 
-          <div class="panel panel-default">
-            <div class="panel-heading"><h3 class="panel-title">Question <%= instance_question.question_number %></h3></div>
-            <table class="table table-condensed two-column-description-no-header">
-              <tbody>
-                <tr>
-                  <td>Value:</td>
-                  <td><%- include('../partials/questionValue', {value: instance_question.current_value});  %></td>
-                </tr>
-                <tr>
-                  <td>History:</td>
-                  <td><%- include('../partials/questionAwardedPoints', {awarded_points: instance_question.variants_points_list, init_points: assessment_question.init_points});  %></td>
-                </tr>
-                <tr>
-                  <td>Awarded points:</td>
-                  <td><%- include('../partials/questionPointsOfMax', {points: instance_question.points, max_points: assessment_question.max_points}); %></td>
-                </tr>
-              </tbody>
-            </table>
-            <% if (assessment.allow_issue_reporting) { %>
-            <div class="panel-footer">
-              <button class="btn btn-xs btn-default" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
-                Report an issue with this question
-              </button>
-              <div class="collapse" id="issueCollapse">
-                <hr />
-                <form method="POST">
-                  <div class="form-group">
-                    <textarea class="form-control" rows="5" name="description" placeholder="Describe the issue"></textarea>
-                  </div>
-                  <input type="hidden" name="__variant_id" value="<%= variant.id %>">
-                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                  <div class="form-group text-right">
-                    <button class="btn btn-small btn-warning" name="__action" value="report_issue">Report issue
-                  </div>
-                </form>
-              </div>
-            </div>
-            <% } %>
-          </div>
+          <%- include('../partials/questionScorePanel') %>
 
           <p class="text-center">
             <% if (instance_question_info.prev_instance_question_id) { %>
