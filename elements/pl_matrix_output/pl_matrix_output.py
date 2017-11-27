@@ -27,6 +27,9 @@ def render(element_html, element_index, data):
                 matlab_data += pl.inner_html(child) + ' = ' + pl.numpy_to_matlab(var_data, ndigits=digits) + ';\n'
                 python_data += pl.inner_html(child) + ' = ' + str(np.array(var_data).round(digits).tolist()) + '\n'
             else:
+                var_data = np.array(var_data)
+                if var_data.ndim != 2:
+                    raise Exception('Value in data["params"] for variable %s in pl_matrix_output element is neither a scalar nor a 2D array' % var_name)
                 matlab_data += pl.inner_html(child) + ' = ' + pl.numpy_to_matlab(np.array(var_data), ndigits=digits) + ';\n'
                 python_data += pl.inner_html(child) + ' = np.array(' + str(np.array(var_data).round(digits).tolist()) + ')\n'
 
