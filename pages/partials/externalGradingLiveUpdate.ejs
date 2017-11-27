@@ -5,6 +5,8 @@
     var variantId = '<%= variant.id %>';
     var variantToken = '<%= variantToken %>';
     var urlPrefix = '<%= urlPrefix %>';
+    var questionContext = '<%= question_context %>';
+    var csrfToken = '<%= __csrf_token %>';
 
     // Render initial grading states into the DOM
     $('[id^=submission-]').each(function(index, elem) {
@@ -49,6 +51,8 @@
         variant_token: variantToken,
         submission_id: submissionId,
         url_prefix: urlPrefix,
+        question_context: questionContext,
+        csrf_token: csrfToken
       }, function(msg) {
         if (msg.submissionPanel) {
           $('#submission-' + submissionId).replaceWith(function() {
@@ -64,6 +68,11 @@
         if (msg.assessmentScorePanel) {
           $('#assessment-score-panel').replaceWith(function() {
             return $(msg.assessmentScorePanel).fadeIn('slow');
+          });
+        }
+        if (msg.questionPanelFooter) {
+          $('#question-panel-footer').replaceWith(function() {
+            return $(msg.questionPanelFooter).fadeIn('slow');
           });
         }
       });
