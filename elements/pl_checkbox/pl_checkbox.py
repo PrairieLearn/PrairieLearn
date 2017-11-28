@@ -220,7 +220,7 @@ def grade(element_html, element_index, data):
 
     # partial credit version 2
     score = 0
-    if partial_credit == False and submittedSet == correctSet:
+    if not partial_credit and submittedSet == correctSet:
         score = 1
     elif partial_credit:
         number_wrong = len(submittedSet - correctSet) + len(correctSet - submittedSet)

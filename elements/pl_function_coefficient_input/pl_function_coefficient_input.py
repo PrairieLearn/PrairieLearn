@@ -63,10 +63,6 @@ def render(element_html, element_index, data):
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
         with open('pl_function_coefficient_input.mustache', 'r') as f:
             info = chevron.render(f, info_params).strip()
-        with open('pl_function_coefficient_input.mustache', 'r') as f:
-            info_params.pop('format', None)
-            info_params['shortformat'] = True
-            shortinfo = chevron.render(f, info_params).strip()
 
         # Prepare html_params
         html_params = {'question': True, 'editable': editable, 'info': info, 'raw_terms': raw_terms}
@@ -91,7 +87,7 @@ def render(element_html, element_index, data):
         submitted_terms = []
         first_term = True
         for child in element:
-            if child.tag == "pl_function_term":
+            if child.tag == 'pl_function_term':
                 child_name = pl.get_string_attrib(child, 'answers_name')
                 suffix = pl.get_string_attrib(child, 'suffix', None)
                 parse_error = data['format_errors'].get(child_name, None)
@@ -111,7 +107,7 @@ def render(element_html, element_index, data):
                 first_term = False
 
         # Prepare html_params
-        html_params = {'submission': True,'submitted_terms': submitted_terms}
+        html_params = {'submission': True, 'submitted_terms': submitted_terms}
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
         if score is not None:
@@ -133,7 +129,7 @@ def render(element_html, element_index, data):
         no_answer = False
         first_term = True
         for child in element:
-            if child.tag == "pl_function_term":
+            if child.tag == 'pl_function_term':
                 child_name = pl.get_string_attrib(child, 'answers_name')
                 suffix = pl.get_string_attrib(child, 'suffix', None)
                 a_tru = data['correct_answers'].get(child_name, None)
@@ -223,17 +219,17 @@ def grade(element_html, element_index, data):
             a_tru = data['correct_answers'].get(child_name, None)
             if a_tru is None:
                 # print("no score due to no true answer")
-                return data;
+                return data
 
             # Get submitted answer (if it does not exist, score is zero)
             a_sub = data['submitted_answers'].get(child_name, None)
             if a_sub is None:
-                #total score is zero if no partial credit is granted
+                # total score is zero if no partial credit is granted
                 if not partial_credit:
                     data['partial_scores'][name] = {'score': 0, 'weight': weight}
                     # print("no score due to no partial credit and not submitted answer")
                     return data
-                #skip this child if partial credit is allowed but submitted answer does not exist
+                # skip this child if partial credit is allowed but submitted answer does not exist
                 else:
                     continue
 
