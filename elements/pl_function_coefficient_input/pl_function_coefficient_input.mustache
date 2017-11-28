@@ -1,0 +1,73 @@
+{{#question}}
+{{! FIXME: Put this somewhere else.}}
+<style>
+    .popover{max-width: 50%;}
+</style>
+
+{{! FIXME: Put this somewhere else.}}
+<script>
+    $(document).ready(function(){
+        $('[data-toggle="popover"]').popover({container: 'body'});
+    });
+</script>
+
+<span class="form-inline">
+    <span>
+        {{#raw_terms}}
+            <input name="{{child_name}}" type="text" class="form-control" size="10" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} />
+            {{#suffix}}<span>${{suffix}}$</span>{{/suffix}}
+            <span>&nbsp;&nbsp;</span>
+        {{/raw_terms}}
+    </span>
+    <a class="btn btn-default" type="button" data-toggle="popover" data-html="true" title="Number" data-content="{{info}}" data-placement="auto left" data-trigger="focus" tabindex="0">
+        <i class="fa fa-question-circle" aria-hidden="true"></i>
+        {{#correct}}&nbsp;<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+        {{#partial}}&nbsp;<span class="label label-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+        {{#incorrect}}&nbsp;<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+    </a>
+</span>
+{{/question}}
+
+
+{{#submission}}
+    {{#submitted_terms}}
+        {{#parse_error}}
+        {{! FIXME: Put this somewhere else.}}
+        <style>
+            .popover{max-width: 50%;}
+        </style>
+
+        {{! FIXME: Put this somewhere else.}}
+        <script>
+            $(document).ready(function(){
+                $('[data-toggle="popover"]').popover({container: 'body'});
+            });
+        </script>
+
+        <a class="btn btn-default" type="button" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Error" tabindex="0" data-content="{{parse_error}}{{#raw_submitted_answer}}<hr><h5><small class='text-uppercase'>What you submitted</small></h5><pre>{{raw_submitted_answer}}</pre>{{/raw_submitted_answer}}">INVALID <span><i class="fa fa-question-circle" aria-hidden="true"></i></span></a>
+        {{/parse_error}}
+        {{^parse_error}}
+        <samp>{{a_sub}}</samp>
+        {{/parse_error}}
+        {{#suffix}}<span>${{suffix}}$</span>{{/suffix}}
+    {{/submitted_terms}}
+
+    {{#correct}}<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+    {{#partial}}<span class="label label-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+    {{#incorrect}}<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+{{/submission}}
+
+{{#answer}}
+    {{#answer_terms}}
+        <samp>{{a_tru}}</samp>
+        {{#suffix}}<span>${{suffix}}$</span>{{/suffix}}
+    {{/answer_terms}}
+{{/answer}}
+
+{{#format}}
+No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted. Scientific notation is accepted (e.g., 1.2e03). {{#relabs}}Your answer must be accurate to within relative tolerance {{rtol}} and absolute tolerance {{atol}}.{{/relabs}}{{#sigfig}}Your answer must be accurate to {{digits}} significant figures.{{/sigfig}}{{#decdig}}Your answer must be accurate to {{digits}} digits after the decimal.{{/decdig}}
+{{/format}}
+
+{{#shortformat}}
+number {{#relabs}}(rtol={{rtol}}, atol={{atol}}){{/relabs}}{{#sigfig}}({{digits}} significant figures){{/sigfig}}{{#decdig}}({{digits}} digits after decimal){{/decdig}}
+{{/shortformat}}
