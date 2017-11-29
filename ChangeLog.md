@@ -98,6 +98,10 @@
 
   * Add more feedback when submission to `pl_symbolic_input` has invalid format (Tim Bretl).
 
+  * Add ability for user to switch between MATLAB and python format in `pl_matrix_output` (Tim Bretl).
+
+  * Add copy-to-clipboard button in `pl_matrix_output` (Tim Bretl).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,

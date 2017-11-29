@@ -423,4 +423,8 @@ def is_correct_scalar_sf(a_sub, a_tru, digits=2, eps_digits=3):
 
 
 def get_uuid():
+    """get_uuid()
+
+    Returns the string representation of a new random UUID.
+    """
     return str(uuid.uuid4())

@@ -1,0 +1,24 @@
+<div class="panel panel-default">
+    <div class="panel-heading">
+        <ul class="nav nav-pills" role="tablist">
+            <li role="presentation" class="active"><a href="#matlab-{{element_index}}" aria-controls="matlab-{{element_index}}" role="tab" data-toggle="pill">matlab</a></li>
+            <li role="presentation"><a href="#python-{{element_index}}" aria-controls="python-{{element_index}}" role="tab" data-toggle="pill">python</a></li>
+        </ul>
+    </div>
+    <div class="panel-body">
+        <div class="tab-content">
+            <div role="tabpanel" class="tab-pane {{#default_is_matlab}}active{{/default_is_matlab}}" id="matlab-{{element_index}}">
+                <pre id="matlab-data-{{element_index}}">{{matlab_data}}</pre>
+                <button type="button" class="btn btn-default btn-xs" onclick="PrairieUtil.copyToClipboard({{matlab_data_raw}})">
+                    copy this text
+                </button>
+            </div>
+            <div role="tabpanel" class="tab-pane {{#default_is_python}}active{{/default_is_python}}" id="python-{{element_index}}">
+                <pre id="python-data-{{element_index}}">{{python_data}}</pre>
+                <button type="button" class="btn btn-default btn-xs" onclick="PrairieUtil.copyToClipboard({{python_data_raw}})">
+                    copy this text
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
