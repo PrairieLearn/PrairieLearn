@@ -83,7 +83,6 @@ app.use(passport.initialize());
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax')));
-app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
 
 // Middleware for all requests
 // response_id is logged on request, response, and error to link them together
