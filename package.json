@@ -13,7 +13,6 @@
         "body-parser": "1.15.x",
         "byline": "^5.0.0",
         "cheerio": "0.22.x",
-        "clipboard": "1.7.x",
         "cookie-parser": "1.4.x",
         "crypto-js": "3.1.x",
         "csv": "1.1.x",
