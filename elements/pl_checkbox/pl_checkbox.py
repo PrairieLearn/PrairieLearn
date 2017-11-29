@@ -211,14 +211,6 @@ def grade(element_html, element_index, data):
     submittedSet = set(submitted_keys)
     correctSet = set(correct_keys)
 
-    # partial credit version 1
-    # score = 0
-    # if partial_credit and len(submittedSet - correctSet) == 0:
-    #     score = 1.0 * len(submittedSet) / len(correctSet)
-    # elif submittedSet == correctSet:
-    #     score = 1
-
-    # partial credit version 2
     score = 0
     if not partial_credit and submittedSet == correctSet:
         score = 1
