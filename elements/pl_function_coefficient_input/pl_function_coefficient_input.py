@@ -35,6 +35,7 @@ def render(element_html, element_index, data):
         editable = data['editable']
         # Get each raw term: raw_submitted_answer and its suffix
         raw_terms = []
+        first_term = True
         for child in element:
             if child.tag == 'pl_function_term':
                 child_name = pl.get_string_attrib(child, 'answers_name')
@@ -45,7 +46,9 @@ def render(element_html, element_index, data):
                     raw_term['suffix'] = suffix
                 if raw_submitted_answer is not None:
                     raw_term['raw_submitted_answer'] = raw_submitted_answer
+                raw_term['first_term'] = first_term
                 raw_terms.append(raw_term)
+                first_term = False
 
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
@@ -104,6 +107,7 @@ def render(element_html, element_index, data):
                     if raw_submitted_answer is not None:
                         submitted_term['raw_submitted_answer'] = escape(raw_submitted_answer)
                 submitted_terms.append(submitted_term)
+                submitted_term['first_term'] = first_term
                 first_term = False
 
         # Prepare html_params
