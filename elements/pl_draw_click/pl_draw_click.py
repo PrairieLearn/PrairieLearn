@@ -9,12 +9,14 @@ import to_precision
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, required_attribs=['file_name'], optional_attribs=['width','height', 'type', 'directory'])
+    pl.check_attribs(element, required_attribs=['answers_name','file_name'], optional_attribs=['width','test_x','test_y','test_width', 'test_height', 'type', 'directory', 'show_coordinates'])
+    name = element.get('answers_name')
     return data
 
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
+    name = element.get('answers_name')
 
     # Get file name or raise exception if one does not exist
     file_name = pl.get_string_attrib(element, 'file_name')
@@ -47,24 +49,65 @@ def render(element_html, element_index, data):
     # Get width (optional)
     width = pl.get_string_attrib(element, 'width', None)
 
-    # Get height (optional)
-    height = pl.get_string_attrib(element, 'height', None)
+
+    # Get test_x (optional)
+    test_x = pl.get_string_attrib(element, 'test_x', None)
+
+    # Get test_x (optional)
+    test_y = pl.get_string_attrib(element, 'test_y', None)
+
+    # Get test_width (optional)
+    test_width = pl.get_string_attrib(element, 'test_width', None)
+
+    # Get test_height (optional)
+    test_height = pl.get_string_attrib(element, 'test_height', None)
+
+     # Get show_coordinates (optional)
+
+    show_coordinates = pl.get_string_attrib(element, 'show_coordinates', None)
+
 
     # Create and return html
-    html_params = {'src': file_url, 'width': width, 'height': height}
+    html_params = {'src': file_url, 'width': width, 'test_x':test_x, 'test_y':test_y, 'test_width':test_width, 'test_height':test_height, 'show_coordinates':show_coordinates }
     with open('pl_draw_click.mustache', 'r') as f:
         html = chevron.render(f, html_params).strip()
     return html
 
 def parse(element_html, element_index, data):
     #Get the stuff parse into float save into same spot
-    sub = data['submitted_answers'].get('cordinates_test')
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, 'answers_name')
+    if(data['submitted_answers'].get('cordinate_x') == ''):
+        data['format_errors'][name] = 'No submitted answer.'
+        return data
+    x_val = float(data['submitted_answers'].get('cordinate_x'))
+    y_val = float(data['submitted_answers'].get('cordinate_y'))
+
+    data['submitted_answers']['x_val'] = x_val
+    data['submitted_answers']['y_val'] = y_val
 
 
-    #transform from list into several floats
-    print(sub)
     return data
 
 def grade(element_html, element_index, data):
-    #Get the cordinates, get the server answers, check if answser is within rage and in that case give correct
+    #Get the coordinates, get the server answers, check if answser is within rage and in that case give correct
+    # Get true answer (if it does not exist, create no grade - leave it
+    # up to the question code)
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, 'answers_name')
+    weight = pl.get_integer_attrib(element, 'weight', 1)
+
+    x_val = data['submitted_answers']['x_val']
+    y_val = data['submitted_answers']['y_val']
+    x = data['correct_answers']['x']
+    y = data['correct_answers']['y']
+    width_ans = data['correct_answers']['width']
+    height_ans = data['correct_answers']['height']
+
+    if(x_val >= x and x_val <= (x+width_ans) and y_val>=y and y_val <= (y+height_ans)):
+         data['partial_scores'][name] = {'score': 1, 'weight': weight}
+    else:
+         data['partial_scores'][name] = {'score': 0, 'weight': weight}
+
+
     return data

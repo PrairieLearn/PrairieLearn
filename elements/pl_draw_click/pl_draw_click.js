@@ -7,52 +7,71 @@ $(function() {
     var can = document.getElementById('clickable');
     var ctx = can.getContext('2d');
     var src = $('#clickable').attr('src');
+    var scale = $('#clickable').attr('width')
+    scale = scale/100;
+
+
+
 
     var img = new Image();
     img.src = src;
+    console.log(img.height);
+
     img.onload = function() {
-        ctx.drawImage(img, 0, 0, img.width,img.height,     // source rectangle
-            0, 0, can.width, can.height);
+        $('#clickable').attr('height', img.height*scale);
+        $('#clickable').attr('width', img.width*scale);
+        ctx.drawImage(img, 0, 0, can.width,can.height);
+        if($("#clickable").attr("test_x")!='' && $("#clickable").attr("test_y")!='' && $("#clickable").attr("test_radius")!=''){
+            try{
+                drawRect(Number($("#clickable").attr("test_x")), Number($("#clickable").attr("test_y")), Number($("#clickable").attr("test_width")), Number($("#clickable").attr("test_height")));
+            } catch(exception){
+                console.log(exception)
+            }
+        }
     };
+
     $("#clickable").click(function(e) {
         var offset = $(this).offset();
         var relativeX = (e.pageX - offset.left);
         var relativeY = (e.pageY - offset.top);
-        if(cords.length < 4) {
-            cords.push({
-                x: relativeX,
-                y: relativeY
-            });
-        }else{
-            cords[0] = {
-                x: relativeX,
-                y: relativeY
-            };
 
-        }
 
         drawX(relativeX,relativeY);
 
-        $('#cordinates').val(JSON.stringify(cords));
+        if($("#clickable").attr("show_coordinates")==='true'){
+            alert('x:' + relativeX + ' y:' + relativeY);
+        }
+
+        $('#cordinate_x').val(relativeX);
+        $('#cordinate_y').val(relativeY);
 
     });
 
-    function drawX(x, y) {
+    function drawRect(x,y,width,height) {
+        console.log('hej');
+        ctx.rect(x,y,width,height);
+        ctx.strokeStyle="#FF0000";
+        ctx.stroke();
+        ctx.strokeStyle="#000000";
 
-        ctx.drawImage(img, 0, 0, img.width,img.height,     // source rectangle
-            0, 0, can.width, can.height);
-        console.log(cords);
+    }
+
+    function drawX(x, y) {
+        console.log(x,y);
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.clearRect(0,0,can.width,can.height);
-        cords.map(function(val) {
-            console.log(val);
-            //ctx.restore();
-            ctx.moveTo(val.x - 10, val.y - 10);
-            ctx.lineTo(val.x + 10, val.y + 10);
-            ctx.stroke();
-            ctx.moveTo(val.x + 10, val.y - 10);
-            ctx.lineTo(val.x - 10, val.y + 10);
-            ctx.stroke();
-        });
+        ctx.restore();
+        ctx.drawImage(img, 0, 0, img.width,img.height,     // source rectangle
+            0, 0, can.width, can.height)
+        //
+        ctx.beginPath();
+        ctx.moveTo(x - 10, y - 10);
+        ctx.lineTo(x + 10, y + 10);
+        ctx.stroke();
+        ctx.moveTo(x + 10, y - 10);
+        ctx.lineTo(x - 10, y + 10);
+        ctx.stroke();
+
 
 
     }
