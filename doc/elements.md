@@ -51,6 +51,7 @@ Attribute | Type | Default | Description
 `fixed-order` | boolean | false | Disable the randomization of answer order.
 `hide-help-text` | boolean | false | Hide help text stating to pick one or more optinos.
 `detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
+`partial-credit` | boolean | false | Gives partial credit according to how many correct choices a student has made. Correct choices include checking a correct answer and not checking a wrong one.
 
 A `pl-checkbox` element displays a subset of the answers in a random order as checkboxes.
 
