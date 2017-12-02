@@ -274,33 +274,27 @@ def test(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers_name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
+    partial_credit = pl.get_boolean_attrib(element, 'partial_credit', True)
+    number_correct = 0
+    number_incorrect = 0
 
-    correct_answer_list = data['correct_answers'].get(name, [])
-    correct_keys = [answer['key'] for answer in correct_answer_list]
-    number_answers = len(data['params'][name])
-    all_keys = [chr(ord('a') + i) for i in range(number_answers)]
+    for child in element:
+        if child.tag == 'pl_function_term':
+            child_name = pl.get_string_attrib(child, 'answers_name')
+            result = random.choice(['correct', 'incorrect'])
+            if result == 'correct':
+                number_correct += 1
+                data['raw_submitted_answers'][child_name] = '%f' % data['correct_answers'][child_name]
+            elif result == 'incorrect':
+                number_incorrect += 1
+                data['raw_submitted_answers'][child_name] = '%f' % (data['correct_answers'][child_name] + 1)
+            else:
+                raise Exception('invalid result: %s' % result)
 
-    result = random.choice(['correct', 'incorrect'])
-    if result == 'correct':
-        if len(correct_keys) == 1:
-            data['raw_submitted_answers'][name] = correct_keys[0]
-        elif len(correct_keys) > 1:
-            data['raw_submitted_answers'][name] = correct_keys
-        else:
-            pass  # no raw_submitted_answer if no correct keys
-        data['partial_scores'][name] = {'score': 1, 'weight': weight}
-    elif result == 'incorrect':
-        while True:
-            # select answer keys at random
-            ans = [k for k in all_keys if random.choice([True, False])]
-            # break and use this choice if it isn't correct
-            if set(ans) != set(correct_keys):
-                break
-        data['raw_submitted_answers'][name] = ans
-        data['partial_scores'][name] = {'score': 0, 'weight': weight}
-
-        # FIXME: test invalid answers
+    total_number = number_correct + number_incorrect
+    if partial_credit:
+        score = 1.0 * number_correct / total_number
     else:
-        raise Exception('invalid result: %s' % result)
-
+        score = 1 if number_correct == total_number else 0
+    data['partial_scores'][name] = {'score': score, 'weight': weight}
     return data
