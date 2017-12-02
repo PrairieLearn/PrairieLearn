@@ -31,6 +31,22 @@
                         "type": "string"
                     }
                 },
+                "nodeModulesStyles": {
+                    "description": "The styles required by this element from /node_modules.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .css file located in /node_modules.",
+                        "type": "string"
+                    }
+                },
+                "nodeModulesScripts": {
+                    "description": "The scripts required by this element from /node_modules.",
+                    "type": "array",
+                    "items": {
+                        "description": "A .js file located in /node_modules.",
+                        "type": "string"
+                    }
+                },
                 "clientFilesCourseStyles": {
                     "description": "The styles required by this element from clientFilesCourse.",
                     "type": "array",

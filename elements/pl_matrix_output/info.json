@@ -1,3 +1,8 @@
 {
-    "controller": "pl_matrix_output.py"
+    "controller": "pl_matrix_output.py",
+    "dependencies": {
+        "nodeModulesScripts": [
+            "clipboard/dist/clipboard.min.js"
+        ]
+    }
 }
