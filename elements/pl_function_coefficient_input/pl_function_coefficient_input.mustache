@@ -20,7 +20,7 @@
             $($
             <input name="{{child_name}}" type="text" class="form-control" size="10" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} />
             $)$
-            {{#suffix}}<span>${{suffix}}$</span>{{/suffix}}
+            {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
         {{/raw_terms}}
     </span>
     <a class="btn btn-default" type="button" data-toggle="popover" data-html="true" title="Number" data-content="{{info}}" data-placement="auto left" data-trigger="focus" tabindex="0">
@@ -56,7 +56,7 @@
         {{^parse_error}}
         <samp>{{a_sub}}</samp>
         {{/parse_error}}
-        {{#suffix}}<span>${{suffix}}$</span>{{/suffix}}
+        {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
     {{/submitted_terms}}
 
     {{#correct}}<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
@@ -67,7 +67,7 @@
 {{#answer}}
     {{#answer_terms}}
         <samp>{{a_tru}}</samp>
-        {{#suffix}}<span>${{suffix}}$</span>{{/suffix}}
+        {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
     {{/answer_terms}}
 {{/answer}}
 
