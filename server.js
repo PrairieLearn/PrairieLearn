@@ -174,6 +174,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessme
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
+    require('./pages/shared/floatFormatters'),
     require('./pages/instructorAssessmentInstance/instructorAssessmentInstance'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id', [
