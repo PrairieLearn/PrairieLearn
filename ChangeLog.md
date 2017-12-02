@@ -98,6 +98,8 @@
 
   * Add more feedback when submission to `pl_symbolic_input` has invalid format (Tim Bretl).
 
+  * Add live update of external grading results (Nathan Walters).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
