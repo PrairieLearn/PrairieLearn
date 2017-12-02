@@ -289,6 +289,187 @@ def numpy_to_matlab_sf(A, ndigits=2):
         return A_str
 
 
+def string_partition_first_interval(s, left='[', right=']'):
+    # Split at first left delimiter
+    (s_before_left, s_left, s) = s.partition(left)
+    # Split at first right delimiter
+    (s, s_right, s_after_right) = s.partition(right)
+    # Return results
+    return s_before_left, s, s_after_right
+
+
+def string_partition_outer_interval(s, left='[', right=']'):
+    # Split at first left delimiter
+    (s_before_left, s_left, s) = s.partition(left)
+    # Split at last right delimiter
+    (s, s_right, s_after_right) = s.rpartition(right)
+    # Return results
+    return s_before_left, s, s_after_right
+
+
+def string_to_2darray(s):
+    # Count left and right brackets and check that they are balanced
+    number_of_left_brackets = s.count('[')
+    number_of_right_brackets = s.count(']')
+    if number_of_left_brackets != number_of_right_brackets:
+        return (None, 'Unbalanced square brackets.')
+
+    # If there are no brackets, treat as scalar
+    if number_of_left_brackets == 0:
+        try:
+            # Convert submitted answer (assumed to be a scalar) to float
+            A = np.array([[float(s)]])
+            # Return it with no error
+            return (A, None)
+        except:
+            # Return error if submitted answer could not be converted to float
+            return (None, 'Invalid format (missing square brackets and not a real number).')
+
+    # Get string between outer brackets
+    (s_before_left, s, s_after_right) = string_partition_outer_interval(s)
+
+    # Return error if there is anything but space outside brackets
+    s_before_left = s_before_left.strip()
+    s_after_right = s_after_right.strip()
+    if s_before_left:
+        return (None, 'Non-empty text "{:s}" before outer brackets.'.format(s_before_left))
+    if s_after_right:
+        return (None, 'Non-empty space "{:s}" after outer brackets.'.format(s_after_right))
+
+    # If there is only one set of brackets, treat as MATLAB format
+    if number_of_left_brackets == 1:
+        # Return error if there are any commas
+        if ',' in s:
+            return (None, 'Commas cannot be used as delimiters in an expression with single brackets.')
+
+        # Split on semicolon
+        s = s.split(';')
+
+        # Get number of rows
+        m = len(s)
+
+        # Return error if there are no rows (i.e., the matrix is empty)
+        if (m == 0):
+            return (None, 'Matrix has no rows.')
+
+        # Get number of columns by splitting first row on space
+        n = len(s[0].split())
+
+        # Return error if first row has no columns
+        if (n == 0):
+            return (None, 'First row of matrix has no columns.')
+
+        # Define matrix in which to put result
+        A = np.zeros((m, n))
+
+        # Iterate over rows
+        for i in range(0, m):
+
+            # Split on space
+            s_row = s[i].split()
+
+            # Return error if current row has more or less columns than first row
+            if (len(s_row) != n):
+                return (None, 'Rows 1 and {:d} of matrix have a different number of columns.'.format(i + 1))
+
+            # Iterate over columns
+            for j in range(0, n):
+                try:
+                    # Convert entry to float
+                    A[i, j] = float(s_row[j])
+
+                    # Return error if entry is not finite
+                    if not np.isfinite(A[i, j]):
+                        return (None, 'Entry ({:d}, {:d}) of matrix "{:s}" is not finite.'.format(i + 1, j + 1, s_row[j]))
+                except:
+                    # Return error if entry could not be converted to float
+                    return (None, 'Entry ({:d}, {:d}) of matrix "{:s}" has invalid format.'.format(i + 1, j + 1, s_row[j]))
+
+        # Return resulting ndarray with no error
+        return (A, None)
+
+    # If there is more than one set of brackets, treat as python format
+    if number_of_left_brackets > 1:
+        # Return error if there are any semicolons
+        if ';' in s:
+            return (None, 'Semicolons cannot be used as delimiters in an expression with nested brackets.')
+
+        # Partition string into rows
+        s_row = []
+        while s:
+            # Get next row
+            (s_before_left, s_between_left_and_right, s_after_right) = string_partition_first_interval(s)
+            s_before_left = s_before_left.strip()
+            s_after_right = s_after_right.strip()
+            s_row.append(s_between_left_and_right)
+
+            # Return error if there is anything but space before left bracket
+            if s_before_left:
+                return (None, 'Non-empty text "{:s}" before left bracket in row {:d} of matrix.'.format(s_before_left, len(s_row)))
+
+            # Return error if there are improperly nested brackets
+            if ('[' in s_between_left_and_right) or (']' in s_between_left_and_right):
+                return (None, 'Improperly nested brackets in row {:d} of matrix.'.format(len(s_row)))
+
+            # Check if we are in the last row
+            if (len(s_row) == number_of_left_brackets):
+                # Return error if it is the last row and there is anything but space after right bracket
+                if s_after_right:
+                    return (None, 'Non-empty text "{:s}" after right bracket in row {:d} of matrix.'.format(s_after_right, len(s_row)))
+                else:
+                    s = s_after_right
+            else:
+                # Return error if it is not the last row and there is no comma after right bracket
+                if s_after_right[0] != ',':
+                    return (None, 'No comma after row {:d} of matrix.'.format(len(s_row)))
+                else:
+                    s = s_after_right[1:]
+        number_of_rows = len(s_row)
+
+        # Check that number of rows is what we expected
+        if number_of_rows != number_of_left_brackets:
+            raise Exception('Number of rows {:d} should have been equal to number of brackets {:d}'.format(number_of_rows, number_of_left_brackets))
+
+        # Split each row on comma
+        number_of_columns = None
+        for i in range(0, number_of_rows):
+            s_row[i] = s_row[i].split(',')
+            n = len(s_row[i])
+
+            # Return error if row has no columns
+            if (n == 0):
+                return (None, 'Row {:d} of matrix has no columns.'.format(i + 1))
+
+            # Return error if row has different number of columns than first row
+            if number_of_columns is None:
+                number_of_columns = n
+            elif number_of_columns != n:
+                return (None, 'Rows 1 and {:d} of matrix have a different number of columns.'.format(i + 1))
+
+        # Define matrix in which to put result
+        A = np.zeros((number_of_rows, number_of_columns))
+
+        # Parse each row and column
+        for i in range(0, number_of_rows):
+            for j in range(0, number_of_columns):
+                try:
+                    # Convert entry to float
+                    A[i, j] = float(s_row[i][j])
+
+                    # Return error if entry is not finite
+                    if not np.isfinite(A[i, j]):
+                        return (None, 'Entry ({:d}, {:d}) of matrix "{:s}" is not finite.'.format(i + 1, j + 1, s_row[i][j]))
+                except:
+                    # Return error if entry could not be converted to float
+                    return (None, 'Entry ({:d}, {:d}) of matrix "{:s}" has invalid format.'.format(i + 1, j + 1, s_row[i][j]))
+
+        # Return result with no error
+        return (A, None)
+
+    # Should never get here
+    raise Exception('Invalid number of left brackets: {:g}'.format(number_of_left_brackets))
+
+
 def matlab_to_numpy(a):
     if (('[' in a) and (']' in a)):
         # Split at first left bracket
@@ -357,7 +538,7 @@ def matlab_to_numpy(a):
             # Return it with no error
             return (A, None)
         except:
-            # Return error if submitted answer coult not be converted to float
+            # Return error if submitted answer could not be converted to float
             return (None, 'Invalid format (missing square brackets and not a real number).')
 
 
