@@ -1,59 +1,4 @@
-<% if (submission.grading_method == 'External' && submission.graded_at == null) { %>
-    <script>
-        $(document).ready(function() {
-            // Expects a status string from sprocs/grading_job_status.sql
-            function updateStatus(status) {
-                var display = $('#grading-<%= submission.grading_job_id %>');
-                var label;
-                var spinner = '<i class="fa fa-refresh fa-spin fa-fw"></i>';
-                switch (status) {
-                    case 'requested':
-                        label = 'Grading requested ' + spinner;
-                        break;
-                    case 'queued':
-                        label = 'Queued for grading ' + spinner;
-                        break;
-                    case 'grading':
-                        label = 'Grading in progress ' + spinner;
-                        break;
-                    case 'processing':
-                        label = 'Processing results ' + spinner;
-                        break;
-                    case 'graded':
-                        label = 'Graded!'
-                        break;
-                    default:
-                        label = 'UNKNOWN STATUS';
-                        break;
-                }
-                display.html(label);
-                var reload = $('#grading-<%= submission.grading_job_id %>-reload');
-                status == 'graded' ? reload.show() : reload.hide();
-            }
-
-            if (io) {
-                var socket = io('/external-grading');
-
-                socket.on('change:status', function(msg) {
-                    updateStatus(msg.status);
-                });
-
-                socket.emit('getStatus', {grading_job_id: <%= submission.grading_job_id %>}, function (msg) {
-                    updateStatus(msg.status);
-                });
-            } else {
-                console.log('socket.io not present on this webpage');
-            }
-
-            // Immediately render with status known from the server; this will be
-            // updated as soon as new data comes in via the socket
-            updateStatus('<%= submission.grading_job_status %>');
-        });
-    </script>
-<% } %>
-
 <% if (submission.graded_at == null) { %>
-
     <% if (submission.grading_requested_at == null) { %>
         <% if (submission.gradable) { %>
             <span class="label label-info">saved, not graded</span>
@@ -62,16 +7,13 @@
         <% } %>
     <% } else { %>
         <% if (submission.grading_method == 'External') { %>
-            <span id="grading-<%= submission.grading_job_id %>" class="label label-default"></span>
-            <!-- FIXME: add in elapsed time? waiting for grading (<%= submission.elapsed_grading_time %>) -->
-            <a id="grading-<%= submission.grading_job_id %>-reload" href="<%= reloadUrl %>" class="btn btn-xs btn-primary" style="display: none;">Reload for results</a>
+            <span id="grading-status-<%= submission.id %>" class="label label-default"></span>
         <% } else if (submission.grading_method == 'Manual') { %>
             <span class="label label-default">waiting for manual grading</span>
         <% } else { %>
             <span class="label label-default">waiting for grading</span>
         <% } %>
     <% } %>
-
 <% } else if (submission.score == 1) { %>
     <% if ((typeof submission.v2_score !== 'undefined') && (submission.v2_score !== null) && (submission.v2_score < 1)) { %>
         <span class="label label-success">correct: 100% (rounded up from <%= Math.floor(submission.v2_score * 100) %>%)</span>
