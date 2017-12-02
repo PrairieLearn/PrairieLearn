@@ -680,6 +680,8 @@ module.exports = {
                     const dependencies = {
                         coreStyles: [],
                         coreScripts: [],
+                        nodeModulesStyles: [],
+                        nodeModulesScripts: [],
                         coreElementStyles: [],
                         coreElementScripts: [],
                         courseElementStyles: [],
@@ -735,6 +737,8 @@ module.exports = {
                         let depdendencyTypes = [
                             'coreStyles',
                             'coreScripts',
+                            'nodeModulesStyles',
+                            'nodeModulesScripts',
                             'clientFilesCourseStyles',
                             'clientFilesCourseScripts',
                             'coreElementStyles',
@@ -766,6 +770,8 @@ module.exports = {
                     const styleUrls = [];
                     dependencies.coreStyles.forEach((file) => styleUrls.push(`/stylesheets/${file}`));
                     dependencies.coreScripts.forEach((file) => coreScriptUrls.push(`/javascripts/${file}`));
+                    dependencies.nodeModulesStyles.forEach((file) => styleUrls.push(`/node_modules/${file}`));
+                    dependencies.nodeModulesScripts.forEach((file) => coreScriptUrls.push(`/node_modules/${file}`));
                     dependencies.clientFilesCourseStyles.forEach((file) => styleUrls.push(`/pl/course_instance/${course_instance.id}/clientFilesCourse/${file}`));
                     dependencies.clientFilesCourseScripts.forEach((file) => scriptUrls.push(`/pl/course_instance/${course_instance.id}/clientFilesCourse/${file}`));
                     dependencies.coreElementStyles.forEach((file) => styleUrls.push(`/pl/static/elements/${file}`));
