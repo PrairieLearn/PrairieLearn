@@ -58,6 +58,38 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
 
+## `pl_function_coefficient_input` element
+
+```html
+  <pl_function_coefficient_input partial_credit="true" answers_name="func" comparison="sigfig" digits="3">
+    <pl_function_term answers_name="no_suffix1"/>
+    <pl_function_term answers_name="a" suffix="x"/>
+    <pl_function_term answers_name="b" suffix="x^2"/>
+    <pl_function_term answers_name="c" suffix="x^3"/>
+  </pl_function_coefficient_input>
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers_name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`partial_credit` | boolean | true | Gives partial credit according to number of correct answered terms.
+`comparison` | "relabs", "sigfig", or "decdig" | "relabs" | How to grade. "relabs" uses relative ("rtol") and absolute ("atol") tolerances. "sigfig" and "decdig" use "digits" significant or decimal digits.
+`rtol` | number | 1e-5 | Relative tolerance for `comparison="relabs"`.
+`atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
+`digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
+`eps_digits` | integer | 3 | Additional digits (beyond `digits`) used to compute a grace tolerance.
+
+A `pl_function_coefficient_input` element displays a subset of the function terms connected by plus signs.
+
+An `pl_function_term` element inside a `pl_function_coefficient_input` element has attributes:
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers_name` | string | — | Variable name to store data in.
+`correct_answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers_name]`.
+`suffix` | text | — | A suffix to display after the input box (e.g., `suffix="$x^2y$"`).
+
 ## `pl_number_input` element
 
 ```html
