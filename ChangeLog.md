@@ -210,6 +210,8 @@
 
   * Fix server crash in grading job handling (Nathan Walters).
 
+  * Fix a few very old submissions with NaN scores (Matt West).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
