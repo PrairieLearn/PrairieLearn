@@ -108,6 +108,8 @@
 
   * Add visible logging for incremental DB migrations (Matt West).
 
+  * Add support for python format in `pl_matrix_input` (Tim Bretl).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,

@@ -20,7 +20,7 @@ const qids = [
     'downloadFile',
     // FIXME: 'fibonacciUpload',
     'functionValueFromPlot',
-    // FIXME: 'multiplyTwoMatrices',
+    'multiplyTwoMatrices',
     'multiplyTwoNumbers',
     'positionTimeGraph',
 ];

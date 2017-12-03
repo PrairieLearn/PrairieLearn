@@ -1,3 +1,8 @@
 {
-    "controller": "pl_matrix_input.py"
+    "controller": "pl_matrix_input.py",
+    "dependencies": {
+        "nodeModulesScripts": [
+            "clipboard/dist/clipboard.min.js"
+        ]
+    }
 }

@@ -78,6 +78,42 @@ Attribute | Type | Default | Description
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `eps_digits` | integer | 3 | Additional digits (beyond `digits`) used to compute a grace tolerance.
 
+## `pl_matrix_input` element
+
+```html
+<pl_matrix_input answers_name="C" comparison="sigfig" digits="3" label="$AB=$" />
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers_name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`correct_answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers_name]`.
+`label` | text | — | A prefix to display before the input box (e.g., `label="$F =$"`).
+`comparison` | "relabs", "sigfig", or "decdig" | "relabs" | How to grade. "relabs" uses relative ("rtol") and absolute ("atol") tolerances. "sigfig" and "decdig" use "digits" significant or decimal digits.
+`rtol` | number | 1e-5 | Relative tolerance for `comparison="relabs"`.
+`atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
+`digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
+`eps_digits` | integer | 3 | Additional digits (beyond `digits`) used to compute a grace tolerance.
+
+In the question panel, a `pl_matrix_input` element displays an input field that accepts a matrix (i.e., a 2-D array) expressed either in matlab or python format.
+
+Here is an example of valid MATLAB format:
+```
+[1.23; 4.56]
+```
+
+Here is an example of valid python format:
+```
+[[1.23], [4.56]]
+```
+
+A scalar will be accepted either as a matrix of size $1\times 1$ (e.g., `[1.23]` or `[[1.23]]`) or just as a single number (e.g., `1.23`).
+
+In the answer panel, a `pl_matrix_input` element displays the correct answer, allowing the user to switch between matlab and python format.
+
+In the submission panel, a `pl_matrix_input` element displays either the submitted answer (in the same format that it was submitted, either matlab or python), or a note that the submitted answer was invalid (with an explanation of why).
+
 ## `pl_matrix_output` element
 
 ```html
