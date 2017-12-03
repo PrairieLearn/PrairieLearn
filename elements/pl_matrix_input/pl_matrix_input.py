@@ -2,6 +2,7 @@ import prairielearn as pl
 import lxml.html
 from html import escape
 import numpy as np
+import random
 import math
 import chevron
 
@@ -21,6 +22,8 @@ def render(element_html, element_index, data):
 
     if '_pl_matrix_input_format' in data['submitted_answers']:
         format_type = data['submitted_answers']['_pl_matrix_input_format'].get(name, 'matlab')
+    else:
+        format_type = 'matlab'
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -228,5 +231,47 @@ def grade(element_html, element_index, data):
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
     else:
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
+
+    return data
+
+
+def test(element_html, element_index, data):
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, 'answers_name')
+    weight = pl.get_integer_attrib(element, 'weight', 1)
+
+    a_tru = np.array(data['correct_answers'][name])
+
+    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    if random.choice([True, False]):
+        # matlab
+        if result == 'correct':
+            data['raw_submitted_answers'][name] = pl.numpy_to_matlab(a_tru, ndigits=12, wtype='g')
+            data['partial_scores'][name] = {'score': 1, 'weight': weight}
+        elif result == 'incorrect':
+            data['raw_submitted_answers'][name] = pl.numpy_to_matlab(a_tru + random.random(), ndigits=12, wtype='g')
+            data['partial_scores'][name] = {'score': 0, 'weight': weight}
+        elif result == 'invalid':
+            # FIXME: add more invalid expressions, make text of format_errors
+            # correct, and randomize
+            data['raw_submitted_answers'][name] = '[1, 2, 3]'
+            data['format_errors'][name] = 'invalid'
+        else:
+            raise Exception('invalid result: %s' % result)
+    else:
+        # python
+        if result == 'correct':
+            data['raw_submitted_answers'][name] = str(np.array(a_tru).tolist())
+            data['partial_scores'][name] = {'score': 1, 'weight': weight}
+        elif result == 'incorrect':
+            data['raw_submitted_answers'][name] = str(np.array(a_tru + random.random()).tolist())
+            data['partial_scores'][name] = {'score': 0, 'weight': weight}
+        elif result == 'invalid':
+            # FIXME: add more invalid expressions, make text of format_errors
+            # correct, and randomize
+            data['raw_submitted_answers'][name] = '[[1, 2, 3], [4, 5]]'
+            data['format_errors'][name] = 'invalid'
+        else:
+            raise Exception('invalid result: %s' % result)
 
     return data
