@@ -288,6 +288,7 @@ def numpy_to_matlab_sf(A, ndigits=2):
                     A_str += ' '
         return A_str
 
+
 # This function assumes that A is either a floating-point number or a
 # real-valued numpy array. It returns A as a python-formatted string
 # in which each entry has ndigits significant digits.
