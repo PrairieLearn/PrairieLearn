@@ -104,6 +104,8 @@
 
   * Add copy-to-clipboard button in `pl_matrix_output` (Tim Bretl).
 
+  * Add support for python format in `pl_matrix_input` (Tim Bretl).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
