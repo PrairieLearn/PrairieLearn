@@ -145,14 +145,19 @@ def parse(element_html, element_index, data):
     a_sub = a_sub.replace(u'\u2212', '-')
 
     # Convert submitted answer to numpy array (return parse_error on failure)
-    (a_sub_parsed, parse_error) = pl.matlab_to_numpy(a_sub)
+    (a_sub_parsed, info) = pl.string_to_2darray(a_sub)
     if a_sub_parsed is None:
-        data['format_errors'][name] = parse_error
+        data['format_errors'][name] = info['format_error']
         data['submitted_answers'][name] = None
         return data
 
     # Replace submitted answer with numpy array
     data['submitted_answers'][name] = a_sub_parsed.tolist()
+
+    # Store format type
+    if '_pl_matrix_input_format' not in data['submitted_answers']:
+        data['submitted_answers']['_pl_matrix_input_format'] = {}
+    data['submitted_answers']['_pl_matrix_input_format'][name] = info['format_type']
 
     return data
 
