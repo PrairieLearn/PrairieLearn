@@ -8,8 +8,8 @@
 <div class="panel panel-default">
     <div class="panel-heading">
         <ul class="nav nav-pills" role="tablist">
-            <li role="presentation" class="active"><a href="#matlab-{{element_index}}" aria-controls="matlab-{{element_index}}" role="tab" data-toggle="pill">matlab</a></li>
-            <li role="presentation"><a href="#python-{{element_index}}" aria-controls="python-{{element_index}}" role="tab" data-toggle="pill">python</a></li>
+            <li role="presentation" {{#default_is_matlab}}class="active"{{/default_is_matlab}}><a href="#matlab-{{element_index}}" aria-controls="matlab-{{element_index}}" role="tab" data-toggle="pill">matlab</a></li>
+            <li role="presentation" {{#default_is_python}}class="active">{{/default_is_python}}<a href="#python-{{element_index}}" aria-controls="python-{{element_index}}" role="tab" data-toggle="pill">python</a></li>
         </ul>
     </div>
     <div class="panel-body">
