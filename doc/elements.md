@@ -245,3 +245,24 @@ Attribute | Type | Default | Description
 `answers_name` | string | — | Variable name to display score for.
 
 Display the partial score for a specific answer variable.
+
+## `pl_img_click` element
+
+```html
+<pl_img_click answers_name="x" width="100" file_name="graph.png" 
+show_coordinates="true" test_x="378" test_y="58" test_width="40" test_height="40" />
+
+```
+Provide a Image that can be clicked on to answer a question.
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`x_answer_name` | string | — | Variable name to store the x coordinate answer in.
+`y_answer_name` | string | — | Variable name to store the y coordinate answer in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`width` | float | 100 | Decides the size of the image in %, 150 equals 1.5 times the img size.
+`file_name` | string | — | Name of image file.
+`show_coordinates` | boolean | false | Give a alert of the coordinates each time the image is clicked.
+`test_x,test_y, test_width, test_hight` | float | - | Used to visualise what is graded as the correct area in the img.
+     
+

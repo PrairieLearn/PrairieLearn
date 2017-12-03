@@ -10,14 +10,16 @@ incremental = 0
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, required_attribs=['answers_name','file_name'], optional_attribs=['width','test_x','test_y','test_width', 'test_height', 'type', 'directory', 'show_coordinates'])
-    name = element.get('answers_name')
+    pl.check_attribs(element, required_attribs=['x_answer_name','y_answer_name','file_name'], optional_attribs=['width','test_x','test_y','test_width', 'type', 'test_height', 'show_coordinates'])
+    x_name = element.get('x_answer_name')
+    y_name = element.get('y_answer_name')
     return data
 
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = element.get('answers_name')
+    x_name = element.get('x_answer_name')
+    y_name = element.get('x_answer_name')
     # Get file name or raise exception if one does not exist
     file_name = pl.get_string_attrib(element, 'file_name')
     # Get type (default is static)
@@ -49,6 +51,8 @@ def render(element_html, element_index, data):
 
         # Get width (optional)
         width = pl.get_string_attrib(element, 'width', None)
+        if width is None:
+            width = 100
 
         # Get test_x (optional)
         test_x = pl.get_string_attrib(element, 'test_x', None)
@@ -67,7 +71,7 @@ def render(element_html, element_index, data):
 
         # Create and return html
         html_params = {'question': True, 'src': file_url, 'width': width, 'test_x':test_x, 'test_y':test_y, 'test_width':test_width, 'test_height':test_height, 'show_coordinates':show_coordinates }
-        with open('pl_draw_click.mustache', 'r') as f:
+        with open('pl_img_click.mustache', 'r') as f:
             html = chevron.render(f, html_params).strip()
 
     elif data['panel'] == 'submission':
@@ -75,17 +79,17 @@ def render(element_html, element_index, data):
         incremental += 1
         #get the answer for x and y cordinates
         try:
-            sub_x = data['submitted_answers']['x_val']
-            sub_y = data['submitted_answers']['y_val']
+            sub_x = data['submitted_answers']['submitted_x_val']
+            sub_y = data['submitted_answers']['submitted_y_val']
             html_params = {'submission': True, 'src': file_url, 'incremental': incremental, 'submission_x': sub_x,'submission_y': sub_y }
-            with open('pl_draw_click.mustache', 'r') as f:
+            with open('pl_img_click.mustache', 'r') as f:
                 html = chevron.render(f, html_params).strip()
         except KeyError:
             html = 'No value detected, click image to generate answer'
 
     elif data['panel'] == 'answer':
         html_params = {'answer': True, 'src': file_url, 'answer_x': data['correct_answers']['x'],'answer_y': data['correct_answers']['y'] }
-        with open('pl_draw_click.mustache', 'r') as f:
+        with open('pl_img_click.mustache', 'r') as f:
             html = chevron.render(f, html_params).strip()
     else:
         html = ''
@@ -95,14 +99,15 @@ def render(element_html, element_index, data):
 def parse(element_html, element_index, data):
     #Get the stuff parse into float save into same spot
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    x_name = pl.get_string_attrib(element, 'x_answer_name')
+    y_name = pl.get_string_attrib(element, 'y_answer_name')
     if(data['submitted_answers'].get('cordinate_x') == ''):
-        data['format_errors'][name] = 'No submitted answer.'
+        data['format_errors'][x_name] = 'No submitted answer.'
         return data
     x_val = float(data['submitted_answers'].get('cordinate_x'))
     y_val = float(data['submitted_answers'].get('cordinate_y'))
-    data['submitted_answers']['x_val'] = x_val
-    data['submitted_answers']['y_val'] = y_val
+    data['submitted_answers']['submitted_x_val'] = x_val
+    data['submitted_answers']['submitted_y_val'] = y_val
 
     return data
 
@@ -111,20 +116,21 @@ def grade(element_html, element_index, data):
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    x_name = pl.get_string_attrib(element, 'x_answer_name')
+    y_name = pl.get_string_attrib(element, 'y_answer_name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
-    x_val = data['submitted_answers']['x_val']
-    y_val = data['submitted_answers']['y_val']
-    x = data['correct_answers']['x']
-    y = data['correct_answers']['y']
+    x_val = data['submitted_answers']['submitted_x_val']
+    y_val = data['submitted_answers']['submitted_y_val']
+    x = data['correct_answers'][x_name]
+    y = data['correct_answers'][y_name]
     width_ans = data['correct_answers']['width']
     height_ans = data['correct_answers']['height']
     x = x - (width_ans/2)
     y = y - (height_ans/2)
     if(x_val >= x and x_val <= (x+width_ans) and y_val>=y and y_val <= (y+height_ans)):
-         data['partial_scores'][name] = {'score': 1, 'weight': weight}
+         data['partial_scores'][x_name] = {'score': 1, 'weight': weight}
     else:
-         data['partial_scores'][name] = {'score': 0, 'weight': weight}
+         data['partial_scores'][x_name] = {'score': 0, 'weight': weight}
 
 
     return data

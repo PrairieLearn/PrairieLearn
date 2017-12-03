@@ -14,7 +14,4 @@ function drawX(x, y, ctx,img,can,x_size) {
     ctx.moveTo(x + x_size, y - x_size);
     ctx.lineTo(x - x_size, y + x_size);
     ctx.stroke();
-
-
-
 }

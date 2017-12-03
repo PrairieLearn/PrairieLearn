@@ -1,0 +1,11 @@
+{
+    "controller": "pl_img_click.py",
+    "dependencies": {
+        "coreScripts": [
+            "ace/ace.js"
+        ],
+        "elementScripts": [
+            "pl_img_click.js"
+        ]
+    }
+}
