@@ -15,7 +15,7 @@
     {{#label}}<label class="input-group-addon" id="basic-addon2">{{label}}</label>{{/label}}
     <input name="{{name}}" type="text" class="form-control" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
     <div class="input-group-btn" id="basic-addon1">
-        <a class="btn btn-default" type="button" data-toggle="popover" data-html="true" title="MATLAB Matrix" data-content="{{info}}" data-placement="auto left" data-trigger="focus" tabindex="0">
+        <a class="btn btn-default" type="button" data-toggle="popover" data-html="true" title="Matrix" data-content="{{info}}" data-placement="auto left" data-trigger="focus" tabindex="0">
             <i class="fa fa-question-circle" aria-hidden="true"></i>
             {{#correct}}&nbsp;<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
             {{#partial}}&nbsp;<span class="label label-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
@@ -91,9 +91,18 @@
 {{/answer}}
 
 {{#format}}
-Enclose it by a single pair of square brackets. Separate entries in each row with a space. Indicate the end of each intermediate row with a semicolon. Each entry must be a number. No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted. Scientific notation is accepted (e.g., 1.2e03). {{#relabs}}Numbers must be accurate to within relative tolerance {{rtol}} and absolute tolerance {{atol}}.{{/relabs}}{{#sigfig}}Numbers must be accurate to {{digits}} significant figures.{{/sigfig}}{{#decdig}}Numbers must be accurate to {{digits}} digits after the decimal.{{/decdig}}
+<p>
+Your answer must be a matrix (i.e., a 2D array). It can be expressed in one of two ways:
+</p>
+<ul>
+    <li><strong>Matlab Format.</strong> Enclose it by a single pair of square brackets. Separate entries in each row with a space. Indicate the end of each intermediate row with a semicolon. Example: <samp>[1 2 3; 4 5 6]</samp></li>
+    <li><strong>Python Format.</strong> Enclose it by a single pair of square brackets. Enclose each row by a single pair of square brackets. Separate rows with a comma. Separate entries in each row with a comma. Example: <samp>[[1, 2, 3], [4, 5, 6]]</samp></li>
+</ul>
+<p>
+ Each entry must be a number. No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted. Scientific notation is accepted (e.g., 1.2e03). {{#relabs}}Numbers must be accurate to within relative tolerance {{rtol}} and absolute tolerance {{atol}}.{{/relabs}}{{#sigfig}}Numbers must be accurate to {{digits}} significant figures.{{/sigfig}}{{#decdig}}Numbers must be accurate to {{digits}} digits after the decimal.{{/decdig}}
+</p>
 {{/format}}
 
 {{#shortformat}}
-matrix {{#relabs}}(MATLAB format, rtol={{rtol}}, atol={{atol}}){{/relabs}}{{#sigfig}}(MATLAB format, {{digits}} significant figures){{/sigfig}}{{#decdig}}(MATLAB format, {{digits}} digits after decimal){{/decdig}}
+matrix {{#relabs}}(rtol={{rtol}}, atol={{atol}}){{/relabs}}{{#sigfig}}({{digits}} significant figures){{/sigfig}}{{#decdig}}({{digits}} digits after decimal){{/decdig}}
 {{/shortformat}}
