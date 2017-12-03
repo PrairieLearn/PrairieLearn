@@ -153,6 +153,61 @@
       
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">
+            <%= assessment_instance_label %>
+            Statistics:
+            <%= instance_user.name %> (<%= instance_user.uid %>)
+          </h3>
+        </div>
+        <table id="instanceQuestionStatsTable" class="table table-condensed table-hover tablesorter">
+          <thead>
+          <tr>
+            <th>Question</th>
+            <th>Some submission</th>
+            <th>Some perfect submission</th>
+            <th>Some nonzero submission</th>
+            <th>First submission score</th>
+            <th>Last submission score</th>
+            <th>Max submission score</th>
+            <th>Average submission score</th>
+          </tr>
+          </thead>
+          <tbody>
+          <% assessment_instance_stats.forEach(function(row) { %>
+          <tr>
+            <td>
+              <a href="<%= urlPrefix %>/question/<%= row.question_id %>/">
+                  <%= row.number %>. <%= row.title %>
+              </a>
+            </td>
+            <td><%= row.some_submission %></td>
+            <td><%= row.some_perfect_submission %></td>
+            <td><%= row.some_nonzero_submission %></td>
+            <td><%= formatFloat(row.first_submission_score, 2) %></td>
+            <td><%= formatFloat(row.last_submission_score, 2) %></td>
+            <td><%= formatFloat(row.max_submission_score, 2) %></td>
+            <td><%= formatFloat(row.average_submission_score, 2) %></td>
+          </tr>
+          <% }); %>
+          </tbody>
+        </table>
+        <script>
+            $(function(){
+                $("#loginstanceQuestionStatsTable").tablesorter({
+                    theme: "bootstrap",
+                    widthFixed: true,
+                    headerTemplate: '{content} {icon}',
+                    widgets: ["uitheme"],
+                });
+            });
+        </script>
+      </div>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
       
       <div class="panel panel-primary">
         <div class="panel-heading">

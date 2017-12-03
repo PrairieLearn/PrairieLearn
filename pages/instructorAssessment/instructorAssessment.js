@@ -55,6 +55,14 @@ router.get('/', function(req, res, next) {
     debug('GET /');
     async.series([
         function(callback) {
+          var params = {assessment_id: res.locals.assessment.id};
+          sqldb.queryOneRow(sql.assessment_stats_last_updated, params, function(err, result) {
+            if (ERR(err, callback)) return;
+            res.locals.stats_last_updated = result.rows[0].stats_last_updated;
+            callback(null);
+          });
+        },
+        function(callback) {
             debug('set filenames');
             _.assign(res.locals, filenames(res.locals));
             callback(null);
@@ -77,15 +85,6 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.assessment_access_rules, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.access_rules = result.rows;
-                callback(null);
-            });
-        },
-        function(callback) {
-            debug('query question_stats');
-            var params = {assessment_id: res.locals.assessment.id};
-            sqldb.query(sql.question_stats, params, function(err, result) {
-                if (ERR(err, callback)) return;
-                res.locals.question_stats = result.rows;
                 callback(null);
             });
         },
@@ -372,16 +371,19 @@ router.get('/:filename', function(req, res, next) {
                 res.send(zipBuffer);
             });
         });
-    } else if (req.params.filename == res.locals.questionStatsCsvFilename) {
-        let params = {assessment_id: res.locals.assessment.id};
-        sqldb.query(sql.question_stats, params, function(err, result) {
+    } else if (req.params.filename === res.locals.questionStatsCsvFilename) {
+        var params = {
+            assessment_id: res.locals.assessment.id,
+            course_id: res.locals.course.id,
+        };
+        sqldb.query(sql.questions, params, function(err, result) {
             if (ERR(err, next)) return;
             var questionStatsList = result.rows;
             var csvData = [];
-            var csvHeaders = ['Question number', 'Question title', 'Mean score', 'Discrimination', 'Attempts'];
-            for (var i = 0; i < 5; i++) {
-                csvHeaders.push('Hist ' + (i + 1));
-            }
+            var csvHeaders = ['Question number', 'Question title'];
+            Object.keys(res.locals.stat_descriptions).forEach(key => {
+                csvHeaders.push(res.locals.stat_descriptions[key].non_html_title);
+            });
 
             csvData.push(csvHeaders);
 
@@ -389,9 +391,31 @@ router.get('/:filename', function(req, res, next) {
                 var questionStatsData = [];
                 questionStatsData.push(questionStats.number);
                 questionStatsData.push(questionStats.title);
-                questionStatsData.push(questionStats.mean_score_per_question);
+                questionStatsData.push(questionStats.mean_question_score);
+                questionStatsData.push(questionStats.question_score_variance);
                 questionStatsData.push(questionStats.discrimination);
-                questionStatsData.push(questionStats.average_number_attempts);
+                questionStatsData.push(questionStats.some_submission_perc);
+                questionStatsData.push(questionStats.some_perfect_submission_perc);
+                questionStatsData.push(questionStats.some_nonzero_submission_perc);
+                questionStatsData.push(questionStats.average_first_submission_score);
+                questionStatsData.push(questionStats.first_submission_score_variance);
+                questionStatsData.push(questionStats.first_submission_score_hist);
+                questionStatsData.push(questionStats.average_last_submission_score);
+                questionStatsData.push(questionStats.last_submission_score_variance);
+                questionStatsData.push(questionStats.last_submission_score_hist);
+                questionStatsData.push(questionStats.average_max_submission_score);
+                questionStatsData.push(questionStats.max_submission_score_variance);
+                questionStatsData.push(questionStats.max_submission_score_hist);
+                questionStatsData.push(questionStats.average_average_submission_score);
+                questionStatsData.push(questionStats.average_submission_score_variance);
+                questionStatsData.push(questionStats.average_submission_score_hist);
+                questionStatsData.push(questionStats.submission_score_array_averages);
+                questionStatsData.push(questionStats.incremental_submission_score_array_averages);
+                questionStatsData.push(questionStats.incremental_submission_points_array_averages);
+                questionStatsData.push(questionStats.average_number_submissions);
+                questionStatsData.push(questionStats.number_submissions_variance);
+                questionStatsData.push(questionStats.number_submissions_hist);
+                questionStatsData.push(questionStats.quintile_question_scores);
 
                 _(questionStats.quintile_scores).each(function(perc) {
                     questionStatsData.push(perc);
@@ -675,6 +699,14 @@ router.post('/', function(req, res, next) {
         regradeAllAssessmentInstances(req.body.assessment_id, res.locals, function(err, job_sequence_id) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+        });
+    } else if (req.body.postAction == 'refresh_stats') {
+        var params = [
+            req.body.assessment_id,
+        ];
+        sqldb.call('assessment_questions_calculate_stats_for_assessment', params, function(err) {
+          if (ERR(err, next)) return;
+          res.redirect(req.originalUrl);
         });
     } else {
         return next(error.make(400, 'unknown __action', {locals: res.locals, body: req.body}));

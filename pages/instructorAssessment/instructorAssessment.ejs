@@ -37,11 +37,14 @@
               <th>Topic</th>
               <th>Tags</th>
               <th>Points</th>
+              <th width="100">Mean score</th>
+              <th width="100">Question score</th>
+              <th>Num. Submissions Histogram</th>
               <th>Other Assessments</th>
             </tr>
           </thead>
           <tbody>
-            <% questions.forEach(function(question) { %>
+            <% questions.forEach(function(question, i) { %>
             <% if (question.start_new_zone) { %>
             <tr>
               <th colspan="6">
@@ -90,6 +93,33 @@
                 <% if (assessment.type == "Exam") { %><%= question.points_list %><% } %>
                 <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_points %><% } %>
               </td>
+              <td>
+                <% if (question.mean_question_score) { %>
+                  <%= question.mean_question_score.toFixed(3) %>
+                <% } %>
+              </td>
+              <td>
+                  <% if (question.avg_question_score_perc) { %>
+                  <%= question.avg_question_score_perc.toFixed(3) %> %
+                  <% } %>
+              </td>
+              <td class="cell-center">
+                <% if (question.number_submissions_hist) { %>
+                  <div id="attemptsHist<%= i %>" class="miniHist">
+
+                  </div>
+                <% } %>
+              </td>
+              <script>
+                $(function() {
+                  var data = [<%= question.number_submissions_hist %>];
+                  var options = {
+                    width: 60,
+                    height: 20,
+                  };
+                  histmini("#attemptsHist<%= i %>", data, options);
+                });
+              </script>
               <td>
                 <% if (question.other_assessments) { %>
                 <% question.other_assessments.forEach(function(assessment) { %>
@@ -293,12 +323,19 @@
 
         <% if (assessment_stat.number > 0) { %>
         <div class="panel-body">
+          <p>
+            <a class="btn btn-xs btn-default" role="button"
+               data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
+                <i class="fa fa-refresh" aria-hidden="true"></i> Recalculate statistics
+            </a>
+            Last calculated: <%= stats_last_updated %>
+          </p>
           <div id="difficultyDiscriminationScatter" class="scatter"></div>
           <script>
             $(function() {
-                var xdata = [<% question_stats.forEach(function(question) { %><%= question.mean_score_per_question %>,<% }); %>];
-                var ydata = [<% question_stats.forEach(function(question) { %><%= question.discrimination %>,<% }); %>];
-                var labels = [<% question_stats.forEach(function(question) { %><%= question.number %>,<% }); %>];
+                var xdata = [<% questions.forEach(function(question) { %><%= question.mean_question_score %>,<% }); %>];
+                var ydata = [<% questions.forEach(function(question) { %><%= question.discrimination %>,<% }); %>];
+                var labels = [<% questions.forEach(function(question) { %><%= question.number %>,<% }); %>];
                 var options = {
                     xgrid: _.range(0, 110, 10),
                     ygrid: _.range(0, 110, 10),
@@ -336,35 +373,46 @@
           <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Question statistics</h3>
         </div>
 
+        <div class="panel-body">
+          <p>
+            <a class="btn btn-xs btn-default" role="button"
+               data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
+                <i class="fa fa-refresh" aria-hidden="true"></i> Recalculate statistics
+            </a>
+            Last calculated: <%= stats_last_updated %>
+          </p>
+        </div>
+
         <table id="questionsTable" class="table table-condensed table-hover tablesorter">
           <thead>
             <tr>
               <th class="cell-center">Question</th>
               <th class="cell-center">Mean score</th>
               <th class="cell-center">Discrimination</th>
-              <th class="cell-center">Attempts</th>
+              <th class="cell-center">Number of submissions</th>
               <th class="cell-center">Quintiles</th>
             </tr>
           </thead>
           <tbody>
-            <% question_stats.forEach(function(row, i) { %>
+            <% questions.forEach(function(row, i) { %>
             <tr>
               <td>
                 <a href="<%= urlPrefix %>/question/<%= row.question_id %>/">
                   <%= row.number %>. <%= row.title %>
                 </a>
               </td>
-              <td class="cell-center"><%- include('../partials/scorebar', {score: Math.round(row.mean_score_per_question)}); %></td>
+              <td class="cell-center"><%- include('../partials/scorebar', {score: Math.round(row.mean_question_score)}); %></td>
               <td class="cell-center"><%- include('../partials/scorebar', {score: Math.round(row.discrimination)}); %></td>
-              <td class="cell-center"><%= parseFloat(row.average_number_attempts).toFixed(1); %></td>
+              <td class="cell-center"><%= parseFloat(row.average_number_submissions).toFixed(2); %></td>
               <% if (row.number > 0) { %>
               <td class="cell-center"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
               <script>
                 $(function() {
-                    var data = [<%= row.quintile_scores %>];
+                    var data = [<%= row.quintile_question_scores %>];
                     var options = {
                         width: 60,
                         height: 20,
+                        ymax: 100,
                     };
                     histmini("#scoreHist<%= i %>", data, options);
                 });
@@ -402,7 +450,7 @@
 
         <% if (assessment_stat.number > 0) { %>
         <div class="panel-body">
-          <div id="scoreHistsByDateDiv" style="border: 1px solid black;"></div>
+          <div id="scoreHistsByDateDiv" style="overflow-x: scroll; overflow-y: hidden;"></div>
           <script>
             $(function() {
                 var data = [<% assessment_score_histogram_by_date.forEach(function(day) {
@@ -415,7 +463,8 @@
                     xgrid: [<%= assessment_score_histogram_by_date.length %>],
                     xlabel: 'start date',
                     ylabel: 'score / %',
-                    yTickLabels: _.range(100, -10, -10)
+                    yTickLabels: _.range(100, -10, -10),
+                    width: data.length * 200
                 };
                 parallel_histograms("#scoreHistsByDateDiv", data, options);
             });
@@ -441,7 +490,239 @@
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
-      
+
+      <div class="modal fade" id="refreshAssessmentQuestionStatsModal" tabindex="-1"
+           role="dialog" aria-labelledby="refreshStatsAssessmentInstances">
+        <div class="modal-dialog" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title"
+                  id="refreshAssessmentQuestionStatsModalLabel">Refresh statistics</h4>
+            </div>
+            <div class="modal-body">
+              Are you sure you want to refresh all statistics
+              for <strong><%= assessment_set.name %>
+                    <%= assessment.number %></strong>? This cannot be
+              undone.
+            </div>
+            <div class="modal-footer">
+              <form name="refresh-stats-form" method="POST">
+                <input type="hidden" name="postAction" value="refresh_stats">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <input type="hidden" name="assessment_id" value="<%= assessment.id %>">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-danger">Submit</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Detailed question statistics</h3>
+        </div>
+        <div class="panel-body">
+          <p>
+            <a class="btn btn-xs btn-default" role="button"
+               data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
+                <i class="fa fa-refresh" aria-hidden="true"></i> Recalculate statistics
+            </a>
+            Last calculated: <%= stats_last_updated %>
+          </p>
+        </div>
+        <div class="table-responsive">
+          <table id="questionsTable" class="table table-condensed table-hover tablesorter table-bordered">
+            <thead>
+            <tr>
+              <th class="cell-center">
+                Question
+              </th>
+              <% Object.keys(stat_descriptions).forEach(function(stat) { %>
+                <% if (stat !== 'INCREMENTAL_SUBMISSION_SCORE_POINTS_AVERAGES' || assessment.type !== 'Homework') { %>
+                  <th
+                    class="cell-center"
+                    title="<%- stat_descriptions[stat].description %>">
+                    <%- stat_descriptions[stat].title %>
+                  </th>
+                <% } %>
+              <% }); %>
+            </tr>
+            </thead>
+            <tbody>
+            <% questions.forEach(function(row, i) { %>
+            <tr>
+              <td style="white-space: nowrap;">
+                <a href="<%= urlPrefix %>/question/<%= row.question_id %>/">
+                    <%= row.number %>. <%= row.qid %>
+                </a>
+              </td>
+              <td class="cell-center">
+                <%= formatFloat(row.mean_question_score, 1) %>
+              </td>
+              <td class="cell-center">
+                <%= formatFloat(row.question_score_variance, 1) %>
+              </td>
+              <td class="cell-center">
+                <%= formatFloat(row.discrimination, 1) %>
+              </td>
+              <td class="cell-center">
+                <%= formatFloat(row.some_submission_perc, 1) %>
+              </td>
+              <td class="cell-center">
+                <%= formatFloat(row.some_perfect_submission_perc, 1) %>
+              </td>
+              <td class="cell-center">
+                <%= formatFloat(row.some_nonzero_submission_perc, 1) %>
+              </td>
+              <td class="cell-center">
+                <%= formatFloat(row.average_first_submission_score, 2) %>
+              </td>
+              <td class="cell-center">
+                <%= formatFloat(row.first_submission_score_variance, 2) %>
+              </td>
+              <td class="cell-center">
+                <% if (row.first_submission_score_hist !== null) { %>
+                  <div id="firstSubmissionScoreHist<%= i %>" class="miniHist"></div>
+                <% } %>
+              </td>
+              <td class="cell-center">
+                <%= formatFloat(row.average_last_submission_score, 2) %>
+              </td>
+              <td class="cell-center">
+                <%= formatFloat(row.last_submission_score_variance, 2) %>
+              </td>
+              <td class="cell-center">
+                <% if (row.last_submission_score_hist !== null) { %>
+                  <div id="lastSubmissionScoreHist<%= i %>" class="miniHist"></div>
+                <% } %>
+              </td>
+              <td class="cell-center">
+                <%= formatFloat(row.average_max_submission_score, 2) %>
+              </td>
+              <td class="cell-center">
+                <%= formatFloat(row.max_submission_score_variance, 2) %>
+              </td>
+              <td class="cell-center">
+                <% if (row.max_submission_score_hist !== null) { %>
+                  <div id="maxSubmissionScoreHist<%= i %>" class="miniHist"></div>
+                <% } %>
+              </td>
+              <td class="cell-center">
+                <%= formatFloat(row.average_average_submission_score, 2) %>
+              </td>
+              <td class="cell-center">
+                <%= formatFloat(row.average_submission_score_variance, 2) %>
+              </td>
+              <td class="cell-center">
+                <% if (row.average_submission_score_hist !== null) { %>
+                  <div id="averageSubmissionScoreHist<%= i %>" class="miniHist"></div>
+                <% } %>
+              </td>
+              <td class="cell-center">
+                <% if (row.submission_score_array_averages !== null) { %>
+                  <div id="submissionScoreArray<%= i %>" class="miniHist"></div>
+                <% } %>
+              </td>
+              <td class="cell-center">
+                <% if (row.incremental_submission_score_array_averages !== null) { %>
+                  <div id="incrementalSubmissionScoreArray<%= i %>" class="miniHist"></div>
+                <% } %>
+              </td>
+              <% if (assessment.type !== 'Homework') { %>
+                <td class="cell-center">
+                  <% if (row.incremental_submission_points_array_averages !== null) { %>
+                    <div id="incrementalSubmissionPointsArray<%= i %>" class="miniHist"></div>
+                  <% } %>
+                </td>
+              <% } %>
+              <td class="cell-center">
+                <%= formatFloat(row.average_number_submissions, 2) %>
+              </td>
+              <td class="cell-center">
+                <%= formatFloat(row.number_submissions_variance, 2) %>
+              </td>
+              <td class="cell-center">
+                <% if (row.number_submissions_hist !== null) { %>
+                  <div id="numberSubmissionsHist<%= i %>" class="miniHist"></div>
+                <% } %>
+              </td>
+              <td class="cell-center">
+                <% if (row.quintile_question_scores !== null) { %>
+                  <div id="quintileQuestionScoresHist<%= i %>" class="miniHist"></div>
+                <% } %>
+              </td>
+              <script>
+                $(function() {
+                    const options = {
+                        width: 60,
+                        height: 20,
+                        ymax: 1
+                    };
+                    histmini("#firstSubmissionScoreHist<%= i %>",
+                             [<%= row.first_submission_score_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#lastSubmissionScoreHist<%= i %>",
+                             [<%= row.last_submission_score_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#maxSubmissionScoreHist<%= i %>",
+                             [<%= row.max_submission_score_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#averageSubmissionScoreHist<%= i %>",
+                             [<%= row.average_submission_score_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#submissionScoreArray<%= i %>",
+                             [<%= row.submission_score_array_averages %>],
+                             options);
+                    histmini("#incrementalSubmissionScoreArray<%= i %>",
+                             [<%= row.incremental_submission_score_array_averages %>],
+                             options);
+                    histmini("#incrementalSubmissionPointsArray<%= i %>",
+                             [<%= row.incremental_submission_points_array_averages %>],
+                             _.defaults({ymax: <%= row.max_points %>}, options));
+                    histmini("#numberSubmissionsHist<%= i %>",
+                             [<%= row.number_submissions_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#quintileQuestionScoresHist<%= i %>",
+                             [<%= row.quintile_question_scores %>],
+                             _.defaults({ymax: 100}, options));
+                });
+              </script>
+            </tr>
+            <% }); %>
+            </tbody>
+          </table>
+        </div>
+        <div class="panel-footer">
+          <p>
+            Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= questionStatsCsvFilename %>"><%= questionStatsCsvFilename %></a>
+          </p>
+          <small>
+            <ul>
+              <% Object.keys(stat_descriptions).forEach(function(stat) {%>
+                <li>
+                  <strong>
+                    <%- stat_descriptions[stat].title %>:
+                  </strong>
+                  <%- stat_descriptions[stat].description %>
+                </li>
+              <% }); %>
+            </ul>
+            <p class="no-bottom-margin">
+              In the case that a student takes this assessment multiple
+              times (e.g., if this assessment is a practice exam), we
+              are calculating the above statistics by first averaging
+              over all assessment instances for each student, then
+              averaging over students.
+            </p>
+          </small>
+
+        </div>
+      </div>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Downloads</h3>
@@ -939,6 +1220,8 @@
         </script>
         <div class="panel-footer">
           <small>
+
+
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= instancesCsvFilename %>"><%= instancesCsvFilename %></a>
           </small>
         </div>

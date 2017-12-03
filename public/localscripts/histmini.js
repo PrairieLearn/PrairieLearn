@@ -1,4 +1,7 @@
+
 function histmini(selector, data, options) {
+    if (!_.isArray(data) || data.length == 0) return;
+
     options = options || {};
     _.defaults(options, {
         width: 100,
@@ -7,7 +10,13 @@ function histmini(selector, data, options) {
         xmax: 100,
         ymin: 0,
         ymax: "auto",
+        normalize: false,
     });
+
+    if (options.normalize) {
+        const total = data.reduce((sum, value) => sum + value);
+        data = data.map(val => val / total);
+    }
 
     var margin = {top: 1, right: 1, bottom: 1, left: 1},
         width = options.width - margin.left - margin.right,
@@ -32,7 +41,7 @@ function histmini(selector, data, options) {
         .append("g")
         .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-    svg.selectAll(".bar")
+    var barConfiguration = svg.selectAll(".bar")
         .data(data)
         .enter().append("rect")
         .attr("class", "bar")

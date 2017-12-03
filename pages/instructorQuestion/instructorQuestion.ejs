@@ -5,6 +5,9 @@
     <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
     <script type="text/javascript" src="/MathJax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
     <script type="text/javascript" src="/javascripts/socket.io.js"></script>
+    <script type="text/javascript" src="/javascripts/d3.min.js"></script>
+    <script type="text/javascript" src="/localscripts/stacked_histogram.js"></script>
+    <script type="text/javascript" src="/localscripts/histmini.js"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
@@ -95,6 +98,239 @@
       </div>
 
       <%- include('../partials/question', {question_context: 'instructor'}); %>
+
+      <!--<div class="panel panel-primary">-->
+        <!--<div class="panel-heading">-->
+          <!--<h3 class="panel-title">Num Attempts</h3>-->
+        <!--</div>-->
+        <table class="table table-condensed table-hover two-column-description">
+          <tbody>
+            <% if (question_attempts_histogram && question_attempts_before_giving_up_histogram) { %>
+              <tr>
+                <th> Num Attempts Histogram Exams </th>
+                <td>
+                  <%- include('../partials/attempts-histogram', {
+                    question_attempts_histogram: question_attempts_histogram,
+                    question_attempts_before_giving_up_histogram: question_attempts_before_giving_up_histogram,
+                    title: 'exams'
+                  }); %>
+              </td>
+              </tr>
+            <% } %>
+            <% if (question_attempts_histogram_hw && question_attempts_before_giving_up_histogram_hw) { %>
+              <tr>
+                <th> Num Attempts Histogram HW </th>
+                <td>
+                  <%- include('../partials/attempts-histogram', {
+                    question_attempts_histogram: question_attempts_histogram_hw,
+                    question_attempts_before_giving_up_histogram: question_attempts_before_giving_up_histogram_hw,
+                  title: 'hw'
+                  }); %>
+              </td>
+              </tr>
+              <% } %>
+          </tbody>
+        </table>
+      <!--</div>-->
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+
+      <div class="panel panel-primary">
+        <div class="panel-heading">
+          <h3 class="panel-title">Detailed assessment statistics</h3>
+        </div>
+
+        <div class="table-responsive">
+
+          <table id="questionsTable" class="table table-condensed table-hover tablesorter table-bordered">
+            <thead>
+            <tr>
+              <th class="cell-center">Course Instance</th>
+              <th class="cell-center">Assessment</th>
+                <% Object.keys(stat_descriptions).forEach(function(stat) {%>
+              <th
+                      class="cell-center"
+                      title="<%- stat_descriptions[stat].description %>">
+                  <%- stat_descriptions[stat].title %>
+              </th>
+                <% }); %>
+
+            </tr>
+            </thead>
+            <tbody>
+            <% assessment_stats.forEach(function(row, i) { %>
+            <tr>
+              <td>
+                  <%= row.course_title %>
+              </td>
+              <td style="width: 1%">
+                <a href="/pl/course_instance/<%= row.course_instance_id %>/instructor/assessment/<%= row.assessment_id %>/" class="btn btn-<%=
+                  row.color %> btn-xs" role="button"><%= row.label %></a>
+              </td>
+              <td class="cell-center">
+                  <%= formatFloat(row.mean_question_score, 1) %>
+              </td>
+              <td class="cell-center">
+                  <%= formatFloat(row.question_score_variance, 1) %>
+              </td>
+              <td class="cell-center">
+                  <%= formatFloat(row.discrimination, 1) %>
+              </td>
+              <td class="cell-center">
+                  <%= formatFloat(row.some_submission_perc, 1) %>
+              </td>
+              <td class="cell-center">
+                  <%= formatFloat(row.some_perfect_submission_perc, 1) %>
+              </td>
+              <td class="cell-center">
+                  <%= formatFloat(row.some_nonzero_submission_perc, 1) %>
+              </td>
+              <td class="cell-center">
+                  <%= formatFloat(row.average_first_submission_score, 2) %>
+              </td>
+              <td class="cell-center">
+                  <%= formatFloat(row.first_submission_score_variance, 2) %>
+              </td>
+              <td class="cell-center">
+                  <% if (row.first_submission_score_hist !== null) { %>
+                <div id="firstSubmissionScoreHist<%= i %>" class="miniHist"></div>
+                  <% } %>
+              </td>
+              <td class="cell-center">
+                  <%= formatFloat(row.average_last_submission_score, 2) %>
+              </td>
+              <td class="cell-center">
+                  <%= formatFloat(row.last_submission_score_variance, 2) %>
+              </td>
+              <td class="cell-center">
+                  <% if (row.last_submission_score_hist !== null) { %>
+                <div id="lastSubmissionScoreHist<%= i %>" class="miniHist"></div>
+                  <% } %>
+              </td>
+              <td class="cell-center">
+                  <%= formatFloat(row.average_max_submission_score, 2) %>
+              </td>
+              <td class="cell-center">
+                  <%= formatFloat(row.max_submission_score_variance, 2) %>
+              </td>
+              <td class="cell-center">
+                  <% if (row.max_submission_score_hist !== null) { %>
+                <div id="maxSubmissionScoreHist<%= i %>" class="miniHist"></div>
+                  <% } %>
+              </td>
+              <td class="cell-center">
+                  <%= formatFloat(row.average_average_submission_score, 2) %>
+              </td>
+              <td class="cell-center">
+                  <%= formatFloat(row.average_submission_score_variance, 2) %>
+              </td>
+              <td class="cell-center">
+                  <% if (row.average_submission_score_hist !== null) { %>
+                <div id="averageSubmissionScoreHist<%= i %>" class="miniHist"></div>
+                  <% } %>
+              </td>
+              <td class="cell-center">
+                  <% if (row.submission_score_array_averages !== null) { %>
+                <div id="submissionScoreArray<%= i %>" class="miniHist"></div>
+                  <% } %>
+              </td>
+              <td class="cell-center">
+                  <% if (row.incremental_submission_score_array_averages !== null) { %>
+                <div id="incrementalSubmissionScoreArray<%= i %>" class="miniHist"></div>
+                  <% } %>
+              </td>
+              <td class="cell-center">
+                <% if (row.type !== 'Homework') { %>
+                  <% if (row.incremental_submission_points_array_averages !== null) { %>
+                    <div id="incrementalSubmissionPointsArray<%= i %>" class="miniHist"></div>
+                  <% } %>
+                <% } else { %>
+                  N/A
+                <% } %>
+              </td>
+              <td class="cell-center">
+                  <%= formatFloat(row.average_number_submissions, 2) %>
+              </td>
+              <td class="cell-center">
+                  <%= formatFloat(row.number_submissions_variance, 2) %>
+              </td>
+              <td class="cell-center">
+                  <% if (row.number_submissions_hist !== null) { %>
+                <div id="numberSubmissionsHist<%= i %>" class="miniHist"></div>
+                  <% } %>
+              </td>
+              <td class="cell-center">
+                  <% if (row.quintile_question_scores !== null) { %>
+                <div id="quintileQuestionScoresHist<%= i %>" class="miniHist"></div>
+                  <% } %>
+              </td>
+              <script>
+                $(function() {
+                    const options = {
+                        width: 60,
+                        height: 20,
+                        ymax: 1
+                    };
+                    histmini("#firstSubmissionScoreHist<%= i %>",
+                             [<%= row.first_submission_score_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#lastSubmissionScoreHist<%= i %>",
+                             [<%= row.last_submission_score_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#maxSubmissionScoreHist<%= i %>",
+                             [<%= row.max_submission_score_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#averageSubmissionScoreHist<%= i %>",
+                             [<%= row.average_submission_score_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#submissionScoreArray<%= i %>",
+                             [<%= row.submission_score_array_averages %>],
+                             options);
+                    histmini("#incrementalSubmissionScoreArray<%= i %>",
+                             [<%= row.incremental_submission_score_array_averages %>],
+                             options);
+                    histmini("#incrementalSubmissionPointsArray<%= i %>",
+                             [<%= row.incremental_submission_points_array_averages %>],
+                             _.defaults({ymax: <%= row.max_points %>}, options));
+                    histmini("#numberSubmissionsHist<%= i %>",
+                             [<%= row.number_submissions_hist %>],
+                             _.defaults({normalize: true}, options));
+                    histmini("#quintileQuestionScoresHist<%= i %>",
+                             [<%= row.quintile_question_scores %>],
+                             _.defaults({ymax: 100}, options));
+                });
+              </script>
+            </tr>
+            <% }); %>
+            </tbody>
+          </table>
+        </div>
+        <div class="panel-footer">
+          <p>
+            Download <a href="<%= urlPrefix %>/question/<%= question.id %>/<%= assessmentStatsCsvFilename %>"><%= assessmentStatsCsvFilename %></a>
+          </p>
+          <small>
+            <ul>
+                <% Object.keys(stat_descriptions).forEach(function(stat) {%>
+              <li>
+                <strong>
+                    <%- stat_descriptions[stat].title %>:
+                </strong>
+                  <%- stat_descriptions[stat].description %>
+              </li>
+                <% }); %>
+            </ul>
+            <p class="no-bottom-margin">
+              In the case that a student takes this assessment multiple
+              times (e.g., if this assessment is a practice exam), we
+              are calculating the above statistics by first averaging
+              over all assessment instances for each student, then
+              averaging over students.
+            </p>
+          </small>
+        </div>
+      </div>
 
     </div>
   </body>

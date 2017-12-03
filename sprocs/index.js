@@ -11,6 +11,12 @@ module.exports = {
     init: function(callback) {
         logger.verbose('Starting DB stored procedure initialization');
         async.eachSeries([
+            'array_dot.sql',
+            'array_product.sql',
+            'array_increments_above_max.sql',
+            'array_and_number.sql',
+            'array_avg.sql',
+            'array_var.sql',
             'histogram.sql',
             'array_histogram.sql',
             'format_interval.sql',
@@ -111,6 +117,9 @@ module.exports = {
             'variants_ensure_open.sql',
             'variants_unlink.sql',
             'grader_loads_current.sql',
+            'assessment_questions_calculate_stats_for_assessment.sql',
+            'assessment_questions_calculate_stats.sql',
+            'instance_questions_calculate_stats.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
