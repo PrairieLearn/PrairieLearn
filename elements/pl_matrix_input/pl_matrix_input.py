@@ -19,6 +19,9 @@ def render(element_html, element_index, data):
     name = pl.get_string_attrib(element, 'answers_name')
     label = pl.get_string_attrib(element, 'label', None)
 
+    if '_pl_matrix_input_format' in data['submitted_answers']:
+        format_type = data['submitted_answers']['_pl_matrix_input_format'].get(name, 'matlab')
+
     if data['panel'] == 'question':
         editable = data['editable']
         raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
@@ -70,7 +73,10 @@ def render(element_html, element_index, data):
         html_params = {'submission': True, 'label': label, 'parse_error': parse_error}
         if parse_error is None:
             a_sub = np.array(data['submitted_answers'][name])
-            html_params['a_sub'] = pl.numpy_to_matlab(a_sub, ndigits=12, wtype='g')
+            if format_type == 'matlab':
+                html_params['a_sub'] = pl.numpy_to_matlab(a_sub, ndigits=12, wtype='g')
+            else:
+                html_params['a_sub'] = str(np.array(a_sub).tolist())
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             if raw_submitted_answer is not None:
@@ -105,18 +111,24 @@ def render(element_html, element_index, data):
                 rtol = pl.get_float_attrib(element, 'rtol', 1e-5)
                 atol = pl.get_float_attrib(element, 'atol', 1e-8)
                 # FIXME: render correctly with respect to rtol and atol
-                a_tru = pl.numpy_to_matlab(a_tru, ndigits=12, wtype='g')
+                matlab_data = pl.numpy_to_matlab(a_tru, ndigits=12, wtype='g')
+                python_data = str(np.array(a_tru).tolist())
             elif comparison == 'sigfig':
                 digits = pl.get_integer_attrib(element, 'digits', 2)
-                a_tru = pl.numpy_to_matlab_sf(a_tru, ndigits=digits)
+                matlab_data = pl.numpy_to_matlab_sf(a_tru, ndigits=digits)
+                python_data = pl.string_from_2darray_sf(a_tru, ndigits=digits)
             elif comparison == 'decdig':
                 digits = pl.get_integer_attrib(element, 'digits', 2)
-                a_tru = pl.numpy_to_matlab(a_tru, ndigits=digits, wtype='f')
+                matlab_data = pl.numpy_to_matlab(a_tru, ndigits=digits, wtype='f')
+                python_data = str(np.array(a_tru).round(digits).tolist())
             else:
                 raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
 
-            # FIXME: render correctly with respect to method of comparison
-            html_params = {'answer': True, 'label': label, 'a_tru': a_tru}
+            html_params = {'answer': True, 'label': label, 'matlab_data': matlab_data, 'python_data': python_data, 'element_index': element_index}
+            if format_type == 'matlab':
+                html_params['default_is_matlab'] = True
+            else:
+                html_params['default_is_python'] = True
             with open('pl_matrix_input.mustache', 'r') as f:
                 html = chevron.render(f, html_params).strip()
         else:
