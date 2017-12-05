@@ -63,9 +63,9 @@ Attribute | Type | Default | Description
 ```html
   <pl_function_coefficient_input partial_credit="true" answers_name="func" comparison="sigfig" digits="3">
     <pl_function_term answers_name="no_suffix1"/>
-    <pl_function_term answers_name="a" suffix="x"/>
-    <pl_function_term answers_name="b" suffix="x^2"/>
-    <pl_function_term answers_name="c" suffix="x^3"/>
+    <pl_function_term answers_name="a" suffix="$x$"/>
+    <pl_function_term answers_name="b" suffix="$x^2$"/>
+    <pl_function_term answers_name="c" suffix="$x^3$"/>
   </pl_function_coefficient_input>
 ```
 
