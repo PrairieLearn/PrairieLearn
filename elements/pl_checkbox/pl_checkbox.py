@@ -193,6 +193,7 @@ def render(element_html, element_index, data):
 
 def parse(element_html, element_index, data):
     # FIXME: check for invalid answers
+    pass
 
 
 def grade(element_html, element_index, data):
@@ -243,4 +244,3 @@ def test(element_html, element_index, data):
         # FIXME: test invalid answers
     else:
         raise Exception('invalid result: %s' % result)
-    
