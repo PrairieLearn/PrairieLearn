@@ -11,7 +11,7 @@ Next, clone your forked repository to your local machine and set up the main rep
 
 ```sh
 git clone git@github.com/$user_name/PrairieLearn.git
-git remote add upstream git@github.com/PrairieLearn/PrairieLearn.git
+git remote add upstream git@github.com:PrairieLearn/PrairieLearn.git
 ```
 
 This means that you now have three key repositories to keep track of:
