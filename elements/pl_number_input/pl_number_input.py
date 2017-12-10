@@ -20,8 +20,6 @@ def prepare(element_html, element_index, data):
             raise Exception('duplicate correct_answers variable name: %s' % name)
         data['correct_answers'][name] = correct_answer
 
-    return data
-
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -151,7 +149,7 @@ def parse(element_html, element_index, data):
     if not a_sub:
         data['format_errors'][name] = 'No submitted answer.'
         data['submitted_answers'][name] = None
-        return data
+        return
 
     # Replace unicode minus with hyphen minus wherever it occurs
     a_sub = a_sub.replace(u'\u2212', '-')
@@ -166,8 +164,6 @@ def parse(element_html, element_index, data):
         data['format_errors'][name] = 'Invalid format (not a real number).'
         data['submitted_answers'][name] = None
 
-    return data
-
 
 def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -180,13 +176,13 @@ def grade(element_html, element_index, data):
     # up to the question code)
     a_tru = data['correct_answers'].get(name, None)
     if a_tru is None:
-        return data
+        return
 
     # Get submitted answer (if it does not exist, score is zero)
     a_sub = data['submitted_answers'].get(name, None)
     if a_sub is None:
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
-        return data
+        return
 
     # Get method of comparison, with relabs as default
     comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
@@ -212,8 +208,6 @@ def grade(element_html, element_index, data):
     else:
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
 
-    return data
-
 
 def test(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -224,5 +218,3 @@ def test(element_html, element_index, data):
 
     data['raw_submitted_answers'][name] = '%f' % data['correct_answers'][name]
     data['partial_scores'][name] = {'score': 1, 'weight': weight}
-
-    return data

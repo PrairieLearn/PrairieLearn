@@ -12,7 +12,6 @@ def prepare(element_html, element_index, data):
     required_attribs = ['answers_name']
     optional_attribs = ['weight', 'correct_answer', 'label', 'comparison', 'rtol', 'atol', 'digits', 'eps_digits']
     pl.check_attribs(element, required_attribs, optional_attribs)
-    return data
 
 
 def render(element_html, element_index, data):
@@ -154,7 +153,7 @@ def parse(element_html, element_index, data):
     if not a_sub:
         data['format_errors'][name] = 'No submitted answer.'
         data['submitted_answers'][name] = None
-        return data
+        return
 
     # Replace unicode minus with hyphen minus wherever it occurs
     a_sub = a_sub.replace(u'\u2212', '-')
@@ -164,7 +163,7 @@ def parse(element_html, element_index, data):
     if a_sub_parsed is None:
         data['format_errors'][name] = info['format_error']
         data['submitted_answers'][name] = None
-        return data
+        return
 
     # Replace submitted answer with numpy array
     data['submitted_answers'][name] = a_sub_parsed.tolist()
@@ -173,8 +172,6 @@ def parse(element_html, element_index, data):
     if '_pl_matrix_input_format' not in data['submitted_answers']:
         data['submitted_answers']['_pl_matrix_input_format'] = {}
     data['submitted_answers']['_pl_matrix_input_format'][name] = info['format_type']
-
-    return data
 
 
 def grade(element_html, element_index, data):
@@ -188,7 +185,7 @@ def grade(element_html, element_index, data):
     # up to the question code)
     a_tru = pl.from_json(data['correct_answers'].get(name, None))
     if a_tru is None:
-        return data
+        return
     # Convert true answer to numpy
     a_tru = np.array(a_tru)
     # Throw an error if true answer is not a 2D numpy array
@@ -199,14 +196,14 @@ def grade(element_html, element_index, data):
     a_sub = data['submitted_answers'].get(name, None)
     if a_sub is None:
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
-        return data
+        return
     # Convert submitted answer to numpy
     a_sub = np.array(a_sub)
 
     # If true and submitted answers have different shapes, score is zero
     if not (a_sub.shape == a_tru.shape):
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
-        return data
+        return
 
     # Get method of comparison, with relabs as default
     comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
@@ -231,8 +228,6 @@ def grade(element_html, element_index, data):
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
     else:
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
-
-    return data
 
 
 def test(element_html, element_index, data):
@@ -273,5 +268,3 @@ def test(element_html, element_index, data):
             data['format_errors'][name] = 'invalid'
         else:
             raise Exception('invalid result: %s' % result)
-
-    return data

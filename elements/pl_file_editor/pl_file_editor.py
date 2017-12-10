@@ -25,8 +25,6 @@ def prepare(element_html, element_index, data):
         data['params']['_required_file_names'] = []
     data['params']['_required_file_names'].append(pl.get_string_attrib(element, 'file_name'))
 
-    return data
-
 
 def render(element_html, element_index, data):
     if data['panel'] != 'question':
@@ -76,7 +74,7 @@ def parse(element_html, element_index, data):
     file_contents = data['submitted_answers'].get(answer_name, None)
     if not file_contents:
         add_format_error(data, 'No submitted answer for {0}'.format(file_name))
-        return data
+        return
 
     if data['submitted_answers'].get('_files', None) is None:
         data['submitted_answers']['_files'] = []
@@ -91,5 +89,3 @@ def parse(element_html, element_index, data):
         })
     else:
         add_format_error(data, '_files was present but was not an array.')
-
-    return data

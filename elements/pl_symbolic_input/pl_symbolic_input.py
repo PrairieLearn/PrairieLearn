@@ -29,8 +29,6 @@ def prepare(element_html, element_index, data):
             raise Exception('duplicate correct_answers variable name: %s' % name)
         data['correct_answers'][name] = correct_answer
 
-    return data
-
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -130,7 +128,7 @@ def parse(element_html, element_index, data):
     if not a_sub:
         data['format_errors'][name] = 'No submitted answer.'
         data['submitted_answers'][name] = None
-        return data
+        return
 
     try:
         # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
@@ -191,8 +189,6 @@ def parse(element_html, element_index, data):
         data['format_errors'][name] = 'Invalid format.'
         data['submitted_answers'][name] = None
 
-    return data
-
 
 def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -205,13 +201,13 @@ def grade(element_html, element_index, data):
     # up to the question code)
     a_tru = pl.from_json(data['correct_answers'].get(name, None))
     if a_tru is None:
-        return data
+        return
 
     # Get submitted answer (if it does not exist, score is zero)
     a_sub = data['submitted_answers'].get(name, None)
     if a_sub is None:
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
-        return data
+        return
 
     # Parse both correct and submitted answer (will throw an error on fail).
     variables = get_variables_list(pl.get_string_attrib(element, 'variables', None))
@@ -226,8 +222,6 @@ def grade(element_html, element_index, data):
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
     else:
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
-
-    return data
 
 
 def test(element_html, element_index, data):
@@ -290,5 +284,3 @@ def test(element_html, element_index, data):
             raise Exception('invalid invalid_type: %s' % invalid_type)
     else:
         raise Exception('invalid result: %s' % result)
-
-    return data

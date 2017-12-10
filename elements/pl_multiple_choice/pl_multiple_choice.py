@@ -67,7 +67,6 @@ def prepare(element_html, element_index, data):
         raise Exception('duplicate correct_answers variable name: %s' % name)
     data['params'][name] = display_answers
     data['correct_answers'][name] = correct_answer
-    return data
 
 
 def render(element_html, element_index, data):
@@ -161,13 +160,11 @@ def parse(element_html, element_index, data):
 
     if submitted_key is None:
         data['format_errors'][name] = 'No submitted answer.'
-        return data
+        return
 
     if submitted_key not in all_keys:
         data['format_errors'][name] = 'INVALID choice: ' + submitted_key  # FIXME: escape submitted_key
-        return data
-
-    return data
+        return
 
 
 def grade(element_html, element_index, data):
@@ -183,7 +180,6 @@ def grade(element_html, element_index, data):
         score = 1
 
     data['partial_scores'][name] = {'score': score, 'weight': weight}
-    return data
 
 
 def test(element_html, element_index, data):
@@ -217,5 +213,3 @@ def test(element_html, element_index, data):
         # FIXME: add more invalid choices
     else:
         raise Exception('invalid result: %s' % result)
-
-    return data

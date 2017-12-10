@@ -10,8 +10,6 @@ def prepare(element_html, element_index, data):
     optional_attribs = []
     pl.check_attribs(element, required_attribs, optional_attribs)
 
-    return data
-
 
 def render(element_html, element_index, data):
     if data['panel'] != 'submission':
