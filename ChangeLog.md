@@ -220,6 +220,8 @@
 
   * Fix null-byte handling in grader results (Nathan Walters).
 
+  * Truncate assessment score to 2 decimal places (Nathan Walters).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
