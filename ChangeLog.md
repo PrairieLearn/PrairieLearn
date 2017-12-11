@@ -110,6 +110,8 @@
 
   * Add support for python format in `pl_matrix_input` (Tim Bretl).
 
+  * Add student and instructor question links on instructor page (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,

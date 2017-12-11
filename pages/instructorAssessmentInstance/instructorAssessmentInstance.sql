@@ -2,6 +2,7 @@
 SELECT
     iq.id AS instance_question_id,
     q.title,
+    q.qid,
     q.id AS question_id,
     admin_assessment_question_number(aq.id) as number,
     iq.some_submission,
@@ -26,7 +27,6 @@ WHERE
     ai.id=$assessment_instance_id
     AND aq.deleted_at IS NULL
     AND q.deleted_at IS NULL
-    AND e.role = 'Student'
 GROUP BY
     q.id,
     iq.id,
@@ -54,7 +54,8 @@ SELECT
     q.qid,
     aq.max_points,
     qo.row_order,
-    qo.question_number
+    qo.question_number,
+    admin_assessment_question_number(aq.id) as instructor_question_number
 FROM
     instance_questions AS iq
     JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)

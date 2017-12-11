@@ -89,7 +89,8 @@
         <table id="instanceQuestionList" class="table table-condensed table-hover">
           <thead>
             <tr>
-              <th>Question</th>
+              <th>Student question</th>
+              <th>Instructor question</th>
               <th class="cell-center">
                 Awarded points
               </th>
@@ -107,11 +108,13 @@
             <% } %>
             <tr>
               <td>
-                <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instance_question/<%= instance_question.id %>/">
-                  <%= instance_question.question_number %>.
-                  <%= instance_question.question_title %>
-                </a>
-                (QID: <a href="<%= urlPrefix %>/question/<%= instance_question.question_id %>/"><%= instance_question.qid %></a>)
+                S-<%= instance_question.question_number %>.
+                (<a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instance_question/<%= instance_question.id %>/">student view</a>)
+              </td>
+              <td>
+                I-<%= instance_question.instructor_question_number %>.
+                <%= instance_question.qid %>
+                (<a href="<%= urlPrefix %>/question/<%= instance_question.question_id %>/">instructor view</a>)
               </td>
               <td class="cell-center">
                 <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>
@@ -165,7 +168,7 @@
         <table id="instanceQuestionStatsTable" class="table table-condensed table-hover tablesorter">
           <thead>
           <tr>
-            <th>Question</th>
+            <th>Instructor question</th>
             <th>Some submission</th>
             <th>Some perfect submission</th>
             <th>Some nonzero submission</th>
@@ -179,9 +182,8 @@
           <% assessment_instance_stats.forEach(function(row) { %>
           <tr>
             <td>
-              <a href="<%= urlPrefix %>/question/<%= row.question_id %>/">
-                  <%= row.number %>. <%= row.title %>
-              </a>
+              I-<%= row.number %>.
+              <a href="<%= urlPrefix %>/question/<%= row.question_id %>/"><%= row.qid %></a>
             </td>
             <td><%= row.some_submission %></td>
             <td><%= row.some_perfect_submission %></td>
