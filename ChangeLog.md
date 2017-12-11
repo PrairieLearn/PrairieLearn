@@ -212,6 +212,8 @@
 
   * Fix a few very old submissions with NaN scores (Matt West).
 
+  * Fix null-byte handling in grader results (Nathan Walters).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
