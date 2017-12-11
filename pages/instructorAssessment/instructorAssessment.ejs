@@ -173,7 +173,7 @@
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
-      
+
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Score statistics</h3>
@@ -218,13 +218,13 @@
         <div class="panel-body">
           <p>No student data.</p>
         </div>
-        
+
         <% }%>
       </div>
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
-      
+
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Duration statistics</h3>
@@ -267,13 +267,13 @@
         <div class="panel-body">
           <p>No student data.</p>
         </div>
-        
+
         <% }%>
       </div>
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
-      
+
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Duration versus score</h3>
@@ -309,7 +309,7 @@
         <div class="panel-body">
           <p>No student data.</p>
         </div>
-        
+
         <% }%>
       </div>
 
@@ -361,13 +361,13 @@
         <div class="panel-body">
           <p>No student data.</p>
         </div>
-        
+
         <% }%>
       </div>
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
-      
+
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Question statistics</h3>
@@ -484,7 +484,7 @@
         <div class="panel-body">
           <p>No student data.</p>
         </div>
-        
+
         <% }%>
       </div>
 
@@ -945,13 +945,13 @@
         <div class="panel-body">
           <p>No regradings.</p>
         </div>
-        
+
         <% }%>
       </div>
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
-      
+
       <div class="modal fade" id="deleteAssessmentInstanceModal" tabindex="-1" role="dialog" aria-labelledby="deleteAssessmentInstance">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
@@ -1178,7 +1178,7 @@
 
                     <% if (authz_data.has_instructor_edit) { %>
                     <li <% if (row.open) { %>class="disabled"<% } %>>
-                      <a <% if (!row.open) { %>onclick="$('#row<%= iRow %>PopoverOpen').popover('show')"><% } %>
+                      <a <% if (!row.open) { %>onclick="$('#row<%= iRow %>PopoverOpen').popover('show')"<% } %>>
                         <i class="fa fa-circle-o" aria-hidden="true"></i> Re-open
                       </a>
                     </li>
@@ -1188,7 +1188,7 @@
 
                     <% if (authz_data.has_instructor_edit) { %>
                     <li <% if (!row.open) { %>class="disabled"<% } %>>
-                      <a <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"><% } %>
+                      <a <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"<% } %>>
                         <i class="fa fa-ban" aria-hidden="true"></i> Close
                       </a>
                     </li>
