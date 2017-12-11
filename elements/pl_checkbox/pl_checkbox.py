@@ -73,7 +73,6 @@ def prepare(element_html, element_index, data):
         raise Exception('duplicate correct_answers variable name: %s' % name)
     data['params'][name] = display_answers
     data['correct_answers'][name] = correct_answer_list
-    return data
 
 
 def render(element_html, element_index, data):
@@ -194,7 +193,7 @@ def render(element_html, element_index, data):
 
 def parse(element_html, element_index, data):
     # FIXME: check for invalid answers
-    return data
+    pass
 
 
 def grade(element_html, element_index, data):
@@ -211,7 +210,6 @@ def grade(element_html, element_index, data):
         score = 1
 
     data['partial_scores'][name] = {'score': score, 'weight': weight}
-    return data
 
 
 def test(element_html, element_index, data):
@@ -246,5 +244,3 @@ def test(element_html, element_index, data):
         # FIXME: test invalid answers
     else:
         raise Exception('invalid result: %s' % result)
-
-    return data

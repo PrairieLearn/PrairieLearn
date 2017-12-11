@@ -127,6 +127,8 @@
 
   * Remove detailed AzureAD logging (Matt West).
 
+  * Remove the need to return `data` in python functions (Tim Bretl).
+
   * Change `externalGradingOptions.files` to `.serverFilesCourse`
     (Nathan Walters).
 

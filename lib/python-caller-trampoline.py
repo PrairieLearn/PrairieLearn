@@ -40,6 +40,8 @@ with open(3, 'w', encoding='utf-8') as outf:
         cwd = inp['cwd']
         paths = inp['paths']
 
+        original_data_str = str(args[-1])
+
         # reset and then set up the path
         sys.path = copy.copy(saved_path)
         for path in reversed(paths):
@@ -73,17 +75,27 @@ with open(3, 'w', encoding='utf-8') as outf:
                 # the thing returned by file() does not have the correct format
                 val = base64.b64encode(val).decode()
 
-            output = {"present": True, "val": val}
+            # Any function that is not 'file' or 'render' will modify 'data' and
+            # should not be returning anything (because 'data' is mutable).
+            if (fcn != 'file') and (fcn != 'render'):
+                if val is None:
+                    json_outp = json.dumps({"present": True, "val": args[-1]})
+                else:
+                    json_outp_passed = json.dumps({"present": True, "val": args[-1]}, sort_keys=True)
+                    json_outp = json.dumps({"present": True, "val": val}, sort_keys=True)
+                    if json_outp_passed != json_outp:
+                        sys.stderr.write('WARNING: Passed and returned value of "data" differ in the function ' + str(fcn) + '() in the file ' + str(cwd) + '/' + str(file) + '.py.\n\n passed:\n  ' + str(args[-1]) + '\n\n returned:\n  ' + str(val) + '\n\nThere is no need to be returning "data" at all (it is mutable, i.e., passed by reference). In future, this code will throw a fatal error. For now, the returned value of "data" was used and the passed value was discarded.')
+            else:
+                json_outp = json.dumps({"present": True, "val": val})
         else:
             # the function wasn't present, so report this
-            output = {"present": False}
+            json_outp = json.dumps({"present": False})
 
         # make sure all output streams are flushed
         sys.stderr.flush()
         sys.stdout.flush()
 
-        # write the return value as JSON on a single line
-        json_outp = json.dumps(output)
+        # write the return value (JSON on a single line)
         outf.write(json_outp)
         outf.write("\n");
         outf.flush()

@@ -38,8 +38,6 @@ def prepare(element_html, element_index, data):
     file_names = get_file_names_as_array(pl.get_string_attrib(element, 'file_names'))
     data['params']['_required_file_names'].extend(file_names)
 
-    return data
-
 
 def render(element_html, element_index, data):
     if data['panel'] != 'question':
@@ -79,7 +77,7 @@ def parse(element_html, element_index, data):
     files = data['submitted_answers'].get(answer_name, None)
     if not files:
         add_format_error(data, 'No submitted answer for file upload.')
-        return data
+        return
 
     try:
         parsed_files = json.loads(files)
@@ -103,5 +101,3 @@ def parse(element_html, element_index, data):
 
         if len(missing_files) > 0:
             add_format_error(data, 'The following required files were missing: ' + ', '.join(missing_files))
-
-    return data

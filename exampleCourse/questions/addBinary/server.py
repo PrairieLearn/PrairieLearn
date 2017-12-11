@@ -10,11 +10,8 @@ def generate(data):
     c = "11101"
     data["correct_answers"]["c"] = c
 
-    return data
-
 def grade(data):
     if data["submitted_answers"]["c"] == data["correct_answers"]["c"]:
         data["score"] = 1
     else:
         data["score"] = 0
-    return data
