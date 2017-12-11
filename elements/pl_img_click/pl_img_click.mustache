@@ -1,24 +1,36 @@
 {{#question}}
 <div class="container-fluid">
-    <canvas src="{{src}}" {{#width}}width="{{width}}"{{/width}} {{#test_x}}test_x="{{test_x}}"{{/test_x}} {{#test_y}}test_y="{{test_y}}"{{/test_y}} {{#test_width}}test_width="{{test_width}}"{{/test_width}} {{#test_height}}test_height="{{test_height}}"{{/test_height}}{{#show_coordinates}}show_coordinates="{{show_coordinates}}"{{/show_coordinates}}   id="clickable" class="img-responsive center-block" />
+    <canvas src="{{src}}" {{#scale}}scale="{{scale}}"{{/scale}} {{#test_x}}test_x="{{test_x}}"{{/test_x}} {{#test_y}}test_y="{{test_y}}"{{/test_y}} {{#test_width}}test_width="{{test_width}}"{{/test_width}} {{#test_height}}test_height="{{test_height}}"{{/test_height}}{{#show_coordinates}}show_coordinates="{{show_coordinates}}"{{/show_coordinates}} {{#answer_scale}}answer_scale="{{answer_scale}}"{{/answer_scale}}   id="clickable" class="img-responsive center-block" />
     <input name="cordinate_x" id="cordinate_x" type="hidden" class="form-control"   aria-describedby="basic-addon1" />
     <input name="cordinate_y" id="cordinate_y" type="hidden" class="form-control"   aria-describedby="basic-addon1" />
 </div>
+<style>
+
+</style>
     <script>
         $(function() {
             var cords = [];
             var can = document.getElementById('clickable');
             var ctx = can.getContext('2d');
             var src = $('#clickable').attr('src');
-            var scale = $('#clickable').attr('width')
+            var scale = $('#clickable').attr('scale')
             scale = scale/100;
             var img = new Image();
             img.src = src;
+            var new_width;
+            var new_height;
+
             img.onload = function() {
-                $('#clickable').attr('height', img.height*scale);
-                $('#clickable').attr('width', img.width*scale);
-                ctx.drawImage(img, 0, 0, can.width,can.height);
-                if($("#clickable").attr("test_x")!='' && $("#clickable").attr("test_y")!='' && $("#clickable").attr("test_radius")!=''){
+                var css_height = 'min-width: ' + (img.width*scale) + ';';
+                var css_width = 'min-height: ' + (img.height*scale) + ';';
+                $('#clickable').css({css_height});
+                $('#clickable').css({css_width});
+                new_width= img.width*scale;
+                new_height = img.height*scale;
+                $('#clickable').attr('height', new_height);
+                $('#clickable').attr('width', new_width);
+                ctx.drawImage(img, 0, 0, new_width,new_height);
+                if($("#clickable").attr("test_x")!='' && $("#clickable").attr("test_y")!='' && $("#clickable").attr("test_width")!='' && $("#clickable").attr("test_height")!=''){
                     try{
                         drawRect(Number($("#clickable").attr("test_x")), Number($("#clickable").attr("test_y")), Number($("#clickable").attr("test_width")), Number($("#clickable").attr("test_height")));
                     } catch(exception){
@@ -30,14 +42,23 @@
                 var offset = $(this).offset();
                 var relativeX = (e.pageX - offset.left);
                 var relativeY = (e.pageY - offset.top);
-                drawX(relativeX,relativeY,ctx,img,can,10);
+                var ansX = (relativeX/new_width) * 100;
+                var ansY = (relativeY/new_height)* 100;
+                drawX(relativeX,relativeY,ctx,img,can,(10*scale));
                 if($("#clickable").attr("show_coordinates")==='true'){
-                    alert('x:' + relativeX + ' y:' + relativeY);
+                    alert('x:' + Math.round(ansX) + ' y:' + Math.round(ansY));
                 }
-                $('#cordinate_x').val(relativeX);
-                $('#cordinate_y').val(relativeY);
+                $('#cordinate_x').val(ansX);
+                $('#cordinate_y').val(ansY);
             });
             function drawRect(x,y,width,height) {
+                console.log(width + ":" +height);
+                console.log(new_width + ":" +new_height);
+                x = (x/100)*new_width;
+                y = (y/100)*new_height;
+                width = (width/100)*new_width;
+                height = (height/100)*new_height;
+                console.log(width + ":" +height);
                 x=x-width/2;
                 y=y-height/2;
                 ctx.rect(x,y,width,height);
@@ -50,29 +71,36 @@
 {{/question}}
 {{#submission}}
     <div class="container-fluid">
-        <canvas src="{{src}}" id="submitted{{incremental}}" class="img-responsive center-block" />
+        <canvas src="{{src}}" id="submitted{{uuid}}" class="img-responsive center-block" />
     </div>
     <script>
         $(window).load(function() {
-            var sub_x{{incremental}} = {{submission_x}}
-            var sub_y{{incremental}} = {{submission_y}}
-            var sub_can{{incremental}};
-            var sub_ctx{{incremental}};
-            var src{{incremental}} = $('#submitted{{incremental}}').attr('src');
-            sub_can{{incremental}} = document.getElementById('submitted{{incremental}}');
-            sub_ctx{{incremental}} = sub_can{{incremental}}.getContext('2d');
-            var img{{incremental}} = new Image();
-            img{{incremental}}.src = src{{incremental}};
-            img{{incremental}}.onload = function() {
-                sub_ctx{{incremental}}.drawImage(img{{incremental}}, 0, 0, sub_can{{incremental}}.width,sub_can{{incremental}}.height);
+            var sub_x = {{submission_x}}
+            var sub_y = {{submission_y}}
+            var sub_scale = {{answer_scale}}/100
+
+            var sub_can;
+            var sub_ctx;
+
+            var src = $('#submitted{{uuid}}').attr('src');
+            var img = new Image();
+            img.src = src;
+            img.onload = function() {
+                var new_sub_width= img.width*sub_scale;
+                var new_sub_height = img.height*sub_scale;
+                $('#submitted{{uuid}}').attr('width', new_sub_width);
+                $('#submitted{{uuid}}').attr('height', new_sub_height);
+                sub_can = document.getElementById('submitted{{uuid}}');
+                sub_ctx = sub_can.getContext('2d');
+                sub_ctx.drawImage(img, 0, 0, new_sub_width,new_sub_height);
 
                 //calculate cordinates relative to size
                 var question_can = document.getElementById('clickable');
-                var scale_width = (sub_can{{incremental}}.width/question_can.width);
-                var scale_height = (sub_can{{incremental}}.height/question_can.height);
-                sub_x{{incremental}} = sub_x{{incremental}}*scale_width;
-                sub_y{{incremental}} = sub_y{{incremental}}*scale_height;
-                drawX(sub_x{{incremental}},sub_y{{incremental}},sub_ctx{{incremental}},img{{incremental}},sub_can{{incremental}},5);
+               // var scale_width = (sub_can.width/question_can.width);
+                //var scale_height = (sub_can.height/question_can.height);
+                sub_x = (sub_x/100)*sub_can.width;
+                sub_y = (sub_y/100)*sub_can.height;
+                drawX(sub_x,sub_y,sub_ctx,img,sub_can,(10*sub_scale));
             };
         });
     </script>
@@ -88,26 +116,30 @@
             var ans_can;
             var ans_ctx;
             var ans_src = $('#answer').attr('src');
-            try{
-                ans_can = document.getElementById('answer');
-                ans_ctx = ans_can.getContext('2d');
-            } catch(exception){
-                console.log(exception)
-            }
+            var ans_scale = {{answer_scale}}/100
+
+
+
+
             var ans_img = new Image();
             ans_img.src = ans_src;
 
 
             ans_img.onload = function() {
+
+                $('#answer').attr('height',ans_img.height*ans_scale)
+                $('#answer').attr('width',ans_img.width*ans_scale)
+                ans_can = document.getElementById('answer');
+                ans_ctx = ans_can.getContext('2d');
                 ans_ctx.drawImage(ans_img, 0, 0, ans_can.width,ans_can.height);
 
                 var question_can = document.getElementById('clickable');
                 var ans_scale_width = (ans_can.width/question_can.width);
                 var ans_scale_height = (ans_can.height/question_can.height);
-                ans_x = ans_x*ans_scale_width;
-                ans_y = ans_y * ans_scale_height;
+                ans_x = (ans_x/100)*ans_can.width;
+                ans_y = (ans_y/100) * ans_can.height;
                 console.log(ans_can.height + ":" + question_can.height);
-                drawX(ans_x,ans_y,ans_ctx,ans_img,ans_can,5);
+                drawX(ans_x,ans_y,ans_ctx,ans_img,ans_can,(10*ans_scale));
             };
         });
     </script>

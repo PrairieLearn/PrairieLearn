@@ -249,20 +249,25 @@ Display the partial score for a specific answer variable.
 ## `pl_img_click` element
 
 ```html
-<pl_img_click answers_name="x" width="100" file_name="graph.png" 
+<pl_img_click answers_name="x" scale="100" answer_scale="50" file_name="graph.png" 
 show_coordinates="true" test_x="378" test_y="58" test_width="40" test_height="40" />
 
 ```
-Provide a Image that can be clicked on to answer a question.
+Provide a Image that can be clicked on to answer a question. The cordinates will have values from 0-100 starting from the left corner.
+Sugested way to write the question is:<br /> step 1: Add url and enable show_coordinates, render and click on the image where the correct answer
+ will be.<br /> Step 2: Use the coordinates from step one in test_x,test_y also add the values to test_width and test_height to visualise the correct 
+ answer area.<br /> Step 3: Once correct area has been decided put these values in your answer_names in the server code. Lastly remove the test_... inputs ans show_answer in the html. 
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `x_answer_name` | string | — | Variable name to store the x coordinate answer in.
 `y_answer_name` | string | — | Variable name to store the y coordinate answer in.
-`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`width` | float | 100 | Decides the size of the image in %, 150 equals 1.5 times the img size.
+`width_answer_name` | string | — | Variable name to store the width of the correct area in.
+`height_answer_name` | string | — | Variable name to store the height of the correct area in.
+`scale` | float | 100 | Decides the size of the image in %, 150 equals 1.5 times the img size.
+`answer_scale` | float | 50 | Decides the size of the image in %, 150 equals 1.5 times the img size.
 `file_name` | string | — | Name of image file.
 `show_coordinates` | boolean | false | Give a alert of the coordinates each time the image is clicked.
-`test_x,test_y, test_width, test_hight` | float | - | Used to visualise what is graded as the correct area in the img.
+`test_x,test_y, test_width, test_hight` | float | - | Used to visualise the correct grading area in the img.
      
 
