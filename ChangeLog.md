@@ -212,6 +212,8 @@
 
   * Fix a few very old submissions with NaN scores (Matt West).
 
+  * Wrote new python grading framework for example course (Nathan Walters).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
