@@ -26,5 +26,3 @@ def generate(data):
     data["params"]["A"] = A.tolist()
     data["params"]["B"] = B.tolist()
     data["correct_answers"]["C"] = C.tolist()
-
-    return data

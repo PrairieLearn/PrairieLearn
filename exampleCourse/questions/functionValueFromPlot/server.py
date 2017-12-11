@@ -52,5 +52,3 @@ def generate(data):
     data['params']['b'] = b
     data['params']['x'] = x
     data['correct_answers']['f'] = f
-
-    return data

@@ -26,5 +26,3 @@ def generate(data):
     data["params"]["vy_x2"] = round( -0.5*g*t - h/2, 2)
     data["params"]["vy_x3"] = round(-math.sqrt(v0x**2 + v0y**2), 2)
     data["params"]["vy_x4"] = 0
-
-    return data

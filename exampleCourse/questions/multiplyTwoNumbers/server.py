@@ -25,5 +25,3 @@ def generate(data):
     data["params"]["b"] = b
     data["correct_answers"]["c"] = c
     data["correct_answers"]["d"] = d
-
-    return data
