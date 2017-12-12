@@ -112,6 +112,8 @@
 
   * Add student and instructor question links on instructor page (Matt West).
 
+  * Add new python grading framework for exampleCourse (Nathan Walters).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,

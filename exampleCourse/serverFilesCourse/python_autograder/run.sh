@@ -35,8 +35,6 @@ echo "" > $BIN_DIR/__init__.py
 # RUN
 ##########################
 
-RESULTS_FILE='/grade/results/results.json'
-
 cd $JOB_DIR'run/'
 
 # give the ag user the ownership of it's small bin folder
@@ -45,12 +43,17 @@ sudo chmod -R +rw $BIN_DIR
 
 echo "[run] starting autograder"
 
-# we do the capturing ourselves, so that only the stdout of the autograder is used and that we aren't relying on any files that the student code could easily create
-# we are also running the autograder as a limited user called ag
-sudo -H -u ag bash -c 'python3.5 autograder_wrapper.py' > results.json
+# we run the autograder as a limited user called ag
+bash -c 'python pltest.py'
+
+if [ ! -s results.json ]
+then
+  # Let's attempt to keep everything from dying completely
+  echo '{"succeeded": false, "score": 0.0, "message": "Catastrophic failure! Contact course staff and have them check the logs for this submission."}' > results.json
+fi
 
 echo "[run] autograder completed"
 
 # get the results from the file
-cp $MERGE_DIR/results.json $RESULTS_FILE
+cp $MERGE_DIR/results.json '/grade/results/results.json'
 echo "[run] copied results"
