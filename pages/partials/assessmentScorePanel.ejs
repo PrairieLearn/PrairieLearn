@@ -1,10 +1,12 @@
+<% include('pointsFormatter'); %>
+
 <div class="panel panel-default" id="assessment-score-panel">
   <div class="panel-heading"><h3 class="panel-title"><a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/"><%= assessment_set.name %> <%= assessment.number %></a></h3></div>
   <table class="table table-condensed">
     <tbody>
       <tr>
         <td>Total points:</td>
-        <td><%= assessment_instance.points %>/<%= assessment_instance.max_points %></td>
+        <td><%= getStringFromFloat(assessment_instance.points) %>/<%= assessment_instance.max_points %></td>
       </tr>
       <tr>
         <td>Score:</td>
