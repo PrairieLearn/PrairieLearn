@@ -77,6 +77,7 @@ module.exports = {
             'instance_questions_points_exam.sql',
             'instance_questions_points.sql',
             'instance_questions_grade.sql',
+            'instance_questions_interval_update_last_accesses_update.sql',
             'instance_questions_select_question.sql',
             'instance_questions_lock.sql',
             'instance_questions_ensure_open.sql',

@@ -22,6 +22,7 @@ columns
     points_in_grading: double precision default 0
     points_list: double precision[]
     points_list_original: double precision[]
+    question_duration: interval default '00:00:00'::interval
     score_perc: double precision default 0
     score_perc_in_grading: double precision default 0
     some_nonzero_submission: boolean

@@ -20,6 +20,30 @@ question_scores AS (
         assessment_questions AS aq
     GROUP BY
         aq.question_id
+),
+questions_duration_correct AS (
+    SELECT
+        aq.question_id,
+        avg(iq.question_duration) AS question_time_correct,
+        count(*) AS correct_count
+    FROM
+        instance_questions AS iq
+        JOIN assessment_questions AS aq ON (iq.assessment_question_id = aq.id)
+    WHERE iq.points = aq.max_points
+    GROUP BY
+        aq.question_id
+),
+questions_duration_wrong AS (
+    SELECT
+        aq.question_id,
+        avg(iq.question_duration) AS question_time_wrong,
+        count(*) AS wrong_count
+    FROM
+        instance_questions AS iq
+        JOIN assessment_questions AS aq ON (iq.assessment_question_id = aq.id)
+    WHERE iq.points <> aq.max_points
+    GROUP BY
+        aq.question_id
 )
 SELECT
     aq.*,q.qid,q.title,row_to_json(top) AS topic,
@@ -35,7 +59,11 @@ SELECT
     (lag(ag.id) OVER (PARTITION BY ag.id ORDER BY aq.number) IS NULL) AS start_new_alternative_group,
     assessments_format_for_question(q.id,ci.id,a.id) AS other_assessments,
     coalesce(ic.open_issue_count, 0) AS open_issue_count,
-    question_scores.question_score AS avg_question_score_perc
+    question_scores.question_score AS avg_question_score_perc,
+    format_interval(questions_duration_correct.question_time_correct) AS avg_correct_duration,
+    format_interval(questions_duration_wrong.question_time_wrong) AS avg_wrong_duration,
+    questions_duration_correct.correct_count AS question_correct_count,
+    questions_duration_wrong.wrong_count AS question_wrong_count
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
@@ -46,6 +74,8 @@ FROM
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     LEFT JOIN issue_count AS ic ON (ic.question_id = q.id)
     LEFT JOIN question_scores ON (question_scores.question_id = q.id)
+    LEFT JOIN questions_duration_correct ON (questions_duration_correct.question_id = q.id)
+    LEFT JOIN questions_duration_wrong ON (questions_duration_wrong.question_id = q.id)
 WHERE
     a.id = $assessment_id
     AND aq.deleted_at IS NULL

@@ -173,7 +173,7 @@
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
-      
+
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Score statistics</h3>
@@ -218,13 +218,13 @@
         <div class="panel-body">
           <p>No student data.</p>
         </div>
-        
+
         <% }%>
       </div>
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
-      
+
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Duration statistics</h3>
@@ -267,13 +267,13 @@
         <div class="panel-body">
           <p>No student data.</p>
         </div>
-        
+
         <% }%>
       </div>
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
-      
+
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Duration versus score</h3>
@@ -309,7 +309,7 @@
         <div class="panel-body">
           <p>No student data.</p>
         </div>
-        
+
         <% }%>
       </div>
 
@@ -361,13 +361,13 @@
         <div class="panel-body">
           <p>No student data.</p>
         </div>
-        
+
         <% }%>
       </div>
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
-      
+
       <div class="panel panel-primary">
         <div class="panel-heading">
           <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Question statistics</h3>
@@ -390,6 +390,10 @@
               <th class="cell-center">Mean score</th>
               <th class="cell-center">Discrimination</th>
               <th class="cell-center">Number of submissions</th>
+              <th class="cell-center">Avg Time get correct</th>
+              <th class="cell-center">Correct submissions</th>
+              <th class="cell-center">Avg Time get wrong</th>
+              <th class="cell-center">Wrong submissions</th>
               <th class="cell-center">Quintiles</th>
             </tr>
           </thead>
@@ -404,6 +408,10 @@
               <td class="cell-center"><%- include('../partials/scorebar', {score: Math.round(row.mean_question_score)}); %></td>
               <td class="cell-center"><%- include('../partials/scorebar', {score: Math.round(row.discrimination)}); %></td>
               <td class="cell-center"><%= parseFloat(row.average_number_submissions).toFixed(2); %></td>
+              <td class="cell-center" data-text="<%= row.duration_secs %>"><%= row.avg_correct_duration %></td>
+              <td class="cell-center"><%= row.question_correct_count %></td>
+              <td class="cell-center" data-text="<%= row.duration_secs %>"><%= row.avg_wrong_duration %></td>
+              <td class="cell-center"><%= row.question_wrong_count %></td>
               <% if (row.number > 0) { %>
               <td class="cell-center"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
               <script>
@@ -484,7 +492,7 @@
         <div class="panel-body">
           <p>No student data.</p>
         </div>
-        
+
         <% }%>
       </div>
 
@@ -945,13 +953,13 @@
         <div class="panel-body">
           <p>No regradings.</p>
         </div>
-        
+
         <% }%>
       </div>
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
-      
+
       <div class="modal fade" id="deleteAssessmentInstanceModal" tabindex="-1" role="dialog" aria-labelledby="deleteAssessmentInstance">
         <div class="modal-dialog" role="document">
           <div class="modal-content">

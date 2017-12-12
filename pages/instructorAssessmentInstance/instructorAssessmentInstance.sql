@@ -272,6 +272,31 @@ WITH event_log AS (
         WHERE
             asl.assessment_instance_id = $assessment_instance_id
     )
+    UNION
+    (
+        SELECT
+            8 AS event_order,
+            'View'::TEXT AS event_name,
+            'green3'::TEXT AS event_color,
+            vlog.date,
+            u.user_id AS auth_user_id,
+            u.uid AS auth_user_uid,
+            q.qid,
+            q.id AS question_id,
+            v.id as variant_id,
+            v.number as variant_number,
+            NULL::JSONB as data
+        FROM
+            variant_view_logs AS vl
+            JOIN access_logs AS vlog ON (vl.access_log_id = vlog.id)
+            JOIN variants AS v ON (v.id = vl.variant_id)
+            JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+            JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+            JOIN questions AS q ON (q.id = aq.question_id)
+            LEFT JOIN users AS u ON (u.user_id = v.authn_user_id)
+        WHERE
+            iq.assessment_instance_id = $assessment_instance_id
+    )
     ORDER BY date, event_order, question_id
 )
 SELECT
