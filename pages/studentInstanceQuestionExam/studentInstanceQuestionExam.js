@@ -7,6 +7,8 @@ var error = require('../../lib/error');
 var question = require('../../lib/question');
 var assessment = require('../../lib/assessment');
 var sqldb = require('../../lib/sqldb');
+var sqlLoader = require('../../lib/sql-loader');
+var sql = sqlLoader.loadSqlEquiv(__filename);
 
 function processSubmission(req, res, callback) {
     if (!res.locals.assessment_instance.open) return callback(error.make(400, 'assessment_instance is closed'));
@@ -116,6 +118,13 @@ router.get('/', function(req, res, next) {
     const variant_id = null;
     question.getAndRenderVariant(variant_id, res.locals, function(err) {
         if (ERR(err, next)) return;
+        var insert_viewlog_key = {
+          date: new Date(),
+          variant_id: res.locals.variant.id,
+          };
+        sqldb.queryOneRow(sql.log_into_view_log, insert_viewlog_key, function(err){
+          if(ERR(err, next)) return;
+        });
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
