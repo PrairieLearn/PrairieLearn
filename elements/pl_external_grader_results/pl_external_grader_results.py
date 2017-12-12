@@ -61,7 +61,7 @@ def render(element_html, element_index, data):
 
                     html_params['tests'] = tests
 
-        with open('pl_external_grader_results.mustache', 'r') as f:
+        with open('pl_external_grader_results.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     else:
         html = ''

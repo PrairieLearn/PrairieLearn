@@ -33,7 +33,7 @@ def render(element_html, element_index, data):
                 python_data += pl.inner_html(child) + ' = np.array(' + str(np.array(var_data).round(digits).tolist()) + ')\n'
 
     html_params = {'default_is_matlab': True, 'matlab_data': matlab_data, 'python_data': python_data, 'element_index': element_index}
-    with open('pl_matrix_output.mustache', 'r') as f:
+    with open('pl_matrix_output.mustache', 'r', encoding='utf-8') as f:
         html = chevron.render(f, html_params).strip()
 
     return html

@@ -44,9 +44,9 @@ def render(element_html, element_index, data):
         constants = ', '.join(['pi'])
 
         info_params = {'format': True, 'variables': variables_string, 'operators': operators, 'constants': constants}
-        with open('pl_symbolic_input.mustache', 'r') as f:
+        with open('pl_symbolic_input.mustache', 'r', encoding='utf-8') as f:
             info = chevron.render(f, info_params).strip()
-        with open('pl_symbolic_input.mustache', 'r') as f:
+        with open('pl_symbolic_input.mustache', 'r', encoding='utf-8') as f:
             info_params.pop('format', None)
             info_params['shortformat'] = True
             shortinfo = chevron.render(f, info_params).strip()
@@ -69,7 +69,7 @@ def render(element_html, element_index, data):
 
         if raw_submitted_answer is not None:
             html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
-        with open('pl_symbolic_input.mustache', 'r') as f:
+        with open('pl_symbolic_input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
 
     elif data['panel'] == 'submission':
@@ -98,7 +98,7 @@ def render(element_html, element_index, data):
             except:
                 raise ValueError('invalid score' + score)
 
-        with open('pl_symbolic_input.mustache', 'r') as f:
+        with open('pl_symbolic_input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
 
     elif data['panel'] == 'answer':
@@ -107,7 +107,7 @@ def render(element_html, element_index, data):
             if isinstance(a_tru, str):
                 a_tru = phs.convert_string_to_sympy(a_tru, variables)
             html_params = {'answer': True, 'a_tru': sympy.latex(a_tru)}
-            with open('pl_symbolic_input.mustache', 'r') as f:
+            with open('pl_symbolic_input.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params).strip()
         else:
             html = ''
