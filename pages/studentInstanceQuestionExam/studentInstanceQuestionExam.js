@@ -125,6 +125,10 @@ router.get('/', function(req, res, next) {
         sqldb.queryOneRow(sql.log_into_view_log, insert_viewlog_key, function(err){
           if(ERR(err, next)) return;
         });
+        var duration_update_key = [res.locals.instance_question_info.id, parseInt(res.locals.variant.authn_user_id)];
+        sqldb.callOneRow('instance_questions_interval_update_last_accesses_update', duration_update_key, function(err){
+          if(ERR(err, next)) return;
+        });
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
