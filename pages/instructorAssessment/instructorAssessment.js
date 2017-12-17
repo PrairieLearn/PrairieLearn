@@ -79,22 +79,6 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.questions, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.questions = result.rows;
-
-                for (let i = 0; i < res.locals.questions.length; i++) {
-                    const question = res.locals.questions[i];
-                    var some_correct_submission_perc = question.question_some_correct_submission_perc;
-                    var max_points = question.max_points;
-                    const points_list = question.points_list;
-                    const rightOnNthTry = question.question_length_of_incorrect_streak_hist_with_some_correct_submission;
-                    if (rightOnNthTry) {
-                        let result = 0;
-                        for (let j = 0; j < points_list.length; j++) {
-                            result += points_list[j] * rightOnNthTry[j] / 100;
-                        }
-                        result = result / max_points * some_correct_submission_perc;
-                        question.expected_mean_score = result;
-                    }
-                }
                 callback(null);
             });
         },

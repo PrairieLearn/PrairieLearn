@@ -98,11 +98,11 @@ aq_stats AS (
         avg(question_stats_by_user.number_submissions)                                      AS average_number_submissions,
         var_pop(question_stats_by_user.number_submissions)                                  AS number_submissions_variance,
         histogram(question_stats_by_user.number_submissions, 0, 10, 10)                     AS number_submissions_hist,
-        histogram(iq_stats_by_user.number_submissions, 0, 10, 10)
-            FILTER (WHERE iq_stats_by_user.max_submission_score = 1)
+        histogram(question_stats_by_user.number_submissions, 0, 10, 10)
+            FILTER (WHERE question_stats_by_user.max_submission_score = 1)
             AS number_submissions_hist_with_perfect_submission,
-        histogram(iq_stats_by_user.number_submissions, 0, 10, 10)
-            FILTER (WHERE iq_stats_by_user.max_submission_score != 1)
+        histogram(question_stats_by_user.number_submissions, 0, 10, 10)
+            FILTER (WHERE question_stats_by_user.max_submission_score IS NULL OR question_stats_by_user.max_submission_score != 1)
             AS number_submissions_hist_with_no_perfect_submission
 
     FROM

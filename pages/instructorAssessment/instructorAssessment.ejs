@@ -106,14 +106,13 @@
                     <% } %>
                 </td>
                 <td>
-                    <% if (question.question_length_of_incorrect_streak_hist_with_some_correct_submission) { %>
-                    <%= question.expected_mean_score.toFixed(3) %> %
+                    <% if (question.predicted_mean_score) { %>
+                    <%= question.predicted_mean_score.toFixed(3) %> %
                     <% } %>
                 </td>
                 <td class="text-center">
                   <% if (question.number_submissions_hist) { %>
                     <div id="attemptsHist<%= i %>" class="miniHist">
-
                     </div>
                   <% } %>
                 </td>

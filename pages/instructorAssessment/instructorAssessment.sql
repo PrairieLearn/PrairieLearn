@@ -35,7 +35,13 @@ SELECT
     (lag(ag.id) OVER (PARTITION BY ag.id ORDER BY aq.number) IS NULL) AS start_new_alternative_group,
     assessments_format_for_question(q.id,ci.id,a.id) AS other_assessments,
     coalesce(ic.open_issue_count, 0) AS open_issue_count,
-    question_scores.question_score AS avg_question_score_perc
+    question_scores.question_score AS avg_question_score_perc,
+    qs.incremental_submission_score_array_averages AS qs_incremental_submission_score_array_averages,
+    hw_qs.average_last_submission_score AS hw_qs_average_last_submission_score,
+    calculate_predicted_question_score(qs.incremental_submission_score_array_averages,
+                                       hw_qs.average_last_submission_score,
+                                       aq.points_list,
+                                       aq.max_points) AS predicted_mean_score
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
@@ -47,6 +53,7 @@ FROM
     LEFT JOIN issue_count AS ic ON (ic.question_id = q.id)
     LEFT JOIN question_scores ON (question_scores.question_id = q.id)
     LEFT JOIN question_statistics AS qs ON (qs.question_id = q.id AND qs.domain = get_domain(a.type, a.mode))
+    LEFT JOIN question_statistics AS hw_qs ON (hw_qs.question_id = q.id AND hw_qs.domain = get_domain('Homework', 'Public'))
 WHERE
     a.id = $assessment_id
     AND aq.deleted_at IS NULL

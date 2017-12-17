@@ -153,7 +153,7 @@ router.get('/', function(req, res, next) {
                 question_stats.push({
                     domain_code: 'exams',
                     domain_name: 'exams',
-                    stats: exam_stats
+                    stats: exam_stats,
                 });
 
                 const practice_exam_stats = result.rows.filter(function (row) {
@@ -162,7 +162,7 @@ router.get('/', function(req, res, next) {
                 question_stats.push({
                     domain_code: 'practice_exams',
                     domain_name: 'practice exams',
-                    stats: practice_exam_stats
+                    stats: practice_exam_stats,
                 });
 
                 const hw_stats = result.rows.filter(function (row) {
@@ -171,13 +171,13 @@ router.get('/', function(req, res, next) {
                 question_stats.push({
                     domain_code: 'hws',
                     domain_name: 'homeworks',
-                    stats: hw_stats
+                    stats: hw_stats,
                 });
 
                 res.locals.question_stats = question_stats;
                 res.locals.hw_stats = hw_stats;
                 res.locals.exam_stats = exam_stats;
-                console.log(res.locals.exam_stats);
+                console.log(JSON.stringify(question_stats, null, 3));
                 callback(null);
             });
         },

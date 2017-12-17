@@ -105,43 +105,41 @@
           <h3 class="panel-title">Num Attempts</h3>
         </div>
         <div class="panel-body">
-          <% if (!exam_stats.number_submissions_hist_with_perfect_submission &&
-                  !exam_stats.number_submissions_hist_with_no_perfect_submission &&
-                  !hw_stats.number_submissions_hist_with_perfect_submission &&
-                  !hw_stats.number_submissions_hist_with_no_perfect_submission) { %>
-                No data
-          <% } %>
-        </div>
-        <table class="table table-condensed table-hover two-column-description">
-          <tbody>
-            <% if (exam_stats.number_submissions_hist_with_perfect_submission &&
-                    exam_stats.number_submissions_hist_with_no_perfect_submission) { %>
+          <table class="table table-condensed table-hover two-column-description">
+            <tbody>
               <tr>
                 <th> Num Attempts Histogram Exams </th>
                 <td>
-                  <%- include('../partials/attempts-histogram', {
-                    question_attempts_histogram: exam_stats.number_submissions_hist_with_perfect_submission,
-                    question_attempts_before_giving_up_histogram: exam_stats.number_submissions_hist_with_no_perfect_submission,
-                    title: 'exams'
-                  }); %>
-              </td>
+                    <% if (exam_stats && exam_stats.number_submissions_hist_with_perfect_submission &&
+                            exam_stats.number_submissions_hist_with_no_perfect_submission) { %>
+                      <%- include('../partials/attempts-histogram', {
+                      question_attempts_histogram: exam_stats.number_submissions_hist_with_perfect_submission,
+                      question_attempts_before_giving_up_histogram: exam_stats.number_submissions_hist_with_no_perfect_submission,
+                      title: 'exams'
+                      }); %>
+                    <% } else { %>
+                      No data
+                    <% } %>
+                </td>
               </tr>
-            <% } %>
-            <% if (hw_stats.number_submissions_hist_with_perfect_submission &&
-                    hw_stats.number_submissions_hist_with_no_perfect_submission) { %>
               <tr>
                 <th> Num Attempts Histogram HW </th>
                 <td>
-                  <%- include('../partials/attempts-histogram', {
+                    <% if (hw_stats && hw_stats.number_submissions_hist_with_perfect_submission &&
+                            hw_stats.number_submissions_hist_with_no_perfect_submission) { %>
+                      <%- include('../partials/attempts-histogram', {
                       question_attempts_histogram: hw_stats.number_submissions_hist_with_perfect_submission,
                       question_attempts_before_giving_up_histogram: hw_stats.number_submissions_hist_with_no_perfect_submission,
                       title: 'hw'
-                  }); %>
-              </td>
+                      }); %>
+                    <% } else { %>
+                      No data
+                    <% } %>
+                </td>
               </tr>
-              <% } %>
-          </tbody>
-        </table>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- ###################################################################### -->
@@ -173,9 +171,9 @@
                     <td>Average over <%= domain_obj.domain_name %></td>
                     <td>---</td>
                     <% if (stats) { %>
-                      <%- include('statsHtml', {row: stats, i: domain_obj.domain_code}); %>
+                      <%- include('statsHtml', {row: stats, i: domain_obj.domain_code, is_average_row: true}); %>
                     <% } else { %>
-                      <%- include('statsHtml', {row: {}, i: ""}); %>
+                      <%- include('statsHtml', {row: {}, i: "", is_average_row: true}); %>
                     <% } %>
                   </tr>
               <% } %>
@@ -188,7 +186,7 @@
                           <a href="/pl/course_instance/<%= row.course_instance_id %>/instructor/assessment/<%= row.assessment_id %>/" class="btn btn-<%=
                               row.color %> color-hover" role="button"><%= row.label %></a>
                     </td>
-                    <%- include('statsHtml', {row: row, i: i}); %>
+                    <%- include('statsHtml', {row: row, i: i, is_average_row: false}); %>
                   </tr>
               <% }); %>
             </tbody>
