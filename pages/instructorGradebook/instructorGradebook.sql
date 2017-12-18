@@ -27,7 +27,7 @@ course_scores AS (
     WHERE
         a.course_instance_id = $course_instance_id
     ORDER BY
-        ai.user_id, a.id, ai.score_perc, ai.id
+        ai.user_id, a.id, ai.score_perc DESC, ai.id
 ),
 user_ids AS (
     (SELECT DISTINCT user_id FROM course_scores)

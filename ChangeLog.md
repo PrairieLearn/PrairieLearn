@@ -226,6 +226,8 @@
 
   * Fix display of assessment score to 2 decimal places (Nathan Walters).
 
+  * Fix gradebook to choose best score rather than worst (Matt West).
+
 * __2.10.1__ - 2017-05-24
 
   * Fix display of saved submissions for Exam assessments.
