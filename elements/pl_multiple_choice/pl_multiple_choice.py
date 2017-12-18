@@ -7,24 +7,47 @@ import math
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers_name']
-    optional_attribs = ['weight', 'number_answers', 'fixed_order', 'inline']
+    optional_attribs = ['weight', 'number_answers', 'fixed_order', 'inline', 'answers_param']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = element.get('answers_name')
 
+    answers_param = element.get('answers_param', None)
+    answers_element_count = sum([1 if child.tag == 'pl_answer' else 0 for child in element])
+
+    if answers_param is not None and answers_element_count > 0:
+        raise Exception('pl_multiple_choice cannot use both answers_param and pl_answer children')
+
     correct_answers = []
     incorrect_answers = []
-    index = 0
-    for child in element:
-        if child.tag == 'pl_answer':
-            pl.check_attribs(child, required_attribs=[], optional_attribs=['correct'])
-            correct = pl.get_boolean_attrib(child, 'correct', False)
-            child_html = pl.inner_html(child)
-            answer_tuple = (index, correct, child_html)
-            if correct:
-                correct_answers.append(answer_tuple)
-            else:
-                incorrect_answers.append(answer_tuple)
+
+    # Case 1: we're pulling answers from dynamically-generated params
+    if answers_param is not None:
+        answers = data['params'].get(answers_param, None)
+        if answers is None:
+            raise Exception(f'"{answers_param}" was not present in the params dict')
+
+        index = 0
+        for answer in answers.get('correct', None):
+            correct_answers.append((index, True, answer))
             index += 1
+        for answer in answers.get('incorrect', None):
+            incorrect_answers.append((index, False, answer))
+            index += 1
+
+    # Case 1: we're pulling answers from pl_answer children
+    else:
+        index = 0
+        for child in element:
+            if child.tag == 'pl_answer':
+                pl.check_attribs(child, required_attribs=[], optional_attribs=['correct'])
+                correct = pl.get_boolean_attrib(child, 'correct', False)
+                child_html = pl.inner_html(child)
+                answer_tuple = (index, correct, child_html)
+                if correct:
+                    correct_answers.append(answer_tuple)
+                else:
+                    incorrect_answers.append(answer_tuple)
+                index += 1
 
     len_correct = len(correct_answers)
     len_incorrect = len(incorrect_answers)
