@@ -227,6 +227,8 @@
   * Fix display of assessment score to 2 decimal places (Nathan Walters).
 
   * Fix gradebook to choose best score rather than worst (Matt West).
+  
+  * Fix bug in `pl_number_input` that crashed on submission of large integers (Tim Bretl).
 
 * __2.10.1__ - 2017-05-24
 
