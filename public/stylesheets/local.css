@@ -266,3 +266,11 @@ table.two-column-description-no-header-with-help tr td:last-of-type {
 .table-no-wrap td {
     white-space: nowrap;
 }
+
+/***************************************
+ * Additions for Bootstrap 4 conversion
+ ***************************************/
+
+ .card > table {
+    margin-bottom: 0;
+ }

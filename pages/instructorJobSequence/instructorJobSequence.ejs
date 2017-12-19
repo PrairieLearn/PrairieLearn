@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head-bs4'); %>
     <script src="/javascripts/socket.io.js"></script>
   </head>
   <body>
@@ -37,9 +37,9 @@
     <%- include('../partials/navbar', {navPage: ''}); %>
     <div id="content" class="container">
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= job_sequence.description %> #<%= job_sequence.number %></h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= job_sequence.description %> #<%= job_sequence.number %>
         </div>
 
         <% job_sequence.jobs.forEach(function(job) { %>
@@ -63,7 +63,7 @@
             <% if (job.exit_signal != null) { %><p class="list-group-item-text">Exit signal: <%= job.exit_signal %></p><% } %>
             <% if (job.error_message != null) { %><p class="list-group-item-text">Error message: <%= job.error_message %></p><% } %>
             <p></p>
-            <pre id="output-<%= job.id %>"><%= job.output %></pre>
+            <pre id="output-<%= job.id %>" class="bg-dark text-white rounded p-3"><%= job.output %></pre>
           </li>
         </div>
         <% }); %>

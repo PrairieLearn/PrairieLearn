@@ -1,45 +1,38 @@
-<nav class="navbar navbar-inverse navbar-static-top" role="navigation">
-  <div class="container-fluid">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="<%= plainUrlPrefix %>">PrairieLearn</a>
-    </div>
-    <div class="collapse navbar-collapse">
-      <ul class="nav navbar-nav" id="main-nav">
+<nav class="navbar navbar-dark bg-dark navbar-expand-md mb-4" role="navigation">
+  <a class="navbar-brand" href="<%= plainUrlPrefix %>">PrairieLearn</a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse">
+    <ul class="nav navbar-nav mr-auto" id="main-nav">
 
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-- Home ------------------------------------------------------------------------>
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Home ------------------------------------------------------------------------>
 
-        <li <% if (navPage == "home") { %>class="active"<% } %>><a href="<%= plainUrlPrefix %>">Home</a></li>
-        <% if (is_administrator) { %>
-        <li <% if (navPage == "admin") { %>class="active"<% } %>><a href="<%= plainUrlPrefix %>/administrator/overview">Admin</a></li>
-        <% } %>
+      <li class="nav-item <% if (navPage == "home") { %>active<% } %>"><a class="nav-link" href="<%= plainUrlPrefix %>">Home</a></li>
+      <% if (is_administrator) { %>
+      <li class="nav-item <% if (navPage == "admin") { %>active<% } %>"><a class="nav-link" href="<%= plainUrlPrefix %>/administrator/overview">Admin</a></li>
+      <% } %>
 
-      </ul>
+    </ul>
 
-      <div class="navbar-right">
+    <div class="navbar-right">
 
-        <% if (typeof authn_user == 'undefined') { %>
-        <p class="navbar-text">(No user)</p>
-        <% } else if (is_administrator) { %>
-        <p class="navbar-text"><%= authn_user.name %> (Administrator)</p>
-        <% } else { // is_administrator %>
-        <p class="navbar-text"><%= authn_user.name %></p>
-        <% } // is_administrator %>
+      <% if (typeof authn_user == 'undefined') { %>
+      <span class="navbar-text">(No user)</span>
+      <% } else if (is_administrator) { %>
+      <span class="navbar-text"><%= authn_user.name %> (Administrator)</span>
+      <% } else { // is_administrator %>
+      <span class="navbar-text"><%= authn_user.name %></span>
+      <% } // is_administrator %>
 
-        <% if (devMode) { %>
-        <a class="btn btn-success navbar-btn" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a>
-        <% } %>
+      <% if (devMode) { %>
+      <a class="btn btn-success" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a>
+      <% } %>
 
-        <%- include('logout'); %>
-      </div>
+      <%- include('logout'); %>
     </div>
   </div>
 </nav>

@@ -1,18 +1,16 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head-bs4'); %>
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: 'home'}); %>
     <div id="content" class="container">
 
       <% if (devMode) { %>
-      <div class="panel panel-default">
-        <div class="panel-heading">
-          <h3 class="panel-title">Development Mode</h3>
-        </div>
-        <div class="panel-body">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Development Mode</div>
+        <div class="card-body">
           <p>
             PrairieLearn is running in Development Mode. Click
             the <strong>“Load from disk”</strong> button above to load
@@ -26,7 +24,7 @@
             to a different page or if you reload the current page in
             your web browser.
           </p>
-          <p class="no-bottom-margin">
+          <p class="mb-0">
             See
             the <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/README.md">PrairieLearn
             documentation</a> for information on creating questions
@@ -37,12 +35,10 @@
       <% } %>
 
       <% if (courses && courses.length > 0) { %>
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Courses</h3>
-        </div>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Courses</div>
 
-        <table class="table table-condensed table-hover table-striped">
+        <table class="table table-sm table-hover table-striped">
           <tbody>
             <% courses.forEach(function(course) { %>
             <tr>
@@ -59,32 +55,33 @@
       </div>
       <% } %> <!-- course_instances.length -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
           <% if (courses && courses.length > 0) { %>
-          <h3 class="panel-title">Course instances</h3>
+          Course instances
           <% } else { %>
-          <h3 class="panel-title">Courses</h3>
+          Courses
           <% } %>
+          <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-light btn-sm ml-auto">Add or remove courses</a>
         </div>
 
         <% if (course_instances && course_instances.length == 0) { %>
 
         <% if (devMode) { %>
-        <div class="panel-body">
+        <div class="card-body">
           No courses loaded. Click <strong>“Load from disk”</strong>
           above and then click <strong>“Home”</strong> to come back to
           this page.
         </div>
         <% } else { %> <!-- devMode -->
-        <div class="panel-body">
+        <div class="card-body">
           No courses found. Use the “Add or remove courses” button below.
         </div>
         <% } %> <!-- devMode -->
-        
+
         <% } else { %> <!-- course_instances.length -->
 
-        <table class="table table-condensed table-hover table-striped">
+        <table class="table table-sm table-hover table-striped">
           <tbody>
             <% course_instances.forEach(function(course_instance) { %>
             <tr>
@@ -99,14 +96,6 @@
         </table>
 
         <% } %> <!-- course_instances.length -->
-
-        <div class="panel-footer">
-          <p class="text-right no-bottom-margin">
-            <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-primary">
-              Add or remove courses
-            </a>
-          </p>
-        </div>
       </div>
     </div>
   </body>
