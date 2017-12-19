@@ -1,32 +1,32 @@
 <nav aria-label="...">
-  <ul class="pager">
-    <li <% if (currPage == 1) { %>class="disabled"<% } %>>
-      <a href="?page=1">
-        <i class="fa fa-fast-backward" aria-hidden="true"></i>
+  <ul class="pagination justify-content-center mb-0">
+    <li class="page-item <% if (currPage == 1) { %>disabled<% } %>">
+      <a class="page-link" href="?page=1">
+        <i class="fa fa-angle-double-left" aria-hidden="true"></i>
         First
       </a>
     </li>
-    <li <% if (currPage == 1) { %>class="disabled"<% } %>>
-      <a href="?page=<%= prevPage %>">
-        <i class="fa fa-chevron-left" aria-hidden="true"></i>
+    <li class="page-item <% if (currPage == 1) { %>disabled<% } %>">
+      <a class="page-link" href="?page=<%= prevPage %>">
+        <i class="fa fa-angle-left" aria-hidden="true"></i>
         Prev
       </a>
     </li>
-    <li>
-      <a href="?page=<%= currPage %>">
+    <li class="page-item">
+      <a class="page-link" href="?page=<%= currPage %>">
         Page <%= currPage %>/<%= lastPage %>
       </a>
     </li>
-    <li <% if (currPage == lastPage) { %>class="disabled"<% } %>>
-      <a href="?page=<%= nextPage %>">
+    <li class="page-item <% if (currPage == lastPage) { %>disabled<% } %>">
+      <a class="page-link" href="?page=<%= nextPage %>">
         Next
-        <i class="fa fa-chevron-right" aria-hidden="true"></i>
+        <i class="fa fa-angle-right" aria-hidden="true"></i>
       </a>
     </li>
-    <li <% if (currPage == lastPage) { %>class="disabled"<% } %>>
-      <a href="?page=<%= lastPage %>">
+    <li class="page-item <% if (currPage == lastPage) { %>disabled<% } %>">
+      <a class="page-link" href="?page=<%= lastPage %>">
         Last
-        <i class="fa fa-fast-forward" aria-hidden="true"></i>
+        <i class="fa fa-angle-double-right" aria-hidden="true"></i>
       </a>
     </li>
   </ul>

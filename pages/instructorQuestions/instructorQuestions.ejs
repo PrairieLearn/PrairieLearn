@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head-bs4'); %>
     <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
     <script type="text/javascript" src="/javascripts/jquery.tablesorter.min.js"></script>
     <script type="text/javascript" src="/javascripts/jquery.tablesorter.widgets.js"></script>
@@ -9,16 +9,13 @@
   <body>
     <%- include('../partials/navbar', {navPage: 'questions'}); %>
     <div id="content" class="container">
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Questions</h3>
+      <div class="card">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          Questions
+          <button class="btn btn-sm btn-light ml-auto" id="resetFilter">Clear all filters</button>
         </div>
 
-        <div class="panel-body">
-          <button class="btn btn-primary resetFilter">Clear all filters</button>
-        </div>
-        
-        <table id="questionsTable" class="table table-condensed table-hover tablesorter">
+        <table id="questionsTable" class="table table-sm table-hover tablesorter">
           <thead>
             <tr>
               <th>Title</th>
@@ -31,14 +28,14 @@
           <tbody>
             <% questions.forEach(function(question) { %>
             <tr>
-              <td>
+              <td class="align-middle">
                 <a href="<%= urlPrefix %>/question/<%= question.id %>/"><%= question.title %></a>
                 <%- include('../partials/issueBadge', {count: question.open_issue_count, issueQid: question.qid}); %>
               </td>
-              <td><%= question.qid %></td>
-              <td><%- include('../partials/topic', {topic: question.topic}); %></td>
-              <td><%- include('../partials/tags', {tags: question.tags}); %></td>
-              <td><%- include('../partials/assessments', {assessments: question.assessments}); %></td>
+              <td class="align-middle"><%= question.qid %></td>
+              <td class="align-middle"><%- include('../partials/topic', {topic: question.topic}); %></td>
+              <td class="align-middle"><%- include('../partials/tags', {tags: question.tags}); %></td>
+              <td class="align-middle"><%- include('../partials/assessments', {assessments: question.assessments}); %></td>
             </tr>
             <% }); %>
           </tbody>
@@ -52,7 +49,7 @@
                   widgets: ["uitheme", "filter", "zebra"],
                   widgetOptions: {
                       zebra: ["even", "odd"],
-                      filter_reset : ".resetFilter",
+                      filter_reset : "#resetFilter",
                       filter_cssFilter: "form-control",
                       filter_functions: {
                           3: {

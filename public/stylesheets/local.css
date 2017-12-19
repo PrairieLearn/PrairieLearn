@@ -274,3 +274,8 @@ table.two-column-description-no-header-with-help tr td:last-of-type {
  .card > table {
     margin-bottom: 0;
  }
+
+ .btn.btn-xs {
+   padding: 1px 5px;
+   font-size: 0.7rem;
+ }
