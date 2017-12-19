@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head-bs4'); %>
   </head>
   <body>
     <script>
@@ -11,12 +11,10 @@
     </script>
     <%- include('../partials/navbar', {navPage: 'assessments'}); %>
     <div id="content" class="container">
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Assessments</h3>
-        </div>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Assessments</div>
 
-        <table class="table table-condensed table-hover">
+        <table class="table table-sm table-hover">
           <thead>
             <tr>
               <th style="width: 1%"></th>
@@ -33,24 +31,24 @@
             </tr>
             <% } %>
             <tr>
-              <td style="width: 1%">
+              <td class="align-middle" style="width: 1%">
                 <% if (row.multiple_instance_header) { %>
-                <button class="btn btn-<%= row.assessment_set_color %> btn-xs"><%= row.label %></button>
+                <button class="btn btn-<%= row.assessment_set_color %> btn-sm"><%= row.label %></button>
                 <% } else { %>
                 <a href="<%= urlPrefix %><%= row.link %>"
-                   class="btn btn-<%= row.assessment_set_color %> btn-xs" role="button">
+                   class="btn btn-<%= row.assessment_set_color %> btn-sm" role="button">
                   <%= row.label %>
                 </a>
                 <% } %>
               </td>
-              <td>
+              <td class="align-middle">
                 <% if (row.multiple_instance_header) { %>
                 <%= row.title %>
                 <% } else { %>
                 <a href="<%= urlPrefix %><%= row.link %>"><%= row.title %></a>
                 <% } %>
               </td>
-              <td class="cell-center">
+              <td class="cell-center align-middle">
                 <%= row.credit_date_string %>
                 <%- include('../partials/studentAccessRulesPopover', {
                     accessRules: row.access_rules,
@@ -58,9 +56,9 @@
                     assessmentNumber: row.assessment_number,
                     }) %>
               </td>
-              <td class="cell-center">
+              <td class="cell-center align-middle">
                 <% if (row.multiple_instance_header) { %>
-                <a href="<%= urlPrefix %><%= row.link %>" class="btn btn-primary btn-xs" role="button">New instance</a>
+                <a href="<%= urlPrefix %><%= row.link %>" class="btn btn-primary btn-sm" role="button">New instance</a>
                 <% } else { // multiple_instance_header %>
                 <% if (row.assessment_instance_id) { %>
                 <%- include('../partials/scorebar', {score: row.assessment_instance_score_perc}) %>

@@ -18,21 +18,20 @@
 
     </ul>
 
-    <div class="navbar-right">
-
-      <% if (typeof authn_user == 'undefined') { %>
-      <span class="navbar-text">(No user)</span>
-      <% } else if (is_administrator) { %>
-      <span class="navbar-text"><%= authn_user.name %> (Administrator)</span>
-      <% } else { // is_administrator %>
-      <span class="navbar-text"><%= authn_user.name %></span>
-      <% } // is_administrator %>
-
+    <ul class="nav navbar-nav" id="username-nav">
+      <li class="nav-item mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %>">
+        <% if (typeof authn_user == 'undefined') { %>
+        <span class="navbar-text">(No user)</span>
+        <% } else if (is_administrator) { %>
+        <span class="navbar-text"><%= authn_user.name %> (Administrator)</span>
+        <% } else { // is_administrator %>
+        <span class="navbar-text"><%= authn_user.name %></span>
+        <% } // is_administrator %>
+      </li>
       <% if (devMode) { %>
-      <a class="btn btn-success" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a>
+      <li class="mb-2 mb-md-0 mr-2 "><a class="btn btn-success" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a></li>
       <% } %>
-
-      <%- include('logout'); %>
-    </div>
+      <li><%- include('logout'); %></li>
+    </ul>
   </div>
 </nav>
