@@ -40,8 +40,6 @@ with open(3, 'w', encoding='utf-8') as outf:
         cwd = inp['cwd']
         paths = inp['paths']
 
-        original_data_str = str(args[-1])
-
         # reset and then set up the path
         sys.path = copy.copy(saved_path)
         for path in reversed(paths):
