@@ -857,6 +857,17 @@
             <% } // assessment.multiple_instance %>
             <tr>
               <td>
+                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= instanceQuestionsCsvFilename %>"><%= instanceQuestionsCsvFilename %></a>
+              </td>
+              <td>
+                All questions for all students for all assessment
+                instances. Shows the score for each question as well
+                as the best submission score and the number of
+                attempts at the question.
+              </td>
+            </tr>
+            <tr>
+              <td>
                 <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= allSubmissionsCsvFilename %>"><%= allSubmissionsCsvFilename %></a>
               </td>
               <td>

@@ -42,6 +42,7 @@ var filenames = function(locals) {
         pointsByUsernameAllCsvFilename: prefix + 'points_by_username_all.csv',
         instancesCsvFilename:           prefix + 'instances.csv',
         instancesAllCsvFilename:        prefix + 'instances_all.csv',
+        instanceQuestionsCsvFilename:   prefix + 'instance_questions.csv',
         finalSubmissionsCsvFilename:    prefix + 'final_submissions.csv',
         allSubmissionsCsvFilename:      prefix + 'all_submissions.csv',
         finalFilesZipFilename:          prefix + 'final_files.zip',
@@ -308,6 +309,34 @@ router.get('/:filename', function(req, res, next) {
     } else if (req.params.filename == res.locals.instancesAllCsvFilename) {
         sendInstancesCsv(res, req, instancesColumns, {only_highest: false}, (err) => {
             if (ERR(err, next)) return;
+        });
+    } else if (req.params.filename == res.locals.instanceQuestionsCsvFilename) {
+        let params = {
+            assessment_id: res.locals.assessment.id,
+        };
+        sqldb.query(sql.select_instance_questions, params, function(err, result) {
+            if (ERR(err, next)) return;
+            var columns = [
+                ['UID', 'uid'],
+                ['Name', 'name'],
+                ['Role', 'role'],
+                ['Assessment', 'assessment_label'],
+                ['Assessment instance', 'assessment_instance_number'],
+                ['Question', 'qid'],
+                ['Question instance', 'instance_question_number'],
+                ['Question points', 'points'],
+                ['Max points', 'max_points'],
+                ['Question % score', 'score_perc'],
+                ['Date', 'date_formatted'],
+                ['Highest submission score', 'highest_submission_score'],
+                ['Last submission score', 'last_submission_score'],
+                ['Number attempts', 'number_attempts'],
+            ];
+            csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
+                if (ERR(err, next)) return;
+                res.attachment(req.params.filename);
+                res.send(csv);
+            });
         });
     } else if (req.params.filename == res.locals.allSubmissionsCsvFilename
                || req.params.filename == res.locals.finalSubmissionsCsvFilename) {

@@ -189,6 +189,36 @@ WHERE
 ORDER BY
     js.start_date DESC, js.id;
 
+-- BLOCK select_instance_questions
+SELECT
+    u.uid,
+    u.name,
+    e.role,
+    (aset.name || ' ' || a.number) AS assessment_label,
+    ai.number AS assessment_instance_number,
+    q.qid,
+    iq.number AS instance_question_number,
+    iq.points,
+    iq.score_perc,
+    aq.max_points,
+    format_date_iso8601(iq.created_at, ci.display_timezone) AS date_formatted,
+    iq.highest_submission_score,
+    iq.last_submission_score,
+    iq.number_attempts
+FROM
+    instance_questions AS iq
+    JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+    JOIN questions AS q ON (q.id = aq.question_id)
+    JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+    JOIN assessments AS a ON (a.id = ai.assessment_id)
+    JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+    JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    JOIN users AS u ON (u.user_id = ai.user_id)
+    LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = ci.id)
+WHERE
+    a.id = $assessment_id
+ORDER BY
+    u.uid, ai.number, q.qid, iq.number, iq.id;
 
 -- BLOCK assessment_instance_submissions
 WITH all_submissions AS (
