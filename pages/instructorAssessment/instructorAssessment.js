@@ -43,6 +43,7 @@ var filenames = function(locals) {
         instancesCsvFilename:           prefix + 'instances.csv',
         instancesAllCsvFilename:        prefix + 'instances_all.csv',
         finalSubmissionsCsvFilename:    prefix + 'final_submissions.csv',
+        bestSubmissionsCsvFilename:     prefix + 'best_submissions.csv',
         allSubmissionsCsvFilename:      prefix + 'all_submissions.csv',
         finalFilesZipFilename:          prefix + 'final_files.zip',
         allFilesZipFilename:            prefix + 'all_files.zip',
@@ -310,11 +311,16 @@ router.get('/:filename', function(req, res, next) {
             if (ERR(err, next)) return;
         });
     } else if (req.params.filename == res.locals.allSubmissionsCsvFilename
-               || req.params.filename == res.locals.finalSubmissionsCsvFilename) {
+               || req.params.filename == res.locals.finalSubmissionsCsvFilename
+               || req.params.filename == res.locals.bestSubmissionsCsvFilename) {
         let include_all = (req.params.filename == res.locals.allSubmissionsCsvFilename);
+        let include_final = (req.params.filename == res.locals.finalSubmissionsCsvFilename);
+        let include_best = (req.params.filename == res.locals.bestSubmissionsCsvFilename);
         let params = {
             assessment_id: res.locals.assessment.id,
-            include_all: include_all,
+            include_all,
+            include_final,
+            include_best,
         };
         sqldb.query(sql.assessment_instance_submissions, params, function(err, result) {
             if (ERR(err, next)) return;
