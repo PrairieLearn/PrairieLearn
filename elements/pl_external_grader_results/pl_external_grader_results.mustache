@@ -3,14 +3,15 @@
   {{^grading_succeeded}}
     <h3>Grading failed!</h3>
     {{#message}}
-      <pre class="terminal-output termial-output-question-panel"><code>{{message}}</code></pre>
+      <pre class="bg-dark text-white rounded p-3 mb-0"><code>{{message}}</code></pre>
     {{/message}}
     {{^message}}
-      <pre class="terminal-output termial-output-question-panel"><code>Unknown error; please contact course staff.</code></pre>
+      <pre class="bg-dark text-white rounded p-3 mb-0"><code>Unknown error; please contact course staff.</code></pre>
     {{/message}}
   {{/grading_succeeded}}
   {{#grading_succeeded}}
-    <h3>Score:
+    <h3 class="mt-2">
+      Score:
       <span style="color: {{results_color}}"
       {{#points}}
       <strong>{{points}}/{{max_points}} ({{score}}%)</strong>
@@ -22,19 +23,15 @@
     </h3>
     {{#has_message_or_output}}
       {{#has_message}}
-        <div class="panel-group">
-          <div class="panel panel-default">
-            <div class="panel-heading"><h4 class="panel-title">Message</h4></div>
-            <pre class="terminal-output termial-output-question-panel"><code>{{message}}</code></pre>
-          </div>
+        <div class="card mb-4">
+          <div class="card-header">Message</div>
+          <pre class="bg-dark text-white p-3 mb-0"><code>{{message}}</code></pre>
         </div>
       {{/has_message}}
       {{#has_output}}
-        <div class="panel-group">
-          <div class="panel panel-default">
-            <div class="panel-heading"><h4 class="panel-title">Output</h4></div>
-            <pre class="terminal-output termial-output-question-panel"><code>{{output}}</code></pre>
-          </div>
+        <div class="card mb-4">
+          <div class="card-header">Output</div>
+          <pre class="bg-dark text-white p-3 mb-0"><code>{{output}}</code></pre>
         </div>
       {{/has_output}}
     {{/has_message_or_output}}
@@ -44,21 +41,21 @@
     {{/has_tests}}
     {{#has_tests}}
       {{#tests}}
-        <div class="panel panel-default">
-          <div class="panel-heading collapsed" data-toggle="collapse" data-target="#panel-{{uuid}}-{{index}}" style="cursor: pointer;">
-            <div class="panel-heading-left">
-              <h4 class="panel-title">
+        <div class="card mb-1">
+          <div class="card-header d-flex collapsed" data-toggle="collapse" data-target="#panel-{{uuid}}-{{index}}" style="cursor: pointer;">
+            <div class="mr-auto">
+              <span class="panel-title">
                 <span class="glyphicon {{results_icon}}" aria-hidden="true" style="color: {{results_color}}"></span>
                 <span style="color: {{results_color}}; margin-left: 5px;"><strong>[{{points}}/{{max_points}}]</strong></span>
                 <span style="margin-left: 5px;">{{name}}</span>
-              </h4>
+              </span>
             </div>
-            <div class="panel-heading-right">
-              <span class="glyphicon glyphicon-chevron-down"></span>
+            <div>
+              <span class="fa fa-angle-down"></span>
             </div>
           </div>
           <div id="panel-{{uuid}}-{{index}}" class="panel-collapse collapse">
-            <ul class="list-group">
+            <ul class="list-group list-group-flush">
               {{#has_description}}
                 <li class="list-group-item"><strong>Description:</strong> {{description}}</li>
               {{/has_description}}
@@ -67,13 +64,13 @@
               {{#has_message}}
                 <li class="list-group-item">
                   <div><strong>Message</strong></div>
-                  <pre style="background: black; white-space: pre-wrap; overflow-y: auto; overflow-x: hidden; max-height: 200px"><code style="color: white; font-family: monospace;">{{message}}</code></pre>
+                  <pre class="bg-dark text-white rounded p-3 mb-0" style="max-height: 200px"><code style="color: white; font-family: monospace;">{{message}}</code></pre>
                 </li>
               {{/has_message}}
               {{#has_output}}
                 <li class="list-group-item">
                   <div><strong>Output</strong></div>
-                  <pre style="background: black; white-space: pre-wrap; overflow-y: auto; overflow-x: hidden; max-height: 200px;"><code style="color: white; font-family: monospace;">{{output}}</code></pre>
+                  <pre class="bg-dark text-white rounded p-3 mb-0" style="max-height: 200px;"><code style="color: white; font-family: monospace;">{{output}}</code></pre>
                 </li>
               {{/has_output}}
             </ul>

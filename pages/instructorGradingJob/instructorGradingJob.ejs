@@ -1,17 +1,15 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head-bs4'); %>
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: ''}); %>
     <div id="content" class="container">
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Grading Job <%= grading_job.id %></h3>
-        </div>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Grading Job <%= grading_job.id %></div>
 
-        <table class="table table-condensed table-hover two-column-description">
+        <table class="table table-sm table-hover two-column-description">
           <tbody>
             <tr>
               <th>Question</th>
@@ -50,11 +48,9 @@
       </div>
 
       <% if (grading_job.s3_bucket && grading_job.s3_root_key) { %>
-        <div class="panel panel-primary">
-          <div class="panel-heading">
-            <h3 class="panel-title">Downloads</h3>
-          </div>
-          <table class="table table-condensed table-hover">
+        <div class="card mb-4">
+          <div class="card-header bg-primary text-white">Downloads</div>
+          <table class="table table-sm table-hover">
             <thead>
               <tr>
                 <th>File</th>
@@ -104,11 +100,9 @@
         </div>
       <% } %>
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Job Output</h3>
-        </div>
-        <div class="panel-body">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Job Output</div>
+        <div class="card-body">
           <% if (grading_job.s3_bucket && grading_job.s3_root_key) { %>
           <script>
             $.get('<%= urlPrefix %>/grading_job/<%= grading_job.id %>/file/output.log')
@@ -122,13 +116,13 @@
               $('#job-output').show();
             });
           </script>
-          <pre id="job-output" style="display: none;"></pre>
+          <pre class="bg-dark text-white rounded p-3 mb-0" id="job-output" style="display: none;"></pre>
           <i class="fa fa-spinner fa-spin fa-2x" id="job-output-loading" style="width: 100%; text-align: center;"></i>
           <% } else { %>
           <% if (grading_job.output) { %>
-          <pre id="job-output"><%= grading_job.output %></pre>
+          <pre class="bg-dark text-white rounded p-3 mb-0" id="job-output"><%= grading_job.output %></pre>
           <% } else { %>
-          <pre>No output was captured for this grading job.</pre>
+          <pre class="bg-dark text-white rounded p-3 mb-0">No output was captured for this grading job.</pre>
           <% } %>
           <% } %>
         </div>

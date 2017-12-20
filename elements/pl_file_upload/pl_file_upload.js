@@ -150,7 +150,7 @@ window.PLFileUpload.prototype.renderFileList = function() {
         var $fileStatusContainerLeft = $('<div class="file-status-container-left"></div>');
         $fileStatusContainer.append($fileStatusContainerLeft);
         if (fileData) {
-            $fileStatusContainerLeft.append('<i class="file-status-icon fa fa-check-circle" aria-hidden="true"></i>');
+            $fileStatusContainerLeft.append('<i class="file-status-icon fa fa-check-circle" style="color: #4CAF50;" aria-hidden="true"></i>');
         } else {
             $fileStatusContainerLeft.append('<i class="file-status-icon fa fa-circle-o" aria-hidden="true"></i>');
         }
@@ -161,7 +161,7 @@ window.PLFileUpload.prototype.renderFileList = function() {
             $fileStatusContainerLeft.append('<p class="file-status">uploaded</p>');
         }
         if (fileData) {
-            var $preview = $('<div class="file-preview collapse" id="file-preview-' + uuid + '-' + index + '"><pre><code></code></pre></div>');
+            var $preview = $('<div class="file-preview collapse" id="file-preview-' + uuid + '-' + index + '"><pre class="bg-dark text-white rounded p-3 mb-0"><code></code></pre></div>');
             if (isExpanded) {
                 $preview.addClass('in');
             }

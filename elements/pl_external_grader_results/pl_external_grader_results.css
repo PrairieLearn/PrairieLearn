@@ -1,39 +1,7 @@
-.pl-external-grader-results .panel-heading {
-  display: flex;
-  flex-direction: row;
-}
-
-.pl-external-grader-results .panel-heading .panel-heading-left {
-  flex: 1;
-  align-self: left;
-}
-
-.pl-external-grader-results .panel-heading .panel-heading-right {
-  align-self: right;
-}
-
-.pl-external-grader-results .panel-heading .panel-heading-right .glyphicon.glyphicon-chevron-down {
+.pl-external-grader-results .card-header .fa-angle-down {
   transition: all 400ms;
 }
 
-.pl-external-grader-results .panel-heading:not(.collapsed) .panel-heading-right .glyphicon.glyphicon-chevron-down {
+.pl-external-grader-results .card-header:not(.collapsed) .fa-angle-down {
   transform: rotateX(180deg);
-}
-
-.pl-external-grader-results pre.terminal-output {
-  background: black;
-  white-space: pre-wrap;
-  overflow-y: auto;
-  overflow-x: hidden;
-  max-height: 200px;
-}
-
-.pl-external-grader-results pre.terminal-output > code {
-  color: white;
-  font-family: monospace;
-}
-
-.pl-external-grader-results pre.terminal-output.termial-output-question-panel {
-  margin: 0px;
-  border-radius: 0px;
 }

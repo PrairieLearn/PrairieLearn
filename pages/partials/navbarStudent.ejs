@@ -34,7 +34,7 @@
     <ul class="nav navbar-nav" id="username-nav">
       <% if (authz_data.authn_has_instructor_view) { %>
       <li class="nav-item mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %>">
-        <a class="nav-link" href="<%= urlPrefix %>/course/effectiveUser">
+        <a class="nav-link" href="<%= urlPrefix %>/effectiveUser">
           <%= authz_data.user.name %> (<%= authz_data.course_role %>)
           <i class="fa fa-edit" aria-hidden="true"></i>
         </a>
@@ -50,7 +50,7 @@
             Student
           </button>
           <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-            <a class="dropdown-item"  href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/assessments">Switch to student view</a>
+            <a class="dropdown-item"  href="<%= urlPrefix %>/instructor/assessments">Switch to instructor view</a>
           </div>
         </div>
       </li>

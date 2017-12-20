@@ -1,17 +1,15 @@
 <!-- Keeping "graded" state in the DOM is bad, yet here we are. -->
-<div class="panel panel-info pastsubmission-block" data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>">
-  <div class="panel-heading">
-    <h3 class="panel-title">
-      Submitted answer
-      <% if (submissionCount > 1) { %>
-      <%= submissionIdx %>
-      <% } %>
-    </h3>
-    <%- include('submissionStatus', {submission: submission}); %>
-    <small>Submitted at <%- submission.formatted_date %></small>
+<div class="card mb-4 pastsubmission-block" data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>">
+  <div class="card-header bg-light text-dark d-flex align-items-center">
+    Submitted answer
+    <% if (submissionCount > 1) { %>
+    <%= submissionIdx %>
+    <% } %>
+    <span class="ml-2"><%- include('submissionStatus', {submission: submission}); %></span>
+    <small class="ml-auto">Submitted at <%- submission.formatted_date %></small>
   </div>
 
-  <div class="panel-body submission-body">
+  <div class="card-body submission-body">
     <%- submissionHtml %>
   </div>
 </div>

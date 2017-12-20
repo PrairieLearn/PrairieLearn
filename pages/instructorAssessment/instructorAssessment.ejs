@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head-bs4'); %>
     <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
     <script type="text/javascript" src="/javascripts/d3.min.js"></script>
     <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
@@ -24,12 +24,12 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Questions</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Questions
         </div>
 
-        <table class="table table-condensed table-hover">
+        <table class="table table-sm table-hover">
           <thead>
             <tr>
               <th></th>
@@ -136,12 +136,12 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Access rules</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Access rules
         </div>
 
-        <table class="table table-condensed table-hover">
+        <table class="table table-sm table-hover">
           <thead>
             <tr>
               <th>Mode</th>
@@ -174,12 +174,12 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Score statistics</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Score statistics
         </div>
         <% if (assessment_stat.number > 0) { %>
-        <div class="panel-body">
+        <div class="card-body">
           <div id="scoreHist" class="scoreHistogram"></div>
           <script>
             $(function() {
@@ -195,7 +195,7 @@
           </script>
         </div>
 
-        <table class="table table-condensed table-hover">
+        <table class="table table-sm table-hover">
           <tbody>
             <tr><td>Number of students</td><td><%= assessment_stat.number %></td></tr>
             <tr><td>Mean score</td><td><%= Math.round(assessment_stat.mean) %>%</td></tr>
@@ -207,7 +207,7 @@
             <tr><td>Number of 100%</td><td><%= assessment_stat.n_hundred %> (<%= Math.round(assessment_stat.n_hundred_perc) %>% of class)</td></tr>
           </tbody>
         </table>
-        <div class="panel-footer">
+        <div class="card-footer">
           <small>
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= scoreStatsCsvFilename %>"><%= scoreStatsCsvFilename %></a>. Data outside of the plotted range is included in the last bin.
           </small>
@@ -215,8 +215,8 @@
 
         <% } else { %>
 
-        <div class="panel-body">
-          <p>No student data.</p>
+        <div class="card-body">
+          No student data.
         </div>
 
         <% }%>
@@ -225,13 +225,13 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Duration statistics</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Duration statistics
         </div>
 
         <% if (assessment_stat.number > 0) { %>
-        <div class="panel-body">
+        <div class="card-body">
           <div id="durationHist" class="histogram"></div>
           <script>
             $(function() {
@@ -248,7 +248,7 @@
           </script>
         </div>
 
-        <table class="table table-condensed table-hover">
+        <table class="table table-sm table-hover">
           <tbody>
             <tr><td>Mean duration</td><td><%= duration_stat.mean %></td></tr>
             <tr><td>Median duration</td><td><%= duration_stat.median %></td></tr>
@@ -256,7 +256,7 @@
             <tr><td>Maximum duration</td><td><%= duration_stat.max %></td></tr>
           </tbody>
         </table>
-        <div class="panel-footer">
+        <div class="card-footer">
           <small>
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= durationStatsCsvFilename %>"><%= durationStatsCsvFilename %></a>. Data outside of the plotted range is included in the last bin.
           </small>
@@ -264,8 +264,8 @@
 
         <% } else { %>
 
-        <div class="panel-body">
-          <p>No student data.</p>
+        <div class="card-body">
+          No student data.
         </div>
 
         <% }%>
@@ -274,13 +274,13 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Duration versus score</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Duration versus score
         </div>
 
         <% if (assessment_stat.number > 0) { %>
-        <div class="panel-body">
+        <div class="card-body">
           <div id="durationScoreScatter" class="scatter"></div>
           <script>
             $(function() {
@@ -298,7 +298,7 @@
           </script>
         </div>
 
-        <div class="panel-footer">
+        <div class="card-footer">
           <small>
             Each point is one student. Data is available below for all users. Points beyond the plot range are plotted on the edge.
           </small>
@@ -306,8 +306,8 @@
 
         <% } else { %>
 
-        <div class="panel-body">
-          <p>No student data.</p>
+        <div class="card-body">
+          No student data.
         </div>
 
         <% }%>
@@ -316,13 +316,13 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Question difficulty vs discrimination</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Question difficulty vs discrimination
         </div>
 
         <% if (assessment_stat.number > 0) { %>
-        <div class="panel-body">
+        <div class="card-body">
           <p>
             <a class="btn btn-xs btn-default" role="button"
                data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
@@ -348,7 +348,7 @@
             });
           </script>
         </div>
-          <div class="panel-footer">
+          <div class="card-footer">
             <small>
               <ul>
                 <li><strong>Mean score</strong> of a question is the average score for all students on the question. It is best to have a range of questions with different mean scores on the test, with some easy (mean score above 90%) and some hard (mean score below 50%).</li>
@@ -358,8 +358,8 @@
           </div>
         <% } else { %>
 
-        <div class="panel-body">
-          <p>No student data.</p>
+        <div class="card-body">
+          No student data.
         </div>
 
         <% }%>
@@ -368,22 +368,19 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Question statistics</h3>
-        </div>
-
-        <div class="panel-body">
-          <p>
-            <a class="btn btn-xs btn-default" role="button"
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <%= assessment_set.name %> <%= assessment.number %>: Question statistics
+          <div class="ml-auto">
+            <small><span class="text-light mr-2">Last calculated: <%= stats_last_updated %></span></small>
+            <a class="btn btn-sm btn-light" role="button" tabindex="0"
                data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
-                <i class="fa fa-refresh" aria-hidden="true"></i> Recalculate statistics
+                <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
             </a>
-            Last calculated: <%= stats_last_updated %>
-          </p>
+          </div>
         </div>
 
-        <table id="questionsTable" class="table table-condensed table-hover tablesorter">
+        <table id="questionsTable" class="table table-sm table-hover tablesorter">
           <thead>
             <tr>
               <th class="cell-center">Question</th>
@@ -424,7 +421,7 @@
             <% }); %>
           </tbody>
         </table>
-        <div class="panel-footer">
+        <div class="card-footer">
           <p>
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= questionStatsCsvFilename %>"><%= questionStatsCsvFilename %></a>
           </p>
@@ -443,13 +440,13 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Score statistics by date </h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Score statistics by date
         </div>
 
         <% if (assessment_stat.number > 0) { %>
-        <div class="panel-body">
+        <div class="card-body">
           <div id="scoreHistsByDateDiv" style="overflow-x: scroll; overflow-y: hidden;"></div>
           <script>
             $(function() {
@@ -471,7 +468,7 @@
           </script>
         </div>
 
-        <div class="panel-footer">
+        <div class="card-footer">
           <small>
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= statsByDateCsvFilename %>"><%= statsByDateCsvFilename %></a>.
             <br/>
@@ -481,8 +478,8 @@
 
         <% } else { %>
 
-        <div class="panel-body">
-          <p>No student data.</p>
+        <div class="card-body">
+          No student data.
         </div>
 
         <% }%>
@@ -518,21 +515,20 @@
         </div>
       </div>
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Detailed question statistics</h3>
-        </div>
-        <div class="panel-body">
-          <p>
-            <a class="btn btn-xs btn-default" role="button"
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <%= assessment_set.name %> <%= assessment.number %>: Detailed question statistics
+          <div class="ml-auto">
+            <small><span class="text-light mr-2">Last calculated: <%= stats_last_updated %></span></small>
+            <a class="btn btn-sm btn-light" role="button" tabindex="0"
                data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
-                <i class="fa fa-refresh" aria-hidden="true"></i> Recalculate statistics
+                <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
             </a>
-            Last calculated: <%= stats_last_updated %>
-          </p>
+          </div>
         </div>
+
         <div class="table-responsive">
-          <table id="questionsTable" class="table table-condensed table-hover tablesorter table-bordered">
+          <table id="questionsTable" class="table table-sm table-hover tablesorter table-bordered">
             <thead>
             <tr>
               <th class="cell-center">
@@ -693,7 +689,7 @@
             </tbody>
           </table>
         </div>
-        <div class="panel-footer">
+        <div class="card-footer">
           <p>
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= questionStatsCsvFilename %>"><%= questionStatsCsvFilename %></a>
           </p>
@@ -723,13 +719,13 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Downloads</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Downloads
         </div>
 
         <% if (assessment.multiple_instance) { %>
-        <div class="panel-body">
+        <div class="card-body">
           <p>
             <small>
               This is a <strong>multiple instance</strong> assessment, so each student may have more than one assessment instance. The CSV files are available in plain and <strong><tt>_all</tt></strong> versions. The plain versions contain one record per student, which is taken to be the assessment instance for that student with the maximum percentage score. The <strong><tt>_all</tt></strong> CSV files contain one record per assessment instance, possibly including more than one record per student.
@@ -738,7 +734,7 @@
         </div>
         <% } // assessment.multiple_instance %>
 
-        <table class="table table-condensed table-hover">
+        <table class="table table-sm table-hover">
           <thead>
             <tr>
               <th>Data file</th>
@@ -906,15 +902,15 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Regrading history</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Regrading history
         </div>
 
         <% if (regrading_job_sequences && regrading_job_sequences.length > 0) { %>
 
         <div class="table-responsive">
-          <table class="table table-condensed table-hover">
+          <table class="table table-sm table-hover">
             <thead>
               <tr>
                 <th>Number</th>
@@ -942,8 +938,8 @@
 
         <% } else { %>
 
-        <div class="panel-body">
-          <p>No regradings.</p>
+        <div class="card-body">
+          No regradings.
         </div>
 
         <% }%>
@@ -1047,30 +1043,28 @@
         </div>
       </div>
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Assessment instances</h3>
-        </div>
-        <div class="panel-body">
-          <p>
-            <a class="btn btn-xs btn-default" role="button"
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <%= assessment_set.name %> <%= assessment.number %>: Assessment instances
+          <div class="ml-auto">
+            <a class="btn btn-sm btn-light" role="button" tabindex="0"
                data-toggle="modal" data-target="#deleteAllAssessmentInstancesModal">
               <i class="fa fa-times" aria-hidden="true"></i> Delete all assessment instances
             </a>
-            <a class="btn btn-xs btn-default" role="button"
+            <a class="btn btn-sm btn-light" role="button" tabindex="0"
                data-toggle="modal" data-target="#regradeAllAssessmentInstancesModal">
-              <i class="fa fa-refresh" aria-hidden="true"></i> Regrade all assessment instances
+              <i class="fa fa-sync" aria-hidden="true"></i> Regrade all assessment instances
             </a>
-          </p>
-          <p class="no-bottom-margin">
-            <small>
+          </div>
+        </div>
+        <div class="card-body">
+          <small>
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= instancesCsvFilename %>"><%= instancesCsvFilename %></a>.
             Click on a column header to sort. Shift-click on a second header to sub-sort.
           </small>
-          </p>
         </div>
 
-        <table id="usersTable" class="table table-condensed table-hover tablesorter">
+        <table id="usersTable" class="table table-sm table-hover tablesorter">
           <thead>
             <tr>
               <th>UID</th>
@@ -1218,10 +1212,8 @@
               });
           });
         </script>
-        <div class="panel-footer">
+        <div class="card-footer">
           <small>
-
-
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= instancesCsvFilename %>"><%= instancesCsvFilename %></a>
           </small>
         </div>

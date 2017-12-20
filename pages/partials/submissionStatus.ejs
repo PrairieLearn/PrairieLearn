@@ -1,32 +1,32 @@
 <% if (submission.graded_at == null) { %>
     <% if (submission.grading_requested_at == null) { %>
         <% if (submission.gradable) { %>
-            <span class="label label-info">saved, not graded</span>
+            <span class="badge badge-info">saved, not graded</span>
         <% } else { %>
-            <span class="label label-danger">invalid, not graded</span>
+            <span class="badge badge-danger">invalid, not graded</span>
         <% } %>
     <% } else { %>
         <% if (submission.grading_method == 'External') { %>
-            <span id="grading-status-<%= submission.id %>" class="label label-default"></span>
+            <span id="grading-status-<%= submission.id %>" class="badge badge-default"></span>
         <% } else if (submission.grading_method == 'Manual') { %>
-            <span class="label label-default">waiting for manual grading</span>
+            <span class="badge badge-default">waiting for manual grading</span>
         <% } else { %>
-            <span class="label label-default">waiting for grading</span>
+            <span class="badge badge-default">waiting for grading</span>
         <% } %>
     <% } %>
 <% } else if (submission.score == 1) { %>
     <% if ((typeof submission.v2_score !== 'undefined') && (submission.v2_score !== null) && (submission.v2_score < 1)) { %>
-        <span class="label label-success">correct: 100% (rounded up from <%= Math.floor(submission.v2_score * 100) %>%)</span>
+        <span class="badge badge-success">correct: 100% (rounded up from <%= Math.floor(submission.v2_score * 100) %>%)</span>
         <span><%= submission.v2_score > 0 %></span>
     <% } else { %>
-        <span class="label label-success">correct: 100%</span>
+        <span class="badge badge-success">correct: 100%</span>
     <% } %>
 <% } else if (submission.score > 0) { %>
-    <span class="label label-warning">partially correct: <%= Math.floor(submission.score * 100) %>%</span>
+    <span class="badge badge-warning">partially correct: <%= Math.floor(submission.score * 100) %>%</span>
 <% } else { %>
     <% if ((typeof submission.v2_score !== 'undefined') && (submission.v2_score !== null) && (submission.v2_score >= 0.01)) { %>
-        <span class="label label-danger">incorrect: 0% (rounded down from <%= Math.floor(submission.v2_score * 100) %>%)</span>
+        <span class="badge badge-danger">incorrect: 0% (rounded down from <%= Math.floor(submission.v2_score * 100) %>%)</span>
     <% } else { %>
-        <span class="label label-danger">incorrect: 0%</span>
+        <span class="badge badge-danger">incorrect: 0%</span>
     <% } %>
 <% } %>

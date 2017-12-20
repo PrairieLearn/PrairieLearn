@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head-bs4'); %>
     <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
     <script type="text/javascript" src="/javascripts/d3.min.js"></script>
     <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
@@ -16,17 +16,15 @@
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
-      
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">
-            <%= assessment_instance_label %>
-            Summary:
-            <%= instance_user.name %> (<%= instance_user.uid %>)
-          </h3>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_instance_label %>
+          Summary:
+          <%= instance_user.name %> (<%= instance_user.uid %>)
         </div>
 
-        <table class="table table-condensed table-hover two-column-description">
+        <table class="table table-sm table-hover two-column-description">
           <tbody>
             <tr><th>UID</th><td colspan="2"><%= instance_user.uid %></td></tr>
             <tr><th>Name</th><td colspan="2"><%= instance_user.name %></td></tr>
@@ -46,17 +44,17 @@
                    data-content="<%= include('editTotalPointsForm',
                                  {id: 'editTotalPointsButton'}); %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
-                  <i class="fa fa-pencil" aria-hidden="true"></i>
+                  <i class="fa fa-edit" aria-hidden="true"></i>
                 </a>
                 <% } %>
               </td>
             </tr>
             <tr>
               <th>Score</th>
-              <td style="width: 20%;">
+              <td class="align-middle" style="width: 20%;">
                 <%- include('../partials/scorebar', {score: assessment_instance.score_perc}); %>
               </td>
-              <td style="width: 100%;">
+              <td class="align-middle" style="width: 100%;">
                 <% if (authz_data.has_instructor_edit) { %>
                 <a id="editTotalScorePercButton"
                    tabindex="0" class="btn btn-xs btn-default" role="button"
@@ -65,7 +63,7 @@
                    data-content="<%= include('editTotalScorePercForm',
                                  {id: 'editTotalScorePercButton'}); %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
-                  <i class="fa fa-pencil" aria-hidden="true"></i>
+                  <i class="fa fa-edit" aria-hidden="true"></i>
                 </a>
                 <% } %>
               </td>
@@ -78,15 +76,14 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">
-            <%= assessment_instance_label %>
-            Questions:
-            <%= instance_user.name %> (<%= instance_user.uid %>)
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_instance_label %>
+          Questions:
+          <%= instance_user.name %> (<%= instance_user.uid %>)
         </div>
 
-        <table id="instanceQuestionList" class="table table-condensed table-hover">
+        <table id="instanceQuestionList" class="table table-sm table-hover">
           <thead>
             <tr>
               <th>Student question</th>
@@ -127,14 +124,14 @@
                                  {id: 'editQuestionPoints' + i_instance_question,
                                  instance_question: instance_question}); %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
-                  <i class="fa fa-pencil" aria-hidden="true"></i>
+                  <i class="fa fa-edit" aria-hidden="true"></i>
                 </a>
                 <% } %>
               </td>
-              <td class="cell-center">
+              <td class="align-middle cell-center">
                 <%- include('../partials/scorebar', {score: instance_question.score_perc}); %>
               </td>
-              <td style="width: 1em;">
+              <td class="align-middle" style="width: 1em;">
                 <% if (authz_data.has_instructor_edit) { %>
                 <a id="editQuestionScorePerc<%= i_instance_question %>"
                    tabindex="0" class="btn btn-xs btn-default editQuestionScorePercButton" role="button"
@@ -144,7 +141,7 @@
                                  {id: 'editQuestionScorePerc' + i_instance_question,
                                  instance_question: instance_question}); %>"
                    data-trigger="manual" onclick="$(this).popover('show')">
-                  <i class="fa fa-pencil" aria-hidden="true"></i>
+                  <i class="fa fa-edit" aria-hidden="true"></i>
                 </a>
                 <% } %>
               </td>
@@ -153,19 +150,17 @@
           </tbody>
         </table>
       </div>
-      
+
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">
-            <%= assessment_instance_label %>
-            Statistics:
-            <%= instance_user.name %> (<%= instance_user.uid %>)
-          </h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_instance_label %>
+          Statistics:
+          <%= instance_user.name %> (<%= instance_user.uid %>)
         </div>
-        <table id="instanceQuestionStatsTable" class="table table-condensed table-hover tablesorter">
+        <table id="instanceQuestionStatsTable" class="table table-sm table-hover tablesorter">
           <thead>
           <tr>
             <th>Instructor question</th>
@@ -210,16 +205,14 @@
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
-      
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">
-            <%= assessment_instance_label %>
-            Log:
-            <%= instance_user.name %> (<%= instance_user.uid %>)
-          </h3>
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_instance_label %>
+          Log:
+          <%= instance_user.name %> (<%= instance_user.uid %>)
         </div>
-        <div class="panel-body">
+        <div class="card-body">
           <small>
             Download <a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
 
@@ -265,7 +258,7 @@
               });
           });
         </script>
-        <div class="panel-footer">
+        <div class="card-footer">
           <small>
             Download <a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/<%= logCsvFilename %>"><%= logCsvFilename %></a>.
           </small>
@@ -274,7 +267,7 @@
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
-      
+
     </div>
   </body>
 </html>

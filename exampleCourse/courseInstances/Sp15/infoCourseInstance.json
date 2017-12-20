@@ -5,7 +5,8 @@
     "userRoles": {
         "mwest@illinois.edu": "Instructor",
         "zilles@illinois.edu": "TA",
-        "mussulma@illinois.edu": "TA"
+        "mussulma@illinois.edu": "TA",
+        "nwalter2@illinois.edu": "Student"
     },
     "allowAccess": [
         {

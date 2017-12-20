@@ -4,18 +4,16 @@
   <% } %>
 
   <% issues.forEach(function(issue, iIssue) { %>
-  <div class="panel panel-danger">
-    <div class="panel-heading">
-      <h3 class="panel-title">
-        <% if (issue.manually_reported) { %>
-        Manually reported issue
-        <% } else { %>
-        Issue
-        <% } %>
-      </h3>
+  <div class="card">
+    <div class="card-header bg-danger">
+      <% if (issue.manually_reported) { %>
+      Manually reported issue
+      <% } else { %>
+      Issue
+      <% } %>
     </div>
 
-    <table class="table table-condensed table-hover two-column-description">
+    <table class="table table-sm table-hover two-column-description">
       <tbody>
         <% if (devMode || authz_data.has_instructor_view) { %>
         <tr><th>Student message:</th><td><%= issue.student_message %></td></tr>
@@ -29,7 +27,7 @@
     </table>
 
     <% if (devMode || authz_data.has_instructor_view || is_administrator) { %>
-    <div class="panel-body">
+    <div class="card-body">
       <% if (is_administrator && issue.system_data.courseErrData ) { %>
       <p><strong>Console log:</strong>
         <pre><%= issue.system_data.courseErrData.outputBoth %></pre>
@@ -60,19 +58,19 @@
 
   <% if (question.type == 'Freeform') { %>
   <form class="question-form" name="question-form" method="POST">
-    <div class="panel panel-primary question-block">
-      <div class="panel-heading">
+    <div class="card mb-4 question-block">
+      <div class="card-header bg-primary text-white">
         <% if (question_context == 'student_homework') { %>
-            <h3 class="panel-title"><%= instance_question_info.question_number %>. <%= question.title %></h3>
+          <%= instance_question_info.question_number %>. <%= question.title %>
         <% } else if (question_context == 'student_exam') { %>
-            <!-- FIXME: insert question number properly -->
+          <!-- FIXME: insert question number properly -->
         <% } else if (question_context == 'instructor') { %>
-            <h3 class="panel-title"><%= question.title %></h3>
+          <%= question.title %>
         <% } else { %>
             <% throw Error('unknown question_context: ' + question_context); %>
         <% } %>
       </div>
-      <div class="panel-body question-body">
+      <div class="card-body question-body">
         <%- questionHtml %>
       </div>
       <%- include('questionFooter'); %>
@@ -102,11 +100,9 @@
   <% } %>
 
   <% if (showTrueAnswer) { %>
-  <div class="panel panel-info grading-block">
-    <div class="panel-heading">
-      <h3 class="panel-title">Correct answer</h3>
-    </div>
-    <div class="panel-body answer-body">
+  <div class="card mb-4 grading-block">
+    <div class="card-header bg-success text-white">Correct answer</div>
+    <div class="card-body answer-body">
       <%- answerHtml %>
     </div>
   </div>

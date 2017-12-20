@@ -32,10 +32,13 @@
 
     <ul class="nav navbar-nav" id="username-nav">
       <li class="nav-item mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %>">
-        <a class="nav-link" href="<%= urlPrefix %>/course/effectiveUser">
-          <%= authz_data.user.name %> (<%= authz_data.course_role %>)
-          <i class="fa fa-edit" aria-hidden="true"></i>
-        </a>
+        <% if (typeof authn_user == 'undefined') { %>
+        <span class="navbar-text">(No user)</span>
+        <% } else if (is_administrator) { %>
+        <span class="navbar-text"><%= authn_user.name %> (Administrator)</span>
+        <% } else { // is_administrator %>
+        <span class="navbar-text"><%= authn_user.name %></span>
+        <% } // is_administrator %>
       </li>
       <% if (devMode) { %>
       <li class="mb-2 mb-md-0 mr-2 "><a class="btn btn-success" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a></li>
