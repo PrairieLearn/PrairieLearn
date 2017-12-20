@@ -260,6 +260,7 @@ WITH all_file_submissions AS (
         s.submitted_answer,
         row_number() OVER (PARTITION BY v.id ORDER BY s.date) AS submission_number,
         (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1 AS final_submission_per_variant,
+        (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC, s.id DESC)) = 1 AS best_submission_per_variant,
         (CASE
             WHEN s.submitted_answer ? 'fileData' THEN v.params->>'fileName'
             WHEN s.submitted_answer ? '_files' THEN f.file->>'name'
@@ -303,7 +304,9 @@ SELECT
 FROM
     all_file_submissions
 WHERE
-    $include_all OR final_submission_per_variant
+    $include_all
+    OR ($include_final AND final_submission_per_variant)
+    OR ($include_best AND best_submission_per_variant)
 ORDER BY
     uid, assessment_instance_number, qid, variant_number, date;
 
