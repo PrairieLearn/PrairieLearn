@@ -116,6 +116,8 @@
 
   * Add CSV export of best (highest scoring) submissions (Matt West).
 
+  * Add CSV download for instance questions (Matt West).
+
   * Split installing documentation into separate method sections (Matt West).
 
   * Remove unused dead code (`/lib/db.js`, `question-servers/shortAnswer.js`,
