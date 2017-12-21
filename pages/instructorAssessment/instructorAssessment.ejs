@@ -877,6 +877,15 @@
             </tr>
             <tr>
               <td>
+                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= bestSubmissionsCsvFilename %>"><%= bestSubmissionsCsvFilename %></a>
+              </td>
+              <td>
+                Best submitted answers for each question for all
+                students for all assessment instances.
+              </td>
+            </tr>
+            <tr>
+              <td>
                 <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= allFilesZipFilename %>"><%= allFilesZipFilename %></a>
               </td>
               <td>
@@ -894,6 +903,17 @@
               </td>
               <td>
                 Final submitted files for each question for all
+                students for all assessment instances. Only data
+                from <tt>File</tt>-type questions will be included in
+                the zip.
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= bestFilesZipFilename %>"><%= bestFilesZipFilename %></a>
+              </td>
+              <td>
+                Best submitted files for each question for all
                 students for all assessment instances. Only data
                 from <tt>File</tt>-type questions will be included in
                 the zip.
