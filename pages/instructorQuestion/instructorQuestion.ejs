@@ -59,7 +59,7 @@
             </tr>
             <% if (question.type == 'Freeform') { %>
             <tr>
-              <th>Tests</th>
+              <th class="align-middle">Tests</th>
               <td>
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
@@ -300,7 +300,7 @@
           <% }); %>
           </tbody>
         </table>
-        
+
         <div class="card-footer">
           <p>
             Download <a href="<%= urlPrefix %>/question/<%= question.id %>/<%= assessmentStatsCsvFilename %>"><%= assessmentStatsCsvFilename %></a>

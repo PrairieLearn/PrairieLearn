@@ -9,13 +9,13 @@
   <body>
     <%- include('../partials/navbar', {navPage: 'questions'}); %>
     <div id="content" class="container">
-      <div class="card">
+      <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           Questions
           <button class="btn btn-sm btn-light ml-auto" id="resetFilter">Clear all filters</button>
         </div>
 
-        <table id="questionsTable" class="table table-sm table-hover tablesorter">
+        <table id="questionsTable" class="table table-sm table-hover table-responsive tablesorter">
           <thead>
             <tr>
               <th>Title</th>

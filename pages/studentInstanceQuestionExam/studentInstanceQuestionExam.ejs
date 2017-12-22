@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head-bs4'); %>
     <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
     <script type="text/javascript" src="/MathJax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
     <script type="text/javascript" src="/javascripts/socket.io.js"></script>
@@ -26,19 +26,19 @@
     <%- include('../partials/navbar', {navPage: ''}); %>
     <div id="content" class="container">
       <div class="row">
-        <div class="col-md-9 col-sm-12">
+        <div class="col-lg-9 col-sm-12">
           <%- include('../partials/question', {question_context: 'student_exam'}); %>
         </div>
 
-        <div class="col-md-3 col-sm-4 col-xs-12">
+        <div class="col-lg-3 col-sm-12">
 
-          <div class="panel panel-default">
-            <div class="panel-heading"><h3 class="panel-title"><a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/"><%= assessment_set.name %> <%= assessment.number %></a></h3></div>
+          <div class="card mb-4">
+            <div class="card-header bg-secondary"><a class="text-white" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/"><%= assessment_set.name %> <%= assessment.number %></a></div>
 
-            <div class="panel-body">
-              <p class="text-center">
+            <div class="card-body">
+              <div class="d-flex justify-content-center">
                 <a class="btn btn-info" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/">Assessment overview</a>
-              </p>
+              </div>
 
               <% if (assessment_instance.open && assessment_instance_remaining_ms != null) { %>
               <div id="countdownProgress"></div>
@@ -61,14 +61,14 @@
             <% if (instance_question_info.prev_instance_question_id) { %>
             <a class="btn btn-primary" href="<%= urlPrefix %>/instance_question/<%= instance_question_info.prev_instance_question_id %>/">Previous question</a>
             <% } else { %>
-            <a class="btn btn-primary disabled">Previous question</a>
+            <a class="btn btn-primary disabled" tabindex="-1">Previous question</a>
             <% } %>
           </p>
           <p class="text-center">
             <% if (instance_question_info.next_instance_question_id) { %>
             <a class="btn btn-primary" href="<%= urlPrefix %>/instance_question/<%= instance_question_info.next_instance_question_id %>/">Next question</a>
             <% } else { %>
-            <a class="btn btn-primary disabled">Next question</a>
+            <a class="btn btn-primary disabled" tabindex="-1">Next question</a>
             <% } %>
           </p>
           <% if (video) { %>

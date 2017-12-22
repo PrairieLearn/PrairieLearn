@@ -324,7 +324,7 @@
         <% if (assessment_stat.number > 0) { %>
         <div class="card-body">
           <p>
-            <a class="btn btn-xs btn-default" role="button"
+            <a class="btn btn-xs btn-secondary" role="button"
                data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
                 <i class="fa fa-refresh" aria-hidden="true"></i> Recalculate statistics
             </a>
@@ -507,7 +507,7 @@
                 <input type="hidden" name="postAction" value="refresh_stats">
                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                 <input type="hidden" name="assessment_id" value="<%= assessment.id %>">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-danger">Submit</button>
               </form>
             </div>
@@ -728,7 +728,7 @@
         <div class="card-body">
           <p>
             <small>
-              This is a <strong>multiple instance</strong> assessment, so each student may have more than one assessment instance. The CSV files are available in plain and <strong><tt>_all</tt></strong> versions. The plain versions contain one record per student, which is taken to be the assessment instance for that student with the maximum percentage score. The <strong><tt>_all</tt></strong> CSV files contain one record per assessment instance, possibly including more than one record per student.
+              This is a <strong>multiple instance</strong> assessment, so each student may have more than one assessment instance. The CSV files are available in plain and <strong><code>_all</code></strong> versions. The plain versions contain one record per student, which is taken to be the assessment instance for that student with the maximum percentage score. The <strong><code>_all</code></strong> CSV files contain one record per assessment instance, possibly including more than one record per student.
             </small>
           </p>
         </div>
@@ -878,7 +878,7 @@
               <td>
                 All submitted files for all students for all
                 assessment instances. Only data
-                from <tt>File</tt>-type questions will be included in
+                from <code>File</code>-type questions will be included in
                 the zip. Not all submitted files will have been used
                 to compute the final score, as some may have been
                 superceded by subsequent attempts.
@@ -891,7 +891,7 @@
               <td>
                 Final submitted files for each question for all
                 students for all assessment instances. Only data
-                from <tt>File</tt>-type questions will be included in
+                from <code>File</code>-type questions will be included in
                 the zip.
               </td>
             </tr>
@@ -968,7 +968,7 @@
                 <input type="hidden" name="__action" value="delete">
                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                 <input type="hidden" name="assessment_instance_id" class="modal-assessment-instance-id" value="">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-danger">Delete</button>
               </form>
             </div>
@@ -1010,7 +1010,7 @@
                 <input type="hidden" name="__action" value="delete_all">
                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                 <input type="hidden" name="assessment_id" value="<%= assessment.id %>">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-danger">Delete all</button>
               </form>
             </div>
@@ -1035,7 +1035,7 @@
                 <input type="hidden" name="__action" value="regrade_all">
                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                 <input type="hidden" name="assessment_id" value="<%= assessment.id %>">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-primary">Regrade all</button>
               </form>
             </div>
@@ -1089,8 +1089,8 @@
               <td class="cell-center" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
               <td class="cell-center"><%= row.time_remaining %></td>
               <td class="cell-center">
-                <div class="btn-group">
-                  <button type="button" class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <div class="dropdown">
+                  <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Action <span class="caret"></span>
                   </button>
                   <div id="row<%= iRow %>PopoverOpen"
@@ -1104,7 +1104,7 @@
                                        <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;open&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
-                                       <button type=&quot;button&quot; class=&quot;btn btn-default&quot; onclick=&quot;$('#row<%= iRow %>PopoverOpen').popover('hide')&quot;>
+                                       <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverOpen').popover('hide')&quot;>
                                          Cancel
                                        </button>
                                        <button type=&quot;submit&quot; class=&quot;btn btn-success&quot;>Open assessment</button>
@@ -1112,14 +1112,14 @@
                                      ">
                   </div>
                   <div id="row<%= iRow %>PopoverClose"
-                       tabindex="0" data-toggle="popover" data-trigger="focus" data-container="body"
+                       tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
                        data-html="true" data-placement="auto" title="Confirm close"
                        data-content="
                                      <form name=&quot;close-form&quot; method=&quot;POST&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;close&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
-                                       <button type=&quot;button&quot; class=&quot;btn btn-default&quot; onclick=&quot;$('#row<%= iRow %>PopoverClose').popover('hide')&quot;>
+                                       <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverClose').popover('hide')&quot;>
                                          Cancel
                                        </button>
                                        <button type=&quot;submit&quot; class=&quot;btn btn-danger&quot;>Grade and close</button>
@@ -1127,70 +1127,66 @@
                                      ">
                   </div>
                   <div id="row<%= iRow %>PopoverRegrade"
-                       tabindex="0" data-toggle="popover" data-trigger="focus" data-container="body"
+                       tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
                        data-html="true" data-placement="auto" title="Confirm regrade"
                        data-content="
                                      <form name=&quot;regrade-form&quot; method=&quot;POST&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;regrade&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
-                                       <button type=&quot;button&quot; class=&quot;btn btn-default&quot; onclick=&quot;$('#row<%= iRow %>PopoverRegrade').popover('hide')&quot;>
+                                       <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverRegrade').popover('hide')&quot;>
                                          Cancel
                                        </button>
                                        <button type=&quot;submit&quot; class=&quot;btn btn-primary&quot;>Regrade</button>
                                      </form>
                                      ">
                   </div>
-                  <ul class="dropdown-menu">
+
+                  <!-- Capture all clicks to dropdown items to prevent scrolling to the top of the page -->
+                  <div class="dropdown-menu" onclick="window.event.preventDefault();">
 
                     <!-- ################################################## -->
 
                     <% if (authz_data.has_instructor_edit) { %>
-                    <li>
-                      <a data-toggle="modal" data-target="#deleteAssessmentInstanceModal"
-                         data-uid="<%= row.uid %>" data-name="<%= row.name %>"
-                         data-number="<%= row.number %>"
-                         data-score-perc="<%= Math.floor(row.score_perc) %>"
-                         data-assessment-instance-id="<%= row.assessment_instance_id %>"
-                         >
-                        <i class="fa fa-times" aria-hidden="true"></i> Delete
-                      </a>
-                    </li>
-                    <% } %> <!-- if has_instructor_edit -->
+                    <a class="dropdown-item"
+                       href="#"
+                       data-toggle="modal" data-target="#deleteAssessmentInstanceModal"
+                       data-uid="<%= row.uid %>" data-name="<%= row.name %>"
+                       data-number="<%= row.number %>"
+                       data-score-perc="<%= Math.floor(row.score_perc) %>"
+                       data-assessment-instance-id="<%= row.assessment_instance_id %>"
+                       >
+                      <i class="fa fa-times" aria-hidden="true"></i> Delete
+                    </a>
+                    <% } %>
 
                     <!-- ################################################## -->
 
                     <% if (authz_data.has_instructor_edit) { %>
-                    <li>
-                      <a onclick="$('#row<%= iRow %>PopoverRegrade').popover('show')">
-                        <i class="fa fa-refresh" aria-hidden="true"></i> Regrade
-                      </a>
-                    </li>
-                    <% } %> <!-- if has_instructor_edit -->
+                    <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverRegrade').popover('show')" href="#">
+                      <i class="fa fa-sync" aria-hidden="true"></i> Regrade
+                    </a>
+                    <% } %>
 
                     <!-- ################################################## -->
 
                     <% if (authz_data.has_instructor_edit) { %>
-                    <li <% if (row.open) { %>class="disabled"<% } %>>
-                      <a <% if (!row.open) { %>onclick="$('#row<%= iRow %>PopoverOpen').popover('show')"<% } %>>
-                        <i class="fa fa-circle-o" aria-hidden="true"></i> Re-open
-                      </a>
-                    </li>
-                    <% } %> <!-- if has_instructor_edit -->
+                    <a class="dropdown-item <% if (row.open) { %>disabled<% } %>" <% if (!row.open) { %>onclick="$('#row<%= iRow %>PopoverOpen').popover('show')"<% } %> href="#">
+                      <i class="far fa-circle" aria-hidden="true"></i> Re-open
+                    </a>
+                    <% } %>
 
                     <!-- ################################################## -->
 
                     <% if (authz_data.has_instructor_edit) { %>
-                    <li <% if (!row.open) { %>class="disabled"<% } %>>
-                      <a <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"<% } %>>
-                        <i class="fa fa-ban" aria-hidden="true"></i> Close
-                      </a>
-                    </li>
-                    <% } %> <!-- if has_instructor_edit -->
+                    <a class="dropdown-item <% if (!row.open) { %>disabled<% } %>" <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"<% } %> href="#">
+                      <i class="fa fa-ban" aria-hidden="true"></i> Close
+                    </a>
+                    <% } %>
 
                     <!-- ################################################## -->
 
-                  </ul>
+                  </div>
                 </div>
               </td>
               <td class="cell-center"><a href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>" class="btn btn-xs btn-info">Details</a></td>

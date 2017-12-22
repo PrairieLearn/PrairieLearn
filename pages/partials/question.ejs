@@ -4,8 +4,8 @@
   <% } %>
 
   <% issues.forEach(function(issue, iIssue) { %>
-  <div class="card">
-    <div class="card-header bg-danger">
+  <div class="card mb-4">
+    <div class="card-header bg-danger text-white">
       <% if (issue.manually_reported) { %>
       Manually reported issue
       <% } else { %>
@@ -27,10 +27,10 @@
     </table>
 
     <% if (devMode || authz_data.has_instructor_view || is_administrator) { %>
-    <div class="card-body">
+    <div class="card-body border border-bottom-0 border-left-0 border-right-0">
       <% if (is_administrator && issue.system_data.courseErrData ) { %>
       <p><strong>Console log:</strong>
-        <pre><%= issue.system_data.courseErrData.outputBoth %></pre>
+        <pre class="bg-dark text-white rounded p-3"><%= issue.system_data.courseErrData.outputBoth %></pre>
         <% } %>
       <p><strong>Associated data:</strong>
         <a class="btn btn-xs btn-default" role="button" data-toggle="collapse" href="#issue-course-data-<%= iIssue %>" aria-expanded="false" aria-controls="#issue-course-data-<%= iIssue %>">
@@ -38,7 +38,7 @@
         </a>
       </p>
       <div class="collapse" id="issue-course-data-<%= iIssue %>">
-        <pre><%= JSON.stringify(issue.course_data, null, '    ') %></pre>
+        <pre class="bg-dark text-white rounded p-3"><%= JSON.stringify(issue.course_data, null, '    ') %></pre>
       </div>
       <% if (is_administrator) { %>
       <p><strong>System data:</strong>
@@ -47,7 +47,7 @@
         </a>
       </p>
       <div class="collapse" id="issue-system-data-<%= iIssue %>">
-        <pre><%= JSON.stringify(issue.system_data, null, '    ') %></pre>
+        <pre class="bg-dark text-white rounded p-3"><%= JSON.stringify(issue.system_data, null, '    ') %></pre>
       </div>
       <% } %>
     </div>
@@ -63,7 +63,7 @@
         <% if (question_context == 'student_homework') { %>
           <%= instance_question_info.question_number %>. <%= question.title %>
         <% } else if (question_context == 'student_exam') { %>
-          <!-- FIXME: insert question number properly -->
+          Question <%= instance_question_info.question_number %>: <%= question.title %>
         <% } else if (question_context == 'instructor') { %>
           <%= question.title %>
         <% } else { %>
@@ -80,19 +80,20 @@
 
 
   <% if (question.type != 'Freeform') { %>
-  <div class="panel panel-primary question-block">
-    <div class="panel-heading">
-        <% if (question_context == 'student_homework') { %>
-            <h3 class="panel-title"><%= instance_question_info.question_number %>. <%= question.title %></h3>
-        <% } else if (question_context == 'student_exam') { %>
+  <div class="card mb-4">
+    <div class="card-header bg-primary text-white">
+      <% if (question_context == 'student_homework') { %>
+        <%= instance_question_info.question_number %>. <%= question.title %></h3>
+      <% } else if (question_context == 'student_exam') { %>
             <!-- FIXME: insert question number properly -->
-        <% } else if (question_context == 'instructor') { %>
-            <h3 class="panel-title"><%= question.title %></h3>
-        <% } else { %>
-            <% throw Error('unknown question_context: ' + question_context); %>
-        <% } %>
+            Question <%= instance_question_info.question_number %>: <%= question.title %>
+      <% } else if (question_context == 'instructor') { %>
+        <%= question.title %>
+      <% } else { %>
+        <% throw Error('unknown question_context: ' + question_context); %>
+      <% } %>
     </div>
-    <div class="panel-body question-body">
+    <div class="card-body question-body">
       <%- questionHtml %>
     </div>
     <%- include('questionFooter'); %>
@@ -109,11 +110,9 @@
   <% } %>
 
   <% if (showSubmissions) { %>
-  <div class="panel-group">
-    <% submissions.forEach(function(submission, idx) { %>
-      <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionIdx: submissions.length - idx, submissionHtml: submissionHtmls[idx]}); %>
-    <% }); %>
-  </div>
+  <% submissions.forEach(function(submission, idx) { %>
+    <%- include('submission', {submission: submission, submissionCount: submissions.length, submissionIdx: submissions.length - idx, submissionHtml: submissionHtmls[idx]}); %>
+  <% }); %>
   <% } %>
 
   <%- include('externalGradingLiveUpdate'); %>
