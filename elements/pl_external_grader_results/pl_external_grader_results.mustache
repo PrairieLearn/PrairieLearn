@@ -42,10 +42,10 @@
     {{#has_tests}}
       {{#tests}}
         <div class="card mb-1">
-          <div class="card-header d-flex collapsed" data-toggle="collapse" data-target="#panel-{{uuid}}-{{index}}" style="cursor: pointer;">
+          <div class="card-header d-flex collapsed" data-toggle="collapse" data-target="#card-{{uuid}}-{{index}}" style="cursor: pointer;">
             <div class="mr-auto">
-              <span class="panel-title">
-                <span class="glyphicon {{results_icon}}" aria-hidden="true" style="color: {{results_color}}"></span>
+              <span class="card-title">
+                <i class="fa {{results_icon}}" aria-hidden="true" style="color: {{results_color}}"></i>
                 <span style="color: {{results_color}}; margin-left: 5px;"><strong>[{{points}}/{{max_points}}]</strong></span>
                 <span style="margin-left: 5px;">{{name}}</span>
               </span>
@@ -54,7 +54,7 @@
               <span class="fa fa-angle-down"></span>
             </div>
           </div>
-          <div id="panel-{{uuid}}-{{index}}" class="panel-collapse collapse">
+          <div id="card-{{uuid}}-{{index}}" class="collapse">
             <ul class="list-group list-group-flush">
               {{#has_description}}
                 <li class="list-group-item"><strong>Description:</strong> {{description}}</li>

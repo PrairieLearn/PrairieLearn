@@ -53,7 +53,7 @@ def render(element_html, element_index, data):
                         test['points'] = results_test.get('points')
                         correct = test['max_points'] == test['points']
                         test['results_color'] = '#4CAF50' if correct else '#F44336'
-                        test['results_icon'] = 'glyphicon-ok' if correct else 'glyphicon-remove'
+                        test['results_icon'] = 'fa-check' if correct else 'fa-times'
                         test['has_description'] = bool(results_test.get('description', None))
                         test['description'] = results_test.get('description', None)
 
