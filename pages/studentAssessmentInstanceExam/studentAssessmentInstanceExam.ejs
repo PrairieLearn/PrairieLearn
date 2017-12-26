@@ -66,7 +66,7 @@
       </div>
 
       <div class="card-body">
-        <div class="row align-items-center mb-4">
+        <div class="row align-items-center">
           <div class="col-md-3 col-sm-6">
             <% include('../partials/pointsFormatter'); %>
             Total points: <%= getStringFromFloat(assessment_instance.points) %>/<%= getStringFromFloat(assessment_instance.max_points) %>
@@ -84,7 +84,7 @@
         </div>
 
         <% if (assessment_text_templated) { %>
-        <div class="alert alert-secondary mb-0">
+        <div class="alert alert-secondary mb-0 mt-4">
           <%- assessment_text_templated %>
         </div>
         <% } %>

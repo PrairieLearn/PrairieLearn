@@ -99,8 +99,8 @@ def render(element_html, element_index, data):
 
         html = ''
         for answer in display_answers:
-            item = '  <label' + (' class="checkbox-inline"' if inline else '') + '>\n' \
-                + '    <input type="checkbox"' \
+            item = '  <label class="form-check-label">\n' \
+                + '    <input type="checkbox" class="form-check-input"' \
                 + ' name="' + name + '" value="' + answer['key'] + '"' \
                 + ('' if editable else ' disabled') \
                 + (' checked ' if (answer['key'] in submitted_keys) else '') \
@@ -110,11 +110,10 @@ def render(element_html, element_index, data):
             if score is not None:
                 if answer['key'] in submitted_keys:
                     if answer['key'] in correct_keys:
-                        item = item + '<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
+                        item = item + '<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
                     else:
-                        item = item + '<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
-            if not inline:
-                item = '<div class="checkbox">\n' + item + '</div>\n'
+                        item = item + '<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
+            item = f'<div class="form-check {"form-check-inline" if inline else ""}">\n' + item + '</div>\n'
             html += item
         if inline:
             html = '<p>\n' + html + '</p>\n'
@@ -122,11 +121,11 @@ def render(element_html, element_index, data):
             try:
                 score = float(score)
                 if score >= 1:
-                    html = html + '&nbsp;<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
+                    html = html + '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
                 elif score > 0:
-                    html = html + '&nbsp;<span class="label label-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
+                    html = html + '&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
                 else:
-                    html = html + '&nbsp;<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
+                    html = html + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
             except:
                 raise ValueError('invalid score' + score)
     elif data['panel'] == 'submission':
@@ -145,9 +144,9 @@ def render(element_html, element_index, data):
                     item = '(%s) %s' % (submitted_key, submitted_html)
                     if score is not None:
                         if submitted_key in correct_keys:
-                            item = item + '&nbsp;<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
+                            item = item + '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
                         else:
-                            item = item + '&nbsp;<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
+                            item = item + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
                 if inline:
                     item = '<span>' + item + '</span>\n'
                 else:
@@ -161,11 +160,11 @@ def render(element_html, element_index, data):
                 try:
                     score = float(score)
                     if score >= 1:
-                        html = html + '&nbsp;<span class="label label-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
+                        html = html + '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
                     elif score > 0:
-                        html = html + '&nbsp;<span class="label label-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
+                        html = html + '&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
                     else:
-                        html = html + '&nbsp;<span class="label label-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
+                        html = html + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
                 except:
                     raise ValueError('invalid score' + score)
     elif data['panel'] == 'answer':

@@ -29,10 +29,6 @@ canvas {
     background: #faa;
 }
 
-.navbar .navbar-right .btn {
-    margin-right: 10px;
-}
-
 .progress-summary table {
     margin-bottom: 5px;
 }
@@ -271,11 +267,42 @@ table.two-column-description-no-header-with-help tr td:last-of-type {
  * Additions for Bootstrap 4 conversion
  ***************************************/
 
- .card > table {
-    margin-bottom: 0;
- }
+.card > table {
+  margin-bottom: 0;
+}
 
- .btn.btn-xs {
-   padding: 1px 5px;
-   font-size: 0.7rem;
- }
+.btn.btn-xs {
+  padding: 1px 5px;
+  font-size: 0.7rem;
+}
+
+.btn {
+  cursor: pointer;
+}
+
+.navbar-brand {
+  position: relative;
+}
+
+.navbar-brand-label, .navbar-brand-hover-label {
+  display: inline-block;
+  transition: all 0.3s ease-out;
+}
+
+.navbar-brand-hover-label {
+  opacity: 0;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  font-size: 0.8rem;
+  transform: translate(0px, -3px);
+}
+
+.navbar-brand:hover .navbar-brand-label{
+  transform: translate(0px, -7px);
+}
+
+.navbar-brand:hover .navbar-brand-hover-label {
+  opacity: 1;
+  transform: translate(0px, 0px);
+}
