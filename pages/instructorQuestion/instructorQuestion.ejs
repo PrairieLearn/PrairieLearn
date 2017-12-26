@@ -97,11 +97,11 @@
 
       <%- include('../partials/question', {question_context: 'instructor'}); %>
 
-      <!--<div class="panel panel-primary">-->
-        <!--<div class="panel-heading">-->
-          <!--<h3 class="panel-title">Num Attempts</h3>-->
-        <!--</div>-->
-        <table class="table table-condensed table-hover two-column-description">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Num Attempts
+        </div>
+        <table class="table table-sm table-hover two-column-description">
           <tbody>
             <% if (question_attempts_histogram && question_attempts_before_giving_up_histogram) { %>
               <tr>
@@ -129,7 +129,7 @@
               <% } %>
           </tbody>
         </table>
-      <!--</div>-->
+      </div>
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->

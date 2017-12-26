@@ -77,63 +77,65 @@
           <%- include('../partials/pager') %>
         </div>
 
-        <table class="table table-sm table-hover">
-          <thead>
-            <tr>
-              <th>ID</th>
-              <th>Date</th>
-              <th>Instance</th>
-              <th>Assessment</th>
-              <th>Question</th>
-              <th>User</th>
-              <th>Message</th>
-              <th>Link</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% rows.forEach(row => { %>
-            <tr>
-              <td><%= row.display_id %></td>
-              <td><%= row.formatted_date %></td>
-              <td><%= row.course_instance_short_name || '—' %></td>
-              <td>
-                <% if (row.assessment) { %>
-                <%- include('../partials/assessment', {assessment: row.assessment}) %>
-                <% } else { %>
-                —
-                <% } %>
-              </td>
-              <td>
-                <% if (row.question_qid) { %>
-                <%= row.question_qid %>
-                <% } else { %>
-                —
-                <% } %>
-              </td>
-              <td><%= row.user_uid || '—' %></td>
-              <td>
-                <% if (row.manually_reported) { %><i>Manually reported:</i><% } %>
-                <% if (row.student_message == null || row.student_message.length == 0) { %>
-                —
-                <% } else if (row.manually_reported && row.student_message.length > 30) { %>
-                <%= row.student_message.substring(0, 31) %>…
-                <% } else if (!row.manually_reported && row.student_message.length > 50) { %>
-                <%= row.student_message.substring(0, 51) %>…
-                <% } else { %>
-                <%= row.student_message %>
-                <% } %>
-              </td>
-              <td>
-                <% if (row.variant_id) { %>
-                <a href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>" class="btn btn-xs btn-primary">View</a>
-                <% } %>
-              </td>
-              <td><%- include('../partials/issueStatus', {open: row.open, issue_id: row.issue_id}) %></td>
-            </tr>
-            <% }); %>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Date</th>
+                <th>Instance</th>
+                <th>Assessment</th>
+                <th>Question</th>
+                <th>User</th>
+                <th>Message</th>
+                <th>Link</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% rows.forEach(row => { %>
+              <tr>
+                <td><%= row.display_id %></td>
+                <td><%= row.formatted_date %></td>
+                <td><%= row.course_instance_short_name || '—' %></td>
+                <td>
+                  <% if (row.assessment) { %>
+                  <%- include('../partials/assessment', {assessment: row.assessment}) %>
+                  <% } else { %>
+                  —
+                  <% } %>
+                </td>
+                <td>
+                  <% if (row.question_qid) { %>
+                  <%= row.question_qid %>
+                  <% } else { %>
+                  —
+                  <% } %>
+                </td>
+                <td><%= row.user_uid || '—' %></td>
+                <td>
+                  <% if (row.manually_reported) { %><i>Manually reported:</i><% } %>
+                  <% if (row.student_message == null || row.student_message.length == 0) { %>
+                  —
+                  <% } else if (row.manually_reported && row.student_message.length > 30) { %>
+                  <%= row.student_message.substring(0, 31) %>…
+                  <% } else if (!row.manually_reported && row.student_message.length > 50) { %>
+                  <%= row.student_message.substring(0, 51) %>…
+                  <% } else { %>
+                  <%= row.student_message %>
+                  <% } %>
+                </td>
+                <td>
+                  <% if (row.variant_id) { %>
+                  <a href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>" class="btn btn-xs btn-primary">View</a>
+                  <% } %>
+                </td>
+                <td><%- include('../partials/issueStatus', {open: row.open, issue_id: row.issue_id}) %></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
 
       </div>
     </div>
