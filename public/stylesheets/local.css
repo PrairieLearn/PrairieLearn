@@ -267,7 +267,7 @@ table.two-column-description-no-header-with-help tr td:last-of-type {
  * Additions for Bootstrap 4 conversion
  ***************************************/
 
-.card > table {
+.card > table, .card > .table-responsive > table {
   margin-bottom: 0;
 }
 

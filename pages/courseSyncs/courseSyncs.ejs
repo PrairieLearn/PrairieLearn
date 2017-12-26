@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <%- include('../partials/head'); %>
+    <%- include('../partials/head-bs4'); %>
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: 'sync'}); %>
@@ -12,22 +12,22 @@
       <!-------------------------------------------------------------------------------->
       <!-- Repository status ----------------------------------------------------------->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Repository status</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Repository status
         </div>
 
         <div class="table-responsive">
-          <table class="table table-condensed table-hover">
+          <table class="table table-sm">
             <tbody>
               <tr>
-                <th>Path on disk:</th>
-                <td><%= course.path %></td>
+                <th class="align-middle">Path on disk:</th>
+                <td class="align-middle"><%= course.path %></td>
                 <td>
                   <form name="confirm-form" method="POST">
                     <input type="hidden" name="__action" value="status">
                     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                    <button type="submit" class="btn btn-xs btn-default">
+                    <button type="submit" class="btn btn-sm btn-outline-primary">
                       <i class="fa fa-info-circle" aria-hidden="true"></i>
                       Show server git status
                     </button>
@@ -35,14 +35,14 @@
                 </td>
               </tr>
               <tr>
-                <th>Remote repository:</th>
-                <td><%= course.repository %></td>
+                <th class="align-middle">Remote repository:</th>
+                <td class="align-middle"><%= course.repository %></td>
                 <td>
                   <form name="confirm-form" method="POST">
                     <input type="hidden" name="__action" value="pull">
                     <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                    <button type="submit" class="btn btn-xs btn-default">
-                      <i class="fa fa-cloud-download" aria-hidden="true"></i>
+                    <button type="submit" class="btn btn-sm btn-outline-primary">
+                      <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
                       Pull from remote git repository
                     </button>
                   </form>
@@ -51,7 +51,6 @@
             </tbody>
           </table>
         </div>
-
       </div>
 
       <!-------------------------------------------------------------------------------->
@@ -59,13 +58,13 @@
       <!-------------------------------------------------------------------------------->
       <!-- Sync history ---------------------------------------------------------------->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Sync job history</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Sync job history
         </div>
 
         <div class="table-responsive">
-          <table class="table table-condensed table-hover">
+          <table class="table table-sm table-hover">
             <thead>
               <tr>
                 <th>Number</th>
@@ -90,7 +89,6 @@
             </tbody>
           </table>
         </div>
-
       </div>
 
       <!-------------------------------------------------------------------------------->
