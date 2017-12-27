@@ -81,7 +81,7 @@
     function updateStatus(submission) {
       var display = $('#grading-status-' + submission.id);
       var label;
-      var spinner = '<i class="fa fa-refresh fa-spin fa-fw"></i>';
+      var spinner = '<i class="fa fa-sync fa-spin fa-fw"></i>';
       switch (submission.grading_job_status) {
         case 'requested':
           label = 'Grading requested ' + spinner;
