@@ -156,12 +156,12 @@ def parse(element_html, element_index, data):
 
     # Convert to float
     try:
-        a_sub_float = float(a_sub)
+        a_sub_float = np.float64(a_sub)
         if not np.isfinite(a_sub_float):
             raise ValueError('submitted answer must be a finite real number but was either "inf" or "nan"')
         data['submitted_answers'][name] = a_sub_float
     except ValueError:
-        data['format_errors'][name] = 'Invalid format (not a real number).'
+        data['format_errors'][name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point number.'
         data['submitted_answers'][name] = None
 
 
@@ -183,6 +183,27 @@ def grade(element_html, element_index, data):
     if a_sub is None:
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
         return
+
+    # Cast both submitted and true answers as np.float64, because...
+    #
+    #   If the method of comparison is relabs (i.e., using relative and
+    #   absolute tolerance) then np.allclose is applied to check if the
+    #   submitted and true answers are the same. If either answer is an
+    #   integer outside the range of int64...
+    #
+    #       https://docs.scipy.org/doc/numpy-1.13.0/user/basics.types.html
+    #
+    #   ...then numpy throws this error:
+    #
+    #       TypeError: ufunc 'isfinite' not supported for the input types, and
+    #       the inputs could not be safely coerced to any supported types
+    #       according to the casting rule ''safe''
+    #
+    #   Casting as np.float64 avoids this error. This is reasonable in any case,
+    #   because <pl_number_input> accepts double-precision floats, not ints.
+    #
+    a_sub = np.float64(a_sub)
+    a_tru = np.float64(a_tru)
 
     # Get method of comparison, with relabs as default
     comparison = pl.get_string_attrib(element, 'comparison', 'relabs')

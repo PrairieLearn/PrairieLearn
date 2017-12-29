@@ -83,7 +83,7 @@
 {{/answer}}
 
 {{#format}}
-No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted. Scientific notation is accepted (e.g., 1.2e03). {{#relabs}}Your answer must be accurate to within relative tolerance {{rtol}} and absolute tolerance {{atol}}.{{/relabs}}{{#sigfig}}Your answer must be accurate to {{digits}} significant figures.{{/sigfig}}{{#decdig}}Your answer must be accurate to {{digits}} digits after the decimal.{{/decdig}}
+Your answer must be a real number between -1e308 and 1e308 (i.e., it must be interpretable as a double-precision floating-point number). No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted. Scientific notation is accepted (e.g., 1.2e03). {{#relabs}}Your answer must be accurate to within relative tolerance {{rtol}} and absolute tolerance {{atol}}.{{/relabs}}{{#sigfig}}Your answer must be accurate to {{digits}} significant figures.{{/sigfig}}{{#decdig}}Your answer must be accurate to {{digits}} digits after the decimal.{{/decdig}}
 {{/format}}
 
 {{#shortformat}}
