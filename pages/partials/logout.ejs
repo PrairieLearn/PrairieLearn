@@ -4,8 +4,8 @@
    <% } else if (authn_user.provider == 'azure') { %>
        <a class="btn btn-secondary" href="<%= config.azureDestroySessionUrl %>">Log out</a>
    <% } else { %>
-       <a class="btn btn-secondary" disabled>Log out</a>
+       <a class="btn btn-secondary disabled">Log out</a>
    <% } %>
 <% } else { %>
-   <a class="btn btn-secondary" disabled>Log out</a>
+   <a class="btn btn-secondary disabled">Log out</a>
 <% } %>

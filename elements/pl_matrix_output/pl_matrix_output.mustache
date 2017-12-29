@@ -1,10 +1,10 @@
 <script>
-    (function(){
-        new Clipboard('.copy-button');
-    })();
+    $(function(){
+        PrairieUtil.initCopyButton('#pl-matrix-output-{{uuid}} .copy-button');
+    });
 </script>
 
-<div class="card mb-4">
+<div id="pl-matrix-output-{{uuid}}" class="card mb-4">
     <div class="card-header">
         <ul class="nav nav-tabs card-header-tabs" role="tablist">
             <li class="nav-item" role="presentation"><a class="nav-link{{#default_is_matlab}} active{{/default_is_matlab}}" href="#matlab-{{element_index}}" aria-controls="matlab-{{element_index}}" role="tab" data-toggle="pill">matlab</a></li>

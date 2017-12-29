@@ -49,7 +49,15 @@ def render(element_html, element_index, data):
             info_params['shortformat'] = True
             shortinfo = chevron.render(f, info_params).strip()
 
-        html_params = {'question': True, 'name': name, 'label': label, 'editable': editable, 'info': info, 'shortinfo': shortinfo}
+        html_params = {
+            'question': True,
+            'name': name,
+            'label': label,
+            'editable': editable,
+            'info': info,
+            'shortinfo': shortinfo,
+            'uuid': pl.get_uuid()
+        }
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
@@ -126,7 +134,15 @@ def render(element_html, element_index, data):
             else:
                 raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
 
-            html_params = {'answer': True, 'label': label, 'matlab_data': matlab_data, 'python_data': python_data, 'element_index': element_index}
+            html_params = {
+                'answer': True,
+                'label': label,
+                'matlab_data': matlab_data,
+                'python_data': python_data,
+                'element_index': element_index,
+                'uuid': pl.get_uuid()
+            }
+
             if format_type == 'matlab':
                 html_params['default_is_matlab'] = True
             else:
