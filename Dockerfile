@@ -26,7 +26,7 @@ COPY requirements.txt package.json /PrairieLearn/
 RUN python3 -m pip install --no-cache-dir -r /PrairieLearn/requirements.txt \
     && cd /PrairieLearn \
     && npm install \
-    && npm cache clean
+    && npm --force cache clean
 
 # NOTE: Modify .dockerignore to whitelist files/directories to copy.
 COPY . /PrairieLearn/
