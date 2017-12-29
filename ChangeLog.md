@@ -5,6 +5,8 @@
 
   * Upgrade to Bootstrap 4 (Nathan Walters).
 
+  * Upgrade to NodeJS 8.x LTS (Matt West).
+
 * __2.11.0__ - 2017-12-29
 
   * Add support for partial credit in Homeworks (Tim Bretl).

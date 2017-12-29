@@ -3,7 +3,7 @@ FROM centos:7
 RUN yum -y install \
         epel-release \
         https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/pgdg-centos96-9.6-3.noarch.rpm \
-        https://rpm.nodesource.com/pub_7.x/el/7/x86_64/nodesource-release-el7-1.noarch.rpm \
+        https://rpm.nodesource.com/pub_8.x/el/7/x86_64/nodesource-release-el7-1.noarch.rpm \
         https://centos7.iuscommunity.org/ius-release.rpm \
     && yum -y update \
     && yum -y install \
