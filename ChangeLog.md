@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __next version__ - XXXX-XX-XX
+
+  * Upgrade to Bootstrap 4 (Nathan Walters).
+
 * __2.11.0__ - 2017-12-29
 
   * Add support for partial credit in Homeworks (Tim Bretl).
