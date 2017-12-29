@@ -1,11 +1,11 @@
 <% include('pointsFormatter'); %>
 
 <% if (points == 0) { %>
-<span class="label label-danger">
+<span class="badge badge-danger">
 <% } else if (points < max_points) { %>
-<span class="label label-warning">
+<span class="badge badge-warning">
 <% } else { %>
-<span class="label label-success">
+<span class="badge badge-success">
 <% } %>
 <%= getStringFromFloat(points) %>/<%= getStringFromFloat(max_points) %>
 </span>

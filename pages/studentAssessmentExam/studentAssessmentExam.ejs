@@ -6,12 +6,12 @@
   <body>
     <%- include('../partials/navbar', {navPage: ''}); %>
     <div id="content" class="container">
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %></h3>
+      <div class="card">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
         </div>
 
-        <div class="panel-body">
+        <div class="card-body">
 
           <p class="lead text-center">
             Please wait until instructed to start by a proctor
@@ -36,18 +36,18 @@
               Password: <input type="password" name="password">
             </p>
             <% } %>
-            <p class="text-center">
+            <div class="d-flex justify-content-center">
               <button id="start-assessment" type="submit" class="btn btn-primary">Start assessment</button>
-            </p>
+            </div>
           </form>
           <script>
             $('#confirm-form').on('submit', function() {
                 $('#start-assessment')
                     .prop('disabled', true)
-                    .html('<i class="fa fa-refresh fa-spin fa-fw"></i> Generating questions…');
+                    .html('<i class="fa fa-sync fa-spin fa-fw"></i> Generating questions…');
             });
           </script>
-          
+
         </div> <!-- panel-body -->
 
       </div>

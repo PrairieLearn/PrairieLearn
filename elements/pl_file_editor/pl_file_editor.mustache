@@ -13,10 +13,8 @@ $(function() {
 </script>
 <div id="file-editor-{{uuid}}">
     <input type="hidden" name="{{name}}">
-    <div class="panel panel-default">
-        <div class="panel-heading">
-            <h4 class="panel-title">{{file_name}}</h4>
-        </div>
+    <div class="card">
+        <div class="card-header">{{file_name}}</div>
         <div class="editor"></div>
     </div>
     {{submission}}

@@ -1,8 +1,8 @@
 <% include('pointsFormatter'); %>
 
-<div class="panel panel-default" id="assessment-score-panel">
-  <div class="panel-heading"><h3 class="panel-title"><a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/"><%= assessment_set.name %> <%= assessment.number %></a></h3></div>
-  <table class="table table-condensed">
+<div class="card mb-4" id="assessment-score-panel">
+  <div class="card-header bg-secondary"><a class="text-white" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/"><%= assessment_set.name %> <%= assessment.number %></a></div>
+  <table class="table table-sm">
     <tbody>
       <tr>
         <td>Total points:</td>
@@ -10,7 +10,7 @@
       </tr>
       <tr>
         <td>Score:</td>
-        <td><%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %></td>
+        <td class="align-middle"><%- include('../partials/scorebar', {score: assessment_instance.score_perc}) %></td>
       </tr>
     </tbody>
   </table>

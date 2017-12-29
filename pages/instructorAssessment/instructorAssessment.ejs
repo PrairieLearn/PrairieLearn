@@ -2,15 +2,15 @@
 <html>
   <head>
     <%- include('../partials/head'); %>
-    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
-    <script type="text/javascript" src="/javascripts/d3.min.js"></script>
+    <script src="/javascripts/lodash.min.js"></script>
+    <script src="/javascripts/d3.min.js"></script>
     <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
-    <script type="text/javascript" src="/javascripts/jquery.tablesorter.min.js"></script>
-    <script type="text/javascript" src="/javascripts/jquery.tablesorter.widgets.js"></script>
-    <script type="text/javascript" src="/localscripts/histogram.js"></script>
-    <script type="text/javascript" src="/localscripts/scatter.js"></script>
-    <script type="text/javascript" src="/localscripts/histmini.js"></script>
-    <script type="text/javascript" src="/localscripts/parallel_histograms.js"></script>
+    <script src="/javascripts/jquery.tablesorter.min.js"></script>
+    <script src="/javascripts/jquery.tablesorter.widgets.js"></script>
+    <script src="/localscripts/histogram.js"></script>
+    <script src="/localscripts/scatter.js"></script>
+    <script src="/localscripts/histmini.js"></script>
+    <script src="/localscripts/parallel_histograms.js"></script>
   </head>
   <body>
     <script>
@@ -24,124 +24,126 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Questions</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Questions
         </div>
 
-        <table class="table table-condensed table-hover">
-          <thead>
-            <tr>
-              <th></th>
-              <th>QID</th>
-              <th>Topic</th>
-              <th>Tags</th>
-              <th>Points</th>
-              <th width="100">Mean score</th>
-              <th width="100">Question score</th>
-              <th>Num. Submissions Histogram</th>
-              <th>Other Assessments</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% questions.forEach(function(question, i) { %>
-            <% if (question.start_new_zone) { %>
-            <tr>
-              <th colspan="6">
-                Zone <%= question.zone_number %>. <%= question.zone_title %>
-                <% if (question.zone_number_choose == null) { %>
-                (Choose all questions)
-                <% } else if (question.zone_number_choose == 1) { %>
-                (Choose 1 question)
-                <% } else { %>
-                (Choose <%= question.zone_number_choose %> questions)
-                <% } %>
-              </th>
-            </tr>
-            <% } %>
-            <% if (question.start_new_alternative_group && question.alternative_group_size > 1) { %>
-            <tr>
-              <td colspan="6">
-                <%= question.alternative_group_number %>.
-                <% if (question.alternative_group_number_choose == null) { %>
-                Choose all questions from:
-                <% } else if (question.alternative_group_number_choose == 1) { %>
-                Choose 1 question from:
-                <% } else { %>
-                Choose <%= question.alternative_group_number_choose %> questions from:
-                <% } %>
-              </td>
-            </tr>
-            <% } %>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/question/<%= question.question_id %>/">
-                  <% if (question.alternative_group_size == 1) { %>
-                  <%= question.alternative_group_number %>.
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th></th>
+                <th>QID</th>
+                <th>Topic</th>
+                <th>Tags</th>
+                <th>Points</th>
+                <th width="100">Mean score</th>
+                <th width="100">Question score</th>
+                <th>Num. Submissions Histogram</th>
+                <th>Other Assessments</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% questions.forEach(function(question, i) { %>
+              <% if (question.start_new_zone) { %>
+              <tr>
+                <th colspan="6">
+                  Zone <%= question.zone_number %>. <%= question.zone_title %>
+                  <% if (question.zone_number_choose == null) { %>
+                  (Choose all questions)
+                  <% } else if (question.zone_number_choose == 1) { %>
+                  (Choose 1 question)
                   <% } else { %>
-                  &nbsp;&nbsp;&nbsp;&nbsp;
-                  <%= question.alternative_group_number %>.<%= question.number_in_alternative_group %>.
+                  (Choose <%= question.zone_number_choose %> questions)
                   <% } %>
-                  <%= question.title %>
-                  <%- include('../partials/issueBadge', {count: question.open_issue_count, issueQid: question.qid}); %>
-                </a>
-              </td>
-              <td><%= question.qid %></td>
-              <td><%- include('../partials/topic', {topic: question.topic}); %></td>
-              <td><%- include('../partials/tags', {tags: question.tags}); %></td>
-              <td>
-                <% if (assessment.type == "Exam") { %><%= question.points_list %><% } %>
-                <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_points %><% } %>
-              </td>
-              <td>
-                <% if (question.mean_question_score) { %>
-                  <%= question.mean_question_score.toFixed(3) %>
-                <% } %>
-              </td>
-              <td>
-                  <% if (question.avg_question_score_perc) { %>
-                  <%= question.avg_question_score_perc.toFixed(3) %> %
+                </th>
+              </tr>
+              <% } %>
+              <% if (question.start_new_alternative_group && question.alternative_group_size > 1) { %>
+              <tr>
+                <td colspan="6">
+                  <%= question.alternative_group_number %>.
+                  <% if (question.alternative_group_number_choose == null) { %>
+                  Choose all questions from:
+                  <% } else if (question.alternative_group_number_choose == 1) { %>
+                  Choose 1 question from:
+                  <% } else { %>
+                  Choose <%= question.alternative_group_number_choose %> questions from:
                   <% } %>
-              </td>
-              <td class="cell-center">
-                <% if (question.number_submissions_hist) { %>
-                  <div id="attemptsHist<%= i %>" class="miniHist">
+                </td>
+              </tr>
+              <% } %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/question/<%= question.question_id %>/">
+                    <% if (question.alternative_group_size == 1) { %>
+                    <%= question.alternative_group_number %>.
+                    <% } else { %>
+                    &nbsp;&nbsp;&nbsp;&nbsp;
+                    <%= question.alternative_group_number %>.<%= question.number_in_alternative_group %>.
+                    <% } %>
+                    <%= question.title %>
+                    <%- include('../partials/issueBadge', {count: question.open_issue_count, issueQid: question.qid}); %>
+                  </a>
+                </td>
+                <td><%= question.qid %></td>
+                <td><%- include('../partials/topic', {topic: question.topic}); %></td>
+                <td><%- include('../partials/tags', {tags: question.tags}); %></td>
+                <td>
+                  <% if (assessment.type == "Exam") { %><%= question.points_list %><% } %>
+                  <% if (assessment.type == "Homework") { %><%= question.init_points %>/<%= question.max_points %><% } %>
+                </td>
+                <td>
+                  <% if (question.mean_question_score) { %>
+                    <%= question.mean_question_score.toFixed(3) %>
+                  <% } %>
+                </td>
+                <td>
+                    <% if (question.avg_question_score_perc) { %>
+                    <%= question.avg_question_score_perc.toFixed(3) %> %
+                    <% } %>
+                </td>
+                <td class="cell-center">
+                  <% if (question.number_submissions_hist) { %>
+                    <div id="attemptsHist<%= i %>" class="miniHist">
 
-                  </div>
-                <% } %>
-              </td>
-              <script>
-                $(function() {
-                  var data = [<%= question.number_submissions_hist %>];
-                  var options = {
-                    width: 60,
-                    height: 20,
-                  };
-                  histmini("#attemptsHist<%= i %>", data, options);
-                });
-              </script>
-              <td>
-                <% if (question.other_assessments) { %>
-                <% question.other_assessments.forEach(function(assessment) { %>
-                <%- include('../partials/assessment', {assessment: assessment}); %>
-                <% }); %>
-                <% } %>
-              </td>
-            </tr>
-            <% }); %>
-          </tbody>
-        </table>
+                    </div>
+                  <% } %>
+                </td>
+                <script>
+                  $(function() {
+                    var data = [<%= question.number_submissions_hist %>];
+                    var options = {
+                      width: 60,
+                      height: 20,
+                    };
+                    histmini("#attemptsHist<%= i %>", data, options);
+                  });
+                </script>
+                <td>
+                  <% if (question.other_assessments) { %>
+                  <% question.other_assessments.forEach(function(assessment) { %>
+                  <%- include('../partials/assessment', {assessment: assessment}); %>
+                  <% }); %>
+                  <% } %>
+                </td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Access rules</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Access rules
         </div>
 
-        <table class="table table-condensed table-hover">
+        <table class="table table-sm table-hover">
           <thead>
             <tr>
               <th>Mode</th>
@@ -174,12 +176,12 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Score statistics</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Score statistics
         </div>
         <% if (assessment_stat.number > 0) { %>
-        <div class="panel-body">
+        <div class="card-body">
           <div id="scoreHist" class="scoreHistogram"></div>
           <script>
             $(function() {
@@ -195,7 +197,7 @@
           </script>
         </div>
 
-        <table class="table table-condensed table-hover">
+        <table class="table table-sm table-hover">
           <tbody>
             <tr><td>Number of students</td><td><%= assessment_stat.number %></td></tr>
             <tr><td>Mean score</td><td><%= Math.round(assessment_stat.mean) %>%</td></tr>
@@ -207,7 +209,7 @@
             <tr><td>Number of 100%</td><td><%= assessment_stat.n_hundred %> (<%= Math.round(assessment_stat.n_hundred_perc) %>% of class)</td></tr>
           </tbody>
         </table>
-        <div class="panel-footer">
+        <div class="card-footer">
           <small>
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= scoreStatsCsvFilename %>"><%= scoreStatsCsvFilename %></a>. Data outside of the plotted range is included in the last bin.
           </small>
@@ -215,8 +217,8 @@
 
         <% } else { %>
 
-        <div class="panel-body">
-          <p>No student data.</p>
+        <div class="card-body">
+          No student data.
         </div>
 
         <% }%>
@@ -225,13 +227,13 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Duration statistics</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Duration statistics
         </div>
 
         <% if (assessment_stat.number > 0) { %>
-        <div class="panel-body">
+        <div class="card-body">
           <div id="durationHist" class="histogram"></div>
           <script>
             $(function() {
@@ -248,7 +250,7 @@
           </script>
         </div>
 
-        <table class="table table-condensed table-hover">
+        <table class="table table-sm table-hover">
           <tbody>
             <tr><td>Mean duration</td><td><%= duration_stat.mean %></td></tr>
             <tr><td>Median duration</td><td><%= duration_stat.median %></td></tr>
@@ -256,7 +258,7 @@
             <tr><td>Maximum duration</td><td><%= duration_stat.max %></td></tr>
           </tbody>
         </table>
-        <div class="panel-footer">
+        <div class="card-footer">
           <small>
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= durationStatsCsvFilename %>"><%= durationStatsCsvFilename %></a>. Data outside of the plotted range is included in the last bin.
           </small>
@@ -264,8 +266,8 @@
 
         <% } else { %>
 
-        <div class="panel-body">
-          <p>No student data.</p>
+        <div class="card-body">
+          No student data.
         </div>
 
         <% }%>
@@ -274,13 +276,13 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Duration versus score</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Duration versus score
         </div>
 
         <% if (assessment_stat.number > 0) { %>
-        <div class="panel-body">
+        <div class="card-body">
           <div id="durationScoreScatter" class="scatter"></div>
           <script>
             $(function() {
@@ -298,7 +300,7 @@
           </script>
         </div>
 
-        <div class="panel-footer">
+        <div class="card-footer">
           <small>
             Each point is one student. Data is available below for all users. Points beyond the plot range are plotted on the edge.
           </small>
@@ -306,8 +308,8 @@
 
         <% } else { %>
 
-        <div class="panel-body">
-          <p>No student data.</p>
+        <div class="card-body">
+          No student data.
         </div>
 
         <% }%>
@@ -316,15 +318,15 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Question difficulty vs discrimination</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Question difficulty vs discrimination
         </div>
 
         <% if (assessment_stat.number > 0) { %>
-        <div class="panel-body">
+        <div class="card-body">
           <p>
-            <a class="btn btn-xs btn-default" role="button"
+            <a class="btn btn-xs btn-secondary" role="button"
                data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
                 <i class="fa fa-refresh" aria-hidden="true"></i> Recalculate statistics
             </a>
@@ -348,7 +350,7 @@
             });
           </script>
         </div>
-          <div class="panel-footer">
+          <div class="card-footer">
             <small>
               <ul>
                 <li><strong>Mean score</strong> of a question is the average score for all students on the question. It is best to have a range of questions with different mean scores on the test, with some easy (mean score above 90%) and some hard (mean score below 50%).</li>
@@ -358,8 +360,8 @@
           </div>
         <% } else { %>
 
-        <div class="panel-body">
-          <p>No student data.</p>
+        <div class="card-body">
+          No student data.
         </div>
 
         <% }%>
@@ -368,22 +370,19 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Question statistics</h3>
-        </div>
-
-        <div class="panel-body">
-          <p>
-            <a class="btn btn-xs btn-default" role="button"
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <%= assessment_set.name %> <%= assessment.number %>: Question statistics
+          <div class="ml-auto">
+            <small><span class="text-light mr-2">Last calculated: <%= stats_last_updated %></span></small>
+            <a class="btn btn-sm btn-light" role="button" tabindex="0"
                data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
-                <i class="fa fa-refresh" aria-hidden="true"></i> Recalculate statistics
+                <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
             </a>
-            Last calculated: <%= stats_last_updated %>
-          </p>
+          </div>
         </div>
 
-        <table id="questionsTable" class="table table-condensed table-hover tablesorter">
+        <table id="questionsTable" class="table table-sm table-hover tablesorter">
           <thead>
             <tr>
               <th class="cell-center">Question</th>
@@ -424,7 +423,7 @@
             <% }); %>
           </tbody>
         </table>
-        <div class="panel-footer">
+        <div class="card-footer">
           <p>
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= questionStatsCsvFilename %>"><%= questionStatsCsvFilename %></a>
           </p>
@@ -443,13 +442,13 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Score statistics by date </h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Score statistics by date
         </div>
 
         <% if (assessment_stat.number > 0) { %>
-        <div class="panel-body">
+        <div class="card-body">
           <div id="scoreHistsByDateDiv" style="overflow-x: scroll; overflow-y: hidden;"></div>
           <script>
             $(function() {
@@ -471,7 +470,7 @@
           </script>
         </div>
 
-        <div class="panel-footer">
+        <div class="card-footer">
           <small>
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= statsByDateCsvFilename %>"><%= statsByDateCsvFilename %></a>.
             <br/>
@@ -481,8 +480,8 @@
 
         <% } else { %>
 
-        <div class="panel-body">
-          <p>No student data.</p>
+        <div class="card-body">
+          No student data.
         </div>
 
         <% }%>
@@ -510,7 +509,7 @@
                 <input type="hidden" name="postAction" value="refresh_stats">
                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                 <input type="hidden" name="assessment_id" value="<%= assessment.id %>">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-danger">Submit</button>
               </form>
             </div>
@@ -518,21 +517,20 @@
         </div>
       </div>
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Detailed question statistics</h3>
-        </div>
-        <div class="panel-body">
-          <p>
-            <a class="btn btn-xs btn-default" role="button"
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <%= assessment_set.name %> <%= assessment.number %>: Detailed question statistics
+          <div class="ml-auto">
+            <small><span class="text-light mr-2">Last calculated: <%= stats_last_updated %></span></small>
+            <a class="btn btn-sm btn-light" role="button" tabindex="0"
                data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
-                <i class="fa fa-refresh" aria-hidden="true"></i> Recalculate statistics
+                <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
             </a>
-            Last calculated: <%= stats_last_updated %>
-          </p>
+          </div>
         </div>
+
         <div class="table-responsive">
-          <table id="questionsTable" class="table table-condensed table-hover tablesorter table-bordered">
+          <table id="questionsTable" class="table table-sm table-hover tablesorter table-bordered">
             <thead>
             <tr>
               <th class="cell-center">
@@ -693,7 +691,7 @@
             </tbody>
           </table>
         </div>
-        <div class="panel-footer">
+        <div class="card-footer">
           <p>
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= questionStatsCsvFilename %>"><%= questionStatsCsvFilename %></a>
           </p>
@@ -708,7 +706,7 @@
                 </li>
               <% }); %>
             </ul>
-            <p class="no-bottom-margin">
+            <p class="mb-0">
               In the case that a student takes this assessment multiple
               times (e.g., if this assessment is a practice exam), we
               are calculating the above statistics by first averaging
@@ -723,22 +721,22 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Downloads</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Downloads
         </div>
 
         <% if (assessment.multiple_instance) { %>
-        <div class="panel-body">
+        <div class="card-body">
           <p>
             <small>
-              This is a <strong>multiple instance</strong> assessment, so each student may have more than one assessment instance. The CSV files are available in plain and <strong><tt>_all</tt></strong> versions. The plain versions contain one record per student, which is taken to be the assessment instance for that student with the maximum percentage score. The <strong><tt>_all</tt></strong> CSV files contain one record per assessment instance, possibly including more than one record per student.
+              This is a <strong>multiple instance</strong> assessment, so each student may have more than one assessment instance. The CSV files are available in plain and <strong><code>_all</code></strong> versions. The plain versions contain one record per student, which is taken to be the assessment instance for that student with the maximum percentage score. The <strong><code>_all</code></strong> CSV files contain one record per assessment instance, possibly including more than one record per student.
             </small>
           </p>
         </div>
         <% } // assessment.multiple_instance %>
 
-        <table class="table table-condensed table-hover">
+        <table class="table table-sm table-hover">
           <thead>
             <tr>
               <th>Data file</th>
@@ -902,7 +900,7 @@
               <td>
                 All submitted files for all students for all
                 assessment instances. Only data
-                from <tt>File</tt>-type questions will be included in
+                from <code>File</code>-type questions will be included in
                 the zip. Not all submitted files will have been used
                 to compute the final score, as some may have been
                 superceded by subsequent attempts.
@@ -915,7 +913,7 @@
               <td>
                 Final submitted files for each question for all
                 students for all assessment instances. Only data
-                from <tt>File</tt>-type questions will be included in
+                from <code>File</code>-type questions will be included in
                 the zip.
               </td>
             </tr>
@@ -937,15 +935,15 @@
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Regrading history</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Regrading history
         </div>
 
         <% if (regrading_job_sequences && regrading_job_sequences.length > 0) { %>
 
         <div class="table-responsive">
-          <table class="table table-condensed table-hover">
+          <table class="table table-sm table-hover">
             <thead>
               <tr>
                 <th>Number</th>
@@ -973,8 +971,8 @@
 
         <% } else { %>
 
-        <div class="panel-body">
-          <p>No regradings.</p>
+        <div class="card-body">
+          No regradings.
         </div>
 
         <% }%>
@@ -1003,7 +1001,7 @@
                 <input type="hidden" name="__action" value="delete">
                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                 <input type="hidden" name="assessment_instance_id" class="modal-assessment-instance-id" value="">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-danger">Delete</button>
               </form>
             </div>
@@ -1045,7 +1043,7 @@
                 <input type="hidden" name="__action" value="delete_all">
                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                 <input type="hidden" name="assessment_id" value="<%= assessment.id %>">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-danger">Delete all</button>
               </form>
             </div>
@@ -1070,7 +1068,7 @@
                 <input type="hidden" name="__action" value="regrade_all">
                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                 <input type="hidden" name="assessment_id" value="<%= assessment.id %>">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-primary">Regrade all</button>
               </form>
             </div>
@@ -1078,30 +1076,28 @@
         </div>
       </div>
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Assessment instances</h3>
-        </div>
-        <div class="panel-body">
-          <p>
-            <a class="btn btn-xs btn-default" role="button"
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <%= assessment_set.name %> <%= assessment.number %>: Assessment instances
+          <div class="ml-auto">
+            <a class="btn btn-sm btn-light" role="button" tabindex="0"
                data-toggle="modal" data-target="#deleteAllAssessmentInstancesModal">
               <i class="fa fa-times" aria-hidden="true"></i> Delete all assessment instances
             </a>
-            <a class="btn btn-xs btn-default" role="button"
+            <a class="btn btn-sm btn-light" role="button" tabindex="0"
                data-toggle="modal" data-target="#regradeAllAssessmentInstancesModal">
-              <i class="fa fa-refresh" aria-hidden="true"></i> Regrade all assessment instances
+              <i class="fa fa-sync" aria-hidden="true"></i> Regrade all assessment instances
             </a>
-          </p>
-          <p class="no-bottom-margin">
-            <small>
+          </div>
+        </div>
+        <div class="card-body">
+          <small>
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= instancesCsvFilename %>"><%= instancesCsvFilename %></a>.
             Click on a column header to sort. Shift-click on a second header to sub-sort.
           </small>
-          </p>
         </div>
 
-        <table id="usersTable" class="table table-condensed table-hover tablesorter">
+        <table id="usersTable" class="table table-sm table-hover tablesorter">
           <thead>
             <tr>
               <th>UID</th>
@@ -1126,8 +1122,8 @@
               <td class="cell-center" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
               <td class="cell-center"><%= row.time_remaining %></td>
               <td class="cell-center">
-                <div class="btn-group">
-                  <button type="button" class="btn btn-xs btn-default dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                <div class="dropdown">
+                  <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Action <span class="caret"></span>
                   </button>
                   <div id="row<%= iRow %>PopoverOpen"
@@ -1141,7 +1137,7 @@
                                        <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;open&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
-                                       <button type=&quot;button&quot; class=&quot;btn btn-default&quot; onclick=&quot;$('#row<%= iRow %>PopoverOpen').popover('hide')&quot;>
+                                       <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverOpen').popover('hide')&quot;>
                                          Cancel
                                        </button>
                                        <button type=&quot;submit&quot; class=&quot;btn btn-success&quot;>Open assessment</button>
@@ -1149,14 +1145,14 @@
                                      ">
                   </div>
                   <div id="row<%= iRow %>PopoverClose"
-                       tabindex="0" data-toggle="popover" data-trigger="focus" data-container="body"
+                       tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
                        data-html="true" data-placement="auto" title="Confirm close"
                        data-content="
                                      <form name=&quot;close-form&quot; method=&quot;POST&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;close&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
-                                       <button type=&quot;button&quot; class=&quot;btn btn-default&quot; onclick=&quot;$('#row<%= iRow %>PopoverClose').popover('hide')&quot;>
+                                       <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverClose').popover('hide')&quot;>
                                          Cancel
                                        </button>
                                        <button type=&quot;submit&quot; class=&quot;btn btn-danger&quot;>Grade and close</button>
@@ -1164,70 +1160,66 @@
                                      ">
                   </div>
                   <div id="row<%= iRow %>PopoverRegrade"
-                       tabindex="0" data-toggle="popover" data-trigger="focus" data-container="body"
+                       tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
                        data-html="true" data-placement="auto" title="Confirm regrade"
                        data-content="
                                      <form name=&quot;regrade-form&quot; method=&quot;POST&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;regrade&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
                                        <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
-                                       <button type=&quot;button&quot; class=&quot;btn btn-default&quot; onclick=&quot;$('#row<%= iRow %>PopoverRegrade').popover('hide')&quot;>
+                                       <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverRegrade').popover('hide')&quot;>
                                          Cancel
                                        </button>
                                        <button type=&quot;submit&quot; class=&quot;btn btn-primary&quot;>Regrade</button>
                                      </form>
                                      ">
                   </div>
-                  <ul class="dropdown-menu">
+
+                  <!-- Capture all clicks to dropdown items to prevent scrolling to the top of the page -->
+                  <div class="dropdown-menu" onclick="window.event.preventDefault();">
 
                     <!-- ################################################## -->
 
                     <% if (authz_data.has_instructor_edit) { %>
-                    <li>
-                      <a data-toggle="modal" data-target="#deleteAssessmentInstanceModal"
-                         data-uid="<%= row.uid %>" data-name="<%= row.name %>"
-                         data-number="<%= row.number %>"
-                         data-score-perc="<%= Math.floor(row.score_perc) %>"
-                         data-assessment-instance-id="<%= row.assessment_instance_id %>"
-                         >
-                        <i class="fa fa-times" aria-hidden="true"></i> Delete
-                      </a>
-                    </li>
-                    <% } %> <!-- if has_instructor_edit -->
+                    <a class="dropdown-item"
+                       href="#"
+                       data-toggle="modal" data-target="#deleteAssessmentInstanceModal"
+                       data-uid="<%= row.uid %>" data-name="<%= row.name %>"
+                       data-number="<%= row.number %>"
+                       data-score-perc="<%= Math.floor(row.score_perc) %>"
+                       data-assessment-instance-id="<%= row.assessment_instance_id %>"
+                       >
+                      <i class="fa fa-times" aria-hidden="true"></i> Delete
+                    </a>
+                    <% } %>
 
                     <!-- ################################################## -->
 
                     <% if (authz_data.has_instructor_edit) { %>
-                    <li>
-                      <a onclick="$('#row<%= iRow %>PopoverRegrade').popover('show')">
-                        <i class="fa fa-refresh" aria-hidden="true"></i> Regrade
-                      </a>
-                    </li>
-                    <% } %> <!-- if has_instructor_edit -->
+                    <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverRegrade').popover('show')" href="#">
+                      <i class="fa fa-sync" aria-hidden="true"></i> Regrade
+                    </a>
+                    <% } %>
 
                     <!-- ################################################## -->
 
                     <% if (authz_data.has_instructor_edit) { %>
-                    <li <% if (row.open) { %>class="disabled"<% } %>>
-                      <a <% if (!row.open) { %>onclick="$('#row<%= iRow %>PopoverOpen').popover('show')"<% } %>>
-                        <i class="fa fa-circle-o" aria-hidden="true"></i> Re-open
-                      </a>
-                    </li>
-                    <% } %> <!-- if has_instructor_edit -->
+                    <a class="dropdown-item <% if (row.open) { %>disabled<% } %>" <% if (!row.open) { %>onclick="$('#row<%= iRow %>PopoverOpen').popover('show')"<% } %> href="#">
+                      <i class="far fa-circle" aria-hidden="true"></i> Re-open
+                    </a>
+                    <% } %>
 
                     <!-- ################################################## -->
 
                     <% if (authz_data.has_instructor_edit) { %>
-                    <li <% if (!row.open) { %>class="disabled"<% } %>>
-                      <a <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"<% } %>>
-                        <i class="fa fa-ban" aria-hidden="true"></i> Close
-                      </a>
-                    </li>
-                    <% } %> <!-- if has_instructor_edit -->
+                    <a class="dropdown-item <% if (!row.open) { %>disabled<% } %>" <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"<% } %> href="#">
+                      <i class="fa fa-ban" aria-hidden="true"></i> Close
+                    </a>
+                    <% } %>
 
                     <!-- ################################################## -->
 
-                  </ul>
+                  </div>
                 </div>
               </td>
               <td class="cell-center"><a href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>" class="btn btn-xs btn-info">Details</a></td>
@@ -1249,10 +1241,8 @@
               });
           });
         </script>
-        <div class="panel-footer">
+        <div class="card-footer">
           <small>
-
-
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= instancesCsvFilename %>"><%= instancesCsvFilename %></a>
           </small>
         </div>

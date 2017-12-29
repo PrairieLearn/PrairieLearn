@@ -1,6 +1,6 @@
-<div class="panel panel-default" id="question-score-panel">
-  <div class="panel-heading"><h3 class="panel-title">Question <%= instance_question.question_number %></h3></div>
-  <table class="table table-condensed two-column-description-no-header">
+<div class="card mb-4" id="question-score-panel">
+  <div class="card-header bg-secondary text-white">Question <%= instance_question.question_number %></div>
+  <table class="table table-sm two-column-description-no-header">
     <tbody>
       <% if (assessment.type === 'Exam') { %>
       <tr>
@@ -32,8 +32,8 @@
     </tbody>
   </table>
   <% if (assessment.allow_issue_reporting) { %>
-  <div class="panel-footer">
-    <button class="btn btn-xs btn-default" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
+  <div class="card-footer">
+    <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
       Report an issue with this question
     </button>
     <div class="collapse" id="issueCollapse">

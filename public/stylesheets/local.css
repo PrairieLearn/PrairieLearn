@@ -6,82 +6,8 @@ canvas {
     border: 1px solid #aaa;
 }
 
-.jumbotron {
-  text-align: center;
-  background-color: transparent;
-}
-
-.jumbotron .btn {
-  font-size: 21px;
-  padding: 14px 24px;
-  margin: 30px 20px;
-}
-
-.correct {
-    border: 1px solid #0f0;
-    padding: 5px;
-    background: #afa;
-}
-
-.incorrect {
-    border: 1px solid #f00;
-    padding: 5px;
-    background: #faa;
-}
-
-.navbar .navbar-right .btn {
-    margin-right: 10px;
-}
-
-.progress-summary table {
-    margin-bottom: 5px;
-}
-
-.progress-summary th {
-    text-align: right;
-    border: 0px;
-}
-
-.progress-summary td {
-    width: 100%;
-    border: 0px;
-    padding-right: 0px;
-}
-
 #qbody form {
     margin-top: 20px;
-}
-
-.answer {
-    margin-top: 20px;
-}
-
-#qsubmit {
-    margin-top: 20px;
-}
-
-#qgrading {
-    margin-top: 20px;
-}
-
-.progress {
-    margin-bottom: 0px;
-}
-
-.no-bottom-margin {
-    margin-bottom: 0px;
-}
-
-.small-bottom-margin {
-    margin-bottom: 10px;
-}
-
-.main-question-list .table {
-    margin-bottom: 10px;
-}
-
-.main-question-list .table tr:last-child td {
-    border-bottom: 1px solid #dddddd;
 }
 
 .table .cell-center {
@@ -90,36 +16,6 @@ canvas {
 
 .table .cell-right {
     text-align: right;
-}
-
-#qscore td {
-    border: 0px;
-}
-
-.spinner-container {
-    height: 40px;
-}
-
-div.statsContainer {
-    margin-top: 40px;
-    margin-bottom: 20px;
-    height: 300px;
-    width: 100%;
-}
-
-div.statsContainer.square {
-    margin-top: 40px;
-    margin-bottom: 20px;
-    height: 600px;
-    width: 600px;
-}
-
-.statsContainer canvas {
-    border: 0px;
-}
-
-.statsExplain {
-    margin-bottom: 20px;
 }
 
 line.axis {
@@ -142,10 +38,6 @@ line.axis {
     shape-rendering: crispEdges;
 }
 
-.dot {
-    stroke: #000;
-}
-
 .bar {
     stroke: #46b8da;
     fill: #5bc0de;
@@ -159,39 +51,6 @@ line.axis {
 .outlineBarRed {
     stroke: #fff;
     fill: #FF0000;
-}
-
-.boxBar {
-    stroke: #000;
-    fill: #5bc0de;
-}
-
-.whiskerStem {
-    stroke: #000;
-}
-
-.whiskerEnd {
-    stroke: #000;
-}
-
-.outlier {
-    stroke: #000;
-    fill: rgba(255,255,255,0);
-}
-
-.boxMedian {
-    stroke: #000;
-    stroke-width: 3px;
-}
-
-.violin {
-    stroke: #46b8da;
-    fill: #5bc0de;
-}
-
-.violinMedian {
-    stroke: #000;
-    stroke-width: 3px;
 }
 
 .parallelHistMean {
@@ -246,23 +105,55 @@ table.two-column-description-no-header-with-help tr td:last-of-type {
     width: 1%;
 }
 
-.panel.pastsubmission-block > .panel-heading {
-    display: flex;
-    align-items: center;
-}
-
-.panel.pastsubmission-block > .panel-heading > * {
-    margin-right: 15px;
-}
-
-.panel.pastsubmission-block > .panel-title {
-    display: inline-block;
-}
-
 .table-no-wrap th {
     white-space: nowrap;
 }
 
 .table-no-wrap td {
     white-space: nowrap;
+}
+
+/***************************************
+ * Additions for Bootstrap 4 conversion
+ ***************************************/
+
+.card > table, .card > .table-responsive > table {
+  margin-bottom: 0;
+}
+
+.btn.btn-xs {
+  padding: 1px 5px;
+  font-size: 0.7rem;
+}
+
+.navbar-brand {
+  position: relative;
+}
+
+.navbar-brand-label, .navbar-brand-hover-label {
+  display: inline-block;
+  transition: all 0.3s ease-out;
+}
+
+.navbar-brand-hover-label {
+  opacity: 0;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  font-size: 0.8rem;
+  transform: translate(0px, -3px);
+}
+
+.navbar-brand:hover .navbar-brand-label{
+  transform: translate(0px, -7px);
+}
+
+.navbar-brand:hover .navbar-brand-hover-label {
+  opacity: 1;
+  transform: translate(0px, 0px);
+}
+
+/* Used to help vertically center badges in table cells */
+table td > .badge {
+  transform: translate(0, -12.5%);
 }

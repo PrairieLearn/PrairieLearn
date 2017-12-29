@@ -32,7 +32,14 @@ def render(element_html, element_index, data):
                 matlab_data += pl.inner_html(child) + ' = ' + pl.numpy_to_matlab(np.array(var_data), ndigits=digits) + ';\n'
                 python_data += pl.inner_html(child) + ' = np.array(' + str(np.array(var_data).round(digits).tolist()) + ')\n'
 
-    html_params = {'default_is_matlab': True, 'matlab_data': matlab_data, 'python_data': python_data, 'element_index': element_index}
+    html_params = {
+        'default_is_matlab': True,
+        'matlab_data': matlab_data,
+        'python_data': python_data,
+        'element_index': element_index,
+        'uuid': pl.get_uuid()
+    }
+
     with open('pl_matrix_output.mustache', 'r', encoding='utf-8') as f:
         html = chevron.render(f, html_params).strip()
 

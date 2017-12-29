@@ -1,4 +1,4 @@
-<td>
+<td class="align-middle">
   <%= course[column_name] %>
   <a id="courseButton<%= column_name %><%= i %>"
      tabindex="0" class="btn btn-xs btn-default" role="button"
@@ -7,6 +7,6 @@
      data-content="<%= include('courseUpdateColumnForm',
                    {id: 'courseButton' + column_name + i}) %>"
      data-trigger="manual" onclick="$(this).popover('show')">
-    <i class="fa fa-pencil" aria-hidden="true"></i>
+    <i class="fa fa-edit" aria-hidden="true"></i>
   </a>
 </td>

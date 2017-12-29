@@ -33,22 +33,22 @@ def render(element_html, element_index, data):
     try:
         score = float(score)
     except:
-        return '<span class="label label-danger">ERROR: invalid score: ' + score + '</span>'
+        return '<span class="badge badge-danger">ERROR: invalid score: ' + score + '</span>'
 
     if score >= 1:
-        html = '<span class="label label-success">' \
+        html = '<span class="badge badge-success">' \
             + '<i class="fa fa-check" aria-hidden="true"></i>' \
             + (' correct: %d%%' % math.floor(score * 100)) \
             + ((' (' + feedback + ')') if feedback else '') \
             + '</span>'
     elif score > 0:
-        html = '<span class="label label-warning">' \
+        html = '<span class="badge badge-warning">' \
             + '<i class="fa fa-circle-o" aria-hidden="true"></i>' \
             + (' partially correct: %d%%' % math.floor(score * 100)) \
             + ((' (' + feedback + ')') if feedback else '') \
             + '</span>'
     else:
-        html = '<span class="label label-danger">' \
+        html = '<span class="badge badge-danger">' \
             + '<i class="fa fa-times" aria-hidden="true"></i>' \
             + (' incorrect: %d%%' % math.floor(score * 100)) \
             + ((' (' + feedback + ')') if feedback else '') \

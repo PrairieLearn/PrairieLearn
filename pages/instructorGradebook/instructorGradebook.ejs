@@ -6,17 +6,17 @@
   <body>
     <%- include('../partials/navbar', {navPage: 'gradebook'}); %>
     <div id="content" class="container">
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Users</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Users
         </div>
 
-        <div class="panel-body">
+        <div class="card-body">
           Download <a href="<%= urlPrefix %>/gradebook/<%= csvFilename %>"><%= csvFilename %></a>
         </div>
 
         <div class="table-responsive table-no-wrap">
-          <table class="table table-condensed table-hover">
+          <table class="table table-sm table-hover">
             <thead>
               <tr>
                 <th>UID</th>
@@ -51,7 +51,7 @@
                                    score_perc: score.score_perc,
                                    assessment_instance_id: score.assessment_instance_id}); %>"
                      data-trigger="manual" onclick="$(this).popover('show')">
-                    <i class="fa fa-pencil" aria-hidden="true"></i>
+                    <i class="fa fa-edit" aria-hidden="true"></i>
                     <% } %>
                   </a>
                   <% } %>
@@ -63,7 +63,7 @@
           </table>
         </div>
 
-        <div class="panel-footer">
+        <div class="card-footer">
           Download <a href="<%= urlPrefix %>/gradebook/<%= csvFilename %>"><%= csvFilename %></a>
         </div>
 

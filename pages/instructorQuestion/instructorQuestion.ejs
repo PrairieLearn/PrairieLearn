@@ -3,31 +3,29 @@
   <head>
     <%- include('../partials/head'); %>
     <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
-    <script type="text/javascript" src="/MathJax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
-    <script type="text/javascript" src="/javascripts/socket.io.js"></script>
-    <script type="text/javascript" src="/javascripts/d3.min.js"></script>
-    <script type="text/javascript" src="/localscripts/stacked_histogram.js"></script>
-    <script type="text/javascript" src="/localscripts/histmini.js"></script>
+    <script src="/MathJax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script src="/javascripts/socket.io.js"></script>
+    <script src="/javascripts/d3.min.js"></script>
+    <script src="/localscripts/stacked_histogram.js"></script>
+    <script src="/localscripts/histmini.js"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
     <% if (question.type != 'Freeform') { %>
-    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
-    <script type="text/javascript" src="/javascripts/require.js"></script>
-    <script type="text/javascript" src="/localscripts/question.js"></script>
-    <script type="text/javascript" src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
+    <script src="/javascripts/lodash.min.js"></script>
+    <script src="/javascripts/require.js"></script>
+    <script src="/localscripts/question.js"></script>
+    <script src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
     <% } %>
     <%- extraHeadersHtml %>
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: ''}); %>
     <div id="content" class="container">
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Question <%= question.qid %></h3>
-        </div>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Question <%= question.qid %></div>
 
-        <table class="table table-condensed table-hover two-column-description">
+        <table class="table table-sm table-hover two-column-description">
           <tbody>
             <tr>
               <th>Title</th>
@@ -35,7 +33,7 @@
             </tr>
             <tr>
               <th>QID</th>
-              <td><%= question.qid %> 
+              <td><%= question.qid %>
                   <% if (questionGHLink) { %>(<a target="_blank" href="<%= questionGHLink %>">view on GitHub</a>)<% } %>
               </td>
             </tr>
@@ -61,14 +59,14 @@
             </tr>
             <% if (question.type == 'Freeform') { %>
             <tr>
-              <th>Tests</th>
+              <th class="align-middle">Tests</th>
               <td>
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                  <button class="btn btn-xs btn-default" name="__action" value="test_once">
+                  <button class="btn btn-sm btn-outline-primary" name="__action" value="test_once">
                     Test once with full details
                   </button>
-                  <button class="btn btn-xs btn-default" name="__action" value="test_100">
+                  <button class="btn btn-sm btn-outline-primary" name="__action" value="test_100">
                     Test 100 times with only results
                   </button>
                 </form>
@@ -77,8 +75,8 @@
             <% } %>
           </tbody>
         </table>
-        <div class="panel-footer">
-          <button class="btn btn-xs btn-default" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
+        <div class="card-footer">
+          <button class="btn btn-sm btn-primary" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
             Report an issue with this question
           </button>
           <div class="collapse" id="issueCollapse">
@@ -90,7 +88,7 @@
               <input type="hidden" name="__variant_id" value="<%= variant.id %>">
               <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
               <div class="form-group text-right">
-                <button class="btn btn-small btn-warning" name="__action" value="report_issue">Report issue
+                <button class="btn btn-small btn-warning" name="__action" value="report_issue">Report issue</button>
               </div>
             </form>
           </div>
@@ -99,11 +97,11 @@
 
       <%- include('../partials/question', {question_context: 'instructor'}); %>
 
-      <!--<div class="panel panel-primary">-->
-        <!--<div class="panel-heading">-->
-          <!--<h3 class="panel-title">Num Attempts</h3>-->
-        <!--</div>-->
-        <table class="table table-condensed table-hover two-column-description">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Num Attempts
+        </div>
+        <table class="table table-sm table-hover two-column-description">
           <tbody>
             <% if (question_attempts_histogram && question_attempts_before_giving_up_histogram) { %>
               <tr>
@@ -131,19 +129,16 @@
               <% } %>
           </tbody>
         </table>
-      <!--</div>-->
+      </div>
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Detailed assessment statistics</h3>
-        </div>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Detailed assessment statistics</div>
 
         <div class="table-responsive">
-
-          <table id="questionsTable" class="table table-condensed table-hover tablesorter table-bordered">
+          <table id="questionsTable" class="table table-sm table-hover tablesorter table-bordered">
             <thead>
             <tr>
               <th class="cell-center">Course Instance</th>
@@ -306,7 +301,8 @@
             </tbody>
           </table>
         </div>
-        <div class="panel-footer">
+
+        <div class="card-footer">
           <p>
             Download <a href="<%= urlPrefix %>/question/<%= question.id %>/<%= assessmentStatsCsvFilename %>"><%= assessmentStatsCsvFilename %></a>
           </p>
@@ -321,7 +317,7 @@
               </li>
                 <% }); %>
             </ul>
-            <p class="no-bottom-margin">
+            <p class="mb-0">
               In the case that a student takes this assessment multiple
               times (e.g., if this assessment is a practice exam), we
               are calculating the above statistics by first averaging

@@ -23,10 +23,6 @@
   transition: all 400ms;
 }
 
-[id^=file-preview] .fa.fa-check-circle {
-  color: #4CAF50;
-}
-
 [id^=file-preview] .file-status {
   margin-bottom: 0px;
   font-size: 0.8em;

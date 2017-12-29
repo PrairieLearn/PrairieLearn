@@ -11,27 +11,18 @@
     </script>
     <%- include('../partials/navbar', {navPage: 'enroll'}); %>
     <div id="content" class="container">
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Courses</h3>
-        </div>
-
-        <div class="panel-body">
-          <a href="<%= plainUrlPrefix %>" class="btn btn-primary">
-            Back to course list
-          </a>
-        </div>
-        
-        <table class="table table-condensed table-hover table-striped">
+      <div class="card">
+        <div class="card-header bg-primary text-white">Courses</div>
+        <table class="table table-sm table-hover table-striped">
           <tbody>
             <% course_instances.forEach(function(course_instance) { %>
             <tr>
-              <td>
+              <td class="align-middle">
                 <%= course_instance.label %>
               </td>
               <td>
                 <% if (!course_instance.enrolled) { %>
-                <a tabindex="0" class="btn btn-xs btn-info" role="button"
+                <a tabindex="0" class="btn btn-sm btn-info" role="button"
                    data-toggle="popover" data-trigger="focus" data-container="body"
                    data-html="true" data-placement="auto" title="Confirm add"
                    data-content="
@@ -51,7 +42,7 @@
               </td>
               <td>
                 <% if (course_instance.enrolled) { %>
-                <a tabindex="0" class="btn btn-xs btn-danger" role="button"
+                <a tabindex="0" class="btn btn-sm btn-danger" role="button"
                    data-toggle="popover" data-trigger="focus" data-container="body"
                    data-html="true" data-placement="auto" title="Confirm remove"
                    data-content="

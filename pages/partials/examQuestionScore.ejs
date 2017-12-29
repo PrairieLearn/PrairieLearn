@@ -1,15 +1,15 @@
 <% if (instance_question.status == 'unanswered') { %>
-    <span class="label label-danger">unanswered</span>
+    <span class="badge badge-danger">unanswered</span>
 <% } else if (instance_question.status == 'saved') { %>
-    <span class="label label-info">saved</span>
+    <span class="badge badge-info">saved</span>
 <% } else if (instance_question.status == 'grading') { %>
-    <span class="label label-default">grading</span>
+    <span class="badge badge-default">grading</span>
 <% } else { %>
     <% if (instance_question.highest_submission_score >= 1) { %>
-        <span class="label label-success"><%= Math.floor(instance_question.highest_submission_score * 100) %>%</span>
+        <span class="badge badge-success"><%= Math.floor(instance_question.highest_submission_score * 100) %>%</span>
     <% } else if (instance_question.highest_submission_score <= 0) { %>
-        <span class="label label-danger"><%= Math.floor(instance_question.highest_submission_score * 100) %>%</span>
+        <span class="badge badge-danger"><%= Math.floor(instance_question.highest_submission_score * 100) %>%</span>
     <% } else { %>
-        <span class="label label-warning"><%= Math.floor(instance_question.highest_submission_score * 100) %>%</span>
+        <span class="badge badge-warning"><%= Math.floor(instance_question.highest_submission_score * 100) %>%</span>
     <% } %>
 <% } %>

@@ -118,9 +118,9 @@ window.PLFileUpload.prototype.getSubmittedFileContents = function(name) {
 * Imperative DOM manipulations can rot in hell.
 */
 window.PLFileUpload.prototype.renderFileList = function() {
-    var $fileList = this.element.find('.file-upload-status .panel ul.list-group');
+    var $fileList = this.element.find('.file-upload-status .card ul.list-group');
 
-    // Save which panels are currently expanded
+    // Save which cards are currently expanded
     var expandedFiles = [];
     $fileList.children().each(function() {
         var fileName = $(this).attr('data-file');
@@ -150,9 +150,9 @@ window.PLFileUpload.prototype.renderFileList = function() {
         var $fileStatusContainerLeft = $('<div class="file-status-container-left"></div>');
         $fileStatusContainer.append($fileStatusContainerLeft);
         if (fileData) {
-            $fileStatusContainerLeft.append('<i class="file-status-icon fa fa-check-circle" aria-hidden="true"></i>');
+            $fileStatusContainerLeft.append('<i class="file-status-icon fa fa-check-circle" style="color: #4CAF50;" aria-hidden="true"></i>');
         } else {
-            $fileStatusContainerLeft.append('<i class="file-status-icon fa fa-circle-o" aria-hidden="true"></i>');
+            $fileStatusContainerLeft.append('<i class="file-status-icon far fa-circle" aria-hidden="true"></i>');
         }
         $fileStatusContainerLeft.append(fileName);
         if (!fileData) {
@@ -161,7 +161,7 @@ window.PLFileUpload.prototype.renderFileList = function() {
             $fileStatusContainerLeft.append('<p class="file-status">uploaded</p>');
         }
         if (fileData) {
-            var $preview = $('<div class="file-preview collapse" id="file-preview-' + uuid + '-' + index + '"><pre><code></code></pre></div>');
+            var $preview = $('<div class="file-preview collapse" id="file-preview-' + uuid + '-' + index + '"><pre class="bg-dark text-white rounded p-3 mb-0"><code></code></pre></div>');
             if (isExpanded) {
                 $preview.addClass('in');
             }
@@ -176,7 +176,7 @@ window.PLFileUpload.prototype.renderFileList = function() {
                 $preview.find('code').text('Unable to decode file.');
             }
             $file.append($preview);
-            $fileStatusContainer.append('<div class="file-status-container-right"><button type="button" class="btn btn-default btn-xs file-preview-button"><span class="file-preview-icon glyphicon glyphicon-chevron-down"></span></button></div>');
+            $fileStatusContainer.append('<div class="file-status-container-right"><button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>');
         }
 
         $fileList.append($file);

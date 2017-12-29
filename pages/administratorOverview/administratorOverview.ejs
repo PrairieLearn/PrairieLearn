@@ -2,9 +2,9 @@
 <html>
   <head>
     <%- include('../partials/head'); %>
-    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
-    <script type="text/javascript" src="/javascripts/d3.min.js"></script>
-    <script type="text/javascript" src="/localscripts/histmini.js"></script>
+    <script src="/javascripts/lodash.min.js"></script>
+    <script src="/javascripts/d3.min.js"></script>
+    <script src="/localscripts/histmini.js"></script>
   </head>
   <body>
     <%- include('../partials/navbar', {navPage: 'admin'}); %>
@@ -15,12 +15,10 @@
       <!-------------------------------------------------------------------------------->
       <!-- Config ---------------------------------------------------------------------->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Server configuration</h3>
-        </div>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Server configuration</div>
 
-        <table class="table table-condensed table-hover table-striped">
+        <table class="table table-sm table-hover table-striped">
           <thead>
             <tr>
               <th>Key</th>
@@ -36,7 +34,7 @@
           </tbody>
         </table>
 
-        <div class="panel-footer">
+        <div class="card-footer">
           <small>
             Edit values in the <strong><tt>config</tt></strong> table.
           </small>
@@ -48,14 +46,11 @@
       <!-------------------------------------------------------------------------------->
       <!-- Administrators -------------------------------------------------------------->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Administrators</h3>
-        </div>
-
-        <div class="panel-body">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          Administrators
           <a id="administratorInsertButton"
-             tabindex="0" class="btn btn-xs btn-default" role="button"
+             tabindex="0" class="btn btn-sm btn-light ml-auto" role="button"
              data-toggle="popover" data-container="body"
              data-html="true" data-placement="auto" title="Add new administrator"
              data-content="<%= include('administratorInsertForm',
@@ -65,7 +60,7 @@
           </a>
         </div>
 
-        <table class="table table-condensed table-hover table-striped">
+        <table class="table table-sm table-hover table-striped">
           <thead>
             <tr>
               <th>UID</th>
@@ -75,11 +70,11 @@
           <tbody>
             <% administrator_users.forEach(function(administrator_user, i) { %>
             <tr>
-              <td><%= administrator_user.uid %></td>
-              <td><%= administrator_user.name %></td>
-              <td>
+              <td class="align-middle"><%= administrator_user.uid %></td>
+              <td class="align-middle"><%= administrator_user.name %></td>
+              <td class="align-middle">
                 <a id="administratorDeleteButton<%= i %>"
-                   tabindex="0" class="btn btn-xs btn-default" role="button"
+                   tabindex="0" class="btn btn-sm btn-danger" role="button"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Remove administrator access"
                    data-content="<%= include('administratorDeleteForm',
@@ -94,7 +89,7 @@
           </tbody>
         </table>
 
-        <div class="panel-footer">
+        <div class="card-footer">
           <small>
             Administrators have full access to every course and course
             instance. They are automatically Owners of every course
@@ -109,12 +104,10 @@
       <!-------------------------------------------------------------------------------->
       <!-- Exam mode networks ---------------------------------------------------------->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Exam-mode networks</h3>
-        </div>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Exam-mode networks</div>
 
-        <table class="table table-condensed table-hover table-striped">
+        <table class="table table-sm table-hover table-striped">
           <thead>
             <tr>
               <th>CIDR</th>
@@ -136,7 +129,7 @@
           </tbody>
         </table>
 
-        <div class="panel-footer">
+        <div class="card-footer">
           <small>
             To add new networks for exam-mode access, insert directly
             into the <strong><tt>exam_mode_networks</tt></strong> table.
@@ -149,14 +142,11 @@
       <!-------------------------------------------------------------------------------->
       <!-- Courses --------------------------------------------------------------------->
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Courses</h3>
-        </div>
-
-        <div class="panel-body">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          Courses
           <a id="courseInsertButton"
-             tabindex="0" class="btn btn-xs btn-default" role="button"
+             tabindex="0" class="btn btn-sm btn-light ml-auto" role="button"
              data-toggle="popover" data-container="body"
              data-html="true" data-placement="auto" title="Add new administrator"
              data-content="<%= include('courseInsertForm', {id: 'courseInsertButton'}) %>"
@@ -165,7 +155,7 @@
           </a>
         </div>
 
-        <table class="table table-condensed table-hover table-striped">
+        <table class="table table-sm table-hover table-striped">
           <thead>
             <tr>
               <th>Short name</th>
@@ -183,9 +173,9 @@
               <%- include('courseUpdateColumn', {column_name: 'display_timezone', label: 'timezone',   course: course, i: i}) %>
               <%- include('courseUpdateColumn', {column_name: 'path',             label: 'path',       course: course, i: i}) %>
               <%- include('courseUpdateColumn', {column_name: 'repository',       label: 'repository', course: course, i: i}) %>
-              <td>
+              <td class="align-middle">
                 <a id="courseDeleteButton<%= i %>"
-                   tabindex="0" class="btn btn-xs btn-default" role="button"
+                   tabindex="0" class="btn btn-sm btn-danger" role="button"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Really delete <%= course.short_name %>?"
                    data-content="<%= include('courseDeleteForm',
@@ -199,7 +189,7 @@
           </tbody>
         </table>
 
-        <div class="panel-footer">
+        <div class="card-footer">
           <small>
             When a course is synced, if the <strong>path</strong> does
             not exist on disk then a <code>git clone</code> is

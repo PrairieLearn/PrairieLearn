@@ -1,65 +1,52 @@
-<nav class="navbar navbar-inverse navbar-static-top" role="navigation">
-  <div class="container-fluid">
-    <div class="navbar-header">
-      <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
-        <span class="sr-only">Toggle navigation</span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-        <span class="icon-bar"></span>
-      </button>
-      <a class="navbar-brand" href="<%= plainUrlPrefix %>">PrairieLearn</a>
-    </div>
-    <div class="collapse navbar-collapse">
-      <ul class="nav navbar-nav" id="main-nav">
-        
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-- Home ------------------------------------------------------------------------>
-
-        <li <% if (navPage == "home") { %>class="active"<% } %>><a href="<%= plainUrlPrefix %>">Home</a></li>
-
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-- Course title ---------------------------------------------------------------->
-
-        <li><p class="navbar-text"><%= course.short_name %></p></li>
-
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-------------------------------------------------------------------------------->
-        <!-- Main pages ------------------------------------------------------------------>
-
-        <li <% if (navPage == "courseOverview") { %>class="active"<% } %>><a href="<%= urlPrefix %>/overview">Course</a></li>
-        <% if (!devMode && authz_data.has_course_permission_edit) { %>
-        <li <% if (navPage == "sync")           { %>class="active"<% } %>><a href="<%= urlPrefix %>/syncs">Sync</a></li>
-        <% } %>
-
-      </ul>
+<nav class="navbar navbar-dark bg-dark navbar-expand-md mb-4">
+  <a class="navbar-brand" href="<%= plainUrlPrefix %>">
+    <span class="navbar-brand-label">PrairieLearn</span>
+    <span class="navbar-brand-hover-label text-secondary">Go home <i class="fa fa-angle-right" aria-hidden="true"></i></span>
+  </a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse">
+    <ul class="nav navbar-nav mr-auto" id="main-nav">
 
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
-      <!-- User and logout ------------------------------------------------------------->
+      <!-- Course title ---------------------------------------------------------------->
 
-      <div class="navbar-right">
+      <li class="nav-item mr-4"><span class="navbar-text"><%= course.short_name %></span></li>
 
-        <ul class="nav navbar-nav" id="username-nav">
-          <li <% if (navPage == "effective") { %>class="active"<% } %>>
-            <a href="<%= urlPrefix %>/course/effectiveUser">
-              <%= authz_data.user.name %> (<%= authz_data.course_role %>)
-              <span class="glyphicon glyphicon-edit" aria-hidden="true"></span>
-            </a>
-          </li>
-        </ul>
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-- Main pages ------------------------------------------------------------------>
 
-        <% if (devMode) { %>
-        <a class="btn btn-success navbar-btn" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a>
-        <% } %>
+      <li class="nav-item <% if (navPage == "courseOverview") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/overview">Course</a></li>
+      <% if (!devMode && authz_data.has_course_permission_edit) { %>
+      <li class="nav-item <% if (navPage == "sync")           { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/syncs">Sync</a></li>
+      <% } %>
 
-        <%- include('logout'); %>
-      </div>
-    </div>
+    </ul>
+
+    <!-------------------------------------------------------------------------------->
+    <!-------------------------------------------------------------------------------->
+    <!-------------------------------------------------------------------------------->
+    <!-- User and logout ------------------------------------------------------------->
+
+    <ul class="nav navbar-nav" id="username-nav">
+      <li class="nav-item mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %>">
+        <% if (typeof authn_user == 'undefined') { %>
+        <span class="navbar-text">(No user)</span>
+        <% } else if (is_administrator) { %>
+        <span class="navbar-text"><%= authn_user.name %> (Administrator)</span>
+        <% } else { // is_administrator %>
+        <span class="navbar-text"><%= authn_user.name %></span>
+        <% } // is_administrator %>
+      </li>
+      <% if (devMode) { %>
+      <li class="mb-2 mb-md-0 mr-2 "><a class="btn btn-success" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a></li>
+      <% } %>
+      <li><%- include('logout'); %></li>
+    </ul>
   </div>
 </nav>

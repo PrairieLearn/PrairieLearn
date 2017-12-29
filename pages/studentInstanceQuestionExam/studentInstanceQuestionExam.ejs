@@ -3,16 +3,16 @@
   <head>
     <%- include('../partials/head'); %>
     <script type="text/x-mathjax-config">MathJax.Hub.Config({tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}});</script>
-    <script type="text/javascript" src="/MathJax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
-    <script type="text/javascript" src="/javascripts/socket.io.js"></script>
+    <script src="/MathJax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    <script src="/javascripts/socket.io.js"></script>
     <script>
       document.urlPrefix = '<%= urlPrefix %>';
     </script>
     <% if (question.type != 'Freeform') { %>
-    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
-    <script type="text/javascript" src="/javascripts/require.js"></script>
-    <script type="text/javascript" src="/localscripts/question.js"></script>
-    <script type="text/javascript" src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
+    <script src="/javascripts/lodash.min.js"></script>
+    <script src="/javascripts/require.js"></script>
+    <script src="/localscripts/question.js"></script>
+    <script src="/localscripts/question<%= effectiveQuestionType %>.js"></script>
     <% } %>
     <%- extraHeadersHtml %>
   </head>
@@ -26,23 +26,23 @@
     <%- include('../partials/navbar', {navPage: ''}); %>
     <div id="content" class="container">
       <div class="row">
-        <div class="col-md-9 col-sm-12">
+        <div class="col-lg-9 col-sm-12">
           <%- include('../partials/question', {question_context: 'student_exam'}); %>
         </div>
 
-        <div class="col-md-3 col-sm-4 col-xs-12">
+        <div class="col-lg-3 col-sm-12">
 
-          <div class="panel panel-default">
-            <div class="panel-heading"><h3 class="panel-title"><a href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/"><%= assessment_set.name %> <%= assessment.number %></a></h3></div>
+          <div class="card mb-4">
+            <div class="card-header bg-secondary"><a class="text-white" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/"><%= assessment_set.name %> <%= assessment.number %></a></div>
 
-            <div class="panel-body">
-              <p class="text-center">
+            <div class="card-body">
+              <div class="d-flex justify-content-center">
                 <a class="btn btn-info" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>/">Assessment overview</a>
-              </p>
+              </div>
 
               <% if (assessment_instance.open && assessment_instance_remaining_ms != null) { %>
               <div id="countdownProgress"></div>
-              <p class="no-bottom-margin">
+              <p class="mb-0">
                 Time remaining: <span id="countdownDisplay"></span>
               </p>
               <%- include('../partials/countdown', {
@@ -61,14 +61,14 @@
             <% if (instance_question_info.prev_instance_question_id) { %>
             <a class="btn btn-primary" href="<%= urlPrefix %>/instance_question/<%= instance_question_info.prev_instance_question_id %>/">Previous question</a>
             <% } else { %>
-            <a class="btn btn-primary disabled">Previous question</a>
+            <a class="btn btn-primary disabled" tabindex="-1">Previous question</a>
             <% } %>
           </p>
           <p class="text-center">
             <% if (instance_question_info.next_instance_question_id) { %>
             <a class="btn btn-primary" href="<%= urlPrefix %>/instance_question/<%= instance_question_info.next_instance_question_id %>/">Next question</a>
             <% } else { %>
-            <a class="btn btn-primary disabled">Next question</a>
+            <a class="btn btn-primary disabled" tabindex="-1">Next question</a>
             <% } %>
           </p>
           <% if (video) { %>

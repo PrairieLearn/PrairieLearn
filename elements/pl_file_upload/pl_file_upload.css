@@ -46,10 +46,6 @@
   transition: all 400ms;
 }
 
-[id^=file-upload] .fa.fa-check-circle {
-  color: #4CAF50;
-}
-
 [id^=file-upload] .file-status {
   margin-bottom: 0px;
   font-size: 0.8em;
