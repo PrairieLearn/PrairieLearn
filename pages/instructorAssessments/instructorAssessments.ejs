@@ -12,69 +12,71 @@
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Assessments</div>
 
-        <table class="table table-sm table-hover table-responsive">
-          <thead>
-            <tr>
-              <th style="width: 1%"></th>
-              <th></th>
-              <th>TID</th>
-              <th class="cell-center">Students</th>
-              <th class="cell-center">Scores</th>
-              <th class="cell-center">Mean Score</th>
-              <th class="cell-center">Mean Duration</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% rows.forEach(function(row, i) { %>
-            <% if (row.start_new_set) { %>
-            <tr class="<%= row.color %>">
-              <th colspan="7"><%= row.heading %></th>
-            </tr>
-            <% } %>
-            <tr>
-              <td class="align-middle" style="width: 1%">
-                <a href="<%= urlPrefix %>/assessment/<%= row.id %>/" class="btn btn-<%= row.color %> btn-xs" role="button"><%= row.label %></a>
-              </td>
-              <td class="align-middle">
-                <a href="<%= urlPrefix %>/assessment/<%= row.id %>/"><%= row.title %></a>
-                <%- include('../partials/issueBadge', {count: row.open_issue_count}); %>
-              </td>
-              <td class="align-middle"><%= row.tid %></td>
-
-              <td class="cell-center align-middle"><%= row.number %></td>
-
-              <% if (row.number > 0) { %>
-              <td class="cell-center align-middle"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
-              <script>
-                $(function() {
-                    var data = [<%= row.score_hist %>];
-                    var options = {
-                        width: 60,
-                        height: 20,
-                    };
-                    histmini("#scoreHist<%= i %>", data, options);
-                });
-              </script>
-              <% } else { %>
-              <td class="cell-center align-middle"></td>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th style="width: 1%"></th>
+                <th></th>
+                <th>TID</th>
+                <th class="cell-center">Students</th>
+                <th class="cell-center">Scores</th>
+                <th class="cell-center">Mean Score</th>
+                <th class="cell-center">Mean Duration</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% rows.forEach(function(row, i) { %>
+              <% if (row.start_new_set) { %>
+              <tr class="<%= row.color %>">
+                <th colspan="7"><%= row.heading %></th>
+              </tr>
               <% } %>
+              <tr>
+                <td class="align-middle" style="width: 1%">
+                  <a href="<%= urlPrefix %>/assessment/<%= row.id %>/" class="btn btn-<%= row.color %> btn-xs" role="button"><%= row.label %></a>
+                </td>
+                <td class="align-middle">
+                  <a href="<%= urlPrefix %>/assessment/<%= row.id %>/"><%= row.title %></a>
+                  <%- include('../partials/issueBadge', {count: row.open_issue_count}); %>
+                </td>
+                <td class="align-middle"><%= row.tid %></td>
 
-              <% if (row.number > 0) { %>
-              <td class="cell-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.mean)}); %></td>
-              <% } else { %>
-              <td class="cell-center align-middle"></td>
-              <% } %>
+                <td class="cell-center align-middle"><%= row.number %></td>
 
-              <% if (row.number > 0) { %>
-              <td class="cell-center align-middle"><%= row.mean_duration %></td>
-              <% } else { %>
-              <td class="cell-center align-middle"></td>
-              <% } %>
+                <% if (row.number > 0) { %>
+                <td class="cell-center align-middle"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
+                <script>
+                  $(function() {
+                      var data = [<%= row.score_hist %>];
+                      var options = {
+                          width: 60,
+                          height: 20,
+                      };
+                      histmini("#scoreHist<%= i %>", data, options);
+                  });
+                </script>
+                <% } else { %>
+                <td class="cell-center align-middle"></td>
+                <% } %>
 
-            </tr>
-            <% }); %>
-          </tbody>
-        </table>
+                <% if (row.number > 0) { %>
+                <td class="cell-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.mean)}); %></td>
+                <% } else { %>
+                <td class="cell-center align-middle"></td>
+                <% } %>
+
+                <% if (row.number > 0) { %>
+                <td class="cell-center align-middle"><%= row.mean_duration %></td>
+                <% } else { %>
+                <td class="cell-center align-middle"></td>
+                <% } %>
+
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
 
         <div class="card-footer">
           <p class="mb-0">
