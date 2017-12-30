@@ -48,7 +48,7 @@
               <% questions.forEach(function(question, i) { %>
               <% if (question.start_new_zone) { %>
               <tr>
-                <th colspan="6">
+                <th colspan="9">
                   Zone <%= question.zone_number %>. <%= question.zone_title %>
                   <% if (question.zone_number_choose == null) { %>
                   (Choose all questions)
@@ -62,7 +62,7 @@
               <% } %>
               <% if (question.start_new_alternative_group && question.alternative_group_size > 1) { %>
               <tr>
-                <td colspan="6">
+                <td colspan="9">
                   <%= question.alternative_group_number %>.
                   <% if (question.alternative_group_number_choose == null) { %>
                   Choose all questions from:
