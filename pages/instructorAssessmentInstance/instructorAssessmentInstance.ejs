@@ -38,7 +38,7 @@
                 <small>/<span id="total-max-points" class="text-muted"><%= getStringFromFloat(assessment_instance.max_points) %></span></small>
                 <% if (authz_data.has_instructor_edit) { %>
                 <a id="editTotalPointsButton"
-                   tabindex="0" class="btn btn-xs btn-default" role="button"
+                   tabindex="0" class="btn btn-xs btn-secondary" role="button"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change total points"
                    data-content="<%= include('editTotalPointsForm',
@@ -57,7 +57,7 @@
               <td class="align-middle" style="width: 100%;">
                 <% if (authz_data.has_instructor_edit) { %>
                 <a id="editTotalScorePercButton"
-                   tabindex="0" class="btn btn-xs btn-default" role="button"
+                   tabindex="0" class="btn btn-xs btn-secondary" role="button"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change total percentage score"
                    data-content="<%= include('editTotalScorePercForm',
@@ -117,7 +117,7 @@
                 <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>
                 <% if (authz_data.has_instructor_edit) { %>
                 <a id="editQuestionPoints<%= i_instance_question %>"
-                   tabindex="0" class="btn btn-xs btn-default editQuestionPointsButton" role="button"
+                   tabindex="0" class="btn btn-xs btn-secondary editQuestionPointsButton" role="button"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> points"
                    data-content="<%= include('editQuestionPointsForm',
@@ -134,7 +134,7 @@
               <td class="align-middle" style="width: 1em;">
                 <% if (authz_data.has_instructor_edit) { %>
                 <a id="editQuestionScorePerc<%= i_instance_question %>"
-                   tabindex="0" class="btn btn-xs btn-default editQuestionScorePercButton" role="button"
+                   tabindex="0" class="btn btn-xs btn-secondary editQuestionScorePercButton" role="button"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> percentage score"
                    data-content="<%= include('editQuestionScorePercForm',

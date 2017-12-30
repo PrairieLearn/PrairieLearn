@@ -77,7 +77,8 @@
                 <td class="align-middle"><%= administrator_user.name %></td>
                 <td class="align-middle">
                   <a id="administratorDeleteButton<%= i %>"
-                     tabindex="0" class="btn btn-sm btn-danger" role="button"
+                     class="btn btn-sm btn-danger float-right"
+                     tabindex="0" role="button"
                      data-toggle="popover" data-container="body"
                      data-html="true" data-placement="auto" title="Remove administrator access"
                      data-content="<%= include('administratorDeleteForm',
@@ -181,7 +182,8 @@
                 <%- include('courseUpdateColumn', {column_name: 'repository',       label: 'repository', course: course, i: i}) %>
                 <td class="align-middle">
                   <a id="courseDeleteButton<%= i %>"
-                     tabindex="0" class="btn btn-sm btn-danger" role="button"
+                     class="btn btn-sm btn-danger float-right"
+                     tabindex="0" role="button"
                      data-toggle="popover" data-container="body"
                      data-html="true" data-placement="auto" title="Really delete <%= course.short_name %>?"
                      data-content="<%= include('courseDeleteForm',

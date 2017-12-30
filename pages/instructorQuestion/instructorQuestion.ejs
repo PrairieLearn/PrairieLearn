@@ -25,56 +25,58 @@
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Question <%= question.qid %></div>
 
-        <table class="table table-sm table-hover two-column-description">
-          <tbody>
-            <tr>
-              <th>Title</th>
-              <td><%= question.title %></td>
-            </tr>
-            <tr>
-              <th>QID</th>
-              <td><%= question.qid %>
-                  <% if (questionGHLink) { %>(<a target="_blank" href="<%= questionGHLink %>">view on GitHub</a>)<% } %>
-              </td>
-            </tr>
-            <tr>
-              <th>Type</th>
-              <td><%= question.type %></td>
-            </tr>
-            <tr>
-              <th>Topic</th>
-              <td><%- include('../partials/topic', {topic: topic}); %></td>
-            </tr>
-            <tr>
-              <th>Tags</th>
-              <td><%- include('../partials/tags', {tags: tags}); %></td>
-            </tr>
-            <tr>
-              <th>Issues</th>
-              <td><%- include('../partials/issueBadge', {count: open_issue_count}); %></td>
-            </tr>
-            <tr>
-              <th>Assessments</th>
-              <td><%- include('../partials/assessments', {assessments: assessments}); %></td>
-            </tr>
-            <% if (question.type == 'Freeform') { %>
-            <tr>
-              <th class="align-middle">Tests</th>
-              <td>
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                  <button class="btn btn-sm btn-outline-primary" name="__action" value="test_once">
-                    Test once with full details
-                  </button>
-                  <button class="btn btn-sm btn-outline-primary" name="__action" value="test_100">
-                    Test 100 times with only results
-                  </button>
-                </form>
-              </td>
-            </tr>
-            <% } %>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover two-column-description">
+            <tbody>
+              <tr>
+                <th>Title</th>
+                <td><%= question.title %></td>
+              </tr>
+              <tr>
+                <th>QID</th>
+                <td><%= question.qid %>
+                    <% if (questionGHLink) { %>(<a target="_blank" href="<%= questionGHLink %>">view on GitHub</a>)<% } %>
+                </td>
+              </tr>
+              <tr>
+                <th>Type</th>
+                <td><%= question.type %></td>
+              </tr>
+              <tr>
+                <th>Topic</th>
+                <td><%- include('../partials/topic', {topic: topic}); %></td>
+              </tr>
+              <tr>
+                <th>Tags</th>
+                <td><%- include('../partials/tags', {tags: tags}); %></td>
+              </tr>
+              <tr>
+                <th>Issues</th>
+                <td><%- include('../partials/issueBadge', {count: open_issue_count}); %></td>
+              </tr>
+              <tr>
+                <th>Assessments</th>
+                <td><%- include('../partials/assessments', {assessments: assessments}); %></td>
+              </tr>
+              <% if (question.type == 'Freeform') { %>
+              <tr>
+                <th class="align-middle">Tests</th>
+                <td>
+                  <form method="POST">
+                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                    <button class="btn btn-sm btn-outline-primary" name="__action" value="test_once">
+                      Test once with full details
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" name="__action" value="test_100">
+                      Test 100 times with only results
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
         <div class="card-footer">
           <button class="btn btn-sm btn-primary" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
             Report an issue with this question

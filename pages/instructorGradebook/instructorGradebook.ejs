@@ -43,7 +43,7 @@
                   </a>
                   <% if (authz_data.has_instructor_edit) { %>
                   <a id="editTotalScorePercButton<%= iRow %>-<%= iScore %>"
-                     tabindex="0" class="btn btn-xs btn-default editTotalScorePercButton" role="button"
+                     tabindex="0" class="btn btn-xs btn-secondary editTotalScorePercButton" role="button"
                      data-toggle="popover" data-container="body"
                      data-html="true" data-placement="auto" title="Change total percentage score"
                      data-content="<%= include('editTotalScorePercForm',
