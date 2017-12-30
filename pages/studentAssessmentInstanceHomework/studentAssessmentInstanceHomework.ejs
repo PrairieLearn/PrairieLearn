@@ -57,9 +57,9 @@
           <thead>
             <tr>
               <th>Question</th>
-              <th class="cell-center">Value</th>
-              <th class="cell-center">History</th>
-              <th class="cell-center">Awarded points</th>
+              <th class="text-center">Value</th>
+              <th class="text-center">History</th>
+              <th class="text-center">Awarded points</th>
             </tr>
           </thead>
           <tbody>
@@ -75,9 +75,9 @@
                   <%= question.question_number %>. <%= question.question_title %>
                 </a>
               </td>
-              <td class="cell-center"><%- include('../partials/questionValue', {value: question.current_value});  %></td>
-              <td class="cell-center"><%- include('../partials/questionAwardedPoints', {awarded_points: question.variants_points_list, init_points: question.init_points});  %></td>
-              <td class="cell-center"><%- include('../partials/questionPointsOfMax', {points: question.points, max_points: question.max_points}); %></td>
+              <td class="text-center"><%- include('../partials/questionValue', {value: question.current_value});  %></td>
+              <td class="text-center"><%- include('../partials/questionAwardedPoints', {awarded_points: question.variants_points_list, init_points: question.init_points});  %></td>
+              <td class="text-center"><%- include('../partials/questionPointsOfMax', {points: question.points, max_points: question.max_points}); %></td>
             </tr>
             <% }); %>
           </tbody>

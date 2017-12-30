@@ -19,10 +19,10 @@
                 <th style="width: 1%"></th>
                 <th></th>
                 <th>TID</th>
-                <th class="cell-center">Students</th>
-                <th class="cell-center">Scores</th>
-                <th class="cell-center">Mean Score</th>
-                <th class="cell-center">Mean Duration</th>
+                <th class="text-center">Students</th>
+                <th class="text-center">Scores</th>
+                <th class="text-center">Mean Score</th>
+                <th class="text-center">Mean Duration</th>
               </tr>
             </thead>
             <tbody>
@@ -42,10 +42,10 @@
                 </td>
                 <td class="align-middle"><%= row.tid %></td>
 
-                <td class="cell-center align-middle"><%= row.number %></td>
+                <td class="text-center align-middle"><%= row.number %></td>
 
                 <% if (row.number > 0) { %>
-                <td class="cell-center align-middle"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
+                <td class="text-center align-middle"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
                 <script>
                   $(function() {
                       var data = [<%= row.score_hist %>];
@@ -57,19 +57,19 @@
                   });
                 </script>
                 <% } else { %>
-                <td class="cell-center align-middle"></td>
+                <td class="text-center align-middle"></td>
                 <% } %>
 
                 <% if (row.number > 0) { %>
-                <td class="cell-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.mean)}); %></td>
+                <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.mean)}); %></td>
                 <% } else { %>
-                <td class="cell-center align-middle"></td>
+                <td class="text-center align-middle"></td>
                 <% } %>
 
                 <% if (row.number > 0) { %>
-                <td class="cell-center align-middle"><%= row.mean_duration %></td>
+                <td class="text-center align-middle"><%= row.mean_duration %></td>
                 <% } else { %>
-                <td class="cell-center align-middle"></td>
+                <td class="text-center align-middle"></td>
                 <% } %>
 
               </tr>

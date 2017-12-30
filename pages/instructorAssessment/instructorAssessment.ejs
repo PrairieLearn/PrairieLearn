@@ -104,7 +104,7 @@
                     <%= question.avg_question_score_perc.toFixed(3) %> %
                     <% } %>
                 </td>
-                <td class="cell-center">
+                <td class="text-center">
                   <% if (question.number_submissions_hist) { %>
                     <div id="attemptsHist<%= i %>" class="miniHist">
 
@@ -385,11 +385,11 @@
         <table id="questionsTable" class="table table-sm table-hover tablesorter">
           <thead>
             <tr>
-              <th class="cell-center">Question</th>
-              <th class="cell-center">Mean score</th>
-              <th class="cell-center">Discrimination</th>
-              <th class="cell-center">Number of submissions</th>
-              <th class="cell-center">Quintiles</th>
+              <th class="text-center">Question</th>
+              <th class="text-center">Mean score</th>
+              <th class="text-center">Discrimination</th>
+              <th class="text-center">Number of submissions</th>
+              <th class="text-center">Quintiles</th>
             </tr>
           </thead>
           <tbody>
@@ -400,11 +400,11 @@
                   <%= row.number %>. <%= row.title %>
                 </a>
               </td>
-              <td class="cell-center"><%- include('../partials/scorebar', {score: Math.round(row.mean_question_score)}); %></td>
-              <td class="cell-center"><%- include('../partials/scorebar', {score: Math.round(row.discrimination)}); %></td>
-              <td class="cell-center"><%= parseFloat(row.average_number_submissions).toFixed(2); %></td>
+              <td class="text-center"><%- include('../partials/scorebar', {score: Math.round(row.mean_question_score)}); %></td>
+              <td class="text-center"><%- include('../partials/scorebar', {score: Math.round(row.discrimination)}); %></td>
+              <td class="text-center"><%= parseFloat(row.average_number_submissions).toFixed(2); %></td>
               <% if (row.number > 0) { %>
-              <td class="cell-center"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
+              <td class="text-center"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
               <script>
                 $(function() {
                     var data = [<%= row.quintile_question_scores %>];
@@ -417,7 +417,7 @@
                 });
               </script>
               <% } else { %>
-              <td class="cell-center"></td>
+              <td class="text-center"></td>
               <% } %>
             </tr>
             <% }); %>
@@ -533,13 +533,13 @@
           <table id="questionsTable" class="table table-sm table-hover tablesorter table-bordered">
             <thead>
             <tr>
-              <th class="cell-center">
+              <th class="text-center">
                 Question
               </th>
               <% Object.keys(stat_descriptions).forEach(function(stat) { %>
                 <% if (stat !== 'INCREMENTAL_SUBMISSION_SCORE_POINTS_AVERAGES' || assessment.type !== 'Homework') { %>
                   <th
-                    class="cell-center"
+                    class="text-center"
                     title="<%- stat_descriptions[stat].description %>">
                     <%- stat_descriptions[stat].title %>
                   </th>
@@ -555,97 +555,97 @@
                     <%= row.number %>. <%= row.qid %>
                 </a>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.mean_question_score, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.question_score_variance, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.discrimination, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.some_submission_perc, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.some_perfect_submission_perc, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.some_nonzero_submission_perc, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.average_first_submission_score, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.first_submission_score_variance, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <% if (row.first_submission_score_hist !== null) { %>
                   <div id="firstSubmissionScoreHist<%= i %>" class="miniHist"></div>
                 <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.average_last_submission_score, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.last_submission_score_variance, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <% if (row.last_submission_score_hist !== null) { %>
                   <div id="lastSubmissionScoreHist<%= i %>" class="miniHist"></div>
                 <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.average_max_submission_score, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.max_submission_score_variance, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <% if (row.max_submission_score_hist !== null) { %>
                   <div id="maxSubmissionScoreHist<%= i %>" class="miniHist"></div>
                 <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.average_average_submission_score, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.average_submission_score_variance, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <% if (row.average_submission_score_hist !== null) { %>
                   <div id="averageSubmissionScoreHist<%= i %>" class="miniHist"></div>
                 <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <% if (row.submission_score_array_averages !== null) { %>
                   <div id="submissionScoreArray<%= i %>" class="miniHist"></div>
                 <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <% if (row.incremental_submission_score_array_averages !== null) { %>
                   <div id="incrementalSubmissionScoreArray<%= i %>" class="miniHist"></div>
                 <% } %>
               </td>
               <% if (assessment.type !== 'Homework') { %>
-                <td class="cell-center">
+                <td class="text-center">
                   <% if (row.incremental_submission_points_array_averages !== null) { %>
                     <div id="incrementalSubmissionPointsArray<%= i %>" class="miniHist"></div>
                   <% } %>
                 </td>
               <% } %>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.average_number_submissions, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.number_submissions_variance, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <% if (row.number_submissions_hist !== null) { %>
                   <div id="numberSubmissionsHist<%= i %>" class="miniHist"></div>
                 <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <% if (row.quintile_question_scores !== null) { %>
                   <div id="quintileQuestionScoresHist<%= i %>" class="miniHist"></div>
                 <% } %>
@@ -1102,13 +1102,13 @@
             <tr>
               <th>UID</th>
               <th>Name</th>
-              <th class="cell-center">Role</th>
-              <th class="cell-center">Instance</th>
-              <th class="cell-center">Score</th>
-              <th class="cell-center">Duration</th>
-              <th class="cell-center">Remaining</th>
-              <th class="cell-center"></th>
-              <th class="cell-center"></th>
+              <th class="text-center">Role</th>
+              <th class="text-center">Instance</th>
+              <th class="text-center">Score</th>
+              <th class="text-center">Duration</th>
+              <th class="text-center">Remaining</th>
+              <th class="text-center"></th>
+              <th class="text-center"></th>
             </tr>
           </thead>
           <tbody>
@@ -1116,12 +1116,12 @@
             <tr>
               <td><%= row.uid %></td>
               <td><%= row.name %></td>
-              <td class="cell-center"><%= row.role %></td>
-              <td class="cell-center"><%= row.number %></td>
-              <td class="cell-center"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
-              <td class="cell-center" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
-              <td class="cell-center"><%= row.time_remaining %></td>
-              <td class="cell-center">
+              <td class="text-center"><%= row.role %></td>
+              <td class="text-center"><%= row.number %></td>
+              <td class="text-center align-middle"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
+              <td class="text-center" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
+              <td class="text-center"><%= row.time_remaining %></td>
+              <td class="text-center">
                 <div class="dropdown">
                   <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                     Action <span class="caret"></span>
@@ -1222,7 +1222,7 @@
                   </div>
                 </div>
               </td>
-              <td class="cell-center"><a href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>" class="btn btn-xs btn-info">Details</a></td>
+              <td class="text-center"><a href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>" class="btn btn-xs btn-info">Details</a></td>
             </tr>
             <% }); %>
           </tbody>

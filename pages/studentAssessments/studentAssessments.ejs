@@ -19,8 +19,8 @@
             <tr>
               <th style="width: 1%"></th>
               <th></th>
-              <th class="cell-center">Available credit</th>
-              <th class="cell-center">Score</th>
+              <th class="text-center">Available credit</th>
+              <th class="text-center">Score</th>
             </tr>
           </thead>
           <tbody>
@@ -48,7 +48,7 @@
                 <a href="<%= urlPrefix %><%= row.link %>"><%= row.title %></a>
                 <% } %>
               </td>
-              <td class="cell-center align-middle">
+              <td class="text-center align-middle">
                 <%= row.credit_date_string %>
                 <%- include('../partials/studentAccessRulesPopover', {
                     accessRules: row.access_rules,
@@ -56,7 +56,7 @@
                     assessmentNumber: row.assessment_number,
                     }) %>
               </td>
-              <td class="cell-center align-middle">
+              <td class="text-center align-middle">
                 <% if (row.multiple_instance_header) { %>
                 <a href="<%= urlPrefix %><%= row.link %>" class="btn btn-primary btn-sm" role="button">New instance</a>
                 <% } else { // multiple_instance_header %>
