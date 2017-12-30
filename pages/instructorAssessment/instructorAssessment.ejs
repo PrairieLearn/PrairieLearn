@@ -400,8 +400,8 @@
                   <%= row.number %>. <%= row.title %>
                 </a>
               </td>
-              <td class="text-center"><%- include('../partials/scorebar', {score: Math.round(row.mean_question_score)}); %></td>
-              <td class="text-center"><%- include('../partials/scorebar', {score: Math.round(row.discrimination)}); %></td>
+              <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.mean_question_score)}); %></td>
+              <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.discrimination)}); %></td>
               <td class="text-center"><%= parseFloat(row.average_number_submissions).toFixed(2); %></td>
               <% if (row.number > 0) { %>
               <td class="text-center"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
