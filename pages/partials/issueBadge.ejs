@@ -1,13 +1,12 @@
 <% if (count > 0) { %>
     <% if (!(typeof suppressLink != 'undefined' && suppressLink)) { %>
         <% if (typeof issueQid != 'undefined') { %>
-            <a href="<%= urlPrefix %>/issues?qid=<%= issueQid %>">
+            <a class="badge badge-pill badge-danger" href="<%= urlPrefix %>/issues?qid=<%= issueQid %>">
         <% } else { %>
-            <a href="<%= urlPrefix %>/issues">
+            <a class="badge badge-pill badge-danger" href="<%= urlPrefix %>/issues">
         <% } %>
-    <% } %>
-    <span class="badge badge-pill badge-danger"><%= count %></span>
-    <% if (!(typeof suppressLink != 'undefined' && suppressLink)) { %>
-        </a>
+        <%= count %></a>
+    <% } else { %>
+        <span class="badge badge-pill badge-danger"><%= count %></span>
     <% } %>
 <% } %>

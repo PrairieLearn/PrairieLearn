@@ -1,14 +1,15 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var express = require('express');
-var router = express.Router();
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+const moment = require('moment');
+const express = require('express');
+const router = express.Router();
 
-var error = require('../../lib/error');
-var paginate = require('../../lib/paginate');
-var sqldb = require('../../lib/sqldb');
-var sqlLoader = require('../../lib/sql-loader');
+const error = require('../../lib/error');
+const paginate = require('../../lib/paginate');
+const sqldb = require('../../lib/sqldb');
+const sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const pageSize = 100;
 
@@ -24,7 +25,7 @@ router.get('/', function(req, res, next) {
         res.locals.issueCount = res.locals.closedCount + res.locals.openCount;
 
         _.assign(res.locals, paginate.pages(req.query.page, res.locals.issueCount, pageSize));
-        
+
         var params = {
             course_id: res.locals.course.id,
             offset: (res.locals.currPage - 1) * pageSize,
@@ -33,6 +34,11 @@ router.get('/', function(req, res, next) {
         };
         sqldb.query(sql.select_issues, params, function(err, result) {
             if (ERR(err, next)) return;
+
+            // Add human-readable relative dates to each row
+            result.rows.forEach((row) => {
+                row.relative_date = moment(row.formatted_date).from(row.now_date);
+            });
 
             res.locals.rows = result.rows;
             res.locals.filterQid = req.query.qid;
