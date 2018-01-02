@@ -18,6 +18,7 @@ const commonQueries = {
     allOpenQuery: 'is:open',
     allClosedQuery: 'is:closed',
     allManuallyReportedQuery: 'is:manually-reported',
+    allAutomaticallyReportedQuery: 'is:automatically-reported',
 };
 
 const formattedCommonQueries = {};
@@ -36,6 +37,7 @@ function parseRawQuery(str) {
         filter_is_open: null,
         filter_is_closed: null,
         filter_manually_reported: null,
+        filter_automatically_reported: null,
         filter_qids: null,
         filter_not_qids: null,
         filter_query_text: null,
@@ -60,6 +62,10 @@ function parseRawQuery(str) {
                         break;
                     case 'manually-reported':
                         filters.filter_manually_reported = !option.negated;
+                        break;
+                    case 'automatically-reported':
+                        filters.filter_automatically_reported = !option.negated;
+                        break;
                 }
                 break;
             case 'qid':
