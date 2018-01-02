@@ -47,7 +47,9 @@ WHERE
     AND (($filter_manually_reported::boolean IS NULL) OR (i.manually_reported = $filter_manually_reported::boolean))
     AND (($filter_qids::text[] IS NULL) OR (q.qid ILIKE ANY($filter_qids::text[])))
     AND (($filter_not_qids::text[] IS NULL) OR (q.qid NOT ILIKE ANY($filter_not_qids::text[])))
-    AND (($filter_query_text::text IS NULL) OR (to_tsvector(concat_ws(' ', q.directory, i.student_message)) @@ plainto_tsquery($filter_query_text::text)))
+    AND (($filter_users::text[] IS NULL) OR (u.uid ILIKE ANY($filter_users::text[])))
+    AND (($filter_not_users::text[] IS NULL) OR (u.uid NOT ILIKE ANY($filter_not_users::text[])))
+    AND (($filter_query_text::text IS NULL) OR (to_tsvector(concat_ws(' ', q.directory, u.uid, i.student_message)) @@ plainto_tsquery($filter_query_text::text)))
 ORDER BY
     i.date DESC, i.id
 LIMIT

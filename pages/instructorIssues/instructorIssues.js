@@ -26,6 +26,10 @@ Object.keys(commonQueries).forEach((key) => {
     formattedCommonQueries[key] = `?q=${encodeURIComponent(commonQueries[key])}`;
 });
 
+function formatForLikeClause(str) {
+    return `%${str}%`;
+}
+
 function parseRawQuery(str) {
     const parsedQuery = SearchString.parse(str);
     const filters = {
@@ -35,6 +39,8 @@ function parseRawQuery(str) {
         filter_qids: null,
         filter_not_qids: null,
         filter_query_text: null,
+        filter_users: null,
+        filter_not_users: null,
     };
 
     const queryText = parsedQuery.getAllText();
@@ -57,14 +63,21 @@ function parseRawQuery(str) {
                 }
                 break;
             case 'qid':
-                // QIDs are matched using ILIKE in postgres, so we have to add
-                // the % wildcard to each qid
                 if (!option.negated) {
                     filters.filter_qids = filters.filter_qids || [];
-                    filters.filter_qids.push(`%${option.value}%`);
+                    filters.filter_qids.push(formatForLikeClause(option.value));
                 } else {
                     filters.filter_not_qids = filters.filter_not_qids || [];
-                    filters.filter_not_qids.push(`%${option.value}%`);
+                    filters.filter_not_qids.push(formatForLikeClause(option.value));
+                }
+                break;
+            case 'user':
+                if (!option.negated) {
+                    filters.filter_users = filters.filter_users || [];
+                    filters.filter_users.push(formatForLikeClause(option.value));
+                } else {
+                    filters.filter_not_users = filters.filter_not_users || [];
+                    filters.filter_not_users.push(formatForLikeClause(option.value));
                 }
                 break;
         }
