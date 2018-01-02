@@ -30,6 +30,8 @@
         </div>
       </div>
 
+      <%- include('../partials/issueResponseModal'); %>
+
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <div class="d-flex flex-column">
@@ -62,8 +64,6 @@
           </tbody>
         </table>
 
-
-
         <%
         var getFormattedMessage = function(row) {
           if (row.student_message == null || row.student_message.length == 0) {
@@ -78,32 +78,33 @@
         };
         %>
 
-        <!-- Once more, with spirit! -->
         <div class="list-group list-group-flush">
           <% rows.forEach(row => { %>
-          <div class="list-group-item issue-list-item">
-            <% if (row.open) { %>
-            <i class="fa fa-exclamation-circle text-danger issue-status-icon"></i>
-            <% } else { %>
-            <i class="fa fa-check-circle text-success issue-status-icon"></i>
-            <% } %>
-            <%- include('../partials/issueStatusButton', {open: row.open, issue_id: row.issue_id}) %>
-            <div class="d-block">
-              <a class="text-truncate d-block" href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>">
+          <div class="list-group-item issue-list-item d-flex flex-row align-items-center">
+            <div style="min-width: 0;">
+              <% if (row.open) { %>
+              <i class="fa fa-exclamation-circle text-danger issue-status-icon"></i>
+              <% } else { %>
+              <i class="fa fa-check-circle text-success issue-status-icon"></i>
+              <% } %>
+              <a class="d-block" href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>">
                 <%= row.question_qid ? (row.question_qid + ': ') : '' %><%= getFormattedMessage(row) %>
               </a>
-            </div>
-            <small class="text-muted mr-2">#<%= row.display_id %> reported <span title="<%= row.formatted_date %>"><%= row.relative_date %></span> by <%= row.user_uid || '-' %></small>
+              <small class="text-muted mr-2">#<%= row.display_id %> reported <span title="<%= row.formatted_date %>"><%= row.relative_date %></span> by <%= row.user_uid || '-' %></small>
 
-            <% if (row.manually_reported) { %>
-              <span class="badge badge-info">Manually reported</span>
-            <% } %>
-            <% if (row.assessment) { %>
-            <%- include('../partials/assessment', {assessment: row.assessment}) %>
-            <% } %>
-            <% if (row.course_instance_short_name) { %>
-            <span class="badge badge-dark"><%= row.course_instance_short_name || '—' %></span>
-            <% } %>
+              <% if (row.manually_reported) { %>
+                <span class="badge badge-info">Manually reported</span>
+              <% } %>
+              <% if (row.assessment) { %>
+              <%- include('../partials/assessment', {assessment: row.assessment}) %>
+              <% } %>
+              <% if (row.course_instance_short_name) { %>
+              <span class="badge badge-dark"><%= row.course_instance_short_name || '—' %></span>
+              <% } %>
+            </div>
+            <div class="ml-auto pl-4">
+              <%- include('../partials/issueActionButtons', {issue: row}) %>
+            </div>
           </div>
           <% }); %>
         </div>
