@@ -3,6 +3,7 @@ const _ = require('lodash');
 const moment = require('moment');
 const express = require('express');
 const router = express.Router();
+const SearchString = require('search-string');
 
 const error = require('../../lib/error');
 const paginate = require('../../lib/paginate');
@@ -12,6 +13,64 @@ const sqlLoader = require('../../lib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
 const pageSize = 100;
+
+const commonQueries = {
+    allOpenQuery: 'is:open',
+    allClosedQuery: 'is:closed',
+};
+
+const formattedCommonQueries = {};
+
+Object.keys(commonQueries).forEach((key) => {
+    formattedCommonQueries[key] = `?q=${encodeURIComponent(commonQueries[key])}`;
+});
+
+function parseRawQuery(str) {
+    const parsedQuery = SearchString.parse(str);
+    const filters = {
+        filter_is_open: null,
+        filter_is_closed: null,
+        filter_manually_reported: null,
+        filter_qids: null,
+        filter_not_qids: null,
+        filter_query_text: null,
+    };
+
+    const queryText = parsedQuery.getAllText();
+    if (queryText) {
+        filters.filter_query_text = queryText;
+    }
+
+    for (const option of parsedQuery.getConditionArray()) {
+        switch (option.keyword) {
+            case 'is': // boolean option
+                switch (option.value) {
+                    case 'open':
+                        filters.filter_is_open = !option.negated;
+                        break;
+                    case 'closed':
+                        filters.filter_is_closed = !option.negated;
+                        break;
+                    case 'manually-reported':
+                        filters.filter_manually_reported = !option.negated;
+                }
+                break;
+            case 'qid':
+                // QIDs are matched using ILIKE in postgres, so we have to add
+                // the % wildcard to each qid
+                if (!option.negated) {
+                    filters.filter_qids = filters.filter_qids || [];
+                    filters.filter_qids.push(`%${option.value}%`);
+                } else {
+                    filters.filter_not_qids = filters.filter_not_qids || [];
+                    filters.filter_not_qids.push(`%${option.value}%`);
+                }
+                break;
+        }
+    }
+
+    return filters;
+}
 
 router.get('/', function(req, res, next) {
     var params = {
@@ -30,8 +89,11 @@ router.get('/', function(req, res, next) {
             course_id: res.locals.course.id,
             offset: (res.locals.currPage - 1) * pageSize,
             limit: pageSize,
-            qid: req.query.qid,
         };
+
+        const filters = parseRawQuery(req.query.q);
+        _.assign(params, filters);
+
         sqldb.query(sql.select_issues, params, function(err, result) {
             if (ERR(err, next)) return;
 
@@ -41,7 +103,13 @@ router.get('/', function(req, res, next) {
             });
 
             res.locals.rows = result.rows;
-            res.locals.filterQid = req.query.qid;
+            res.locals.filterQuery = req.query.q;
+
+            res.locals.filters = filters;
+
+            res.locals.commonQueries = {};
+            _.assign(res.locals.commonQueries, formattedCommonQueries);
+
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });
     });

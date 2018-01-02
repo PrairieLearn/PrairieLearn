@@ -42,7 +42,12 @@ FROM
 WHERE
     i.course_id = $course_id
     AND i.course_caused
-    AND (($qid::text IS NULL) OR (q.qid = $qid::text))
+    AND (($filter_is_open::boolean IS NULL) OR (i.open = $filter_is_open::boolean))
+    AND (($filter_is_closed::boolean IS NULL) OR (i.open != $filter_is_closed::boolean))
+    AND (($filter_manually_reported::boolean IS NULL) OR (i.manually_reported = $filter_manually_reported::boolean))
+    AND (($filter_qids::text[] IS NULL) OR (q.qid ILIKE ANY($filter_qids::text[])))
+    AND (($filter_not_qids::text[] IS NULL) OR (q.qid NOT ILIKE ANY($filter_not_qids::text[])))
+    AND (($filter_query_text::text IS NULL) OR (to_tsvector(concat_ws(' ', q.directory, i.student_message)) @@ plainto_tsquery($filter_query_text::text)))
 ORDER BY
     i.date DESC, i.id
 LIMIT

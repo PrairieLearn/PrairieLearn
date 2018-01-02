@@ -8,7 +8,7 @@
     <%- include('../partials/navbar', {navPage: 'issues'}); %>
     <div id="content" class="container">
 
-      <div class="modal fade" id="closeAllIssuesModal" tabindex="-1" role="dialog" aria-labelledby="closeAllIssues">
+      <div class="modal fade" id="closeAllIssuesModal" tabindex="-1" role="dialog" aria-labelledby="closeAllIssuesModalLabel">
         <div class="modal-dialog" role="document">
           <div class="modal-content">
             <div class="modal-header">
@@ -30,39 +30,94 @@
         </div>
       </div>
 
+      <div class="modal fade" id="filterHelpModal" tabindex="-1" role="dialog" aria-labelledby="filterHelpModalLabel">
+        <div class="modal-dialog modal-lg" role="document">
+          <div class="modal-content">
+            <div class="modal-header">
+              <h4 class="modal-title" id="filterHelpModalLabel">Filter help</h4>
+              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+              </button>
+            </div>
+            <div class="modal-body">
+              <p>Issues can be filtered and searched in a variety of ways. Filtering
+                is done with the following set of qualifiers.</p>
+              <table class="table table-bordered">
+                <thead>
+                  <th>Qualifier</th>
+                  <th>Explanation</th>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><code>is:open</code></td>
+                    <td>Shows all issues that are open</td>
+                  </tr>
+                  <tr>
+                    <td><code>is:closed</code></td>
+                    <td>Shows all issues that are closed</td>
+                  </tr>
+                  <tr>
+                    <td><code>is:manually-reported</code></td>
+                    <td>Shows all issues that were manually reported</td>
+                  </tr>
+                  <tr>
+                    <td><code>qid:<em>QID</em></code></td>
+                    <td>
+                      Shows all issues with a question ID like <code>QID</code>.
+                      <br>
+                      <strong>Example:</strong> <code>qid:graph</code> shows all issues associated with questions such as <code>graphConnectivity</code> and <code>speedTimeGraph</code>.</td>
+                  </tr>
+                </tbody>
+              </table>
+              <h4>Qualifier negation</h4>
+              <p>Any qualifier can be negagted with the a hyphen (<code>-</code>). For example, <code>-is:manually-reported</code> would return all issues that were <strong>not</strong> manually reported.</p>
+              <h4>Combining qualifiers</h4>
+              <p>These can be combined to form complex searches. An example:</p>
+              <code><pre>is:open is:manually-reported qid:vector</pre></code>
+              <p>This would return any open issues that were manually reported with a QID like <code>vector</code>.</p>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <%- include('../partials/issueResponseModal'); %>
 
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
-          <div class="d-flex flex-column">
-            Issues
-            <small><%= openCount %> open, <%= closedCount %> closed</small>
+        <div class="card-header bg-primary text-white">
+          <div class="d-flex flex-row align-items-center mb-2">
+            <div class="d-flex flex-column">
+              Issues
+              <small>
+                <a href="<%= commonQueries.allOpenQuery %>" class="mr-3 text-white">
+                  <i class="fa fa-exclamation-circle"></i> <%= openCount %> open
+                </a>
+                <a href="<%= commonQueries.allClosedQuery %>" class="text-white">
+                  <i class="fa fa-check-circle"></i> <%= closedCount %> closed
+                </a>
+              </small>
+            </div>
+            <button class="btn btn-sm btn-danger ml-auto" data-toggle="modal" data-target="#closeAllIssuesModal">
+              <i class="fa fa-times" aria-hidden="true"></i> Close all issues
+            </button>
           </div>
-          <button class="btn btn-sm btn-danger ml-auto" data-toggle="modal" data-target="#closeAllIssuesModal">
-            <i class="fa fa-times" aria-hidden="true"></i> Close all issues
-          </button>
+          <form name="query-form" method="GET">
+            <div class="input-group">
+              <input type="text" class="form-control" name="q" value="<%= filterQuery %>">
+              <div class="input-group-append">
+                <button class="btn btn-dark" href="<%= urlPrefix %>/issues">
+                  <i class="fa fa-times" aria-hidden="true"></i>
+                  Clear
+                </button>
+                <button class="btn btn-dark" type="button" data-toggle="modal" data-target="#filterHelpModal">
+                  <i class="fa fa-question-circle" aria-hidden="true"></i>
+                </button>
+              </div>
+            </div>
+          </form>
         </div>
-
-        <table class="table table-sm two-column-description">
-          <tbody>
-            <% if (typeof filterQid != 'undefined') { %>
-            <tr>
-              <th class="align-middle">Filter:</th>
-              <td>
-                <div class="input-group">
-                  <input type="text" class="form-control" disabled value="QID:<%= filterQid %>">
-                  <div class="input-group-append">
-                    <a class="btn btn-secondary" role="button" href="<%= urlPrefix %>/issues">
-                      <i class="fa fa-times" aria-hidden="true"></i>
-                      Clear
-                    </a>
-                  </span>
-                </div>
-              </td>
-            </tr>
-            <% } %>
-          </tbody>
-        </table>
 
         <%
         var getFormattedMessage = function(row) {
