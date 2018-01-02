@@ -76,12 +76,16 @@
                   </tr>
                 </tbody>
               </table>
+              <h4>Full-text search</h4>
+              <p>You can also search the issue message by simply entering text. For example, <code>no picture</code> would return any issues that contain text like "no picture".</p>
+
               <h4>Qualifier negation</h4>
               <p>Any qualifier can be negagted with the a hyphen (<code>-</code>). For example, <code>-is:manually-reported</code> would return all issues that were <strong>not</strong> manually reported.</p>
+
               <h4>Combining qualifiers</h4>
               <p>These can be combined to form complex searches. An example:</p>
-              <code><pre>is:open is:manually-reported qid:vector</pre></code>
-              <p>This would return any open issues that were manually reported with a QID like <code>vector</code>.</p>
+              <code><pre>is:open qid:vector answer is wrong</pre></code>
+              <p>This would return any open issues with a QID like <code>vector</code> whose message contains text like "answer is wrong".</p>
             </div>
             <div class="modal-footer">
               <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
