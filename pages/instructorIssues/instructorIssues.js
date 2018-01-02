@@ -93,7 +93,7 @@ function parseRawQuery(str) {
 }
 
 router.get('/', function(req, res, next) {
-    if (!req.query.q) {
+    if (!('q' in req.query)) {
         req.query.q = 'is:open';
     }
     const filters = parseRawQuery(req.query.q);
