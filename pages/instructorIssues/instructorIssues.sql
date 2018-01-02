@@ -3,7 +3,18 @@ WITH counts AS (
     SELECT
         i.open,
         count(*)::int
-    FROM issues AS i
+    FROM
+        issues_select_with_filter (
+            $filter_is_open,
+            $filter_is_closed,
+            $filter_manually_reported,
+            $filter_qids,
+            $filter_not_qids,
+            $filter_users,
+            $filter_not_users,
+            $filter_query_text
+        ) AS selected_issues
+        JOIN issues AS i ON (i.id = selected_issues.issue_id)
     WHERE
         i.course_id = $course_id
         AND i.course_caused
@@ -33,7 +44,17 @@ SELECT
     i.open,
     i.manually_reported
 FROM
-    issues AS i
+    issues_select_with_filter (
+        $filter_is_open,
+        $filter_is_closed,
+        $filter_manually_reported,
+        $filter_qids,
+        $filter_not_qids,
+        $filter_users,
+        $filter_not_users,
+        $filter_query_text
+    ) AS selected_issues
+    JOIN issues AS i ON (i.id = selected_issues.issue_id)
     JOIN pl_courses AS c ON (c.id = i.course_id)
     LEFT JOIN course_instances AS ci ON (ci.id = i.course_instance_id)
     LEFT JOIN assessments AS a ON (a.id = i.assessment_id)
@@ -42,14 +63,6 @@ FROM
 WHERE
     i.course_id = $course_id
     AND i.course_caused
-    AND (($filter_is_open::boolean IS NULL) OR (i.open = $filter_is_open::boolean))
-    AND (($filter_is_closed::boolean IS NULL) OR (i.open != $filter_is_closed::boolean))
-    AND (($filter_manually_reported::boolean IS NULL) OR (i.manually_reported = $filter_manually_reported::boolean))
-    AND (($filter_qids::text[] IS NULL) OR (q.qid ILIKE ANY($filter_qids::text[])))
-    AND (($filter_not_qids::text[] IS NULL) OR (q.qid NOT ILIKE ANY($filter_not_qids::text[])))
-    AND (($filter_users::text[] IS NULL) OR (u.uid ILIKE ANY($filter_users::text[])))
-    AND (($filter_not_users::text[] IS NULL) OR (u.uid NOT ILIKE ANY($filter_not_users::text[])))
-    AND (($filter_query_text::text IS NULL) OR (to_tsvector(concat_ws(' ', q.directory, u.uid, i.student_message)) @@ plainto_tsquery($filter_query_text::text)))
 ORDER BY
     i.date DESC, i.id
 LIMIT

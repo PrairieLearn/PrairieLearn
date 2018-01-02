@@ -147,6 +147,11 @@
         };
         %>
 
+        <% if (rows.length == 0) { %>
+          <div class="card-body">
+            <div class="text-center text-muted">No matching issues found</div>
+          </div>
+        <% } else { %>
         <div class="list-group list-group-flush">
           <% rows.forEach(row => { %>
           <div class="list-group-item issue-list-item d-flex flex-row align-items-center">
@@ -177,10 +182,13 @@
           </div>
           <% }); %>
         </div>
+        <% } %>
 
+        <% if (shouldPaginate) { %>
         <div class="card-body">
-          <%- include('../partials/pager') %>
+          <%- include('../partials/pager', {params: 'q=' + encodedFilterQuery}) %>
         </div>
+        <% } %>
 
       </div>
     </div>

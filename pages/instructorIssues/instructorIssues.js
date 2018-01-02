@@ -12,7 +12,7 @@ const sqlLoader = require('../../lib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
-const pageSize = 100;
+const PAGE_SIZE = 100;
 
 const commonQueries = {
     allOpenQuery: 'is:open',
@@ -87,9 +87,13 @@ function parseRawQuery(str) {
 }
 
 router.get('/', function(req, res, next) {
+    const filters = parseRawQuery(req.query.q);
+
     var params = {
         course_id: res.locals.course.id,
     };
+    _.assign(params, filters);
+
     sqldb.query(sql.issues_count, params, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount != 2) return next(new Error('unable to obtain issue count, rowCount = ' + result.rowCount));
@@ -97,15 +101,14 @@ router.get('/', function(req, res, next) {
         res.locals.openCount = result.rows[1].count;
         res.locals.issueCount = res.locals.closedCount + res.locals.openCount;
 
-        _.assign(res.locals, paginate.pages(req.query.page, res.locals.issueCount, pageSize));
+        _.assign(res.locals, paginate.pages(req.query.page, res.locals.issueCount, PAGE_SIZE));
+        res.locals.shouldPaginate = res.locals.issueCount > PAGE_SIZE;
 
         var params = {
             course_id: res.locals.course.id,
-            offset: (res.locals.currPage - 1) * pageSize,
-            limit: pageSize,
+            offset: (res.locals.currPage - 1) * PAGE_SIZE,
+            limit: PAGE_SIZE,
         };
-
-        const filters = parseRawQuery(req.query.q);
         _.assign(params, filters);
 
         sqldb.query(sql.select_issues, params, function(err, result) {
@@ -117,8 +120,9 @@ router.get('/', function(req, res, next) {
             });
 
             res.locals.rows = result.rows;
-            res.locals.filterQuery = req.query.q;
 
+            res.locals.filterQuery = req.query.q;
+            res.locals.encodedFilterQuery = encodeURIComponent(req.query.q);
             res.locals.filters = filters;
 
             res.locals.commonQueries = {};

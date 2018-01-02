@@ -120,6 +120,7 @@ module.exports = {
             'assessment_questions_calculate_stats_for_assessment.sql',
             'assessment_questions_calculate_stats.sql',
             'instance_questions_calculate_stats.sql',
+            'issues_select_with_filter.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
