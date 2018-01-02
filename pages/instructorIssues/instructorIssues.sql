@@ -21,8 +21,8 @@ ORDER BY open;
 -- BLOCK select_issues
 SELECT
     i.id AS issue_id,
-    format_date_full_compact(now(), coalesce(ci.display_timezone, c.display_timezone)) AS now_date,
-    format_date_full_compact(i.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date,
+    format_date_iso8601(now(), coalesce(ci.display_timezone, c.display_timezone)) AS now_date,
+    format_date_iso8601(i.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date,
     ci.short_name AS course_instance_short_name,
     CASE WHEN i.assessment_id IS NOT NULL THEN assessments_format(i.assessment_id) ELSE NULL END AS assessment,
     i.question_id,
