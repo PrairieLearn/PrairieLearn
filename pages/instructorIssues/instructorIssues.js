@@ -17,6 +17,7 @@ const pageSize = 100;
 const commonQueries = {
     allOpenQuery: 'is:open',
     allClosedQuery: 'is:closed',
+    allManuallyReportedQuery: 'is:manually-reported',
 };
 
 const formattedCommonQueries = {};
