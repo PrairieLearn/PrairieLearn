@@ -26,17 +26,17 @@
           <tbody>
             <% rows.forEach(function(row) { %>
             <% if (row.start_new_set) { %>
-            <tr class="<%= row.assessment_set_color %>">
+            <tr>
               <th colspan="4"><%= row.assessment_set_heading %></th>
             </tr>
             <% } %>
             <tr>
               <td class="align-middle" style="width: 1%">
                 <% if (row.multiple_instance_header) { %>
-                <button class="btn btn-<%= row.assessment_set_color %> btn-xs"><%= row.label %></button>
+                <button class="btn color-<%= row.assessment_set_color %> btn-xs"><%= row.label %></button>
                 <% } else { %>
                 <a href="<%= urlPrefix %><%= row.link %>"
-                   class="btn btn-<%= row.assessment_set_color %> btn-xs" role="button">
+                   class="btn color-<%= row.assessment_set_color %> btn-xs" role="button">
                   <%= row.label %>
                 </a>
                 <% } %>
