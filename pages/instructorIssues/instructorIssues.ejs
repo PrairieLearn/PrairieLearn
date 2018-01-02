@@ -106,7 +106,7 @@
           <form name="query-form" method="GET">
             <div class="input-group">
               <div class="input-group-prepend">
-                <button class="btn btn-dark dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Filters</button>
+                <button class="btn btn-med-light dropdown-toggle" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Filters</button>
                 <div class="dropdown-menu">
                   <a class="dropdown-item" href="<%= commonQueries.allOpenQuery %>">Open issues</a>
                   <a class="dropdown-item" href="<%= commonQueries.allClosedQuery %>">Closed issues</a>
@@ -115,11 +115,10 @@
               </div>
               <input type="text" class="form-control" name="q" value="<%= filterQuery %>">
               <div class="input-group-append">
-                <a class="btn btn-dark" href="<%= urlPrefix %>/issues">
+                <a class="btn btn-med-light" href="<%= urlPrefix %>/issues" title="Clear filters">
                   <i class="fa fa-times" aria-hidden="true"></i>
-                  Clear
                 </a>
-                <button class="btn btn-dark" type="button" data-toggle="modal" data-target="#filterHelpModal">
+                <button class="btn btn-med-light" type="button" title="Show filter help" data-toggle="modal" data-target="#filterHelpModal">
                   <i class="fa fa-question-circle" aria-hidden="true"></i>
                 </button>
               </div>
