@@ -31,7 +31,6 @@ ORDER BY open;
 -- BLOCK select_issues
 SELECT
     i.id AS issue_id,
-    i.display_id,
     format_date_full_compact(now(), coalesce(ci.display_timezone, c.display_timezone)) AS now_date,
     format_date_full_compact(i.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date,
     ci.short_name AS course_instance_short_name,
