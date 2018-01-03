@@ -201,14 +201,14 @@ describe('Instructor assessment editing', function() {
         it('data-content should have a CSRF token', function() {
             elemList = locals.data$('form input[name="__csrf_token"]');
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
+            assert.nestedProperty(elemList[0], 'attribs.value');
             locals.__csrf_token = elemList[0].attribs.value;
             assert.isString(locals.__csrf_token);
         });
         it('data-content should have an __action', function() {
             elemList = locals.data$('form input[name="__action"]');
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
+            assert.nestedProperty(elemList[0], 'attribs.value');
             locals.__action = elemList[0].attribs.value;
             assert.isString(locals.__action);
             assert.equal(locals.__action, 'edit_question_points');
@@ -216,7 +216,7 @@ describe('Instructor assessment editing', function() {
         it('data-content should have an instance_question_id', function() {
             elemList = locals.data$('form input[name="instance_question_id"]');
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
+            assert.nestedProperty(elemList[0], 'attribs.value');
             locals.instance_question_id = Number.parseInt(elemList[0].attribs.value);
         });
         it('data-content should have a points input', function() {
@@ -270,14 +270,14 @@ describe('Instructor assessment editing', function() {
         it('data-content should have a CSRF token', function() {
             elemList = locals.data$('form input[name="__csrf_token"]');
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
+            assert.nestedProperty(elemList[0], 'attribs.value');
             locals.__csrf_token = elemList[0].attribs.value;
             assert.isString(locals.__csrf_token);
         });
         it('data-content should have an __action', function() {
             elemList = locals.data$('form input[name="__action"]');
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
+            assert.nestedProperty(elemList[0], 'attribs.value');
             locals.__action = elemList[0].attribs.value;
             assert.isString(locals.__action);
             assert.equal(locals.__action, 'edit_question_score_perc');
@@ -285,7 +285,7 @@ describe('Instructor assessment editing', function() {
         it('data-content should have an instance_question_id', function() {
             elemList = locals.data$('form input[name="instance_question_id"]');
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
+            assert.nestedProperty(elemList[0], 'attribs.value');
             locals.instance_question_id = Number.parseInt(elemList[0].attribs.value);
         });
         it('data-content should have a score_perc input', function() {
@@ -339,14 +339,14 @@ describe('Instructor assessment editing', function() {
         it('data-content should have a CSRF token', function() {
             elemList = locals.data$('form input[name="__csrf_token"]');
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
+            assert.nestedProperty(elemList[0], 'attribs.value');
             locals.__csrf_token = elemList[0].attribs.value;
             assert.isString(locals.__csrf_token);
         });
         it('data-content should have an __action', function() {
             elemList = locals.data$('form input[name="__action"]');
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
+            assert.nestedProperty(elemList[0], 'attribs.value');
             locals.__action = elemList[0].attribs.value;
             assert.isString(locals.__action);
             assert.equal(locals.__action, 'edit_total_points');
@@ -354,7 +354,7 @@ describe('Instructor assessment editing', function() {
         it('data-content should have the correct assessment_instance_id', function() {
             elemList = locals.data$('form input[name="assessment_instance_id"]');
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
+            assert.nestedProperty(elemList[0], 'attribs.value');
             const assessment_instance_id = Number.parseInt(elemList[0].attribs.value);
             assert.equal(assessment_instance_id, 1);
         });
@@ -409,14 +409,14 @@ describe('Instructor assessment editing', function() {
         it('data-content should have a CSRF token', function() {
             elemList = locals.data$('form input[name="__csrf_token"]');
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
+            assert.nestedProperty(elemList[0], 'attribs.value');
             locals.__csrf_token = elemList[0].attribs.value;
             assert.isString(locals.__csrf_token);
         });
         it('data-content should have an __action', function() {
             elemList = locals.data$('form input[name="__action"]');
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
+            assert.nestedProperty(elemList[0], 'attribs.value');
             locals.__action = elemList[0].attribs.value;
             assert.isString(locals.__action);
             assert.equal(locals.__action, 'edit_total_score_perc');
@@ -424,7 +424,7 @@ describe('Instructor assessment editing', function() {
         it('data-content should have the correct assessment_instance_id', function() {
             elemList = locals.data$('form input[name="assessment_instance_id"]');
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
+            assert.nestedProperty(elemList[0], 'attribs.value');
             const assessment_instance_id = Number.parseInt(elemList[0].attribs.value);
             assert.equal(assessment_instance_id, 1);
         });
@@ -509,14 +509,14 @@ describe('Instructor assessment editing', function() {
         it('data-content should have a CSRF token', function() {
             elemList = locals.data$('form input[name="__csrf_token"]');
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
+            assert.nestedProperty(elemList[0], 'attribs.value');
             locals.__csrf_token = elemList[0].attribs.value;
             assert.isString(locals.__csrf_token);
         });
         it('data-content should have an __action', function() {
             elemList = locals.data$('form input[name="__action"]');
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
+            assert.nestedProperty(elemList[0], 'attribs.value');
             locals.__action = elemList[0].attribs.value;
             assert.isString(locals.__action);
             assert.equal(locals.__action, 'edit_total_score_perc');
@@ -524,7 +524,7 @@ describe('Instructor assessment editing', function() {
         it('data-content should have the correct assessment_instance_id', function() {
             elemList = locals.data$('form input[name="assessment_instance_id"]');
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
+            assert.nestedProperty(elemList[0], 'attribs.value');
             const assessment_instance_id = Number.parseInt(elemList[0].attribs.value);
             assert.equal(assessment_instance_id, 1);
         });

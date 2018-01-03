@@ -204,7 +204,7 @@ describe('Access control', function() {
             getAssessments(cookiesStudentExam(), true, callback);
         });
         it('should have the correct link for E1', function() {
-            assert.deepProperty(elemList[0], 'attribs.href');
+            assert.nestedProperty(elemList[0], 'attribs.href');
             assessmentUrl = siteUrl + elemList[0].attribs.href;
             assert.equal(assessmentUrl, courseInstanceBaseUrl + '/assessment/' + assessment_id + '/');
         });
@@ -244,7 +244,7 @@ describe('Access control', function() {
         it('should have a CSRF token', function() {
             elemList = $('form input[name="__csrf_token"]');
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
+            assert.nestedProperty(elemList[0], 'attribs.value');
             __csrf_token = elemList[0].attribs.value;
             assert.isString(__csrf_token);
         });
@@ -375,7 +375,7 @@ describe('Access control', function() {
             assert.lengthOf(elemList, 1);
         });
         it('question-data should contain base64 data', function() {
-            assert.deepProperty(elemList[0], 'children.0.data');
+            assert.nestedProperty(elemList[0], 'children.0.data');
             assert.lengthOf(elemList[0].children, 1);
             assert.property(elemList[0].children[0], 'data');
         });
@@ -383,13 +383,13 @@ describe('Access control', function() {
             questionData = JSON.parse(decodeURIComponent(new Buffer(elemList[0].children[0].data, 'base64').toString()));
         });
         it('should have a variant_id in the questionData', function() {
-            assert.deepProperty(questionData, 'variant.id');
+            assert.nestedProperty(questionData, 'variant.id');
             variant = questionData.variant;
         });
         it('should have a CSRF token', function() {
             elemList = $('.question-form input[name="__csrf_token"]');
             assert.lengthOf(elemList, 1);
-            assert.deepProperty(elemList[0], 'attribs.value');
+            assert.nestedProperty(elemList[0], 'attribs.value');
             __csrf_token = elemList[0].attribs.value;
             assert.isString(__csrf_token);
         });
