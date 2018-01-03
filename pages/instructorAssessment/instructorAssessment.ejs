@@ -48,7 +48,7 @@
               <% questions.forEach(function(question, i) { %>
               <% if (question.start_new_zone) { %>
               <tr>
-                <th colspan="6">
+                <th colspan="9">
                   Zone <%= question.zone_number %>. <%= question.zone_title %>
                   <% if (question.zone_number_choose == null) { %>
                   (Choose all questions)
@@ -62,7 +62,7 @@
               <% } %>
               <% if (question.start_new_alternative_group && question.alternative_group_size > 1) { %>
               <tr>
-                <td colspan="6">
+                <td colspan="9">
                   <%= question.alternative_group_number %>.
                   <% if (question.alternative_group_number_choose == null) { %>
                   Choose all questions from:
@@ -104,7 +104,7 @@
                     <%= question.avg_question_score_perc.toFixed(3) %> %
                     <% } %>
                 </td>
-                <td class="cell-center">
+                <td class="text-center">
                   <% if (question.number_submissions_hist) { %>
                     <div id="attemptsHist<%= i %>" class="miniHist">
 
@@ -143,34 +143,36 @@
           <%= assessment_set.name %> <%= assessment.number %>: Access rules
         </div>
 
-        <table class="table table-sm table-hover">
-          <thead>
-            <tr>
-              <th>Mode</th>
-              <th>Role</th>
-              <th>UIDs</th>
-              <th>Start date</th>
-              <th>End date</th>
-              <th>Credit</th>
-              <th>Time limit</th>
-              <th>Password</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% access_rules.forEach(function(access_rule) { %>
-            <tr>
-              <td><%= access_rule.mode %></td>
-              <td><%= access_rule.role %></td>
-              <td><%= access_rule.uids %></td>
-              <td><%= access_rule.start_date %></td>
-              <td><%= access_rule.end_date %></td>
-              <td><%= access_rule.credit %></td>
-              <td><%= access_rule.time_limit %></td>
-              <td><%= access_rule.password %></td>
-            </tr>
-            <% }); %>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>Mode</th>
+                <th>Role</th>
+                <th>UIDs</th>
+                <th>Start date</th>
+                <th>End date</th>
+                <th>Credit</th>
+                <th>Time limit</th>
+                <th>Password</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% access_rules.forEach(function(access_rule) { %>
+              <tr>
+                <td><%= access_rule.mode %></td>
+                <td><%= access_rule.role %></td>
+                <td><%= access_rule.uids %></td>
+                <td><%= access_rule.start_date %></td>
+                <td><%= access_rule.end_date %></td>
+                <td><%= access_rule.credit %></td>
+                <td><%= access_rule.time_limit %></td>
+                <td><%= access_rule.password %></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- ###################################################################### -->
@@ -197,18 +199,20 @@
           </script>
         </div>
 
-        <table class="table table-sm table-hover">
-          <tbody>
-            <tr><td>Number of students</td><td><%= assessment_stat.number %></td></tr>
-            <tr><td>Mean score</td><td><%= Math.round(assessment_stat.mean) %>%</td></tr>
-            <tr><td>Standard deviation</td><td><%= Math.round(assessment_stat.std) %>%</td></tr>
-            <tr><td>Median score</td><td><%= Math.round(assessment_stat.median) %>%</td></tr>
-            <tr><td>Minimum score</td><td><%= Math.round(assessment_stat.min) %>%</td></tr>
-            <tr><td>Maximum score</td><td><%= Math.round(assessment_stat.max) %>%</td></tr>
-            <tr><td>Number of 0%</td><td><%= assessment_stat.n_zero %> (<%= Math.round(assessment_stat.n_zero_perc) %>% of class)</td></tr>
-            <tr><td>Number of 100%</td><td><%= assessment_stat.n_hundred %> (<%= Math.round(assessment_stat.n_hundred_perc) %>% of class)</td></tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <tbody>
+              <tr><td>Number of students</td><td><%= assessment_stat.number %></td></tr>
+              <tr><td>Mean score</td><td><%= Math.round(assessment_stat.mean) %>%</td></tr>
+              <tr><td>Standard deviation</td><td><%= Math.round(assessment_stat.std) %>%</td></tr>
+              <tr><td>Median score</td><td><%= Math.round(assessment_stat.median) %>%</td></tr>
+              <tr><td>Minimum score</td><td><%= Math.round(assessment_stat.min) %>%</td></tr>
+              <tr><td>Maximum score</td><td><%= Math.round(assessment_stat.max) %>%</td></tr>
+              <tr><td>Number of 0%</td><td><%= assessment_stat.n_zero %> (<%= Math.round(assessment_stat.n_zero_perc) %>% of class)</td></tr>
+              <tr><td>Number of 100%</td><td><%= assessment_stat.n_hundred %> (<%= Math.round(assessment_stat.n_hundred_perc) %>% of class)</td></tr>
+            </tbody>
+          </table>
+        </div>
         <div class="card-footer">
           <small>
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= scoreStatsCsvFilename %>"><%= scoreStatsCsvFilename %></a>. Data outside of the plotted range is included in the last bin.
@@ -250,14 +254,16 @@
           </script>
         </div>
 
-        <table class="table table-sm table-hover">
-          <tbody>
-            <tr><td>Mean duration</td><td><%= duration_stat.mean %></td></tr>
-            <tr><td>Median duration</td><td><%= duration_stat.median %></td></tr>
-            <tr><td>Minimum duration</td><td><%= duration_stat.min %></td></tr>
-            <tr><td>Maximum duration</td><td><%= duration_stat.max %></td></tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <tbody>
+              <tr><td>Mean duration</td><td><%= duration_stat.mean %></td></tr>
+              <tr><td>Median duration</td><td><%= duration_stat.median %></td></tr>
+              <tr><td>Minimum duration</td><td><%= duration_stat.min %></td></tr>
+              <tr><td>Maximum duration</td><td><%= duration_stat.max %></td></tr>
+            </tbody>
+          </table>
+        </div>
         <div class="card-footer">
           <small>
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= durationStatsCsvFilename %>"><%= durationStatsCsvFilename %></a>. Data outside of the plotted range is included in the last bin.
@@ -382,47 +388,49 @@
           </div>
         </div>
 
-        <table id="questionsTable" class="table table-sm table-hover tablesorter">
-          <thead>
-            <tr>
-              <th class="cell-center">Question</th>
-              <th class="cell-center">Mean score</th>
-              <th class="cell-center">Discrimination</th>
-              <th class="cell-center">Number of submissions</th>
-              <th class="cell-center">Quintiles</th>
-            </tr>
-          </thead>
-          <tbody>
-            <% questions.forEach(function(row, i) { %>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/question/<%= row.question_id %>/">
-                  <%= row.number %>. <%= row.title %>
-                </a>
-              </td>
-              <td class="cell-center"><%- include('../partials/scorebar', {score: Math.round(row.mean_question_score)}); %></td>
-              <td class="cell-center"><%- include('../partials/scorebar', {score: Math.round(row.discrimination)}); %></td>
-              <td class="cell-center"><%= parseFloat(row.average_number_submissions).toFixed(2); %></td>
-              <% if (row.number > 0) { %>
-              <td class="cell-center"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
-              <script>
-                $(function() {
-                    var data = [<%= row.quintile_question_scores %>];
-                    var options = {
-                        width: 60,
-                        height: 20,
-                        ymax: 100,
-                    };
-                    histmini("#scoreHist<%= i %>", data, options);
-                });
-              </script>
-              <% } else { %>
-              <td class="cell-center"></td>
-              <% } %>
-            </tr>
-            <% }); %>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table id="questionsTable" class="table table-sm table-hover tablesorter">
+            <thead>
+              <tr>
+                <th class="text-center">Question</th>
+                <th class="text-center">Mean score</th>
+                <th class="text-center">Discrimination</th>
+                <th class="text-center">Number of submissions</th>
+                <th class="text-center">Quintiles</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% questions.forEach(function(row, i) { %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/question/<%= row.question_id %>/">
+                    <%= row.number %>. <%= row.title %>
+                  </a>
+                </td>
+                <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.mean_question_score)}); %></td>
+                <td class="text-center align-middle"><%- include('../partials/scorebar', {score: Math.round(row.discrimination)}); %></td>
+                <td class="text-center"><%= parseFloat(row.average_number_submissions).toFixed(2); %></td>
+                <% if (row.number > 0) { %>
+                <td class="text-center"><div id="scoreHist<%= i %>" class="miniHist"></div></td>
+                <script>
+                  $(function() {
+                      var data = [<%= row.quintile_question_scores %>];
+                      var options = {
+                          width: 60,
+                          height: 20,
+                          ymax: 100,
+                      };
+                      histmini("#scoreHist<%= i %>", data, options);
+                  });
+                </script>
+                <% } else { %>
+                <td class="text-center"></td>
+                <% } %>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
         <div class="card-footer">
           <p>
             Download <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= questionStatsCsvFilename %>"><%= questionStatsCsvFilename %></a>
@@ -533,13 +541,13 @@
           <table id="questionsTable" class="table table-sm table-hover tablesorter table-bordered">
             <thead>
             <tr>
-              <th class="cell-center">
+              <th class="text-center">
                 Question
               </th>
               <% Object.keys(stat_descriptions).forEach(function(stat) { %>
                 <% if (stat !== 'INCREMENTAL_SUBMISSION_SCORE_POINTS_AVERAGES' || assessment.type !== 'Homework') { %>
                   <th
-                    class="cell-center"
+                    class="text-center"
                     title="<%- stat_descriptions[stat].description %>">
                     <%- stat_descriptions[stat].title %>
                   </th>
@@ -555,97 +563,97 @@
                     <%= row.number %>. <%= row.qid %>
                 </a>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.mean_question_score, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.question_score_variance, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.discrimination, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.some_submission_perc, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.some_perfect_submission_perc, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.some_nonzero_submission_perc, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.average_first_submission_score, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.first_submission_score_variance, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <% if (row.first_submission_score_hist !== null) { %>
                   <div id="firstSubmissionScoreHist<%= i %>" class="miniHist"></div>
                 <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.average_last_submission_score, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.last_submission_score_variance, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <% if (row.last_submission_score_hist !== null) { %>
                   <div id="lastSubmissionScoreHist<%= i %>" class="miniHist"></div>
                 <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.average_max_submission_score, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.max_submission_score_variance, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <% if (row.max_submission_score_hist !== null) { %>
                   <div id="maxSubmissionScoreHist<%= i %>" class="miniHist"></div>
                 <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.average_average_submission_score, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.average_submission_score_variance, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <% if (row.average_submission_score_hist !== null) { %>
                   <div id="averageSubmissionScoreHist<%= i %>" class="miniHist"></div>
                 <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <% if (row.submission_score_array_averages !== null) { %>
                   <div id="submissionScoreArray<%= i %>" class="miniHist"></div>
                 <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <% if (row.incremental_submission_score_array_averages !== null) { %>
                   <div id="incrementalSubmissionScoreArray<%= i %>" class="miniHist"></div>
                 <% } %>
               </td>
               <% if (assessment.type !== 'Homework') { %>
-                <td class="cell-center">
+                <td class="text-center">
                   <% if (row.incremental_submission_points_array_averages !== null) { %>
                     <div id="incrementalSubmissionPointsArray<%= i %>" class="miniHist"></div>
                   <% } %>
                 </td>
               <% } %>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.average_number_submissions, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%= formatFloat(row.number_submissions_variance, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <% if (row.number_submissions_hist !== null) { %>
                   <div id="numberSubmissionsHist<%= i %>" class="miniHist"></div>
                 <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <% if (row.quintile_question_scores !== null) { %>
                   <div id="quintileQuestionScoresHist<%= i %>" class="miniHist"></div>
                 <% } %>
@@ -736,200 +744,202 @@
         </div>
         <% } // assessment.multiple_instance %>
 
-        <table class="table table-sm table-hover">
-          <thead>
-            <tr>
-              <th>Data file</th>
-              <th>Description</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= scoresCsvFilename %>"><%= scoresCsvFilename %></a>
-              </td>
-              <td>
-                Total percentage score for each student. Scores range
-                from 0 to 100 (or higher if bonus credit was given).
-              </td>
-            </tr>
-            <% if (assessment.multiple_instance) { %>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= scoresAllCsvFilename %>"><%= scoresAllCsvFilename %></a>
-              </td>
-              <td>
-                Total percentage score for each assessment
-                instance. Scores range from 0 to 100 (or higher if
-                bonus credit was given).
-              </td>
-            </tr>
-            <% } // assessment.multiple_instance %>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= scoresByUsernameCsvFilename %>"><%= scoresByUsernameCsvFilename %></a>
-              </td>
-              <td>
-                Total percentage score for each student, formatted by
-                username for upload into LMS gradebooks. Scores range
-                from 0 to 100 (or higher if bonus credit was given).
-              </td>
-            </tr>
-            <% if (assessment.multiple_instance) { %>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= scoresByUsernameAllCsvFilename %>"><%= scoresByUsernameAllCsvFilename %></a>
-              </td>
-              <td>
-                Total percentage score for each assessment instance,
-                formatted by username for upload into LMS
-                gradebooks. Scores range from 0 to 100 (or higher if
-                bonus credit was given).
-              </td>
-            </tr>
-            <% } // assessment.multiple_instance %>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= pointsCsvFilename %>"><%= pointsCsvFilename %></a>
-              </td>
-              <td>
-                Total points for each student. Points range
-                from 0 to the maximum for this assessment.
-              </td>
-            </tr>
-            <% if (assessment.multiple_instance) { %>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= pointsAllCsvFilename %>"><%= pointsAllCsvFilename %></a>
-              </td>
-              <td>
-                Total points for each assessment instance. Points
-                range from 0 to the maximum for this assessment.
-              </td>
-            </tr>
-            <% } // assessment.multiple_instance %>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= pointsByUsernameCsvFilename %>"><%= pointsByUsernameCsvFilename %></a>
-              </td>
-              <td>
-                Total points for each student, formatted by username
-                for upload into LMS gradebooks. Points range from 0 to
-                100 (or higher if bonus credit was given).
-              </td>
-            </tr>
-            <% if (assessment.multiple_instance) { %>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= pointsByUsernameAllCsvFilename %>"><%= pointsByUsernameAllCsvFilename %></a>
-              </td>
-              <td>
-                Total points for each assessment instance, formatted
-                by username for upload into LMS gradebooks. Points
-                range from 0 to 100 (or higher if bonus credit was
-                given).
-              </td>
-            </tr>
-            <% } // assessment.multiple_instance %>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= instancesCsvFilename %>"><%= instancesCsvFilename %></a>
-              </td>
-              <td>
-                Detailed data for each student. Includes points,
-                maximum points, percentage score, duration, and other
-                information.
-              </td>
-            </tr>
-            <% if (assessment.multiple_instance) { %>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= instancesAllCsvFilename %>"><%= instancesAllCsvFilename %></a>
-              </td>
-              <td>
-                Detailed data for each assessment instance. Includes
-                points, maximum points, percentage score, duration,
-                and other information.
-              </td>
-            </tr>
-            <% } // assessment.multiple_instance %>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= instanceQuestionsCsvFilename %>"><%= instanceQuestionsCsvFilename %></a>
-              </td>
-              <td>
-                All questions for all students for all assessment
-                instances. Shows the score for each question as well
-                as the best submission score and the number of
-                attempts at the question.
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= allSubmissionsCsvFilename %>"><%= allSubmissionsCsvFilename %></a>
-              </td>
-              <td>
-                All submitted answers for all students for all
-                assessment instances. Not all submitted answers will
-                have been used to compute the final score, as some may
-                have been superceded by subsequent attempts.
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= finalSubmissionsCsvFilename %>"><%= finalSubmissionsCsvFilename %></a>
-              </td>
-              <td>
-                Final submitted answers for each question for all
-                students for all assessment instances.
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= bestSubmissionsCsvFilename %>"><%= bestSubmissionsCsvFilename %></a>
-              </td>
-              <td>
-                Best submitted answers for each question for all
-                students for all assessment instances.
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= allFilesZipFilename %>"><%= allFilesZipFilename %></a>
-              </td>
-              <td>
-                All submitted files for all students for all
-                assessment instances. Only data
-                from <code>File</code>-type questions will be included in
-                the zip. Not all submitted files will have been used
-                to compute the final score, as some may have been
-                superceded by subsequent attempts.
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= finalFilesZipFilename %>"><%= finalFilesZipFilename %></a>
-              </td>
-              <td>
-                Final submitted files for each question for all
-                students for all assessment instances. Only data
-                from <code>File</code>-type questions will be included in
-                the zip.
-              </td>
-            </tr>
-            <tr>
-              <td>
-                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= bestFilesZipFilename %>"><%= bestFilesZipFilename %></a>
-              </td>
-              <td>
-                Best submitted files for each question for all
-                students for all assessment instances. Only data
-                from <tt>File</tt>-type questions will be included in
-                the zip.
-              </td>
-            </tr>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover">
+            <thead>
+              <tr>
+                <th>Data file</th>
+                <th>Description</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= scoresCsvFilename %>"><%= scoresCsvFilename %></a>
+                </td>
+                <td>
+                  Total percentage score for each student. Scores range
+                  from 0 to 100 (or higher if bonus credit was given).
+                </td>
+              </tr>
+              <% if (assessment.multiple_instance) { %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= scoresAllCsvFilename %>"><%= scoresAllCsvFilename %></a>
+                </td>
+                <td>
+                  Total percentage score for each assessment
+                  instance. Scores range from 0 to 100 (or higher if
+                  bonus credit was given).
+                </td>
+              </tr>
+              <% } // assessment.multiple_instance %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= scoresByUsernameCsvFilename %>"><%= scoresByUsernameCsvFilename %></a>
+                </td>
+                <td>
+                  Total percentage score for each student, formatted by
+                  username for upload into LMS gradebooks. Scores range
+                  from 0 to 100 (or higher if bonus credit was given).
+                </td>
+              </tr>
+              <% if (assessment.multiple_instance) { %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= scoresByUsernameAllCsvFilename %>"><%= scoresByUsernameAllCsvFilename %></a>
+                </td>
+                <td>
+                  Total percentage score for each assessment instance,
+                  formatted by username for upload into LMS
+                  gradebooks. Scores range from 0 to 100 (or higher if
+                  bonus credit was given).
+                </td>
+              </tr>
+              <% } // assessment.multiple_instance %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= pointsCsvFilename %>"><%= pointsCsvFilename %></a>
+                </td>
+                <td>
+                  Total points for each student. Points range
+                  from 0 to the maximum for this assessment.
+                </td>
+              </tr>
+              <% if (assessment.multiple_instance) { %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= pointsAllCsvFilename %>"><%= pointsAllCsvFilename %></a>
+                </td>
+                <td>
+                  Total points for each assessment instance. Points
+                  range from 0 to the maximum for this assessment.
+                </td>
+              </tr>
+              <% } // assessment.multiple_instance %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= pointsByUsernameCsvFilename %>"><%= pointsByUsernameCsvFilename %></a>
+                </td>
+                <td>
+                  Total points for each student, formatted by username
+                  for upload into LMS gradebooks. Points range from 0 to
+                  100 (or higher if bonus credit was given).
+                </td>
+              </tr>
+              <% if (assessment.multiple_instance) { %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= pointsByUsernameAllCsvFilename %>"><%= pointsByUsernameAllCsvFilename %></a>
+                </td>
+                <td>
+                  Total points for each assessment instance, formatted
+                  by username for upload into LMS gradebooks. Points
+                  range from 0 to 100 (or higher if bonus credit was
+                  given).
+                </td>
+              </tr>
+              <% } // assessment.multiple_instance %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= instancesCsvFilename %>"><%= instancesCsvFilename %></a>
+                </td>
+                <td>
+                  Detailed data for each student. Includes points,
+                  maximum points, percentage score, duration, and other
+                  information.
+                </td>
+              </tr>
+              <% if (assessment.multiple_instance) { %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= instancesAllCsvFilename %>"><%= instancesAllCsvFilename %></a>
+                </td>
+                <td>
+                  Detailed data for each assessment instance. Includes
+                  points, maximum points, percentage score, duration,
+                  and other information.
+                </td>
+              </tr>
+              <% } // assessment.multiple_instance %>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= instanceQuestionsCsvFilename %>"><%= instanceQuestionsCsvFilename %></a>
+                </td>
+                <td>
+                  All questions for all students for all assessment
+                  instances. Shows the score for each question as well
+                  as the best submission score and the number of
+                  attempts at the question.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= allSubmissionsCsvFilename %>"><%= allSubmissionsCsvFilename %></a>
+                </td>
+                <td>
+                  All submitted answers for all students for all
+                  assessment instances. Not all submitted answers will
+                  have been used to compute the final score, as some may
+                  have been superceded by subsequent attempts.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= finalSubmissionsCsvFilename %>"><%= finalSubmissionsCsvFilename %></a>
+                </td>
+                <td>
+                  Final submitted answers for each question for all
+                  students for all assessment instances.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= bestSubmissionsCsvFilename %>"><%= bestSubmissionsCsvFilename %></a>
+                </td>
+                <td>
+                  Best submitted answers for each question for all
+                  students for all assessment instances.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= allFilesZipFilename %>"><%= allFilesZipFilename %></a>
+                </td>
+                <td>
+                  All submitted files for all students for all
+                  assessment instances. Only data
+                  from <code>File</code>-type questions will be included in
+                  the zip. Not all submitted files will have been used
+                  to compute the final score, as some may have been
+                  superceded by subsequent attempts.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= finalFilesZipFilename %>"><%= finalFilesZipFilename %></a>
+                </td>
+                <td>
+                  Final submitted files for each question for all
+                  students for all assessment instances. Only data
+                  from <code>File</code>-type questions will be included in
+                  the zip.
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>/<%= bestFilesZipFilename %>"><%= bestFilesZipFilename %></a>
+                </td>
+                <td>
+                  Best submitted files for each question for all
+                  students for all assessment instances. Only data
+                  from <tt>File</tt>-type questions will be included in
+                  the zip.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
       <!-- ###################################################################### -->
@@ -1097,136 +1107,138 @@
           </small>
         </div>
 
-        <table id="usersTable" class="table table-sm table-hover tablesorter">
-          <thead>
-            <tr>
-              <th>UID</th>
-              <th>Name</th>
-              <th class="cell-center">Role</th>
-              <th class="cell-center">Instance</th>
-              <th class="cell-center">Score</th>
-              <th class="cell-center">Duration</th>
-              <th class="cell-center">Remaining</th>
-              <th class="cell-center"></th>
-              <th class="cell-center"></th>
-            </tr>
-          </thead>
-          <tbody>
-            <% user_scores.forEach(function(row, iRow) { %>
-            <tr>
-              <td><%= row.uid %></td>
-              <td><%= row.name %></td>
-              <td class="cell-center"><%= row.role %></td>
-              <td class="cell-center"><%= row.number %></td>
-              <td class="cell-center"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
-              <td class="cell-center" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
-              <td class="cell-center"><%= row.time_remaining %></td>
-              <td class="cell-center">
-                <div class="dropdown">
-                  <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-                    Action <span class="caret"></span>
-                  </button>
-                  <div id="row<%= iRow %>PopoverOpen"
-                       tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-                       data-html="true" data-placement="auto" title="Confirm open"
-                       data-content="
-                                     <p><small>
-                                         This will disable auto-closing. The assessment will need to be manually closed.
-                                     </small></p>
-                                     <form name=&quot;open-form&quot; method=&quot;POST&quot;>
-                                       <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;open&quot;>
-                                       <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
-                                       <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
-                                       <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverOpen').popover('hide')&quot;>
-                                         Cancel
-                                       </button>
-                                       <button type=&quot;submit&quot; class=&quot;btn btn-success&quot;>Open assessment</button>
-                                     </form>
-                                     ">
+        <div class="table-responsive">
+          <table id="usersTable" class="table table-sm table-hover tablesorter">
+            <thead>
+              <tr>
+                <th>UID</th>
+                <th>Name</th>
+                <th class="text-center">Role</th>
+                <th class="text-center">Instance</th>
+                <th class="text-center">Score</th>
+                <th class="text-center">Duration</th>
+                <th class="text-center">Remaining</th>
+                <th class="text-center"></th>
+                <th class="text-center"></th>
+              </tr>
+            </thead>
+            <tbody>
+              <% user_scores.forEach(function(row, iRow) { %>
+              <tr>
+                <td><%= row.uid %></td>
+                <td><%= row.name %></td>
+                <td class="text-center"><%= row.role %></td>
+                <td class="text-center"><%= row.number %></td>
+                <td class="text-center align-middle"><%- include('../partials/scorebar', {score: row.score_perc}); %></td>
+                <td class="text-center" data-text="<%= row.duration_secs %>"><%= row.duration %></td>
+                <td class="text-center"><%= row.time_remaining %></td>
+                <td class="text-center">
+                  <div class="dropdown">
+                    <button type="button" class="btn btn-xs dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                      Action <span class="caret"></span>
+                    </button>
+                    <div id="row<%= iRow %>PopoverOpen"
+                         tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
+                         data-html="true" data-placement="auto" title="Confirm open"
+                         data-content="
+                                       <p><small>
+                                           This will disable auto-closing. The assessment will need to be manually closed.
+                                       </small></p>
+                                       <form name=&quot;open-form&quot; method=&quot;POST&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;open&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
+                                         <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverOpen').popover('hide')&quot;>
+                                           Cancel
+                                         </button>
+                                         <button type=&quot;submit&quot; class=&quot;btn btn-success&quot;>Open assessment</button>
+                                       </form>
+                                       ">
+                    </div>
+                    <div id="row<%= iRow %>PopoverClose"
+                         tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
+                         data-html="true" data-placement="auto" title="Confirm close"
+                         data-content="
+                                       <form name=&quot;close-form&quot; method=&quot;POST&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;close&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
+                                         <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverClose').popover('hide')&quot;>
+                                           Cancel
+                                         </button>
+                                         <button type=&quot;submit&quot; class=&quot;btn btn-danger&quot;>Grade and close</button>
+                                       </form>
+                                       ">
+                    </div>
+                    <div id="row<%= iRow %>PopoverRegrade"
+                         tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
+                         data-html="true" data-placement="auto" title="Confirm regrade"
+                         data-content="
+                                       <form name=&quot;regrade-form&quot; method=&quot;POST&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;regrade&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
+                                         <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
+                                         <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverRegrade').popover('hide')&quot;>
+                                           Cancel
+                                         </button>
+                                         <button type=&quot;submit&quot; class=&quot;btn btn-primary&quot;>Regrade</button>
+                                       </form>
+                                       ">
+                    </div>
+
+                    <!-- Capture all clicks to dropdown items to prevent scrolling to the top of the page -->
+                    <div class="dropdown-menu" onclick="window.event.preventDefault();">
+
+                      <!-- ################################################## -->
+
+                      <% if (authz_data.has_instructor_edit) { %>
+                      <a class="dropdown-item"
+                         href="#"
+                         data-toggle="modal" data-target="#deleteAssessmentInstanceModal"
+                         data-uid="<%= row.uid %>" data-name="<%= row.name %>"
+                         data-number="<%= row.number %>"
+                         data-score-perc="<%= Math.floor(row.score_perc) %>"
+                         data-assessment-instance-id="<%= row.assessment_instance_id %>"
+                         >
+                        <i class="fa fa-times" aria-hidden="true"></i> Delete
+                      </a>
+                      <% } %>
+
+                      <!-- ################################################## -->
+
+                      <% if (authz_data.has_instructor_edit) { %>
+                      <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverRegrade').popover('show')" href="#">
+                        <i class="fa fa-sync" aria-hidden="true"></i> Regrade
+                      </a>
+                      <% } %>
+
+                      <!-- ################################################## -->
+
+                      <% if (authz_data.has_instructor_edit) { %>
+                      <a class="dropdown-item <% if (row.open) { %>disabled<% } %>" <% if (!row.open) { %>onclick="$('#row<%= iRow %>PopoverOpen').popover('show')"<% } %> href="#">
+                        <i class="far fa-circle" aria-hidden="true"></i> Re-open
+                      </a>
+                      <% } %>
+
+                      <!-- ################################################## -->
+
+                      <% if (authz_data.has_instructor_edit) { %>
+                      <a class="dropdown-item <% if (!row.open) { %>disabled<% } %>" <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"<% } %> href="#">
+                        <i class="fa fa-ban" aria-hidden="true"></i> Close
+                      </a>
+                      <% } %>
+
+                      <!-- ################################################## -->
+
+                    </div>
                   </div>
-                  <div id="row<%= iRow %>PopoverClose"
-                       tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-                       data-html="true" data-placement="auto" title="Confirm close"
-                       data-content="
-                                     <form name=&quot;close-form&quot; method=&quot;POST&quot;>
-                                       <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;close&quot;>
-                                       <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
-                                       <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
-                                       <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverClose').popover('hide')&quot;>
-                                         Cancel
-                                       </button>
-                                       <button type=&quot;submit&quot; class=&quot;btn btn-danger&quot;>Grade and close</button>
-                                     </form>
-                                     ">
-                  </div>
-                  <div id="row<%= iRow %>PopoverRegrade"
-                       tabindex="0" data-toggle="popover" data-trigger="manual" data-container="body"
-                       data-html="true" data-placement="auto" title="Confirm regrade"
-                       data-content="
-                                     <form name=&quot;regrade-form&quot; method=&quot;POST&quot;>
-                                       <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;regrade&quot;>
-                                       <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
-                                       <input type=&quot;hidden&quot; name=&quot;assessment_instance_id&quot; value=&quot;<%= row.assessment_instance_id %>&quot;>
-                                       <button type=&quot;button&quot; class=&quot;btn btn-secondary&quot; onclick=&quot;$('#row<%= iRow %>PopoverRegrade').popover('hide')&quot;>
-                                         Cancel
-                                       </button>
-                                       <button type=&quot;submit&quot; class=&quot;btn btn-primary&quot;>Regrade</button>
-                                     </form>
-                                     ">
-                  </div>
-
-                  <!-- Capture all clicks to dropdown items to prevent scrolling to the top of the page -->
-                  <div class="dropdown-menu" onclick="window.event.preventDefault();">
-
-                    <!-- ################################################## -->
-
-                    <% if (authz_data.has_instructor_edit) { %>
-                    <a class="dropdown-item"
-                       href="#"
-                       data-toggle="modal" data-target="#deleteAssessmentInstanceModal"
-                       data-uid="<%= row.uid %>" data-name="<%= row.name %>"
-                       data-number="<%= row.number %>"
-                       data-score-perc="<%= Math.floor(row.score_perc) %>"
-                       data-assessment-instance-id="<%= row.assessment_instance_id %>"
-                       >
-                      <i class="fa fa-times" aria-hidden="true"></i> Delete
-                    </a>
-                    <% } %>
-
-                    <!-- ################################################## -->
-
-                    <% if (authz_data.has_instructor_edit) { %>
-                    <a class="dropdown-item" onclick="$('#row<%= iRow %>PopoverRegrade').popover('show')" href="#">
-                      <i class="fa fa-sync" aria-hidden="true"></i> Regrade
-                    </a>
-                    <% } %>
-
-                    <!-- ################################################## -->
-
-                    <% if (authz_data.has_instructor_edit) { %>
-                    <a class="dropdown-item <% if (row.open) { %>disabled<% } %>" <% if (!row.open) { %>onclick="$('#row<%= iRow %>PopoverOpen').popover('show')"<% } %> href="#">
-                      <i class="far fa-circle" aria-hidden="true"></i> Re-open
-                    </a>
-                    <% } %>
-
-                    <!-- ################################################## -->
-
-                    <% if (authz_data.has_instructor_edit) { %>
-                    <a class="dropdown-item <% if (!row.open) { %>disabled<% } %>" <% if (row.open) { %>onclick="$('#row<%= iRow %>PopoverClose').popover('show')"<% } %> href="#">
-                      <i class="fa fa-ban" aria-hidden="true"></i> Close
-                    </a>
-                    <% } %>
-
-                    <!-- ################################################## -->
-
-                  </div>
-                </div>
-              </td>
-              <td class="cell-center"><a href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>" class="btn btn-xs btn-info">Details</a></td>
-            </tr>
-            <% }); %>
-          </tbody>
-        </table>
+                </td>
+                <td class="text-center"><a href="<%= urlPrefix %>/assessment_instance/<%= row.assessment_instance_id %>" class="btn btn-xs btn-info">Details</a></td>
+              </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
         <script>
           $(function(){
               $("#usersTable").tablesorter({

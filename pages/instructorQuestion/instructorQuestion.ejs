@@ -25,56 +25,58 @@
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Question <%= question.qid %></div>
 
-        <table class="table table-sm table-hover two-column-description">
-          <tbody>
-            <tr>
-              <th>Title</th>
-              <td><%= question.title %></td>
-            </tr>
-            <tr>
-              <th>QID</th>
-              <td><%= question.qid %>
-                  <% if (questionGHLink) { %>(<a target="_blank" href="<%= questionGHLink %>">view on GitHub</a>)<% } %>
-              </td>
-            </tr>
-            <tr>
-              <th>Type</th>
-              <td><%= question.type %></td>
-            </tr>
-            <tr>
-              <th>Topic</th>
-              <td><%- include('../partials/topic', {topic: topic}); %></td>
-            </tr>
-            <tr>
-              <th>Tags</th>
-              <td><%- include('../partials/tags', {tags: tags}); %></td>
-            </tr>
-            <tr>
-              <th>Issues</th>
-              <td><%- include('../partials/issueBadge', {count: open_issue_count}); %></td>
-            </tr>
-            <tr>
-              <th>Assessments</th>
-              <td><%- include('../partials/assessments', {assessments: assessments}); %></td>
-            </tr>
-            <% if (question.type == 'Freeform') { %>
-            <tr>
-              <th class="align-middle">Tests</th>
-              <td>
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-                  <button class="btn btn-sm btn-outline-primary" name="__action" value="test_once">
-                    Test once with full details
-                  </button>
-                  <button class="btn btn-sm btn-outline-primary" name="__action" value="test_100">
-                    Test 100 times with only results
-                  </button>
-                </form>
-              </td>
-            </tr>
-            <% } %>
-          </tbody>
-        </table>
+        <div class="table-responsive">
+          <table class="table table-sm table-hover two-column-description">
+            <tbody>
+              <tr>
+                <th>Title</th>
+                <td><%= question.title %></td>
+              </tr>
+              <tr>
+                <th>QID</th>
+                <td><%= question.qid %>
+                    <% if (questionGHLink) { %>(<a target="_blank" href="<%= questionGHLink %>">view on GitHub</a>)<% } %>
+                </td>
+              </tr>
+              <tr>
+                <th>Type</th>
+                <td><%= question.type %></td>
+              </tr>
+              <tr>
+                <th>Topic</th>
+                <td><%- include('../partials/topic', {topic: topic}); %></td>
+              </tr>
+              <tr>
+                <th>Tags</th>
+                <td><%- include('../partials/tags', {tags: tags}); %></td>
+              </tr>
+              <tr>
+                <th>Issues</th>
+                <td><%- include('../partials/issueBadge', {count: open_issue_count}); %></td>
+              </tr>
+              <tr>
+                <th>Assessments</th>
+                <td><%- include('../partials/assessments', {assessments: assessments}); %></td>
+              </tr>
+              <% if (question.type == 'Freeform') { %>
+              <tr>
+                <th class="align-middle">Tests</th>
+                <td>
+                  <form method="POST">
+                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                    <button class="btn btn-sm btn-outline-primary" name="__action" value="test_once">
+                      Test once with full details
+                    </button>
+                    <button class="btn btn-sm btn-outline-primary" name="__action" value="test_100">
+                      Test 100 times with only results
+                    </button>
+                  </form>
+                </td>
+              </tr>
+              <% } %>
+            </tbody>
+          </table>
+        </div>
         <div class="card-footer">
           <button class="btn btn-sm btn-primary" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
             Report an issue with this question
@@ -141,11 +143,11 @@
           <table id="questionsTable" class="table table-sm table-hover tablesorter table-bordered">
             <thead>
             <tr>
-              <th class="cell-center">Course Instance</th>
-              <th class="cell-center">Assessment</th>
+              <th class="text-center">Course Instance</th>
+              <th class="text-center">Assessment</th>
                 <% Object.keys(stat_descriptions).forEach(function(stat) {%>
               <th
-                      class="cell-center"
+                      class="text-center"
                       title="<%- stat_descriptions[stat].description %>">
                   <%- stat_descriptions[stat].title %>
               </th>
@@ -163,79 +165,79 @@
                 <a href="/pl/course_instance/<%= row.course_instance_id %>/instructor/assessment/<%= row.assessment_id %>/" class="btn btn-<%=
                   row.color %> btn-xs" role="button"><%= row.label %></a>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <%= formatFloat(row.mean_question_score, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <%= formatFloat(row.question_score_variance, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <%= formatFloat(row.discrimination, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <%= formatFloat(row.some_submission_perc, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <%= formatFloat(row.some_perfect_submission_perc, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <%= formatFloat(row.some_nonzero_submission_perc, 1) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <%= formatFloat(row.average_first_submission_score, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <%= formatFloat(row.first_submission_score_variance, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <% if (row.first_submission_score_hist !== null) { %>
                 <div id="firstSubmissionScoreHist<%= i %>" class="miniHist"></div>
                   <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <%= formatFloat(row.average_last_submission_score, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <%= formatFloat(row.last_submission_score_variance, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <% if (row.last_submission_score_hist !== null) { %>
                 <div id="lastSubmissionScoreHist<%= i %>" class="miniHist"></div>
                   <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <%= formatFloat(row.average_max_submission_score, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <%= formatFloat(row.max_submission_score_variance, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <% if (row.max_submission_score_hist !== null) { %>
                 <div id="maxSubmissionScoreHist<%= i %>" class="miniHist"></div>
                   <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <%= formatFloat(row.average_average_submission_score, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <%= formatFloat(row.average_submission_score_variance, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <% if (row.average_submission_score_hist !== null) { %>
                 <div id="averageSubmissionScoreHist<%= i %>" class="miniHist"></div>
                   <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <% if (row.submission_score_array_averages !== null) { %>
                 <div id="submissionScoreArray<%= i %>" class="miniHist"></div>
                   <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <% if (row.incremental_submission_score_array_averages !== null) { %>
                 <div id="incrementalSubmissionScoreArray<%= i %>" class="miniHist"></div>
                   <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <% if (row.type !== 'Homework') { %>
                   <% if (row.incremental_submission_points_array_averages !== null) { %>
                     <div id="incrementalSubmissionPointsArray<%= i %>" class="miniHist"></div>
@@ -244,18 +246,18 @@
                   N/A
                 <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <%= formatFloat(row.average_number_submissions, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <%= formatFloat(row.number_submissions_variance, 2) %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <% if (row.number_submissions_hist !== null) { %>
                 <div id="numberSubmissionsHist<%= i %>" class="miniHist"></div>
                   <% } %>
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                   <% if (row.quintile_question_scores !== null) { %>
                 <div id="quintileQuestionScoresHist<%= i %>" class="miniHist"></div>
                   <% } %>

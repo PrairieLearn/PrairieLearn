@@ -10,14 +10,6 @@ canvas {
     margin-top: 20px;
 }
 
-.table .cell-center {
-    text-align: center;
-}
-
-.table .cell-right {
-    text-align: right;
-}
-
 line.axis {
     fill: none;
     stroke: #000;

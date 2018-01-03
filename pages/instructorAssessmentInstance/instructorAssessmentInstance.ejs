@@ -38,7 +38,7 @@
                 <small>/<span id="total-max-points" class="text-muted"><%= getStringFromFloat(assessment_instance.max_points) %></span></small>
                 <% if (authz_data.has_instructor_edit) { %>
                 <a id="editTotalPointsButton"
-                   tabindex="0" class="btn btn-xs btn-default" role="button"
+                   tabindex="0" class="btn btn-xs btn-secondary" role="button"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change total points"
                    data-content="<%= include('editTotalPointsForm',
@@ -57,7 +57,7 @@
               <td class="align-middle" style="width: 100%;">
                 <% if (authz_data.has_instructor_edit) { %>
                 <a id="editTotalScorePercButton"
-                   tabindex="0" class="btn btn-xs btn-default" role="button"
+                   tabindex="0" class="btn btn-xs btn-secondary" role="button"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change total percentage score"
                    data-content="<%= include('editTotalScorePercForm',
@@ -88,10 +88,10 @@
             <tr>
               <th>Student question</th>
               <th>Instructor question</th>
-              <th class="cell-center">
+              <th class="text-center">
                 Awarded points
               </th>
-              <th class="cell-center" colspan="2">
+              <th class="text-center" colspan="2">
                 Percentage score
               </th>
             </tr>
@@ -113,11 +113,11 @@
                 <%= instance_question.qid %>
                 (<a href="<%= urlPrefix %>/question/<%= instance_question.question_id %>/">instructor view</a>)
               </td>
-              <td class="cell-center">
+              <td class="text-center">
                 <%- include('../partials/examQuestionAwardedPoints', {points: instance_question.points, max_points: instance_question.max_points}); %>
                 <% if (authz_data.has_instructor_edit) { %>
                 <a id="editQuestionPoints<%= i_instance_question %>"
-                   tabindex="0" class="btn btn-xs btn-default editQuestionPointsButton" role="button"
+                   tabindex="0" class="btn btn-xs btn-secondary editQuestionPointsButton" role="button"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> points"
                    data-content="<%= include('editQuestionPointsForm',
@@ -128,13 +128,13 @@
                 </a>
                 <% } %>
               </td>
-              <td class="align-middle cell-center">
+              <td class="align-middle text-center">
                 <%- include('../partials/scorebar', {score: instance_question.score_perc}); %>
               </td>
               <td class="align-middle" style="width: 1em;">
                 <% if (authz_data.has_instructor_edit) { %>
                 <a id="editQuestionScorePerc<%= i_instance_question %>"
-                   tabindex="0" class="btn btn-xs btn-default editQuestionScorePercButton" role="button"
+                   tabindex="0" class="btn btn-xs btn-secondary editQuestionScorePercButton" role="button"
                    data-toggle="popover" data-container="body"
                    data-html="true" data-placement="auto" title="Change question <%= instance_question.question_number %> percentage score"
                    data-content="<%= include('editQuestionScorePercForm',
