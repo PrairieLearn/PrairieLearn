@@ -1,4 +1,4 @@
-[id^=file-upload] .dropzone {
+[id^=file-upload] .upload-dropzone {
   position: relative;
   min-height: 15ex;
   border-radius: 4px;
@@ -6,14 +6,14 @@
   border: 2px dashed #0087F7;
   margin-bottom: 20px;
 }
-[id^=file-upload] .dropzone.dz-clickable {
+[id^=file-upload] .upload-dropzone.dz-clickable {
   cursor: pointer;
 }
-[id^=file-upload] .dropzone.dz-drag-hover {
+[id^=file-upload] .upload-dropzone.dz-drag-hover {
   background-color: #D9EDF7;
   border-style: solid;
 }
-[id^=file-upload] .dropzone .dz-message {
+[id^=file-upload] .upload-dropzone .dz-message {
   position: absolute;
   top: 50%;
   transform: translateY(-50%);

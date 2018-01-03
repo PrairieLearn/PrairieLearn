@@ -1,8 +1,5 @@
 <script>
 $(function() {
-  // Turn off Dropzone autodiscover; we'll configure it manually
-  window.Dropzone.autoDiscover = false;
-
   var UUID = "{{uuid}}";
 
   new window.PLFileUpload(UUID, {
@@ -14,7 +11,7 @@ $(function() {
 
 <div id="file-upload-{{uuid}}">
   <input type="hidden" name="{{name}}">
-  <div class="dropzone">
+  <div class="upload-dropzone">
     <div class="dz-message">
       Drop files here or click to upload.
       <br/>
