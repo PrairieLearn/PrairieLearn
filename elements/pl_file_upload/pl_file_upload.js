@@ -26,7 +26,7 @@ window.PLFileUpload = function(uuid, options) {
 * Initializes the file upload zone on the question.
 */
 window.PLFileUpload.prototype.initializeTemplate = function() {
-    var $dropTarget = this.element.find('.dropzone');
+    var $dropTarget = this.element.find('.upload-dropzone');
 
     var that = this;
 
