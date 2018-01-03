@@ -2,4 +2,8 @@
 
 cd /PrairieLearn
 docker/start_postgres.sh
-node server.js
+if [[ -n $NODEMON ]] && [[ $NODEMON == "true" ]]; then
+  npm run start-nodemon
+else
+  npm start
+fi

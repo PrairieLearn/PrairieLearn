@@ -1,0 +1,78 @@
+<div class="modal fade" id="issueResponseModal" tabindex="-1" role="dialog" aria-labelledby="issueResponseModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="issueResponseModalLabel">Send message to student</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form>
+          <div class="form-group">
+            <label for="message-text" class="col-form-label">Message:</label>
+            <textarea class="form-control" id="issueResponseModalMessage"></textarea>
+          </div>
+        </form>
+        <hr>
+        <div class="card">
+          <div class="card-header">Message preview</div>
+          <div class="card-body" id="issueResponseModalPreview" style="white-space: pre-line;">
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+        <a href="#" role="button" class="btn btn-primary" id="issueResponseModalSend">Send message</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  var instructorName = '<%= authz_data.user.name %>';
+
+  function getMessageBody(studentMessage, instructorMessage, showPlaceholder) {
+    var body = 'Hello,\nThis is in response to an issue you filed on PrairieLearn:\n\n"' + studentMessage + '"\n\n';
+    body += instructorMessage || (showPlaceholder ? '<span class="font-italic text-muted">your message here!</span>' : '');
+    body += '\n\nSincerely,\n' + instructorName;
+    return body;
+  }
+
+  $('#issueResponseModal').on('show.bs.modal', function(event) {
+    var instructorRole = '<%= authz_data.course_role %>';
+    var button = $(event.relatedTarget);
+    var uid = button.data('uid');
+    var issueId = button.data('issue-id');
+    var studentMessage = button.data('student-message');
+    var modal = $(this);
+    modal.find('.modal-title').text('Send message to ' + uid);
+    modal.find('#recipientName').val(uid);
+
+    var sendButton = modal.find('#issueResponseModalSend');
+    var message = modal.find('#issueResponseModalMessage');
+    var preview = modal.find('#issueResponseModalPreview');
+
+    message.bind("propertychange keyup input cut paste", function() {
+      preview.html(getMessageBody(studentMessage, message.val(), true));
+    });
+
+    // Sync initial message preview
+    preview.html(getMessageBody(studentMessage, message.val(), true));
+
+    sendButton.click(function() {
+      var subject = 'PrairieLearn Issue #' + issueId;
+      var body = getMessageBody(studentMessage, message.val(), false);
+      var href = 'mailto:' + uid + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+      $(this).attr('href', href);
+      modal.modal('hide');
+    });
+  });
+
+  $('#issueResponseModal').on('hide.bs.modal', function(event) {
+    // Wipe the message for the next time the dialog is shown.
+    $(this).find('#issueResponseModalMessage').val('');
+  });
+})();
+</script>

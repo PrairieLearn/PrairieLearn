@@ -1,21 +1,108 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var express = require('express');
-var router = express.Router();
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+const moment = require('moment');
+const express = require('express');
+const router = express.Router();
+const SearchString = require('search-string');
 
-var error = require('../../lib/error');
-var paginate = require('../../lib/paginate');
-var sqldb = require('../../lib/sqldb');
-var sqlLoader = require('../../lib/sql-loader');
+const error = require('../../lib/error');
+const paginate = require('../../lib/paginate');
+const sqldb = require('../../lib/sqldb');
+const sqlLoader = require('../../lib/sql-loader');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
-const pageSize = 100;
+const PAGE_SIZE = 100;
+
+const commonQueries = {
+    allOpenQuery: 'is:open',
+    allClosedQuery: 'is:closed',
+    allManuallyReportedQuery: 'is:manually-reported',
+    allAutomaticallyReportedQuery: 'is:automatically-reported',
+};
+
+const formattedCommonQueries = {};
+
+Object.keys(commonQueries).forEach((key) => {
+    formattedCommonQueries[key] = `?q=${encodeURIComponent(commonQueries[key])}`;
+});
+
+function formatForLikeClause(str) {
+    return `%${str}%`;
+}
+
+function parseRawQuery(str) {
+    const parsedQuery = SearchString.parse(str);
+    const filters = {
+        filter_is_open: null,
+        filter_is_closed: null,
+        filter_manually_reported: null,
+        filter_automatically_reported: null,
+        filter_qids: null,
+        filter_not_qids: null,
+        filter_query_text: null,
+        filter_users: null,
+        filter_not_users: null,
+    };
+
+    const queryText = parsedQuery.getAllText();
+    if (queryText) {
+        filters.filter_query_text = queryText;
+    }
+
+    for (const option of parsedQuery.getConditionArray()) {
+        switch (option.keyword) {
+            case 'is': // boolean option
+                switch (option.value) {
+                    case 'open':
+                        filters.filter_is_open = !option.negated;
+                        break;
+                    case 'closed':
+                        filters.filter_is_closed = !option.negated;
+                        break;
+                    case 'manually-reported':
+                        filters.filter_manually_reported = !option.negated;
+                        break;
+                    case 'automatically-reported':
+                        filters.filter_automatically_reported = !option.negated;
+                        break;
+                }
+                break;
+            case 'qid':
+                if (!option.negated) {
+                    filters.filter_qids = filters.filter_qids || [];
+                    filters.filter_qids.push(formatForLikeClause(option.value));
+                } else {
+                    filters.filter_not_qids = filters.filter_not_qids || [];
+                    filters.filter_not_qids.push(formatForLikeClause(option.value));
+                }
+                break;
+            case 'user':
+                if (!option.negated) {
+                    filters.filter_users = filters.filter_users || [];
+                    filters.filter_users.push(formatForLikeClause(option.value));
+                } else {
+                    filters.filter_not_users = filters.filter_not_users || [];
+                    filters.filter_not_users.push(formatForLikeClause(option.value));
+                }
+                break;
+        }
+    }
+
+    return filters;
+}
 
 router.get('/', function(req, res, next) {
+    if (!('q' in req.query)) {
+        req.query.q = 'is:open';
+    }
+    const filters = parseRawQuery(req.query.q);
+
     var params = {
         course_id: res.locals.course.id,
     };
+    _.assign(params, filters);
+
     sqldb.query(sql.issues_count, params, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount != 2) return next(new Error('unable to obtain issue count, rowCount = ' + result.rowCount));
@@ -23,19 +110,33 @@ router.get('/', function(req, res, next) {
         res.locals.openCount = result.rows[1].count;
         res.locals.issueCount = res.locals.closedCount + res.locals.openCount;
 
-        _.assign(res.locals, paginate.pages(req.query.page, res.locals.issueCount, pageSize));
-        
+        _.assign(res.locals, paginate.pages(req.query.page, res.locals.issueCount, PAGE_SIZE));
+        res.locals.shouldPaginate = res.locals.issueCount > PAGE_SIZE;
+
         var params = {
             course_id: res.locals.course.id,
-            offset: (res.locals.currPage - 1) * pageSize,
-            limit: pageSize,
-            qid: req.query.qid,
+            offset: (res.locals.currPage - 1) * PAGE_SIZE,
+            limit: PAGE_SIZE,
         };
+        _.assign(params, filters);
+
         sqldb.query(sql.select_issues, params, function(err, result) {
             if (ERR(err, next)) return;
 
+            // Add human-readable relative dates to each row
+            result.rows.forEach((row) => {
+                row.relative_date = moment(row.formatted_date).from(row.now_date);
+            });
+
             res.locals.rows = result.rows;
-            res.locals.filterQid = req.query.qid;
+
+            res.locals.filterQuery = req.query.q;
+            res.locals.encodedFilterQuery = encodeURIComponent(req.query.q);
+            res.locals.filters = filters;
+
+            res.locals.commonQueries = {};
+            _.assign(res.locals.commonQueries, formattedCommonQueries);
+
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });
     });

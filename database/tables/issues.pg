@@ -6,7 +6,6 @@ columns
     course_id: bigint
     course_instance_id: bigint
     date: timestamp with time zone default now()
-    display_id: text
     id: bigint not null default nextval('issues_id_seq'::regclass)
     instance_question_id: bigint
     instructor_message: text

@@ -7,6 +7,8 @@
 
   * Upgrade to NodeJS 8.x LTS (Matt West).
 
+  * Add new Issues page style and flexible filtering (Nathan Walters).
+
 * __2.11.0__ - 2017-12-29
 
   * Add support for partial credit in Homeworks (Tim Bretl).

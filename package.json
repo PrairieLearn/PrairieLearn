@@ -34,8 +34,10 @@
         "lodash": "4.17.x",
         "mathjax": "2.7.x",
         "mersenne": "0.0.x",
+        "moment": "^2.20.1",
         "mongodb": "2.2.x",
         "mustache": "2.3.0",
+        "nodemon": "^1.14.7",
         "numeric": "1.2.x",
         "passport": "0.4.x",
         "passport-azure-ad": "3.0.x",
@@ -44,6 +46,7 @@
         "request": "2.81.x",
         "requirejs": "2.3.x",
         "s3-upload-stream": "1.0.x",
+        "search-string": "^3.0.0",
         "serve-favicon": "2.3.x",
         "socket.io": "1.7.x",
         "socket.io-client": "1.7.x",
@@ -64,6 +67,8 @@
         "yargs": "8.0.1"
     },
     "scripts": {
+        "start": "node server.js",
+        "start-nodemon": "nodemon server.js",
         "test": "nyc --reporter=lcov mocha tests/index.js",
         "lint-js": "eslint --ext js \"**/*.js\"",
         "lint-python": "python3.6 -m flake8 ./"

@@ -236,7 +236,7 @@
             <tr>
               <td><%= row.formatted_date %></td>
               <td><%= row.auth_user_uid %></td>
-              <td><button class="btn btn-xs btn-<%= row.event_color %>"><%= row.event_name %></button></td>
+              <td><button class="btn btn-xs color-<%= row.event_color %>"><%= row.event_name %></button></td>
               <td><% if (row.qid) { %><a href="<%= urlPrefix %>/question/<%= row.question_id %>/"><%= row.qid %></a><% } %></td>
               <td><% if (row.question_id && row.variant_id) { %><%= row.variant_number %><% } %></td>
               <% if (row.event_name != 'External grading results') { %>

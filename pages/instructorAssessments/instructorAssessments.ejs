@@ -28,13 +28,13 @@
             <tbody>
               <% rows.forEach(function(row, i) { %>
               <% if (row.start_new_set) { %>
-              <tr class="<%= row.color %>">
+              <tr>
                 <th colspan="7"><%= row.heading %></th>
               </tr>
               <% } %>
               <tr>
                 <td class="align-middle" style="width: 1%">
-                  <a href="<%= urlPrefix %>/assessment/<%= row.id %>/" class="btn btn-<%= row.color %> btn-xs" role="button"><%= row.label %></a>
+                  <a href="<%= urlPrefix %>/assessment/<%= row.id %>/" class="btn color-<%= row.color %> btn-xs" role="button"><%= row.label %></a>
                 </td>
                 <td class="align-middle">
                   <a href="<%= urlPrefix %>/assessment/<%= row.id %>/"><%= row.title %></a>

@@ -149,3 +149,18 @@ table.two-column-description-no-header-with-help tr td:last-of-type {
 table td > .badge {
   transform: translate(0, -12.5%);
 }
+
+/* Custom button styles that look better in input groups */
+.btn.btn-med-light {
+  color: #212529;
+  background-color: #dbdcdc;
+}
+
+.btn.btn-med-light:hover {
+  background-color: #ced0d0;
+}
+
+.btn.btn-med-light:focus {
+  background-color: #c3c3c3;
+  box-shadow: 0 0 0 0.2rem rgba(195,195,195,.25)
+}

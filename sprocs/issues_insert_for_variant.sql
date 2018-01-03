@@ -20,7 +20,6 @@ DECLARE
     assessment_id bigint;
     instance_question_id bigint;
     user_id bigint;
-    display_id text;
 BEGIN
     SELECT
         c.id,      ci.id,              q.id,        a.id,                         iq.id, u.user_id
@@ -41,14 +40,12 @@ BEGIN
 
     IF NOT FOUND THEN RAISE EXCEPTION 'invalid variant_id'; END IF;
 
-    display_id := issues_generate_display_id();
-
     INSERT INTO issues
-        (display_id, student_message, instructor_message, course_caused, course_data, system_data, authn_user_id,
+        (student_message, instructor_message, course_caused, course_data, system_data, authn_user_id,
         instance_question_id, course_id, course_instance_id, question_id, assessment_id, user_id, variant_id,
         manually_reported)
     VALUES
-        (display_id, student_message, instructor_message, course_caused, course_data, system_data, authn_user_id,
+        (student_message, instructor_message, course_caused, course_data, system_data, authn_user_id,
         instance_question_id, course_id, course_instance_id, question_id, assessment_id, user_id, variant_id,
         manually_reported);
 END;

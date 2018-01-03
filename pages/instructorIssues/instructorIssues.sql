@@ -3,7 +3,8 @@ WITH counts AS (
     SELECT
         i.open,
         count(*)::int
-    FROM issues AS i
+    FROM
+        issues AS i
     WHERE
         i.course_id = $course_id
         AND i.course_caused
@@ -20,8 +21,8 @@ ORDER BY open;
 -- BLOCK select_issues
 SELECT
     i.id AS issue_id,
-    i.display_id,
-    format_date_full_compact(i.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date,
+    format_date_iso8601(now(), coalesce(ci.display_timezone, c.display_timezone)) AS now_date,
+    format_date_iso8601(i.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date,
     ci.short_name AS course_instance_short_name,
     CASE WHEN i.assessment_id IS NOT NULL THEN assessments_format(i.assessment_id) ELSE NULL END AS assessment,
     i.question_id,
@@ -32,7 +33,18 @@ SELECT
     i.open,
     i.manually_reported
 FROM
-    issues AS i
+    issues_select_with_filter (
+        $filter_is_open,
+        $filter_is_closed,
+        $filter_manually_reported,
+        $filter_automatically_reported,
+        $filter_qids,
+        $filter_not_qids,
+        $filter_users,
+        $filter_not_users,
+        $filter_query_text
+    ) AS selected_issues
+    JOIN issues AS i ON (i.id = selected_issues.issue_id)
     JOIN pl_courses AS c ON (c.id = i.course_id)
     LEFT JOIN course_instances AS ci ON (ci.id = i.course_instance_id)
     LEFT JOIN assessments AS a ON (a.id = i.assessment_id)
@@ -41,7 +53,6 @@ FROM
 WHERE
     i.course_id = $course_id
     AND i.course_caused
-    AND (($qid::text IS NULL) OR (q.qid = $qid::text))
 ORDER BY
     i.date DESC, i.id
 LIMIT

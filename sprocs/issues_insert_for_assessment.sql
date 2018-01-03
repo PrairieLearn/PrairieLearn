@@ -15,7 +15,6 @@ AS $$
 DECLARE
     course_id bigint;
     course_instance_id bigint;
-    display_id text;
 BEGIN
     SELECT
         c.id,      ci.id
@@ -30,13 +29,11 @@ BEGIN
 
     IF NOT FOUND THEN RAISE EXCEPTION 'invalid assessment_id'; END IF;
 
-    display_id := issues_generate_display_id();
-
     INSERT INTO issues
-        (display_id, student_message, instructor_message, course_caused, course_data, system_data, authn_user_id,
+        (student_message, instructor_message, course_caused, course_data, system_data, authn_user_id,
         course_id, course_instance_id, assessment_id, user_id)
     VALUES
-        (display_id, student_message, instructor_message, course_caused, course_data, system_data, authn_user_id,
+        (student_message, instructor_message, course_caused, course_data, system_data, authn_user_id,
         course_id, course_instance_id, assessment_id, user_id);
 END;
 $$ LANGUAGE plpgsql VOLATILE;
