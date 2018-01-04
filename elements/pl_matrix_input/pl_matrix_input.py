@@ -80,7 +80,12 @@ def render(element_html, element_index, data):
 
     elif data['panel'] == 'submission':
         parse_error = data['format_errors'].get(name, None)
-        html_params = {'submission': True, 'label': label, 'parse_error': parse_error}
+        html_params = {
+            'submission': True,
+            'label': label,
+            'parse_error': parse_error,
+            'uuid': pl.get_uuid()
+        }
         if parse_error is None:
             a_sub = np.array(data['submitted_answers'][name])
             if format_type == 'matlab':
