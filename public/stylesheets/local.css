@@ -118,6 +118,10 @@ table.two-column-description-no-header-with-help tr td:last-of-type {
   font-size: 0.7rem;
 }
 
+a.badge {
+  text-decoration: none;
+}
+
 .navbar-brand {
   position: relative;
 }
