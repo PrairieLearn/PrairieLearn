@@ -41,7 +41,7 @@
         "passport": "^0.4.0",
         "passport-azure-ad": "^3.0.9",
         "pg": "^7.4.0",
-        "popper.js": "^1.12.9",
+        "popper.js": "^1.13.0",
         "requirejs": "^2.3.5",
         "s3-upload-stream": "^1.0.7",
         "search-string": "^3.0.0",
@@ -61,7 +61,7 @@
         "nyc": "^11.4.1",
         "request": "^2.83.0",
         "tmp": "0.0.33",
-        "yargs": "^10.0.3"
+        "yargs": "^10.1.0"
     },
     "scripts": {
         "start": "node server.js",
