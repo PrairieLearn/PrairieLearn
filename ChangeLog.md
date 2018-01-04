@@ -11,6 +11,8 @@
 
   * Fix broken file upload element (Nathan Walters).
 
+  * Fix broken popover and improve assessment label styles (Nathan Walters).
+
 * __2.11.0__ - 2017-12-29
 
   * Add support for partial credit in Homeworks (Tim Bretl).
