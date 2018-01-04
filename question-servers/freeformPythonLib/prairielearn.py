@@ -573,7 +573,7 @@ def matlab_to_numpy(a):
             return (None, 'Invalid format (missing square brackets and not a real number).')
 
 
-def is_correct_ndarray2D_dd(a_sub, a_tru, digits=2, eps_digits=3):
+def is_correct_ndarray2D_dd(a_sub, a_tru, digits=2):
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
@@ -586,13 +586,13 @@ def is_correct_ndarray2D_dd(a_sub, a_tru, digits=2, eps_digits=3):
     return True
 
 
-def is_correct_ndarray2D_sf(a_sub, a_tru, digits=2, eps_digits=3):
+def is_correct_ndarray2D_sf(a_sub, a_tru, digits=2):
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
     for i in range(0, m):
         for j in range(0, n):
-            if not is_correct_scalar_sf(a_sub[i, j], a_tru[i, j], digits, eps_digits):
+            if not is_correct_scalar_sf(a_sub[i, j], a_tru[i, j], digits):
                 return False
 
     # All elements were close
@@ -608,27 +608,25 @@ def is_correct_scalar_ra(a_sub, a_tru, rtol=1e-5, atol=1e-8):
     return np.allclose(a_sub, a_tru, rtol, atol)
 
 
-def is_correct_scalar_dd(a_sub, a_tru, digits=2, eps_digits=3):
+def is_correct_scalar_dd(a_sub, a_tru, digits=2):
     # Get bounds on submitted answer
-    m = 10**digits
-    eps = 10**-(digits + eps_digits)
-    lower_bound = (np.floor(m * (a_tru - eps)) / m) - eps
-    upper_bound = (np.ceil(m * (a_tru + eps)) / m) + eps
+    eps = 0.51*(10**-digits)
+    lower_bound = a_tru - eps
+    upper_bound = a_tru + eps
 
     # Check if submitted answer is in bounds
     return (a_sub > lower_bound) & (a_sub < upper_bound)
 
 
-def is_correct_scalar_sf(a_sub, a_tru, digits=2, eps_digits=3):
+def is_correct_scalar_sf(a_sub, a_tru, digits=2):
     # Get bounds on submitted answer
     if (a_tru == 0):
-        n = digits
+        n = digits-1
     else:
         n = -int(np.floor(np.log10(np.abs(a_tru)))) + (digits - 1)
-    m = 10**n
-    eps = 10**-(n + eps_digits)
-    lower_bound = (np.floor(m * (a_tru - eps)) / m) - eps
-    upper_bound = (np.ceil(m * (a_tru + eps)) / m) + eps
+    eps = 0.51*(10**-n)
+    lower_bound = a_tru - eps
+    upper_bound = a_tru + eps
 
     # Check if submitted answer is in bounds
     return (a_sub > lower_bound) & (a_sub < upper_bound)
