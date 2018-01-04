@@ -114,7 +114,7 @@ module.exports = {
             it('should have a CSRF token', function() {
                 elemList = locals.$('form input[name="__csrf_token"]');
                 assert.lengthOf(elemList, 1);
-                assert.deepProperty(elemList[0], 'attribs.value');
+                assert.nestedProperty(elemList[0], 'attribs.value');
                 locals.__csrf_token = elemList[0].attribs.value;
                 assert.isString(locals.__csrf_token);
             });

@@ -1,11 +1,11 @@
-var _ = require('underscore');
+const _ = require('lodash');
 
 /**
  * Question servers module.
  * @module question-servers
  */
 
-var questionModules = {
+const questionModules = {
     'Calculation':       require('./calculation'),
     'File':              require('./calculation'),
     'Checkbox':          require('./calculation'),
@@ -14,7 +14,7 @@ var questionModules = {
     'Freeform':          require('./freeform'),
 };
 
-var effectiveQuestionTypes = {
+const effectiveQuestionTypes = {
     'Calculation':       'Calculation',
     'File':              'Calculation',
     'Checkbox':          'Calculation',
@@ -25,7 +25,7 @@ var effectiveQuestionTypes = {
 
 module.exports = {
     getEffectiveQuestionType: function(type, callback) {
-        if (_(effectiveQuestionTypes).has(type)) {
+        if (_.has(effectiveQuestionTypes, type)) {
             callback(null, effectiveQuestionTypes[type]);
         } else {
             callback(new Error('Unknown question type: ' + type));
@@ -33,7 +33,7 @@ module.exports = {
     },
 
     getModule: function(type, callback) {
-        if (_(questionModules).has(type)) {
+        if (_.has(questionModules, type)) {
             callback(null, questionModules[type]);
         } else {
             callback(new Error('Unknown question type: ' + type));

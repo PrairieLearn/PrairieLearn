@@ -34,9 +34,9 @@ module.exports = {
                 elemList = locals.$('.question-data');
                 assert.lengthOf(elemList, 1);
             });
-            it('question-data should contain base64 data if Calculation', function() {
+            it('question-data should contain base64 data of Calculation', function() {
                 if (locals.question.type != 'Calculation') return;
-                assert.deepProperty(elemList[0], 'children.0.data');
+                assert.nestedProperty(elemList[0], 'children.0.data');
                 assert.lengthOf(elemList[0].children, 1);
                 assert.property(elemList[0].children[0], 'data');
             });
@@ -46,7 +46,7 @@ module.exports = {
             });
             it('should have a variant_id in the questionData if Calculation', function() {
                 if (locals.question.type != 'Calculation') return;
-                assert.deepProperty(locals.questionData, 'variant.id');
+                assert.nestedProperty(locals.questionData, 'variant.id');
                 locals.variant_id = locals.questionData.variant.id;
             });
             it('should have a variant_id input if Freeform with grade or save buttons', function() {
@@ -54,7 +54,7 @@ module.exports = {
                 if (!locals.shouldHaveButtons.includes('grade') && !locals.shouldHaveButtons.includes('save')) return;
                 elemList = locals.$('.question-form input[name="__variant_id"]');
                 assert.lengthOf(elemList, 1);
-                assert.deepProperty(elemList[0], 'attribs.value');
+                assert.nestedProperty(elemList[0], 'attribs.value');
                 locals.variant_id = elemList[0].attribs.value;
                 locals.variant_id = Number.parseInt(locals.variant_id);
             });
@@ -88,7 +88,7 @@ module.exports = {
                 if (!locals.shouldHaveButtons.includes('grade') && !locals.shouldHaveButtons.includes('save')) return;
                 elemList = locals.$('.question-form input[name="__csrf_token"]');
                 assert.lengthOf(elemList, 1);
-                assert.deepProperty(elemList[0], 'attribs.value');
+                assert.nestedProperty(elemList[0], 'attribs.value');
                 locals.__csrf_token = elemList[0].attribs.value;
                 assert.isString(locals.__csrf_token);
             });
@@ -362,7 +362,7 @@ module.exports = {
             it('should have a CSRF token', function() {
                 elemList = locals.$('form[name="regrade-all-form"] input[name="__csrf_token"]');
                 assert.lengthOf(elemList, 1);
-                assert.deepProperty(elemList[0], 'attribs.value');
+                assert.nestedProperty(elemList[0], 'attribs.value');
                 locals.__csrf_token = elemList[0].attribs.value;
                 assert.isString(locals.__csrf_token);
             });

@@ -7,6 +7,8 @@
 
   * Upgrade to NodeJS 8.x LTS (Matt West).
 
+  * Upgrade all Node dependencies to latest versions (Nathan Walters).
+
   * Add new Issues page style and flexible filtering (Nathan Walters).
 
   * Fix broken file upload element (Nathan Walters).
