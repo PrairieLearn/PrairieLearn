@@ -10,7 +10,7 @@ import numpy as np
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers_name']
-    optional_attribs = ['weight', 'correct_answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits', 'eps_digits']
+    optional_attribs = ['weight', 'correct_answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers_name')
 
@@ -230,12 +230,10 @@ def grade(element_html, element_index, data):
         correct = pl.is_correct_scalar_ra(a_sub, a_tru, rtol, atol)
     elif comparison == 'sigfig':
         digits = pl.get_integer_attrib(element, 'digits', 2)
-        eps_digits = pl.get_integer_attrib(element, 'eps_digits', 3)
-        correct = pl.is_correct_scalar_sf(a_sub, a_tru, digits, eps_digits)
+        correct = pl.is_correct_scalar_sf(a_sub, a_tru, digits)
     elif comparison == 'decdig':
         digits = pl.get_integer_attrib(element, 'digits', 2)
-        eps_digits = pl.get_integer_attrib(element, 'eps_digits', 3)
-        correct = pl.is_correct_scalar_dd(a_sub, a_tru, digits, eps_digits)
+        correct = pl.is_correct_scalar_dd(a_sub, a_tru, digits)
     else:
         raise ValueError('method of comparison "%s" is not valid' % comparison)
 
