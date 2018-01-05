@@ -35,7 +35,7 @@ def render(element_html, element_index, data):
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
         if comparison == 'relabs':
-            rtol = pl.get_float_attrib(element, 'rtol', 1e-5)
+            rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
             atol = pl.get_float_attrib(element, 'atol', 1e-8)
             info_params = {'format': True, 'relabs': True, 'rtol': rtol, 'atol': atol}
         elif comparison == 'sigfig':
@@ -130,7 +130,7 @@ def render(element_html, element_index, data):
             # Get comparison parameters
             comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
             if comparison == 'relabs':
-                rtol = pl.get_float_attrib(element, 'rtol', 1e-5)
+                rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
                 atol = pl.get_float_attrib(element, 'atol', 1e-8)
                 # FIXME: render correctly with respect to rtol and atol
                 a_tru = '{:.12g}'.format(a_tru)
@@ -225,7 +225,7 @@ def grade(element_html, element_index, data):
 
     # Compare submitted answer with true answer
     if comparison == 'relabs':
-        rtol = pl.get_float_attrib(element, 'rtol', 1e-5)
+        rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
         atol = pl.get_float_attrib(element, 'atol', 1e-8)
         correct = pl.is_correct_scalar_ra(a_sub, a_tru, rtol, atol)
     elif comparison == 'sigfig':
