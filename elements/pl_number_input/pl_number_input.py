@@ -43,7 +43,7 @@ def render(element_html, element_index, data):
             info_params = {'format': True, 'sigfig': True, 'digits': digits, 'comparison_eps': 0.51*(10**-(digits-1))}
         elif comparison == 'decdig':
             digits = pl.get_integer_attrib(element, 'digits', 2)
-            info_params = {'format': True, 'decdig': True, 'digits': digits}
+            info_params = {'format': True, 'decdig': True, 'digits': digits, 'comparison_eps': 0.51*(10**-(digits-0))}
         else:
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
         with open('pl_number_input.mustache', 'r', encoding='utf-8') as f:
