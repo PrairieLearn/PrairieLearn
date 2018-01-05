@@ -13,7 +13,7 @@
     </span>
     <input name="{{name}}" type="text" class="form-control" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="basic-addon1" placeholder="{{shortinfo}}" />
     <div class="input-group-append">
-        <button class="btn btn-light border" type="button" data-toggle="popover" data-html="true" title="Matrix" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
+        <a class="btn btn-light border" role="button" data-toggle="popover" data-html="true" title="Matrix" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
             <i class="fa fa-question-circle" aria-hidden="true"></i>
             {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
             {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
@@ -91,11 +91,16 @@
 Your answer must be a matrix (i.e., a 2D array). It can be expressed in one of two ways:
 </p>
 <ul>
-    <li><strong>Matlab Format.</strong> Enclose it by a single pair of square brackets. Separate entries in each row with a space. Indicate the end of each intermediate row with a semicolon. Example: <samp>[1 2 3; 4 5 6]</samp></li>
-    <li><strong>Python Format.</strong> Enclose it by a single pair of square brackets. Enclose each row by a single pair of square brackets. Separate rows with a comma. Separate entries in each row with a comma. Example: <samp>[[1, 2, 3], [4, 5, 6]]</samp></li>
+    <li><strong>Matlab Format.</strong> Enclose it by a single pair of square brackets. Separate entries in each row with a space. Indicate the end of each intermediate row with a semicolon. Example: <code>[1 2 3; 4 5 6]</code></li>
+    <li><strong>Python Format.</strong> Enclose it by a single pair of square brackets. Enclose each row by a single pair of square brackets. Separate rows with a comma. Separate entries in each row with a comma. Example: <code>[[1, 2, 3], [4, 5, 6]]</code></li>
 </ul>
 <p>
- Each entry must be a number. No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted. Scientific notation is accepted (e.g., 1.2e03). {{#relabs}}Numbers must be accurate to within relative tolerance {{rtol}} and absolute tolerance {{atol}}.{{/relabs}}{{#sigfig}}Numbers must be accurate to {{digits}} significant figures.{{/sigfig}}{{#decdig}}Numbers must be accurate to {{digits}} digits after the decimal.{{/decdig}}
+Each entry must be a real number between <code>-1e308</code> and <code>1e308</code> (i.e., it must be interpretable as a double-precision floating-point number). No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted. Scientific notation is accepted (e.g., <code>1.2e03</code>).
+</p>
+<p>
+{{#relabs}}Numbers must be accurate to within relative tolerance <code>{{rtol}}</code> and absolute tolerance <code>{{atol}}</code>.{{/relabs}}
+{{#sigfig}}Numbers must be accurate to {{digits}} significant figures. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.{{/sigfig}}
+{{#decdig}}Numbers must be accurate to {{digits}} digits after the decimal. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.{{/decdig}}
 </p>
 {{/format}}
 
