@@ -343,12 +343,15 @@ def string_to_2darray(s):
     if number_of_left_brackets == 0:
         try:
             # Convert submitted answer (assumed to be a scalar) to float
-            A = np.array([[float(s)]])
+            s_float = np.float64(s)
+            if not np.isfinite(s_float):
+                raise ValueError('submitted answer must be a finite real number but was either "inf" or "nan"')
+            A = np.array([[s_float]])
             # Return it with no error
             return (A, {'format_type': 'python'})
         except:
             # Return error if submitted answer could not be converted to float
-            return (None, {'format_error': 'Invalid format (missing square brackets and not a real number).'})
+            return (None, {'format_error': 'Invalid format (missing square brackets and could not be interpreted as a double-precision floating-point number).'})
 
     # Get string between outer brackets
     (s_before_left, s, s_after_right) = string_partition_outer_interval(s)
@@ -401,7 +404,7 @@ def string_to_2darray(s):
             for j in range(0, n):
                 try:
                     # Convert entry to float
-                    A[i, j] = float(s_row[j])
+                    A[i, j] = np.float64(s_row[j])
 
                     # Return error if entry is not finite
                     if not np.isfinite(A[i, j]):
@@ -485,7 +488,7 @@ def string_to_2darray(s):
                         return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix is empty.'.format(i + 1, j + 1)})
 
                     # Convert entry to float
-                    A[i, j] = float(s_row[i][j])
+                    A[i, j] = np.float64(s_row[i][j])
 
                     # Return error if entry is not finite
                     if not np.isfinite(A[i, j]):
