@@ -11,9 +11,17 @@
 
   * Add new Issues page style and flexible filtering (Nathan Walters).
 
+  * Change sigfig and decdig method of comparison to reduce tolerance (Tim Bretl).
+
+  * Change default relative tolerance from 1e-5 to 1e-2 (Tim Bretl).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
+
+  * Fix bug in `pl_matrix_input` that crashed on submission of large integers (Tim Bretl).
+
+  * Fix broken popovers in input elements (Tim Bretl).
 
 * __2.11.0__ - 2017-12-29
 
