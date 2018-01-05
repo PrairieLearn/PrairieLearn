@@ -864,7 +864,7 @@ describe('Homework assessment', function() {
                 locals.getSubmittedAnswer = function(_variant) {
                     return {
                         s1: 100,
-                        s2: 99,
+                        s2: 90,
                     };
                 };
             });
