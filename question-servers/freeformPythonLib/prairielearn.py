@@ -613,7 +613,7 @@ def is_correct_scalar_ra(a_sub, a_tru, rtol=1e-5, atol=1e-8):
 
 def is_correct_scalar_dd(a_sub, a_tru, digits=2):
     # Get bounds on submitted answer
-    eps = 0.51*(10**-digits)
+    eps = 0.51 * (10**-digits)
     lower_bound = a_tru - eps
     upper_bound = a_tru + eps
 
@@ -624,10 +624,10 @@ def is_correct_scalar_dd(a_sub, a_tru, digits=2):
 def is_correct_scalar_sf(a_sub, a_tru, digits=2):
     # Get bounds on submitted answer
     if (a_tru == 0):
-        n = digits-1
+        n = digits - 1
     else:
         n = -int(np.floor(np.log10(np.abs(a_tru)))) + (digits - 1)
-    eps = 0.51*(10**-n)
+    eps = 0.51 * (10**-n)
     lower_bound = a_tru - eps
     upper_bound = a_tru + eps
 
