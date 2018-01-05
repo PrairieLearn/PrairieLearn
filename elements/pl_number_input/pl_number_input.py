@@ -40,7 +40,7 @@ def render(element_html, element_index, data):
             info_params = {'format': True, 'relabs': True, 'rtol': rtol, 'atol': atol}
         elif comparison == 'sigfig':
             digits = pl.get_integer_attrib(element, 'digits', 2)
-            info_params = {'format': True, 'sigfig': True, 'digits': digits, 'comparison_eps': 0.51*(10**-digits)}
+            info_params = {'format': True, 'sigfig': True, 'digits': digits, 'comparison_eps': 0.51*(10**-(digits-1))}
         elif comparison == 'decdig':
             digits = pl.get_integer_attrib(element, 'digits', 2)
             info_params = {'format': True, 'decdig': True, 'digits': digits}
