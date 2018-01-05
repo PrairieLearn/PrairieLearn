@@ -579,7 +579,7 @@ def is_correct_ndarray2D_dd(a_sub, a_tru, digits=2):
     n = a_sub.shape[1]
     for i in range(0, m):
         for j in range(0, n):
-            if not is_correct_scalar_dd(a_sub[i, j], a_tru[i, j], digits, eps_digits):
+            if not is_correct_scalar_dd(a_sub[i, j], a_tru[i, j], digits):
                 return False
 
     # All elements were close
