@@ -408,7 +408,7 @@ def string_to_2darray(s):
 
                     # Return error if entry is not finite
                     if not np.isfinite(A[i, j]):
-                        return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" is not finite.'.format(i + 1, j + 1, s_row[j])})
+                        return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" could not be interpreted as a double-precision floating-point number.'.format(i + 1, j + 1, s_row[j])})
                 except:
                     # Return error if entry could not be converted to float
                     return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" has invalid format.'.format(i + 1, j + 1, s_row[j])})
@@ -492,7 +492,7 @@ def string_to_2darray(s):
 
                     # Return error if entry is not finite
                     if not np.isfinite(A[i, j]):
-                        return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" is not finite.'.format(i + 1, j + 1, s_row[i][j])})
+                        return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" could not be interpreted as a double-precision floating-point number.'.format(i + 1, j + 1, s_row[i][j])})
                 except:
                     # Return error if entry could not be converted to float
                     return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" has invalid format.'.format(i + 1, j + 1, s_row[i][j])})
