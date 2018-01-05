@@ -343,12 +343,15 @@ def string_to_2darray(s):
     if number_of_left_brackets == 0:
         try:
             # Convert submitted answer (assumed to be a scalar) to float
-            A = np.array([[float(s)]])
+            s_float = np.float64(s)
+            if not np.isfinite(s_float):
+                raise ValueError('submitted answer must be a finite real number but was either "inf" or "nan"')
+            A = np.array([[s_float]])
             # Return it with no error
             return (A, {'format_type': 'python'})
         except:
             # Return error if submitted answer could not be converted to float
-            return (None, {'format_error': 'Invalid format (missing square brackets and not a real number).'})
+            return (None, {'format_error': 'Invalid format (missing square brackets and could not be interpreted as a double-precision floating-point number).'})
 
     # Get string between outer brackets
     (s_before_left, s, s_after_right) = string_partition_outer_interval(s)
@@ -401,11 +404,11 @@ def string_to_2darray(s):
             for j in range(0, n):
                 try:
                     # Convert entry to float
-                    A[i, j] = float(s_row[j])
+                    A[i, j] = np.float64(s_row[j])
 
                     # Return error if entry is not finite
                     if not np.isfinite(A[i, j]):
-                        return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" is not finite.'.format(i + 1, j + 1, s_row[j])})
+                        return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" could not be interpreted as a double-precision floating-point number.'.format(i + 1, j + 1, s_row[j])})
                 except:
                     # Return error if entry could not be converted to float
                     return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" has invalid format.'.format(i + 1, j + 1, s_row[j])})
@@ -485,11 +488,11 @@ def string_to_2darray(s):
                         return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix is empty.'.format(i + 1, j + 1)})
 
                     # Convert entry to float
-                    A[i, j] = float(s_row[i][j])
+                    A[i, j] = np.float64(s_row[i][j])
 
                     # Return error if entry is not finite
                     if not np.isfinite(A[i, j]):
-                        return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" is not finite.'.format(i + 1, j + 1, s_row[i][j])})
+                        return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" could not be interpreted as a double-precision floating-point number.'.format(i + 1, j + 1, s_row[i][j])})
                 except:
                     # Return error if entry could not be converted to float
                     return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" has invalid format.'.format(i + 1, j + 1, s_row[i][j])})
@@ -573,26 +576,26 @@ def matlab_to_numpy(a):
             return (None, 'Invalid format (missing square brackets and not a real number).')
 
 
-def is_correct_ndarray2D_dd(a_sub, a_tru, digits=2, eps_digits=3):
+def is_correct_ndarray2D_dd(a_sub, a_tru, digits=2):
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
     for i in range(0, m):
         for j in range(0, n):
-            if not is_correct_scalar_dd(a_sub[i, j], a_tru[i, j], digits, eps_digits):
+            if not is_correct_scalar_dd(a_sub[i, j], a_tru[i, j], digits):
                 return False
 
     # All elements were close
     return True
 
 
-def is_correct_ndarray2D_sf(a_sub, a_tru, digits=2, eps_digits=3):
+def is_correct_ndarray2D_sf(a_sub, a_tru, digits=2):
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
     for i in range(0, m):
         for j in range(0, n):
-            if not is_correct_scalar_sf(a_sub[i, j], a_tru[i, j], digits, eps_digits):
+            if not is_correct_scalar_sf(a_sub[i, j], a_tru[i, j], digits):
                 return False
 
     # All elements were close
@@ -608,27 +611,25 @@ def is_correct_scalar_ra(a_sub, a_tru, rtol=1e-5, atol=1e-8):
     return np.allclose(a_sub, a_tru, rtol, atol)
 
 
-def is_correct_scalar_dd(a_sub, a_tru, digits=2, eps_digits=3):
+def is_correct_scalar_dd(a_sub, a_tru, digits=2):
     # Get bounds on submitted answer
-    m = 10**digits
-    eps = 10**-(digits + eps_digits)
-    lower_bound = (np.floor(m * (a_tru - eps)) / m) - eps
-    upper_bound = (np.ceil(m * (a_tru + eps)) / m) + eps
+    eps = 0.51 * (10**-digits)
+    lower_bound = a_tru - eps
+    upper_bound = a_tru + eps
 
     # Check if submitted answer is in bounds
     return (a_sub > lower_bound) & (a_sub < upper_bound)
 
 
-def is_correct_scalar_sf(a_sub, a_tru, digits=2, eps_digits=3):
+def is_correct_scalar_sf(a_sub, a_tru, digits=2):
     # Get bounds on submitted answer
     if (a_tru == 0):
-        n = digits
+        n = digits - 1
     else:
         n = -int(np.floor(np.log10(np.abs(a_tru)))) + (digits - 1)
-    m = 10**n
-    eps = 10**-(n + eps_digits)
-    lower_bound = (np.floor(m * (a_tru - eps)) / m) - eps
-    upper_bound = (np.ceil(m * (a_tru + eps)) / m) + eps
+    eps = 0.51 * (10**-n)
+    lower_bound = a_tru - eps
+    upper_bound = a_tru + eps
 
     # Check if submitted answer is in bounds
     return (a_sub > lower_bound) & (a_sub < upper_bound)

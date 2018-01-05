@@ -51,7 +51,14 @@ def render(element_html, element_index, data):
             info_params['shortformat'] = True
             shortinfo = chevron.render(f, info_params).strip()
 
-        html_params = {'question': True, 'name': name, 'editable': editable, 'info': info, 'shortinfo': shortinfo}
+        html_params = {
+            'question': True,
+            'name': name,
+            'editable': editable,
+            'info': info,
+            'shortinfo': shortinfo,
+            'uuid': pl.get_uuid()
+        }
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
@@ -74,7 +81,11 @@ def render(element_html, element_index, data):
 
     elif data['panel'] == 'submission':
         parse_error = data['format_errors'].get(name, None)
-        html_params = {'submission': True, 'parse_error': parse_error}
+        html_params = {
+            'submission': True,
+            'parse_error': parse_error,
+            'uuid': pl.get_uuid()
+        }
         if parse_error is None:
             a_sub = data['submitted_answers'][name]
             a_sub = phs.convert_string_to_sympy(a_sub, variables)

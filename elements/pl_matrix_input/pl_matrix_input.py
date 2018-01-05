@@ -10,7 +10,7 @@ import chevron
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers_name']
-    optional_attribs = ['weight', 'correct_answer', 'label', 'comparison', 'rtol', 'atol', 'digits', 'eps_digits']
+    optional_attribs = ['weight', 'correct_answer', 'label', 'comparison', 'rtol', 'atol', 'digits']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
@@ -31,15 +31,15 @@ def render(element_html, element_index, data):
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
         if comparison == 'relabs':
-            rtol = pl.get_float_attrib(element, 'rtol', 1e-5)
+            rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
             atol = pl.get_float_attrib(element, 'atol', 1e-8)
             info_params = {'format': True, 'relabs': True, 'rtol': rtol, 'atol': atol}
         elif comparison == 'sigfig':
             digits = pl.get_integer_attrib(element, 'digits', 2)
-            info_params = {'format': True, 'sigfig': True, 'digits': digits}
+            info_params = {'format': True, 'sigfig': True, 'digits': digits, 'comparison_eps': 0.51 * (10**-(digits - 1))}
         elif comparison == 'decdig':
             digits = pl.get_integer_attrib(element, 'digits', 2)
-            info_params = {'format': True, 'decdig': True, 'digits': digits}
+            info_params = {'format': True, 'decdig': True, 'digits': digits, 'comparison_eps': 0.51 * (10**-(digits - 0))}
         else:
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
         with open('pl_matrix_input.mustache', 'r', encoding='utf-8') as f:
@@ -123,7 +123,7 @@ def render(element_html, element_index, data):
             # Get comparison parameters
             comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
             if comparison == 'relabs':
-                rtol = pl.get_float_attrib(element, 'rtol', 1e-5)
+                rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
                 atol = pl.get_float_attrib(element, 'atol', 1e-8)
                 # FIXME: render correctly with respect to rtol and atol
                 matlab_data = pl.numpy_to_matlab(a_tru, ndigits=12, wtype='g')
@@ -231,17 +231,15 @@ def grade(element_html, element_index, data):
 
     # Compare submitted answer with true answer
     if comparison == 'relabs':
-        rtol = pl.get_float_attrib(element, 'rtol', 1e-5)
+        rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
         atol = pl.get_float_attrib(element, 'atol', 1e-8)
         correct = pl.is_correct_ndarray2D_ra(a_sub, a_tru, rtol, atol)
     elif comparison == 'sigfig':
         digits = pl.get_integer_attrib(element, 'digits', 2)
-        eps_digits = pl.get_integer_attrib(element, 'eps_digits', 3)
-        correct = pl.is_correct_ndarray2D_sf(a_sub, a_tru, digits, eps_digits)
+        correct = pl.is_correct_ndarray2D_sf(a_sub, a_tru, digits)
     elif comparison == 'decdig':
         digits = pl.get_integer_attrib(element, 'digits', 2)
-        eps_digits = pl.get_integer_attrib(element, 'eps_digits', 3)
-        correct = pl.is_correct_ndarray2D_dd(a_sub, a_tru, digits, eps_digits)
+        correct = pl.is_correct_ndarray2D_dd(a_sub, a_tru, digits)
     else:
         raise ValueError('method of comparison "%s" is not valid' % comparison)
 
