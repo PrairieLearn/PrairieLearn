@@ -73,10 +73,9 @@ Attribute | Type | Default | Description
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="$\rm m/s^2$"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 `comparison` | "relabs", "sigfig", or "decdig" | "relabs" | How to grade. "relabs" uses relative ("rtol") and absolute ("atol") tolerances. "sigfig" and "decdig" use "digits" significant or decimal digits.
-`rtol` | number | 1e-5 | Relative tolerance for `comparison="relabs"`.
+`rtol` | number | 1e-2 | Relative tolerance for `comparison="relabs"`.
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
-`eps_digits` | integer | 3 | Additional digits (beyond `digits`) used to compute a grace tolerance.
 
 ## `pl_matrix_input` element
 
@@ -91,10 +90,9 @@ Attribute | Type | Default | Description
 `correct_answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers_name]`.
 `label` | text | — | A prefix to display before the input box (e.g., `label="$F =$"`).
 `comparison` | "relabs", "sigfig", or "decdig" | "relabs" | How to grade. "relabs" uses relative ("rtol") and absolute ("atol") tolerances. "sigfig" and "decdig" use "digits" significant or decimal digits.
-`rtol` | number | 1e-5 | Relative tolerance for `comparison="relabs"`.
+`rtol` | number | 1e-2 | Relative tolerance for `comparison="relabs"`.
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
-`eps_digits` | integer | 3 | Additional digits (beyond `digits`) used to compute a grace tolerance.
 
 In the question panel, a `pl_matrix_input` element displays an input field that accepts a matrix (i.e., a 2-D array) expressed either in matlab or python format.
 
