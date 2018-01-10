@@ -1,0 +1,15 @@
+{{#question}}
+<script>
+$(function() {
+    new PLThreeJS("{{uuid}}", {quaternion: '{{{quaternion}}}'});
+});
+</script>
+<div class="container-fluid" id="pl-threejs-{{uuid}}">
+    <input type="hidden" name="{{answer_name}}">
+</div>
+{{/question}}
+
+{{#submission}}
+{{#parse_error}}<p>Parse error: <code>{{parse_error}}</code></p>{{/parse_error}}
+{{^parse_error}}<p>Submission: <code>{{a_sub}}</code></p>{{/parse_error}}
+{{/submission}}
