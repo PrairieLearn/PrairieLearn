@@ -2,7 +2,8 @@
     "controller": "pl_threejs.py",
     "dependencies": {
         "nodeModulesScripts": [
-            "three/build/three.min.js"
+            "three/build/three.min.js",
+            "three/examples/js/loaders/STLLoader.js"
         ],
         "elementScripts": [
             "pl_threejs.js"

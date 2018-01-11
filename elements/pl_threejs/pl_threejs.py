@@ -4,6 +4,7 @@ import chevron
 import numpy as np
 import json
 import base64
+import os
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -21,11 +22,16 @@ def render(element_html, element_index, data):
     name = pl.get_string_attrib(element, 'answer_name')
 
     if data['panel'] == 'question':
+        file_name = 'geometry.json'
+        base_url = data['options']['client_files_question_url']
+        file_url = os.path.join(base_url, file_name)
+
         html_params = {
             'question': True,
             'answer_name': name,
             'uuid': pl.get_uuid(),
-            'quaternion': q_to_b64(data['submitted_answers'].get(name, [0, 0, 0, 1]))
+            'quaternion': q_to_b64(data['submitted_answers'].get(name, [0, 0, 0, 1])),
+            'obj': file_url
             # 'quaternion': json.dumps(list_to_q(data['submitted_answers'].get(name, [0, 0, 0, 1])))
         }
         with open('pl_threejs.mustache', 'r', encoding='utf-8') as f:

@@ -1,5 +1,9 @@
+// import * as OBJLoader from 'three-obj-loader';
+
 // Constructor with property definitions
 function PLThreeJS(uuid, options) {
+
+
     // Get the id of the div that contains everything
     var elementId = '#pl-threejs-' + uuid;
     this.element = $(elementId);
@@ -11,6 +15,9 @@ function PLThreeJS(uuid, options) {
     this.inputElement = this.element.find('input');
 
 
+    THREE.Object3D.DefaultUp.set(0, 0, 1);
+
+
     // Create scene
 
     this.width = 400;
@@ -18,19 +25,78 @@ function PLThreeJS(uuid, options) {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera( 75, this.width/this.height, 0.1, 1000 );
 
-    this.renderer = new THREE.WebGLRenderer();
+    this.camera.position.x = 2;
+    this.camera.position.y = -3;
+    this.camera.position.z = 1;
+    this.camera.up.set( 0, 0, 1 );
+    this.camera.lookAt( this.scene.position );
+
+
+    // var loader = new THREE.STLLoader();
+
+    this.renderer = new THREE.WebGLRenderer( { alpha: true, antialias: true } );
+    // this.renderer = new THREE.WebGLRenderer();
+    // this.renderer.setClearColor( 0xffffff );
+
 
     this.renderer.setSize(this.width, this.height);
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // anti-alias shadow
 
     // Use 'append' (a jQuery method) and not 'appendChild' (a DOM method)
     this.element.append(this.renderer.domElement);
 
-    this.geometry = new THREE.BoxGeometry( 1, 1, 1 );
-    this.material = new THREE.MeshBasicMaterial( { color: 0x00ff00 } );
-    this.cube = new THREE.Mesh( this.geometry, this.material );
-    this.scene.add( this.cube );
 
-    this.camera.position.z = 5;
+    var geometry = new THREE.PlaneGeometry( 50, 50, 50 );
+    var material = new THREE.ShadowMaterial( {color: 0x888888} );
+    var plane = new THREE.Mesh( geometry, material );
+    plane.receiveShadow = true;
+    // plane.translateOnAxis( [0, 0, 1], 0 );
+    plane.position.set( 0, 0, -5 );
+    this.scene.add( plane );
+
+    // var grid = new THREE.GridHelper( 5, 50 );
+    // grid.setColors( 0xffffff, 0xffffff );
+    // this.scene.add( grid );
+
+
+
+    // var light = new THREE.AmbientLight( 0xffffff );
+    // var light = new THREE.PointLight();
+    var light = new THREE.DirectionalLight( 0xffffff, 0.5 );
+    // light.position.set( 0, 0, 5 );
+    light.castShadow = true;
+    // light.shadowDarkness = 0.5;
+    this.scene.add(light);
+	// this.scene.add( new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 ) );
+    this.scene.add( new THREE.AmbientLight( 0xffffff ));
+
+    // // White directional light at half intensity shining from the top.
+    // var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
+    // this.scene.add( directionalLight );
+
+
+    this.spaceFrame = new THREE.AxesHelper( 1 );
+    this.bodyFrame = new THREE.AxesHelper( 1 );
+    this.scene.add( this.spaceFrame );
+    // this.scene.add( this.bodyFrame );
+
+    this.geometry = new THREE.BoxGeometry( 1, 2, 3 );
+    this.material = new THREE.MeshStandardMaterial(
+        {
+            color: 0xE84A27,
+            transparent: true,
+            opacity: 0.7
+        });
+    this.object = new THREE.Mesh( this.geometry, this.material );
+    this.object.castShadow = true;
+    this.object.add(this.bodyFrame);
+    this.scene.add(this.object);
+    this.bodyFrame.position.copy( this.object.position );
+    this.bodyFrame.quaternion.copy( this.object.quaternion );
+
+
+
 
     this.isDragging = false;
     this.previousMousePosition = {
@@ -39,7 +105,7 @@ function PLThreeJS(uuid, options) {
     };
 
     // From array, from string, from b64
-    this.cube.quaternion.fromArray(JSON.parse(atob(options.quaternion)));
+    this.object.quaternion.fromArray(JSON.parse(atob(options.quaternion)));
 
     this.updateInputElement();
 
@@ -49,6 +115,13 @@ function PLThreeJS(uuid, options) {
     $(document).mouseup(PLThreeJS.prototype.onmouseup.bind(this));
 
     this.animate();
+};
+
+PLThreeJS.prototype.onLoad = function( geometry, materials ) {
+    var material = materials[ 0 ];
+    var object = new THREE.Mesh( geometry, material );
+    console.log(this);
+    this.scene.add( object );
 };
 
 PLThreeJS.prototype.onmousedown = function() {
@@ -62,17 +135,25 @@ PLThreeJS.prototype.onmousemove = function(e) {
     };
 
     if(this.isDragging) {
-
-        var deltaRotationQuaternion = new THREE.Quaternion()
+        // Orientation of camera
+        var qCamera = this.camera.quaternion.clone();
+        // Rotation to be applied by mouse motion (in camera frame)
+        var qMotion = new THREE.Quaternion()
             .setFromEuler(new THREE.Euler(
                 deltaMove.y * (Math.PI / 180),
                 deltaMove.x * (Math.PI / 180),
                 0,
                 'XYZ'
             ));
-
-        this.cube.quaternion.multiplyQuaternions(deltaRotationQuaternion, this.cube.quaternion);
-
+        // Rotation to be applied by mouse motion (in world frame) - note that
+        // ".inverse()" modifies qCamera in place, so the order here matters
+        qMotion.multiplyQuaternions(qCamera, qMotion);
+        qMotion.multiplyQuaternions(qMotion, qCamera.inverse());
+        // New orientation of object
+        this.object.quaternion.multiplyQuaternions(qMotion, this.object.quaternion);
+        // // Body axes have same orientation
+        // this.bodyFrame.quaternion.copy(this.object.quaternion);
+        // Update the value of the hidden input element to contain the new orientation
         this.updateInputElement();
     }
 
@@ -94,30 +175,5 @@ PLThreeJS.prototype.animate = function() {
 };
 
 PLThreeJS.prototype.updateInputElement = function() {
-    this.inputElement.val(btoa(JSON.stringify(this.cube.quaternion.toArray())));
-    // To array, to string, to b64.
-    // this.inputElement.val(this.b64EncodeUnicode(JSON.stringify(this.cube.quaternion.toArray())));
-    // this.inputElement.val(
-    //     '[' + this.cube.quaternion.x +
-    //     ',' + this.cube.quaternion.y +
-    //     ',' + this.cube.quaternion.z +
-    //     ',' + this.cube.quaternion.w + ']'
-    // );
+    this.inputElement.val(btoa(JSON.stringify(this.object.quaternion.toArray())));
 };
-
-// PLThreeJS.prototype.b64DecodeUnicode = function(str) {
-//     // Going backwards: from bytestream, to percent-encoding, to original string.
-//     return decodeURIComponent(atob(str).split('').map(function(c) {
-//         return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-//     }).join(''));
-// };
-//
-// PLThreeJS.prototype.b64EncodeUnicode = function(str) {
-//     // first we use encodeURIComponent to get percent-encoded UTF-8,
-//     // then we convert the percent encodings into raw bytes which
-//     // can be fed into btoa.
-//     return btoa(encodeURIComponent(str).replace(/%([0-9A-F]{2})/g,
-//         function toSolidBytes(match, p1) {
-//             return String.fromCharCode('0x' + p1);
-//     }));
-// };

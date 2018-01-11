@@ -1,7 +1,7 @@
 {{#question}}
 <script>
 $(function() {
-    new PLThreeJS("{{uuid}}", {quaternion: '{{{quaternion}}}'});
+    new PLThreeJS("{{uuid}}", {quaternion: '{{{quaternion}}}', obj: "{{obj}}"});
 });
 </script>
 <div class="container-fluid" id="pl-threejs-{{uuid}}">
