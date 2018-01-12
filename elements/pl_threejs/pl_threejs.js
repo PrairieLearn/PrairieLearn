@@ -52,7 +52,7 @@ function PLThreeJS(uuid, options) {
     this.scene.add( new THREE.AmbientLight( 0xaaaaaa ));
     this.scene.add( this.makeLights() );
 
-    
+
 
     this.screen = this.makeScreen();
     this.scene.add(this.screen);
@@ -100,13 +100,22 @@ function PLThreeJS(uuid, options) {
     $('#pl-threejs-button-framevisible-' + uuid).click(PLThreeJS.prototype.toggleFrameVisible.bind(this));
     $('#pl-threejs-button-shadowvisible-' + uuid).click(PLThreeJS.prototype.toggleShadowVisible.bind(this));
 
-    $('#pl-threejs-toggle-view-' + uuid).change(function() {console.log('toggle!')});
+    $('#pl-threejs-toggle-view-' + uuid).change(PLThreeJS.prototype.toggleRotate.bind(this));
+
+
+    this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
+    this.controls.enablePan = false;
+    // this.controls.addEventListener( 'change', render );
 
 
 
     this.animate();
 
     $(window).resize(PLThreeJS.prototype.onResize.bind(this));
+};
+
+PLThreeJS.prototype.toggleRotate = function() {
+    this.controls.enabled = !this.controls.enabled;
 };
 
 PLThreeJS.prototype.toggleObjectVisible = function() {
@@ -238,52 +247,61 @@ PLThreeJS.prototype.onLoad = function( geometry, materials ) {
 };
 
 PLThreeJS.prototype.onmousedown = function() {
-    this.isDragging = true;
+    if (!this.controls.enabled) {
+        this.isDragging = true;
+    }
 };
 
 PLThreeJS.prototype.onmousemove = function(e) {
-    var deltaMove = {
-        x: e.offsetX-this.previousMousePosition.x,
-        y: e.offsetY-this.previousMousePosition.y
-    };
+    if (!this.controls.enabled) {
+        var deltaMove = {
+            x: e.offsetX-this.previousMousePosition.x,
+            y: e.offsetY-this.previousMousePosition.y
+        };
 
-    if(this.isDragging) {
-        // Orientation of camera
-        var qCamera = this.camera.quaternion.clone();
-        // Rotation to be applied by mouse motion (in camera frame)
-        var qMotion = new THREE.Quaternion()
-            .setFromEuler(new THREE.Euler(
-                deltaMove.y * (Math.PI / 180),
-                deltaMove.x * (Math.PI / 180),
-                0,
-                'XYZ'
-            ));
-        // Rotation to be applied by mouse motion (in world frame) - note that
-        // ".inverse()" modifies qCamera in place, so the order here matters
-        qMotion.multiplyQuaternions(qCamera, qMotion);
-        qMotion.multiplyQuaternions(qMotion, qCamera.inverse());
-        // New orientation of object
-        this.bodyGroup.quaternion.multiplyQuaternions(qMotion, this.bodyGroup.quaternion);
-        // // Body axes have same orientation
-        // this.bodyFrame.quaternion.copy(this.object.quaternion);
-        // Update the value of the hidden input element to contain the new orientation
-        this.updateInputElement();
+        if(this.isDragging) {
+            // Orientation of camera
+            var qCamera = this.camera.quaternion.clone();
+            // Rotation to be applied by mouse motion (in camera frame)
+            var qMotion = new THREE.Quaternion()
+                .setFromEuler(new THREE.Euler(
+                    deltaMove.y * (Math.PI / 180),
+                    deltaMove.x * (Math.PI / 180),
+                    0,
+                    'XYZ'
+                ));
+            // Rotation to be applied by mouse motion (in world frame) - note that
+            // ".inverse()" modifies qCamera in place, so the order here matters
+            qMotion.multiplyQuaternions(qCamera, qMotion);
+            qMotion.multiplyQuaternions(qMotion, qCamera.inverse());
+            // New orientation of object
+            this.bodyGroup.quaternion.multiplyQuaternions(qMotion, this.bodyGroup.quaternion);
+            // // Body axes have same orientation
+            // this.bodyFrame.quaternion.copy(this.object.quaternion);
+            // Update the value of the hidden input element to contain the new orientation
+            this.updateInputElement();
+        }
+
+        this.previousMousePosition = {
+            x: e.offsetX,
+            y: e.offsetY
+        };
     }
-
-    this.previousMousePosition = {
-        x: e.offsetX,
-        y: e.offsetY
-    };
 };
 
 PLThreeJS.prototype.onmouseup = function() {
-    if (this.isDragging) {
-        this.isDragging = false;
+    if (!this.controls.enabled) {
+        if (this.isDragging) {
+            this.isDragging = false;
+        }
     }
 };
 
 PLThreeJS.prototype.animate = function() {
     requestAnimationFrame(PLThreeJS.prototype.animate.bind(this));
+    if (this.controls.enabled) {
+        this.controls.update();
+    }
     this.renderer.render(this.scene, this.camera);
 };
 

@@ -3,7 +3,8 @@
     "dependencies": {
         "nodeModulesScripts": [
             "three/build/three.min.js",
-            "three/examples/js/loaders/STLLoader.js"
+            "three/examples/js/loaders/STLLoader.js",
+            "three/examples/js/controls/OrbitControls.js"
         ],
         "elementScripts": [
             "pl_threejs.js"
