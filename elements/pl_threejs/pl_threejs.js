@@ -107,6 +107,13 @@ PLThreeJS.prototype.makeScreen = function() {
         light.castShadow = true;
         part.add(light);
 
+        // var finegrid = new THREE.GridHelper( 2, 10, 0xeeeeee, 0xeeeeee );
+        // finegrid.position.set(0, 0, -5);
+        // finegrid.quaternion.setFromEuler(new THREE.Euler(Math.PI/2, 0, 0, 'XYZ'));
+        // finegrid.transparent = true;
+        // finegrid.opacity = 0.1;
+        // part.add(finegrid);
+
         var grid = new THREE.GridHelper( 10, 10, 0xdddddd, 0xdddddd );
         grid.position.set(0, 0, -5);
         grid.quaternion.setFromEuler(new THREE.Euler(Math.PI/2, 0, 0, 'XYZ'));
