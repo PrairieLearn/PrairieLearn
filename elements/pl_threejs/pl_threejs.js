@@ -18,6 +18,8 @@ function PLThreeJS(uuid, options) {
     THREE.Object3D.DefaultUp.set(0, 0, 1);
 
 
+
+
     // Create scene
 
     this.aspectratio = 4/3;
@@ -48,6 +50,9 @@ function PLThreeJS(uuid, options) {
     this.element.append(this.renderer.domElement);
 
     this.scene.add( new THREE.AmbientLight( 0xaaaaaa ));
+    this.scene.add( this.makeLights() );
+
+    
 
     this.screen = this.makeScreen();
     this.scene.add(this.screen);
@@ -90,9 +95,31 @@ function PLThreeJS(uuid, options) {
     $(document).mousemove(PLThreeJS.prototype.onmousemove.bind(this));
     $(document).mouseup(PLThreeJS.prototype.onmouseup.bind(this));
 
+    // Enable buttons
+    $('#pl-threejs-button-objectvisible-' + uuid).click(PLThreeJS.prototype.toggleObjectVisible.bind(this));
+    $('#pl-threejs-button-framevisible-' + uuid).click(PLThreeJS.prototype.toggleFrameVisible.bind(this));
+    $('#pl-threejs-button-shadowvisible-' + uuid).click(PLThreeJS.prototype.toggleShadowVisible.bind(this));
+
+    $('#pl-threejs-toggle-view-' + uuid).change(function() {console.log('toggle!')});
+
+
+
     this.animate();
 
     $(window).resize(PLThreeJS.prototype.onResize.bind(this));
+};
+
+PLThreeJS.prototype.toggleObjectVisible = function() {
+    this.bodyObject.visible = !this.bodyObject.visible;
+};
+
+PLThreeJS.prototype.toggleFrameVisible = function() {
+    this.bodyFrame.visible = !this.bodyFrame.visible;
+    this.spaceFrame.visible = !this.spaceFrame.visible;
+};
+
+PLThreeJS.prototype.toggleShadowVisible = function() {
+    this.screen.visible = !this.screen.visible;
 };
 
 PLThreeJS.prototype.onResize = function() {
@@ -101,6 +128,20 @@ PLThreeJS.prototype.onResize = function() {
     this.renderer.setSize(this.width, this.height);
 };
 
+PLThreeJS.prototype.makeLights = function() {
+    function makeLight(p) {
+        var light = new THREE.DirectionalLight( 0xffffff, 0.5 );
+        light.castShadow = true;
+        light.position.copy(p);
+        return light;
+    }
+
+    var lights = new THREE.Group();
+    lights.add(makeLight(new THREE.Vector3(5, 0, 0)));
+    lights.add(makeLight(new THREE.Vector3(0, 5, 0)));
+    lights.add(makeLight(new THREE.Vector3(0, 0, 5)));
+    return lights;
+};
 
 PLThreeJS.prototype.makeScreen = function() {
     function makePart() {
@@ -113,9 +154,9 @@ PLThreeJS.prototype.makeScreen = function() {
         plane.position.set( 0, 0, -5 );
         part.add( plane );
 
-        var light = new THREE.DirectionalLight( 0xffffff, 0.5 );
-        light.castShadow = true;
-        part.add(light);
+        // var light = new THREE.DirectionalLight( 0xffffff, 0.5 );
+        // light.castShadow = true;
+        // part.add(light);
 
         // var finegrid = new THREE.GridHelper( 2, 10, 0xeeeeee, 0xeeeeee );
         // finegrid.position.set(0, 0, -5);

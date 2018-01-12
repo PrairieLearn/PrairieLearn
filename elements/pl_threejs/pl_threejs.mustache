@@ -5,10 +5,27 @@ $(function() {
 });
 </script>
 <div class="container-fluid">
+    <!-- hidden input element to transfer data from client to server -->
     <input type="hidden" name="{{answer_name}}">
 
-    <div id="pl-threejs-{{uuid}}">
-        <!-- empty div in which to put the WebGLRenderer canvas -->
+    <!-- empty div in which to put the WebGLRenderer canvas -->
+    <div id="pl-threejs-{{uuid}}"></div>
+
+    <!-- button toolbar -->
+    <div class="btn-toolbar" role="toolbar">
+        <div class="btn-group btn-group-sm btn-group-toggle mr-2 mb-2" data-toggle="buttons" role="group" id="pl-threejs-toggle-view-{{uuid}}">
+            <label type="button" class="btn btn-secondary active">
+                <input type="radio" id="pl-threejs-button-rotateview-{{uuid}}" autocomplete="off" checked>rotate view</input>
+            </label>
+            <label type="button" class="btn btn-secondary">
+                <input type="radio" id="pl-threejs-button-rotateobject-{{uuid}}" autocomplete="off">rotate object</input>
+            </label>
+        </div>
+        <div class="btn-group btn-group-sm mr-2 mb-2" role="group">
+            <button id="pl-threejs-button-objectvisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">object visible</button>
+            <button id="pl-threejs-button-framevisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">frames visible</button>
+            <button id="pl-threejs-button-shadowvisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">shadows visible</button>
+        </div>
     </div>
 </div>
 {{/question}}
