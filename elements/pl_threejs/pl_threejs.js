@@ -25,9 +25,9 @@ function PLThreeJS(uuid, options) {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera( 75, this.width/this.height, 0.1, 1000 );
 
-    this.camera.position.x = 2;
-    this.camera.position.y = -3;
-    this.camera.position.z = 1;
+    this.camera.position.x = 5;
+    this.camera.position.y = 2;
+    this.camera.position.z = 2;
     this.camera.up.set( 0, 0, 1 );
     this.camera.lookAt( this.scene.position );
 
@@ -46,56 +46,32 @@ function PLThreeJS(uuid, options) {
     // Use 'append' (a jQuery method) and not 'appendChild' (a DOM method)
     this.element.append(this.renderer.domElement);
 
+    this.scene.add( new THREE.AmbientLight( 0xaaaaaa ));
 
-    var geometry = new THREE.PlaneGeometry( 50, 50, 50 );
-    var material = new THREE.ShadowMaterial( {color: 0x888888} );
-    var plane = new THREE.Mesh( geometry, material );
-    plane.receiveShadow = true;
-    // plane.translateOnAxis( [0, 0, 1], 0 );
-    plane.position.set( 0, 0, -5 );
-    this.scene.add( plane );
-
-    // var grid = new THREE.GridHelper( 5, 50 );
-    // grid.setColors( 0xffffff, 0xffffff );
-    // this.scene.add( grid );
+    this.screen = this.makeScreen();
+    this.scene.add(this.screen);
 
 
+    this.spaceFrame = this.makeFrame();
+    this.bodyFrame = this.makeFrame();
+    this.scene.add(this.spaceFrame);
 
-    // var light = new THREE.AmbientLight( 0xffffff );
-    // var light = new THREE.PointLight();
-    var light = new THREE.DirectionalLight( 0xffffff, 0.5 );
-    // light.position.set( 0, 0, 5 );
-    light.castShadow = true;
-    // light.shadowDarkness = 0.5;
-    this.scene.add(light);
-	// this.scene.add( new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 ) );
-    this.scene.add( new THREE.AmbientLight( 0xffffff ));
-
-    // // White directional light at half intensity shining from the top.
-    // var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
-    // this.scene.add( directionalLight );
-
-
-    this.spaceFrame = new THREE.AxesHelper( 1 );
-    this.bodyFrame = new THREE.AxesHelper( 1 );
-    this.scene.add( this.spaceFrame );
-    // this.scene.add( this.bodyFrame );
-
-    this.geometry = new THREE.BoxGeometry( 1, 2, 3 );
-    this.material = new THREE.MeshStandardMaterial(
-        {
+    this.bodyObject = (function (){
+        var geometry = new THREE.BoxGeometry( 1, 2, 3 );
+        var material = new THREE.MeshStandardMaterial({
             color: 0xE84A27,
             transparent: true,
             opacity: 0.7
         });
-    this.object = new THREE.Mesh( this.geometry, this.material );
-    this.object.castShadow = true;
-    this.object.add(this.bodyFrame);
-    this.scene.add(this.object);
-    this.bodyFrame.position.copy( this.object.position );
-    this.bodyFrame.quaternion.copy( this.object.quaternion );
+        var mesh = new THREE.Mesh( geometry, material );
+        mesh.castShadow = true;
+        return mesh;
+    })();
 
-
+    this.bodyGroup = new THREE.Group();
+    this.bodyGroup.add(this.bodyObject);
+    this.bodyGroup.add(this.bodyFrame);
+    this.scene.add(this.bodyGroup);
 
 
     this.isDragging = false;
@@ -105,8 +81,7 @@ function PLThreeJS(uuid, options) {
     };
 
     // From array, from string, from b64
-    this.object.quaternion.fromArray(JSON.parse(atob(options.quaternion)));
-
+    this.bodyGroup.quaternion.fromArray(JSON.parse(atob(options.quaternion)));
     this.updateInputElement();
 
     // Enable mouse controls
@@ -115,6 +90,86 @@ function PLThreeJS(uuid, options) {
     $(document).mouseup(PLThreeJS.prototype.onmouseup.bind(this));
 
     this.animate();
+};
+
+PLThreeJS.prototype.makeScreen = function() {
+    function makePart() {
+        var part = new THREE.Group();
+
+        var geometry = new THREE.PlaneGeometry( 10, 10, 1 );
+        var material = new THREE.ShadowMaterial( {color: 0x888888} );
+        var plane = new THREE.Mesh( geometry, material );
+        plane.receiveShadow = true;
+        plane.position.set( 0, 0, -5 );
+        part.add( plane );
+
+        var light = new THREE.DirectionalLight( 0xffffff, 0.5 );
+        light.castShadow = true;
+        part.add(light);
+
+        var grid = new THREE.GridHelper( 10, 10, 0xdddddd, 0xdddddd );
+        grid.position.set(0, 0, -5);
+        grid.quaternion.setFromEuler(new THREE.Euler(Math.PI/2, 0, 0, 'XYZ'));
+        grid.transparent = true;
+        grid.opacity = 0.1;
+        part.add(grid);
+
+        return part;
+    }
+
+    var x = makePart().rotateX(-Math.PI/2);
+    var y = makePart().rotateY(Math.PI/2);
+    var z = makePart();
+
+    var screen = new THREE.Group();
+    screen.add(x);
+    screen.add(y);
+    screen.add(z);
+
+
+    return screen;
+};
+
+
+
+PLThreeJS.prototype.makeFrame = function() {
+    function makeAxis(whichAxis) {
+        var geometry = new THREE.CylinderGeometry( 0.05, 0.05, 1 );
+        var material = new THREE.MeshStandardMaterial({
+            transparent: true,
+            opacity: 0.9
+        });
+        if ((whichAxis == 'x') || (whichAxis == 'X')) {
+            geometry.rotateZ(Math.PI/2);
+            geometry.translate(0.5, 0, 0);
+            material.color = new THREE.Color(0xff0000);
+        } else if ((whichAxis == 'y') || (whichAxis == 'Y')) {
+            geometry.rotateX(Math.PI);
+            geometry.translate(0, 0.5, 0);
+            material.color = new THREE.Color(0x00ff00);
+        } else if ((whichAxis == 'z') || (whichAxis == 'Z')) {
+            geometry.rotateX(-Math.PI/2);
+            geometry.translate(0, 0, 0.5);
+            material.color = new THREE.Color(0x0000ff);
+        } else {
+            throw "argument to whichAxis() must be 'x', 'y', or 'z'";
+        }
+        var cylinder = new THREE.Mesh( geometry, material );
+        cylinder.castShadow = true;
+        return cylinder;
+    }
+
+    var x = makeAxis('x');
+    var y = makeAxis('y');
+    var z = makeAxis('z');
+
+    var frame = new THREE.Object3D();
+
+    frame.add(x);
+    frame.add(y);
+    frame.add(z);
+
+    return frame;
 };
 
 PLThreeJS.prototype.onLoad = function( geometry, materials ) {
@@ -150,7 +205,7 @@ PLThreeJS.prototype.onmousemove = function(e) {
         qMotion.multiplyQuaternions(qCamera, qMotion);
         qMotion.multiplyQuaternions(qMotion, qCamera.inverse());
         // New orientation of object
-        this.object.quaternion.multiplyQuaternions(qMotion, this.object.quaternion);
+        this.bodyGroup.quaternion.multiplyQuaternions(qMotion, this.bodyGroup.quaternion);
         // // Body axes have same orientation
         // this.bodyFrame.quaternion.copy(this.object.quaternion);
         // Update the value of the hidden input element to contain the new orientation
@@ -175,5 +230,5 @@ PLThreeJS.prototype.animate = function() {
 };
 
 PLThreeJS.prototype.updateInputElement = function() {
-    this.inputElement.val(btoa(JSON.stringify(this.object.quaternion.toArray())));
+    this.inputElement.val(btoa(JSON.stringify(this.bodyGroup.quaternion.toArray())));
 };
