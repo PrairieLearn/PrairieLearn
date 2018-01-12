@@ -4,8 +4,12 @@ $(function() {
     new PLThreeJS("{{uuid}}", {quaternion: '{{{quaternion}}}', obj: "{{obj}}"});
 });
 </script>
-<div class="container-fluid" id="pl-threejs-{{uuid}}">
+<div class="container-fluid">
     <input type="hidden" name="{{answer_name}}">
+
+    <div id="pl-threejs-{{uuid}}">
+        <!-- empty div in which to put the WebGLRenderer canvas -->
+    </div>
 </div>
 {{/question}}
 
