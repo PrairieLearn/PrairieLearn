@@ -20,10 +20,11 @@ function PLThreeJS(uuid, options) {
 
     // Create scene
 
-    this.width = 400;
-    this.height = 300;
+    this.aspectratio = 4/3;
+    this.width = this.element.width();
+    this.height = this.width/this.aspectratio;
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera( 75, this.width/this.height, 0.1, 1000 );
+    this.camera = new THREE.PerspectiveCamera( 75, this.aspectratio, 0.1, 1000 );
 
     this.camera.position.x = 5;
     this.camera.position.y = 2;
@@ -90,7 +91,16 @@ function PLThreeJS(uuid, options) {
     $(document).mouseup(PLThreeJS.prototype.onmouseup.bind(this));
 
     this.animate();
+
+    $(window).resize(PLThreeJS.prototype.onResize.bind(this));
 };
+
+PLThreeJS.prototype.onResize = function() {
+    this.width = this.element.width();
+    this.height = this.width/this.aspectratio;
+    this.renderer.setSize(this.width, this.height);
+};
+
 
 PLThreeJS.prototype.makeScreen = function() {
     function makePart() {
