@@ -25,9 +25,7 @@ function PLThreeJS(uuid, options) {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera( 75, this.aspectratio, 0.1, 1000 );
 
-    this.camera.position.x = 5;
-    this.camera.position.y = 2;
-    this.camera.position.z = 2;
+    this.camera.position.set(5, 2, 2);
     this.camera.up.set( 0, 0, 1 );
     this.camera.lookAt( this.scene.position );
 
@@ -46,6 +44,7 @@ function PLThreeJS(uuid, options) {
 
     // Use 'append' (a jQuery method) and not 'appendChild' (a DOM method)
     this.element.append(this.renderer.domElement);
+    this.renderer.domElement.style.borderWidth = "medium";
 
     this.scene.add( new THREE.AmbientLight( 0xaaaaaa ));
     this.scene.add( this.makeLights() );
@@ -97,6 +96,17 @@ function PLThreeJS(uuid, options) {
             $(document).mousemove(PLThreeJS.prototype.onmousemove.bind(this));
             $(document).mouseup(PLThreeJS.prototype.onmouseup.bind(this));
 
+            // FIXME: use of orbitcontrols with zoom results in a warning on Chrome:
+            //
+            //  Blink deferred a task in order to make scrolling smoother. Your timer and
+            //  network tasks should take less than 50ms to run to avoid this. Please see
+            //  https://developers.google.com/web/tools/chrome-devtools/profile/evaluate-performance/rail
+            //  and https://crbug.com/574343#c40 for more information.
+            //
+            this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
+            this.controls.enablePan = false;
+            this.controls.addEventListener('change', (function() {this.renderer.render(this.scene, this.camera);}).bind(this));
+
             // Enable buttons
             $('#pl-threejs-button-objectvisible-' + uuid).click(PLThreeJS.prototype.toggleObjectVisible.bind(this));
             $('#pl-threejs-button-framevisible-' + uuid).click(PLThreeJS.prototype.toggleFrameVisible.bind(this));
@@ -104,14 +114,16 @@ function PLThreeJS(uuid, options) {
 
             $('#pl-threejs-toggle-view-' + uuid).change(PLThreeJS.prototype.toggleRotate.bind(this));
 
+            $(window).resize(PLThreeJS.prototype.onResize.bind(this));
 
-            this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
-            this.controls.enablePan = false;
+
             // this.controls.addEventListener( 'change', render );
 
-            this.animate();
+            // this.animate();
 
-            $(window).resize(PLThreeJS.prototype.onResize.bind(this));
+            this.renderer.render(this.scene, this.camera);
+            console.log("done with load/init")
+
         }).bind(this));
     }).call(this);
 
@@ -150,6 +162,18 @@ PLThreeJS.prototype.onResize = function() {
     this.width = this.element.width();
     this.height = this.width/this.aspectratio;
     this.renderer.setSize(this.width, this.height);
+    this.renderer.render(this.scene, this.camera);
+
+    // this.width = Math.floor(this.element.width());
+    // this.height = Math.ceil(this.width/this.targetaspectratio);
+    // this.renderer.setSize(this.width, this.height);
+    // this.camera.aspect = this.width/this.height;
+    // this.camera.updateProjectionMatrix();
+    // this.renderer.render(this.scene, this.camera);
+    // console.log(this.renderer.domElement);
+    // console.log(this.renderer.domElement.style);
+    // this.renderer.domElement.style.borderWidth = "thick"
+    // console.log(this.renderer.domElement.style);
 };
 
 PLThreeJS.prototype.makeLights = function() {
@@ -312,13 +336,13 @@ PLThreeJS.prototype.onmouseup = function() {
     }
 };
 
-PLThreeJS.prototype.animate = function() {
-    requestAnimationFrame(PLThreeJS.prototype.animate.bind(this));
-    if (this.controls.enabled) {
-        this.controls.update();
-    }
-    this.renderer.render(this.scene, this.camera);
-};
+// PLThreeJS.prototype.animate = function() {
+//     requestAnimationFrame(PLThreeJS.prototype.animate.bind(this));
+//     if (this.controls.enabled) {
+//         this.controls.update();
+//     }
+//     this.renderer.render(this.scene, this.camera);
+// };
 
 PLThreeJS.prototype.updateInputElement = function() {
     this.inputElement.val(btoa(JSON.stringify(this.bodyGroup.quaternion.toArray())));
