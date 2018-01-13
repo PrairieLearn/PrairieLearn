@@ -23,6 +23,8 @@
 
   * Fix broken popovers in input elements (Tim Bretl).
 
+  * Update question card coloring; collapse past submissions by default (Nathan Walters).
+
 * __2.11.0__ - 2017-12-29
 
   * Add support for partial credit in Homeworks (Tim Bretl).
