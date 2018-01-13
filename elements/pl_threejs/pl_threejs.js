@@ -2,6 +2,8 @@
 
 // Constructor with property definitions
 function PLThreeJS(uuid, options) {
+    console.log(uuid);
+    console.log(options);
 
 
     // Get the id of the div that contains everything
@@ -62,8 +64,9 @@ function PLThreeJS(uuid, options) {
 
     (function(){
         var loader = new THREE.STLLoader();
-        console.log(options.file_url);
         loader.load(options.file_url, (function (geometry) {
+            console.log("In load callback...");
+
             var material = new THREE.MeshStandardMaterial({
                 color: 0xE84A27,
                 transparent: true,
@@ -85,11 +88,13 @@ function PLThreeJS(uuid, options) {
             };
 
             // From array, from string, from b64
-            this.bodyGroup.quaternion.fromArray(JSON.parse(atob(options.quaternion)));
-            this.updateInputElement();
-            console.log(this.inputElement.val());
+            var state = JSON.parse(atob(options.state));
+            this.bodyGroup.quaternion.fromArray(state.body_quaternion);
+            this.bodyGroup.position.fromArray(state.body_position);
+            this.camera.quaternion.fromArray(state.camera_quaternion);
+            this.camera.position.fromArray(state.camera_position);
 
-            console.log(this.bodyGroup);
+            this.updateInputElement();
 
             // Enable mouse controls
             $(this.renderer.domElement).mousedown(PLThreeJS.prototype.onmousedown.bind(this));
@@ -105,7 +110,10 @@ function PLThreeJS(uuid, options) {
             //
             this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
             this.controls.enablePan = false;
-            this.controls.addEventListener('change', (function() {this.renderer.render(this.scene, this.camera);}).bind(this));
+            this.controls.addEventListener('change', (function() {
+                this.renderer.render(this.scene, this.camera);
+                this.updateInputElement();
+            }).bind(this));
 
             // Enable buttons
             $('#pl-threejs-button-objectvisible-' + uuid).click(PLThreeJS.prototype.toggleObjectVisible.bind(this));
@@ -143,19 +151,23 @@ function PLThreeJS(uuid, options) {
 
 PLThreeJS.prototype.toggleRotate = function() {
     this.controls.enabled = !this.controls.enabled;
+    this.renderer.render(this.scene, this.camera);
 };
 
 PLThreeJS.prototype.toggleObjectVisible = function() {
     this.bodyObject.visible = !this.bodyObject.visible;
+    this.renderer.render(this.scene, this.camera);
 };
 
 PLThreeJS.prototype.toggleFrameVisible = function() {
     this.bodyFrame.visible = !this.bodyFrame.visible;
     this.spaceFrame.visible = !this.spaceFrame.visible;
+    this.renderer.render(this.scene, this.camera);
 };
 
 PLThreeJS.prototype.toggleShadowVisible = function() {
     this.screen.visible = !this.screen.visible;
+    this.renderer.render(this.scene, this.camera);
 };
 
 PLThreeJS.prototype.onResize = function() {
@@ -163,17 +175,6 @@ PLThreeJS.prototype.onResize = function() {
     this.height = this.width/this.aspectratio;
     this.renderer.setSize(this.width, this.height);
     this.renderer.render(this.scene, this.camera);
-
-    // this.width = Math.floor(this.element.width());
-    // this.height = Math.ceil(this.width/this.targetaspectratio);
-    // this.renderer.setSize(this.width, this.height);
-    // this.camera.aspect = this.width/this.height;
-    // this.camera.updateProjectionMatrix();
-    // this.renderer.render(this.scene, this.camera);
-    // console.log(this.renderer.domElement);
-    // console.log(this.renderer.domElement.style);
-    // this.renderer.domElement.style.borderWidth = "thick"
-    // console.log(this.renderer.domElement.style);
 };
 
 PLThreeJS.prototype.makeLights = function() {
@@ -281,7 +282,6 @@ PLThreeJS.prototype.makeFrame = function() {
 PLThreeJS.prototype.onLoad = function( geometry, materials ) {
     var material = materials[ 0 ];
     var object = new THREE.Mesh( geometry, material );
-    console.log(this);
     this.scene.add( object );
 };
 
@@ -315,8 +315,8 @@ PLThreeJS.prototype.onmousemove = function(e) {
             qMotion.multiplyQuaternions(qMotion, qCamera.inverse());
             // New orientation of object
             this.bodyGroup.quaternion.multiplyQuaternions(qMotion, this.bodyGroup.quaternion);
-            // // Body axes have same orientation
-            // this.bodyFrame.quaternion.copy(this.object.quaternion);
+            // Render
+            this.renderer.render(this.scene, this.camera);
             // Update the value of the hidden input element to contain the new orientation
             this.updateInputElement();
         }
@@ -345,5 +345,14 @@ PLThreeJS.prototype.onmouseup = function() {
 // };
 
 PLThreeJS.prototype.updateInputElement = function() {
-    this.inputElement.val(btoa(JSON.stringify(this.bodyGroup.quaternion.toArray())));
+
+    var val = {
+        body_quaternion: this.bodyGroup.quaternion.toArray(),
+        body_position: this.bodyGroup.position.toArray(),
+        camera_quaternion: this.camera.quaternion.toArray(),
+        camera_position: this.camera.position.toArray()
+    };
+
+    this.inputElement.val(btoa(JSON.stringify(val)));
+
 };

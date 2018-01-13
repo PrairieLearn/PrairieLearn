@@ -1,7 +1,11 @@
 {{#question}}
 <script>
 $(function() {
-    new PLThreeJS("{{uuid}}", {quaternion: '{{{quaternion}}}', file_url: "{{file_url}}", scale: "{{scale}}"});
+    new PLThreeJS( "{{uuid}}", {
+        state: '{{{state}}}',
+        file_url: "{{file_url}}",
+        scale: "{{scale}}"
+    });
 });
 </script>
 <div class="container-fluid">
