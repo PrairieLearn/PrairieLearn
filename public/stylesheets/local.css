@@ -116,12 +116,20 @@ table.two-column-description-no-header-with-help tr td:last-of-type {
   cursor: pointer;
 }
 
-.submission-header > .expand-icon {
-  transition: all 400ms;
+.submission-header .expand-icon {
+  transition: transform 400ms;
 }
 
-.submission-header.collapsed > .expand-icon {
+.submission-header .expand-icon-container::before {
+  content: "hide";
+}
+
+.submission-header.collapsed .expand-icon {
   transform: rotateX(180deg);
+}
+
+.submission-header.collapsed .expand-icon-container::before {
+  content: "show";
 }
 
 /***************************************
