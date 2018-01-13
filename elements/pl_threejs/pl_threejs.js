@@ -21,8 +21,9 @@ function PLThreeJS(uuid, options) {
 
     // Create scene
 
+    this.minimumwidth = 400;
     this.aspectratio = 4/3;
-    this.width = this.element.width();
+    this.width = Math.max(this.element.width(), this.minimumwidth);
     this.height = this.width/this.aspectratio;
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera( 75, this.aspectratio, 0.1, 1000 );
@@ -171,7 +172,7 @@ PLThreeJS.prototype.toggleShadowVisible = function() {
 };
 
 PLThreeJS.prototype.onResize = function() {
-    this.width = this.element.width();
+    this.width = Math.max(this.element.width(), this.minimumwidth);
     this.height = this.width/this.aspectratio;
     this.renderer.setSize(this.width, this.height);
     this.renderer.render(this.scene, this.camera);
