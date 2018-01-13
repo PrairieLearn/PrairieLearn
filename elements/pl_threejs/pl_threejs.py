@@ -22,7 +22,7 @@ def render(element_html, element_index, data):
     name = pl.get_string_attrib(element, 'answer_name')
 
     if data['panel'] == 'question':
-        file_name = 'geometry.json'
+        file_name = 'MAKE_Robot_V6.stl'
         base_url = data['options']['client_files_question_url']
         file_url = os.path.join(base_url, file_name)
 
@@ -31,7 +31,8 @@ def render(element_html, element_index, data):
             'answer_name': name,
             'uuid': pl.get_uuid(),
             'quaternion': q_to_b64(data['submitted_answers'].get(name, [0, 0, 0, 1])),
-            'obj': file_url
+            'file_url': file_url,
+            'scale': 0.1
             # 'quaternion': json.dumps(list_to_q(data['submitted_answers'].get(name, [0, 0, 0, 1])))
         }
         with open('pl_threejs.mustache', 'r', encoding='utf-8') as f:

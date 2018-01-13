@@ -17,9 +17,6 @@ function PLThreeJS(uuid, options) {
 
     THREE.Object3D.DefaultUp.set(0, 0, 1);
 
-
-
-
     // Create scene
 
     this.aspectratio = 4/3;
@@ -35,7 +32,8 @@ function PLThreeJS(uuid, options) {
     this.camera.lookAt( this.scene.position );
 
 
-    // var loader = new THREE.STLLoader();
+
+
 
     this.renderer = new THREE.WebGLRenderer( { alpha: true, antialias: true } );
     // this.renderer = new THREE.WebGLRenderer();
@@ -62,57 +60,74 @@ function PLThreeJS(uuid, options) {
     this.bodyFrame = this.makeFrame();
     this.scene.add(this.spaceFrame);
 
-    this.bodyObject = (function (){
-        var geometry = new THREE.BoxGeometry( 1, 2, 3 );
-        var material = new THREE.MeshStandardMaterial({
-            color: 0xE84A27,
-            transparent: true,
-            opacity: 0.7
-        });
-        var mesh = new THREE.Mesh( geometry, material );
-        mesh.castShadow = true;
-        return mesh;
-    })();
 
-    this.bodyGroup = new THREE.Group();
-    this.bodyGroup.add(this.bodyObject);
-    this.bodyGroup.add(this.bodyFrame);
-    this.scene.add(this.bodyGroup);
+    (function(){
+        var loader = new THREE.STLLoader();
+        console.log(options.file_url);
+        loader.load(options.file_url, (function (geometry) {
+            var material = new THREE.MeshStandardMaterial({
+                color: 0xE84A27,
+                transparent: true,
+                opacity: 0.7
+            });
+            this.bodyObject = new THREE.Mesh(geometry.scale(options.scale, options.scale, options.scale), material);
+            this.bodyObject.castShadow = true;
+            this.bodyObject.receiveShadow = true;
 
+            this.bodyGroup = new THREE.Group();
+            this.bodyGroup.add(this.bodyObject);
+            this.bodyGroup.add(this.bodyFrame);
+            this.scene.add(this.bodyGroup);
 
-    this.isDragging = false;
-    this.previousMousePosition = {
-        x: 0,
-        y: 0
-    };
+            this.isDragging = false;
+            this.previousMousePosition = {
+                x: 0,
+                y: 0
+            };
 
-    // From array, from string, from b64
-    this.bodyGroup.quaternion.fromArray(JSON.parse(atob(options.quaternion)));
-    this.updateInputElement();
+            // From array, from string, from b64
+            this.bodyGroup.quaternion.fromArray(JSON.parse(atob(options.quaternion)));
+            this.updateInputElement();
+            console.log(this.inputElement.val());
 
-    // Enable mouse controls
-    $(this.renderer.domElement).mousedown(PLThreeJS.prototype.onmousedown.bind(this));
-    $(document).mousemove(PLThreeJS.prototype.onmousemove.bind(this));
-    $(document).mouseup(PLThreeJS.prototype.onmouseup.bind(this));
+            console.log(this.bodyGroup);
 
-    // Enable buttons
-    $('#pl-threejs-button-objectvisible-' + uuid).click(PLThreeJS.prototype.toggleObjectVisible.bind(this));
-    $('#pl-threejs-button-framevisible-' + uuid).click(PLThreeJS.prototype.toggleFrameVisible.bind(this));
-    $('#pl-threejs-button-shadowvisible-' + uuid).click(PLThreeJS.prototype.toggleShadowVisible.bind(this));
+            // Enable mouse controls
+            $(this.renderer.domElement).mousedown(PLThreeJS.prototype.onmousedown.bind(this));
+            $(document).mousemove(PLThreeJS.prototype.onmousemove.bind(this));
+            $(document).mouseup(PLThreeJS.prototype.onmouseup.bind(this));
 
-    $('#pl-threejs-toggle-view-' + uuid).change(PLThreeJS.prototype.toggleRotate.bind(this));
+            // Enable buttons
+            $('#pl-threejs-button-objectvisible-' + uuid).click(PLThreeJS.prototype.toggleObjectVisible.bind(this));
+            $('#pl-threejs-button-framevisible-' + uuid).click(PLThreeJS.prototype.toggleFrameVisible.bind(this));
+            $('#pl-threejs-button-shadowvisible-' + uuid).click(PLThreeJS.prototype.toggleShadowVisible.bind(this));
 
-
-    this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
-    this.controls.enablePan = false;
-    // this.controls.addEventListener( 'change', render );
-
+            $('#pl-threejs-toggle-view-' + uuid).change(PLThreeJS.prototype.toggleRotate.bind(this));
 
 
-    this.animate();
+            this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
+            this.controls.enablePan = false;
+            // this.controls.addEventListener( 'change', render );
 
-    $(window).resize(PLThreeJS.prototype.onResize.bind(this));
+            this.animate();
+
+            $(window).resize(PLThreeJS.prototype.onResize.bind(this));
+        }).bind(this));
+    }).call(this);
+
+    // (function (){
+    //     var geometry = new THREE.BoxGeometry( 1, 2, 3 );
+    //     var material = new THREE.MeshStandardMaterial({
+    //         color: 0xE84A27,
+    //         transparent: true,
+    //         opacity: 0.7
+    //     });
+    //     var mesh = new THREE.Mesh( geometry, material );
+    //     mesh.castShadow = true;
+    //     this.bodyObject = mesh;
+    // }).call(this);
 };
+
 
 PLThreeJS.prototype.toggleRotate = function() {
     this.controls.enabled = !this.controls.enabled;

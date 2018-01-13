@@ -1,15 +1,15 @@
 {{#question}}
 <script>
 $(function() {
-    new PLThreeJS("{{uuid}}", {quaternion: '{{{quaternion}}}', obj: "{{obj}}"});
+    new PLThreeJS("{{uuid}}", {quaternion: '{{{quaternion}}}', file_url: "{{file_url}}", scale: "{{scale}}"});
 });
 </script>
 <div class="container-fluid">
-    <!-- hidden input element to transfer data from client to server -->
-    <input type="hidden" name="{{answer_name}}">
-
-    <!-- empty div in which to put the WebGLRenderer canvas -->
-    <div id="pl-threejs-{{uuid}}"></div>
+    <!-- div in which to put the WebGLRenderer canvas -->
+    <div id="pl-threejs-{{uuid}}">
+        <!-- hidden input element to transfer data from client to server -->
+        <input type="hidden" name="{{answer_name}}">
+    </div>
 
     <!-- button toolbar -->
     <div class="btn-toolbar" role="toolbar">
