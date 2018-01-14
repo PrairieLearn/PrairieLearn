@@ -1,3 +1,7 @@
+/*****************
+ * General styles
+ *****************/
+
 body {
   overflow-y: scroll;
 }
@@ -103,6 +107,29 @@ table.two-column-description-no-header-with-help tr td:last-of-type {
 
 .table-no-wrap td {
     white-space: nowrap;
+}
+
+/**************
+ * Submissions
+ **************/
+.submission-header {
+  cursor: pointer;
+}
+
+.submission-header .expand-icon {
+  transition: transform 400ms;
+}
+
+.submission-header .expand-icon-container::before {
+  content: "hide";
+}
+
+.submission-header.collapsed .expand-icon {
+  transform: rotateX(180deg);
+}
+
+.submission-header.collapsed .expand-icon-container::before {
+  content: "show";
 }
 
 /***************************************
