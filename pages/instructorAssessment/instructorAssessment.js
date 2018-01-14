@@ -71,6 +71,30 @@ router.get('/', function(req, res, next) {
             callback(null);
         },
         function(callback) {
+            debug('query expected quintile assessment score');
+            var params = {
+                assessment_id: res.locals.assessment.id
+            };
+            sqldb.query(sql.expected_quintile_assessment_scores, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                res.locals.expected_assessment_quintile_score_perc = result.rows;
+                console.log(result.rows);
+                callback(null);
+            });
+        },
+        function(callback) {
+            debug('query expected assessment score');
+            var params = {
+                assessment_id: res.locals.assessment.id
+            };
+            sqldb.query(sql.expected_assessment_score, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                res.locals.expected_assessment_score_perc = result.rows[0].score_perc;
+                console.log(result.rows[0].score_perc);
+                callback(null);
+            });
+        },
+        function(callback) {
             debug('query questions');
             var params = {
                 assessment_id: res.locals.assessment.id,
@@ -79,6 +103,12 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.questions, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.questions = result.rows;
+                console.log("before ----------");
+                for (var i = 0; i < res.locals.questions.length; i++) {
+                   console.log(res.locals.questions[i].predicted_quintile_scores);
+                }
+                console.log("after ----------");
+
                 callback(null);
             });
         },
@@ -99,6 +129,15 @@ router.get('/', function(req, res, next) {
                 res.locals.assessment_stat = result.rows[0];
                 callback(null);
            });
+        },
+        function(callback) {
+            debug('query assessment_score_quintiles');
+            var params = {assessment_id: res.locals.assessment.id};
+            sqldb.query(sql.assessment_score_quintiles, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                res.locals.assessment_score_quintiles = result.rows;
+                callback(null);
+            });
         },
         function(callback) {
             debug('query assessment_score_histogram_by_date');

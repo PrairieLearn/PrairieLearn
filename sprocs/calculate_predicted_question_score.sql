@@ -8,6 +8,9 @@ DECLARE
     result DOUBLE PRECISION;
     bound INTEGER;
 BEGIN
+    IF points_list IS NULL OR max_points IS NULL THEN
+        RETURN NULL;
+    END IF;
     IF qs_incremental_submission_score_array_averages IS NOT NULL THEN
         result = 0;
         bound = LEAST(array_length(qs_incremental_submission_score_array_averages, 1), array_length(points_list, 1));

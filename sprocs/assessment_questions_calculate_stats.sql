@@ -58,7 +58,10 @@ user_quintiles AS (
     FROM assessment_scores_by_user
 ),
 quintile_scores AS (
-    SELECT avg(question_stats_by_user.score_perc) AS quintile_score
+    SELECT
+        avg(question_stats_by_user.score_perc) AS quintile_score,
+        array_avg(question_stats_by_user.incremental_submission_score_array) AS quintile_incremental_submission_score_array,
+        avg(question_stats_by_user.last_submission_score) AS average_last_submission_score_quintiles
     FROM
         question_stats_by_user
         JOIN user_quintiles USING (user_id)
@@ -66,7 +69,10 @@ quintile_scores AS (
     ORDER BY user_quintiles.quintile
 ),
 quintile_scores_as_array AS (
-    SELECT array_agg(quintile_score) AS scores
+    SELECT
+        array_agg(quintile_score) AS scores,
+        array_agg_custom(quintile_incremental_submission_score_array) AS incremental_submission_score_array,
+        array_agg(average_last_submission_score_quintiles) AS average_last_submission_score_quintiles
     FROM quintile_scores
 ),
 aq_stats AS (
@@ -141,7 +147,9 @@ SET
     number_submissions_variance                   = aq_stats.number_submissions_variance,
     number_submissions_hist                       = aq_stats.number_submissions_hist,
     number_submissions_hist_with_perfect_submission = aq_stats.number_submissions_hist_with_perfect_submission,
-    number_submissions_hist_with_no_perfect_submission = aq_stats.number_submissions_hist_with_no_perfect_submission
+    number_submissions_hist_with_no_perfect_submission = aq_stats.number_submissions_hist_with_no_perfect_submission,
+    incremental_submission_score_array_quintile_averages = quintile_scores_as_array.incremental_submission_score_array,
+    average_last_submission_score_quintiles       = quintile_scores_as_array.average_last_submission_score_quintiles
 
 FROM
     quintile_scores_as_array,

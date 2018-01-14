@@ -117,6 +117,7 @@ module.exports = {
             'variants_unlink.sql',
             'grader_loads_current.sql',
             'server_loads_current.sql',
+            'array_agg_custom.sql',
             'assessment_questions_calculate_stats_for_assessment.sql',
             'assessment_questions_calculate_stats.sql',
             'instance_questions_calculate_stats.sql',
@@ -130,6 +131,7 @@ module.exports = {
             'weighted_arr_avg.sql',
             'get_domain.sql',
             'calculate_predicted_question_score.sql',
+            'weighted_arr_avg_2d.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {
