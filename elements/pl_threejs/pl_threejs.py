@@ -5,66 +5,87 @@ import numpy as np
 import json
 import base64
 import os
+import pyquaternion
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, required_attribs=['answer_name'], optional_attribs=[])
+    required_attribs = [
+        'answer_name',          # key for 'submitted_answers' and 'true_answers'
+        'file_name'             # *.stl
+    ]
+    optional_attribs = [
+        'file_directory',       # 'clientFilesCourse' or 'clientFilesQuestion'
+        'body_color',           # '0xe84a27' (default)
+        'body_orientation',     # [x, y, z, w] or [roll, pitch, yaw] or rotation matrix (3x3 ndarray) or exponential coordinates [wx, wy, wz]
+        'body_scale',           # s (float > 0)
+        'camera_position',      # [x, y, z] - camera is z up and points at origin of space frame
+        'body_canmove',         # true or false
+        'camera_canmove',       # true or false
+        'format_of_body_orientation',       # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
+        'format_of_display_orientation',    # 'matrix' (default), 'quaternion', 'none'
+        'format_of_answer_orientation'      # 'none' (default), 'rpy', 'quaternion', 'matrix', 'axisangle'
+    ]
+    pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
 
-def dict_to_b64(d):
-    return base64.b64encode(json.dumps(d).encode('utf-8')).decode()
 
-def b64_to_dict(b64):
-    return json.loads(base64.b64decode(b64).decode())
 
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answer_name')
+    answer_name = pl.get_string_attrib(element, 'answer_name')
 
     if data['panel'] == 'question':
-        file_name = 'MAKE_Robot_V6.stl'
-        base_url = data['options']['client_files_question_url']
-        file_url = os.path.join(base_url, file_name)
 
+        # Attributes
+        file_url = get_file_url(element, data)    # uses file_name and file_directory
+        body_color = pl.get_color_attrib(element, 'body_color', '#e84a27')
+        body_orientation = get_body_orientation(element)
+        body_scale = pl.get_float_attrib(element, 'body_scale', 1.0)
+        camera_position = get_camera_position(element)
+        body_canmove = pl.get_boolean_attrib(element, 'body_canmove', True)
+        camera_canmove = pl.get_boolean_attrib(element, 'camera_canmove', True)
+        format_of_display_orientation = pl.get_string_attrib(element, 'format_of_display_orientation', 'matrix')
+        if format_of_display_orientation not in ['matrix', 'quaternion', 'none']:
+            raise Exception('attribute "format_of_display_orientation" must be either "matrix", "quaternion", or "none"')
 
+        # Restore pose of body and camera, if available - otherwise use values
+        # from attributes (note that restored pose will also have camera_orientation,
+        # which we currently ignore because the camera is always z up and looking
+        # at the origin of the space frame).
         pose_default = {
-            'body_quaternion': [0, 0, 0, 1],
+            'body_quaternion': body_orientation,
             'body_position': [0, 0, 0],
-            'camera_quaternion': [0, 0, 0, 1],
-            'camera_position': [5, 2, 2]
+            'camera_position': camera_position
         }
-        pose = data['submitted_answers'].get(name, pose_default)
-
-        matlab_data = ''
-        python_data = 'import numpy as np\n\n'
-
-        digits = 2
-        matlab_data += 'R = ' + pl.numpy_to_matlab(np.array([pose['body_quaternion']]), ndigits=digits) + ';\n'
-        python_data += 'R = np.array(' + str(np.array(pose['body_quaternion']).round(digits).tolist()) + ')\n'
+        pose = data['submitted_answers'].get(answer_name, pose_default)
 
         html_params = {
             'question': True,
-            'answer_name': name,
             'uuid': pl.get_uuid(),
-            'state': dict_to_b64(pose),
+            'answer_name': answer_name,
             'file_url': file_url,
-            'scale': 0.1,
+            'state': dict_to_b64(pose),     # body_orientation and camera_position
+            'scale': json.dumps(body_scale),
+            'body_canmove': json.dumps(body_canmove),
+            'camera_canmove': json.dumps(camera_canmove),
+            'show_bodybuttons': body_canmove,
+            'show_toggle': body_canmove and camera_canmove,
+            'format_of_display_orientation': format_of_display_orientation,
+            'show_display': format_of_display_orientation != 'none',
             'default_is_python': True,
-            'matlab_data': matlab_data,
-            'python_data': python_data
-            # 'quaternion': json.dumps(list_to_q(data['submitted_answers'].get(name, [0, 0, 0, 1])))
+            'body_color': body_color
         }
         with open('pl_threejs.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'submission':
-        parse_error = data['format_errors'].get(name, None)
+        parse_error = data['format_errors'].get(answer_name, None)
         html_params = {
             'submission': True,
             'parse_error': parse_error
         }
 
         if parse_error is None:
-            a_sub = data['submitted_answers'][name]
+            a_sub = data['submitted_answers'][answer_name]
             html_params['a_sub'] = str(a_sub)
             # '{:.12g}'.format(a_sub)
 
@@ -158,3 +179,93 @@ def grade(element_html, element_index, data):
     #     data['partial_scores'][name] = {'score': 1, 'weight': weight}
     # else:
     #     data['partial_scores'][name] = {'score': 0, 'weight': weight}
+
+
+def dict_to_b64(d):
+    return base64.b64encode(json.dumps(d).encode('utf-8')).decode()
+
+def b64_to_dict(b64):
+    return json.loads(base64.b64decode(b64).decode())
+
+def get_file_url(element, data):
+    # Get file name or raise exception if one does not exist
+    file_name = pl.get_string_attrib(element, 'file_name')
+
+    # Get directory (default is clientFilesQuestion)
+    file_directory = pl.get_string_attrib(element, 'file_directory', 'clientFilesQuestion')
+
+    # Get base url, which depends on the directory
+    if file_directory == 'clientFilesQuestion':
+        base_url = data['options']['client_files_question_url']
+    elif file_directory == 'clientFilesCourse':
+        base_url = data['options']['client_files_course_url']
+    else:
+        raise ValueError('file_directory "{}" is not valid (must be "clientFilesQuestion" or "clientFilesCourse")'.format(file_directory))
+
+    # Get full url
+    file_url = os.path.join(base_url, file_name)
+
+    return file_url
+
+def get_body_orientation(element):
+    s = pl.get_string_attrib(element, 'body_orientation', None)
+    if s is None:
+        return [0, 0, 0, 1]
+
+    f = pl.get_string_attrib(element, 'format_of_body_orientation', 'rpy')
+    if f == 'rpy':
+        try:
+            rpy = np.array(json.loads(s), dtype=np.float64)
+            if rpy.shape == (3,):
+                qx = pyquaternion.Quaternion(axis=[1, 0, 0], degrees=rpy[0])
+                qy = pyquaternion.Quaternion(axis=[0, 1, 0], degrees=rpy[1])
+                qz = pyquaternion.Quaternion(axis=[0, 0, 1], degrees=rpy[2])
+                return np.roll((qx * qy * qz).elements, -1).tolist()
+            else:
+                raise ValueError()
+        except:
+            raise Exception('attribute "body_orientation" must be a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]": {:s}'.format(s))
+    elif f == 'quaternion':
+        try:
+            q = np.array(json.loads(s), dtype=np.float64)
+            if (q.shape == (4,)) and np.allclose(np.linalg.norm(q), 1.0):
+                return q.tolist()
+            else:
+                raise ValueError()
+        except:
+            raise Exception('attribute "body_orientation" must be a unit quaternion with format "[x, y, z, w]": {:s}'.format(s))
+    elif f == 'matrix':
+        try:
+            R = np.array(json.loads(s), dtype=np.float64)
+            return np.roll(pyquaternion.Quaternion(matrix=R).elements, -1).tolist()
+        except:
+            raise Exception('attribute "body_orientation" must be a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]": {:s}'.format(s))
+    elif f == 'axisangle':
+        try:
+            q = np.array(json.loads(s), dtype=np.float64)
+            if (q.shape == (4,)):
+                axis = q[0:3]
+                angle = q[3]
+                if np.allclose(np.linalg.norm(axis), 1.0):
+                    return np.roll(pyquaternion.Quaternion(axis=axis, degrees=angle).elements, -1).tolist()
+                else:
+                    raise ValueError()
+            else:
+                raise ValueError()
+        except:
+            raise Exception('attribute "body_orientation" must have format "[x, y, z, angle]"\n' \
+                             + 'where (x, y, z) are the components of a unit vector and where the angle\n' \
+                             + 'is in degrees: {:s}'.format(s))
+    else:
+        raise Exception('attribute "format_of_body_orientation" must be "rpy", "quaternion", "matrix", or "axisangle": {:s}'.format(f))
+
+def get_camera_position(element):
+    p = pl.get_string_attrib(element, 'camera_position', '[5, 2, 2]')
+    try:
+        p_arr = np.array(json.loads(p), dtype=np.float64)
+        if (p_arr.shape == (3,)) and not np.allclose(p_arr, np.array([0, 0, 0])):
+            return p_arr.tolist()
+        else:
+            raise ValueError()
+    except:
+        raise Exception('attribute "camera_position" must have format [x, y, z] and must be non-zero: {:s}'.format(p))

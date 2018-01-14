@@ -1,16 +1,22 @@
 {{#question}}
 <script>
+{{#show_display}}
 <!-- init copy button -->
 $(function(){
     PrairieUtil.initCopyButton('#pl-threejs-output-{{uuid}} .copy-button');
 });
+{{/show_display}}
 
 <!-- create three.js element -->
 $(function() {
     new PLThreeJS( "{{uuid}}", {
-        state: '{{{state}}}',
+        state: "{{{state}}}",
         file_url: "{{file_url}}",
-        scale: "{{scale}}"
+        scale: {{scale}},
+        body_canmove: {{body_canmove}},
+        camera_canmove: {{camera_canmove}},
+        format_of_display_orientation: "{{format_of_display_orientation}}",
+        body_color: "{{body_color}}",
     });
 });
 </script>
@@ -26,15 +32,18 @@ $(function() {
 
     <!-- button toolbar -->
     <div class="btn-toolbar" role="toolbar">
-        <div class="btn-group btn-group-sm btn-group-toggle mr-2 mb-2" data-toggle="buttons" role="group" id="pl-threejs-toggle-view-{{uuid}}">
+        {{#show_toggle}}
+        <div class="btn-group btn-group-sm btn-group-toggle mr-2 mb-2" data-toggle="buttons" role="group" id="toggle-view-{{uuid}}">
             <label class="btn btn-secondary active">
-                <input type="radio" id="pl-threejs-button-rotateview-{{uuid}}" autocomplete="off" checked>rotate view</input>
+                <input type="radio" autocomplete="off" checked>rotate view</input>
             </label>
             <label class="btn btn-secondary">
-                <input type="radio" id="pl-threejs-button-rotateobject-{{uuid}}" autocomplete="off">rotate object</input>
+                <input type="radio" autocomplete="off">rotate object</input>
             </label>
         </div>
-        <div class="input-group input-group-sm mr-2 mb-2">
+        {{/show_toggle}}
+        {{#show_bodybuttons}}
+        <div class="input-group input-group-sm mr-2 mb-2" id="x-group-{{uuid}}">
             <div class="input-group-prepend">
                 <button id="x-minus-{{uuid}}" class="btn btn-secondary" type="button" disabled><i class="fa fa-redo" aria-hidden="true"></i></button>
                 <span class="input-group-text">x</span>
@@ -43,7 +52,7 @@ $(function() {
                 <button id="x-plus-{{uuid}}" class="btn btn-secondary" type="button" disabled><i class="fa fa-redo fa-flip-horizontal" aria-hidden="true"></i></button>
             </div>
         </div>
-        <div class="input-group input-group-sm mr-2 mb-2">
+        <div class="input-group input-group-sm mr-2 mb-2" id="y-group-{{uuid}}">
             <div class="input-group-prepend">
                 <button id="y-minus-{{uuid}}" class="btn btn-secondary" type="button" disabled><i class="fa fa-redo" aria-hidden="true"></i></button>
                 <span class="input-group-text">y</span>
@@ -52,7 +61,7 @@ $(function() {
                 <button id="y-plus-{{uuid}}" class="btn btn-secondary" type="button" disabled><i class="fa fa-redo fa-flip-horizontal" aria-hidden="true"></i></button>
             </div>
         </div>
-        <div class="input-group input-group-sm mr-2 mb-2">
+        <div class="input-group input-group-sm mr-2 mb-2" id="z-group-{{uuid}}">
             <div class="input-group-prepend">
                 <button id="z-minus-{{uuid}}" class="btn btn-secondary" type="button" disabled><i class="fa fa-redo" aria-hidden="true"></i></button>
                 <span class="input-group-text">z</span>
@@ -61,6 +70,7 @@ $(function() {
                 <button id="z-plus-{{uuid}}" class="btn btn-secondary" type="button" disabled><i class="fa fa-redo fa-flip-horizontal" aria-hidden="true"></i></button>
             </div>
         </div>
+        {{/show_bodybuttons}}
         <div class="btn-group btn-group-sm mr-2 mb-2" role="group">
             <button id="pl-threejs-button-objectvisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">object visible</button>
             <button id="pl-threejs-button-framevisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">frames visible</button>
@@ -68,6 +78,7 @@ $(function() {
         </div>
     </div>
 
+    {{#show_display}}
     <!-- state -->
     <div id="pl-threejs-output-{{uuid}}" class="card mb-4">
         <div class="card-header">
@@ -79,13 +90,13 @@ $(function() {
         <div class="card-body">
             <div class="tab-content">
                 <div role="tabpanel" class="tab-pane {{#default_is_matlab}}active{{/default_is_matlab}}" id="matlab-{{uuid}}">
-                    <pre class="bg-dark text-white rounded p-2" id="matlab-data-{{uuid}}">{{matlab_data}}</pre>
+                    <pre class="bg-dark text-white rounded p-2" id="matlab-data-{{uuid}}"></pre>
                     <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#matlab-data-{{uuid}}">
                         copy this text
                     </button>
                 </div>
                 <div role="tabpanel" class="tab-pane {{#default_is_python}}active{{/default_is_python}}" id="python-{{uuid}}">
-                    <pre class="bg-dark text-white rounded p-2" id="python-data-{{uuid}}">{{python_data}}</pre>
+                    <pre class="bg-dark text-white rounded p-2" id="python-data-{{uuid}}"></pre>
                     <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#python-data-{{uuid}}">
                         copy this text
                     </button>
@@ -93,6 +104,7 @@ $(function() {
             </div>
         </div>
     </div>
+    {{/show_display}}
 </div>
 {{/question}}
 

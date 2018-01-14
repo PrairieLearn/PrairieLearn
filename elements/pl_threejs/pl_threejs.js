@@ -1,12 +1,17 @@
-// import * as OBJLoader from 'three-obj-loader';
-
-// Constructor with property definitions
 function PLThreeJS(uuid, options) {
-    console.log(uuid);
-    console.log(options);
 
-    this.matlabText = $('#matlab-data-' + uuid);
-    this.pythonText = $('#python-data-' + uuid);
+    // parse options
+    this.initialPose = JSON.parse(atob(options.state));
+    this.scale = options.scale;
+    this.bodyCanMove = options.body_canmove;
+    this.cameraCanMove = options.camera_canmove;
+    this.displayFormat = options.format_of_display_orientation;
+    this.bodyColor = options.body_color;
+
+    // jquery container element
+    this.container = $('#pl-threejs-' + uuid);
+
+    // jquery button elements
     this.xPlusButton = $('#x-plus-' + uuid);
     this.xMinusButton = $('#x-minus-' + uuid);
     this.yPlusButton = $('#y-plus-' + uuid);
@@ -14,222 +19,174 @@ function PLThreeJS(uuid, options) {
     this.zPlusButton = $('#z-plus-' + uuid);
     this.zMinusButton = $('#z-minus-' + uuid);
 
-    // Get the id of the div that contains everything
-    var elementId = '#pl-threejs-' + uuid;
-    this.element = $(elementId);
-    if (!this.element.length) {
-        throw new Error('pl-threejs-element ' + elementId + ' was not found!');
-    }
+    // jquery text display elements
+    this.matlabText = $('#matlab-data-' + uuid);
+    this.pythonText = $('#python-data-' + uuid);
 
-    // Get the hidden input element to communicate from client to server
-    this.inputElement = this.element.find('input');
+    // jquery hidden input element
+    this.hiddenInput = $('#hidden-input-' + uuid);
 
-
+    // global THREE options
     THREE.Object3D.DefaultUp.set(0, 0, 1);
 
-    // Create scene
-
+    // renderer
     this.minimumwidth = 400;
     this.aspectratio = 4/3;
-    this.width = Math.max(this.element.width(), this.minimumwidth);
+    this.width = Math.max(this.container.width(), this.minimumwidth);
     this.height = this.width/this.aspectratio;
-    this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera( 75, this.aspectratio, 0.1, 1000 );
-
-    this.camera.position.set(5, 2, 2);
-    this.camera.up.set( 0, 0, 1 );
-    this.camera.lookAt( this.scene.position );
-
-
-
-
-
-    this.renderer = new THREE.WebGLRenderer( { alpha: true, antialias: true } );
-    // this.renderer = new THREE.WebGLRenderer();
-    // this.renderer.setClearColor( 0xffffff );
-
-
+    this.renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     this.renderer.setSize(this.width, this.height);
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // anti-alias shadow
+    this.container.append(this.renderer.domElement);
+    this.renderer.domElement.style.borderWidth = "medium"; // FIXME: fix flickering border on resize in Chrome
 
-    // Use 'append' (a jQuery method) and not 'appendChild' (a DOM method)
-    this.element.append(this.renderer.domElement);
-    this.renderer.domElement.style.borderWidth = "medium";
+    // camera
+    this.camera = new THREE.PerspectiveCamera(75, this.aspectratio, 0.1, 1000);
+    this.camera.position.fromArray(this.initialPose.camera_position);
+    this.camera.up.set(0, 0, 1); // z-up
+    this.camera.lookAt(0, 0, 0); // ignore this.initialPose.camera_orientation even if it exists
 
-    // console.log($(this.renderer.domElement).position());
-    // console.log($('#info').css('top'));
-    // $('#info').css('top', $(this.renderer.domElement).position().top);
+    // scene
+    this.scene = new THREE.Scene();
 
+    // lights
+    this.scene.add(new THREE.AmbientLight( 0xaaaaaa )); //ambient
+    this.scene.add(this.makeLights()); // directional
 
-
-
-    // var text = document.createElement( 'div' );
-    // text.style.position = 'absolute';
-    // text.innerHTML = 'Hello, world!';
-    // text.style.left = "100px";
-    // text.style.top = "100px";
-    // text.style['z-index'] = "100";
-    // text.style.left = coord.x + 'px';
-    // text.style.top = coord.y + 'px';
-
-
-
-
-
-
-    this.scene.add( new THREE.AmbientLight( 0xaaaaaa ));
-    this.scene.add( this.makeLights() );
-
-
-
+    // shadows
     this.screen = this.makeScreen();
     this.scene.add(this.screen);
 
-
+    // space frame
     this.spaceFrame = this.makeFrame();
-    this.bodyFrame = this.makeFrame();
     this.scene.add(this.spaceFrame);
 
+    // load stl file, then complete setup in a callback
+    var loader = new THREE.STLLoader();
+    loader.load(options.file_url, (function (geometry) {
 
-    (function(){
-        var loader = new THREE.STLLoader();
-        loader.load(options.file_url, (function (geometry) {
-            var material = new THREE.MeshStandardMaterial({
-                color: 0xE84A27,
-                transparent: true,
-                opacity: 0.7
-            });
-            this.bodyObject = new THREE.Mesh(geometry.scale(options.scale, options.scale, options.scale), material);
-            this.bodyObject.castShadow = true;
-            this.bodyObject.receiveShadow = true;
+        // body frame
+        this.bodyFrame = this.makeFrame();
 
-            this.bodyGroup = new THREE.Group();
-            this.bodyGroup.add(this.bodyObject);
-            this.bodyGroup.add(this.bodyFrame);
-            this.scene.add(this.bodyGroup);
+        // body object
+        var material = new THREE.MeshStandardMaterial({
+            color: this.bodyColor,
+            transparent: true,
+            opacity: 0.7
+        });
+        this.bodyObject = new THREE.Mesh(geometry.scale(this.scale, this.scale, this.scale), material);
+        this.bodyObject.castShadow = true;
+        this.bodyObject.receiveShadow = true;
 
-            this.isDragging = false;
-            this.previousMousePosition = {
-                x: 0,
-                y: 0
-            };
+        // entire body (as a group)
+        this.bodyGroup = new THREE.Group();
+        this.bodyGroup.add(this.bodyObject);
+        this.bodyGroup.add(this.bodyFrame);
+        this.bodyGroup.quaternion.fromArray(this.initialPose.body_quaternion);
+        this.bodyGroup.position.fromArray(this.initialPose.body_position);
+        this.scene.add(this.bodyGroup);
 
-            // From array, from string, from b64
-            var state = JSON.parse(atob(options.state));
-            this.bodyGroup.quaternion.fromArray(state.body_quaternion);
-            this.bodyGroup.position.fromArray(state.body_position);
-            this.camera.quaternion.fromArray(state.camera_quaternion);
-            this.camera.position.fromArray(state.camera_position);
+        //  render and update hidden input
+        this.render();
 
-            // Enable mouse controls
-            $(this.renderer.domElement).mousedown(PLThreeJS.prototype.onmousedown.bind(this));
-            $(document).mousemove(PLThreeJS.prototype.onmousemove.bind(this));
-            $(document).mouseup(PLThreeJS.prototype.onmouseup.bind(this));
+        // state for mouse control of body pose
+        this.isDragging = false;
+        this.previousMousePosition = {
+            x: 0,
+            y: 0
+        };
 
-            // FIXME: use of orbitcontrols with zoom results in a warning on Chrome:
-            //
-            //  Blink deferred a task in order to make scrolling smoother. Your timer and
-            //  network tasks should take less than 50ms to run to avoid this. Please see
-            //  https://developers.google.com/web/tools/chrome-devtools/profile/evaluate-performance/rail
-            //  and https://crbug.com/574343#c40 for more information.
-            //
-            this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
-            this.controls.enablePan = false;
-            this.controls.addEventListener('change', (function() {
-                this.render();
-                this.updateInputElement();
-            }).bind(this));
+        // buttons to toggle between camera and body motion
+        $('#toggle-view-' + uuid).change(PLThreeJS.prototype.toggleRotate.bind(this));
 
-            // Enable buttons
-            $('#pl-threejs-button-objectvisible-' + uuid).click(PLThreeJS.prototype.toggleObjectVisible.bind(this));
-            $('#pl-threejs-button-framevisible-' + uuid).click(PLThreeJS.prototype.toggleFrameVisible.bind(this));
-            $('#pl-threejs-button-shadowvisible-' + uuid).click(PLThreeJS.prototype.toggleShadowVisible.bind(this));
+        // mouse control of body pose
+        $(this.renderer.domElement).mousedown(PLThreeJS.prototype.onmousedown.bind(this));
+        $(document).mousemove(PLThreeJS.prototype.onmousemove.bind(this));
+        $(document).mouseup(PLThreeJS.prototype.onmouseup.bind(this));
 
-            $('#pl-threejs-toggle-view-' + uuid).change(PLThreeJS.prototype.toggleRotate.bind(this));
+        // buttons to rotate body about coordinate axes of body frame
+        this.xPlusButton.click(PLThreeJS.prototype.xPlus.bind(this));
+        this.xMinusButton.click(PLThreeJS.prototype.xMinus.bind(this));
+        this.yPlusButton.click(PLThreeJS.prototype.yPlus.bind(this));
+        this.yMinusButton.click(PLThreeJS.prototype.yMinus.bind(this));
+        this.zPlusButton.click(PLThreeJS.prototype.zPlus.bind(this));
+        this.zMinusButton.click(PLThreeJS.prototype.zMinus.bind(this));
 
-            this.xPlusButton.click(PLThreeJS.prototype.xPlus.bind(this));
-            this.xMinusButton.click(PLThreeJS.prototype.xMinus.bind(this));
-            this.yPlusButton.click(PLThreeJS.prototype.yPlus.bind(this));
-            this.yMinusButton.click(PLThreeJS.prototype.yMinus.bind(this));
-            this.zPlusButton.click(PLThreeJS.prototype.zPlus.bind(this));
-            this.zMinusButton.click(PLThreeJS.prototype.zMinus.bind(this));
+        // mouse control of camera pose
+        //
+        // FIXME: use of orbitcontrols with zoom results in a warning on Chrome:
+        //
+        //  Blink deferred a task in order to make scrolling smoother. Your timer and
+        //  network tasks should take less than 50ms to run to avoid this. Please see
+        //  https://developers.google.com/web/tools/chrome-devtools/profile/evaluate-performance/rail
+        //  and https://crbug.com/574343#c40 for more information.
+        //
+        this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
+        this.controls.enablePan = false;
+        this.controls.addEventListener('change', PLThreeJS.prototype.render.bind(this));
+        this.controls.enabled = this.cameraCanMove;
+        this.updateBodyButtons();
 
-            $(window).resize(PLThreeJS.prototype.onResize.bind(this));
+        // buttons to toggle visibility
+        $('#pl-threejs-button-objectvisible-' + uuid).click(PLThreeJS.prototype.toggleObjectVisible.bind(this));
+        $('#pl-threejs-button-framevisible-' + uuid).click(PLThreeJS.prototype.toggleFrameVisible.bind(this));
+        $('#pl-threejs-button-shadowvisible-' + uuid).click(PLThreeJS.prototype.toggleShadowVisible.bind(this));
 
-
-            // this.controls.addEventListener( 'change', render );
-
-            // this.animate();
-
-            this.render();
-            this.updateInputElement();
-
-        }).bind(this));
-    }).call(this);
-
-    // (function (){
-    //     var geometry = new THREE.BoxGeometry( 1, 2, 3 );
-    //     var material = new THREE.MeshStandardMaterial({
-    //         color: 0xE84A27,
-    //         transparent: true,
-    //         opacity: 0.7
-    //     });
-    //     var mesh = new THREE.Mesh( geometry, material );
-    //     mesh.castShadow = true;
-    //     this.bodyObject = mesh;
-    // }).call(this);
+        // resize with window
+        $(window).resize(PLThreeJS.prototype.onResize.bind(this));
+    }).bind(this));
 };
 
 PLThreeJS.prototype.render = function() {
     this.renderer.render(this.scene, this.camera);
+    this.updateHiddenInput();
+    this.updateDisplayOfOrientation();
 }
 
 PLThreeJS.prototype.xPlus = function() {
     this.bodyGroup.rotateX(5*Math.PI/180);
     this.render();
-    this.updateInputElement();
 };
 
 PLThreeJS.prototype.xMinus = function() {
     this.bodyGroup.rotateX(-5*Math.PI/180);
     this.render();
-    this.updateInputElement();
 };
 
 PLThreeJS.prototype.yPlus = function() {
     this.bodyGroup.rotateY(5*Math.PI/180);
     this.render();
-    this.updateInputElement();
 };
 
 PLThreeJS.prototype.yMinus = function() {
     this.bodyGroup.rotateY(-5*Math.PI/180);
     this.render();
-    this.updateInputElement();
 };
 
 PLThreeJS.prototype.zPlus = function() {
     this.bodyGroup.rotateZ(5*Math.PI/180);
     this.render();
-    this.updateInputElement();
 };
 
 PLThreeJS.prototype.zMinus = function() {
     this.bodyGroup.rotateZ(-5*Math.PI/180);
     this.render();
-    this.updateInputElement();
 };
 
 PLThreeJS.prototype.toggleRotate = function() {
     this.controls.enabled = !this.controls.enabled;
+    this.updateBodyButtons();
+    this.render();
+};
+
+PLThreeJS.prototype.updateBodyButtons = function() {
     this.xPlusButton.prop('disabled', this.controls.enabled);
     this.xMinusButton.prop('disabled', this.controls.enabled);
     this.yPlusButton.prop('disabled', this.controls.enabled);
     this.yMinusButton.prop('disabled', this.controls.enabled);
     this.zPlusButton.prop('disabled', this.controls.enabled);
     this.zMinusButton.prop('disabled', this.controls.enabled);
-    this.render();
 };
 
 PLThreeJS.prototype.toggleObjectVisible = function() {
@@ -249,13 +206,10 @@ PLThreeJS.prototype.toggleShadowVisible = function() {
 };
 
 PLThreeJS.prototype.onResize = function() {
-    this.width = Math.max(this.element.width(), this.minimumwidth);
+    this.width = Math.max(this.container.width(), this.minimumwidth);
     this.height = this.width/this.aspectratio;
     this.renderer.setSize(this.width, this.height);
     this.render();
-
-
-    // $('#info').css('top', $(this.renderer.domElement).position().top);
 };
 
 PLThreeJS.prototype.makeLights = function() {
@@ -284,17 +238,6 @@ PLThreeJS.prototype.makeScreen = function() {
         plane.position.set( 0, 0, -5 );
         part.add( plane );
 
-        // var light = new THREE.DirectionalLight( 0xffffff, 0.5 );
-        // light.castShadow = true;
-        // part.add(light);
-
-        // var finegrid = new THREE.GridHelper( 2, 10, 0xeeeeee, 0xeeeeee );
-        // finegrid.position.set(0, 0, -5);
-        // finegrid.quaternion.setFromEuler(new THREE.Euler(Math.PI/2, 0, 0, 'XYZ'));
-        // finegrid.transparent = true;
-        // finegrid.opacity = 0.1;
-        // part.add(finegrid);
-
         var grid = new THREE.GridHelper( 10, 10, 0xdddddd, 0xdddddd );
         grid.position.set(0, 0, -5);
         grid.quaternion.setFromEuler(new THREE.Euler(Math.PI/2, 0, 0, 'XYZ'));
@@ -317,8 +260,6 @@ PLThreeJS.prototype.makeScreen = function() {
 
     return screen;
 };
-
-
 
 PLThreeJS.prototype.makeFrame = function() {
     function makeAxis(whichAxis) {
@@ -396,10 +337,8 @@ PLThreeJS.prototype.onmousemove = function(e) {
             qMotion.multiplyQuaternions(qMotion, qCamera.inverse());
             // New orientation of object
             this.bodyGroup.quaternion.multiplyQuaternions(qMotion, this.bodyGroup.quaternion);
-            // Render
+            // Render and update hidden input element
             this.render();
-            // Update the value of the hidden input element to contain the new orientation
-            this.updateInputElement();
         }
 
         this.previousMousePosition = {
@@ -417,15 +356,7 @@ PLThreeJS.prototype.onmouseup = function() {
     }
 };
 
-// PLThreeJS.prototype.animate = function() {
-//     requestAnimationFrame(PLThreeJS.prototype.animate.bind(this));
-//     if (this.controls.enabled) {
-//         this.controls.update();
-//     }
-//     this.renderer.render(this.scene, this.camera);
-// };
-
-PLThreeJS.prototype.updateInputElement = function() {
+PLThreeJS.prototype.updateHiddenInput = function() {
 
     var val = {
         body_quaternion: this.bodyGroup.quaternion.toArray(),
@@ -434,8 +365,10 @@ PLThreeJS.prototype.updateInputElement = function() {
         camera_position: this.camera.position.toArray()
     };
 
-    this.inputElement.val(btoa(JSON.stringify(val)));
+    this.hiddenInput.val(btoa(JSON.stringify(val)));
+};
 
+PLThreeJS.prototype.updateDisplayOfOrientation = function() {
     function numToString(n, decimals, digits) {
         var s = n.toFixed(decimals);
         s = ' '.repeat(digits - s.length) + s;
@@ -512,12 +445,13 @@ PLThreeJS.prototype.updateInputElement = function() {
         return s;
     }
 
-
-    this.matlabText.text(quatToMatlab(val.body_quaternion));
-    this.pythonText.text(quatToPython(val.body_quaternion));
-
-    this.matlabText.text(rotToMatlab(this.bodyGroup.matrix.elements));
-    this.pythonText.text(rotToPython(this.bodyGroup.matrix.elements));
-
-
+    if (this.displayFormat == "matrix") {
+        var R = this.bodyGroup.matrix.elements;
+        this.matlabText.text(rotToMatlab(R));
+        this.pythonText.text(rotToPython(R));
+    } else if (this.displayFormat == "quaternion") {
+        var q = this.bodyGroup.quaternion.toArray();
+        this.matlabText.text(quatToMatlab(q));
+        this.pythonText.text(quatToPython(q));
+    }
 };
