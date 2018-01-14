@@ -4,10 +4,14 @@
         "nodeModulesScripts": [
             "three/build/three.min.js",
             "three/examples/js/loaders/STLLoader.js",
-            "three/examples/js/controls/OrbitControls.js"
+            "three/examples/js/controls/OrbitControls.js",
+            "clipboard/dist/clipboard.min.js"
         ],
         "elementScripts": [
             "pl_threejs.js"
+        ],
+        "coreScripts": [
+            "PrairieUtil.js"
         ]
     }
 }

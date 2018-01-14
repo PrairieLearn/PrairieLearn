@@ -5,6 +5,14 @@ function PLThreeJS(uuid, options) {
     console.log(uuid);
     console.log(options);
 
+    this.matlabText = $('#matlab-data-' + uuid);
+    this.pythonText = $('#python-data-' + uuid);
+    this.xPlusButton = $('#x-plus-' + uuid);
+    this.xMinusButton = $('#x-minus-' + uuid);
+    this.yPlusButton = $('#y-plus-' + uuid);
+    this.yMinusButton = $('#y-minus-' + uuid);
+    this.zPlusButton = $('#z-plus-' + uuid);
+    this.zMinusButton = $('#z-minus-' + uuid);
 
     // Get the id of the div that contains everything
     var elementId = '#pl-threejs-' + uuid;
@@ -48,6 +56,27 @@ function PLThreeJS(uuid, options) {
     // Use 'append' (a jQuery method) and not 'appendChild' (a DOM method)
     this.element.append(this.renderer.domElement);
     this.renderer.domElement.style.borderWidth = "medium";
+
+    // console.log($(this.renderer.domElement).position());
+    // console.log($('#info').css('top'));
+    // $('#info').css('top', $(this.renderer.domElement).position().top);
+
+
+
+
+    // var text = document.createElement( 'div' );
+    // text.style.position = 'absolute';
+    // text.innerHTML = 'Hello, world!';
+    // text.style.left = "100px";
+    // text.style.top = "100px";
+    // text.style['z-index'] = "100";
+    // text.style.left = coord.x + 'px';
+    // text.style.top = coord.y + 'px';
+
+
+
+
+
 
     this.scene.add( new THREE.AmbientLight( 0xaaaaaa ));
     this.scene.add( this.makeLights() );
@@ -112,7 +141,7 @@ function PLThreeJS(uuid, options) {
             this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
             this.controls.enablePan = false;
             this.controls.addEventListener('change', (function() {
-                this.renderer.render(this.scene, this.camera);
+                this.render();
                 this.updateInputElement();
             }).bind(this));
 
@@ -123,6 +152,13 @@ function PLThreeJS(uuid, options) {
 
             $('#pl-threejs-toggle-view-' + uuid).change(PLThreeJS.prototype.toggleRotate.bind(this));
 
+            this.xPlusButton.click(PLThreeJS.prototype.xPlus.bind(this));
+            this.xMinusButton.click(PLThreeJS.prototype.xMinus.bind(this));
+            this.yPlusButton.click(PLThreeJS.prototype.yPlus.bind(this));
+            this.yMinusButton.click(PLThreeJS.prototype.yMinus.bind(this));
+            this.zPlusButton.click(PLThreeJS.prototype.zPlus.bind(this));
+            this.zMinusButton.click(PLThreeJS.prototype.zMinus.bind(this));
+            
             $(window).resize(PLThreeJS.prototype.onResize.bind(this));
 
 
@@ -130,7 +166,7 @@ function PLThreeJS(uuid, options) {
 
             // this.animate();
 
-            this.renderer.render(this.scene, this.camera);
+            this.render();
             console.log("done with load/init")
 
         }).bind(this));
@@ -149,33 +185,75 @@ function PLThreeJS(uuid, options) {
     // }).call(this);
 };
 
+PLThreeJS.prototype.render = function() {
+    this.renderer.render(this.scene, this.camera);
+}
+
+PLThreeJS.prototype.xPlus = function() {
+    this.bodyGroup.rotateX(5*Math.PI/180);
+    this.render();
+};
+
+PLThreeJS.prototype.xMinus = function() {
+    this.bodyGroup.rotateX(-5*Math.PI/180);
+    this.render();
+};
+
+PLThreeJS.prototype.yPlus = function() {
+    this.bodyGroup.rotateY(5*Math.PI/180);
+    this.render();
+};
+
+PLThreeJS.prototype.yMinus = function() {
+    this.bodyGroup.rotateY(-5*Math.PI/180);
+    this.render();
+};
+
+PLThreeJS.prototype.zPlus = function() {
+    this.bodyGroup.rotateZ(5*Math.PI/180);
+    this.render();
+};
+
+PLThreeJS.prototype.zMinus = function() {
+    this.bodyGroup.rotateZ(-5*Math.PI/180);
+    this.render();
+};
 
 PLThreeJS.prototype.toggleRotate = function() {
     this.controls.enabled = !this.controls.enabled;
-    this.renderer.render(this.scene, this.camera);
+    this.xPlusButton.prop('disabled', this.controls.enabled);
+    this.xMinusButton.prop('disabled', this.controls.enabled);
+    this.yPlusButton.prop('disabled', this.controls.enabled);
+    this.yMinusButton.prop('disabled', this.controls.enabled);
+    this.zPlusButton.prop('disabled', this.controls.enabled);
+    this.zMinusButton.prop('disabled', this.controls.enabled);
+    this.render();
 };
 
 PLThreeJS.prototype.toggleObjectVisible = function() {
     this.bodyObject.visible = !this.bodyObject.visible;
-    this.renderer.render(this.scene, this.camera);
+    this.render();
 };
 
 PLThreeJS.prototype.toggleFrameVisible = function() {
     this.bodyFrame.visible = !this.bodyFrame.visible;
     this.spaceFrame.visible = !this.spaceFrame.visible;
-    this.renderer.render(this.scene, this.camera);
+    this.render();
 };
 
 PLThreeJS.prototype.toggleShadowVisible = function() {
     this.screen.visible = !this.screen.visible;
-    this.renderer.render(this.scene, this.camera);
+    this.render();
 };
 
 PLThreeJS.prototype.onResize = function() {
     this.width = Math.max(this.element.width(), this.minimumwidth);
     this.height = this.width/this.aspectratio;
     this.renderer.setSize(this.width, this.height);
-    this.renderer.render(this.scene, this.camera);
+    this.render();
+
+
+    // $('#info').css('top', $(this.renderer.domElement).position().top);
 };
 
 PLThreeJS.prototype.makeLights = function() {
@@ -317,7 +395,7 @@ PLThreeJS.prototype.onmousemove = function(e) {
             // New orientation of object
             this.bodyGroup.quaternion.multiplyQuaternions(qMotion, this.bodyGroup.quaternion);
             // Render
-            this.renderer.render(this.scene, this.camera);
+            this.render();
             // Update the value of the hidden input element to contain the new orientation
             this.updateInputElement();
         }
@@ -355,5 +433,89 @@ PLThreeJS.prototype.updateInputElement = function() {
     };
 
     this.inputElement.val(btoa(JSON.stringify(val)));
+
+    function numToString(n, decimals, digits) {
+        var s = n.toFixed(decimals);
+        s = ' '.repeat(digits - s.length) + s;
+        return s;
+    }
+
+    function quatToMatlab(q) {
+        var s = '% The quaternion describing the orientation of the body\n';
+        s += '% frame in the coordinates of the space frame.\n\n';
+        s += 'q = [ ';
+        for (var i = 0; i < 4; i++) {
+            s += numToString(q[i], 4, 7);
+            if (i < 3) {
+                s += ' ';
+            } else {
+                s += ' ];';
+            }
+        }
+        return s;
+    }
+
+    function quatToPython(q) {
+        var s = '# The quaternion describing the orientation of the body\n';
+        s += '# frame in the coordinates of the space frame.\n\n';
+        s += 'import numpy as np\n\nq = np.array([ ';
+        for (var i = 0; i < 4; i++) {
+            s += numToString(q[i], 4, 7);
+            if (i < 3) {
+                s += ', ';
+            } else {
+                s += ' ])';
+            }
+        }
+        return s;
+    }
+
+    function rotToMatlab(R) {
+        var s = '% The rotation matrix describing the orientation of the body\n';
+        s += '% frame in the coordinates of the space frame.\n\n';
+        s += 'R = [ ';
+        for (var i = 0; i < 3; i++) {
+            for (var j = 0; j < 3; j++) {
+                s += numToString(R[i + 4*j], 4, 7);
+                if (j < 2) {
+                    s += ' ';
+                }
+            }
+            if (i < 2) {
+                s += ' ;\n      ';
+            }
+        }
+        s += ' ];';
+        return s;
+    }
+
+    function rotToPython(R) {
+        var s = '# The rotation matrix describing the orientation of the body\n';
+        s += '# frame in the coordinates of the space frame.\n\n';
+        s += 'import numpy as np\n\nR = np.array([';
+        for (var i = 0; i < 3; i++) {
+            s += '[ '
+            for (var j = 0; j < 3; j++) {
+                s += numToString(R[i + 4*j], 4, 7);
+                if (j < 2) {
+                    s += ', ';
+                }
+            }
+            s += ' ]';
+            if (i < 2) {
+                s += ',\n              ';
+            }
+        }
+        s += '])';
+        return s;
+    }
+
+
+    this.matlabText.text(quatToMatlab(val.body_quaternion));
+    this.pythonText.text(quatToPython(val.body_quaternion));
+
+    this.matlabText.text(rotToMatlab(this.bodyGroup.matrix.elements));
+    this.pythonText.text(rotToPython(this.bodyGroup.matrix.elements));
+
 
 };

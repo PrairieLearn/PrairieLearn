@@ -1,5 +1,11 @@
 {{#question}}
 <script>
+<!-- init copy button -->
+$(function(){
+    PrairieUtil.initCopyButton('#pl-threejs-output-{{uuid}} .copy-button');
+});
+
+<!-- create three.js element -->
 $(function() {
     new PLThreeJS( "{{uuid}}", {
         state: '{{{state}}}',
@@ -13,6 +19,8 @@ $(function() {
     <div id="pl-threejs-{{uuid}}">
         <!-- hidden input element to transfer data from client to server -->
         <input type="hidden" name="{{answer_name}}">
+
+        <!-- <div id="info" style="position: absolute; top: 10px; width: 100%; z-index: 100; display:block;">1.2 3.4 5.6</div> -->
     </div>
 
     <!-- button toolbar -->
@@ -29,6 +37,59 @@ $(function() {
             <button id="pl-threejs-button-objectvisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">object visible</button>
             <button id="pl-threejs-button-framevisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">frames visible</button>
             <button id="pl-threejs-button-shadowvisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">shadows visible</button>
+        </div>
+        <div class="input-group input-group-sm mr-2 mb-2">
+            <div class="input-group-prepend">
+                <button id="x-minus-{{uuid}}" class="btn btn-secondary" type="button" disabled><i class="fa fa-redo" aria-hidden="true"></i></button>
+                <span class="input-group-text">x</span>
+            </div>
+            <div class="input-group-append">
+                <button id="x-plus-{{uuid}}" class="btn btn-secondary" type="button" disabled><i class="fa fa-redo fa-flip-horizontal" aria-hidden="true"></i></button>
+            </div>
+        </div>
+        <div class="input-group input-group-sm mr-2 mb-2">
+            <div class="input-group-prepend">
+                <button id="y-minus-{{uuid}}" class="btn btn-secondary" type="button" disabled><i class="fa fa-redo" aria-hidden="true"></i></button>
+                <span class="input-group-text">y</span>
+            </div>
+            <div class="input-group-append">
+                <button id="y-plus-{{uuid}}" class="btn btn-secondary" type="button" disabled><i class="fa fa-redo fa-flip-horizontal" aria-hidden="true"></i></button>
+            </div>
+        </div>
+        <div class="input-group input-group-sm mr-2 mb-2">
+            <div class="input-group-prepend">
+                <button id="z-minus-{{uuid}}" class="btn btn-secondary" type="button" disabled><i class="fa fa-redo" aria-hidden="true"></i></button>
+                <span class="input-group-text">z</span>
+            </div>
+            <div class="input-group-append">
+                <button id="z-plus-{{uuid}}" class="btn btn-secondary" type="button" disabled><i class="fa fa-redo fa-flip-horizontal" aria-hidden="true"></i></button>
+            </div>
+        </div>
+    </div>
+
+    <!-- state -->
+    <div id="pl-threejs-output-{{uuid}}" class="card mb-4">
+        <div class="card-header">
+            <ul class="nav nav-tabs card-header-tabs" role="tablist">
+                <li class="nav-item" role="presentation"><a class="nav-link{{#default_is_matlab}} active{{/default_is_matlab}}" href="#matlab-{{uuid}}" aria-controls="matlab-{{uuid}}" role="tab" data-toggle="pill">matlab</a></li>
+                <li class="nav-item" role="presentation"><a class="nav-link{{#default_is_python}} active{{/default_is_python}}" href="#python-{{uuid}}" aria-controls="python-{{uuid}}" role="tab" data-toggle="pill">python</a></li>
+            </ul>
+        </div>
+        <div class="card-body">
+            <div class="tab-content">
+                <div role="tabpanel" class="tab-pane {{#default_is_matlab}}active{{/default_is_matlab}}" id="matlab-{{uuid}}">
+                    <pre class="bg-dark text-white rounded p-2" id="matlab-data-{{uuid}}">{{matlab_data}}</pre>
+                    <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#matlab-data-{{uuid}}">
+                        copy this text
+                    </button>
+                </div>
+                <div role="tabpanel" class="tab-pane {{#default_is_python}}active{{/default_is_python}}" id="python-{{uuid}}">
+                    <pre class="bg-dark text-white rounded p-2" id="python-data-{{uuid}}">{{python_data}}</pre>
+                    <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#python-data-{{uuid}}">
+                        copy this text
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </div>

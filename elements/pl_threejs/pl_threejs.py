@@ -33,15 +33,25 @@ def render(element_html, element_index, data):
             'camera_quaternion': [0, 0, 0, 1],
             'camera_position': [5, 2, 2]
         }
+        pose = data['submitted_answers'].get(name, pose_default)
 
+        matlab_data = ''
+        python_data = 'import numpy as np\n\n'
+
+        digits = 2
+        matlab_data += 'R = ' + pl.numpy_to_matlab(np.array([pose['body_quaternion']]), ndigits=digits) + ';\n'
+        python_data += 'R = np.array(' + str(np.array(pose['body_quaternion']).round(digits).tolist()) + ')\n'
 
         html_params = {
             'question': True,
             'answer_name': name,
             'uuid': pl.get_uuid(),
-            'state': dict_to_b64(data['submitted_answers'].get(name, pose_default)),
+            'state': dict_to_b64(pose),
             'file_url': file_url,
-            'scale': 0.1
+            'scale': 0.1,
+            'default_is_python': True,
+            'matlab_data': matlab_data,
+            'python_data': python_data
             # 'quaternion': json.dumps(list_to_q(data['submitted_answers'].get(name, [0, 0, 0, 1])))
         }
         with open('pl_threejs.mustache', 'r', encoding='utf-8') as f:
