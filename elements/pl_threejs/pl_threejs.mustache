@@ -14,6 +14,7 @@ $(function() {
     });
 });
 </script>
+
 <div class="container-fluid">
     <!-- div in which to put the WebGLRenderer canvas -->
     <div id="pl-threejs-{{uuid}}">
@@ -26,10 +27,10 @@ $(function() {
     <!-- button toolbar -->
     <div class="btn-toolbar" role="toolbar">
         <div class="btn-group btn-group-sm btn-group-toggle mr-2 mb-2" data-toggle="buttons" role="group" id="pl-threejs-toggle-view-{{uuid}}">
-            <label type="button" class="btn btn-secondary active">
+            <label class="btn btn-secondary active">
                 <input type="radio" id="pl-threejs-button-rotateview-{{uuid}}" autocomplete="off" checked>rotate view</input>
             </label>
-            <label type="button" class="btn btn-secondary">
+            <label class="btn btn-secondary">
                 <input type="radio" id="pl-threejs-button-rotateobject-{{uuid}}" autocomplete="off">rotate object</input>
             </label>
         </div>
