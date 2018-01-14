@@ -95,8 +95,6 @@ function PLThreeJS(uuid, options) {
     (function(){
         var loader = new THREE.STLLoader();
         loader.load(options.file_url, (function (geometry) {
-            console.log("In load callback...");
-
             var material = new THREE.MeshStandardMaterial({
                 color: 0xE84A27,
                 transparent: true,
@@ -123,8 +121,6 @@ function PLThreeJS(uuid, options) {
             this.bodyGroup.position.fromArray(state.body_position);
             this.camera.quaternion.fromArray(state.camera_quaternion);
             this.camera.position.fromArray(state.camera_position);
-
-            this.updateInputElement();
 
             // Enable mouse controls
             $(this.renderer.domElement).mousedown(PLThreeJS.prototype.onmousedown.bind(this));
@@ -167,7 +163,7 @@ function PLThreeJS(uuid, options) {
             // this.animate();
 
             this.render();
-            console.log("done with load/init")
+            this.updateInputElement();
 
         }).bind(this));
     }).call(this);

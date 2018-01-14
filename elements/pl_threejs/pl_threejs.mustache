@@ -34,11 +34,6 @@ $(function() {
                 <input type="radio" id="pl-threejs-button-rotateobject-{{uuid}}" autocomplete="off">rotate object</input>
             </label>
         </div>
-        <div class="btn-group btn-group-sm mr-2 mb-2" role="group">
-            <button id="pl-threejs-button-objectvisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">object visible</button>
-            <button id="pl-threejs-button-framevisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">frames visible</button>
-            <button id="pl-threejs-button-shadowvisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">shadows visible</button>
-        </div>
         <div class="input-group input-group-sm mr-2 mb-2">
             <div class="input-group-prepend">
                 <button id="x-minus-{{uuid}}" class="btn btn-secondary" type="button" disabled><i class="fa fa-redo" aria-hidden="true"></i></button>
@@ -65,6 +60,11 @@ $(function() {
             <div class="input-group-append">
                 <button id="z-plus-{{uuid}}" class="btn btn-secondary" type="button" disabled><i class="fa fa-redo fa-flip-horizontal" aria-hidden="true"></i></button>
             </div>
+        </div>
+        <div class="btn-group btn-group-sm mr-2 mb-2" role="group">
+            <button id="pl-threejs-button-objectvisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">object visible</button>
+            <button id="pl-threejs-button-framevisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">frames visible</button>
+            <button id="pl-threejs-button-shadowvisible-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">shadows visible</button>
         </div>
     </div>
 
