@@ -158,7 +158,7 @@ function PLThreeJS(uuid, options) {
             this.yMinusButton.click(PLThreeJS.prototype.yMinus.bind(this));
             this.zPlusButton.click(PLThreeJS.prototype.zPlus.bind(this));
             this.zMinusButton.click(PLThreeJS.prototype.zMinus.bind(this));
-            
+
             $(window).resize(PLThreeJS.prototype.onResize.bind(this));
 
 
@@ -192,31 +192,37 @@ PLThreeJS.prototype.render = function() {
 PLThreeJS.prototype.xPlus = function() {
     this.bodyGroup.rotateX(5*Math.PI/180);
     this.render();
+    this.updateInputElement();
 };
 
 PLThreeJS.prototype.xMinus = function() {
     this.bodyGroup.rotateX(-5*Math.PI/180);
     this.render();
+    this.updateInputElement();
 };
 
 PLThreeJS.prototype.yPlus = function() {
     this.bodyGroup.rotateY(5*Math.PI/180);
     this.render();
+    this.updateInputElement();
 };
 
 PLThreeJS.prototype.yMinus = function() {
     this.bodyGroup.rotateY(-5*Math.PI/180);
     this.render();
+    this.updateInputElement();
 };
 
 PLThreeJS.prototype.zPlus = function() {
     this.bodyGroup.rotateZ(5*Math.PI/180);
     this.render();
+    this.updateInputElement();
 };
 
 PLThreeJS.prototype.zMinus = function() {
     this.bodyGroup.rotateZ(-5*Math.PI/180);
     this.render();
+    this.updateInputElement();
 };
 
 PLThreeJS.prototype.toggleRotate = function() {
