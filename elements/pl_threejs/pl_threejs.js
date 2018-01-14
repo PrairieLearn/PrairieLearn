@@ -443,8 +443,8 @@ PLThreeJS.prototype.updateInputElement = function() {
     }
 
     function quatToMatlab(q) {
-        var s = '% The quaternion describing the orientation of the body\n';
-        s += '% frame in the coordinates of the space frame.\n\n';
+        var s = '% The quaternion [x, y, z, w] describing the orientation of\n';
+        s += '% the body frame in the coordinates of the space frame.\n\n';
         s += 'q = [ ';
         for (var i = 0; i < 4; i++) {
             s += numToString(q[i], 4, 7);
@@ -458,8 +458,8 @@ PLThreeJS.prototype.updateInputElement = function() {
     }
 
     function quatToPython(q) {
-        var s = '# The quaternion describing the orientation of the body\n';
-        s += '# frame in the coordinates of the space frame.\n\n';
+        var s = '# The quaternion [x, y, z, w] describing the orientation of\n';
+        s += '# the body frame in the coordinates of the space frame.\n\n';
         s += 'import numpy as np\n\nq = np.array([ ';
         for (var i = 0; i < 4; i++) {
             s += numToString(q[i], 4, 7);
