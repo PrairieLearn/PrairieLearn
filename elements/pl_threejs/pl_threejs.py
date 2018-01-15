@@ -23,10 +23,12 @@ def prepare(element_html, element_index, data):
         'camera_position',      # [x, y, z] - camera is z up and points at origin of space frame
         'body_canmove',         # true (default) or false
         'camera_canmove',       # true (default) or false
-        'format_of_body_orientation',       # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
-        'format_of_display_orientation',    # 'matrix' (default), 'quaternion'
-        'format_of_answer_orientation',     # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
-        'show_display',         # true (default) or false
+        'body_pose_format',       # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
+        'answer_pose_format',     # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
+        'text_pose_format',    # 'matrix' (default), 'quaternion'
+        'show_pose_in_question',            # true (default) or false
+        'show_pose_in_correct_answer',      # true (default) or false
+        'show_pose_in_submitted_answer',    # true (default) or false
         'tol_degrees',          # 5 (default : float > 0)
         'grade'                 # true (default) or false
     ]
@@ -37,22 +39,23 @@ def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answer_name')
 
-    if data['panel'] == 'question':
-        uuid = pl.get_uuid()
+    uuid = pl.get_uuid()
 
-        # Attributes
-        file_url = get_file_url(element, data)    # uses file_name and file_directory
-        body_color = pl.get_color_attrib(element, 'body_color', '#e84a27')
-        body_orientation = get_body_orientation(element)
-        body_scale = pl.get_float_attrib(element, 'body_scale', 1.0)
-        camera_position = get_camera_position(element)
-        body_canmove = pl.get_boolean_attrib(element, 'body_canmove', True)
-        camera_canmove = pl.get_boolean_attrib(element, 'camera_canmove', True)
-        format_of_display_orientation = pl.get_string_attrib(element, 'format_of_display_orientation', 'matrix')
-        if format_of_display_orientation not in ['matrix', 'quaternion']:
-            raise Exception('attribute "format_of_display_orientation" must be either "matrix" or "quaternion"')
-        show_display = pl.get_boolean_attrib(element, 'show_display', True)
-        
+    file_url = get_file_url(element, data)    # uses file_name and file_directory
+    body_color = pl.get_color_attrib(element, 'body_color', '#e84a27')
+    body_orientation = get_body_orientation(element)
+    body_scale = pl.get_float_attrib(element, 'body_scale', 1.0)
+    camera_position = get_camera_position(element)
+    body_canmove = pl.get_boolean_attrib(element, 'body_canmove', True)
+    camera_canmove = pl.get_boolean_attrib(element, 'camera_canmove', True)
+    text_pose_format = pl.get_string_attrib(element, 'text_pose_format', 'matrix')
+    if text_pose_format not in ['matrix', 'quaternion']:
+        raise Exception('attribute "text_pose_format" must be either "matrix" or "quaternion"')
+
+    if data['panel'] == 'question':
+        will_be_graded = pl.get_boolean_attrib(element, 'grade', None)
+        show_pose = pl.get_boolean_attrib(element, 'show_pose_in_question', True)
+
         # Restore pose of body and camera, if available - otherwise use values
         # from attributes (note that restored pose will also have camera_orientation,
         # which we currently ignore because the camera is always z up and looking
@@ -72,9 +75,8 @@ def render(element_html, element_index, data):
             'scale': body_scale,
             'body_canmove': body_canmove,
             'camera_canmove': camera_canmove,
-            'format_of_display_orientation': format_of_display_orientation,
-            'body_color': body_color,
-            'show_display': show_display
+            'text_pose_format': text_pose_format,
+            'body_color': body_color
         }
 
         # These are used for templating
@@ -84,7 +86,9 @@ def render(element_html, element_index, data):
             'answer_name': answer_name,
             'show_bodybuttons': body_canmove,
             'show_toggle': body_canmove and camera_canmove,
-            'show_display': show_display,
+            'show_pose': show_pose,
+            'show_instructions': will_be_graded,
+            'angle': '{:.1f}'.format(pl.get_float_attrib(element, 'tol_degrees', 5)),
             'default_is_python': True,
             'options': json.dumps(options)
         }
@@ -96,29 +100,39 @@ def render(element_html, element_index, data):
         if not will_be_graded:
             return ''
 
+        show_pose = pl.get_boolean_attrib(element, 'show_pose_in_submitted_answer', True)
+
         # Get submitted answer
-        q = data['submitted_answers'][answer_name]['body_quaternion']
-        q = np.array(q, dtype=np.float64)
+        pose = data['submitted_answers'].get(answer_name)
 
-        # Convert submitted answer to Quaternion
-        q = pyquaternion.Quaternion(np.roll(q, 1))
-
-        # Convert Quaternion to disp_params
-        f = pl.get_string_attrib(element, 'format_of_display_orientation', 'matrix')
-        disp_params = convert_quaternion_to_display(f, q)
-
-        # Create html_params and merge disp_params
-        html_params = {
-            'answer': True,
-            'uuid': pl.get_uuid(),
-            'default_is_python': True
+        # These are passed as arguments to PLThreeJS constructor in client code
+        options = {
+            'uuid': uuid,
+            'file_url': file_url,
+            'state': dict_to_b64(pose),
+            'scale': body_scale,
+            'body_canmove': False,
+            'camera_canmove': False,
+            'text_pose_format': text_pose_format,
+            'body_color': body_color
         }
-        html_params = {**html_params, **disp_params}
+
+        # These are used for templating
+        html_params = {
+            'submission': True,
+            'uuid': uuid,
+            'answer_name': answer_name,
+            'show_bodybuttons': False,
+            'show_toggle': False,
+            'show_pose': show_pose,
+            'default_is_python': True,
+            'options': json.dumps(options)
+        }
 
         partial_score = data['partial_scores'].get(answer_name, None)
         if partial_score is not None:
             html_params['angle'] = str(np.abs(np.round(partial_score['feedback'], 1)))
-            html_params['show_footer'] = True
+            html_params['show_feedback'] = True
             score = partial_score.get('score', None)
             if score is not None:
                 try:
@@ -139,26 +153,46 @@ def render(element_html, element_index, data):
         if not will_be_graded:
             return ''
 
+        show_pose = pl.get_boolean_attrib(element, 'show_pose_in_correct_answer', True)
+
+        # Get submitted answer
+        pose = data['submitted_answers'].get(answer_name)
+
         # Get correct answer
         a = data['correct_answers'].get(answer_name, None)
         if a is None:
             return ''
 
-        # Convert correct answer to Quaternion
-        f = pl.get_string_attrib(element, 'format_of_answer_orientation', 'rpy')
-        q = convert_correct_answer_to_quaternion(f, a)
+        # Convert correct answer to Quaternion, then to [x, y, z, w]
+        f = pl.get_string_attrib(element, 'answer_pose_format', 'rpy')
+        q = np.roll(convert_correct_answer_to_quaternion(f, a).elements, -1).tolist()
 
-        # Convert Quaternion to disp_params
-        f = pl.get_string_attrib(element, 'format_of_display_orientation', 'matrix')
-        disp_params = convert_quaternion_to_display(f, q)
+        # Replace body pose with correct answer
+        pose['body_quaternion'] = q
 
-        # Create html_params and merge disp_params
+        # These are passed as arguments to PLThreeJS constructor in client code
+        options = {
+            'uuid': uuid,
+            'file_url': file_url,
+            'state': dict_to_b64(pose),
+            'scale': body_scale,
+            'body_canmove': False,
+            'camera_canmove': False,
+            'text_pose_format': text_pose_format,
+            'body_color': body_color
+        }
+
+        # These are used for templating
         html_params = {
             'answer': True,
-            'uuid': pl.get_uuid(),
-            'default_is_python': True
+            'uuid': uuid,
+            'answer_name': answer_name,
+            'show_bodybuttons': False,
+            'show_toggle': False,
+            'show_pose': show_pose,
+            'default_is_python': True,
+            'options': json.dumps(options)
         }
-        html_params = {**html_params, **disp_params}
 
         with open('pl_threejs.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
@@ -182,7 +216,7 @@ def convert_quaternion_to_display(f, q, digits=4):
         data_format = 'quaternion [x,y,z,w]'
         data_label = 'q'
     else:
-        raise Exception('attribute "format_of_display_orientation" must be either "matrix" or "quaternion": {:s}'.format(f))
+        raise Exception('attribute "text_pose_format" must be either "matrix" or "quaternion": {:s}'.format(f))
     return {
         'matlab_data': matlab_data,
         'python_data': python_data,
@@ -233,7 +267,7 @@ def grade(element_html, element_index, data):
         return
 
     # Get format of correct answer
-    f = pl.get_string_attrib(element, 'format_of_answer_orientation', 'rpy')
+    f = pl.get_string_attrib(element, 'answer_pose_format', 'rpy')
 
     # Convert submitted answer to Quaternion (first, roll [x,y,z,w] to [w,x,y,z])
     q_sub = pyquaternion.Quaternion(np.roll(state['body_quaternion'], 1))
@@ -249,8 +283,8 @@ def grade(element_html, element_index, data):
     if (tol <= 0):
         raise Exception('tolerance must be a positive real number (angle in degrees): {:g}'.format(tol))
 
-    # Check if angle is below tolerance
-    if (angle < tol):
+    # Check if angle is no greater than tolerance
+    if (angle <= tol):
         data['partial_scores'][answer_name] = {'score': 1, 'weight': weight, 'feedback': angle}
     else:
         data['partial_scores'][answer_name] = {'score': 0, 'weight': weight, 'feedback': angle}
@@ -299,7 +333,7 @@ def convert_correct_answer_to_quaternion(f, a):
         except:
             raise Exception('correct answer must be "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees')
     else:
-        raise Exception('"format_of_answer_orientation" must be "rpy", "quaternion", "matrix", or "axisangle": {:s}'.format(f))
+        raise Exception('"answer_pose_format" must be "rpy", "quaternion", "matrix", or "axisangle": {:s}'.format(f))
 
 
 def dict_to_b64(d):
@@ -336,7 +370,7 @@ def get_body_orientation(element):
     if s is None:
         return [0, 0, 0, 1]
 
-    f = pl.get_string_attrib(element, 'format_of_body_orientation', 'rpy')
+    f = pl.get_string_attrib(element, 'body_pose_format', 'rpy')
     if f == 'rpy':
         try:
             rpy = np.array(json.loads(s), dtype=np.float64)
@@ -379,7 +413,7 @@ def get_body_orientation(element):
         except:
             raise Exception('attribute "body_orientation" must have format "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees: {:s}'.format(s))
     else:
-        raise Exception('attribute "format_of_body_orientation" must be "rpy", "quaternion", "matrix", or "axisangle": {:s}'.format(f))
+        raise Exception('attribute "body_pose_format" must be "rpy", "quaternion", "matrix", or "axisangle": {:s}'.format(f))
 
 
 def get_camera_position(element):

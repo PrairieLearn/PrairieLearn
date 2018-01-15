@@ -8,7 +8,7 @@ function PLThreeJS(options) {
     this.scale = options.scale;
     this.bodyCanMove = options.body_canmove;
     this.cameraCanMove = options.camera_canmove;
-    this.displayFormat = options.format_of_display_orientation;
+    this.textPoseFormat = options.text_pose_format;
     this.bodyColor = options.body_color;
 
     // jquery container element
@@ -311,13 +311,13 @@ PLThreeJS.prototype.onLoad = function( geometry, materials ) {
 };
 
 PLThreeJS.prototype.onmousedown = function() {
-    if (!this.controls.enabled) {
+    if (!this.controls.enabled && this.bodyCanMove) {
         this.isDragging = true;
     }
 };
 
 PLThreeJS.prototype.onmousemove = function(e) {
-    if (!this.controls.enabled) {
+    if (!this.controls.enabled && this.bodyCanMove) {
         var deltaMove = {
             x: e.offsetX-this.previousMousePosition.x,
             y: e.offsetY-this.previousMousePosition.y,
@@ -352,7 +352,7 @@ PLThreeJS.prototype.onmousemove = function(e) {
 };
 
 PLThreeJS.prototype.onmouseup = function() {
-    if (!this.controls.enabled) {
+    if (!this.controls.enabled && this.bodyCanMove) {
         if (this.isDragging) {
             this.isDragging = false;
         }
@@ -448,11 +448,11 @@ PLThreeJS.prototype.updateDisplayOfOrientation = function() {
         return s;
     }
 
-    if (this.displayFormat == 'matrix') {
+    if (this.textPoseFormat == 'matrix') {
         var R = this.bodyGroup.matrix.elements;
         this.matlabText.text(rotToMatlab(R));
         this.pythonText.text(rotToPython(R));
-    } else if (this.displayFormat == 'quaternion') {
+    } else if (this.textPoseFormat == 'quaternion') {
         var q = this.bodyGroup.quaternion.toArray();
         this.matlabText.text(quatToMatlab(q));
         this.pythonText.text(quatToPython(q));

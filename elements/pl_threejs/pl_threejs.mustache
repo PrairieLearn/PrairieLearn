@@ -1,11 +1,10 @@
-{{#question}}
 <script>
-{{#show_display}}
+{{#show_pose}}
 <!-- init copy button -->
 $(function(){
     PrairieUtil.initCopyButton('#pl-threejs-output-{{uuid}} .copy-button');
 });
-{{/show_display}}
+{{/show_pose}}
 
 <!-- create three.js element -->
 $(function() {
@@ -14,6 +13,32 @@ $(function() {
 </script>
 
 <div class="container-fluid">
+    {{#show_instructions}}
+    <div class="card mb-4">
+        <div class="card-body">
+            <span>
+                The angular error must be no greater than <strong>{{angle}} degrees</strong> in order for your answer to be marked correct. This error is the smallest angle through which the submitted orientation would have to rotate in order to be aligned with the correct orientation.
+                {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+                {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+                {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+            </span>
+        </div>
+    </div>
+    {{/show_instructions}}
+
+    {{#show_feedback}}
+    <div class="card mb-4">
+        <div class="card-body">
+            <span>
+                The angular error is <strong>{{angle}} degrees</strong>. This error is the smallest angle through which the submitted orientation would have to rotate in order to be aligned with the correct orientation.
+                {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+                {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+                {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+            </span>
+        </div>
+    </div>
+    {{/show_feedback}}
+
     <!-- div in which to put the WebGLRenderer canvas -->
     <div id="pl-threejs-{{uuid}}">
         <!-- hidden input element to transfer data from client to server -->
@@ -70,7 +95,7 @@ $(function() {
         </div>
     </div>
 
-    {{#show_display}}
+    {{#show_pose}}
     <!-- state -->
     <div id="pl-threejs-output-{{uuid}}" class="card mb-4">
         <div class="card-header">
@@ -96,11 +121,11 @@ $(function() {
             </div>
         </div>
     </div>
-    {{/show_display}}
+    {{/show_pose}}
 </div>
-{{/question}}
 
-{{^question}}
+
+{{#noshow}}
 <script>
 <!-- init copy button -->
 $(function(){
@@ -151,4 +176,4 @@ $(function(){
     </div>
     {{/show_footer}}
 </div>
-{{/question}}
+{{/noshow}}
