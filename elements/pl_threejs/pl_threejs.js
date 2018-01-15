@@ -4,7 +4,12 @@ function PLThreeJS(options) {
 
     // parse options
     var uuid = options.uuid;
-    this.initialPose = JSON.parse(atob(options.state));
+    this.startPose = JSON.parse(atob(options.pose));
+    if (options.hasOwnProperty('pose_default')) {
+        this.resetPose = JSON.parse(atob(options.pose_default));
+    } else {
+        this.resetPose = this.startPose;
+    }
     this.scale = options.scale;
     this.bodyCanMove = options.body_canmove;
     this.cameraCanMove = options.camera_canmove;
@@ -46,9 +51,9 @@ function PLThreeJS(options) {
 
     // camera
     this.camera = new THREE.PerspectiveCamera(75, this.aspectratio, 0.1, 1000);
-    this.camera.position.fromArray(this.initialPose.camera_position);
+    this.camera.position.fromArray(this.startPose.camera_position);
     this.camera.up.set(0, 0, 1); // z-up
-    this.camera.lookAt(0, 0, 0); // ignore this.initialPose.camera_orientation even if it exists
+    this.camera.lookAt(0, 0, 0); // ignore this.startPose.camera_orientation even if it exists
 
     // scene
     this.scene = new THREE.Scene();
@@ -86,8 +91,8 @@ function PLThreeJS(options) {
         this.bodyGroup = new THREE.Group();
         this.bodyGroup.add(this.bodyObject);
         this.bodyGroup.add(this.bodyFrame);
-        this.bodyGroup.quaternion.fromArray(this.initialPose.body_quaternion);
-        this.bodyGroup.position.fromArray(this.initialPose.body_position);
+        this.bodyGroup.quaternion.fromArray(this.startPose.body_quaternion);
+        this.bodyGroup.position.fromArray(this.startPose.body_position);
         this.scene.add(this.bodyGroup);
 
         //  render and update hidden input
@@ -135,6 +140,17 @@ function PLThreeJS(options) {
         $('#pl-threejs-button-objectvisible-' + uuid).click(PLThreeJS.prototype.toggleObjectVisible.bind(this));
         $('#pl-threejs-button-framevisible-' + uuid).click(PLThreeJS.prototype.toggleFrameVisible.bind(this));
         $('#pl-threejs-button-shadowvisible-' + uuid).click(PLThreeJS.prototype.toggleShadowVisible.bind(this));
+
+        // reset button
+        $('#reset-button-' + uuid).click( (function(){
+            console.log('in here!');
+            this.bodyGroup.quaternion.fromArray(this.resetPose.body_quaternion);
+            this.bodyGroup.position.fromArray(this.resetPose.body_position);
+            this.camera.position.fromArray(this.resetPose.camera_position);
+            this.camera.lookAt(0, 0, 0);
+            this.render();
+        }).bind(this));
+        $('#reset-button-' + uuid).click(function(){console.log('click!');});
 
         // resize with window
         $(window).resize(PLThreeJS.prototype.onResize.bind(this));

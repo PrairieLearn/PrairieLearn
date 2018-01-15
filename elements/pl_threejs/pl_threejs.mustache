@@ -49,6 +49,11 @@ $(function() {
 
     <!-- button toolbar -->
     <div class="btn-toolbar" role="toolbar">
+        {{#show_reset}}
+        <div class="btn-group btn-group-sm mr-2 mb-2" role="group">
+            <button id="reset-button-{{uuid}}" type="button" class="btn btn-secondary active" data-toggle="button" aria-pressed="true">reset</button>
+        </div>
+        {{/show_reset}}
         {{#show_toggle}}
         <div class="btn-group btn-group-sm btn-group-toggle mr-2 mb-2" data-toggle="buttons" role="group" id="toggle-view-{{uuid}}">
             <label class="btn btn-secondary active">

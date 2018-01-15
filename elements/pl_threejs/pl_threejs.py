@@ -53,7 +53,7 @@ def render(element_html, element_index, data):
         raise Exception('attribute "text_pose_format" must be either "matrix" or "quaternion"')
 
     if data['panel'] == 'question':
-        will_be_graded = pl.get_boolean_attrib(element, 'grade', None)
+        will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
         show_pose = pl.get_boolean_attrib(element, 'show_pose_in_question', True)
 
         # Restore pose of body and camera, if available - otherwise use values
@@ -71,7 +71,8 @@ def render(element_html, element_index, data):
         options = {
             'uuid': uuid,
             'file_url': file_url,
-            'state': dict_to_b64(pose),
+            'pose': dict_to_b64(pose),
+            'pose_default': dict_to_b64(pose_default),
             'scale': body_scale,
             'body_canmove': body_canmove,
             'camera_canmove': camera_canmove,
@@ -86,6 +87,7 @@ def render(element_html, element_index, data):
             'answer_name': answer_name,
             'show_bodybuttons': body_canmove,
             'show_toggle': body_canmove and camera_canmove,
+            'show_reset': body_canmove or camera_canmove,
             'show_pose': show_pose,
             'show_instructions': will_be_graded,
             'angle': '{:.1f}'.format(pl.get_float_attrib(element, 'tol_degrees', 5)),
@@ -109,7 +111,7 @@ def render(element_html, element_index, data):
         options = {
             'uuid': uuid,
             'file_url': file_url,
-            'state': dict_to_b64(pose),
+            'pose': dict_to_b64(pose),
             'scale': body_scale,
             'body_canmove': False,
             'camera_canmove': False,
@@ -174,7 +176,7 @@ def render(element_html, element_index, data):
         options = {
             'uuid': uuid,
             'file_url': file_url,
-            'state': dict_to_b64(pose),
+            'pose': dict_to_b64(pose),
             'scale': body_scale,
             'body_canmove': False,
             'camera_canmove': False,
