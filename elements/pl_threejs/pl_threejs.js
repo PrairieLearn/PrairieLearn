@@ -143,14 +143,12 @@ function PLThreeJS(options) {
 
         // reset button
         $('#reset-button-' + uuid).click( (function(){
-            console.log('in here!');
             this.bodyGroup.quaternion.fromArray(this.resetPose.body_quaternion);
             this.bodyGroup.position.fromArray(this.resetPose.body_position);
             this.camera.position.fromArray(this.resetPose.camera_position);
             this.camera.lookAt(0, 0, 0);
             this.render();
         }).bind(this));
-        $('#reset-button-' + uuid).click(function(){console.log('click!');});
 
         // resize with window
         $(window).resize(PLThreeJS.prototype.onResize.bind(this));
