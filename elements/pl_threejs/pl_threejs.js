@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global THREE */
+/* global THREE,async */
 function PLThreeJS(options) {
 
     // parse options
@@ -10,11 +10,10 @@ function PLThreeJS(options) {
     } else {
         this.resetPose = this.startPose;
     }
-    this.scale = options.scale;
     this.bodyCanMove = options.body_canmove;
     this.cameraCanMove = options.camera_canmove;
     this.textPoseFormat = options.text_pose_format;
-    this.bodyColor = options.body_color;
+    this.objects = options.objects;
 
     // jquery container element
     this.container = $('#pl-threejs-' + uuid);
@@ -58,101 +57,172 @@ function PLThreeJS(options) {
     // scene
     this.scene = new THREE.Scene();
 
+    // groups
+    this.bodyGroup = new THREE.Group();
+    this.spaceGroup = new THREE.Group();
+    this.bodyObjectGroup = new THREE.Group();
+    this.spaceObjectGroup = new THREE.Group();
+    this.spaceGroup.add(this.spaceObjectGroup);
+    this.bodyGroup.add(this.bodyObjectGroup);
+
     // lights
     this.scene.add(new THREE.AmbientLight( 0xaaaaaa )); //ambient
-    this.scene.add(this.makeLights()); // directional
+    this.spaceGroup.add(this.makeLights()); // directional
 
     // shadows
     this.screen = this.makeScreen();
-    this.scene.add(this.screen);
+    this.spaceGroup.add(this.screen);
 
-    // space frame
+    // frames
     this.spaceFrame = this.makeFrame();
-    this.scene.add(this.spaceFrame);
+    this.bodyFrame = this.makeFrame();
+    this.spaceGroup.add(this.spaceFrame);
+    this.bodyGroup.add(this.bodyFrame);
 
-    // load stl file, then complete setup in a callback
-    var loader = new THREE.STLLoader();
-    loader.load(options.file_url, (function (geometry) {
+    async.series([
+        // Load font
+        (function(callback) {
+            var loader = new THREE.FontLoader();
+            loader.load( '/node_modules/three/examples/fonts/helvetiker_regular.typeface.json', (function (font) {
+                this.font = font;
+                callback(null);
+            }).bind(this) );
+        }).bind(this),
+        // Load each stl
+        (function(callback) {
+            async.eachSeries(this.objects, (function(obj, callback) {
+                if (obj.type == 'stl') {
+                    var loader = new THREE.STLLoader();
+                    loader.load(obj.file_url, (function (geometry) {
+                        var material = new THREE.MeshStandardMaterial({
+                            color: obj.color,
+                            transparent: true,
+                            opacity: obj.opacity,
+                        });
+                        var mesh = new THREE.Mesh(geometry.scale(obj.scale, obj.scale, obj.scale), material);
+                        mesh.castShadow = true;
+                        mesh.receiveShadow = true;
+                        mesh.position.fromArray(obj.position);
+                        mesh.quaternion.fromArray(obj.quaternion);
+                        if (obj.frame == 'space') {
+                            this.spaceObjectGroup.add(mesh);
+                        } else if (obj.frame == 'body') {
+                            this.bodyObjectGroup.add(mesh);
+                        }
+                        callback(null);
+                    }).bind(this));
+                } else if (obj.type == 'txt') {
+                    var geometry = new THREE.TextGeometry(obj.text, {
+                        font: this.font,
+                        size: 0.25,
+                        height: 0.05,
+                        curveSegments: 12,
+                        bevelEnabled: true,
+                        bevelThickness: .01,
+                        bevelSize: .008,
+                        bevelSegments: 2,
+                    });
+                    var material = new THREE.MeshStandardMaterial({
+                        color: obj.color,
+                        transparent: false,
+                        opacity: obj.opacity,
+                    });
+                    var mesh = new THREE.Mesh(geometry.scale(obj.scale, obj.scale, obj.scale), material);
+                    // FIXME: avoid this hack with renderOrder (used to render text first
+                    // so it never "disappears" behind or inside of other transparent objects)
+                    mesh.renderOrder = 1;
+                    mesh.castShadow = true;
+                    mesh.receiveShadow = true;
+                    mesh.position.fromArray(obj.position);
+                    mesh.quaternion.fromArray(obj.quaternion);
+                    if (obj.frame == 'space') {
+                        this.spaceObjectGroup.add(mesh);
+                    } else if (obj.frame == 'body') {
+                        this.bodyObjectGroup.add(mesh);
+                    }
+                    callback(null);
+                } else {
+                    callback(null);
+                }
+            }).bind(this), function(err) {
+                callback(err);
+            });
+        }).bind(this),
+        (function(callback) {
+            // position and orientation
+            this.bodyGroup.quaternion.fromArray(this.startPose.body_quaternion);
+            this.bodyGroup.position.fromArray(this.startPose.body_position);
 
-        // body frame
-        this.bodyFrame = this.makeFrame();
+            // add groups to scene
+            this.scene.add(this.bodyGroup);
+            this.scene.add(this.spaceGroup);
 
-        // body object
-        var material = new THREE.MeshStandardMaterial({
-            color: this.bodyColor,
-            transparent: true,
-            opacity: 0.7,
-        });
-        this.bodyObject = new THREE.Mesh(geometry.scale(this.scale, this.scale, this.scale), material);
-        this.bodyObject.castShadow = true;
-        this.bodyObject.receiveShadow = true;
-
-        // entire body (as a group)
-        this.bodyGroup = new THREE.Group();
-        this.bodyGroup.add(this.bodyObject);
-        this.bodyGroup.add(this.bodyFrame);
-        this.bodyGroup.quaternion.fromArray(this.startPose.body_quaternion);
-        this.bodyGroup.position.fromArray(this.startPose.body_position);
-        this.scene.add(this.bodyGroup);
-
-        //  render and update hidden input
-        this.render();
-
-        // state for mouse control of body pose
-        this.isDragging = false;
-        this.previousMousePosition = {
-            x: 0,
-            y: 0,
-        };
-
-        // buttons to toggle between camera and body motion
-        $('#toggle-view-' + uuid).change(PLThreeJS.prototype.toggleRotate.bind(this));
-
-        // mouse control of body pose
-        $(this.renderer.domElement).mousedown(PLThreeJS.prototype.onmousedown.bind(this));
-        $(document).mousemove(PLThreeJS.prototype.onmousemove.bind(this));
-        $(document).mouseup(PLThreeJS.prototype.onmouseup.bind(this));
-
-        // buttons to rotate body about coordinate axes of body frame
-        this.xPlusButton.click(PLThreeJS.prototype.xPlus.bind(this));
-        this.xMinusButton.click(PLThreeJS.prototype.xMinus.bind(this));
-        this.yPlusButton.click(PLThreeJS.prototype.yPlus.bind(this));
-        this.yMinusButton.click(PLThreeJS.prototype.yMinus.bind(this));
-        this.zPlusButton.click(PLThreeJS.prototype.zPlus.bind(this));
-        this.zMinusButton.click(PLThreeJS.prototype.zMinus.bind(this));
-
-        // mouse control of camera pose
-        //
-        // FIXME: use of orbitcontrols with zoom results in a warning on Chrome:
-        //
-        //  Blink deferred a task in order to make scrolling smoother. Your timer and
-        //  network tasks should take less than 50ms to run to avoid this. Please see
-        //  https://developers.google.com/web/tools/chrome-devtools/profile/evaluate-performance/rail
-        //  and https://crbug.com/574343#c40 for more information.
-        //
-        this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
-        this.controls.enablePan = false;
-        this.controls.addEventListener('change', PLThreeJS.prototype.render.bind(this));
-        this.controls.enabled = this.cameraCanMove;
-        this.updateBodyButtons();
-
-        // buttons to toggle visibility
-        $('#pl-threejs-button-objectvisible-' + uuid).click(PLThreeJS.prototype.toggleObjectVisible.bind(this));
-        $('#pl-threejs-button-framevisible-' + uuid).click(PLThreeJS.prototype.toggleFrameVisible.bind(this));
-        $('#pl-threejs-button-shadowvisible-' + uuid).click(PLThreeJS.prototype.toggleShadowVisible.bind(this));
-
-        // reset button
-        $('#reset-button-' + uuid).click( (function(){
-            this.bodyGroup.quaternion.fromArray(this.resetPose.body_quaternion);
-            this.bodyGroup.position.fromArray(this.resetPose.body_position);
-            this.camera.position.fromArray(this.resetPose.camera_position);
-            this.camera.lookAt(0, 0, 0);
+            // render
             this.render();
-        }).bind(this));
 
-        // resize with window
-        $(window).resize(PLThreeJS.prototype.onResize.bind(this));
-    }).bind(this));
+            // state for mouse control of body pose
+            this.isDragging = false;
+            this.previousMousePosition = {
+                x: 0,
+                y: 0,
+            };
+
+            // buttons to toggle between camera and body motion
+            $('#toggle-view-' + uuid).change(PLThreeJS.prototype.toggleRotate.bind(this));
+
+            // mouse control of body pose
+            $(this.renderer.domElement).mousedown(PLThreeJS.prototype.onmousedown.bind(this));
+            $(document).mousemove(PLThreeJS.prototype.onmousemove.bind(this));
+            $(document).mouseup(PLThreeJS.prototype.onmouseup.bind(this));
+
+            // buttons to rotate body about coordinate axes of body frame
+            this.xPlusButton.click(PLThreeJS.prototype.xPlus.bind(this));
+            this.xMinusButton.click(PLThreeJS.prototype.xMinus.bind(this));
+            this.yPlusButton.click(PLThreeJS.prototype.yPlus.bind(this));
+            this.yMinusButton.click(PLThreeJS.prototype.yMinus.bind(this));
+            this.zPlusButton.click(PLThreeJS.prototype.zPlus.bind(this));
+            this.zMinusButton.click(PLThreeJS.prototype.zMinus.bind(this));
+
+            // mouse control of camera pose
+            //
+            // FIXME: use of orbitcontrols with zoom results in a warning on Chrome:
+            //
+            //  Blink deferred a task in order to make scrolling smoother. Your timer and
+            //  network tasks should take less than 50ms to run to avoid this. Please see
+            //  https://developers.google.com/web/tools/chrome-devtools/profile/evaluate-performance/rail
+            //  and https://crbug.com/574343#c40 for more information.
+            //
+            this.controls = new THREE.OrbitControls( this.camera, this.renderer.domElement );
+            this.controls.enablePan = false;
+            this.controls.addEventListener('change', PLThreeJS.prototype.render.bind(this));
+            this.controls.enabled = this.cameraCanMove;
+            this.updateBodyButtons();
+
+            // buttons to toggle visibility
+            $('#pl-threejs-button-bodyobjectsvisible-' + uuid).click(PLThreeJS.prototype.toggleBodyObjectsVisible.bind(this));
+            $('#pl-threejs-button-spaceobjectsvisible-' + uuid).click(PLThreeJS.prototype.toggleSpaceObjectsVisible.bind(this));
+            $('#pl-threejs-button-framevisible-' + uuid).click(PLThreeJS.prototype.toggleFrameVisible.bind(this));
+            $('#pl-threejs-button-shadowvisible-' + uuid).click(PLThreeJS.prototype.toggleShadowVisible.bind(this));
+
+            // reset button
+            $('#reset-button-' + uuid).click( (function(){
+                this.bodyGroup.quaternion.fromArray(this.resetPose.body_quaternion);
+                this.bodyGroup.position.fromArray(this.resetPose.body_position);
+                this.camera.position.fromArray(this.resetPose.camera_position);
+                this.camera.lookAt(0, 0, 0);
+                this.render();
+            }).bind(this));
+
+            // resize with window
+            $(window).resize(PLThreeJS.prototype.onResize.bind(this));
+
+
+            callback(null);
+        }).bind(this),
+    ], function(_err, _results) {
+        // Do nothing
+        return;
+    });
 }
 
 PLThreeJS.prototype.render = function() {
@@ -206,8 +276,13 @@ PLThreeJS.prototype.updateBodyButtons = function() {
     this.zMinusButton.prop('disabled', this.controls.enabled);
 };
 
-PLThreeJS.prototype.toggleObjectVisible = function() {
-    this.bodyObject.visible = !this.bodyObject.visible;
+PLThreeJS.prototype.toggleBodyObjectsVisible = function() {
+    this.bodyObjectGroup.visible = !this.bodyObjectGroup.visible;
+    this.render();
+};
+
+PLThreeJS.prototype.toggleSpaceObjectsVisible = function() {
+    this.spaceObjectGroup.visible = !this.spaceObjectGroup.visible;
     this.render();
 };
 

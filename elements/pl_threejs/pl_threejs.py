@@ -13,13 +13,9 @@ def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = [
         'answer_name',          # key for 'submitted_answers' and 'true_answers'
-        'file_name'             # *.stl
     ]
     optional_attribs = [
-        'file_directory',       # 'clientFilesCourse' or 'clientFilesQuestion'
-        'body_color',           # '#e84a27' (default)
         'body_orientation',     # [x, y, z, w] or [roll, pitch, yaw] or rotation matrix (3x3 ndarray) or exponential coordinates [wx, wy, wz]
-        'body_scale',           # s (float > 0)
         'camera_position',      # [x, y, z] - camera is z up and points at origin of space frame
         'body_canmove',         # true (default) or false
         'camera_canmove',       # true (default) or false
@@ -35,22 +31,102 @@ def prepare(element_html, element_index, data):
     pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
 
 
+def get_objects(element, data):
+    obj_list = []
+
+    for child in element:
+        is_stl = (child.tag == 'pl_threejs_stl')
+        is_txt = (child.tag == 'pl_threejs_txt')
+        if not (is_stl or is_txt):
+            continue
+
+        # Type-specific check and get (stl)
+        if is_stl:
+            # Attributes
+            pl.check_attribs(child, required_attribs=['file_name'], optional_attribs=['file_directory', 'frame', 'color', 'position', 'orientation', 'format', 'scale'])
+            # - file_name (and file_directory)
+            file_url = get_file_url(child, data)
+            # - type
+            object_type = 'stl'
+            # - object
+            specific = {
+                'type': object_type,
+                'file_url': file_url
+            }
+
+        # Type-specific check and get (txt)
+        if is_txt:
+            # Attributes
+            pl.check_attribs(child, required_attribs=[], optional_attribs=['frame', 'color', 'position', 'orientation', 'format', 'scale'])
+            # - text
+            text = pl.inner_html(child)
+            # - type
+            object_type = 'txt'
+            # - object
+            specific = {
+                'type': object_type,
+                'text': text
+            }
+
+        # Common
+        # - frame
+        frame = pl.get_string_attrib(child, 'frame', 'body')
+        if frame not in ['body', 'space']:
+            raise Exception('"frame" must be either "body" or "space": {:s}'.format(frame))
+        if frame == 'body':
+            default_color = '#e84a27'
+            default_opacity = 0.7
+        else:
+            default_color = '#13294b'
+            default_opacity = 0.4
+        # - color
+        color = pl.get_color_attrib(child, 'color', default_color)
+        # - opacity
+        opacity = pl.get_float_attrib(child, 'opacity', default_opacity)
+        # - position
+        p = pl.get_string_attrib(child, 'position', '[0, 0, 0]')
+        try:
+            position = np.array(json.loads(p), dtype=np.float64)
+            if position.shape == (3,):
+                position = position.tolist()
+            else:
+                raise ValueError()
+        except:
+            raise Exception('attribute "position" must have format [x, y, z] and must be non-zero: {:s}'.format(p))
+        # - orientation (and format)
+        orientation = get_orientation(child, 'orientation', 'format')
+        # - scale
+        scale = pl.get_float_attrib(child, 'scale', 1.0)
+
+        common = {
+            'frame': frame,
+            'color': color,
+            'opacity': opacity,
+            'position': position,
+            'quaternion': orientation,
+            'scale': scale
+        }
+
+        obj = {**specific, **common}
+        obj_list.append(obj)
+
+    return obj_list
+
+
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answer_name')
 
     uuid = pl.get_uuid()
 
-    file_url = get_file_url(element, data)    # uses file_name and file_directory
-    body_color = pl.get_color_attrib(element, 'body_color', '#e84a27')
-    body_orientation = get_body_orientation(element)
-    body_scale = pl.get_float_attrib(element, 'body_scale', 1.0)
+    body_orientation = get_orientation(element, 'body_orientation', 'body_pose_format')
     camera_position = get_camera_position(element)
     body_canmove = pl.get_boolean_attrib(element, 'body_canmove', True)
     camera_canmove = pl.get_boolean_attrib(element, 'camera_canmove', True)
     text_pose_format = pl.get_string_attrib(element, 'text_pose_format', 'matrix')
     if text_pose_format not in ['matrix', 'quaternion']:
         raise Exception('attribute "text_pose_format" must be either "matrix" or "quaternion"')
+    objects = get_objects(element, data)
 
     if data['panel'] == 'question':
         will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
@@ -70,14 +146,12 @@ def render(element_html, element_index, data):
         # These are passed as arguments to PLThreeJS constructor in client code
         options = {
             'uuid': uuid,
-            'file_url': file_url,
             'pose': dict_to_b64(pose),
             'pose_default': dict_to_b64(pose_default),
-            'scale': body_scale,
             'body_canmove': body_canmove,
             'camera_canmove': camera_canmove,
             'text_pose_format': text_pose_format,
-            'body_color': body_color
+            'objects': objects
         }
 
         # These are used for templating
@@ -110,13 +184,11 @@ def render(element_html, element_index, data):
         # These are passed as arguments to PLThreeJS constructor in client code
         options = {
             'uuid': uuid,
-            'file_url': file_url,
             'pose': dict_to_b64(pose),
-            'scale': body_scale,
             'body_canmove': False,
             'camera_canmove': False,
             'text_pose_format': text_pose_format,
-            'body_color': body_color
+            'objects': objects
         }
 
         # These are used for templating
@@ -175,13 +247,11 @@ def render(element_html, element_index, data):
         # These are passed as arguments to PLThreeJS constructor in client code
         options = {
             'uuid': uuid,
-            'file_url': file_url,
             'pose': dict_to_b64(pose),
-            'scale': body_scale,
             'body_canmove': False,
             'camera_canmove': False,
             'text_pose_format': text_pose_format,
-            'body_color': body_color
+            'objects': objects
         }
 
         # These are used for templating
@@ -367,12 +437,12 @@ def get_file_url(element, data):
     return file_url
 
 
-def get_body_orientation(element):
-    s = pl.get_string_attrib(element, 'body_orientation', None)
+def get_orientation(element, name_orientation, name_format):
+    s = pl.get_string_attrib(element, name_orientation, None)
     if s is None:
         return [0, 0, 0, 1]
 
-    f = pl.get_string_attrib(element, 'body_pose_format', 'rpy')
+    f = pl.get_string_attrib(element, name_format, 'rpy')
     if f == 'rpy':
         try:
             rpy = np.array(json.loads(s), dtype=np.float64)
@@ -384,7 +454,7 @@ def get_body_orientation(element):
             else:
                 raise ValueError()
         except:
-            raise Exception('attribute "body_orientation" must be a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]": {:s}'.format(s))
+            raise Exception('attribute "{:s}" with format "{:s}" must be a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]": {:s}'.format(name_orientation, name_format, s))
     elif f == 'quaternion':
         try:
             q = np.array(json.loads(s), dtype=np.float64)
@@ -393,13 +463,13 @@ def get_body_orientation(element):
             else:
                 raise ValueError()
         except:
-            raise Exception('attribute "body_orientation" must be a unit quaternion with format "[x, y, z, w]": {:s}'.format(s))
+            raise Exception('attribute "{:s}" with format "{:s}" must be a unit quaternion with format "[x, y, z, w]": {:s}'.format(name_orientation, name_format, s))
     elif f == 'matrix':
         try:
             R = np.array(json.loads(s), dtype=np.float64)
             return np.roll(pyquaternion.Quaternion(matrix=R).elements, -1).tolist()
         except:
-            raise Exception('attribute "body_orientation" must be a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]": {:s}'.format(s))
+            raise Exception('attribute "{:s}" with format "{:s}" must be a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]": {:s}'.format(name_orientation, name_format, s))
     elif f == 'axisangle':
         try:
             q = np.array(json.loads(s), dtype=np.float64)
@@ -413,9 +483,9 @@ def get_body_orientation(element):
             else:
                 raise ValueError()
         except:
-            raise Exception('attribute "body_orientation" must have format "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees: {:s}'.format(s))
+            raise Exception('attribute "{:s}" with format "{:s}" must have format "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees: {:s}'.format(name_orientation, name_format, s))
     else:
-        raise Exception('attribute "body_pose_format" must be "rpy", "quaternion", "matrix", or "axisangle": {:s}'.format(f))
+        raise Exception('attribute "{:s}" must be "rpy", "quaternion", "matrix", or "axisangle": {:s}'.format(name_format, f))
 
 
 def get_camera_position(element):

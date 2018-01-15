@@ -5,7 +5,11 @@
             "three/build/three.min.js",
             "three/examples/js/loaders/STLLoader.js",
             "three/examples/js/controls/OrbitControls.js",
-            "clipboard/dist/clipboard.min.js"
+            "clipboard/dist/clipboard.min.js",
+            "async/dist/async.min.js"
+        ],
+        "nodeModulesStyles": [
+            "three/examples/fonts/helvetiker_regular.typeface.json"
         ],
         "elementScripts": [
             "pl_threejs.js"
