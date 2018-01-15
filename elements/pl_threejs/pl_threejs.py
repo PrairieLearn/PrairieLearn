@@ -25,7 +25,8 @@ def prepare(element_html, element_index, data):
         'format_of_display_orientation',    # 'matrix' (default), 'quaternion'
         'format_of_answer_orientation',     # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
         'show_display',         # true (default) or false
-        'tol_degrees'           # 5 (default : float > 0)
+        'tol_degrees',          # 5 (default : float > 0)
+        'grade'                 # true (default) or false
     ]
     pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
 
@@ -48,7 +49,7 @@ def render(element_html, element_index, data):
         format_of_display_orientation = pl.get_string_attrib(element, 'format_of_display_orientation', 'matrix')
         if format_of_display_orientation not in ['matrix', 'quaternion']:
             raise Exception('attribute "format_of_display_orientation" must be either "matrix" or "quaternion"')
-        pl.get_boolean_attrib(element, 'show_display', True),
+        show_display = pl.get_boolean_attrib(element, 'show_display', True),
 
         # Restore pose of body and camera, if available - otherwise use values
         # from attributes (note that restored pose will also have camera_orientation,
@@ -61,6 +62,7 @@ def render(element_html, element_index, data):
         }
         pose = data['submitted_answers'].get(answer_name, pose_default)
 
+        # These are passed as arguments to PLThreeJS constructor in client code
         options = {
             'uuid': uuid,
             'file_url': file_url,
@@ -73,6 +75,7 @@ def render(element_html, element_index, data):
             'show_display': show_display
         }
 
+        # These are used for templating
         html_params = {
             'question': True,
             'uuid': uuid,
@@ -83,28 +86,117 @@ def render(element_html, element_index, data):
             'default_is_python': True,
             'options': json.dumps(options)
         }
-        
+
         with open('pl_threejs.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'submission':
-        parse_error = data['format_errors'].get(answer_name, None)
-        grade = print(data['partial_scores'].get(answer_name, None))
+        will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
+        if not will_be_graded:
+            return ''
 
+        q_sub = data['submitted_answers'][answer_name]['body_quaternion']
+        q_sub = np.array(q_sub, dtype=np.float64)
+
+        f = pl.get_string_attrib(element, 'format_of_display_orientation', 'matrix')
+        digits = 4
+        if f == 'matrix':
+            R_sub = pyquaternion.Quaternion(np.roll(q_sub, 1)).rotation_matrix
+            matlab_data = '% The rotation matrix describing the orientation of the body\n' \
+                        + '% frame in the coordinates of the space frame.\n\nR = ' \
+                        + pl.numpy_to_matlab(R_sub, ndigits=digits)
+            python_data = '# The rotation matrix describing the orientation of the body\n' \
+                        + '# frame in the coordinates of the space frame.\n\n' \
+                        + 'import numpy as np\n\nR = ' \
+                        + str(R_sub.round(digits).tolist())
+        elif f == 'quaternion':
+            matlab_data = '% The quaternion [x,y,z,w] describing the orientation of the body\n' \
+                        + '% frame in the coordinates of the space frame.\n\nq = ' \
+                        + pl.numpy_to_matlab(np.array([q_sub]), ndigits=digits)
+            python_data = '# The quaternion [x,y,z,w] describing the orientation of the body\n' \
+                        + '# frame in the coordinates of the space frame.\n\n' \
+                        + 'import numpy as np\n\nq = ' \
+                        + str(np.array(q_sub).round(digits).tolist())
+        else:
+            raise Exception('attribute "format_of_display_orientation" must be either "matrix" or "quaternion": {:s}'.format(f))
 
         html_params = {
             'submission': True,
-            'parse_error': parse_error
+            'uuid': pl.get_uuid(),
+            'matlab_data': matlab_data,
+            'python_data': python_data,
+            'default_is_python': True
         }
 
-        if parse_error is None:
-            a_sub = data['submitted_answers'][answer_name]
-            html_params['a_sub'] = str(a_sub)
-            # '{:.12g}'.format(a_sub)
+        partial_score = data['partial_scores'].get(answer_name, None)
+        if partial_score is not None:
+            html_params['angle'] = str(np.abs(np.round(partial_score['feedback'], 1)))
+            html_params['show_footer'] = True
+            score = partial_score.get('score', None)
+            if score is not None:
+                try:
+                    score = float(score)
+                    if score >= 1:
+                        html_params['correct'] = True
+                    elif score > 0:
+                        html_params['partial'] = math.floor(score * 100)
+                    else:
+                        html_params['incorrect'] = True
+                except:
+                    raise ValueError('invalid score' + score)
+
+        with open('pl_threejs.mustache', 'r', encoding='utf-8') as f:
+            html = chevron.render(f, html_params).strip()
+    elif data['panel'] == 'answer':
+        will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
+        if not will_be_graded:
+            return ''
+
+        # Get correct answer
+        a = data['correct_answers'].get(answer_name, None)
+        if a is None:
+            return ''
+
+        # Get format of correct answer
+        f = pl.get_string_attrib(element, 'format_of_answer_orientation', 'rpy')
+
+        # Convert correct answer to Quaternion
+        q_tru = convert_correct_answer_to_quaternion(f, a)
+
+        f = pl.get_string_attrib(element, 'format_of_display_orientation', 'matrix')
+        digits = 4
+        if f == 'matrix':
+            R_tru = q_tru.rotation_matrix
+            matlab_data = '% The rotation matrix describing the orientation of the body\n' \
+                        + '% frame in the coordinates of the space frame.\n\nR = ' \
+                        + pl.numpy_to_matlab(R_tru, ndigits=digits)
+            python_data = '# The rotation matrix describing the orientation of the body\n' \
+                        + '# frame in the coordinates of the space frame.\n\n' \
+                        + 'import numpy as np\n\nR = ' \
+                        + str(R_tru.round(digits).tolist())
+        elif f == 'quaternion':
+            q_tru = np.roll(q_tru.elements, -1).tolist()
+            matlab_data = '% The quaternion [x,y,z,w] describing the orientation of the body\n' \
+                        + '% frame in the coordinates of the space frame.\n\nq = ' \
+                        + pl.numpy_to_matlab(np.array([q_tru]), ndigits=digits)
+            python_data = '# The quaternion [x,y,z,w] describing the orientation of the body\n' \
+                        + '# frame in the coordinates of the space frame.\n\n' \
+                        + 'import numpy as np\n\nq = ' \
+                        + str(np.array(q_tru).round(digits).tolist())
+        else:
+            raise Exception('attribute "format_of_display_orientation" must be either "matrix" or "quaternion": {:s}'.format(f))
+
+        html_params = {
+            'answer': True,
+            'uuid': pl.get_uuid(),
+            'matlab_data': matlab_data,
+            'python_data': python_data,
+            'default_is_python': True
+        }
 
         with open('pl_threejs.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     else:
-        return ''
+        raise Exception('Invalid panel type: %s' % data['panel'])
 
     return html
 
@@ -131,6 +223,11 @@ def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, 'answer_name')
 
+    # Check if this element is intended to produce a grade
+    will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
+    if not will_be_graded:
+        return
+
     # Get weight
     weight = pl.get_integer_attrib(element, 'weight', 1)
 
@@ -140,7 +237,7 @@ def grade(element_html, element_index, data):
         # This should never happen! If it does, just return nothing.
         return
 
-    # Get correct answer
+    # Get correct answer (if none, don't grade)
     a = data['correct_answers'].get(answer_name, None)
     if a is None:
         return
@@ -152,6 +249,23 @@ def grade(element_html, element_index, data):
     q_sub = pyquaternion.Quaternion(np.roll(state['body_quaternion'], 1))
 
     # Convert correct answer to Quaternion
+    q_tru = convert_correct_answer_to_quaternion(f, a)
+
+    # Find smallest angle of rotation between submitted orientation and correct orientation
+    angle = np.abs((q_tru.inverse * q_sub).degrees)
+
+    # Get tolerance
+    tol = pl.get_float_attrib(element, 'tol_degrees', 5)
+    if (tol <= 0):
+        raise Exception('tolerance must be a positive real number (angle in degrees): {:g}'.format(tol))
+
+    # Check if angle is below tolerance
+    if (angle < tol):
+        data['partial_scores'][answer_name] = {'score': 1, 'weight': weight, 'feedback': angle}
+    else:
+        data['partial_scores'][answer_name] = {'score': 0, 'weight': weight, 'feedback': angle}
+
+def convert_correct_answer_to_quaternion(f, a):
     if f == 'rpy':
         try:
             rpy = np.array(a, dtype=np.float64)
@@ -195,20 +309,7 @@ def grade(element_html, element_index, data):
             raise Exception('correct answer must be "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees')
     else:
         raise Exception('"format_of_answer_orientation" must be "rpy", "quaternion", "matrix", or "axisangle": {:s}'.format(f))
-
-    # Find smallest angle of rotation between submitted orientation and correct orientation
-    angle = np.abs((q_tru.inverse * q_sub).degrees)
-
-    # Get tolerance
-    tol = pl.get_float_attrib(element, 'tol_degrees', 5)
-    if (tol <= 0):
-        raise Exception('tolerance must be a positive real number (angle in degrees): {:g}'.format(tol))
-
-    # Check if angle is below tolerance
-    if (angle < tol):
-        data['partial_scores'][answer_name] = {'score': 1, 'weight': weight, 'feedback': angle}
-    else:
-        data['partial_scores'][answer_name] = {'score': 0, 'weight': weight, 'feedback': angle}
+    return q_tru
 
 def dict_to_b64(d):
     return base64.b64encode(json.dumps(d).encode('utf-8')).decode()

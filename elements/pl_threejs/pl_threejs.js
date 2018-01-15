@@ -1,7 +1,5 @@
 function PLThreeJS(options) {
 
-    console.log(options);
-
     // parse options
     var uuid = options.uuid;
     this.initialPose = JSON.parse(atob(options.state));
