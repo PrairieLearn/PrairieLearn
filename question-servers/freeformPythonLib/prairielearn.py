@@ -240,6 +240,7 @@ def get_float_attrib(element, name, *args):
         raise Exception('Attribute "%s" must be a number: %s' % (name, val))
     return float_val
 
+
 def get_color_attrib(element, name, *args):
     """value = get_color_attrib(element, name, default)
 
@@ -256,6 +257,7 @@ def get_color_attrib(element, name, *args):
         return val
     else:
         raise Exception('Attribute "{:s}" must be a CSS-style RGB string: {:s}'.format(name, val))
+
 
 # This function assumes that A is either a floating-point number or a
 # real-valued numpy array. It returns A as a MATLAB-formatted string.

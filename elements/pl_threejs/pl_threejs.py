@@ -6,6 +6,8 @@ import json
 import base64
 import os
 import pyquaternion
+import math
+
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -94,38 +96,24 @@ def render(element_html, element_index, data):
         if not will_be_graded:
             return ''
 
-        q_sub = data['submitted_answers'][answer_name]['body_quaternion']
-        q_sub = np.array(q_sub, dtype=np.float64)
+        # Get submitted answer
+        q = data['submitted_answers'][answer_name]['body_quaternion']
+        q = np.array(q, dtype=np.float64)
 
+        # Convert submitted answer to Quaternion
+        q = pyquaternion.Quaternion(np.roll(q, 1))
+
+        # Convert Quaternion to disp_params
         f = pl.get_string_attrib(element, 'format_of_display_orientation', 'matrix')
-        digits = 4
-        if f == 'matrix':
-            R_sub = pyquaternion.Quaternion(np.roll(q_sub, 1)).rotation_matrix
-            matlab_data = '% The rotation matrix describing the orientation of the body\n' \
-                        + '% frame in the coordinates of the space frame.\n\nR = ' \
-                        + pl.numpy_to_matlab(R_sub, ndigits=digits)
-            python_data = '# The rotation matrix describing the orientation of the body\n' \
-                        + '# frame in the coordinates of the space frame.\n\n' \
-                        + 'import numpy as np\n\nR = ' \
-                        + str(R_sub.round(digits).tolist())
-        elif f == 'quaternion':
-            matlab_data = '% The quaternion [x,y,z,w] describing the orientation of the body\n' \
-                        + '% frame in the coordinates of the space frame.\n\nq = ' \
-                        + pl.numpy_to_matlab(np.array([q_sub]), ndigits=digits)
-            python_data = '# The quaternion [x,y,z,w] describing the orientation of the body\n' \
-                        + '# frame in the coordinates of the space frame.\n\n' \
-                        + 'import numpy as np\n\nq = ' \
-                        + str(np.array(q_sub).round(digits).tolist())
-        else:
-            raise Exception('attribute "format_of_display_orientation" must be either "matrix" or "quaternion": {:s}'.format(f))
+        disp_params = convert_quaternion_to_display(f, q)
 
+        # Create html_params and merge disp_params
         html_params = {
-            'submission': True,
+            'answer': True,
             'uuid': pl.get_uuid(),
-            'matlab_data': matlab_data,
-            'python_data': python_data,
             'default_is_python': True
         }
+        html_params = {**html_params, **disp_params}
 
         partial_score = data['partial_scores'].get(answer_name, None)
         if partial_score is not None:
@@ -156,42 +144,21 @@ def render(element_html, element_index, data):
         if a is None:
             return ''
 
-        # Get format of correct answer
-        f = pl.get_string_attrib(element, 'format_of_answer_orientation', 'rpy')
-
         # Convert correct answer to Quaternion
-        q_tru = convert_correct_answer_to_quaternion(f, a)
+        f = pl.get_string_attrib(element, 'format_of_answer_orientation', 'rpy')
+        q = convert_correct_answer_to_quaternion(f, a)
 
+        # Convert Quaternion to disp_params
         f = pl.get_string_attrib(element, 'format_of_display_orientation', 'matrix')
-        digits = 4
-        if f == 'matrix':
-            R_tru = q_tru.rotation_matrix
-            matlab_data = '% The rotation matrix describing the orientation of the body\n' \
-                        + '% frame in the coordinates of the space frame.\n\nR = ' \
-                        + pl.numpy_to_matlab(R_tru, ndigits=digits)
-            python_data = '# The rotation matrix describing the orientation of the body\n' \
-                        + '# frame in the coordinates of the space frame.\n\n' \
-                        + 'import numpy as np\n\nR = ' \
-                        + str(R_tru.round(digits).tolist())
-        elif f == 'quaternion':
-            q_tru = np.roll(q_tru.elements, -1).tolist()
-            matlab_data = '% The quaternion [x,y,z,w] describing the orientation of the body\n' \
-                        + '% frame in the coordinates of the space frame.\n\nq = ' \
-                        + pl.numpy_to_matlab(np.array([q_tru]), ndigits=digits)
-            python_data = '# The quaternion [x,y,z,w] describing the orientation of the body\n' \
-                        + '# frame in the coordinates of the space frame.\n\n' \
-                        + 'import numpy as np\n\nq = ' \
-                        + str(np.array(q_tru).round(digits).tolist())
-        else:
-            raise Exception('attribute "format_of_display_orientation" must be either "matrix" or "quaternion": {:s}'.format(f))
+        disp_params = convert_quaternion_to_display(f, q)
 
+        # Create html_params and merge disp_params
         html_params = {
             'answer': True,
             'uuid': pl.get_uuid(),
-            'matlab_data': matlab_data,
-            'python_data': python_data,
             'default_is_python': True
         }
+        html_params = {**html_params, **disp_params}
 
         with open('pl_threejs.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
@@ -199,6 +166,29 @@ def render(element_html, element_index, data):
         raise Exception('Invalid panel type: %s' % data['panel'])
 
     return html
+
+
+def convert_quaternion_to_display(f, q, digits=4):
+    if f == 'matrix':
+        R = q.rotation_matrix
+        matlab_data = pl.numpy_to_matlab(R, ndigits=digits)
+        python_data = str(R.round(digits).tolist())
+        data_format = 'rotation matrix'
+        data_label = 'R'
+    elif f == 'quaternion':
+        q = np.roll(q.elements, -1).tolist()
+        matlab_data = pl.numpy_to_matlab(np.array([q]), ndigits=digits)
+        python_data = str(np.array(q).round(digits).tolist())
+        data_format = 'quaternion [x,y,z,w]'
+        data_label = 'q'
+    else:
+        raise Exception('attribute "format_of_display_orientation" must be either "matrix" or "quaternion": {:s}'.format(f))
+    return {
+        'matlab_data': matlab_data,
+        'python_data': python_data,
+        'data_format': data_format,
+        'data_label': data_label
+    }
 
 
 def parse(element_html, element_index, data):
@@ -265,6 +255,7 @@ def grade(element_html, element_index, data):
     else:
         data['partial_scores'][answer_name] = {'score': 0, 'weight': weight, 'feedback': angle}
 
+
 def convert_correct_answer_to_quaternion(f, a):
     if f == 'rpy':
         try:
@@ -273,16 +264,16 @@ def convert_correct_answer_to_quaternion(f, a):
                 qx = pyquaternion.Quaternion(axis=[1, 0, 0], degrees=rpy[0])
                 qy = pyquaternion.Quaternion(axis=[0, 1, 0], degrees=rpy[1])
                 qz = pyquaternion.Quaternion(axis=[0, 0, 1], degrees=rpy[2])
-                q_tru = qx * qy * qz
+                return qx * qy * qz
             else:
                 raise ValueError()
         except:
             raise Exception('correct answer must be a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]"')
     elif f == 'quaternion':
         try:
-            q_tru = np.array(a, dtype=np.float64)
+            q = np.array(a, dtype=np.float64)
             if (q.shape == (4,)) and np.allclose(np.linalg.norm(q), 1.0):
-                q_tru = pyquaternion.Quaternion(np.roll(q_tru, 1))
+                return pyquaternion.Quaternion(np.roll(q, 1))
             else:
                 raise ValueError()
         except:
@@ -290,12 +281,12 @@ def convert_correct_answer_to_quaternion(f, a):
     elif f == 'matrix':
         try:
             R = np.array(a, dtype=np.float64)
-            q_tru = pyquaternion.Quaternion(matrix=R)
+            return pyquaternion.Quaternion(matrix=R)
         except:
             raise Exception('correct answer must be a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]"')
     elif f == 'axisangle':
         try:
-            q = np.array(json.loads(s), dtype=np.float64)
+            q = np.array(json.loads(a), dtype=np.float64)
             if (q.shape == (4,)):
                 axis = q[0:3]
                 angle = q[3]
@@ -309,13 +300,15 @@ def convert_correct_answer_to_quaternion(f, a):
             raise Exception('correct answer must be "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees')
     else:
         raise Exception('"format_of_answer_orientation" must be "rpy", "quaternion", "matrix", or "axisangle": {:s}'.format(f))
-    return q_tru
+
 
 def dict_to_b64(d):
     return base64.b64encode(json.dumps(d).encode('utf-8')).decode()
 
+
 def b64_to_dict(b64):
     return json.loads(base64.b64decode(b64).decode())
+
 
 def get_file_url(element, data):
     # Get file name or raise exception if one does not exist
@@ -336,6 +329,7 @@ def get_file_url(element, data):
     file_url = os.path.join(base_url, file_name)
 
     return file_url
+
 
 def get_body_orientation(element):
     s = pl.get_string_attrib(element, 'body_orientation', None)
@@ -383,11 +377,10 @@ def get_body_orientation(element):
             else:
                 raise ValueError()
         except:
-            raise Exception('attribute "body_orientation" must have format "[x, y, z, angle]"\n' \
-                             + 'where (x, y, z) are the components of a unit vector and where the angle\n' \
-                             + 'is in degrees: {:s}'.format(s))
+            raise Exception('attribute "body_orientation" must have format "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees: {:s}'.format(s))
     else:
         raise Exception('attribute "format_of_body_orientation" must be "rpy", "quaternion", "matrix", or "axisangle": {:s}'.format(f))
+
 
 def get_camera_position(element):
     p = pl.get_string_attrib(element, 'camera_position', '[5, 2, 2]')
