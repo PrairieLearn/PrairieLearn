@@ -6,6 +6,7 @@
     <script src="/MathJax/MathJax.js?config=TeX-MML-AM_CHTML"></script>
     <script src="/javascripts/socket.io.js"></script>
     <script src="/javascripts/d3.min.js"></script>
+    <script src="/javascripts/lodash.min.js"></script>
     <script src="/localscripts/stacked_histogram.js"></script>
     <script src="/localscripts/histmini.js"></script>
     <script>
@@ -99,40 +100,6 @@
 
       <%- include('../partials/question', {question_context: 'instructor'}); %>
 
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
-          Num Attempts
-        </div>
-        <table class="table table-sm table-hover two-column-description">
-          <tbody>
-            <% if (question_attempts_histogram && question_attempts_before_giving_up_histogram) { %>
-              <tr>
-                <th> Num Attempts Histogram Exams </th>
-                <td>
-                  <%- include('../partials/attempts-histogram', {
-                    question_attempts_histogram: question_attempts_histogram,
-                    question_attempts_before_giving_up_histogram: question_attempts_before_giving_up_histogram,
-                    title: 'exams'
-                  }); %>
-              </td>
-              </tr>
-            <% } %>
-            <% if (question_attempts_histogram_hw && question_attempts_before_giving_up_histogram_hw) { %>
-              <tr>
-                <th> Num Attempts Histogram HW </th>
-                <td>
-                  <%- include('../partials/attempts-histogram', {
-                    question_attempts_histogram: question_attempts_histogram_hw,
-                    question_attempts_before_giving_up_histogram: question_attempts_before_giving_up_histogram_hw,
-                  title: 'hw'
-                  }); %>
-              </td>
-              </tr>
-              <% } %>
-          </tbody>
-        </table>
-      </div>
-
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
 
@@ -162,8 +129,8 @@
                   <%= row.course_title %>
               </td>
               <td style="width: 1%">
-                <a href="/pl/course_instance/<%= row.course_instance_id %>/instructor/assessment/<%= row.assessment_id %>/" class="btn btn-<%=
-                  row.color %> btn-xs" role="button"><%= row.label %></a>
+                <a href="/pl/course_instance/<%= row.course_instance_id %>/instructor/assessment/<%= row.assessment_id %>/" class="badge color-<%=
+                  row.color %> color-hover" role="button"><%= row.label %></a>
               </td>
               <td class="text-center">
                   <%= formatFloat(row.mean_question_score, 1) %>
