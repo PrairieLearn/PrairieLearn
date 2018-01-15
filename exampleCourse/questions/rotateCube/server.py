@@ -2,4 +2,4 @@ import random
 import numpy
 
 def generate(data):
-    pass
+    data['correct_answers']['a'] = [0, 45, 0]
