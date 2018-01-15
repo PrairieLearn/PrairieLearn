@@ -51,8 +51,8 @@ def render(element_html, element_index, data):
         format_of_display_orientation = pl.get_string_attrib(element, 'format_of_display_orientation', 'matrix')
         if format_of_display_orientation not in ['matrix', 'quaternion']:
             raise Exception('attribute "format_of_display_orientation" must be either "matrix" or "quaternion"')
-        show_display = pl.get_boolean_attrib(element, 'show_display', True),
-
+        show_display = pl.get_boolean_attrib(element, 'show_display', True)
+        
         # Restore pose of body and camera, if available - otherwise use values
         # from attributes (note that restored pose will also have camera_orientation,
         # which we currently ignore because the camera is always z up and looking
