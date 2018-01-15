@@ -15,19 +15,19 @@ def prepare(element_html, element_index, data):
     ]
     optional_attribs = [
         'file_directory',       # 'clientFilesCourse' or 'clientFilesQuestion'
-        'body_color',           # '0xe84a27' (default)
+        'body_color',           # '#e84a27' (default)
         'body_orientation',     # [x, y, z, w] or [roll, pitch, yaw] or rotation matrix (3x3 ndarray) or exponential coordinates [wx, wy, wz]
         'body_scale',           # s (float > 0)
         'camera_position',      # [x, y, z] - camera is z up and points at origin of space frame
-        'body_canmove',         # true or false
-        'camera_canmove',       # true or false
+        'body_canmove',         # true (default) or false
+        'camera_canmove',       # true (default) or false
         'format_of_body_orientation',       # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
-        'format_of_display_orientation',    # 'matrix' (default), 'quaternion', 'none'
-        'format_of_answer_orientation'      # 'none' (default), 'rpy', 'quaternion', 'matrix', 'axisangle'
+        'format_of_display_orientation',    # 'matrix' (default), 'quaternion'
+        'format_of_answer_orientation',     # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
+        'show_display',         # true (default) or false
+        'tol_degrees'           # 5 (default : float > 0)
     ]
     pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
-
-
 
 
 def render(element_html, element_index, data):
@@ -35,6 +35,7 @@ def render(element_html, element_index, data):
     answer_name = pl.get_string_attrib(element, 'answer_name')
 
     if data['panel'] == 'question':
+        uuid = pl.get_uuid()
 
         # Attributes
         file_url = get_file_url(element, data)    # uses file_name and file_directory
@@ -45,8 +46,9 @@ def render(element_html, element_index, data):
         body_canmove = pl.get_boolean_attrib(element, 'body_canmove', True)
         camera_canmove = pl.get_boolean_attrib(element, 'camera_canmove', True)
         format_of_display_orientation = pl.get_string_attrib(element, 'format_of_display_orientation', 'matrix')
-        if format_of_display_orientation not in ['matrix', 'quaternion', 'none']:
-            raise Exception('attribute "format_of_display_orientation" must be either "matrix", "quaternion", or "none"')
+        if format_of_display_orientation not in ['matrix', 'quaternion']:
+            raise Exception('attribute "format_of_display_orientation" must be either "matrix" or "quaternion"')
+        pl.get_boolean_attrib(element, 'show_display', True),
 
         # Restore pose of body and camera, if available - otherwise use values
         # from attributes (note that restored pose will also have camera_orientation,
@@ -59,26 +61,36 @@ def render(element_html, element_index, data):
         }
         pose = data['submitted_answers'].get(answer_name, pose_default)
 
+        options = {
+            'uuid': uuid,
+            'file_url': file_url,
+            'state': dict_to_b64(pose),
+            'scale': body_scale,
+            'body_canmove': body_canmove,
+            'camera_canmove': camera_canmove,
+            'format_of_display_orientation': format_of_display_orientation,
+            'body_color': body_color,
+            'show_display': show_display
+        }
+
         html_params = {
             'question': True,
-            'uuid': pl.get_uuid(),
+            'uuid': uuid,
             'answer_name': answer_name,
-            'file_url': file_url,
-            'state': dict_to_b64(pose),     # body_orientation and camera_position
-            'scale': json.dumps(body_scale),
-            'body_canmove': json.dumps(body_canmove),
-            'camera_canmove': json.dumps(camera_canmove),
             'show_bodybuttons': body_canmove,
             'show_toggle': body_canmove and camera_canmove,
-            'format_of_display_orientation': format_of_display_orientation,
-            'show_display': format_of_display_orientation != 'none',
+            'show_display': show_display,
             'default_is_python': True,
-            'body_color': body_color
+            'options': json.dumps(options)
         }
+        
         with open('pl_threejs.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'submission':
         parse_error = data['format_errors'].get(answer_name, None)
+        grade = print(data['partial_scores'].get(answer_name, None))
+
+
         html_params = {
             'submission': True,
             'parse_error': parse_error
@@ -96,13 +108,14 @@ def render(element_html, element_index, data):
 
     return html
 
+
 def parse(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answer_name')
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
-    if not a_sub:
+    if a_sub is None:
         data['format_errors'][name] = 'No submitted answer.'
         data['submitted_answers'][name] = None
         return
@@ -113,73 +126,89 @@ def parse(element_html, element_index, data):
     # Put it into data
     data['submitted_answers'][name] = a_sub
 
+
 def grade(element_html, element_index, data):
-    pass
+    element = lxml.html.fragment_fromstring(element_html)
+    answer_name = pl.get_string_attrib(element, 'answer_name')
 
-    # element = lxml.html.fragment_fromstring(element_html)
-    # name = pl.get_string_attrib(element, 'answer_name')
-    #
-    # # Get weight
-    # weight = pl.get_integer_attrib(element, 'weight', 1)
-    #
-    # # # Get true answer (if it does not exist, create no grade - leave it
-    # # # up to the question code)
-    # # a_tru = data['correct_answers'].get(name, None)
-    # # if a_tru is None:
-    # #     return
-    # a_tru = 23
-    #
-    # # Get submitted answer (if it does not exist, score is zero)
-    # a_sub = data['submitted_answers'].get(name, None)
-    # if a_sub is None:
-    #     data['partial_scores'][name] = {'score': 0, 'weight': weight}
-    #     return
-    #
-    # # Cast both submitted and true answers as np.float64, because...
-    # #
-    # #   If the method of comparison is relabs (i.e., using relative and
-    # #   absolute tolerance) then np.allclose is applied to check if the
-    # #   submitted and true answers are the same. If either answer is an
-    # #   integer outside the range of int64...
-    # #
-    # #       https://docs.scipy.org/doc/numpy-1.13.0/user/basics.types.html
-    # #
-    # #   ...then numpy throws this error:
-    # #
-    # #       TypeError: ufunc 'isfinite' not supported for the input types, and
-    # #       the inputs could not be safely coerced to any supported types
-    # #       according to the casting rule ''safe''
-    # #
-    # #   Casting as np.float64 avoids this error. This is reasonable in any case,
-    # #   because <pl_number_input> accepts double-precision floats, not ints.
-    # #
-    # a_sub = np.float64(a_sub)
-    # a_tru = np.float64(a_tru)
-    #
-    # correct = pl.is_correct_scalar_ra(a_sub, a_tru)
-    #
-    # # # Get method of comparison, with relabs as default
-    # # comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
-    #
-    # # # Compare submitted answer with true answer
-    # # if comparison == 'relabs':
-    # #     rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
-    # #     atol = pl.get_float_attrib(element, 'atol', 1e-8)
-    # #     correct = pl.is_correct_scalar_ra(a_sub, a_tru, rtol, atol)
-    # # elif comparison == 'sigfig':
-    # #     digits = pl.get_integer_attrib(element, 'digits', 2)
-    # #     correct = pl.is_correct_scalar_sf(a_sub, a_tru, digits)
-    # # elif comparison == 'decdig':
-    # #     digits = pl.get_integer_attrib(element, 'digits', 2)
-    # #     correct = pl.is_correct_scalar_dd(a_sub, a_tru, digits)
-    # # else:
-    # #     raise ValueError('method of comparison "%s" is not valid' % comparison)
-    #
-    # if correct:
-    #     data['partial_scores'][name] = {'score': 1, 'weight': weight}
-    # else:
-    #     data['partial_scores'][name] = {'score': 0, 'weight': weight}
+    # Get weight
+    weight = pl.get_integer_attrib(element, 'weight', 1)
 
+    # Get submitted answer (the "state")
+    state = data['submitted_answers'].get(answer_name, None)
+    if state is None:
+        # This should never happen! If it does, just return nothing.
+        return
+
+    # Get correct answer
+    a = data['correct_answers'].get(answer_name, None)
+    if a is None:
+        return
+
+    # Get format of correct answer
+    f = pl.get_string_attrib(element, 'format_of_answer_orientation', 'rpy')
+
+    # Convert submitted answer to Quaternion (first, roll [x,y,z,w] to [w,x,y,z])
+    q_sub = pyquaternion.Quaternion(np.roll(state['body_quaternion'], 1))
+
+    # Convert correct answer to Quaternion
+    if f == 'rpy':
+        try:
+            rpy = np.array(a, dtype=np.float64)
+            if rpy.shape == (3,):
+                qx = pyquaternion.Quaternion(axis=[1, 0, 0], degrees=rpy[0])
+                qy = pyquaternion.Quaternion(axis=[0, 1, 0], degrees=rpy[1])
+                qz = pyquaternion.Quaternion(axis=[0, 0, 1], degrees=rpy[2])
+                q_tru = qx * qy * qz
+            else:
+                raise ValueError()
+        except:
+            raise Exception('correct answer must be a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]"')
+    elif f == 'quaternion':
+        try:
+            q_tru = np.array(a, dtype=np.float64)
+            if (q.shape == (4,)) and np.allclose(np.linalg.norm(q), 1.0):
+                q_tru = pyquaternion.Quaternion(np.roll(q_tru, 1))
+            else:
+                raise ValueError()
+        except:
+            raise Exception('correct answer must be a unit quaternion with format "[x, y, z, w]"')
+    elif f == 'matrix':
+        try:
+            R = np.array(a, dtype=np.float64)
+            q_tru = pyquaternion.Quaternion(matrix=R)
+        except:
+            raise Exception('correct answer must be a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]"')
+    elif f == 'axisangle':
+        try:
+            q = np.array(json.loads(s), dtype=np.float64)
+            if (q.shape == (4,)):
+                axis = q[0:3]
+                angle = q[3]
+                if np.allclose(np.linalg.norm(axis), 1.0):
+                    return np.roll(pyquaternion.Quaternion(axis=axis, degrees=angle).elements, -1).tolist()
+                else:
+                    raise ValueError()
+            else:
+                raise ValueError()
+        except:
+            raise Exception('correct answer must be "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees')
+    else:
+        raise Exception('"format_of_answer_orientation" must be "rpy", "quaternion", "matrix", or "axisangle": {:s}'.format(f))
+
+    # Find smallest angle of rotation between submitted orientation and correct orientation
+    angle = np.abs((q_tru.inverse * q_sub).degrees)
+
+    # Get tolerance
+    tol = pl.get_float_attrib(element, 'tol_degrees', 5)
+    if (tol <= 0):
+        raise Exception('tolerance must be a positive real number (angle in degrees): {:g}'.format(tol))
+
+    # Check if angle is below tolerance
+    if (angle < tol):
+        data['partial_scores'][answer_name] = {'score': 1, 'weight': weight, 'feedback': angle}
+    else:
+        data['partial_scores'][answer_name] = {'score': 0, 'weight': weight, 'feedback': angle}
 
 def dict_to_b64(d):
     return base64.b64encode(json.dumps(d).encode('utf-8')).decode()

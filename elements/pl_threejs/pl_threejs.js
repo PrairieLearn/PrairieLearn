@@ -1,6 +1,9 @@
-function PLThreeJS(uuid, options) {
+function PLThreeJS(options) {
+
+    console.log(options);
 
     // parse options
+    var uuid = options.uuid;
     this.initialPose = JSON.parse(atob(options.state));
     this.scale = options.scale;
     this.bodyCanMove = options.body_canmove;

@@ -9,15 +9,7 @@ $(function(){
 
 <!-- create three.js element -->
 $(function() {
-    new PLThreeJS( "{{uuid}}", {
-        state: "{{{state}}}",
-        file_url: "{{file_url}}",
-        scale: {{scale}},
-        body_canmove: {{body_canmove}},
-        camera_canmove: {{camera_canmove}},
-        format_of_display_orientation: "{{format_of_display_orientation}}",
-        body_color: "{{body_color}}",
-    });
+    new PLThreeJS({{{options}}});
 });
 </script>
 
