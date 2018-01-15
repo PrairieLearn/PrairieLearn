@@ -1,3 +1,5 @@
+/* eslint-env browser,jquery */
+/* global THREE */
 function PLThreeJS(options) {
 
     // parse options
@@ -40,7 +42,7 @@ function PLThreeJS(options) {
     this.renderer.shadowMap.enabled = true;
     this.renderer.shadowMap.type = THREE.PCFSoftShadowMap; // anti-alias shadow
     this.container.append(this.renderer.domElement);
-    this.renderer.domElement.style.borderWidth = "medium"; // FIXME: fix flickering border on resize in Chrome
+    this.renderer.domElement.style.borderWidth = 'medium'; // FIXME: fix flickering border on resize in Chrome
 
     // camera
     this.camera = new THREE.PerspectiveCamera(75, this.aspectratio, 0.1, 1000);
@@ -74,7 +76,7 @@ function PLThreeJS(options) {
         var material = new THREE.MeshStandardMaterial({
             color: this.bodyColor,
             transparent: true,
-            opacity: 0.7
+            opacity: 0.7,
         });
         this.bodyObject = new THREE.Mesh(geometry.scale(this.scale, this.scale, this.scale), material);
         this.bodyObject.castShadow = true;
@@ -95,7 +97,7 @@ function PLThreeJS(options) {
         this.isDragging = false;
         this.previousMousePosition = {
             x: 0,
-            y: 0
+            y: 0,
         };
 
         // buttons to toggle between camera and body motion
@@ -137,13 +139,13 @@ function PLThreeJS(options) {
         // resize with window
         $(window).resize(PLThreeJS.prototype.onResize.bind(this));
     }).bind(this));
-};
+}
 
 PLThreeJS.prototype.render = function() {
     this.renderer.render(this.scene, this.camera);
     this.updateHiddenInput();
     this.updateDisplayOfOrientation();
-}
+};
 
 PLThreeJS.prototype.xPlus = function() {
     this.bodyGroup.rotateX(5*Math.PI/180);
@@ -267,7 +269,7 @@ PLThreeJS.prototype.makeFrame = function() {
         var geometry = new THREE.CylinderGeometry( 0.05, 0.05, 1 );
         var material = new THREE.MeshStandardMaterial({
             transparent: true,
-            opacity: 0.9
+            opacity: 0.9,
         });
         if ((whichAxis == 'x') || (whichAxis == 'X')) {
             geometry.rotateZ(Math.PI/2);
@@ -318,7 +320,7 @@ PLThreeJS.prototype.onmousemove = function(e) {
     if (!this.controls.enabled) {
         var deltaMove = {
             x: e.offsetX-this.previousMousePosition.x,
-            y: e.offsetY-this.previousMousePosition.y
+            y: e.offsetY-this.previousMousePosition.y,
         };
 
         if(this.isDragging) {
@@ -344,7 +346,7 @@ PLThreeJS.prototype.onmousemove = function(e) {
 
         this.previousMousePosition = {
             x: e.offsetX,
-            y: e.offsetY
+            y: e.offsetY,
         };
     }
 };
@@ -363,7 +365,7 @@ PLThreeJS.prototype.updateHiddenInput = function() {
         body_quaternion: this.bodyGroup.quaternion.toArray(),
         body_position: this.bodyGroup.position.toArray(),
         camera_quaternion: this.camera.quaternion.toArray(),
-        camera_position: this.camera.position.toArray()
+        camera_position: this.camera.position.toArray(),
     };
 
     this.hiddenInput.val(btoa(JSON.stringify(val)));
@@ -430,7 +432,7 @@ PLThreeJS.prototype.updateDisplayOfOrientation = function() {
         s += '# frame in the coordinates of the space frame.\n\n';
         s += 'import numpy as np\n\nR = np.array([';
         for (var i = 0; i < 3; i++) {
-            s += '[ '
+            s += '[ ';
             for (var j = 0; j < 3; j++) {
                 s += numToString(R[i + 4*j], 4, 7);
                 if (j < 2) {
@@ -446,11 +448,11 @@ PLThreeJS.prototype.updateDisplayOfOrientation = function() {
         return s;
     }
 
-    if (this.displayFormat == "matrix") {
+    if (this.displayFormat == 'matrix') {
         var R = this.bodyGroup.matrix.elements;
         this.matlabText.text(rotToMatlab(R));
         this.pythonText.text(rotToPython(R));
-    } else if (this.displayFormat == "quaternion") {
+    } else if (this.displayFormat == 'quaternion') {
         var q = this.bodyGroup.quaternion.toArray();
         this.matlabText.text(quatToMatlab(q));
         this.pythonText.text(quatToPython(q));
