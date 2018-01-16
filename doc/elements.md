@@ -291,3 +291,55 @@ Attribute | Type | Default | Description
 `answers_name` | string | — | Variable name to display score for.
 
 Display the partial score for a specific answer variable.
+
+## `pl_threejs` element
+
+```html
+<pl_threejs answer_name="a">
+    <pl_threejs_stl file_name="MAKE_Robot_V6.stl" frame="body" scale="0.1" />
+    <pl_threejs_stl file_name="MAKE_Robot_V6.stl" frame="body" scale="0.025" position="[-1,1,2]" orientation="[0,0,30]" />
+    <pl_threejs_txt frame="body" position="[-1,1,2.6]" orientation="[0,0,30]">mini-me</pl_threejs_txt>
+</pl_threejs>
+```
+
+This element displays a 3D scene with objects that the student can (optionally) rotate. It can be used only for output (e.g., as part of a question that asks for something else to be submitted). Or, it can be used for input (e.g., comparing a submitted orientation of the body-fixed objects to a correct orientation). Information about the current orientation can be hidden from the student and, if visible, can be displayed in a variety of formats, so the element can be used for many different types of questions.
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answer_name` | string | — | Variable name to store data in.
+`body_orientation` | list | special | Initial orientation of body. Defaults to zero orientation (body frame aligned with space frame). Interpretation depends on `body_pose_format`.
+`camera_position` | list | [5, 2, 2] | Initial position of body as `[x, y, z]`.
+`body_canmove` | boolean | true | If you can move the body in the UI.
+`camera_canmove` | boolean | true | If you can move the camera (i.e., change the view) in the UI.
+`body_pose_format` | string | rpy | Determines how `body_orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
+`answer_pose_format` | string | rpy | Determines how the orientation `data['correct_answer'][answer_name]` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
+`text_pose_format` | string | matrix | Determines how the orientation of the body is displayed as text. If `matrix` then 3x3 rotation matrix. If `quaternion` then `[x, y, z, w]`.
+`show_pose_in_question` | boolean | true | If the current orientation of the body is displayed in the question panel.
+`show_pose_in_correct_answer` | boolean | true | If the current orientation of the body is displayed in the correct answer panel.
+`show_pose_in_submitted_answer` | boolean | true | If the current orientation of the body is displayed in the submitted answer panel.
+`tol_degrees` | float | 5.0 | Angular error must be no more than this for the answer to be marked correct.
+`grade` | boolean | true | If the element will be graded, i.e., if it is being used to ask a question. If `grade` is `false`, then this element will never produce any html in the answer panel or in the submission panel.
+
+A `pl_threejs_stl` element inside a `pl_threejs` element allows you to add a mesh described by an `stl` file to the scene, and has these attributes:
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`file_name` | string | — | Name of `.stl` file.
+`file_directory` | string | clientFilesQuestion | Location of `.stl` file, either `clientFilesCourse` or `clientFilesQuestion`.
+`frame` | string | body | Which frame the object is fixed to, either `body` or `space`.
+`color` | color | special | Color of object as CSS string, defaults to `#e84a27` if body-fixed and to `#13294b` if space-fixed.
+`opacity` | float | special | Opacity of object, defaults to `0.7` if body-fixed and to `0.4` if space-fixed.
+`position` | list | [0, 0, 0] | Position of object as `[x, y, z]`.
+`orientation` | list | special | Orientation of object. Defaults to zero orientation. Interpretation depends on `format`.
+`format` | string | rpy | Determines how `orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
+
+A `pl_threejs_txt` element inside a `pl_threejs` element allows you to add whatever text appears between the `<pl_threejs_txt> ... </pl_threejs_txt>` tags as a mesh to the scene, and has these attributes:
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`frame` | string | body | Which frame the object is fixed to, either `body` or `space`.
+`color` | color | special | Color of object as CSS string, defaults to `#e84a27` if body-fixed and to `#13294b` if space-fixed.
+`opacity` | float | special | Opacity of object, defaults to `0.7` if body-fixed and to `0.4` if space-fixed.
+`position` | list | [0, 0, 0] | Position of object as `[x, y, z]`.
+`orientation` | list | special | Orientation of object. Defaults to zero orientation. Interpretation depends on `format`.
+`format` | string | rpy | Determines how `orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
+
+Note that a 3D scene is also created to show each submitted answer. This means that if there are many submitted answers, the page will load slowly.
