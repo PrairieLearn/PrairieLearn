@@ -44,7 +44,8 @@
                 {"id": "downloadFile",               "points": 2, "maxPoints": 10},
                 {"id": "customElement",              "points": 1, "maxPoints": 1},
                 {"id": "differentiatePolynomial",    "points": 2, "maxPoints": 10},
-                {"id": "functionValueFromPlot",      "points": 2, "maxPoints": 10}
+                {"id": "functionValueFromPlot",      "points": 2, "maxPoints": 10},
+                {"id": "rotateObject",               "points": 2, "maxPoints": 10}
             ]
         }
     ]

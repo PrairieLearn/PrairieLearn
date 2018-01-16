@@ -4,6 +4,7 @@ import numpy as np
 import uuid
 import sympy
 from python_helper_sympy import convert_string_to_sympy
+import re
 
 
 def to_json(v):
@@ -238,6 +239,24 @@ def get_float_attrib(element, name, *args):
         # handler because it gives an overly complex displayed error
         raise Exception('Attribute "%s" must be a number: %s' % (name, val))
     return float_val
+
+
+def get_color_attrib(element, name, *args):
+    """value = get_color_attrib(element, name, default)
+
+    Returns a 3-digit or 6-digit hex RGB string in CSS format (e.g., '#123'
+    or '#1a2b3c'), or the (optional) default value. If the default value is
+    not provided and the attribute is missing then an exception is thrown. If
+    the attribute is not a valid RGB string then an exception is thrown.
+    """
+    (val, is_default) = _get_attrib(element, name, *args)
+    if is_default:
+        return val
+    match = re.search(r'^#(?:[0-9a-fA-F]{1,2}){3}$', val)
+    if match:
+        return val
+    else:
+        raise Exception('Attribute "{:s}" must be a CSS-style RGB string: {:s}'.format(name, val))
 
 
 # This function assumes that A is either a floating-point number or a

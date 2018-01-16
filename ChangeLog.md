@@ -11,6 +11,8 @@
 
   * Add new Issues page style and flexible filtering (Nathan Walters).
 
+  * Add `pl_threejs` element (Tim Bretl).
+
   * Change sigfig and decdig method of comparison to reduce tolerance (Tim Bretl).
 
   * Change default relative tolerance from 1e-5 to 1e-2 (Tim Bretl).
