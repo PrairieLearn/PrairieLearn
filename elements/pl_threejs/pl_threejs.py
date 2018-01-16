@@ -43,7 +43,7 @@ def get_objects(element, data):
         # Type-specific check and get (stl)
         if is_stl:
             # Attributes
-            pl.check_attribs(child, required_attribs=['file_name'], optional_attribs=['file_directory', 'frame', 'color', 'position', 'orientation', 'format', 'scale'])
+            pl.check_attribs(child, required_attribs=['file_name'], optional_attribs=['file_directory', 'frame', 'color', 'position', 'orientation', 'format', 'scale', 'opacity'])
             # - file_name (and file_directory)
             file_url = get_file_url(child, data)
             # - type
@@ -57,7 +57,7 @@ def get_objects(element, data):
         # Type-specific check and get (txt)
         if is_txt:
             # Attributes
-            pl.check_attribs(child, required_attribs=[], optional_attribs=['frame', 'color', 'position', 'orientation', 'format', 'scale'])
+            pl.check_attribs(child, required_attribs=[], optional_attribs=['frame', 'color', 'position', 'orientation', 'format', 'scale', 'opacity'])
             # - text
             text = pl.inner_html(child)
             # - type
