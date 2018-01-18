@@ -182,7 +182,7 @@ function PLThreeJS(options) {
 
             // mouse control of body pose
             $(this.renderer.domElement).mousedown(PLThreeJS.prototype.onmousedown.bind(this));
-            $(document).mousemove(PLThreeJS.prototype.onmousemove.bind(this));
+            $(this.renderer.domElement).mousemove(PLThreeJS.prototype.onmousemove.bind(this));
             $(document).mouseup(PLThreeJS.prototype.onmouseup.bind(this));
 
             // buttons to rotate body about coordinate axes of body frame
@@ -239,7 +239,7 @@ function PLThreeJS(options) {
 PLThreeJS.prototype.render = function() {
     this.renderer.render(this.scene, this.camera);
     this.updateHiddenInput();
-    this.updateDisplayOfOrientation();
+    this.updateDisplayOfPose();
 };
 
 PLThreeJS.prototype.xPlus = function() {
@@ -640,5 +640,125 @@ PLThreeJS.prototype.updateDisplayOfOrientation = function() {
         var q = this.bodyGroup.quaternion.toArray();
         this.matlabText.text(quatToMatlab(q));
         this.pythonText.text(quatToPython(q));
+    }
+};
+
+PLThreeJS.prototype.updateDisplayOfPose = function() {
+    function numToString(n, decimals, digits) {
+        var s = n.toFixed(decimals);
+        s = ' '.repeat(digits - s.length) + s;
+        return s;
+    }
+
+    function posToMatlab(p) {
+        var s = '% The position of the body frame.\n';
+        s += 'p = [ ';
+        s += numToString(p.x, 4, 7) + ' ;\n      ';
+        s += numToString(p.y, 4, 7) + ' ;\n      ';
+        s += numToString(p.z, 4, 7) + ' ];';
+        return s;
+    }
+
+    function posToPython(p) {
+        var s = '# The position of the body frame.\n';
+        s += 'p = np.array([';
+        s += '[ ' + numToString(p.x, 4, 7) + ' ],\n              ';
+        s += '[ ' + numToString(p.y, 4, 7) + ' ],\n              ';
+        s += '[ ' + numToString(p.z, 4, 7) + ' ]])';
+        return s;
+    }
+
+    function quatToMatlab(q) {
+        var s = '% The orientation of the body frame as a quaternion [x, y, z, w].\n';
+        s += 'q = [ ';
+        for (var i = 0; i < 4; i++) {
+            s += numToString(q[i], 4, 7);
+            if (i < 3) {
+                s += ' ';
+            } else {
+                s += ' ];';
+            }
+        }
+        return s;
+    }
+
+    function quatToPython(q) {
+        var s = '# The orientation of the body frame as a quaternion [x, y, z, w].\n';
+        s += 'q = np.array([ ';
+        for (var i = 0; i < 4; i++) {
+            s += numToString(q[i], 4, 7);
+            if (i < 3) {
+                s += ', ';
+            } else {
+                s += ' ])';
+            }
+        }
+        return s;
+    }
+
+    function rotToMatlab(R) {
+        var s = '% The orientation of the body frame as a rotation matrix.\n';
+        s += 'R = [ ';
+        for (var i = 0; i < 3; i++) {
+            for (var j = 0; j < 3; j++) {
+                s += numToString(R[i + 4*j], 4, 7);
+                if (j < 2) {
+                    s += ' ';
+                }
+            }
+            if (i < 2) {
+                s += ' ;\n      ';
+            }
+        }
+        s += ' ];';
+        return s;
+    }
+
+    function rotToPython(R) {
+        var s = '# The orientation of the body frame as a rotation matrix.\n';
+        s += 'R = np.array([';
+        for (var i = 0; i < 3; i++) {
+            s += '[ ';
+            for (var j = 0; j < 3; j++) {
+                s += numToString(R[i + 4*j], 4, 7);
+                if (j < 2) {
+                    s += ', ';
+                }
+            }
+            s += ' ]';
+            if (i < 2) {
+                s += ',\n              ';
+            }
+        }
+        s += '])';
+        return s;
+    }
+
+    if (this.textPoseFormat == 'matrix') {
+        // preamble
+        var matlabText = '';
+        var pythonText = 'import numpy as np\n\n';
+        // position
+        matlabText += posToMatlab(this.bodyGroup.position) + '\n\n';
+        pythonText += posToPython(this.bodyGroup.position) + '\n\n';
+        // orientation
+        matlabText += rotToMatlab(this.bodyGroup.matrix.elements);
+        pythonText += rotToPython(this.bodyGroup.matrix.elements);
+        // result
+        this.matlabText.text(matlabText);
+        this.pythonText.text(pythonText);
+    } else if (this.textPoseFormat == 'quaternion') {
+        // preamble
+        var matlabText = '';
+        var pythonText = 'import numpy as np\n\n';
+        // position
+        matlabText += posToMatlab(this.bodyGroup.position) + '\n\n';
+        pythonText += posToPython(this.bodyGroup.position) + '\n\n';
+        // orientation
+        matlabText += quatToMatlab(this.bodyGroup.quaternion.toArray());
+        pythonText += quatToPython(this.bodyGroup.quaternion.toArray());
+        // result
+        this.matlabText.text(matlabText);
+        this.pythonText.text(pythonText);
     }
 };
