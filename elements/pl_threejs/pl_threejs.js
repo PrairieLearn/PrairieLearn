@@ -733,6 +733,44 @@ PLThreeJS.prototype.updateDisplayOfPose = function() {
         s += '])';
         return s;
     }
+    
+    function homToMatlab(R) {
+        var s = '% The pose of the body frame as a homogeneous transformation matrix.\n';
+        s += 'T = [ ';
+        for (var i = 0; i < 4; i++) {
+            for (var j = 0; j < 4; j++) {
+                s += numToString(R[i + 4*j], 4, 7);
+                if (j < 3) {
+                    s += ' ';
+                }
+            }
+            if (i < 3) {
+                s += ' ;\n      ';
+            }
+        }
+        s += ' ];';
+        return s;
+    }
+
+    function homToPython(R) {
+        var s = '# The pose of the body frame as a homogeneous transformation matrix.\n';
+        s += 'T = np.array([';
+        for (var i = 0; i < 4; i++) {
+            s += '[ ';
+            for (var j = 0; j < 4; j++) {
+                s += numToString(R[i + 4*j], 4, 7);
+                if (j < 3) {
+                    s += ', ';
+                }
+            }
+            s += ' ]';
+            if (i < 3) {
+                s += ',\n              ';
+            }
+        }
+        s += '])';
+        return s;
+    }
 
     if (this.textPoseFormat == 'matrix') {
         // preamble
@@ -757,6 +795,16 @@ PLThreeJS.prototype.updateDisplayOfPose = function() {
         // orientation
         matlabText += quatToMatlab(this.bodyGroup.quaternion.toArray());
         pythonText += quatToPython(this.bodyGroup.quaternion.toArray());
+        // result
+        this.matlabText.text(matlabText);
+        this.pythonText.text(pythonText);
+    } else if (this.textPoseFormat == 'homogeneous') {
+        // preamble
+        var matlabText = '';
+        var pythonText = 'import numpy as np\n\n';
+        // both position and orientation
+        matlabText += homToMatlab(this.bodyGroup.matrix.elements);
+        pythonText += homToPython(this.bodyGroup.matrix.elements);
         // result
         this.matlabText.text(matlabText);
         this.pythonText.text(pythonText);

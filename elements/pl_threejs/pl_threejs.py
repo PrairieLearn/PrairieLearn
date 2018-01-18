@@ -22,7 +22,7 @@ def prepare(element_html, element_index, data):
         'camera_canmove',       # true (default) or false
         'body_pose_format',       # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
         'answer_pose_format',     # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
-        'text_pose_format',    # 'matrix' (default), 'quaternion'
+        'text_pose_format',    # 'matrix' (default), 'quaternion', 'homogeneous'
         'show_pose_in_question',            # true (default) or false
         'show_pose_in_correct_answer',      # true (default) or false
         'show_pose_in_submitted_answer',    # true (default) or false
@@ -126,8 +126,8 @@ def render(element_html, element_index, data):
     body_canrotate = pl.get_boolean_attrib(element, 'body_canrotate', True)
     camera_canmove = pl.get_boolean_attrib(element, 'camera_canmove', True)
     text_pose_format = pl.get_string_attrib(element, 'text_pose_format', 'matrix')
-    if text_pose_format not in ['matrix', 'quaternion']:
-        raise Exception('attribute "text_pose_format" must be either "matrix" or "quaternion"')
+    if text_pose_format not in ['matrix', 'quaternion', 'homogeneous']:
+        raise Exception('attribute "text_pose_format" must be either "matrix", "quaternion", or homogeneous')
     objects = get_objects(element, data)
 
     if data['panel'] == 'question':
@@ -277,29 +277,6 @@ def render(element_html, element_index, data):
         raise Exception('Invalid panel type: %s' % data['panel'])
 
     return html
-
-
-def convert_quaternion_to_display(f, q, digits=4):
-    if f == 'matrix':
-        R = q.rotation_matrix
-        matlab_data = pl.numpy_to_matlab(R, ndigits=digits)
-        python_data = str(R.round(digits).tolist())
-        data_format = 'rotation matrix'
-        data_label = 'R'
-    elif f == 'quaternion':
-        q = np.roll(q.elements, -1).tolist()
-        matlab_data = pl.numpy_to_matlab(np.array([q]), ndigits=digits)
-        python_data = str(np.array(q).round(digits).tolist())
-        data_format = 'quaternion [x,y,z,w]'
-        data_label = 'q'
-    else:
-        raise Exception('attribute "text_pose_format" must be either "matrix" or "quaternion": {:s}'.format(f))
-    return {
-        'matlab_data': matlab_data,
-        'python_data': python_data,
-        'data_format': data_format,
-        'data_label': data_label
-    }
 
 
 def parse(element_html, element_index, data):
