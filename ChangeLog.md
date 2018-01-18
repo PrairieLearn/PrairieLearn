@@ -35,6 +35,8 @@
 
   * Fix styling of file upload element (Nathan Walters).
 
+  * Only run changelog verifier on pull request builds (Nathan Walters).
+
 * __2.11.0__ - 2017-12-29
 
   * Add support for partial credit in Homeworks (Tim Bretl).
