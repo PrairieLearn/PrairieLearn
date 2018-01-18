@@ -17,7 +17,7 @@ $(function() {
     <div class="card mb-4">
         <div class="card-body">
             <span>
-                The angular error must be no greater than <strong>{{angle}} degrees</strong> in order for your answer to be marked correct. This error is the smallest angle through which the submitted orientation would have to rotate in order to be aligned with the correct orientation.
+                The error in position must be no greater than <strong>{{tol_translation}} units</strong> and error in orientation must be no greater than <strong>{{tol_rotation}} degrees</strong> in order for your answer to be marked correct. The error in orientation is the smallest angle through which the submitted orientation would have to rotate in order to be aligned with the correct orientation.
                 {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
                 {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
                 {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
@@ -30,7 +30,7 @@ $(function() {
     <div class="card mb-4">
         <div class="card-body">
             <span>
-                The angular error is <strong>{{angle}} degrees</strong>. This error is the smallest angle through which the submitted orientation would have to rotate in order to be aligned with the correct orientation.
+                The error in position is <strong>{{error_in_translation}} units</strong> and the error in orientation is <strong>{{error_in_rotation}} degrees</strong>. The error in orientation is the smallest angle through which the submitted orientation would have to rotate in order to be aligned with the correct orientation.
                 {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
                 {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
                 {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
@@ -129,57 +129,3 @@ $(function() {
     </div>
     {{/show_pose}}
 </div>
-
-
-{{#noshow}}
-<script>
-<!-- init copy button -->
-$(function(){
-    PrairieUtil.initCopyButton('#pl-threejs-output-{{uuid}} .copy-button');
-});
-</script>
-<div id="pl-threejs-output-{{uuid}}" class="card mb-4">
-    <div class="card-header">
-        <ul class="nav nav-tabs card-header-tabs" role="tablist">
-            <li class="nav-item" role="presentation"><a class="nav-link{{#default_is_matlab}} active{{/default_is_matlab}}" href="#matlab-{{uuid}}" aria-controls="matlab-{{uuid}}" role="tab" data-toggle="pill">matlab</a></li>
-            <li class="nav-item" role="presentation"><a class="nav-link{{#default_is_python}} active{{/default_is_python}}" href="#python-{{uuid}}" aria-controls="python-{{uuid}}" role="tab" data-toggle="pill">python</a></li>
-            <li class="nav-item" role="presentation"></li>
-        </ul>
-    </div>
-    <div class="card-body">
-        <div class="tab-content">
-            <div role="tabpanel" class="tab-pane {{#default_is_matlab}}active{{/default_is_matlab}}" id="matlab-{{uuid}}">
-
-                <pre class="bg-dark text-white rounded p-2" id="matlab-data-{{uuid}}">
-% The {{data_format}} describing the orientation of the body
-% frame in the coordinates of the space frame.
-
-{{data_label}} = {{matlab_data}};</pre>
-
-                <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#matlab-data-{{uuid}}">
-                    copy this text
-                </button>
-            </div>
-            <div role="tabpanel" class="tab-pane {{#default_is_python}}active{{/default_is_python}}" id="python-{{uuid}}">
-
-                <pre class="bg-dark text-white rounded p-2" id="python-data-{{uuid}}">
-# The {{data_format}} describing the orientation of the body
-# frame in the coordinates of the space frame.
-
-{{data_label}} = {{python_data}}</pre>
-
-                <button type="button" class="btn btn-secondary btn-sm copy-button" data-clipboard-target="#python-data-{{uuid}}">
-                    copy this text
-                </button>
-            </div>
-        </div>
-    </div>
-    {{#show_footer}}
-    <div class="card-footer">
-        {{#correct}}<span>Angle error is {{angle}} degrees.</span>&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-        {{#partial}}<span>Angle error is {{angle}} degrees.</span>&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-        {{#incorrect}}<span>Angle error is {{angle}} degrees.</span>&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
-    </div>
-    {{/show_footer}}
-</div>
-{{/noshow}}
