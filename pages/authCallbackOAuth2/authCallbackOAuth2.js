@@ -32,7 +32,7 @@ router.get('/', function(req, res, next) {
         if (ERR(err, next)) return;
         try {
             logger.verbose('Got Google auth tokens: ' + JSON.stringify(tokens));
-            oauth2Client.setCredentials(tokens);
+            oauth2Client.credentials = tokens;
             // tokens.id_token is a JWT (JSON Web Token)
             // http://openid.net/specs/draft-jones-json-web-token-07.html
             // A JWT has the form HEADER.PAYLOAD.SIGNATURE
