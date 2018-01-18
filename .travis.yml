@@ -12,7 +12,7 @@ notifications:
 before_install:
   - docker build -t pltest .
 script:
-  - sh tools/verify-changelog.sh 
+  - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then sh ./tools/verify-changelog.sh; fi'
   - docker run -it --name=npm_test_container pltest /PrairieLearn/docker/npm_test.sh
   - docker cp npm_test_container:/PrairieLearn/coverage .
   - docker run -it pltest /PrairieLearn/docker/lint_js.sh
