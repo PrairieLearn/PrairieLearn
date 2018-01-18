@@ -15,17 +15,20 @@ def prepare(element_html, element_index, data):
         'answer_name',          # key for 'submitted_answers' and 'true_answers'
     ]
     optional_attribs = [
+        'body_position',        # [x, y, z]
         'body_orientation',     # [x, y, z, w] or [roll, pitch, yaw] or rotation matrix (3x3 ndarray) or exponential coordinates [wx, wy, wz]
         'camera_position',      # [x, y, z] - camera is z up and points at origin of space frame
-        'body_canmove',         # true (default) or false
+        'body_cantranslate',         # true (default) or false
+        'body_canrotate',         # true (default) or false
         'camera_canmove',       # true (default) or false
         'body_pose_format',       # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
         'answer_pose_format',     # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
-        'text_pose_format',    # 'matrix' (default), 'quaternion'
+        'text_pose_format',    # 'matrix' (default), 'quaternion', 'homogeneous'
         'show_pose_in_question',            # true (default) or false
         'show_pose_in_correct_answer',      # true (default) or false
         'show_pose_in_submitted_answer',    # true (default) or false
-        'tol_degrees',          # 5 (default : float > 0)
+        'tol_translation',      # 0.5 (default : float > 0)
+        'tol_rotation',          # 5 (default : float > 0)
         'grade'                 # true (default) or false
     ]
     pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
@@ -119,13 +122,15 @@ def render(element_html, element_index, data):
 
     uuid = pl.get_uuid()
 
+    body_position = get_position(element, 'body_position', default=[0, 0, 0])
     body_orientation = get_orientation(element, 'body_orientation', 'body_pose_format')
-    camera_position = get_camera_position(element)
-    body_canmove = pl.get_boolean_attrib(element, 'body_canmove', True)
+    camera_position = get_position(element, 'camera_position', default=[5, 2, 2], must_be_nonzero=True)
+    body_cantranslate = pl.get_boolean_attrib(element, 'body_cantranslate', True)
+    body_canrotate = pl.get_boolean_attrib(element, 'body_canrotate', True)
     camera_canmove = pl.get_boolean_attrib(element, 'camera_canmove', True)
     text_pose_format = pl.get_string_attrib(element, 'text_pose_format', 'matrix')
-    if text_pose_format not in ['matrix', 'quaternion']:
-        raise Exception('attribute "text_pose_format" must be either "matrix" or "quaternion"')
+    if text_pose_format not in ['matrix', 'quaternion', 'homogeneous']:
+        raise Exception('attribute "text_pose_format" must be either "matrix", "quaternion", or homogeneous')
     objects = get_objects(element, data)
 
     if data['panel'] == 'question':
@@ -138,7 +143,7 @@ def render(element_html, element_index, data):
         # at the origin of the space frame).
         pose_default = {
             'body_quaternion': body_orientation,
-            'body_position': [0, 0, 0],
+            'body_position': body_position,
             'camera_position': camera_position
         }
         pose = data['submitted_answers'].get(answer_name, pose_default)
@@ -148,7 +153,8 @@ def render(element_html, element_index, data):
             'uuid': uuid,
             'pose': dict_to_b64(pose),
             'pose_default': dict_to_b64(pose_default),
-            'body_canmove': body_canmove,
+            'body_cantranslate': body_cantranslate,
+            'body_canrotate': body_canrotate,
             'camera_canmove': camera_canmove,
             'text_pose_format': text_pose_format,
             'objects': objects
@@ -159,12 +165,13 @@ def render(element_html, element_index, data):
             'question': True,
             'uuid': uuid,
             'answer_name': answer_name,
-            'show_bodybuttons': body_canmove,
-            'show_toggle': body_canmove and camera_canmove,
-            'show_reset': body_canmove or camera_canmove,
+            'show_bodybuttons': body_cantranslate or body_canrotate,
+            'show_toggle': body_cantranslate and body_canrotate,
+            'show_reset': body_cantranslate or body_canrotate or camera_canmove,
             'show_pose': show_pose,
             'show_instructions': will_be_graded,
-            'angle': '{:.1f}'.format(pl.get_float_attrib(element, 'tol_degrees', 5)),
+            'tol_translation': '{:.2f}'.format(pl.get_float_attrib(element, 'tol_translation', 0.5)),
+            'tol_rotation': '{:.1f}'.format(pl.get_float_attrib(element, 'tol_rotation', 5)),
             'default_is_python': True,
             'options': json.dumps(options)
         }
@@ -185,7 +192,8 @@ def render(element_html, element_index, data):
         options = {
             'uuid': uuid,
             'pose': dict_to_b64(pose),
-            'body_canmove': False,
+            'body_cantranslate': False,
+            'body_canrotate': False,
             'camera_canmove': False,
             'text_pose_format': text_pose_format,
             'objects': objects
@@ -205,7 +213,8 @@ def render(element_html, element_index, data):
 
         partial_score = data['partial_scores'].get(answer_name, None)
         if partial_score is not None:
-            html_params['angle'] = str(np.abs(np.round(partial_score['feedback'], 1)))
+            html_params['error_in_translation'] = str(np.abs(np.round(partial_score['feedback']['error_in_translation'], 2)))
+            html_params['error_in_rotation'] = str(np.abs(np.round(partial_score['feedback']['error_in_rotation'], 1)))
             html_params['show_feedback'] = True
             score = partial_score.get('score', None)
             if score is not None:
@@ -239,7 +248,8 @@ def render(element_html, element_index, data):
 
         # Convert correct answer to Quaternion, then to [x, y, z, w]
         f = pl.get_string_attrib(element, 'answer_pose_format', 'rpy')
-        q = np.roll(convert_correct_answer_to_quaternion(f, a).elements, -1).tolist()
+        p, q = parse_correct_answer(f, a)
+        q = np.roll(q.elements, -1).tolist()
 
         # Replace body pose with correct answer
         pose['body_quaternion'] = q
@@ -248,7 +258,8 @@ def render(element_html, element_index, data):
         options = {
             'uuid': uuid,
             'pose': dict_to_b64(pose),
-            'body_canmove': False,
+            'body_cantranslate': False,
+            'body_canrotate': False,
             'camera_canmove': False,
             'text_pose_format': text_pose_format,
             'objects': objects
@@ -272,29 +283,6 @@ def render(element_html, element_index, data):
         raise Exception('Invalid panel type: %s' % data['panel'])
 
     return html
-
-
-def convert_quaternion_to_display(f, q, digits=4):
-    if f == 'matrix':
-        R = q.rotation_matrix
-        matlab_data = pl.numpy_to_matlab(R, ndigits=digits)
-        python_data = str(R.round(digits).tolist())
-        data_format = 'rotation matrix'
-        data_label = 'R'
-    elif f == 'quaternion':
-        q = np.roll(q.elements, -1).tolist()
-        matlab_data = pl.numpy_to_matlab(np.array([q]), ndigits=digits)
-        python_data = str(np.array(q).round(digits).tolist())
-        data_format = 'quaternion [x,y,z,w]'
-        data_label = 'q'
-    else:
-        raise Exception('attribute "text_pose_format" must be either "matrix" or "quaternion": {:s}'.format(f))
-    return {
-        'matlab_data': matlab_data,
-        'python_data': python_data,
-        'data_format': data_format,
-        'data_label': data_label
-    }
 
 
 def parse(element_html, element_index, data):
@@ -338,74 +326,98 @@ def grade(element_html, element_index, data):
     if a is None:
         return
 
+    # Get submitted position (as np.array([x, y, z]))
+    p_sub = np.array(state['body_position'])
+
+    # Get submitted orientation (as Quaternion - first, roll [x,y,z,w] to [w,x,y,z])
+    q_sub = pyquaternion.Quaternion(np.roll(state['body_quaternion'], 1))
+
     # Get format of correct answer
     f = pl.get_string_attrib(element, 'answer_pose_format', 'rpy')
 
-    # Convert submitted answer to Quaternion (first, roll [x,y,z,w] to [w,x,y,z])
-    q_sub = pyquaternion.Quaternion(np.roll(state['body_quaternion'], 1))
+    # Get correct position (as np.array([x, y, z])) and orientation (as Quaternion)
+    p_tru, q_tru = parse_correct_answer(f, a)
 
-    # Convert correct answer to Quaternion
-    q_tru = convert_correct_answer_to_quaternion(f, a)
+    # Find distance between submitted position and correct position
+    error_in_translation = np.linalg.norm(p_sub - p_tru)
 
     # Find smallest angle of rotation between submitted orientation and correct orientation
-    angle = np.abs((q_tru.inverse * q_sub).degrees)
+    error_in_rotation = np.abs((q_tru.inverse * q_sub).degrees)
 
-    # Get tolerance
-    tol = pl.get_float_attrib(element, 'tol_degrees', 5)
-    if (tol <= 0):
-        raise Exception('tolerance must be a positive real number (angle in degrees): {:g}'.format(tol))
+    # Get tolerances
+    tol_translation = pl.get_float_attrib(element, 'tol_translation', 0.1)
+    tol_rotation = pl.get_float_attrib(element, 'tol_rotation', 5)
+    if (tol_translation <= 0):
+        raise Exception('tol_translation must be a positive real number: {:g}'.format(tol_translation))
+    if (tol_rotation <= 0):
+        raise Exception('tol_rotation must be a positive real number (angle in degrees): {:g}'.format(tol_rotation))
 
     # Check if angle is no greater than tolerance
-    if (angle <= tol):
-        data['partial_scores'][answer_name] = {'score': 1, 'weight': weight, 'feedback': angle}
+    if ((error_in_rotation <= tol_rotation) and (error_in_translation <= tol_translation)):
+        data['partial_scores'][answer_name] = {'score': 1, 'weight': weight, 'feedback': {'error_in_rotation': error_in_rotation, 'error_in_translation': error_in_translation}}
     else:
-        data['partial_scores'][answer_name] = {'score': 0, 'weight': weight, 'feedback': angle}
+        data['partial_scores'][answer_name] = {'score': 0, 'weight': weight, 'feedback': {'error_in_rotation': error_in_rotation, 'error_in_translation': error_in_translation}}
 
 
-def convert_correct_answer_to_quaternion(f, a):
-    if f == 'rpy':
+def parse_correct_answer(f, a):
+    if f == 'homogeneous':
         try:
-            rpy = np.array(a, dtype=np.float64)
+            T = np.array(a, dtype=np.float64)
+            if T.shape == (4, 4):
+                R = T[0:3, 0:3]
+                p = T[0:3, 3:4]
+                return np.reshape(p, (3,)), pyquaternion.Quaternion(matrix=R)
+            else:
+                raise ValueError()
+        except:
+            raise Exception('correct answer must be a 4x4 homogeneous transformation matrix with format "[[...], [...], [...], [...]]"')
+    elif f == 'rpy':
+        try:
+            p = np.reshape(np.array(a[0], dtype=np.float64), (3,))
+            rpy = np.array(a[1], dtype=np.float64)
             if rpy.shape == (3,):
                 qx = pyquaternion.Quaternion(axis=[1, 0, 0], degrees=rpy[0])
                 qy = pyquaternion.Quaternion(axis=[0, 1, 0], degrees=rpy[1])
                 qz = pyquaternion.Quaternion(axis=[0, 0, 1], degrees=rpy[2])
-                return qx * qy * qz
+                return np.reshape(p, (3,)), qx * qy * qz
             else:
                 raise ValueError()
         except:
-            raise Exception('correct answer must be a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]"')
+            raise Exception('correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]"')
     elif f == 'quaternion':
         try:
-            q = np.array(a, dtype=np.float64)
+            p = np.reshape(np.array(a[0], dtype=np.float64), (3,))
+            q = np.array(a[1], dtype=np.float64)
             if (q.shape == (4,)) and np.allclose(np.linalg.norm(q), 1.0):
-                return pyquaternion.Quaternion(np.roll(q, 1))
+                return np.reshape(p, (3,)), pyquaternion.Quaternion(np.roll(q, 1))
             else:
                 raise ValueError()
         except:
-            raise Exception('correct answer must be a unit quaternion with format "[x, y, z, w]"')
+            raise Exception('correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is a unit quaternion with format "[x, y, z, w]"')
     elif f == 'matrix':
         try:
-            R = np.array(a, dtype=np.float64)
-            return pyquaternion.Quaternion(matrix=R)
+            p = np.reshape(np.array(a[0], dtype=np.float64), (3,))
+            R = np.array(a[1], dtype=np.float64)
+            return np.reshape(p, (3,)), pyquaternion.Quaternion(matrix=R)
         except:
-            raise Exception('correct answer must be a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]"')
+            raise Exception('correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]"')
     elif f == 'axisangle':
         try:
-            q = np.array(json.loads(a), dtype=np.float64)
+            p = np.reshape(np.array(a[0], dtype=np.float64), (3,))
+            q = np.array(json.loads(a[1]), dtype=np.float64)
             if (q.shape == (4,)):
                 axis = q[0:3]
                 angle = q[3]
                 if np.allclose(np.linalg.norm(axis), 1.0):
-                    return np.roll(pyquaternion.Quaternion(axis=axis, degrees=angle).elements, -1).tolist()
+                    return np.reshape(p, (3,)), np.roll(pyquaternion.Quaternion(axis=axis, degrees=angle).elements, -1).tolist()
                 else:
                     raise ValueError()
             else:
                 raise ValueError()
         except:
-            raise Exception('correct answer must be "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees')
+            raise Exception('correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees')
     else:
-        raise Exception('"answer_pose_format" must be "rpy", "quaternion", "matrix", or "axisangle": {:s}'.format(f))
+        raise Exception('"answer_pose_format" must be "rpy", "quaternion", "matrix", "axisangle", or "homogeneous": {:s}'.format(f))
 
 
 def dict_to_b64(d):
@@ -488,13 +500,18 @@ def get_orientation(element, name_orientation, name_format):
         raise Exception('attribute "{:s}" must be "rpy", "quaternion", "matrix", or "axisangle": {:s}'.format(name_format, f))
 
 
-def get_camera_position(element):
-    p = pl.get_string_attrib(element, 'camera_position', '[5, 2, 2]')
+def get_position(element, name_position, default=[0, 0, 0], must_be_nonzero=False):
+    s = pl.get_string_attrib(element, name_position, None)
+    if s is None:
+        return default
     try:
-        p_arr = np.array(json.loads(p), dtype=np.float64)
-        if (p_arr.shape == (3,)) and not np.allclose(p_arr, np.array([0, 0, 0])):
-            return p_arr.tolist()
+        p = np.array(json.loads(s), dtype=np.float64)
+        if p.shape == (3,):
+            if must_be_nonzero and np.allclose(p, np.array([0, 0, 0])):
+                raise ValueError('attribute "{:s}" must be non-zero'.format(name_position))
+            else:
+                return p.tolist()
         else:
             raise ValueError()
     except:
-        raise Exception('attribute "camera_position" must have format [x, y, z] and must be non-zero: {:s}'.format(p))
+        raise Exception('attribute "{:s}" must have format "[x, y, z]": {:s}'.format(name_position, s))

@@ -302,22 +302,25 @@ Display the partial score for a specific answer variable.
 </pl_threejs>
 ```
 
-This element displays a 3D scene with objects that the student can (optionally) rotate. It can be used only for output (e.g., as part of a question that asks for something else to be submitted). Or, it can be used for input (e.g., comparing a submitted orientation of the body-fixed objects to a correct orientation). Information about the current orientation can be hidden from the student and, if visible, can be displayed in a variety of formats, so the element can be used for many different types of questions.
+This element displays a 3D scene with objects that the student can (optionally) translate and/or rotate. It can be used only for output (e.g., as part of a question that asks for something else to be submitted). Or, it can be used for input (e.g., comparing a submitted pose of the body-fixed objects to a correct orientation). Information about the current pose can be hidden from the student and, if visible, can be displayed in a variety of formats, so the element can be used for many different types of questions.
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `answer_name` | string | — | Variable name to store data in.
+`body_position` | list | [0, 0, 0] | Initial position of body as `[x, y, z]`.
 `body_orientation` | list | special | Initial orientation of body. Defaults to zero orientation (body frame aligned with space frame). Interpretation depends on `body_pose_format`.
-`camera_position` | list | [5, 2, 2] | Initial position of body as `[x, y, z]`.
-`body_canmove` | boolean | true | If you can move the body in the UI.
+`camera_position` | list | [5, 2, 2] | Initial position of camera as `[x, y, z]`.
+`body_cantranslate` | boolean | true | If you can translate the body in the UI.
+`body_canrotate` | boolean | true | If you can rotate the body in the UI.
 `camera_canmove` | boolean | true | If you can move the camera (i.e., change the view) in the UI.
 `body_pose_format` | string | rpy | Determines how `body_orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
-`answer_pose_format` | string | rpy | Determines how the orientation `data['correct_answer'][answer_name]` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
-`text_pose_format` | string | matrix | Determines how the orientation of the body is displayed as text. If `matrix` then 3x3 rotation matrix. If `quaternion` then `[x, y, z, w]`.
-`show_pose_in_question` | boolean | true | If the current orientation of the body is displayed in the question panel.
-`show_pose_in_correct_answer` | boolean | true | If the current orientation of the body is displayed in the correct answer panel.
-`show_pose_in_submitted_answer` | boolean | true | If the current orientation of the body is displayed in the submitted answer panel.
-`tol_degrees` | float | 5.0 | Angular error must be no more than this for the answer to be marked correct.
+`answer_pose_format` | string | rpy | Determines how the answer `data['correct_answer'][answer_name]` is interpreted. If `homogeneous`, then the answer must be a 4x4 homogeneous transformation matrix `[[...], [...], [...], [...]]`. Otherwise, the answer must be a list with two elements. The first element must describe position as `[x, y, z]`. The second element must describe orientation, interpreted based on `answer_pose_format`. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
+`text_pose_format` | string | matrix | Determines how the pose of the body is displayed as text. If `matrix` then position is `[x, y, z]` and orientation is a 3x3 rotation matrix. If `quaternion` then position is `[x, y, z]` and orientation is `[x, y, z, w]`. If `homogeneous` then pose is a 4x4 homogeneous transformation matrix.
+`show_pose_in_question` | boolean | true | If the current pose of the body is displayed in the question panel.
+`show_pose_in_correct_answer` | boolean | true | If the current pose of the body is displayed in the correct answer panel.
+`show_pose_in_submitted_answer` | boolean | true | If the current pose of the body is displayed in the submitted answer panel.
+`tol_position` | float | 0.5 | Error in position must be no more than this for the answer to be marked correct.
+`tol_rotation` | float | 5.0 | Error in rotation must be no more than this for the answer to be marked correct.
 `grade` | boolean | true | If the element will be graded, i.e., if it is being used to ask a question. If `grade` is `false`, then this element will never produce any html in the answer panel or in the submission panel.
 
 A `pl_threejs_stl` element inside a `pl_threejs` element allows you to add a mesh described by an `stl` file to the scene, and has these attributes:
