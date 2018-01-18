@@ -17,7 +17,8 @@ def prepare(element_html, element_index, data):
     optional_attribs = [
         'body_orientation',     # [x, y, z, w] or [roll, pitch, yaw] or rotation matrix (3x3 ndarray) or exponential coordinates [wx, wy, wz]
         'camera_position',      # [x, y, z] - camera is z up and points at origin of space frame
-        'body_canmove',         # true (default) or false
+        'body_cantranslate',         # true (default) or false
+        'body_canrotate',         # true (default) or false
         'camera_canmove',       # true (default) or false
         'body_pose_format',       # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
         'answer_pose_format',     # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
@@ -121,7 +122,8 @@ def render(element_html, element_index, data):
 
     body_orientation = get_orientation(element, 'body_orientation', 'body_pose_format')
     camera_position = get_camera_position(element)
-    body_canmove = pl.get_boolean_attrib(element, 'body_canmove', True)
+    body_cantranslate = pl.get_boolean_attrib(element, 'body_cantranslate', True)
+    body_canrotate = pl.get_boolean_attrib(element, 'body_canrotate', True)
     camera_canmove = pl.get_boolean_attrib(element, 'camera_canmove', True)
     text_pose_format = pl.get_string_attrib(element, 'text_pose_format', 'matrix')
     if text_pose_format not in ['matrix', 'quaternion']:
@@ -148,7 +150,8 @@ def render(element_html, element_index, data):
             'uuid': uuid,
             'pose': dict_to_b64(pose),
             'pose_default': dict_to_b64(pose_default),
-            'body_canmove': body_canmove,
+            'body_cantranslate': body_cantranslate,
+            'body_canrotate': body_canrotate,
             'camera_canmove': camera_canmove,
             'text_pose_format': text_pose_format,
             'objects': objects
@@ -159,9 +162,9 @@ def render(element_html, element_index, data):
             'question': True,
             'uuid': uuid,
             'answer_name': answer_name,
-            'show_bodybuttons': body_canmove,
-            'show_toggle': body_canmove and camera_canmove,
-            'show_reset': body_canmove or camera_canmove,
+            'show_bodybuttons': body_cantranslate or body_canrotate,
+            'show_toggle': body_cantranslate and body_canrotate,
+            'show_reset': body_cantranslate or body_canrotate or camera_canmove,
             'show_pose': show_pose,
             'show_instructions': will_be_graded,
             'angle': '{:.1f}'.format(pl.get_float_attrib(element, 'tol_degrees', 5)),
@@ -185,7 +188,8 @@ def render(element_html, element_index, data):
         options = {
             'uuid': uuid,
             'pose': dict_to_b64(pose),
-            'body_canmove': False,
+            'body_cantranslate': False,
+            'body_canrotate': False,
             'camera_canmove': False,
             'text_pose_format': text_pose_format,
             'objects': objects
@@ -248,7 +252,8 @@ def render(element_html, element_index, data):
         options = {
             'uuid': uuid,
             'pose': dict_to_b64(pose),
-            'body_canmove': False,
+            'body_cantranslate': False,
+            'body_canrotate': False,
             'camera_canmove': False,
             'text_pose_format': text_pose_format,
             'objects': objects

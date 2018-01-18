@@ -4,13 +4,15 @@ function PLThreeJS(options) {
 
     // parse options
     var uuid = options.uuid;
+    this.uuid = uuid;
     this.startPose = JSON.parse(atob(options.pose));
     if (options.hasOwnProperty('pose_default')) {
         this.resetPose = JSON.parse(atob(options.pose_default));
     } else {
         this.resetPose = this.startPose;
     }
-    this.bodyCanMove = options.body_canmove;
+    this.bodyCanTranslate = options.body_cantranslate;
+    this.bodyCanRotate = options.body_canrotate;
     this.cameraCanMove = options.camera_canmove;
     this.textPoseFormat = options.text_pose_format;
     this.objects = options.objects;
@@ -165,21 +167,27 @@ function PLThreeJS(options) {
 
             // state for mouse control of body pose
             this.isDragging = false;
-            this.previousMousePosition = {
-                x: 0,
-                y: 0,
-            };
+            this.isTranslating = true;
+            // - rotation
+            this.previousMousePosition = {};
+            // - translation
+            this.raycaster = new THREE.Raycaster();
+            this.translateIntersection = new THREE.Vector3();
+            this.translatePlane = new THREE.Plane();
+            this.translateMouse = new THREE.Vector2();
+            this.translateOffset = new THREE.Vector3();
 
             // buttons to toggle between camera and body motion
-            $('#toggle-view-' + uuid).change(PLThreeJS.prototype.toggleRotate.bind(this));
+            $('#toggle-type-of-motion-' + uuid).change(PLThreeJS.prototype.toggleTypeOfMotion.bind(this));
 
             // mouse control of body pose
-            this.raycaster = new THREE.Raycaster()
             $(this.renderer.domElement).mousedown(PLThreeJS.prototype.onmousedown.bind(this));
             $(document).mousemove(PLThreeJS.prototype.onmousemove.bind(this));
             $(document).mouseup(PLThreeJS.prototype.onmouseup.bind(this));
 
             // buttons to rotate body about coordinate axes of body frame
+            this.deltaTranslate = 0.1;
+            this.deltaRotate = 5 * Math.PI / 180;
             this.xPlusButton.click(PLThreeJS.prototype.xPlus.bind(this));
             this.xMinusButton.click(PLThreeJS.prototype.xMinus.bind(this));
             this.yPlusButton.click(PLThreeJS.prototype.yPlus.bind(this));
@@ -202,38 +210,6 @@ function PLThreeJS(options) {
             this.controls.enabled = this.cameraCanMove;
             this.updateBodyButtons();
 
-            // FIXME
-            this.translateIntersection = new THREE.Vector3();
-            this.translatePlane = new THREE.Plane();
-            this.translateMouse = new THREE.Vector2();
-            this.translateOffset = new THREE.Vector3();
-
-
-
-
-
-            // var anObject = new THREE.Object3D();
-            console.log('adding group to object...');
-            // anObject.add(this.bodyFrame);
-            // anObject.add(this.bodyGroup);
-            console.log('...done');
-            console.log(anObject);
-            // objects_to_drag.push(this.bodyGroup);
-            // objects_to_drag.push(anObject);
-            console.log('enabling dragControls...');
-            console.log(objects_to_drag);
-            this.dragControls = new THREE.DragControls( objects_to_drag, this.camera, this.renderer.domElement );
-            console.log(this.dragControls);
-            console.log('...done');
-            console.log('adding listeners...');
-			// dragControls.addEventListener( 'dragstart', function ( event ) { controls.enabled = false; } );
-			// dragControls.addEventListener( 'dragend', function ( event ) { controls.enabled = true; } );
-            this.dragControls.addEventListener( 'dragstart', (function ( event ) { console.log('turn off orbit controls'); this.controls.enabled = false; }).bind(this) );
-			this.dragControls.addEventListener( 'dragend', (function ( event ) { console.log('turn on orbit controls'); this.controls.enabled = true; }).bind(this) );
-            this.dragControls.addEventListener( 'drag', (function (event) {console.log('dragging...'); this.render(); }).bind(this) );
-            console.log('...done');
-
-
             // buttons to toggle visibility
             $('#pl-threejs-button-bodyobjectsvisible-' + uuid).click(PLThreeJS.prototype.toggleBodyObjectsVisible.bind(this));
             $('#pl-threejs-button-spaceobjectsvisible-' + uuid).click(PLThreeJS.prototype.toggleSpaceObjectsVisible.bind(this));
@@ -252,7 +228,6 @@ function PLThreeJS(options) {
             // resize with window
             $(window).resize(PLThreeJS.prototype.onResize.bind(this));
 
-
             callback(null);
         }).bind(this),
     ], function(_err, _results) {
@@ -268,48 +243,97 @@ PLThreeJS.prototype.render = function() {
 };
 
 PLThreeJS.prototype.xPlus = function() {
-    this.bodyGroup.rotateX(5*Math.PI/180);
+    if (this.isTranslating) {
+        this.bodyGroup.translateX(this.deltaTranslate);
+    } else {
+        this.bodyGroup.rotateX(this.deltaRotate);
+    }
     this.render();
 };
 
 PLThreeJS.prototype.xMinus = function() {
-    this.bodyGroup.rotateX(-5*Math.PI/180);
+    if (this.isTranslating) {
+        this.bodyGroup.translateX(-this.deltaTranslate);
+    } else {
+        this.bodyGroup.rotateX(-this.deltaRotate);
+    }
     this.render();
 };
 
 PLThreeJS.prototype.yPlus = function() {
-    this.bodyGroup.rotateY(5*Math.PI/180);
+    if (this.isTranslating) {
+        this.bodyGroup.translateY(this.deltaTranslate);
+    } else {
+        this.bodyGroup.rotateY(this.deltaRotate);
+    }
     this.render();
 };
 
 PLThreeJS.prototype.yMinus = function() {
-    this.bodyGroup.rotateY(-5*Math.PI/180);
+    if (this.isTranslating) {
+        this.bodyGroup.translateY(-this.deltaTranslate);
+    } else {
+        this.bodyGroup.rotateY(-this.deltaRotate);
+    }
     this.render();
 };
 
 PLThreeJS.prototype.zPlus = function() {
-    this.bodyGroup.rotateZ(5*Math.PI/180);
+    if (this.isTranslating) {
+        this.bodyGroup.translateZ(this.deltaTranslate);
+    } else {
+        this.bodyGroup.rotateZ(this.deltaRotate);
+    }
     this.render();
 };
 
 PLThreeJS.prototype.zMinus = function() {
-    this.bodyGroup.rotateZ(-5*Math.PI/180);
+    if (this.isTranslating) {
+        this.bodyGroup.translateZ(-this.deltaTranslate);
+    } else {
+        this.bodyGroup.rotateZ(-this.deltaRotate);
+    }
     this.render();
 };
 
-PLThreeJS.prototype.toggleRotate = function() {
-    this.controls.enabled = !this.controls.enabled;
+PLThreeJS.prototype.toggleTypeOfMotion = function() {
+    this.isTranslating = !this.isTranslating;
     this.updateBodyButtons();
     this.render();
 };
 
 PLThreeJS.prototype.updateBodyButtons = function() {
-    this.xPlusButton.prop('disabled', this.controls.enabled);
-    this.xMinusButton.prop('disabled', this.controls.enabled);
-    this.yPlusButton.prop('disabled', this.controls.enabled);
-    this.yMinusButton.prop('disabled', this.controls.enabled);
-    this.zPlusButton.prop('disabled', this.controls.enabled);
-    this.zMinusButton.prop('disabled', this.controls.enabled);
+    if (this.isTranslating && this.bodyCanTranslate) {
+        // Remove circular arrows
+        $('#x-minus-icon-' + this.uuid).removeClass('fa-redo');
+        $('#x-plus-icon-' + this.uuid).removeClass('fa-redo fa-flip-horizontal');
+        $('#y-minus-icon-' + this.uuid).removeClass('fa-redo');
+        $('#y-plus-icon-' + this.uuid).removeClass('fa-redo fa-flip-horizontal');
+        $('#z-minus-icon-' + this.uuid).removeClass('fa-redo');
+        $('#z-plus-icon-' + this.uuid).removeClass('fa-redo fa-flip-horizontal');
+        // Add straight arrows
+        $('#x-minus-icon-' + this.uuid).addClass('fa-arrow-left');
+        $('#x-plus-icon-' + this.uuid).addClass('fa-arrow-right');
+        $('#y-minus-icon-' + this.uuid).addClass('fa-arrow-left');
+        $('#y-plus-icon-' + this.uuid).addClass('fa-arrow-right');
+        $('#z-minus-icon-' + this.uuid).addClass('fa-arrow-left');
+        $('#z-plus-icon-' + this.uuid).addClass('fa-arrow-right');
+    } else if (this.bodyCanRotate) {
+        // Remove straight arrows
+        $('#x-minus-icon-' + this.uuid).removeClass('fa-arrow-left');
+        $('#x-plus-icon-' + this.uuid).removeClass('fa-arrow-right');
+        $('#y-minus-icon-' + this.uuid).removeClass('fa-arrow-left');
+        $('#y-plus-icon-' + this.uuid).removeClass('fa-arrow-right');
+        $('#z-minus-icon-' + this.uuid).removeClass('fa-arrow-left');
+        $('#z-plus-icon-' + this.uuid).removeClass('fa-arrow-right');
+        // Add circular arrows
+        $('#x-minus-icon-' + this.uuid).addClass('fa-redo');
+        $('#x-plus-icon-' + this.uuid).addClass('fa-redo fa-flip-horizontal');
+        $('#y-minus-icon-' + this.uuid).addClass('fa-redo');
+        $('#y-plus-icon-' + this.uuid).addClass('fa-redo fa-flip-horizontal');
+        $('#z-minus-icon-' + this.uuid).addClass('fa-redo');
+        $('#z-plus-icon-' + this.uuid).addClass('fa-redo fa-flip-horizontal');
+    }
 };
 
 PLThreeJS.prototype.toggleBodyObjectsVisible = function() {
@@ -437,168 +461,79 @@ PLThreeJS.prototype.onLoad = function( geometry, materials ) {
 
 PLThreeJS.prototype.onmousedown = function(event) {
     // only continue if the body can move
-    if (!this.bodyCanMove) {
+    if (! (this.bodyCanRotate || this.bodyCanTranslate)) {
         return;
     }
 
-    // did the user click on something in the bodyGroup
+    // did the user click on something in the bodyGroup?
     var rect = this.renderer.domElement.getBoundingClientRect();
-    // var x = ( ( event.clientX - rect.left ) / rect.width ) * 2 - 1;
-	// var y = - ( ( event.clientY - rect.top ) / rect.height ) * 2 + 1;
-    // console.log([x, y, event.clientX, event.clientY, event.offsetX, event.offsetY, event.clientX - rect.left, event.clientY - rect.top]);
     var x = (event.offsetX / rect.width) * 2 - 1;
     var y = - (event.offsetY / rect.height) * 2 + 1;
     var mouse = new THREE.Vector2(x, y);
     this.raycaster.setFromCamera( mouse, this.camera );
     var intersects = this.raycaster.intersectObjects([this.bodyGroup], true);
     if (intersects.length > 0) {
+        // yes, they did!
+        // - turn off orbit controls
         this.controls.enabled = false;
+        // - turn on dragging
         this.isDragging = true;
+        // - state for rotation
         this.previousMousePosition = {
             x: event.offsetX,
             y: event.offsetY,
         };
+        // - state for translation
         this.translatePlane.setFromNormalAndCoplanarPoint(this.camera.getWorldDirection(this.translatePlane.normal), this.bodyGroup.position);
         if (this.raycaster.ray.intersectPlane(this.translatePlane, this.translateIntersection)) {
             this.translateOffset.copy(this.translateIntersection).sub(this.bodyGroup.position);
         }
-        console.log(this.translateOffset);
     }
-
-
-
-    // if (!this.controls.enabled && this.bodyCanMove) {
-    //     this.isDragging = true;
-    // }
-    //
-    // event.preventDefault();
-    //
-    // console.log(event);
-    // console.log([event.clientX, event.clientY]);
-    //
-    // var rect = this.renderer.domElement.getBoundingClientRect();
-    // var x = ( ( event.clientX - rect.left ) / rect.width ) * 2 - 1;
-	// var y = - ( ( event.clientY - rect.top ) / rect.height ) * 2 + 1;
-    // var mouse = new THREE.Vector2(x, y);
-    //
-    // console.log(mouse);
-    //
-	// this.raycaster.setFromCamera( mouse, this.camera );
-    // var intersects = this.raycaster.intersectObjects([this.bodyGroup], true);
-    // console.log(intersects.length);
-    //
-    //     //
-	// 	// var intersects = _raycaster.intersectObjects( _objects );
-    //     //
-	// 	// if ( intersects.length > 0 ) {
-    //     //
-	// 	// 	_selected = intersects[ 0 ].object;
-    //     //
-	// 	// 	if ( _raycaster.ray.intersectPlane( _plane, _intersection ) ) {
-    //     //
-	// 	// 		_offset.copy( _intersection ).sub( _selected.position );
-    //     //
-	// 	// 	}
-    //     //
-	// 	// 	_domElement.style.cursor = 'move';
-    //     //
-	// 	// 	scope.dispatchEvent( { type: 'dragstart', object: _selected } );
-    //     //
-	// 	// }
 };
 
 PLThreeJS.prototype.onmousemove = function(e) {
     if (this.isDragging) {
-        var rect = this.renderer.domElement.getBoundingClientRect();
-        var x = (event.offsetX / rect.width) * 2 - 1;
-        var y = - (event.offsetY / rect.height) * 2 + 1;
-        var mouse = new THREE.Vector2(x, y);
-        console.log(mouse);
-        // need to cast a new ray...
-        this.raycaster.setFromCamera( mouse, this.camera );
-        if (this.raycaster.ray.intersectPlane(this.translatePlane, this.translateIntersection)) {
-            console.log('intersection...');
-            var p = this.translateIntersection.clone();
-            console.log(p);
-            console.log(this.translateOffset);
-            p.sub(this.translateOffset);
-            console.log(p);
-            // console.log(this.bodyGroup.position);
-            // var p = this.translateIntersection.sub(this.translateOffset);
-            // console.log(p);
-            // console.log(typeof(p));
-            this.bodyGroup.position.copy(this.translateIntersection.sub(this.translateOffset));
-            console.log(this.translateIntersection.sub(this.translateOffset));
-            console.log(this.bodyGroup.position);
-            console.log('...done');
+        if (this.isTranslating) {
+            var rect = this.renderer.domElement.getBoundingClientRect();
+            var x = (event.offsetX / rect.width) * 2 - 1;
+            var y = - (event.offsetY / rect.height) * 2 + 1;
+            var mouse = new THREE.Vector2(x, y);
+            this.raycaster.setFromCamera( mouse, this.camera );
+            if (this.raycaster.ray.intersectPlane(this.translatePlane, this.translateIntersection)) {
+                this.bodyGroup.position.copy(this.translateIntersection.sub(this.translateOffset));
+            }
+            this.render();
         } else {
-            console.log('no intersection?');
+            var deltaMove = {
+                x: e.offsetX-this.previousMousePosition.x,
+                y: e.offsetY-this.previousMousePosition.y,
+            };
+
+            // Orientation of camera
+            var qCamera = this.camera.quaternion.clone();
+            // Rotation to be applied by mouse motion (in camera frame)
+            var qMotion = new THREE.Quaternion()
+                .setFromEuler(new THREE.Euler(
+                    deltaMove.y * (Math.PI / 180),
+                    deltaMove.x * (Math.PI / 180),
+                    0,
+                    'XYZ'
+                ));
+            // Rotation to be applied by mouse motion (in world frame) - note that
+            // ".inverse()" modifies qCamera in place, so the order here matters
+            qMotion.multiplyQuaternions(qCamera, qMotion);
+            qMotion.multiplyQuaternions(qMotion, qCamera.inverse());
+            // New orientation of object
+            this.bodyGroup.quaternion.multiplyQuaternions(qMotion, this.bodyGroup.quaternion);
+            // Render and update hidden input element
+            this.render();
+
+            this.previousMousePosition = {
+                x: e.offsetX,
+                y: e.offsetY,
+            };
         }
-        this.render();
-
-
-        // var deltaMove = {
-        //     x: e.offsetX-this.previousMousePosition.x,
-        //     y: e.offsetY-this.previousMousePosition.y,
-        // };
-        //
-        // // Orientation of camera
-        // var qCamera = this.camera.quaternion.clone();
-        // // Rotation to be applied by mouse motion (in camera frame)
-        // var qMotion = new THREE.Quaternion()
-        //     .setFromEuler(new THREE.Euler(
-        //         deltaMove.y * (Math.PI / 180),
-        //         deltaMove.x * (Math.PI / 180),
-        //         0,
-        //         'XYZ'
-        //     ));
-        // // Rotation to be applied by mouse motion (in world frame) - note that
-        // // ".inverse()" modifies qCamera in place, so the order here matters
-        // qMotion.multiplyQuaternions(qCamera, qMotion);
-        // qMotion.multiplyQuaternions(qMotion, qCamera.inverse());
-        // // New orientation of object
-        // this.bodyGroup.quaternion.multiplyQuaternions(qMotion, this.bodyGroup.quaternion);
-        // // Render and update hidden input element
-        // this.render();
-        //
-        // this.previousMousePosition = {
-        //     x: e.offsetX,
-        //     y: e.offsetY,
-        // };
     }
-
-    // if (!this.controls.enabled && this.bodyCanMove) {
-    //     var deltaMove = {
-    //         x: e.offsetX-this.previousMousePosition.x,
-    //         y: e.offsetY-this.previousMousePosition.y,
-    //     };
-    //
-    //     if(this.isDragging) {
-    //         // Orientation of camera
-    //         var qCamera = this.camera.quaternion.clone();
-    //         // Rotation to be applied by mouse motion (in camera frame)
-    //         var qMotion = new THREE.Quaternion()
-    //             .setFromEuler(new THREE.Euler(
-    //                 deltaMove.y * (Math.PI / 180),
-    //                 deltaMove.x * (Math.PI / 180),
-    //                 0,
-    //                 'XYZ'
-    //             ));
-    //         // Rotation to be applied by mouse motion (in world frame) - note that
-    //         // ".inverse()" modifies qCamera in place, so the order here matters
-    //         qMotion.multiplyQuaternions(qCamera, qMotion);
-    //         qMotion.multiplyQuaternions(qMotion, qCamera.inverse());
-    //         // New orientation of object
-    //         this.bodyGroup.quaternion.multiplyQuaternions(qMotion, this.bodyGroup.quaternion);
-    //         // Render and update hidden input element
-    //         this.render();
-    //     }
-    //
-    //     this.previousMousePosition = {
-    //         x: e.offsetX,
-    //         y: e.offsetY,
-    //     };
-    // }
 };
 
 PLThreeJS.prototype.onmouseup = function() {
@@ -606,12 +541,6 @@ PLThreeJS.prototype.onmouseup = function() {
         this.isDragging = false;
         this.controls.enabled = this.cameraCanMove;
     }
-
-    // if (!this.controls.enabled && this.bodyCanMove) {
-    //     if (this.isDragging) {
-    //         this.isDragging = false;
-    //     }
-    // }
 };
 
 PLThreeJS.prototype.updateHiddenInput = function() {
