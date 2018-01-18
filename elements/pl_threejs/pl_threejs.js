@@ -167,7 +167,7 @@ function PLThreeJS(options) {
 
             // state for mouse control of body pose
             this.isDragging = false;
-            this.isTranslating = true;
+            this.isTranslating = this.bodyCanTranslate;
             // - rotation
             this.previousMousePosition = {};
             // - translation
