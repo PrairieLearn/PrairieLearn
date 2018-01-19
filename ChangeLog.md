@@ -27,6 +27,8 @@
 
   * Fix broken popovers in input elements (Tim Bretl).
 
+  * Fix bug in `pl_threejs` that applied different error tolerances to render and grade (Tim Bretl).
+
   * Update question card coloring; collapse past submissions by default (Nathan Walters).
 
   * Fix issues on instructor question page (Nathan Walters).
