@@ -95,7 +95,7 @@ def get_objects(element, data):
             else:
                 raise ValueError()
         except:
-            raise Exception('attribute "position" must have format [x, y, z] and must be non-zero: {:s}'.format(p))
+            raise Exception('attribute "position" must have format [x, y, z]: {:s}'.format(p))
         # - orientation (and format)
         orientation = get_orientation(child, 'orientation', 'format')
         # - scale
@@ -345,7 +345,7 @@ def grade(element_html, element_index, data):
     error_in_rotation = np.abs((q_tru.inverse * q_sub).degrees)
 
     # Get tolerances
-    tol_translation = pl.get_float_attrib(element, 'tol_translation', 0.1)
+    tol_translation = pl.get_float_attrib(element, 'tol_translation', 0.5)
     tol_rotation = pl.get_float_attrib(element, 'tol_rotation', 5)
     if (tol_translation <= 0):
         raise Exception('tol_translation must be a positive real number: {:g}'.format(tol_translation))
