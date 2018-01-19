@@ -39,6 +39,8 @@
 
   * Only run changelog verifier on pull request builds (Nathan Walters).
 
+  * Fix Google OAuth login (James Wang)
+
 * __2.11.0__ - 2017-12-29
 
   * Add support for partial credit in Homeworks (Tim Bretl).
