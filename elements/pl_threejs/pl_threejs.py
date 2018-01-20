@@ -249,9 +249,11 @@ def render(element_html, element_index, data):
         # Convert correct answer to Quaternion, then to [x, y, z, w]
         f = pl.get_string_attrib(element, 'answer_pose_format', 'rpy')
         p, q = parse_correct_answer(f, a)
+        p = p.tolist()
         q = np.roll(q.elements, -1).tolist()
 
         # Replace body pose with correct answer
+        pose['body_position'] = p
         pose['body_quaternion'] = q
 
         # These are passed as arguments to PLThreeJS constructor in client code
