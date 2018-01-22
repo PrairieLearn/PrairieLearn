@@ -141,12 +141,19 @@ def render(element_html, element_index, data):
         # from attributes (note that restored pose will also have camera_orientation,
         # which we currently ignore because the camera is always z up and looking
         # at the origin of the space frame).
+        #
+        # Be careful. It's possible that data['submitted_answers'][answer_name]
+        # exists but is None (due to some other error). So we need to use None
+        # as the default and to check if the result - either from the existing
+        # value or the default value - is None.
         pose_default = {
             'body_quaternion': body_orientation,
             'body_position': body_position,
             'camera_position': camera_position
         }
-        pose = data['submitted_answers'].get(answer_name, pose_default)
+        pose = data['submitted_answers'].get(answer_name, None)
+        if pose is None:
+            pose = pose_default
 
         # These are passed as arguments to PLThreeJS constructor in client code
         options = {
@@ -239,7 +246,15 @@ def render(element_html, element_index, data):
         show_pose = pl.get_boolean_attrib(element, 'show_pose_in_correct_answer', True)
 
         # Get submitted answer
-        pose = data['submitted_answers'].get(answer_name)
+        pose = data['submitted_answers'].get(answer_name, None)
+        if pose is None:
+            # If we are here, an error has occurred. Replace pose with its default.
+            # (Only pose['camera_position'] is actually used.)
+            pose = {
+                'body_quaternion': body_orientation,
+                'body_position': body_position,
+                'camera_position': camera_position
+            }
 
         # Get correct answer
         a = data['correct_answers'].get(answer_name, None)
@@ -298,8 +313,14 @@ def parse(element_html, element_index, data):
         data['submitted_answers'][name] = None
         return
 
-    # Convert from json to dict
-    a_sub = b64_to_dict(a_sub)
+    # Convert from json to dict or return parse error on failure (if there is
+    # a failure, it would be due to corrupt data from the hidden input element).
+    try:
+        a_sub = b64_to_dict(a_sub)
+    except:
+        data['format_errors'][name] = 'Invalid submitted answer.'
+        data['submitted_answers'][name] = None
+        return
 
     # Put it into data
     data['submitted_answers'][name] = a_sub
@@ -320,7 +341,9 @@ def grade(element_html, element_index, data):
     # Get submitted answer (the "state")
     state = data['submitted_answers'].get(answer_name, None)
     if state is None:
-        # This should never happen! If it does, just return nothing.
+        # This might happen. It means that, somehow, the hidden input element
+        # did not get populated with the PLThreeJS state. The student is not at
+        # fault, so we'll return nothing - don't grade.
         return
 
     # Get correct answer (if none, don't grade)
