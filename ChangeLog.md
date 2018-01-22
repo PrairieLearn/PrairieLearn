@@ -31,6 +31,8 @@
 
   * Fix bug in `pl_threejs` that showed wrong body position in answer panel (Tim Bretl).
 
+  * Fix bug in `pl_threejs` to handle case when submitted answer is None (Tim Bretl).
+
   * Update question card coloring; collapse past submissions by default (Nathan Walters).
 
   * Fix issues on instructor question page (Nathan Walters).
