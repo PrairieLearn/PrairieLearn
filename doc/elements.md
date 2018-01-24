@@ -346,3 +346,59 @@ Attribute | Type | Default | Description
 `format` | string | rpy | Determines how `orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
 
 Note that a 3D scene is also created to show each submitted answer. This means that if there are many submitted answers, the page will load slowly.
+
+
+## pl_code
+
+```html
+<pl_code language="python">
+def square(x):
+    return x * x
+</pl_code>
+```
+
+This element displays a block of code with syntax highlighting.
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`language` | string | — | The programming language syntax highlighting to use. See below for options.
+`no_highlight` | boolean | false | Disable highlighting.
+
+The `language` can be one of the following values.
+
+`language` value | Description
+--- | ---
+`armasm` | ARM Assembly
+`bash` | Bash
+`cpp` | C++
+`csharp` | C#
+`css` | CSS
+`excel` | Excel
+`fortran` | Fortran
+`go` | Go
+`haskell` | Haskell
+`html` | HTML,XML
+`ini` | Ini
+`java` | Java
+`javascript` | JavaScript
+`json` | JSON
+`julia` | Julia
+`makefile` | Makefile
+`markdown` | Markdown
+`mathematica` | Mathematica
+`matlab` | Matlab
+`mipsasm` | MIPS Assembly
+`objectivec` | Objective-C
+`ocaml` | OCaml
+`perl` | Perl
+`php` | PHP
+`python` | Python
+`r` | R
+`ruby` | Ruby
+`shell` | Shell Session
+`sql` | SQL
+`tex` | TeX
+`x86asm` | Intel x86 Assembly
+`yaml` | YAML
+
+Please let the PrairieLearn developers know if you need a language that is not on the list above (any [highlight.js](https://highlightjs.org) language could be added).
