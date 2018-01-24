@@ -43,7 +43,9 @@
 
   * Only run changelog verifier on pull request builds (Nathan Walters).
 
-  * Fix Google OAuth login (James Wang)
+  * Fix Google OAuth login (James Wang).
+
+  * Clarify the rules for changing UUIDs (James Balamuta).
 
 * __2.11.0__ - 2017-12-29
 
