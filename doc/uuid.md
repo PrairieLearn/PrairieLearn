@@ -14,6 +14,8 @@ When you make new questions, assessments, etc, you will need to add a UUID to th
 
 ## When do you need a new UUID?
 
+As your course is constructed, you may run into scenarios that require you to change the UUID listed within a JSON file. Below, we've listed some common instances of when the UUID should or shouldn't be changed. 
+
 * **Renaming a directory: no new UUID needed.** For example if you rename a question or assessment directory, then you should leave the UUID the same, so that PrairieLearn will know that this is the same object but just with a new name.
 
 * **Copying a directory: needs a new UUID.** For example, if you copy an existing question or assessment to make a new one, then you will need a new UUID for the new object, so that PrairieLearn can distinguish it from the original.
@@ -22,6 +24,11 @@ When you make new questions, assessments, etc, you will need to add a UUID to th
 
 If you copy questions or assessments from a different course and don't give them new UUIDs, then a local development copy of PrairieLearn running on your own machine may not be able to detect that you have not changed the UUIDs. This will only be detected when you sync your course to the production PrairieLearn server, at which point it will give an error.
 
+Furthermore, if you are adding a `TA` or `Instructor` to the `infoCourseInstance.json`, you do not need to change the UUID. Making a change to this file's UUID will create an _alternative_ version of course with the same name that lacks all assessment information previously held by the course. The original course can only be recovered by reverting the UUID change. If you have unintentionally stumbled into this scenario, you will likely be faced with a sync error of:
+
+```
+Error: UUID 0339b989-d1f2-4f96-bcba-8717c68a64a9 from assessment exam1 in Sp18 already in use in different course instance (possibly in a different course)
+```
 
 ## Bulk addition of UUIDs
 
