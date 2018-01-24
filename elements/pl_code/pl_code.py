@@ -1,43 +1,42 @@
 import prairielearn as pl
 import lxml.html
 import chevron
-import base64
-import hashlib
 
 allowed_languages = [
-    "armasm",
-    "bash",
-    "cpp",
-    "csharp",
-    "css",
-    "excel",
-    "fortran",
-    "go",
-    "haskell",
-    "html",
-    "ini",
-    "java",
-    "javascript",
-    "json",
-    "julia",
-    "makefile",
-    "markdown",
-    "mathematica",
-    "matlab",
-    "mipsasm",
-    "objectivec",
-    "ocaml",
-    "perl",
-    "php",
-    "python",
-    "r",
-    "ruby",
-    "shell",
-    "sql",
-    "tex",
-    "x86asm",
-    "yaml",
+    'armasm',
+    'bash',
+    'cpp',
+    'csharp',
+    'css',
+    'excel',
+    'fortran',
+    'go',
+    'haskell',
+    'html',
+    'ini',
+    'java',
+    'javascript',
+    'json',
+    'julia',
+    'makefile',
+    'markdown',
+    'mathematica',
+    'matlab',
+    'mipsasm',
+    'objectivec',
+    'ocaml',
+    'perl',
+    'php',
+    'python',
+    'r',
+    'ruby',
+    'shell',
+    'sql',
+    'tex',
+    'x86asm',
+    'yaml',
 ]
+
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -49,6 +48,7 @@ def prepare(element_html, element_index, data):
     if language is not None:
         if language not in allowed_languages:
             raise Exception(f'Unknown language: "{language}". Must be one of {",".join(allowed_languages)}')
+
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
