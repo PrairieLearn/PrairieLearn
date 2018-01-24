@@ -14,7 +14,9 @@ When you make new questions, assessments, etc, you will need to add a UUID to th
 
 ## When do you need a new UUID?
 
-As your course is constructed, you may run into scenarios that require you to change the UUID listed within a JSON file. Below, we've listed some common instances of when the UUID should or shouldn't be changed. 
+As your course is constructed, you may run into scenarios that require you to change the UUID listed within a JSON file. Below, we've listed some common instances of when the UUID should or shouldn't be changed.
+
+* **Editing information within a JSON file: no new UUID needed.** For example, if you add another `Instructor` to a `infoCourseInstance.json`, or delete a question in an `infoAssessment.json`, then you **must not change the UUID**. This is because PrairieLearn uses the UUID to know that it's still the same course instance or assessment and you just want to make a change to it. If you do inadvertently change the UUID in this way, changing it back will revert everything to the way it was with no data loss.
 
 * **Renaming a directory: no new UUID needed.** For example if you rename a question or assessment directory, then you should leave the UUID the same, so that PrairieLearn will know that this is the same object but just with a new name.
 
@@ -24,11 +26,14 @@ As your course is constructed, you may run into scenarios that require you to ch
 
 If you copy questions or assessments from a different course and don't give them new UUIDs, then a local development copy of PrairieLearn running on your own machine may not be able to detect that you have not changed the UUIDs. This will only be detected when you sync your course to the production PrairieLearn server, at which point it will give an error.
 
-Furthermore, if you are adding a `TA` or `Instructor` to the `infoCourseInstance.json`, you do not need to change the UUID. Making a change to this file's UUID will create an _alternative_ version of course with the same name that lacks all assessment information previously held by the course. The original course can only be recovered by reverting the UUID change. If you have unintentionally stumbled into this scenario, you will likely be faced with a sync error of:
+If you incorrectly change the UUID in a `infoCourseInstance.json` file when you didn't mean to, then you will get a sync error like:
 
 ```
 Error: UUID 0339b989-d1f2-4f96-bcba-8717c68a64a9 from assessment exam1 in Sp18 already in use in different course instance (possibly in a different course)
 ```
+
+An error like the one above can be fixed by reverting the UUID in the `infoCourseInstance.json` file back to its old value (which you can get from the `git` history).
+
 
 ## Bulk addition of UUIDs
 
