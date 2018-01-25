@@ -22,7 +22,7 @@ First, edit `pl-exp101/courseInstance/Fa17/infoCourseInstance.json` to add a sec
     ]
 ```
 
-Next, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/infoAssessment.json` to add a section for `netid@illinois.edu`:
+Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/infoAssessment.json` to add a section for `netid@illinois.edu`:
 ```
     "allowAccess": [
         {
@@ -40,3 +40,5 @@ Next, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/infoA
         }
     ]
 ```
+
+See [Access control](accessControl.md) for more details.
