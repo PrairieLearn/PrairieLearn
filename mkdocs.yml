@@ -21,6 +21,7 @@ pages:
   - 'PrairieDraw graphics': 'PrairieDraw.md'
   - 'Externally graded questions': 'externalGrading.md'
   - 'What to tell students': 'whatToTellStudents.md'
+  - 'FAQ': 'faq.md'
 - Developer Guide:
   - 'Developer guide': 'dev-guide.md'
   - 'Installing with local source': 'installingLocal.md'

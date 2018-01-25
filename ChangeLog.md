@@ -17,6 +17,8 @@
 
   * Add `pl_code` element for code syntax highlighting (Matt West).
 
+  * Add FAQ docs about post-semester access (Matt West).
+
   * Change sigfig and decdig method of comparison to reduce tolerance (Tim Bretl).
 
   * Change default relative tolerance from 1e-5 to 1e-2 (Tim Bretl).
