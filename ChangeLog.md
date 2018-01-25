@@ -51,6 +51,8 @@
 
   * Clarify the rules for changing UUIDs (James Balamuta).
 
+  * Fix unicode symbols and HTML entities in question.html (Matt West).
+
 * __2.11.0__ - 2017-12-29
 
   * Add support for partial credit in Homeworks (Tim Bretl).
