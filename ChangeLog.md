@@ -61,6 +61,8 @@
 
   * Change build process to verify changelog update only on PR (Nathan Walters).
 
+  * Fix error message for `display` attribute of `pl_number_input` (Matt West).
+
 * __2.11.0__ - 2017-12-29
 
   * Add support for partial credit in Homeworks (Tim Bretl).
