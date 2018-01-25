@@ -65,6 +65,8 @@
 
   * Change build process to verify changelog update only on PR (Nathan Walters).
 
+  * Add question QR code for proctor lookup during exams (Dave Mussulman).
+
 * __2.11.0__ - 2017-12-29
 
   * Add support for partial credit in Homeworks (Tim Bretl).

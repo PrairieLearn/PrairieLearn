@@ -31,8 +31,9 @@
       <% } %>
     </tbody>
   </table>
-  <% if (assessment.allow_issue_reporting) { %>
+  <% if (assessment.type == 'Exam' || assessment.allow_issue_reporting) { %>
   <div class="card-footer">
+  <% if (assessment.allow_issue_reporting) { %>
     <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
       Report an issue with this question
     </button>
@@ -49,6 +50,31 @@
         </div>
       </form>
     </div>
+  <% } %>
+  <% if (assessment.type == 'Exam') { %>
+    <button class="btn btn-xs btn-secondary" type="button" data-toggle="modal" data-target="#iqqrcode" aria-expanded="false" aria-controls="iqqrcode">
+      Proctor information
+    </button>
+  </div>
+  <div class="modal fade" id="iqqrcode" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">Proctor Information</h5>
+          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+            <span aria-hidden="true">&times;</span>
+          </button>
+        </div>
+        <div class="modal-body">
+          <center><%- iqqrcode %></center>
+          <p>If you need assistance with this question, proctors may use this link to get more information.</p>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-seconday" data-dismiss="modal">Close</button>
+        </div>
+      </div>
+    </div>
+  <% } %>
   </div>
   <% } %>
 </div>
