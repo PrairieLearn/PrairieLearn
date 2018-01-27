@@ -64,7 +64,14 @@
 {{/answer}}
 
 {{#format}}
-<p>Your answer must be a real number between <code>-1e308</code> and <code>1e308</code> (i.e., it must be interpretable as a double-precision floating-point number). No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted. Scientific notation is accepted (e.g., <code>1.2e03</code>). {{#relabs}}<p>Your answer must be accurate to within relative tolerance <code>{{rtol}}</code> and absolute tolerance <code>{{atol}}</code>.</p>{{/relabs}}{{#sigfig}}<p>Your answer must be accurate to {{digits}} significant figures. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.</p>{{/sigfig}}{{#decdig}}<p>Your answer must be accurate to {{digits}} digits after the decimal. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.</p>{{/decdig}}
+<p>
+{{#allow_complex}}
+Your answer must be either a real number between <code>-1e308</code> and <code>1e308</code> or a complex number with both real and imaginary parts between <code>-1e308</code> and <code>1e308</code> (i.e., it must be interpretable as a double-precision real or complex number). Complex numbers must use either <code>i</code> or <code>j</code> as the imaginary unit, must place the imaginary unit after the imaginary part (e.g., <code>2j</code> not <code>j2</code>), must write the imaginary part even when <code>1</code> or <code>-1</code> (e.g., <code>1j</code> not <code>j</code>), and must have no space between the real and imaginary part (e.g., <code>1+2j</code> not <code>1 + 2j</code>). Standard python print format is accepted for complex numbers (e.g., <code>(1+2j)</code>).
+{{/allow_complex}}
+{{^allow_complex}}
+Your answer must be a real number between <code>-1e308</code> and <code>1e308</code> (i.e., it must be interpretable as a double-precision floating-point number).
+{{/allow_complex}}
+No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted. Scientific notation is accepted (e.g., <code>1.2e03</code>). {{#relabs}}<p>Your answer must be accurate to within relative tolerance <code>{{rtol}}</code> and absolute tolerance <code>{{atol}}</code>.</p>{{/relabs}}{{#sigfig}}<p>Your answer must be accurate to {{digits}} significant figures. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.</p>{{/sigfig}}{{#decdig}}<p>Your answer must be accurate to {{digits}} digits after the decimal. This means (for example) that if the true answer is <code>1.234</code>, then the submitted answer must be between <code>1.234 - {{comparison_eps}}</code> and <code>1.234 + {{comparison_eps}}</code> to be counted correct.</p>{{/decdig}}
 {{/format}}
 
 {{#shortformat}}
