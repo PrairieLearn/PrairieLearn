@@ -76,6 +76,7 @@ Attribute | Type | Default | Description
 `rtol` | number | 1e-2 | Relative tolerance for `comparison="relabs"`.
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
+`allow_complex` | boolean | False | whether or not to allow complex numbers as answers.
 
 ## `pl_matrix_input` element
 
@@ -93,6 +94,7 @@ Attribute | Type | Default | Description
 `rtol` | number | 1e-2 | Relative tolerance for `comparison="relabs"`.
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
+`allow_complex` | boolean | False | whether or not to allow complex numbers as answers.
 
 In the question panel, a `pl_matrix_input` element displays an input field that accepts a matrix (i.e., a 2-D array) expressed either in matlab or python format.
 
