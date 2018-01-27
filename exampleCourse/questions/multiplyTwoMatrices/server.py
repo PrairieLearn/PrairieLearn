@@ -1,4 +1,5 @@
 import numpy as np
+import prairielearn as pl
 
 def generate(data):
 
@@ -23,6 +24,6 @@ def generate(data):
     C = A.dot(B)
 
     # Modify data and return
-    data["params"]["A"] = A.tolist()
-    data["params"]["B"] = B.tolist()
-    data["correct_answers"]["C"] = C.tolist()
+    data["params"]["A"] = pl.to_json(A)
+    data["params"]["B"] = pl.to_json(B)
+    data["correct_answers"]["C"] = pl.to_json(C)
