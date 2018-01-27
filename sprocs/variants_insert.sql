@@ -9,6 +9,7 @@ CREATE OR REPLACE FUNCTION
         IN broken boolean,
         IN instance_question_id bigint, -- can be NULL
         IN question_id bigint,          -- can be NULL, but needed if instance_question_id is NULL
+        IN course_instance_id bigint,   -- can be NULL for some instructor questions
         IN user_id bigint,              -- can be NULL, but needed if instance_question_id is NULL
         IN authn_user_id bigint,
         OUT variant variants
@@ -62,10 +63,10 @@ BEGIN
     END IF;
 
     INSERT INTO variants
-        (instance_question_id,      question_id,      user_id,
+        (instance_question_id, question_id,      course_instance_id, user_id,
         number,     variant_seed, params, true_answer, options, broken, authn_user_id)
     VALUES
-        (instance_question_id, real_question_id, real_user_id,
+        (instance_question_id, real_question_id, course_instance_id, real_user_id,
         new_number, variant_seed, params, true_answer, options, broken, authn_user_id)
     RETURNING *
     INTO variant;

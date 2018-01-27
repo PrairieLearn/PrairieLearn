@@ -39,7 +39,7 @@ router.post('/', function(req, res, next) {
                 return next(new Error('Incorrect password'));
             }
         }
-        assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.authn_user.user_id, res.locals.authz_data.mode, res.locals.authz_result.time_limit_min, res.locals.authz_data.date, res.locals.course, (err, assessment_instance_id) => {
+        assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.authn_user.user_id, res.locals.authz_data.mode, res.locals.authz_result.time_limit_min, res.locals.authz_data.date, res.locals.course_instance.id, res.locals.course, (err, assessment_instance_id) => {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
         });
