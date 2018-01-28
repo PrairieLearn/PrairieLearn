@@ -182,7 +182,7 @@ def parse(element_html, element_index, data):
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
-    if not a_sub:
+    if a_sub is None:
         data['format_errors'][name] = 'No submitted answer.'
         data['submitted_answers'][name] = None
         return
@@ -280,7 +280,7 @@ def test(element_html, element_index, data):
 
     # Wrap true answer in ndarray (if it already is one, this does nothing)
     a_tru = np.array(a_tru)
-    
+
     result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
     if random.choice([True, False]):
         # matlab
