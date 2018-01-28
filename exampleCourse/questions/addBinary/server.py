@@ -11,7 +11,8 @@ def generate(data):
     data["correct_answers"]["c"] = c
 
 def grade(data):
-    if data["submitted_answers"]["c"] == data["correct_answers"]["c"]:
+    # use get() for submitted_answers in case no answer was submitted
+    if data["submitted_answers"].get("c", None) == data["correct_answers"]["c"]:
         data["score"] = 1
     else:
         data["score"] = 0
