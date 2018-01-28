@@ -23,6 +23,11 @@ const qids = [
     'multiplyTwoMatrices',
     'multiplyTwoNumbers',
     'positionTimeGraph',
+    'addBinary',
+    'addComplexNumbers',
+    'codeHighlight',
+    'multiplyTwoComplexMatrices',
+    // FIXME: 'rotateObject',
 ];
 
 describe('Auto-test questions', function() {
