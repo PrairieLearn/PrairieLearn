@@ -22,6 +22,7 @@
         {"name": "tbretl", "color": "blue1", "description": "Question originally written by tbretl"},
         {"name": "tpl101", "color": "gray1", "description": "Question originally written for the TPL 101 template course"},
         {"name": "fa17", "color": "gray1", "description": "Question written in Fall 2017"},
+        {"name": "sp18", "color": "gray1", "description": "Question written in Spring 2018"},
         {"name": "v2", "color": "red1", "description": "v2 generation question"},
         {"name": "v3", "color": "green1", "description": "v3 generation question (freeform)"}
     ]
