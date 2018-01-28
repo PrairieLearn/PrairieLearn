@@ -25,7 +25,6 @@ def to_json(v):
     If v can be json serialized or does not have a standard type, then it is
     returned without change.
     """
-
     if np.isscalar(v) and np.iscomplexobj(v):
         return {'_type': 'complex', '_value': {'real': v.real, 'imag': v.imag}}
     elif isinstance(v, np.ndarray):
@@ -68,7 +67,6 @@ def from_json(v):
     If v does not have the format {'_type':..., '_value':...}, then it is
     returned without change.
     """
-
     if isinstance(v, dict):
         if '_type' in v:
             if v['_type'] == 'complex':
@@ -105,7 +103,6 @@ def from_json(v):
                     raise Exception('variable of type sympy_matrix should have value, variables, and shape')
             else:
                 raise Exception('variable has unknown type {:s}'.format(v['_type']))
-
     return v
 
 
