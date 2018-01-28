@@ -5,11 +5,24 @@ const _ = require('lodash');
 const logger = require('../lib/logger');
 const config = require('../lib/config');
 
+const namedLocks = require('../lib/named-locks');
+const sqldb = require('../lib/sqldb');
+const sqlLoader = require('../lib/sql-loader');
+
+const sql = sqlLoader.loadSqlEquiv(__filename);
+
 // jobTimeouts meaning (used by stop()):
 //     Timeout object = timeout is running and can be canceled
 //     0 = job is currently running
 //     -1 = stop requested
 const jobTimeouts = {};
+
+// Cron jobs are protected by two layers:
+// 1. We use a namedLock of the form `cron:JOB_NAME`
+// 2. We check the `cron_jobs` table and only run the job if the last
+//    time it ran was more than `intervalSec` time ago.
+// This means that we can have multiple servers running cron jobs and
+// the jobs will still only run at the required frequency.
 
 module.exports = {
     init(callback) {
@@ -135,24 +148,94 @@ module.exports = {
         jobTimeouts['daily'] = setTimeout(queueRun, timeToNextMS());
     },
 
+    // run a list of jobs
     runJobs(jobsList, callback) {
-        logger.verbose('cron jobs starting');
+        logger.verbose('cron: jobs starting');
         async.eachSeries(jobsList, (job, callback) => {
-            var startTime = new Date();
-            job.module.run((err) => {
-                var endTime = new Date();
-                var elapsedTimeMS = endTime - startTime;
+            this.tryJobWithLock(job, (err) => {
                 if (ERR(err, () => {})) {
-                    logger.error('cron: ' + job.name + ' failure, duration: ' + elapsedTimeMS + ' ms',
+                    logger.error('cron: ' + job.name + ' failure: ' + String(err),
                                  {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
-                } else {
-                    logger.verbose('cron: ' + job.name + ' success, duration: ' + elapsedTimeMS + ' ms');
                 }
-                callback(null); // don't return error as we want to do all cron jobs even if one fails
+                // return null even on error so that we run all jobs even if one fails
+                callback(null);
             });
         }, () => {
-            logger.verbose('cron jobs finished');
+            logger.verbose('cron: jobs finished');
             callback(null);
         });
+    },
+
+    // try and get the job lock, and run the job if we get it
+    tryJobWithLock(job, callback) {
+        const lockName = 'cron:' + job.name;
+        namedLocks.tryLock(lockName, (err, lock) => {
+            if (ERR(err, callback)) return;
+            if (lock == null) {
+                logger.verbose('cron: ' + job.name + ' did not acquire lock');
+                callback(null);
+            } else {
+                logger.verbose('cron: ' + job.name + ' acquired lock');
+                this.tryJobWithTime(job, (err) => {
+                    namedLocks.releaseLock(lock, (lockErr) => {
+                        if (ERR(lockErr, callback)) return;
+                        if (ERR(err, callback)) return;
+                        logger.verbose('cron: ' + job.name + ' released lock');
+                        callback(null);
+                    });
+                });
+            }
+        });
+    },
+
+    // See how long it is since we last ran the job and only run it if
+    // enough time has elapsed. We are protected by a lock here so we
+    // have exclusive access.
+    tryJobWithTime(job, callback) {
+        var interval_secs;
+        if (Number.isInteger(job.intervalSec)) {
+            interval_secs = job.intervalSec;
+        } else if (job.intervalSec == 'daily') {
+            interval_secs = 12 * 60 * 60;
+        } else {
+            return callback(new Error(`cron: ${job.name} invalid intervalSec: ${job.intervalSec}`));
+        }
+        const params = {
+            name: job.name,
+            interval_secs,
+        };
+        sqldb.query(sql.select_recent_cron_job, params, (err, result) => {
+            if (ERR(err, callback)) return;
+            if (result.rowCount > 0) {
+                logger.verbose('cron: ' + job.name + ' job was recently run, skipping');
+                callback(null);
+            } else {
+                logger.verbose('cron: ' + job.name + ' job was not recently run');
+                const params = {name: job.name};
+                sqldb.query(sql.update_cron_job_time, params, (err, result) => {
+                    if (ERR(err, callback)) return;
+                    logger.verbose('cron: ' + job.name + ' updated date');
+                    this.runJob(job, (err) => {
+                        if (ERR(err, callback)) return;
+                        callback(null);
+                    });
+                });
+            }
+        });
+    },
+
+    // actually run the job
+    runJob(job, callback) {
+        logger.verbose('cron: starting ' + job.name);
+        var startTime = new Date();
+        setTimeout(() => {
+            job.module.run((err) => {
+                if (ERR(err, callback)) return;
+                var endTime = new Date();
+                var elapsedTimeMS = endTime - startTime;
+                logger.verbose('cron: ' + job.name + ' success, duration: ' + elapsedTimeMS + ' ms');
+                callback(null);
+            });
+        }, 3000);
     },
 };
