@@ -187,12 +187,6 @@ def parse(element_html, element_index, data):
         data['submitted_answers'][name] = None
         return
 
-    # Replace unicode minus with hyphen minus wherever it occurs
-    a_sub = a_sub.replace(u'\u2212', '-')
-
-    # Replace "i" with "j" wherever it occurs (to handle complex numbers)
-    a_sub = a_sub.replace('i', 'j')
-
     # Convert submitted answer to numpy array (return parse_error on failure)
     (a_sub_parsed, info) = pl.string_to_2darray(a_sub, allow_complex=allow_complex)
     if a_sub_parsed is None:

@@ -459,6 +459,15 @@ def string_to_number(s, allow_complex=True):
 
     Returns a number with type np.float64 or np.complex128, or None on parse error.
     """
+    # Replace unicode minus with hyphen minus wherever it occurs
+    s = s.replace(u'\u2212', '-')
+    # If complex numbers are allowed...
+    if allow_complex:
+        # Replace "i" with "j" wherever it occurs
+        s = s.replace('i', 'j')
+        # Strip white space on either side of "+" or "-" wherever they occur
+        s = re.sub(r' *\+ *', '+', s)
+        s = re.sub(r' *\- *', '-', s)
     # Try to parse as float
     try:
         s_float = float(s)
@@ -484,6 +493,15 @@ def string_to_2darray(s, allow_complex=True):
     Parses a string that is either a scalar or a 2D array in matlab or python
     format. Each number must be interpretable as type float or complex.
     """
+    # Replace unicode minus with hyphen minus wherever it occurs
+    s = s.replace(u'\u2212', '-')
+    # If complex numbers are allowed...
+    if allow_complex:
+        # Replace "i" with "j" wherever it occurs
+        s = s.replace('i', 'j')
+        # Strip white space on either side of "+" or "-" wherever they occur
+        s = re.sub(r' *\+ *', '+', s)
+        s = re.sub(r' *\- *', '-', s)
 
     # Count left and right brackets and check that they are balanced
     number_of_left_brackets = s.count('[')

@@ -176,12 +176,6 @@ def parse(element_html, element_index, data):
         data['submitted_answers'][name] = None
         return
 
-    # Replace unicode minus with hyphen minus wherever it occurs
-    a_sub = a_sub.replace(u'\u2212', '-')
-
-    # Replace "i" with "j" wherever it occurs (to handle complex numbers)
-    a_sub = a_sub.replace('i', 'j')
-
     # Convert to float or complex
     try:
         a_sub_parsed = pl.string_to_number(a_sub, allow_complex=allow_complex)
