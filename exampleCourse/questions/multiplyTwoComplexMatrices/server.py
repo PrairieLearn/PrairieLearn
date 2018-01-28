@@ -17,8 +17,12 @@ def generate(data):
     numMax = 10
 
     # The two matrices to be multiplied
-    A = np.random.random_integers(-numMax,numMax,(nRows,nInner))/(10**nDigits)
-    B = np.random.random_integers(-numMax,numMax,(nInner,nCols))/(10**nDigits)
+    Are = np.random.random_integers(-numMax,numMax,(nRows,nInner))/(10**nDigits)
+    Aim = np.random.random_integers(-numMax,numMax,(nRows,nInner))/(10**nDigits)
+    Bre = np.random.random_integers(-numMax,numMax,(nInner,nCols))/(10**nDigits)
+    Bim = np.random.random_integers(-numMax,numMax,(nInner,nCols))/(10**nDigits)
+    A = Are + Aim*1j
+    B = Bre + Bim*1j
 
     # Product of these two matrices
     C = A.dot(B)

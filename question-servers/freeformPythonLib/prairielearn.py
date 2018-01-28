@@ -25,7 +25,6 @@ def to_json(v):
     If v can be json serialized or does not have a standard type, then it is
     returned without change.
     """
-
     if np.isscalar(v) and np.iscomplexobj(v):
         return {'_type': 'complex', '_value': {'real': v.real, 'imag': v.imag}}
     elif isinstance(v, np.ndarray):
@@ -68,7 +67,6 @@ def from_json(v):
     If v does not have the format {'_type':..., '_value':...}, then it is
     returned without change.
     """
-
     if isinstance(v, dict):
         if '_type' in v:
             if v['_type'] == 'complex':
@@ -105,7 +103,6 @@ def from_json(v):
                     raise Exception('variable of type sympy_matrix should have value, variables, and shape')
             else:
                 raise Exception('variable has unknown type {:s}'.format(v['_type']))
-
     return v
 
 
@@ -259,9 +256,17 @@ def get_color_attrib(element, name, *args):
         raise Exception('Attribute "{:s}" must be a CSS-style RGB string: {:s}'.format(name, val))
 
 
-# This function assumes that A is either a floating-point number or a
-# real-valued numpy array. It returns A as a MATLAB-formatted string.
 def numpy_to_matlab(A, ndigits=2, wtype='f'):
+    """numpy_to_matlab(A, ndigits=2, wtype='f')
+
+    This function assumes that A is one of these things:
+
+        - a number (float or complex)
+        - a 2D ndarray (float or complex)
+
+    It returns A as a MATLAB-formatted string in which each number has "ndigits"
+    digits after the decimal and is formatted as "wtype" (e.g., 'f', 'g', etc.).
+    """
     if np.isscalar(A):
         A_str = '{:.{indigits}{iwtype}}'.format(A, indigits=ndigits, iwtype=wtype)
         return A_str
@@ -283,12 +288,105 @@ def numpy_to_matlab(A, ndigits=2, wtype='f'):
         return A_str
 
 
-# This function assumes that A is either a floating-point number or a
-# real-valued numpy array. It returns A as a MATLAB-formatted string
-# in which each entry has ndigits significant digits.
-def numpy_to_matlab_sf(A, ndigits=2):
+def string_from_2darray(A, language='python', presentation_type='f', digits=2):
+    """string_from_2darray(A)
+
+    This function assumes that A is one of these things:
+
+        - a number (float or complex)
+        - a 2D ndarray (float or complex)
+
+    It returns A as a string.
+
+    If language is 'python' and A is a 2D ndarray, the string looks like this:
+
+        [[ ..., ... ], [ ..., ... ]]
+
+    If language is 'matlab' and A is a 2D ndarray, the string looks like this:
+
+        [ ... ... ; ... ... ]
+
+    In either case, if A is not a 2D ndarray, the string is a single number,
+    not wrapped in brackets.
+
+    If presentation_type is 'sigfig', each number is formatted using the
+    to_precision module to "digits" significant figures.
+
+    Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
+    """
+
+    # if A is a scalar
     if np.isscalar(A):
-        A_str = to_precision.to_precision(A, ndigits)
+        if presentation_type == 'sigfig':
+            return string_from_number_sigfig(A, digits=digits)
+        else:
+            return '{:.{digits}{presentation_type}}'.format(A, digits=digits, presentation_type=presentation_type)
+
+    # if A is a 2D ndarray
+    if language == 'python':
+        if presentation_type == 'sigfig':
+            formatter = {
+                'float_kind': lambda x: to_precision.to_precision(x, digits),
+                'complex_kind': lambda x: _string_from_complex_sigfig(x, digits)
+            }
+        else:
+            formatter = {
+                'float_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type),
+                'complex_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type)
+            }
+        return np.array2string(A, formatter=formatter, separator=', ').replace('\n', '')
+    elif language == 'matlab':
+        if presentation_type == 'sigfig':
+            return numpy_to_matlab_sf(A, ndigits=digits)
+        else:
+            return numpy_to_matlab(A, ndigits=digits, wtype=presentation_type)
+    else:
+        raise Exception('language "{:s}" must be either "python" or "matlab"'.format(language))
+
+
+def string_from_number_sigfig(a, digits=2):
+    """_string_from_complex_sigfig(a, digits=2)
+
+    This function assumes that "a" is of type float or complex. It returns "a"
+    as a string in which the number, or both the real and imaginary parts of the
+    number, have digits significant digits.
+    """
+    if np.iscomplexobj(a):
+        return _string_from_complex_sigfig(a, digits=digits)
+    else:
+        return to_precision.to_precision(a, digits)
+
+
+def _string_from_complex_sigfig(a, digits=2):
+    """_string_from_complex_sigfig(a, digits=2)
+
+    This function assumes that "a" is a complex number. It returns "a" as a string
+    in which the real and imaginary parts have digits significant digits.
+    """
+    re = to_precision.to_precision(a.real, digits)
+    im = to_precision.to_precision(np.abs(a.imag), digits)
+    if a.imag >= 0:
+        return '{:s}+{:s}j'.format(re, im)
+    elif a.imag < 0:
+        return '{:s}-{:s}j'.format(re, im)
+
+
+def numpy_to_matlab_sf(A, ndigits=2):
+    """numpy_to_matlab(A, ndigits=2)
+
+    This function assumes that A is one of these things:
+
+        - a number (float or complex)
+        - a 2D ndarray (float or complex)
+
+    It returns A as a MATLAB-formatted string in which each number has
+    ndigits significant digits.
+    """
+    if np.isscalar(A):
+        if np.iscomplexobj(A):
+            A_str = _string_from_complex_sigfig(A, ndigits)
+        else:
+            A_str = to_precision.to_precision(A, ndigits)
         return A_str
     else:
         s = A.shape
@@ -297,7 +395,10 @@ def numpy_to_matlab_sf(A, ndigits=2):
         A_str = '['
         for i in range(0, m):
             for j in range(0, n):
-                A_str += to_precision.to_precision(A[i, j], ndigits)
+                if np.iscomplexobj(A[i, j]):
+                    A_str += _string_from_complex_sigfig(A[i, j], ndigits)
+                else:
+                    A_str += to_precision.to_precision(A[i, j], ndigits)
                 if j == n - 1:
                     if i == m - 1:
                         A_str += ']'
@@ -351,7 +452,57 @@ def string_partition_outer_interval(s, left='[', right=']'):
     return s_before_left, s, s_after_right
 
 
-def string_to_2darray(s):
+def string_to_number(s, allow_complex=True):
+    """string_to_number(s, allow_complex=True)
+
+    Parses a string that can be interpreted either as float or (optionally) complex.
+
+    Returns a number with type np.float64 or np.complex128, or None on parse error.
+    """
+    # Replace unicode minus with hyphen minus wherever it occurs
+    s = s.replace(u'\u2212', '-')
+    # If complex numbers are allowed...
+    if allow_complex:
+        # Replace "i" with "j" wherever it occurs
+        s = s.replace('i', 'j')
+        # Strip white space on either side of "+" or "-" wherever they occur
+        s = re.sub(r' *\+ *', '+', s)
+        s = re.sub(r' *\- *', '-', s)
+    # Try to parse as float
+    try:
+        s_float = float(s)
+        return np.float64(s_float)
+    except:
+        # If that didn't work, either pass (and try to parse as complex) or return None
+        if allow_complex:
+            pass
+        else:
+            return None
+    # Try to parse as complex
+    try:
+        s_complex = complex(s)
+        return np.complex128(s_complex)
+    except:
+        # If that didn't work, return None
+        return None
+
+
+def string_to_2darray(s, allow_complex=True):
+    """string_to_2darray(s)
+
+    Parses a string that is either a scalar or a 2D array in matlab or python
+    format. Each number must be interpretable as type float or complex.
+    """
+    # Replace unicode minus with hyphen minus wherever it occurs
+    s = s.replace(u'\u2212', '-')
+    # If complex numbers are allowed...
+    if allow_complex:
+        # Replace "i" with "j" wherever it occurs
+        s = s.replace('i', 'j')
+        # Strip white space on either side of "+" or "-" wherever they occur
+        s = re.sub(r' *\+ *', '+', s)
+        s = re.sub(r' *\- *', '-', s)
+
     # Count left and right brackets and check that they are balanced
     number_of_left_brackets = s.count('[')
     number_of_right_brackets = s.count(']')
@@ -361,16 +512,21 @@ def string_to_2darray(s):
     # If there are no brackets, treat as scalar
     if number_of_left_brackets == 0:
         try:
-            # Convert submitted answer (assumed to be a scalar) to float
-            s_float = np.float64(s)
-            if not np.isfinite(s_float):
-                raise ValueError('submitted answer must be a finite real number but was either "inf" or "nan"')
-            A = np.array([[s_float]])
+            # Convert submitted answer (assumed to be a scalar) to float or (optionally) complex
+            ans = string_to_number(s, allow_complex=allow_complex)
+            if ans is None:
+                raise ValueError('invalid submitted answer (wrong type)')
+            if not np.isfinite(ans):
+                raise ValueError('invalid submitted answer (not finite)')
+            A = np.array([[ans]])
             # Return it with no error
             return (A, {'format_type': 'python'})
         except:
-            # Return error if submitted answer could not be converted to float
-            return (None, {'format_error': 'Invalid format (missing square brackets and could not be interpreted as a double-precision floating-point number).'})
+            # Return error if submitted answer could not be converted to float or complex
+            if allow_complex:
+                return (None, {'format_error': 'Invalid format (missing square brackets and could not be interpreted as a double-precision floating-point number or as a double-precision complex number).'})
+            else:
+                return (None, {'format_error': 'Invalid format (missing square brackets and could not be interpreted as a double-precision floating-point number).'})
 
     # Get string between outer brackets
     (s_before_left, s, s_after_right) = string_partition_outer_interval(s)
@@ -422,14 +578,23 @@ def string_to_2darray(s):
             # Iterate over columns
             for j in range(0, n):
                 try:
-                    # Convert entry to float
-                    A[i, j] = np.float64(s_row[j])
+                    # Convert entry to float or (optionally) complex
+                    ans = string_to_number(s_row[j], allow_complex=allow_complex)
+                    if ans is None:
+                        raise ValueError('invalid submitted answer (wrong type)')
 
                     # Return error if entry is not finite
-                    if not np.isfinite(A[i, j]):
-                        return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" could not be interpreted as a double-precision floating-point number.'.format(i + 1, j + 1, s_row[j])})
+                    if not np.isfinite(ans):
+                        raise ValueError('invalid submitted answer (not finite)')
+
+                    # If the new entry is complex, convert the entire array in-place to np.complex128
+                    if np.iscomplexobj(ans):
+                        A = A.astype(np.complex128, copy=False)
+
+                    # Insert the new entry
+                    A[i, j] = ans
                 except:
-                    # Return error if entry could not be converted to float
+                    # Return error if entry could not be converted to float or complex
                     return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" has invalid format.'.format(i + 1, j + 1, s_row[j])})
 
         # Return resulting ndarray with no error
@@ -506,14 +671,23 @@ def string_to_2darray(s):
                     if not s_row[i][j].strip():
                         return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix is empty.'.format(i + 1, j + 1)})
 
-                    # Convert entry to float
-                    A[i, j] = np.float64(s_row[i][j])
+                    # Convert entry to float or (optionally) complex
+                    ans = string_to_number(s_row[i][j], allow_complex=allow_complex)
+                    if ans is None:
+                        raise ValueError('invalid submitted answer (wrong type)')
 
                     # Return error if entry is not finite
-                    if not np.isfinite(A[i, j]):
-                        return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" could not be interpreted as a double-precision floating-point number.'.format(i + 1, j + 1, s_row[i][j])})
+                    if not np.isfinite(ans):
+                        raise ValueError('invalid submitted answer (not finite)')
+
+                    # If the new entry is complex, convert the entire array in-place to np.complex128
+                    if np.iscomplexobj(ans):
+                        A = A.astype(np.complex128, copy=False)
+
+                    # Insert the new entry
+                    A[i, j] = ans
                 except:
-                    # Return error if entry could not be converted to float
+                    # Return error if entry could not be converted to float or complex
                     return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" has invalid format.'.format(i + 1, j + 1, s_row[i][j])})
 
         # Return result with no error
@@ -631,6 +805,10 @@ def is_correct_scalar_ra(a_sub, a_tru, rtol=1e-5, atol=1e-8):
 
 
 def is_correct_scalar_dd(a_sub, a_tru, digits=2):
+    # If answers are complex, check real and imaginary parts separately
+    if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
+        return is_correct_scalar_dd(a_sub.real, a_tru.real, digits=digits) and is_correct_scalar_dd(a_sub.imag, a_tru.imag, digits=digits)
+
     # Get bounds on submitted answer
     eps = 0.51 * (10**-digits)
     lower_bound = a_tru - eps
@@ -641,6 +819,10 @@ def is_correct_scalar_dd(a_sub, a_tru, digits=2):
 
 
 def is_correct_scalar_sf(a_sub, a_tru, digits=2):
+    # If answers are complex, check real and imaginary parts separately
+    if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
+        return is_correct_scalar_sf(a_sub.real, a_tru.real, digits=digits) and is_correct_scalar_sf(a_sub.imag, a_tru.imag, digits=digits)
+
     # Get bounds on submitted answer
     if (a_tru == 0):
         n = digits - 1

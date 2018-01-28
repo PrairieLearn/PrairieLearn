@@ -76,6 +76,7 @@ Attribute | Type | Default | Description
 `rtol` | number | 1e-2 | Relative tolerance for `comparison="relabs"`.
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
+`allow_complex` | boolean | False | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers_name] = pl.to_json(ans)`.
 
 ## `pl_matrix_input` element
 
@@ -93,6 +94,7 @@ Attribute | Type | Default | Description
 `rtol` | number | 1e-2 | Relative tolerance for `comparison="relabs"`.
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
+`allow_complex` | boolean | False | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers_name] = pl.to_json(ans)`.
 
 In the question panel, a `pl_matrix_input` element displays an input field that accepts a matrix (i.e., a 2-D array) expressed either in matlab or python format.
 
@@ -146,6 +148,8 @@ import numpy as np
 
 A = np.array([[1.23], [4.56]])
 ```
+
+If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data['params'][params_name] = pl.to_json(v)`.
 
 
 ## `pl_figure` element
