@@ -21,6 +21,8 @@
 
   * Add handling of complex numbers to `pl_number_input`, `pl_matrix_input`, and `pl_matrix_output` (Tim Bretl).
 
+  * Add more questions to unit tests (Tim Bretl).
+
   * Change sigfig and decdig method of comparison to reduce tolerance (Tim Bretl).
 
   * Change default relative tolerance from 1e-5 to 1e-2 (Tim Bretl).
