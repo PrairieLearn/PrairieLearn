@@ -288,7 +288,7 @@ def test(element_html, element_index, data):
             data['raw_submitted_answers'][name] = pl.numpy_to_matlab(a_tru, ndigits=12, wtype='g')
             data['partial_scores'][name] = {'score': 1, 'weight': weight}
         elif result == 'incorrect':
-            data['raw_submitted_answers'][name] = pl.numpy_to_matlab(a_tru + random.random(), ndigits=12, wtype='g')
+            data['raw_submitted_answers'][name] = pl.numpy_to_matlab(a_tru + (random.uniform(1, 10) * random.choice([-1, 1])), ndigits=12, wtype='g')
             data['partial_scores'][name] = {'score': 0, 'weight': weight}
         elif result == 'invalid':
             # FIXME: add more invalid expressions, make text of format_errors
@@ -303,7 +303,7 @@ def test(element_html, element_index, data):
             data['raw_submitted_answers'][name] = str(np.array(a_tru).tolist())
             data['partial_scores'][name] = {'score': 1, 'weight': weight}
         elif result == 'incorrect':
-            data['raw_submitted_answers'][name] = str(np.array(a_tru + random.random()).tolist())
+            data['raw_submitted_answers'][name] = str(a_tru + (random.uniform(1, 10) * random.choice([-1, 1])).tolist())
             data['partial_scores'][name] = {'score': 0, 'weight': weight}
         elif result == 'invalid':
             # FIXME: add more invalid expressions, make text of format_errors
