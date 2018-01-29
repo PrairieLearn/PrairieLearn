@@ -24,7 +24,6 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 const migrations = require('./migrations');
 const sprocs = require('./sprocs');
 const cron = require('./cron');
-const redis = require('./lib/redis');
 const socketServer = require('./lib/socket-server');
 const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
@@ -475,12 +474,6 @@ if (config.startServer) {
         },
         function(callback) {
             cron.init(function(err) {
-                if (ERR(err, callback)) return;
-                callback(null);
-            });
-        },
-        (callback) => {
-            redis.init((err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

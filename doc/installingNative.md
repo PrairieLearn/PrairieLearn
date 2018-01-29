@@ -8,7 +8,6 @@ This page describes the procedure to install and run PrairieLearn without any us
     * [Node.js](http://nodejs.org/) version  or higher
     * [npm](https://npmjs.org/) (included with Node.js on Windows)
     * [PostgreSQL](https://www.postgresql.org) version 9.6 or higher
-    * [Redis](https://redis.io/)
     * [Python 3](https://www.python.org) version 3.6 or higher
     * command-line git or [GitHub Desktop](https://desktop.github.com)
 

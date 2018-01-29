@@ -16,7 +16,6 @@ RUN yum -y install \
     && yum -y install \
         postgresql96-server \
         postgresql96-contrib \
-        redis \
         nodejs \
         python36u \
         python36u-pip \
