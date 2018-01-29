@@ -2,12 +2,10 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
-var QR = require('qrcode-svg');
 
 var error = require('../../lib/error');
 var question = require('../../lib/question');
 var sqldb = require('../../lib/sqldb');
-var config = require('../../lib/config');
 
 function processSubmission(req, res, callback) {
     let variant_id, submitted_answer;
@@ -107,9 +105,6 @@ router.get('/', function(req, res, next) {
     // req.query.variant_id might be undefined, which will generate a new variant
     question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
         if (ERR(err, next)) return;
-        res.locals.iqqrcode = new QR({
-            content: `${config.PLpeekUrl}/${res.locals.variant.instance_question_id}`,
-        }).svg();
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
