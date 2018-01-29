@@ -84,7 +84,7 @@ def render(element_html, element_index, data):
         elif display == 'block':
             html_params['block'] = True
         else:
-            raise ValueError('method of display "%s" is not valid (must be "inline", "block", or "display")' % display)
+            raise ValueError('method of display "%s" is not valid (must be "inline" or "block")' % display)
         if raw_submitted_answer is not None:
             html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
         with open('pl_number_input.mustache', 'r', encoding='utf-8') as f:
