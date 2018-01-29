@@ -3,13 +3,7 @@
 
 * __next version__ - XXXX-XX-XX
 
-  * Upgrade to Bootstrap 4 (Nathan Walters).
-
-  * Upgrade to NodeJS 8.x LTS (Matt West).
-
-  * Upgrade all Node dependencies to latest versions (Nathan Walters).
-
-  * Add new Issues page style and flexible filtering (Nathan Walters).
+  * Add new issues page style and flexible filtering (Nathan Walters).
 
   * Add `pl_threejs` element (Tim Bretl).
 
@@ -21,9 +15,9 @@
 
   * Add handling of complex numbers to `pl_number_input`, `pl_matrix_input`, and `pl_matrix_output` (Tim Bretl).
 
-  * Change sigfig and decdig method of comparison to reduce tolerance (Tim Bretl).
+  * Add more questions to unit tests (Tim Bretl).
 
-  * Change default relative tolerance from 1e-5 to 1e-2 (Tim Bretl).
+  * Add guidance on how to update ChangeLog to docs in `contributing.md` (Tim Bretl).
 
   * Fix broken file upload element (Nathan Walters).
 
@@ -39,21 +33,33 @@
 
   * Fix bug in `pl_threejs` to handle case when submitted answer is None (Tim Bretl).
 
-  * Update question card coloring; collapse past submissions by default (Nathan Walters).
+  * Fix doc to clarify the rules for changing UUIDs (James Balamuta).
 
   * Fix issues on instructor question page (Nathan Walters).
 
-  * Make Travis build fail if Changelog has not been updated (Nathan Walters).
-
   * Fix styling of file upload element (Nathan Walters).
-
-  * Only run changelog verifier on pull request builds (Nathan Walters).
 
   * Fix Google OAuth login (James Wang).
 
-  * Clarify the rules for changing UUIDs (James Balamuta).
-
   * Fix unicode symbols and HTML entities in question.html (Matt West).
+
+  * Fix bug in `addBinary` example question (Tim Bretl).
+
+  * Change to Bootstrap 4 (Nathan Walters).
+
+  * Change to NodeJS 8.x LTS (Matt West).
+
+  * Change all node dependencies to latest versions (Nathan Walters).
+
+  * Change `sigfig` and `decdig` method of comparison to reduce tolerance (Tim Bretl).
+
+  * Change default relative tolerance from `1e-5` to `1e-2` (Tim Bretl).
+
+  * Change question card coloring and collapse past submissions by default (Nathan Walters).
+
+  * Change build process so Travis fails if changelog has not been updated (Nathan Walters).
+
+  * Change build process to verify changelog update only on PR (Nathan Walters).
 
 * __2.11.0__ - 2017-12-29
 
