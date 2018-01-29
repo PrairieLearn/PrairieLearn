@@ -499,9 +499,6 @@ def string_to_2darray(s, allow_complex=True):
     if allow_complex:
         # Replace "i" with "j" wherever it occurs
         s = s.replace('i', 'j')
-        # Strip white space on either side of "+" or "-" wherever they occur
-        s = re.sub(r' *\+ *', '+', s)
-        s = re.sub(r' *\- *', '-', s)
 
     # Count left and right brackets and check that they are balanced
     number_of_left_brackets = s.count('[')
@@ -541,6 +538,12 @@ def string_to_2darray(s, allow_complex=True):
 
     # If there is only one set of brackets, treat as MATLAB format
     if number_of_left_brackets == 1:
+        # Can NOT strip white space on either side of "+" or "-" wherever they occur,
+        # because there is an ambiguity between space delimiters and whitespace.
+        #
+        #   Example:
+        #       is '[1 - 2j]' the same as '[1 -2j]' or '[1-2j]'
+
         # Return error if there are any commas
         if ',' in s:
             return (None, {'format_error': 'Commas cannot be used as delimiters in an expression with single brackets.'})
@@ -602,6 +605,10 @@ def string_to_2darray(s, allow_complex=True):
 
     # If there is more than one set of brackets, treat as python format
     if number_of_left_brackets > 1:
+        # Strip white space on either side of "+" or "-" wherever they occur
+        s = re.sub(r' *\+ *', '+', s)
+        s = re.sub(r' *\- *', '-', s)
+
         # Return error if there are any semicolons
         if ';' in s:
             return (None, {'format_error': 'Semicolons cannot be used as delimiters in an expression with nested brackets.'})
