@@ -45,6 +45,10 @@
 
   * Fix bug in `addBinary` example question (Tim Bretl).
 
+  * Fix error message for `display` attribute of `pl_number_input` (Matt West).
+
+  * Fix bug in handling of MATLAB format in answers submitted to `pl_matrix_input` (Tim Bretl).
+
   * Change to Bootstrap 4 (Nathan Walters).
 
   * Change to NodeJS 8.x LTS (Matt West).
@@ -60,8 +64,6 @@
   * Change build process so Travis fails if changelog has not been updated (Nathan Walters).
 
   * Change build process to verify changelog update only on PR (Nathan Walters).
-
-  * Fix error message for `display` attribute of `pl_number_input` (Matt West).
 
 * __2.11.0__ - 2017-12-29
 
