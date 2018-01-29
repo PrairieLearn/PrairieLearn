@@ -121,7 +121,6 @@ router.get('/', function(req, res, next) {
         res.locals.iqqrcode = new QR({
             content: `${config.PLpeekUrl}/${res.locals.variant.instance_question_id}`,
         }).svg();
-
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });

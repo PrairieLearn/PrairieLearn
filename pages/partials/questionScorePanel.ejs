@@ -31,7 +31,7 @@
       <% } %>
     </tbody>
   </table>
-  <% if (assessment.type == 'Exam' || assessment.allow_issue_reporting) { %>
+  <% if (assessment.allow_issue_reporting || authz_data.mode == 'Exam') { %>
   <div class="card-footer">
   <% if (assessment.allow_issue_reporting) { %>
     <button class="btn btn-xs btn-secondary" type="button" data-toggle="collapse" data-target="#issueCollapse" aria-expanded="false" aria-controls="issueCollapse">
@@ -51,7 +51,7 @@
       </form>
     </div>
   <% } %>
-  <% if (assessment.type == 'Exam') { %>
+  <% if (authz_data.mode == 'Exam') { %>
     <button class="btn btn-xs btn-secondary" type="button" data-toggle="modal" data-target="#iqqrcode" aria-expanded="false" aria-controls="iqqrcode">
       Proctor information
     </button>
