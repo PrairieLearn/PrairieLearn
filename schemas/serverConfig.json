@@ -3,6 +3,7 @@
     "title": "Backend Config",
     "description": "A configuration file for the PrairieLearn server.",
     "type": "object",
+    "additionalProperties": false,
     "properties": {
         "courseDirs": {
             "description": "Paths of the course directories.",
@@ -58,6 +59,10 @@
         },
         "serverPort": {
             "description": "The TCP port number for the server.",
+            "type": "string"
+        },
+        "groupName": {
+            "description": "The group of servers we belong to, used for load reporting and autoscaling.",
             "type": "string"
         },
         "cronIntervalMS": {
