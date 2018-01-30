@@ -13,6 +13,7 @@ var https = require('https');
 
 var logger = require('./lib/logger');
 var config = require('./lib/config');
+var load = require('./lib/load');
 var externalGrader = require('./lib/externalGrader');
 var externalGradingSocket = require('./lib/externalGradingSocket');
 var assessment = require('./lib/assessment');
@@ -101,6 +102,10 @@ app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzu
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
 app.use(require('./middlewares/logRequest'));
+
+// load accounting
+app.use(function(req, res, next) {load.startJob(res.locals.response_id); next();});
+app.use(function(req, res, next) {res.on('finish', function() {load.endJob(res.locals.response_id);}); next();});
 
 // clear all cached course code in dev mode (no authorization needed)
 if (config.devMode) {
@@ -430,6 +435,11 @@ if (config.startServer) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
+        },
+        function(callback) {
+            const maxJobs = 1;
+            load.init(maxJobs);
+            callback(null);
         },
         function(callback) {
             logger.verbose('Starting server...');
