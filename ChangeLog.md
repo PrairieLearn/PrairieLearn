@@ -65,7 +65,7 @@
 
   * Change build process to verify changelog update only on PR (Nathan Walters).
 
-  * Change all required python packages to latest versions (Tim Bretl).
+  * Change all required python packages to latest minor versions (Tim Bretl).
 
 * __2.11.0__ - 2017-12-29
 
