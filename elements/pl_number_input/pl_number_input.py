@@ -76,7 +76,7 @@ def render(element_html, element_index, data):
                     html_params['partial'] = math.floor(score * 100)
                 else:
                     html_params['incorrect'] = True
-            except:
+            except Exception:
                 raise ValueError('invalid score' + score)
 
         if display == 'inline':
@@ -127,7 +127,7 @@ def render(element_html, element_index, data):
                     html_params['partial'] = math.floor(score * 100)
                 else:
                     html_params['incorrect'] = True
-            except:
+            except Exception:
                 raise ValueError('invalid score' + score)
 
         with open('pl_number_input.mustache', 'r', encoding='utf-8') as f:
@@ -184,7 +184,7 @@ def parse(element_html, element_index, data):
         if not np.isfinite(a_sub_parsed):
             raise ValueError('invalid submitted answer (not finite)')
         data['submitted_answers'][name] = pl.to_json(a_sub_parsed)
-    except:
+    except Exception:
         if allow_complex:
             data['format_errors'][name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point or complex number.'
         else:
