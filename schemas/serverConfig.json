@@ -60,6 +60,10 @@
             "description": "The TCP port number for the server.",
             "type": "string"
         },
+        "groupName": {
+            "description": "The group of servers we belong to, used for load reporting and autoscaling.",
+            "type": "string"
+        },
         "cronIntervalMS": {
             "description": "Time between cron job runs (milliseconds).",
             "type": "integer"

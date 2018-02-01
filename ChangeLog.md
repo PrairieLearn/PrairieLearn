@@ -19,6 +19,8 @@
 
   * Add guidance on how to update ChangeLog to docs in `contributing.md` (Tim Bretl).
 
+  * Add server load reporting to CloudWatch (Matt West).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).

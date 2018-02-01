@@ -29,6 +29,11 @@ module.exports = {
                 intervalSec: config.cronIntervalExternalGraderLoadSec,
             },
             {
+                name: 'serverLoad',
+                module: require('./serverLoad'),
+                intervalSec: config.cronIntervalServerLoadSec,
+            },
+            {
                 name: 'calculateAssessmentQuestionStats',
                 module: require('./calculateAssessmentQuestionStats'),
                 intervalSec: 'daily',
