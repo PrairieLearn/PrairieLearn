@@ -19,6 +19,8 @@
 
   * Add guidance on how to update ChangeLog to docs in `contributing.md` (Tim Bretl).
 
+  * Add question QR code for proctor lookup during exams (Dave Mussulman).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
@@ -64,8 +66,6 @@
   * Change build process so Travis fails if changelog has not been updated (Nathan Walters).
 
   * Change build process to verify changelog update only on PR (Nathan Walters).
-
-  * Add question QR code for proctor lookup during exams (Dave Mussulman).
 
 * __2.11.0__ - 2017-12-29
 
