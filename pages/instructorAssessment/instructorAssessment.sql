@@ -106,6 +106,7 @@ SELECT
     CASE
         WHEN aar.exam_id IS NULL THEN '—'
         WHEN e.exam_id IS NULL THEN 'Exam not found: ' || aar.exam_id
+        WHEN NOT $link_exam_id THEN ps_c.rubric || ': ' || e.exam_string
         ELSE '<a href="https://cbtf.engr.illinois.edu/sched/course/'
             || ps_c.course_id || '/exam/' || e.exam_id || '">'
             || ps_c.rubric || ': ' || e.exam_string || '</a>'
