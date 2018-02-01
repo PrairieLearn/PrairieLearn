@@ -102,11 +102,20 @@ SELECT
     CASE
         WHEN aar.password IS NULL THEN '—'
         ELSE aar.password
-    END AS password
+    END AS password,
+    CASE
+        WHEN aar.exam_id IS NULL THEN '—'
+        WHEN e.exam_id IS NULL THEN 'Exam not found: ' || aar.exam_id
+        ELSE '<a href="https://cbtf.engr.illinois.edu/sched/course/'
+            || ps_c.course_id || '/exam/' || e.exam_id || '">'
+            || ps_c.rubric || ': ' || e.exam_string || '</a>'
+    END AS exam
 FROM
     assessment_access_rules AS aar
     JOIN assessments AS a ON (a.id = aar.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    LEFT JOIN exams AS e ON (e.exam_id = aar.exam_id)
+    LEFT JOIN courses AS ps_c ON (ps_c.course_id = e.course_id)
 WHERE
     a.id = $assessment_id
 ORDER BY

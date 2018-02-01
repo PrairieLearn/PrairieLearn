@@ -154,6 +154,7 @@ module.exports = {
                 time_limit_min: _(dbRule).has('timeLimitMin') ? dbRule.timeLimitMin : null,
                 password: _(dbRule).has('password') ? dbRule.password : null,
                 seb_config: _(dbRule).has('SEBConfig') ? dbRule.SEBConfig : null,
+                exam_id: _(dbRule).has('examId') ? dbRule.examId : null,
             };
             sqldb.query(sql.insert_assessment_access_rule, params, function(err, _result) {
                 if (ERR(err, callback)) return;
