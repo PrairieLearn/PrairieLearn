@@ -42,6 +42,7 @@
         "passport-azure-ad": "^3.0.9",
         "pg": "^7.4.0",
         "popper.js": "^1.13.0",
+        "qrcode-svg": "^1.0.0",
         "requirejs": "^2.3.5",
         "s3-upload-stream": "^1.0.7",
         "search-string": "^3.0.0",

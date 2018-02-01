@@ -21,6 +21,8 @@
 
   * Add server load reporting to CloudWatch (Matt West).
 
+  * Add question QR code for proctor lookup during exams (Dave Mussulman).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
