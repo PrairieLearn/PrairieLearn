@@ -52,6 +52,10 @@ module.exports = {
             function(callback) {
                 async.forEachOfSeries(courseInstance.assessmentDB, function(dbAssessment, tid, callback) {
                     logger.debug('Syncing ' + tid);
+                    // issue reporting defaults to false, then to the courseInstance setting, then to the assessment setting
+                    var allow_issue_reporting = false;
+                    if (_.has(courseInstance, 'allowIssueReporting')) allow_issue_reporting = !!courseInstance.allowIssueReporting;
+                    if (_.has(dbAssessment, 'allowIssueReporting')) allow_issue_reporting = !!dbAssessment.allowIssueReporting;
                     var params = {
                         tid: tid,
                         uuid: dbAssessment.uuid,
@@ -62,7 +66,7 @@ module.exports = {
                         config: dbAssessment.options,
                         multiple_instance: dbAssessment.multipleInstance ? true : false,
                         shuffle_questions: dbAssessment.shuffleQuestions ? true : false,
-                        allow_issue_reporting: _.has(dbAssessment, 'allowIssueReporting') ? dbAssessment.allowIssueReporting : false,
+                        allow_issue_reporting: allow_issue_reporting,
                         auto_close: _.has(dbAssessment, 'autoClose') ? dbAssessment.autoClose : true,
                         max_points: dbAssessment.maxPoints,
                         course_instance_id: courseInstance.courseInstanceId,

@@ -21,6 +21,8 @@
 
   * Add server load reporting to CloudWatch (Matt West).
 
+  * Add course-instance-wide issue reporting flag (Matt West).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
