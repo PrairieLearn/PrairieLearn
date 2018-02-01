@@ -71,7 +71,7 @@ def render(element_html, element_index, data):
                     html_params['partial'] = math.floor(score * 100)
                 else:
                     html_params['incorrect'] = True
-            except:
+            except Exception:
                 raise ValueError('invalid score' + score)
 
         if raw_submitted_answer is not None:
@@ -106,7 +106,7 @@ def render(element_html, element_index, data):
                     html_params['partial'] = math.floor(score * 100)
                 else:
                     html_params['incorrect'] = True
-            except:
+            except Exception:
                 raise ValueError('invalid score' + score)
 
         with open('pl_symbolic_input.mustache', 'r', encoding='utf-8') as f:

@@ -113,7 +113,7 @@ def render(element_html, element_index, data):
                     html = html + '&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
                 else:
                     html = html + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
-            except:
+            except Exception:
                 raise ValueError('invalid score' + score)
     elif data['panel'] == 'submission':
         # FIXME: handle parse errors?
@@ -136,7 +136,7 @@ def render(element_html, element_index, data):
                             html = html + '&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
                         else:
                             html = html + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
-                    except:
+                    except Exception:
                         raise ValueError('invalid score' + score)
     elif data['panel'] == 'answer':
         correct_answer = data['correct_answers'].get(name, None)

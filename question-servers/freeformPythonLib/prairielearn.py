@@ -472,7 +472,7 @@ def string_to_number(s, allow_complex=True):
     try:
         s_float = float(s)
         return np.float64(s_float)
-    except:
+    except Exception:
         # If that didn't work, either pass (and try to parse as complex) or return None
         if allow_complex:
             pass
@@ -482,7 +482,7 @@ def string_to_number(s, allow_complex=True):
     try:
         s_complex = complex(s)
         return np.complex128(s_complex)
-    except:
+    except Exception:
         # If that didn't work, return None
         return None
 
@@ -518,7 +518,7 @@ def string_to_2darray(s, allow_complex=True):
             A = np.array([[ans]])
             # Return it with no error
             return (A, {'format_type': 'python'})
-        except:
+        except Exception:
             # Return error if submitted answer could not be converted to float or complex
             if allow_complex:
                 return (None, {'format_error': 'Invalid format (missing square brackets and could not be interpreted as a double-precision floating-point number or as a double-precision complex number).'})
@@ -596,7 +596,7 @@ def string_to_2darray(s, allow_complex=True):
 
                     # Insert the new entry
                     A[i, j] = ans
-                except:
+                except Exception:
                     # Return error if entry could not be converted to float or complex
                     return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" has invalid format.'.format(i + 1, j + 1, s_row[j])})
 
@@ -693,7 +693,7 @@ def string_to_2darray(s, allow_complex=True):
 
                     # Insert the new entry
                     A[i, j] = ans
-                except:
+                except Exception:
                     # Return error if entry could not be converted to float or complex
                     return (None, {'format_error': 'Entry ({:d}, {:d}) of matrix "{:s}" has invalid format.'.format(i + 1, j + 1, s_row[i][j])})
 
@@ -759,7 +759,7 @@ def matlab_to_numpy(a):
                     # Return error if entry is not finite
                     if not np.isfinite(A[i, j]):
                         return (None, 'Entry (%d,%d) of matrix is not finite.' % (i + 1, j + 1))
-                except:
+                except Exception:
                     # Return error if entry could not be converted to float
                     return (None, 'Entry (%d,%d) of matrix has invalid format.' % (i + 1, j + 1))
 
@@ -771,7 +771,7 @@ def matlab_to_numpy(a):
             A = np.array([[float(a)]])
             # Return it with no error
             return (A, None)
-        except:
+        except Exception:
             # Return error if submitted answer could not be converted to float
             return (None, 'Invalid format (missing square brackets and not a real number).')
 

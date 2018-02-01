@@ -32,7 +32,7 @@ def render(element_html, element_index, data):
 
     try:
         score = float(score)
-    except:
+    except Exception:
         return '<span class="badge badge-danger">ERROR: invalid score: ' + score + '</span>'
 
     if score >= 1:

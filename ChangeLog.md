@@ -69,6 +69,10 @@
 
   * Change build process to verify changelog update only on PR (Nathan Walters).
 
+  * Change all required python packages to latest minor versions (Tim Bretl).
+
+  * Change all bare `except:` to `except Exception:` in python code (Tim Bretl).
+
 * __2.11.0__ - 2017-12-29
 
   * Add support for partial credit in Homeworks (Tim Bretl).
