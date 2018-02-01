@@ -23,6 +23,8 @@
 
   * Add question QR code for proctor lookup during exams (Dave Mussulman).
 
+  * Add course-instance-wide issue reporting flag (Matt West).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).

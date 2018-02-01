@@ -98,7 +98,7 @@ By default Exam assessments will auto-close after six hours of inactivity by the
 
 ## Issue reporting
 
-To allow students to report issues with questions (incorrect answers, unclear wording, etc), set the `"allowIssueReporting": true` property in the `infoAssessment.json` file. This option defaults to false.
+To allow students to report issues with questions (incorrect answers, unclear wording, etc), set the `"allowIssueReporting": true` property in the `infoAssessment.json` file. This option defaults to whatever is set for the course instance, or false if nothing is set.
 
 When issue reporting is allowed, students see a button labeled "Report an issue with this question" and they can submit a short text form.
 
