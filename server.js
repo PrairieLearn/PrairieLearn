@@ -99,6 +99,7 @@ app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOA
 app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
 app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
 app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
+app.use('/pl/hackillinois', require('./pages/studentHackIllinois/studentHackIllinois'));
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
 app.use(require('./middlewares/logRequest'));
@@ -231,8 +232,6 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
 // Student pages /////////////////////////////////////////////////////
-
-app.use('/pl/hackillinois', require('./pages/studentHackIllinois/studentHackIllinois'));
 
 // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
 // which checks the assessment type and calls next() if it's not the right type
