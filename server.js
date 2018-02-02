@@ -232,6 +232,8 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
 //////////////////////////////////////////////////////////////////////
 // Student pages /////////////////////////////////////////////////////
 
+app.use('/pl/hackillinois', require('./pages/studentHackIllinois/studentHackIllinois'));
+
 // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
 // which checks the assessment type and calls next() if it's not the right type
 app.use('/pl/course_instance/:course_instance_id/assessments', require('./pages/studentAssessments/studentAssessments'));
