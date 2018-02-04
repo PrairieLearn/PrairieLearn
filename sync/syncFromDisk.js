@@ -68,6 +68,7 @@ module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, c
 
 module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) {
     const lockName = 'coursedir:' + courseDir;
+    logger.verbose(`Trying lock ${lockName}`);
     namedLocks.tryLock(lockName, (err, lock) => {
         if (ERR(err, callback)) return;
         if (lock == null) {
