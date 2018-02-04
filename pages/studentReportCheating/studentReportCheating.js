@@ -1,14 +1,12 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var csvStringify = require('csv').stringify;
-var express = require('express');
-var router = express.Router();
+const ERR = require('async-stacktrace');
+const express = require('express');
+const router = express.Router();
 
-var error = require('../../lib/error');
-var logger = require('../../lib/logger');
-var opsbot = require('../../lib/opsbot');
+const error = require('../../lib/error');
+const logger = require('../../lib/logger');
+const opsbot = require('../../lib/opsbot');
 
-router.get('/', function(req, res, next) {
+router.get('/', function(req, res, _next) {
     res.locals.showReportForm = true;
     res.locals.showSuccess = false;
     res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
