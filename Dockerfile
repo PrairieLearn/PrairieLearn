@@ -1,5 +1,8 @@
 FROM centos:7
 
+
+# Note: readline-devel is a required dependency for rpy2
+
 RUN yum -y install \
         epel-release \
         https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/pgdg-centos96-9.6-3.noarch.rpm \
@@ -15,6 +18,8 @@ RUN yum -y install \
         python36u-devel \
         gcc \
         make \
+		readline-devel \ 
+		R \
     && yum clean all \
     && mkdir /var/postgres && chown postgres:postgres /var/postgres \
     && su postgres -c "/usr/pgsql-9.6/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log" \
