@@ -53,12 +53,12 @@ BEGIN
     END IF;
 
     IF state IS NULL THEN
-        FOR i in 1 .. array_length(nextVal, 1) LOOP
+        FOR i in 1 .. coalesce(array_length(nextVal, 1), 0) LOOP
             state.arr[i] = ROW(0, 0);
         END LOOP;
     END IF;
 
-    FOR i in 1 .. array_length(state.arr, 1) LOOP
+    FOR i in 1 .. coalesce(array_length(state.arr, 1), 0) LOOP
         itemState = state.arr[i];
         state.arr[i] = mul_sum(itemState, nextVal[i], nextWeight);
     END LOOP;
@@ -76,7 +76,9 @@ BEGIN
         RETURN NULL;
     END IF;
 
-    FOR i in 1 .. array_length(state.arr, 1) LOOP
+    RAISE NOTICE 'state: %', state;
+
+    FOR i in 1 .. coalesce(array_length(state.arr, 1), 0) LOOP
         result[i] = final_sum(state.arr[i]);
     END LOOP;
 

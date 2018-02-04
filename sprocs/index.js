@@ -132,6 +132,10 @@ module.exports = {
             'get_domain.sql',
             'calculate_predicted_question_score.sql',
             'weighted_arr_avg_2d.sql',
+            'calculate_predicted_score_for_randomly_generated_assessment.sql',
+            'array_add.sql',
+            'slice.sql',
+            'first.sql',
         ], function(filename, callback) {
             logger.verbose('Loading ' + filename);
             fs.readFile(path.join(__dirname, filename), 'utf8', function(err, sql) {

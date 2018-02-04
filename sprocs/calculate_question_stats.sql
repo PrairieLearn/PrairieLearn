@@ -73,7 +73,11 @@ BEGIN
             array_weighted_avg_2d(aq.incremental_submission_score_array_quintile_averages, aw.weight::DOUBLE PRECISION)
                 AS incremental_submission_score_array_quintile_averages,
             array_weighted_avg(aq.average_last_submission_score_quintiles, aw.weight::DOUBLE PRECISION)
-                AS average_last_submission_score_quintiles
+                AS average_last_submission_score_quintiles,
+            array_weighted_avg_2d(aq.incremental_submission_score_array_variance_quintiles, aw.weight::DOUBLE PRECISION)
+                AS incremental_submission_score_array_variance_quintiles,
+            array_weighted_avg(aq.last_submission_score_variance_quintiles, aw.weight::DOUBLE PRECISION)
+                AS last_submission_score_variance_quintiles
 
         FROM
             assessment_questions AS aq
@@ -122,7 +126,9 @@ BEGIN
             number_submissions_hist_with_perfect_submission,
             number_submissions_hist_with_no_perfect_submission,
             incremental_submission_score_array_quintile_averages,
-            average_last_submission_score_quintiles
+            average_last_submission_score_quintiles,
+            incremental_submission_score_array_variance_quintiles,
+            last_submission_score_variance_quintiles
         )
             SELECT
                 question_id_var,
@@ -158,7 +164,9 @@ BEGIN
                 ga.number_submissions_hist_with_perfect_submission,
                 ga.number_submissions_hist_with_no_perfect_submission,
                 ga.incremental_submission_score_array_quintile_averages,
-                ga.average_last_submission_score_quintiles
+                ga.average_last_submission_score_quintiles,
+                ga.incremental_submission_score_array_variance_quintiles,
+                ga.last_submission_score_variance_quintiles
             FROM
                 averages_grouped_by_type_and_mode AS ga
         ON CONFLICT (question_id, domain)
@@ -196,7 +204,9 @@ BEGIN
             number_submissions_hist_with_perfect_submission=EXCLUDED.number_submissions_hist_with_perfect_submission,
             number_submissions_hist_with_no_perfect_submission=EXCLUDED.number_submissions_hist_with_no_perfect_submission,
             incremental_submission_score_array_quintile_averages=EXCLUDED.incremental_submission_score_array_quintile_averages,
-            average_last_submission_score_quintiles=EXCLUDED.average_last_submission_score_quintiles
+            average_last_submission_score_quintiles=EXCLUDED.average_last_submission_score_quintiles,
+            incremental_submission_score_array_variance_quintiles=EXCLUDED.incremental_submission_score_array_variance_quintiles,
+            last_submission_score_variance_quintiles=EXCLUDED.last_submission_score_variance_quintiles
 
     WHERE EXISTS (SELECT * FROM averages_grouped_by_type_and_mode);
 END;

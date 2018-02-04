@@ -103,12 +103,6 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.questions, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.questions = result.rows;
-                console.log("before ----------");
-                for (var i = 0; i < res.locals.questions.length; i++) {
-                   console.log(res.locals.questions[i].predicted_quintile_scores);
-                }
-                console.log("after ----------");
-
                 callback(null);
             });
         },

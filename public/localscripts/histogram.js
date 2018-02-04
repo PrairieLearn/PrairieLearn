@@ -14,7 +14,7 @@ function histogram(selector, data, xgrid, options) {
         rightMargin: 20,
         bottomMargin: 55,
         leftMargin: 70,
-        xOrdinal: false
+        xOrdinal: false,
     });
 
     var width = 600 - options.leftMargin - options.rightMargin;
@@ -50,8 +50,8 @@ function histogram(selector, data, xgrid, options) {
     }
 
     xAxis
-        // .tickValues(xgrid)
-        // .tickFormat(xTickFormat)
+        .tickValues(xgrid)
+        .tickFormat(xTickFormat)
         .orient("bottom");
 
     var yAxis = d3.svg.axis()
@@ -107,8 +107,9 @@ function histogram(selector, data, xgrid, options) {
             .attr("width", function() { return xOrdinalScale.rangeBand(); });
     } else {
         rects
-            .attr("x", function(d, i) {return x(xgrid[i]);})
-            .attr("width", function(d, i) {return x(xgrid[i+1]) - x(xgrid[i]);});
+            .attr("x", function(d, i) { return x(xgrid[i]); })
+            // .attr("x", function(d, i) { console.log("i: " + i + ", d: " + d + ", xgrid[i]: " + xgrid[i]); return x(xgrid[i]); })
+            .attr("width", function(d, i) { return x(xgrid[1]) - x(xgrid[0]); });
     }
     rects
         .attr("y", function(d, i) {return y(d);})

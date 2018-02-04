@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <%- include('../partials/head'); %>
+    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
+    <script type="text/javascript" src="/javascripts/d3.min.js"></script>
+    <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
+    <script type="text/javascript" src="/javascripts/jquery.tablesorter.min.js"></script>
+    <script type="text/javascript" src="/javascripts/jquery.tablesorter.widgets.js"></script>
+    <script type="text/javascript" src="/localscripts/histogram.js"></script>
+    <script type="text/javascript" src="/localscripts/scatter.js"></script>
+    <script type="text/javascript" src="/localscripts/histmini.js"></script>
+    <script type="text/javascript" src="/localscripts/parallel_histograms.js"></script>
+</head>
+<body>
+<script>
+    $(function () {
+        $('[data-toggle="popover"]').popover()
+    });
+</script>
+<%- include('../partials/navbar', {navPage: 'assessment'}); %>
+<div id="content" class="container">
+
+    <!-- ###################################################################### -->
+    <!-- ###################################################################### -->
+
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+            <h3 class="panel-title">Assessment Generator for
+                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>"><%= assessment.title %></a>
+            </h3>
+
+        </div>
+        <div class="panel-body">
+            <h3> Overall </h3>
+            <div id="scoreHistOverall" class="scoreHistogram"></div>
+            <script>
+                $(function() {
+                    var data = [<%= asdf2.histogram %>];
+                    var xgrid = _.range(0, 110, 10);
+                    var options = {
+                        ymin: 0,
+                        xlabel: 'score / %',
+                        ylabel: 'number of students',
+                        xmin: 0,
+                        xmax: 100,
+                    };
+                    histogram("#scoreHistOverall", data, xgrid, options);
+                });
+            </script>
+
+            <% for (var i = 0; i < 5; i++) { %>
+                <h3> Quintile: <%= (i+1) %> </h3>
+                <h4> Mean: <%= (asdf[i].mean * 100).toFixed(3) %> </h4>
+                <h4> SD: <%= (asdf[i].sd * 100).toFixed(3) %> </h4>
+                <div id="scoreHist<%= i %>" class="scoreHistogram"></div>
+                <script>
+                    $(function() {
+                        var data = [<%= asdf[i].histogram %>];
+                        var xgrid = _.range(0, 110, 10);
+                        var options = {
+                            ymin: 0,
+                            xlabel: 'score / %',
+                            ylabel: 'number of students',
+                            xmin: 0,
+                            xmax: 100,
+                        };
+                        histogram("#scoreHist<%= i %>", data, xgrid, options);
+                    });
+                </script>
+            <% } %>
+        </div>
+       <div class="panel-footer">
+            Panel Footer
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

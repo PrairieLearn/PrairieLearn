@@ -10,12 +10,13 @@ WITH assessment_question_score_quintiles AS (
         JOIN assessments AS a ON (a.id = aq.assessment_id)
         JOIN generate_series(1,5) AS quintiles (quintile) ON TRUE
     WHERE
-        a.id = $assessment_id
+        a.id = $assessment_id AND
+        aq.quintile_question_scores[quintile] IS NOT NULL
 ),
 alternative_group_score_quintiles AS (
     SELECT
-        sum(aqsq.question_score) * coalesce(ag.number_choose / count(aq.id), 1) AS score,
-        sum(aqsq.max_score) * coalesce(ag.number_choose / count(aq.id), 1) AS max_score,
+        sum(aqsq.question_score) * coalesce(ag.number_choose::DOUBLE PRECISION / count(aq.id), 1) AS score,
+        sum(aqsq.max_score) * coalesce(ag.number_choose::DOUBLE PRECISION / count(aq.id), 1) AS max_score,
         coalesce(ag.number_choose, count(aq.id)) AS num_chosen_questions,
         ag.id AS alternative_group_id,
         aqsq.quintile AS quintile
@@ -29,8 +30,8 @@ alternative_group_score_quintiles AS (
 ),
 zone_score_quintiles AS (
     SELECT
-        sum(ag_score_quintiles.score) * coalesce(z.number_choose / sum(ag_score_quintiles.num_chosen_questions), 1) AS score,
-        sum(ag_score_quintiles.max_score) * coalesce(z.number_choose / sum(ag_score_quintiles.num_chosen_questions), 1) AS max_score,
+        sum(ag_score_quintiles.score) * coalesce(z.number_choose::DOUBLE PRECISION / sum(ag_score_quintiles.num_chosen_questions), 1) AS score,
+        sum(ag_score_quintiles.max_score) * coalesce(z.number_choose::DOUBLE PRECISION / sum(ag_score_quintiles.num_chosen_questions), 1) AS max_score,
         ag_score_quintiles.quintile AS quintile
     FROM
         alternative_group_score_quintiles AS ag_score_quintiles
@@ -42,7 +43,7 @@ zone_score_quintiles AS (
 ),
 assessment_score_quintiles AS (
     SELECT
-        sum(zone_score_quintiles.score) / sum(zone_score_quintiles.max_score) AS score,
+        sum(zone_score_quintiles.score)::DOUBLE PRECISION / sum(zone_score_quintiles.max_score) AS score,
         zone_score_quintiles.quintile AS quintile
     FROM
         zone_score_quintiles
@@ -65,7 +66,7 @@ WITH expected_assessment_question_scores AS (
         calculate_predicted_question_score(ARRAY(SELECT unnest(qs.incremental_submission_score_array_quintile_averages[quintiles.quintile:quintiles.quintile])),
                                            hw_qs.average_last_submission_score_quintiles[quintiles.quintile],
                                            aq.points_list,
-                                           aq.max_points) * aq.max_points / 100 AS score
+                                           aq.max_points) * aq.max_points / 100::DOUBLE PRECISION AS score
     FROM
         assessment_questions AS aq
         JOIN assessments AS a ON (a.id = aq.assessment_id)
@@ -77,8 +78,8 @@ WITH expected_assessment_question_scores AS (
 ),
 expected_alternative_group_scores AS (
     SELECT
-        sum(eaqs.score) * coalesce(ag.number_choose / count(aq.id), 1) AS score,
-        sum(eaqs.max_score) * coalesce(ag.number_choose / count(aq.id), 1) AS max_score,
+        sum(eaqs.score) * coalesce(ag.number_choose::DOUBLE PRECISION / count(aq.id), 1) AS score,
+        sum(eaqs.max_score) * coalesce(ag.number_choose::DOUBLE PRECISION / count(aq.id), 1) AS max_score,
         coalesce(ag.number_choose, count(aq.id)) AS num_chosen_questions,
         ag.id AS alternative_group_id,
         eaqs.quintile AS quintile
@@ -92,8 +93,8 @@ expected_alternative_group_scores AS (
 ),
 expected_zone_scores AS (
     SELECT
-        sum(eags.score) * coalesce(z.number_choose / sum(eags.num_chosen_questions), 1) AS score,
-        sum(eags.max_score) * coalesce(z.number_choose / sum(eags.num_chosen_questions), 1) AS max_score,
+        sum(eags.score) * coalesce(z.number_choose::DOUBLE PRECISION / sum(eags.num_chosen_questions), 1) AS score,
+        sum(eags.max_score) * coalesce(z.number_choose::DOUBLE PRECISION / sum(eags.num_chosen_questions), 1) AS max_score,
         eags.quintile AS quintile
     FROM
         expected_alternative_group_scores AS eags
@@ -105,7 +106,7 @@ expected_zone_scores AS (
 ),
 expected_assessment_scores AS (
     SELECT
-        sum(ezs.score) / sum(ezs.max_score) * 100 AS score_perc,
+        sum(ezs.score)::DOUBLE PRECISION / sum(ezs.max_score) * 100 AS score_perc,
         ezs.quintile AS quintile
     FROM
         expected_zone_scores AS ezs
@@ -127,7 +128,7 @@ WITH expected_assessment_question_scores AS (
         calculate_predicted_question_score(qs.incremental_submission_score_array_averages,
                                            hw_qs.average_last_submission_score,
                                            aq.points_list,
-                                           aq.max_points) * aq.max_points / 100 AS score
+                                           aq.max_points) * aq.max_points / 100::DOUBLE PRECISION AS score
     FROM
         assessment_questions AS aq
         JOIN assessments AS a ON (a.id = aq.assessment_id)
@@ -138,8 +139,8 @@ WITH expected_assessment_question_scores AS (
 ),
         expected_alternative_group_scores AS (
         SELECT
-            sum(eaqs.score) * coalesce(ag.number_choose / count(aq.id), 1) AS score,
-            sum(eaqs.max_score) * coalesce(ag.number_choose / count(aq.id), 1) AS max_score,
+            sum(eaqs.score) * coalesce(ag.number_choose::DOUBLE PRECISION / count(aq.id), 1) AS score,
+            sum(eaqs.max_score) * coalesce(ag.number_choose::DOUBLE PRECISION / count(aq.id), 1) AS max_score,
             coalesce(ag.number_choose, count(aq.id)) AS num_chosen_questions,
             ag.id AS alternative_group_id
         FROM
@@ -151,8 +152,8 @@ WITH expected_assessment_question_scores AS (
     ),
         expected_zone_scores AS (
         SELECT
-            sum(eags.score) * coalesce(z.number_choose / sum(eags.num_chosen_questions), 1) AS score,
-            sum(eags.max_score) * coalesce(z.number_choose / sum(eags.num_chosen_questions), 1) AS max_score
+            sum(eags.score) * coalesce(z.number_choose::DOUBLE PRECISION / sum(eags.num_chosen_questions), 1) AS score,
+            sum(eags.max_score) * coalesce(z.number_choose::DOUBLE PRECISION / sum(eags.num_chosen_questions), 1) AS max_score
         FROM
             expected_alternative_group_scores AS eags
             JOIN alternative_groups AS ag ON (ag.id = eags.alternative_group_id)
@@ -162,7 +163,7 @@ WITH expected_assessment_question_scores AS (
     ),
         expected_assessment_scores AS (
         SELECT
-            sum(ezs.score) / sum(ezs.max_score) * 100 AS score_perc
+            sum(ezs.score)::DOUBLE PRECISION / sum(ezs.max_score) * 100 AS score_perc
         FROM
             expected_zone_scores AS ezs
     )
@@ -202,7 +203,7 @@ expected_assessment_question_quintile_scores AS (
             ARRAY(SELECT unnest(qs.incremental_submission_score_array_quintile_averages[quintiles.quintile:quintiles.quintile])),
             hw_qs.average_last_submission_score,
             aq.points_list,
-            aq.max_points) / 100 AS score
+            aq.max_points) / 100::DOUBLE PRECISION AS score
     FROM
         assessment_questions AS aq
     JOIN assessments AS a ON (a.id = aq.assessment_id)

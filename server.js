@@ -205,6 +205,12 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessme
     require('./pages/shared/floatFormatters'),
     require('./pages/instructorAssessment/instructorAssessment'),
 ]);
+app.use('/pl/course_instance/:course_instance_id/instructor/examGenerator/assessment/:assessment_id', [
+    require('./middlewares/selectAndAuthzAssessment'),
+    require('./pages/shared/assessmentStatDescriptions'),
+    require('./pages/shared/floatFormatters'),
+    require('./pages/examGenerator/examGenerator'),
+]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
     require('./pages/shared/floatFormatters'),

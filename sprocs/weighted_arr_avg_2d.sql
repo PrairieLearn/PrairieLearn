@@ -63,7 +63,7 @@ BEGIN
         RETURN state;
     END IF;
 
-    FOR i in 1..array_length(nextVal, 1) LOOP
+    FOR i in 1..coalesce(array_length(nextVal, 1), 0) LOOP
         SELECT ARRAY (SELECT unnest(nextVal[i:i])) INTO sub_input;
         sub_result = array_weighted_avg_sfunc(state.arr[i], sub_input, nextWeight);
         state.arr[i] = sub_result;
@@ -85,15 +85,18 @@ BEGIN
         RETURN NULL;
     END IF;
 
-    num_rows = array_length(state.arr, 1);
-    num_cols = array_length(state.arr[1].arr, 1);
+    num_rows = coalesce(array_length(state.arr, 1), 0);
+    num_cols = 0;
+    FOR i in 1..num_rows LOOP
+        num_cols = greatest(num_cols, coalesce(array_length(state.arr[i].arr, 1), 0));
+    END LOOP;
 
     result = array_fill(NULL::DOUBLE PRECISION, ARRAY[num_rows, num_cols]);
 
-    FOR i in 1..array_length(state.arr, 1) LOOP
+    FOR i in 1..coalesce(array_length(state.arr, 1), 0) LOOP
         sub_result = array_weighted_avg_finalfunc(state.arr[i]);
 
-        FOR j in 1..array_length(sub_result, 1) LOOP
+        FOR j in 1..coalesce(array_length(sub_result, 1), 0) LOOP
             result[i][j] = sub_result[j];
         END LOOP;
     END LOOP;
