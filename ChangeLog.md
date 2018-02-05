@@ -92,6 +92,7 @@
   * Add `load-test` support for v2 questions (Matt West).
 
   * Add submission info modal with external grading stats (Nathan Walters).
+  * Add locking to enable multi-server deployments (Matt West).
 
   * Fix broken file upload element (Nathan Walters).
 
