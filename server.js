@@ -455,6 +455,7 @@ app.use('/pl/course/:course_id/overview', require('./pages/courseOverview/course
 app.use('/pl/course/:course_id/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
 app.use('/pl/course/:course_id/syncs', require('./pages/courseSyncs/courseSyncs'));
 app.use('/pl/course/:course_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
+app.use('/pl/course/:course_id/questions', require('./pages/courseQuestions/courseQuestions'));
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
