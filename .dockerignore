@@ -25,4 +25,5 @@
 !sprocs/
 !sync/
 !tests/
+!tools/
 !webhooks/

@@ -30,12 +30,14 @@
   * Add blocked-event-loop monitor (Matt West).
 
   * Add per-job load tracking (Matt West).
-  
+
   * Add _R_ to the `centos7-plbase` Docker Image (James Balamuta).
 
   * Add `centos7-plbase` Docker image (Matt West).
 
   * Add memory and CPU limits to local external graders (Matt West).
+
+  * Add `tools/` to Docker image (Matt West).
 
   * Fix broken file upload element (Nathan Walters).
 
