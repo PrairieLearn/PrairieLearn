@@ -12,6 +12,13 @@ BEGIN
             arr weighted_avg_type[]
         );
     END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'array_weighted_avg_type_new') THEN
+        CREATE TYPE array_weighted_avg_type_new AS (
+            running_sums DOUBLE PRECISION[],
+            running_weight_total DOUBLE PRECISION
+        );
+    END IF;
 END
 $$;
 
@@ -44,31 +51,27 @@ END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION
-    array_weighted_avg_sfunc (state array_weighted_avg_type, nextVal anyarray, nextWeight double precision) RETURNS array_weighted_avg_type AS $$
+    array_weighted_avg_sfunc (state array_weighted_avg_type_new, nextVal anyarray, nextWeight double precision) RETURNS array_weighted_avg_type_new AS $$
 DECLARE
-    itemState weighted_avg_type;
+    itemState DOUBLE PRECISION;
 BEGIN
     IF nextVal IS NULL THEN
         RETURN state;
     END IF;
 
-    IF state IS NULL THEN
-        FOR i in 1 .. coalesce(array_length(nextVal, 1), 0) LOOP
-            state.arr[i] = ROW(0, 0);
-        END LOOP;
-    END IF;
-
-    FOR i in 1 .. coalesce(array_length(state.arr, 1), 0) LOOP
-        itemState = state.arr[i];
-        state.arr[i] = mul_sum(itemState, nextVal[i], nextWeight);
+    FOR i in 1 .. coalesce(array_length(nextVal, 1), 0) LOOP
+        itemState = state.running_sums[i];
+        state.running_sums[i] = coalesce(itemState, 0) + nextVal[i] * nextWeight;
     END LOOP;
+
+    state.running_weight_total = state.running_weight_total + nextWeight;
 
     RETURN state;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION
-    array_weighted_avg_finalfunc(state array_weighted_avg_type) RETURNS double precision[] AS $$
+    array_weighted_avg_finalfunc(state array_weighted_avg_type_new) RETURNS double precision[] AS $$
 DECLARE
     result DOUBLE PRECISION[];
 BEGIN
@@ -78,8 +81,8 @@ BEGIN
 
     RAISE NOTICE 'state: %', state;
 
-    FOR i in 1 .. coalesce(array_length(state.arr, 1), 0) LOOP
-        result[i] = final_sum(state.arr[i]);
+    FOR i in 1 .. coalesce(array_length(state.running_sums, 1), 0) LOOP
+        result[i] = state.running_sums[i] / state.running_weight_total;
     END LOOP;
 
     RETURN result;
@@ -89,6 +92,6 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 DROP AGGREGATE IF EXISTS array_weighted_avg (anyarray, DOUBLE PRECISION) CASCADE;
 CREATE AGGREGATE array_weighted_avg (anyarray, DOUBLE PRECISION) (
     sfunc = array_weighted_avg_sfunc,
-    stype = array_weighted_avg_type,
+    stype = array_weighted_avg_type_new,
     finalfunc = array_weighted_avg_finalfunc
 );
