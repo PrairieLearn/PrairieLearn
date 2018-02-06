@@ -448,6 +448,7 @@ app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_que
 // Course pages //////////////////////////////////////////////////////
 
 app.use('/pl/course/:course_id', require('./middlewares/authzCourse')); // set res.locals.course
+app.use('/pl/course/:course_id', require('./middlewares/selectOpenIssueCount')); // for the Issue badge in the navbar
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.urlPrefix = '/pl/course/' + req.params.course_id; next();});
 app.use('/pl/course/:course_id', function(req, res, next) {res.locals.navbarType = 'course'; next();});
 app.use(/^\/pl\/course\/[0-9]+\/?$/, function(req, res, _next) {res.redirect(res.locals.urlPrefix + '/overview');}); // redirect plain course URL to overview page
