@@ -460,8 +460,9 @@ app.use('/pl/course/:course_id/question/:question_id', [
     require('./middlewares/selectAndAuthzCourseQuestion'),
     require('./pages/shared/assessmentStatDescriptions'),
     require('./pages/shared/floatFormatters'),
-    require('./pages/courseQuestion/courseQuestion')
+    require('./pages/courseQuestion/courseQuestion'),
 ]);
+app.use('/pl/course/:course_id/issues', require('./pages/courseIssues/courseIssues'));
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
