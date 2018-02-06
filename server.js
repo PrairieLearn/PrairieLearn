@@ -457,6 +457,7 @@ app.use('/pl/course/:course_id/syncs', require('./pages/courseSyncs/courseSyncs'
 app.use('/pl/course/:course_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 app.use('/pl/course/:course_id/questions', require('./pages/courseQuestions/courseQuestions'));
 app.use('/pl/course/:course_id/question/:question_id', [
+    require('./middlewares/selectAndAuthzCourseQuestion'),
     require('./pages/courseQuestion/courseQuestion')
 ]);
 
