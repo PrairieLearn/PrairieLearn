@@ -458,6 +458,8 @@ app.use('/pl/course/:course_id/jobSequence', require('./pages/instructorJobSeque
 app.use('/pl/course/:course_id/questions', require('./pages/courseQuestions/courseQuestions'));
 app.use('/pl/course/:course_id/question/:question_id', [
     require('./middlewares/selectAndAuthzCourseQuestion'),
+    require('./pages/shared/assessmentStatDescriptions'),
+    require('./pages/shared/floatFormatters'),
     require('./pages/courseQuestion/courseQuestion')
 ]);
 
