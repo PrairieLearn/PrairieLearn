@@ -136,13 +136,13 @@ router.get('/', function(req, res, next) {
             _.assign(res.locals, filenames(res.locals));
             callback(null);
         },
-        /*(callback) => {
+        (callback) => {
             sqldb.query(sql.assessment_question_stats, {question_id: res.locals.question.id}, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.assessment_stats = result.rows;
                 callback(null);
             });
-        }, */
+        }, 
         (callback) => {
             res.locals.question_attempts_histogram = null;
             res.locals.question_attempts_before_giving_up_histogram = null;
