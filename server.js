@@ -12,10 +12,6 @@ var http = require('http');
 var https = require('https');
 var blocked = require('blocked-at');
 
-blocked((time, stack) => {
-  console.log(`BLOCKED-AT: Blocked for ${time}ms, operation started here:`, stack); // eslint-disable-line no-console
-}, {threshold: 100}); // threshold in milliseconds
-
 var logger = require('./lib/logger');
 var config = require('./lib/config');
 var load = require('./lib/load');
@@ -44,6 +40,14 @@ if (config.startServer) {
         logger.addFileLogging(config.logFilename);
         logger.verbose('activated file logging: ' + config.logFilename);
     }
+}
+
+if (config.blockedWarnEnable) {
+    blocked((time, stack) => {
+        const msg = `BLOCKED-AT: Blocked for ${time}ms`;
+        logger.verbose(msg, {stack});
+        console.log(msg + '\n' + stack.join('\n')); // eslint-disable-line no-console
+    }, {threshold: config.blockedWarnThresholdMS}); // threshold in milliseconds
 }
 
 const app = express();
