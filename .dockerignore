@@ -19,6 +19,7 @@
 !public/
 !question-servers/
 !requirements.txt
+!r-requirements.R
 !server.js
 !setup.cfg
 !schemas/

@@ -1,7 +1,10 @@
 FROM centos:7
 
 
-# Note: readline-devel is a required dependency for rpy2
+# Notes: The following dependencies are related to R
+# readline-devel is a required dependency for rpy2
+# libcurl-devel and openssl-devel for rvest
+# libxml2-devel for xml2
 
 RUN yum -y install \
         epel-release \
@@ -18,7 +21,10 @@ RUN yum -y install \
         python36u-devel \
         gcc \
         make \
-		readline-devel \ 
+        readline-devel \
+        libcurl-devel \
+        openssl-devel \ 
+        libxml2-devel \
 		R \
     && yum clean all \
     && mkdir /var/postgres && chown postgres:postgres /var/postgres \
@@ -39,6 +45,14 @@ COPY . /PrairieLearn/
 RUN chmod +x /PrairieLearn/docker/init.sh \
     && mv /PrairieLearn/docker/config.json /PrairieLearn \
     && mkdir /course
+
+# r-requirements.R is copied in the above setup.
+# Install a list of R packages to work with
+RUN chmod +x /PrairieLearn/r-requirements.R \
+    && mkdir -p /usr/share/doc/R-3.4.3/html/ \
+    && touch /usr/share/doc/R-3.4.3/html/packages.html \
+    && touch /usr/share/doc/R-3.4.3/html/R.css \
+    && su root -c "Rscript /PrairieLearn/r-requirements.R"
 
 HEALTHCHECK CMD curl --fail http://localhost:3000/pl/webhooks/ping || exit 1
 CMD /PrairieLearn/docker/init.sh
