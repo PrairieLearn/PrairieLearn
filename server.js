@@ -14,7 +14,7 @@ var blocked = require('blocked-at');
 
 blocked((time, stack) => {
   console.log(`BLOCKED-AT: Blocked for ${time}ms, operation started here:`, stack)
-}, {threshold: 1000}); // threshold in milliseconds
+}, {threshold: 100}); // threshold in milliseconds
 
 var logger = require('./lib/logger');
 var config = require('./lib/config');
