@@ -53,7 +53,7 @@
               </tr>
               <tr>
                 <th>Issues</th>
-                <td><%- include('../partials/issueBadge', {count: open_issue_count}); %></td>
+                <td><%- include('../partials/issueBadge', {count: open_issue_count, issueQid: question.qid}); %></td>
               </tr>
               <tr>
                 <th>Assessments</th>
