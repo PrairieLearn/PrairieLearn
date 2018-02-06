@@ -13,7 +13,7 @@ var https = require('https');
 var blocked = require('blocked-at');
 
 blocked((time, stack) => {
-  console.log(`BLOCKED-AT: Blocked for ${time}ms, operation started here:`, stack)
+  console.log(`BLOCKED-AT: Blocked for ${time}ms, operation started here:`, stack); // eslint-disable-line no-console
 }, {threshold: 100}); // threshold in milliseconds
 
 var logger = require('./lib/logger');
