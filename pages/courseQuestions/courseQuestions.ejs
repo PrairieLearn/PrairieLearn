@@ -35,8 +35,7 @@
               <% questions.forEach(function(question) { %>
               <tr>
                 <td class="align-middle">
-                  <!-- <a href="<%= urlPrefix %>/question/<%= question.id %>/"><%= question.title %></a> -->
-                  <%= question.title %>
+                  <a href="<%= urlPrefix %>/question/<%= question.id %>/"><%= question.title %></a>
                   <%- include('../partials/issueBadge', {count: question.open_issue_count, issueQid: question.qid}); %>
                 </td>
                 <td class="align-middle"><%= question.qid %></td>
