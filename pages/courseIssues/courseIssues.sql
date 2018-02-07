@@ -21,8 +21,9 @@ ORDER BY open;
 -- BLOCK select_issues
 SELECT
     i.id AS issue_id,
-    format_date_iso8601(now(), c.display_timezone) AS now_date,
-    format_date_iso8601(i.date, c.display_timezone) AS formatted_date,
+    format_date_iso8601(now(), coalesce(ci.display_timezone, c.display_timezone)) AS now_date,
+    format_date_iso8601(i.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date,
+    ci.short_name AS course_instance_short_name,
     CASE WHEN i.assessment_id IS NOT NULL THEN assessments_format(i.assessment_id) ELSE NULL END AS assessment,
     i.question_id,
     q.directory AS question_qid,
@@ -45,6 +46,8 @@ FROM
     ) AS selected_issues
     JOIN issues AS i ON (i.id = selected_issues.issue_id)
     JOIN pl_courses AS c ON (c.id = i.course_id)
+    LEFT JOIN course_instances AS ci ON (ci.id = i.course_instance_id)
+    LEFT JOIN assessments AS a ON (a.id = i.assessment_id)
     LEFT JOIN questions AS q ON (q.id = i.question_id)
     LEFT JOIN users AS u ON (u.user_id = i.user_id)
 WHERE
