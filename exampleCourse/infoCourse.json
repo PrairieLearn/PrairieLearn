@@ -20,10 +20,12 @@
         {"name": "exampleCourse", "color": "gray1", "description": "Question originally written for exampleCourse"},
         {"name": "mwest", "color": "gray1", "description": "Question originally written by mwest"},
         {"name": "tbretl", "color": "blue1", "description": "Question originally written by tbretl"},
+        {"name": "balamut2", "color": "blue1", "description": "Question originally written by balamut2"},
         {"name": "tpl101", "color": "gray1", "description": "Question originally written for the TPL 101 template course"},
         {"name": "fa17", "color": "gray1", "description": "Question written in Fall 2017"},
         {"name": "sp18", "color": "gray1", "description": "Question written in Spring 2018"},
         {"name": "v2", "color": "red1", "description": "v2 generation question"},
-        {"name": "v3", "color": "green1", "description": "v3 generation question (freeform)"}
+        {"name": "v3", "color": "green1", "description": "v3 generation question (freeform)"},
+        {"name": "rstats", "color": "orange3", "description": "Questions that use the R language"}
     ]
 }
