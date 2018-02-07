@@ -24,17 +24,22 @@ def generate(data):
     ds_nrow = ds_dim[0]
     ds_ncol = ds_dim[1]
     
+    if ds_nrow > 15:
+       ds_nrow = random.randint(6, 15)
+    
     # Output Data Table
-    data['params']['display_data'] = robjects.r("knitr::kable(get('%s'), format = 'html', row.names = FALSE)" % (ds_name))
+    data['params']['display_data'] = str(robjects.r("knitr::kable(head(get('%s'), n = %s), align = rep('c', %s), format = 'html', row.names = FALSE)" % 
+                                                    (ds_name, ds_nrow, ds_ncol)))
 
     # Provide data set name
     data['params']['ds_name'] = ds_name
     
     # Simulate some noise
     data['params']['bad_row_lo'] = ds_nrow + random.randint(-8, -1)
-    data['params']['bad_row_medium'] = ds_nrow + random.randint(1, 7)
-    data['params']['bad_row_high'] = ds_nrow + random.randint(8, 15)
-    data['params']['bad_row_highest'] = ds_nrow + random.randint(16, 30)
+    data['params']['bad_row_medium'] = ds_nrow + random.randint(1, 3)
+    data['params']['bad_row_high'] = ds_nrow + random.randint(4, 6)
+    data['params']['bad_row_highest'] = ds_nrow + random.randint(6, 9)
+    
     data['params']['bad_col_lo'] = ds_ncol + random.randint(-2, -1)
     data['params']['bad_col_medium'] = ds_ncol + random.randint(1, 3)
     data['params']['bad_col_high'] = ds_ncol + random.randint(4, 7)

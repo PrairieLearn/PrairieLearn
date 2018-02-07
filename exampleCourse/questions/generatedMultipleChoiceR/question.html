@@ -2,7 +2,7 @@
 <p>
 	Oh no! The scientist in charge of checking the data forgot to include the data's dimensions. Instead, they provided in their report the entire data.frame!
 	
-	{{params.display_data}}
+	{{{params.display_data}}}
 	
 </p>
 </pl_question_panel>
@@ -12,10 +12,10 @@
 <p>1. <pl_question_panel>How many observations, $n$, does the data set contain?</pl_question_panel>
 <pl_multiple_choice answers_name="num_obs" weight="1">
   <pl_answer correct="true">
-    $n = {{params.ds_nrow}}$
+    $n = {{correct_answers.ds_nrow}}$
   </pl_answer>
   <pl_answer correct="false">
-    $n = {{params.ds_ncol}}$
+    $n = {{correct_answers.ds_ncol}}$
   </pl_answer>
   <pl_answer correct="false">
     $n = {{params.bad_row_lo}}$
@@ -35,10 +35,10 @@
 <p>2. <pl_question_panel>How many variables, $p$, does the data set contain?</pl_question_panel>
 <pl_multiple_choice answers_name="num_vars" weight="1">
   <pl_answer correct="false">
-    $p = {{params.ds_nrow}}$
+    $p = {{correct_answers.ds_nrow}}$
   </pl_answer>
   <pl_answer correct="true">
-    $p = {{params.ds_ncol}}$
+    $p = {{correct_answers.ds_ncol}}$
   </pl_answer>
   <pl_answer correct="false">
     $p = {{params.bad_col_lo}}$
