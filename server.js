@@ -10,6 +10,7 @@ var cookieParser = require('cookie-parser');
 var passport = require('passport');
 var http = require('http');
 var https = require('https');
+var blocked = require('blocked-at');
 
 var logger = require('./lib/logger');
 var config = require('./lib/config');
@@ -39,6 +40,14 @@ if (config.startServer) {
         logger.addFileLogging(config.logFilename);
         logger.verbose('activated file logging: ' + config.logFilename);
     }
+}
+
+if (config.blockedWarnEnable) {
+    blocked((time, stack) => {
+        const msg = `BLOCKED-AT: Blocked for ${time}ms`;
+        logger.verbose(msg, {stack});
+        console.log(msg + '\n' + stack.join('\n')); // eslint-disable-line no-console
+    }, {threshold: config.blockedWarnThresholdMS}); // threshold in milliseconds
 }
 
 const app = express();
