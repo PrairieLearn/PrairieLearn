@@ -18,10 +18,15 @@ var sanitizeName = function(name) {
 };
 
 var filenames = function(locals) {
+    
     var prefix = sanitizeName(locals.course.short_name)
-        + '_'
-        /*+ sanitizeName(locals.course_instance.short_name) 
-        + '_' */
+        + '_';
+    if (typeof locals.course_instance !== 'undefined') {
+        prefix = prefix
+        + sanitizeName(locals.course_instance.short_name)
+        + '_';
+    }
+    prefix = prefix
         + sanitizeName(locals.question.qid + '')
         + '_';
     return {
@@ -79,7 +84,7 @@ function processIssue(req, res, callback) {
     sqldb.callOneRow('variants_ensure_question', [variant_id, res.locals.question.id], (err, _result) => {
         if (ERR(err, callback)) return;
 
-        const course_data = _.pick(res.locals, ['variant', 'question', 'course']);
+        const course_data = _.pick(res.locals, ['variant', 'question', 'course_instance', 'course']);
         const params = [
             variant_id,
             description, // student message
@@ -142,7 +147,7 @@ router.get('/', function(req, res, next) {
                 res.locals.assessment_stats = result.rows;
                 callback(null);
             });
-        }, 
+        },
         (callback) => {
             res.locals.question_attempts_histogram = null;
             res.locals.question_attempts_before_giving_up_histogram = null;

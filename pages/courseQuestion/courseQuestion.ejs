@@ -55,6 +55,12 @@
                 <th>Issues</th>
                 <td><%- include('../partials/issueBadge', {count: open_issue_count, issueQid: question.qid}); %></td>
               </tr>
+              <% if (typeof assessment !== 'undefined') { %>
+              <tr>
+                <th>Assessments</th>
+                <td><%- include('../partials/assessments', {assessments: assessments}); %></td>
+              </tr>
+              <% } %>
               <% if (question.type == 'Freeform') { %>
               <tr>
                 <th class="align-middle">Tests</th>
