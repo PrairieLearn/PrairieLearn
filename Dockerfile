@@ -5,6 +5,7 @@ FROM centos:7
 # readline-devel is a required dependency for rpy2
 # libcurl-devel and openssl-devel for rvest
 # libxml2-devel for xml2
+# libpng-devel for png
 
 RUN yum -y install \
         epel-release \
@@ -25,7 +26,8 @@ RUN yum -y install \
         libcurl-devel \
         openssl-devel \ 
         libxml2-devel \
-		R \
+		libpng-devel \
+        R \
     && yum clean all \
     && mkdir /var/postgres && chown postgres:postgres /var/postgres \
     && su postgres -c "/usr/pgsql-9.6/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log" \
