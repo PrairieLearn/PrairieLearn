@@ -306,11 +306,11 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
     require('./middlewares/selectAndAuthzInstructorQuestion'),
     require('./pages/shared/assessmentStatDescriptions'),
     require('./pages/shared/floatFormatters'),
-    require('./pages/instructorQuestion/instructorQuestion'),
+    require('./pages/courseQuestion/courseQuestion'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/gradebook', require('./pages/instructorGradebook/instructorGradebook'));
 app.use('/pl/course_instance/:course_instance_id/instructor/questions', require('./pages/instructorQuestions/instructorQuestions'));
-app.use('/pl/course_instance/:course_instance_id/instructor/issues', require('./pages/instructorIssues/instructorIssues'));
+app.use('/pl/course_instance/:course_instance_id/instructor/issues', require('./pages/courseIssues/courseIssues'));
 app.use('/pl/course_instance/:course_instance_id/instructor/grading_job', require('./pages/instructorGradingJob/instructorGradingJob'));
 app.use('/pl/course_instance/:course_instance_id/instructor/syncs', require('./pages/courseSyncs/courseSyncs'));
 app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
