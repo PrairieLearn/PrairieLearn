@@ -6,6 +6,7 @@ FROM centos:7
 # libcurl-devel and openssl-devel for rvest
 # libxml2-devel for xml2
 # libpng-devel for png
+# libjpeg-turbo-devel for jpeg
 
 RUN yum -y install \
         epel-release \
@@ -26,7 +27,8 @@ RUN yum -y install \
         libcurl-devel \
         openssl-devel \ 
         libxml2-devel \
-		libpng-devel \
+        libpng-devel \
+        libjpeg-turbo-devel \
         R \
     && yum clean all \
     && mkdir /var/postgres && chown postgres:postgres /var/postgres \
