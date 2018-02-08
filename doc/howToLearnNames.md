@@ -87,6 +87,17 @@ Do the following things:
 * Copy the questions `exampleCourse/questions/whichFace` and `exampleCourse/questions/whichName` into your course (creating new uuids as usual).
 * Copy the assessment `exampleCourse/courseInstances/Sp18/assessments/learn_names` into your course (creating new uuids as usual).
 
+You'll want to make sure that the student names and images are available neither to the public nor to other students. One way to do this would be to never push the new questions or new assessment to the remote server. Another way would be to use the access rule that appears in the example `infoAssessment.json`:
+```
+    "allowAccess": [
+        {
+            "role": "Instructor",
+            "credit": 100
+        }
+    ],
+```
+This allows access to `learn_names` assessment only to instructors.
+
 ## Learn some names!
 
 Keep at it. Never give up.
