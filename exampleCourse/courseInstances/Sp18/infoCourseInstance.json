@@ -1,0 +1,18 @@
+{
+    "uuid": "ab523825-b62a-47d2-93d0-6847e67d1933",
+    "shortName": "Sp18",
+    "longName": "Spring 2018",
+    "userRoles": {
+        "tbretl@illinois.edu": "Instructor",
+        "zilles@illinois.edu": "TA",
+        "mussulma@illinois.edu": "TA",
+        "nwalter2@illinois.edu": "Student",
+        "mwest@illinois.edu": "Student"
+    },
+    "allowAccess": [
+        {
+            "startDate": "1800-01-19T00:00:01",
+            "endDate": "2400-05-13T23:59:59"
+        }
+    ]
+}
