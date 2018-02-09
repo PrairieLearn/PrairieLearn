@@ -12,49 +12,54 @@ module.exports.run = function(callback) {
         config.groupName,
         config.serverLoadAverageIntervalSec,
     ];
-    sqldb.callOneRow('server_loads_current', params, (err, result) => {
+    sqldb.call('server_loads_current', params, (err, result) => {
         if (ERR(err, callback)) return;
-        const stats = result.rows[0];
-
-        const cloudwatch = new AWS.CloudWatch();
-        const dimensions = [{Name: 'By Group', Value: config.groupName}];
         const params = {
-            MetricData: [
+            Namespace: 'PrairieLearn',
+            MetricData: [],
+        };
+        _.forEach(result.rows, (row) => {
+            const dimensions = [
+                {Name: 'Server Group', Value: config.groupName},
+                {Name: 'Job Type', Value: row.job_type},
+            ];
+            params.MetricData.push(...[
                 {
                     MetricName: 'InstanceCount',
                     Dimensions: dimensions,
                     StorageResolution: 1,
-                    Timestamp: stats.timestamp_formatted,
+                    Timestamp: row.timestamp_formatted,
                     Unit: 'Count',
-                    Value: stats.instance_count,
+                    Value: row.instance_count,
                 },
                 {
                     MetricName: 'CurrentJobs',
                     Dimensions: dimensions,
                     StorageResolution: 1,
-                    Timestamp: stats.timestamp_formatted,
+                    Timestamp: row.timestamp_formatted,
                     Unit: 'Count',
-                    Value: stats.current_jobs,
+                    Value: row.current_jobs,
                 },
                 {
                     MetricName: 'MaxJobs',
                     Dimensions: dimensions,
                     StorageResolution: 1,
-                    Timestamp: stats.timestamp_formatted,
+                    Timestamp: row.timestamp_formatted,
                     Unit: 'Count',
-                    Value: stats.max_jobs,
+                    Value: row.max_jobs,
                 },
                 {
                     MetricName: 'LoadPercentage',
                     Dimensions: dimensions,
                     StorageResolution: 1,
-                    Timestamp: stats.timestamp_formatted,
+                    Timestamp: row.timestamp_formatted,
                     Unit: 'Percent',
-                    Value: stats.load_perc,
+                    Value: row.load_perc,
                 },
-            ],
-            Namespace: 'Server',
-        };
+            ]);
+        });
+
+        const cloudwatch = new AWS.CloudWatch();
         cloudwatch.putMetricData(params, function(err, _data) {
             if (ERR(err, callback)) return;
             callback(null);
