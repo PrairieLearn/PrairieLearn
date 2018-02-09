@@ -59,6 +59,8 @@
 
   * Fix bug in handling of MATLAB format in answers submitted to `pl_matrix_input` (Tim Bretl).
 
+  * Fix request load tracking (Matt West).
+
   * Change to Bootstrap 4 (Nathan Walters).
 
   * Change to NodeJS 8.x LTS (Matt West).
