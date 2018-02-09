@@ -9,7 +9,7 @@ WHERE
     ci.deleted_at IS NULL
     AND ci.course_id = $course_id
 ORDER BY
-    ci.number;
+    ci.number DESC;
 
 -- BLOCK questions
 WITH issue_count AS (
