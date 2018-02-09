@@ -29,6 +29,9 @@
                 <th>QID</th>
                 <th class="filter-select filter-exact" data-placeholder="Choose topic">Topic</th>
                 <th data-placeholder="Choose tag">Tags</th>
+                <% course_instance_list.forEach( function(ci) { %>
+                <th><%= ci.course_instance_short_name %></th>
+                <% }); %>
               </tr>
             </thead>
             <tbody>

@@ -11,18 +11,26 @@ router.get('/', function(req, res, next) {
     var params = {
         course_id: res.locals.course.id,
     };
-    sqldb.query(sql.questions, params, function(err, result) {
+    sqldb.query(sql.course_instance_list, params, function(err, result) {
         if (ERR(err, next)) return;
-        res.locals.questions = result.rows;
-
+        res.locals.course_instance_list = result.rows;
+        
         var params = {
             course_id: res.locals.course.id,
         };
-        sqldb.query(sql.tags, params, function(err, result) {
+        sqldb.query(sql.questions, params, function(err, result) {
             if (ERR(err, next)) return;
-            res.locals.all_tags = result.rows;
+            res.locals.questions = result.rows;
+    
+            var params = {
+                course_id: res.locals.course.id,
+            };
+            sqldb.query(sql.tags, params, function(err, result) {
+                if (ERR(err, next)) return;
+                res.locals.all_tags = result.rows;
             
-            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            });
         });
     });
 });

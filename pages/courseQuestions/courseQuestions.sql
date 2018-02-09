@@ -1,3 +1,16 @@
+-- BLOCK course_instance_list
+SELECT
+    ci.id AS course_instance_id,
+    ci.number AS course_instance_number,
+    ci.short_name AS course_instance_short_name
+FROM
+    course_instances AS ci
+WHERE
+    ci.deleted_at IS NULL
+    AND ci.course_id = $course_id
+ORDER BY
+    ci.number;
+
 -- BLOCK questions
 WITH issue_count AS (
     SELECT
