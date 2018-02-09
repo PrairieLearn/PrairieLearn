@@ -11,7 +11,7 @@ var passport = require('passport');
 var http = require('http');
 var https = require('https');
 var blocked = require('blocked-at');
-var onFinished = require('on-finished')
+var onFinished = require('on-finished');
 
 var logger = require('./lib/logger');
 var config = require('./lib/config');
@@ -118,6 +118,7 @@ app.use(require('./middlewares/logRequest'));
 app.use(function(req, res, next) {load.startJob(res.locals.response_id); next();});
 app.use(function(req, res, next) {
     onFinished(res, function (err, res) {
+        if (ERR(err, () => {})) logger.verbose('on-request-finished error', {err});
         load.endJob(res.locals.response_id);
     });
     next();
