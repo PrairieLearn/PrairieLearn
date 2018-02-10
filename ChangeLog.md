@@ -29,6 +29,8 @@
 
   * Add blocked-event-loop monitor (Matt West).
 
+  * Add per-job load tracking (Matt West).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).

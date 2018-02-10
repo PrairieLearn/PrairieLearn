@@ -53,6 +53,7 @@
         "socket.io-client": "^2.0.4",
         "tar": "^4.2.0",
         "three": "^0.89.0",
+        "uuid": "^3.2.1",
         "winston": "^2.4.0"
     },
     "devDependencies": {

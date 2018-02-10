@@ -1,5 +1,4 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 var fs = require('fs');
 var path = require('path');
 var favicon = require('serve-favicon');
@@ -12,6 +11,7 @@ var http = require('http');
 var https = require('https');
 var blocked = require('blocked-at');
 var onFinished = require('on-finished');
+var uuidv4 = require('uuid/v4');
 
 var logger = require('./lib/logger');
 var config = require('./lib/config');
@@ -98,9 +98,20 @@ app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
 
 // Middleware for all requests
 // response_id is logged on request, response, and error to link them together
-var chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-app.use(function(req, res, next) {res.locals.response_id = _.times(12, function() {return _.sample(chars);}).join(''); next();});
+app.use(function(req, res, next) {res.locals.response_id = uuidv4(); next();});
 app.use(function(req, res, next) {res.locals.config = config; next();});
+
+// load accounting for requests
+app.use(function(req, res, next) {load.startJob('request', res.locals.response_id); next();});
+app.use(function(req, res, next) {
+    onFinished(res, function (err, res) {
+        if (ERR(err, () => {})) logger.verbose('on-request-finished error', {err});
+        load.endJob('request', res.locals.response_id);
+    });
+    next();
+});
+
+// More middlewares
 app.use(require('./middlewares/logResponse')); // defers to end of response
 app.use(require('./middlewares/cors'));
 app.use(require('./middlewares/date'));
@@ -114,12 +125,12 @@ app.use(require('./middlewares/authn')); // authentication, set res.locals.authn
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
 app.use(require('./middlewares/logRequest'));
 
-// load accounting
-app.use(function(req, res, next) {load.startJob(res.locals.response_id); next();});
+// load accounting for authenticated accesses
+app.use(function(req, res, next) {load.startJob('authed_request', res.locals.response_id); next();});
 app.use(function(req, res, next) {
     onFinished(res, function (err, res) {
         if (ERR(err, () => {})) logger.verbose('on-request-finished error', {err});
-        load.endJob(res.locals.response_id);
+        load.endJob('authed_request', res.locals.response_id);
     });
     next();
 });
@@ -454,8 +465,9 @@ if (config.startServer) {
             });
         },
         function(callback) {
-            const maxJobs = 1;
-            load.init(maxJobs);
+            load.initEstimator('request', 1);
+            load.initEstimator('authed_request', 1);
+            load.initEstimator('python', 1);
             callback(null);
         },
         function(callback) {
