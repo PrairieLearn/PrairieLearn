@@ -1,8 +1,9 @@
-var ERR = require('async-stacktrace');
+const _ = require('lodash');
+const ERR = require('async-stacktrace');
 const AWS = require('aws-sdk');
 
-var config = require('../lib/config');
-var sqldb = require('../lib/sqldb');
+const config = require('../lib/config');
+const sqldb = require('../lib/sqldb');
 
 module.exports = {};
 
