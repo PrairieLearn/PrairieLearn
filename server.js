@@ -101,6 +101,18 @@ app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
 // response_id is logged on request, response, and error to link them together
 app.use(function(req, res, next) {res.locals.response_id = uuidv4(); next();});
 app.use(function(req, res, next) {res.locals.config = config; next();});
+
+// load accounting for requests
+app.use(function(req, res, next) {load.startJob('request', res.locals.response_id); next();});
+app.use(function(req, res, next) {
+    onFinished(res, function (err, res) {
+        if (ERR(err, () => {})) logger.verbose('on-request-finished error', {err});
+        load.endJob('request', res.locals.response_id);
+    });
+    next();
+});
+
+// More middlewares
 app.use(require('./middlewares/logResponse')); // defers to end of response
 app.use(require('./middlewares/cors'));
 app.use(require('./middlewares/date'));
@@ -114,7 +126,7 @@ app.use(require('./middlewares/authn')); // authentication, set res.locals.authn
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
 app.use(require('./middlewares/logRequest'));
 
-// load accounting
+// load accounting for authenticated accesses
 app.use(function(req, res, next) {load.startJob('authed_request', res.locals.response_id); next();});
 app.use(function(req, res, next) {
     onFinished(res, function (err, res) {
@@ -454,6 +466,7 @@ if (config.startServer) {
             });
         },
         function(callback) {
+            load.initEstimator('request', 1);
             load.initEstimator('authed_request', 1);
             load.initEstimator('python', 1);
             callback(null);
