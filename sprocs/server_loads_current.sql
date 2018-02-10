@@ -5,6 +5,7 @@ CREATE OR REPLACE FUNCTION
         IN group_name text,
         IN current_interval interval
     ) RETURNS TABLE (
+        job_type text,
         instance_count integer,
         current_jobs double precision,
         max_jobs double precision,
@@ -20,6 +21,7 @@ BEGIN
 
     FOR r IN
         SELECT
+            gl.job_type,
             count(*) AS instance_count,
             coalesce(sum(gl.average_jobs), 0) AS current_jobs,
             coalesce(sum(gl.max_jobs), 0) AS max_jobs
@@ -31,6 +33,7 @@ BEGIN
         GROUP BY
             gl.job_type
     LOOP
+        job_type := r.job_type;
         instance_count := r.instance_count;
         current_jobs := r.current_jobs;
         max_jobs := r.max_jobs;
