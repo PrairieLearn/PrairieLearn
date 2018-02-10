@@ -44,6 +44,9 @@
                 <td class="align-middle"><%= question.qid %></td>
                 <td class="align-middle"><%- include('../partials/topic', {topic: question.topic}); %></td>
                 <td class="align-middle"><%- include('../partials/tags', {tags: question.tags}); %></td>
+                <% question.course_instances.forEach(function(course_instance) { %>
+                <td class="align-middle"><%- include('../partials/assessments', {assessments: course_instance.assessments}); %></td>
+                <% }); %>
               </tr>
               <% }); %>
             </tbody>
