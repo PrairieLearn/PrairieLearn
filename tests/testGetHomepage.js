@@ -21,7 +21,7 @@ describe('GET /pl', function() {
                 return callback(error);
             }
             if (response.statusCode != 200) {
-                return callback(new Error('bad status: ' + response.statusCode));
+                return callback(new Error('bad status: ' + response.statusCode, {response, body}));
             }
             page = body;
             callback(null);
