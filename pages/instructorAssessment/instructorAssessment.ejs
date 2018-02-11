@@ -286,11 +286,11 @@
       <!-- ###################################################################### -->
 
         <% if (assessment_score_quintiles) { %>
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Assessment score quintiles (%) </h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Assessment score quintiles (%)
         </div>
-        <div class="panel-body">
+        <div class="card-body">
           <div id="assessmentScoreQuintiles" class="histogram">
           </div>
           <script>
@@ -315,11 +315,11 @@
 
 
         <% if (expected_assessment_score_perc) { %>
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Predicted assessment score (%) </h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Predicted assessment score (%)
         </div>
-        <div class="panel-body">
+        <div class="card-body">
             <%= expected_assessment_score_perc.toFixed(3) %>%
         </div>
       </div>
@@ -331,11 +331,11 @@
 
 
         <% if (expected_assessment_quintile_score_perc) { %>
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title"><%= assessment_set.name %> <%= assessment.number %>: Predicted assessment score (quintiles) (%) </h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Predicted assessment score (quintiles) (%)
         </div>
-        <div class="panel-body">
+        <div class="card-body">
           <div id="expectedAssessmentScoreQuintilesBig" class="histogram">
           </div>
           <script>
@@ -460,9 +460,9 @@
         <% if (assessment_stat.number > 0) { %>
         <div class="card-body">
           <p>
-            <a class="btn btn-xs btn-secondary" role="button"
+            <a class="btn btn-sm btn-light" role="button" tabindex="0"
                data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
-                <i class="fa fa-refresh" aria-hidden="true"></i> Recalculate statistics
+              <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
             </a>
             Last calculated: <%= stats_last_updated %>
           </p>
