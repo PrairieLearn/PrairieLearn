@@ -33,6 +33,8 @@
 
   * All `centos7-plbase` Docker image (Matt West).
 
+  * Add support for creating questions with R (James Balamuta).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
