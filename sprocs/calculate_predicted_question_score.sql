@@ -16,7 +16,7 @@ BEGIN
         result = 0;
         bound = LEAST(array_length(qs_incremental_submission_score_array_averages, 1), array_length(points_list, 1));
         FOR i IN 1.. bound LOOP
-            result = result + qs_incremental_submission_score_array_averages[i] * points_list[i];
+            result = result + coalesce(qs_incremental_submission_score_array_averages[i], 0) * points_list[i];
         END LOOP;
         result = 100 * result / max_points;
         RAISE NOTICE 'Final result: %', result;

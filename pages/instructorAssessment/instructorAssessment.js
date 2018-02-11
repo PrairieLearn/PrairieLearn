@@ -73,7 +73,7 @@ router.get('/', function(req, res, next) {
         function(callback) {
             debug('query expected quintile assessment score');
             var params = {
-                assessment_id: res.locals.assessment.id
+                assessment_id: res.locals.assessment.id,
             };
             sqldb.query(sql.expected_quintile_assessment_scores, params, function(err, result) {
                 if (ERR(err, callback)) return;
@@ -90,7 +90,6 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.expected_assessment_score, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.expected_assessment_score_perc = result.rows[0].score_perc;
-                console.log(result.rows[0].score_perc);
                 callback(null);
             });
         },

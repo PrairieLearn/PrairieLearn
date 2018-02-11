@@ -63,7 +63,7 @@ WITH expected_assessment_question_scores AS (
         aq.max_points AS max_score,
         aq.id AS assessment_question_id,
         quintiles.quintile AS quintile,
-        calculate_predicted_question_score(ARRAY(SELECT unnest(qs.incremental_submission_score_array_quintile_averages[quintiles.quintile:quintiles.quintile])),
+        calculate_predicted_question_score(slice(qs.incremental_submission_score_array_quintile_averages, quintiles.quintile),
                                            hw_qs.average_last_submission_score_quintiles[quintiles.quintile],
                                            aq.points_list,
                                            aq.max_points) * aq.max_points / 100::DOUBLE PRECISION AS score
@@ -200,7 +200,7 @@ expected_assessment_question_quintile_scores AS (
         aq.id AS assessment_question_id,
         quintiles.quintile AS quintile,
         calculate_predicted_question_score(
-            ARRAY(SELECT unnest(qs.incremental_submission_score_array_quintile_averages[quintiles.quintile:quintiles.quintile])),
+            slice(qs.incremental_submission_score_array_quintile_averages, quintiles.quintile),
             hw_qs.average_last_submission_score,
             aq.points_list,
             aq.max_points) / 100::DOUBLE PRECISION AS score
