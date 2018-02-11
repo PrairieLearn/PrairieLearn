@@ -1,18 +1,5 @@
 DO $$
 BEGIN
-    IF NOT EXISTS (select 1 from pg_type where typname = 'weighted_avg_type') THEN
-        CREATE TYPE weighted_avg_type AS (
-          running_sum DOUBLE PRECISION,
-          running_count DOUBLE PRECISION
-        );
-    END IF;
-
-    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'array_weighted_avg_type') THEN
-        CREATE TYPE array_weighted_avg_type AS (
-            arr weighted_avg_type[]
-        );
-    END IF;
-
     IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'array_weighted_avg_type_2d') THEN
         CREATE TYPE array_weighted_avg_type_2d AS (
             arr array_weighted_avg_type[]
@@ -20,34 +7,6 @@ BEGIN
     END IF;
 END
 $$;
-
-CREATE OR REPLACE FUNCTION
-    mul_sum (
-        a weighted_avg_type,
-        amount DOUBLE PRECISION,
-        weight DOUBLE PRECISION
-    ) RETURNS weighted_avg_type AS $$
-BEGIN
-    IF amount IS NULL THEN
-        RETURN a;
-    ELSE
-        RETURN (((a.running_sum + (amount * weight)), (a.running_count + weight)))::weighted_avg_type;
-    END IF;
-END;
-$$ LANGUAGE plpgsql IMMUTABLE;
-
-CREATE OR REPLACE FUNCTION
-    final_sum (
-        a weighted_avg_type
-    ) RETURNS DOUBLE PRECISION as $$
-BEGIN
-    IF a.running_count = 0 THEN
-        RETURN 0::DOUBLE PRECISION;
-    ELSE
-        RETURN a.running_sum / a.running_count;
-    END IF;
-END;
-$$ LANGUAGE plpgsql IMMUTABLE;
 
 CREATE OR REPLACE FUNCTION
     array_weighted_avg_sfunc_2d (
