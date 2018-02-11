@@ -58,7 +58,7 @@ BEGIN
         state.running_sums[i] = coalesce(itemState, 0) + nextVal[i] * nextWeight;
     END LOOP;
 
-    state.running_weight_total = state.running_weight_total + nextWeight;
+    state.running_weight_total = coalesce(state.running_weight_total, 0) + nextWeight;
 
     RETURN state;
 END;

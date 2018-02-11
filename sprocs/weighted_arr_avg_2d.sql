@@ -47,7 +47,7 @@ BEGIN
     num_rows = coalesce(array_length(state.arr, 1), 0);
     num_cols = 0;
     FOR i in 1..num_rows LOOP
-        num_cols = greatest(num_cols, coalesce(array_length(state.arr[i].arr, 1), 0));
+        num_cols = greatest(num_cols, coalesce(array_length(state.arr[i].running_sums, 1), 0));
     END LOOP;
 
     result = array_fill(NULL::DOUBLE PRECISION, ARRAY[num_rows, num_cols]);
