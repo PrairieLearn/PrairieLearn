@@ -270,7 +270,15 @@ function runJob(info, callback) {
                 HostConfig: {
                     Binds: [
                         `${tempDir}:/grade`
-                    ]
+                    ],
+                    Memory: 1 << 30, // 1 GB
+                    MemorySwap: 1 << 30, // same as Memory, so no access to swap
+                    KernelMemory: 1 << 30, // 1 GB
+                    DiskQuota: 1 << 30, // 1 GB
+                    IpcMode: 'private',
+                    CpuPeriod: 100000, // microseconds
+                    CpuQuota: 90000, // portion of the CpuPeriod for this container
+                    PidsLimit: 2048,
                 },
                 Entrypoint: entrypoint.split(' ')
             }, (err, container) => {
