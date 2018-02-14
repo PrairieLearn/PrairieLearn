@@ -267,18 +267,20 @@ function runJob(info, callback) {
                 AttachStdout: true,
                 AttachStderr: true,
                 Tty: true,
+                NetworkDisabled: true,
                 HostConfig: {
                     Binds: [
                         `${tempDir}:/grade`
                     ],
-                    Memory: 1 << 30, // 1 GB
+                    Memory: 1 << 30, // 1 GiB
                     MemorySwap: 1 << 30, // same as Memory, so no access to swap
-                    KernelMemory: 1 << 30, // 1 GB
-                    DiskQuota: 1 << 30, // 1 GB
+                    KernelMemory: 1 << 29, // 512 MiB
+                    DiskQuota: 1 << 30, // 1 GiB
                     IpcMode: 'private',
                     CpuPeriod: 100000, // microseconds
                     CpuQuota: 90000, // portion of the CpuPeriod for this container
-                    PidsLimit: 2048,
+                    PidsLimit: 1024,
+                    NetworkMode: 'none',
                 },
                 Entrypoint: entrypoint.split(' ')
             }, (err, container) => {
