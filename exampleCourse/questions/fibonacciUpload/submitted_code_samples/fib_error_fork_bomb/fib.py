@@ -1,4 +1,4 @@
-import os, time
+import os
 
 def fib(n):
     while True:
