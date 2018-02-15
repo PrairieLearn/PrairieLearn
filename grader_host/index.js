@@ -85,6 +85,19 @@ function handleJob(job, done) {
     const logger = jobLogger(loggerOptions);
     globalLogger.info(`Logging job ${job.jobId} to S3: ${job.s3Bucket}/${job.s3RootKey}`);
 
+    logger.info('Pinging webhook to acknowledge that job was received');
+    const webhookData = {
+        event: 'job_received',
+        job_id: job.jobId,
+        data: {
+            received_time: receivedTime,
+        },
+        __csrf_token: job.csrfToken,
+    };
+    request.post({method: 'POST', url: job.webhookUrl, json: true, body: webhookData}, function (err, _response, _body) {
+        if (ERR(err, (err) => logger.error(err))) return;
+    });
+
     const context = {
         docker: new Docker(),
         s3: new AWS.S3(),
