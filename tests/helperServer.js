@@ -74,13 +74,13 @@ module.exports = {
         var that = this;
         async.series([
             function(callback) {
-                helperDb.after.call(that, function(err) {
+                server.stopServer(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
             },
             function(callback) {
-                server.stopServer(function(err) {
+                helperDb.after.call(that, function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
