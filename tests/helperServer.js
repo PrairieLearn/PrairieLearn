@@ -83,6 +83,12 @@ module.exports = {
         // start() functions above
         async.series([
             function(callback) {
+                freeformServer.close(function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            function(callback) {
                 load.close();
                 callback(null);
             },
