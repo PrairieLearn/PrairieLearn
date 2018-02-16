@@ -71,7 +71,7 @@
     "scripts": {
         "start": "node server.js",
         "start-nodemon": "nodemon server.js",
-        "test": "nyc --reporter=lcov mocha tests/index.js",
+        "test": "nyc --reporter=lcov mocha --exit tests/index.js",
         "lint-js": "eslint --ext js \"**/*.js\"",
         "lint-python": "python3.6 -m flake8 ./"
     }

@@ -26,6 +26,13 @@ module.exports = {
         });
     },
 
+    close: function(callback) {
+        codeCaller.waitForFinish((err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
+    },
+
     /**
      * Takes a directory containing element directories and returns an object
      * mapping element names to that element's controller, dependencies, etc.

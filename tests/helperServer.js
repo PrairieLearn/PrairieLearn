@@ -3,6 +3,7 @@ var async = require('async');
 var path = require('path');
 
 var config = require('../lib/config');
+var load = require('../lib/load');
 var socketServer = require('../lib/socket-server');
 var serverJobs = require('../lib/server-jobs');
 var syncFromDisk = require('../sync/syncFromDisk');
@@ -41,6 +42,12 @@ module.exports = {
                 });
             },
             function(callback) {
+                load.initEstimator('request', 1);
+                load.initEstimator('authed_request', 1);
+                load.initEstimator('python', 1);
+                callback(null);
+            },
+            function(callback) {
                 server.startServer(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
@@ -72,15 +79,27 @@ module.exports = {
 
     after: function(callback) {
         var that = this;
+        // call close()/stop() functions in reverse order to the
+        // start() functions above
         async.series([
             function(callback) {
-                helperDb.after.call(that, function(err) {
+                freeformServer.close(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
             },
             function(callback) {
+                load.close();
+                callback(null);
+            },
+            function(callback) {
                 server.stopServer(function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            function(callback) {
+                helperDb.after.call(that, function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });

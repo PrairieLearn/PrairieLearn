@@ -141,7 +141,7 @@ const partialCreditTests = [
 ];
 
 describe('Homework assessment', function() {
-    this.timeout(20000);
+    this.timeout(60000);
 
     before('set up testing server', helperServer.before);
     after('shut down testing server', helperServer.after);
