@@ -30,6 +30,8 @@
   * Add blocked-event-loop monitor (Matt West).
 
   * Add per-job load tracking (Matt West).
+  
+  * Add _R_ to the `centos7-plbase` Docker Image (James Balamuta).
 
   * All `centos7-plbase` Docker image (Matt West).
 
