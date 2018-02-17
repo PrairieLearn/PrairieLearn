@@ -91,6 +91,8 @@
 
   * Change Docker build to start from `centos7-plbase` (Matt West).
 
+  * Change `requirements.txt` to include `rpy2` (James Balamuta).
+
 * __2.11.0__ - 2017-12-29
 
   * Add support for partial credit in Homeworks (Tim Bretl).
