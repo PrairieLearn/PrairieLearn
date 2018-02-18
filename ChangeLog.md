@@ -33,7 +33,9 @@
   
   * Add _R_ to the `centos7-plbase` Docker Image (James Balamuta).
 
-  * All `centos7-plbase` Docker image (Matt West).
+  * Add `centos7-plbase` Docker image (Matt West).
+
+  * Add memory and CPU limits to local external graders (Matt West).
 
   * Fix broken file upload element (Nathan Walters).
 
