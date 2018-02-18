@@ -44,7 +44,7 @@ sudo chmod -R +rw $BIN_DIR
 echo "[run] starting autograder"
 
 # we run the autograder as a limited user called ag
-bash -c 'python pltest.py'
+bash -c 'python3 pltest.py'
 
 if [ ! -s results.json ]
 then

@@ -60,7 +60,7 @@ async.series([
 
         question.external_grading_files = ['python_autograder/'];
         question.external_grading_entrypoint = '/grade/shared/python_autograder/run.sh';
-        question.external_grading_image = 'prairielearn/centos7-base';
+        question.external_grading_image = 'prairielearn/centos7-python';
         question.directory = 'fibonacciEditor';
         callback(null);
     },
