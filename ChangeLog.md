@@ -39,6 +39,8 @@
 
   * Add `tools/` to Docker image (Matt West).
 
+  * Add docs for generating LaTeX label images with Docker (Matt West).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
