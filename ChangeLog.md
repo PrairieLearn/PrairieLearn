@@ -91,6 +91,8 @@
 
   * Fix tag order display (Dave Mussulman, h/t Pengyu Cheng).
 
+  * Fix navbar role switching button text (Dave Mussulman).
+
   * Change to Bootstrap 4 (Nathan Walters).
 
   * Change to NodeJS 8.x LTS (Matt West).
