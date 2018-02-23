@@ -29,6 +29,8 @@ RUN yum -y install \
         libpng-devel          `# needed for png (for R)` \
         libjpeg-turbo-devel   `# needed for jpeg (for R)` \
         R \
+        ImageMagick           `# for PrairieDraw label images` \
+        texlive               `# for PrairieDraw label images` \
     && yum clean all \
     && mkdir /var/postgres && chown postgres:postgres /var/postgres \
     && su postgres -c "/usr/pgsql-9.6/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log" \
