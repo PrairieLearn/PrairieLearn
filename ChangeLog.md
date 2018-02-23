@@ -75,6 +75,8 @@
 
   * Fix test-server shutdown procedures (Matt West).
 
+  * Fix `readthedocs` build (Matt West).
+
   * Change to Bootstrap 4 (Nathan Walters).
 
   * Change to NodeJS 8.x LTS (Matt West).
