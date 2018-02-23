@@ -28,7 +28,7 @@
 
 <ul class="nav navbar-nav" id="username-nav">
     <li class="nav-item mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %>">
-    <% if (authz_data && authz_data.authn_has_instructor_view) { %>
+    <% if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) { %>
         <a class="nav-link" href="<%= urlPrefix %>/effectiveUser">
         <%= authz_data.user.name %> (<%= authz_data.role %><% if (authz_data.mode == 'Exam') { %>, <%= authz_data.mode %><% } %>)
         <i class="fa fa-edit" aria-hidden="true"></i>
@@ -45,7 +45,7 @@
     </li>
 
 <%
-if (authz_data && authz_data.has_instructor_view) {
+if (typeof authz_data !== 'undefined' && authz_data.has_instructor_view) {
 
     var rolebutton = { current: navbarType.charAt(0).toUpperCase() + navbarType.slice(1), };
     if (navbarType == 'student') {
