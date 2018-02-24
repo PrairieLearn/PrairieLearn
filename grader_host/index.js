@@ -49,24 +49,25 @@ async.series([
     },
     (callback) => {
         if (!config.reportLoad) return callback(null);
-        const maxJobs = 1;
-        load.init(maxJobs);
+        load.init(config.maxConcurrentJobs);
         callback(null);
     },
     () => {
         globalLogger.info('Initialization complete; beginning to process jobs');
         const sqs = new AWS.SQS();
-        async.forever((next) => {
-            receiveFromQueue(sqs, config.queueUrl, (job, fail, success) => {
-                handleJob(job, (err) => {
-                    if (ERR(err, fail)) return;
-                    success();
-                });
-            }, (err) => {
-                if (ERR(err, (err) => globalLogger.error(err)));
-                next();
-            });
-        });
+        for (let i = 0; i < config.maxConcurrentJobs; i++) {
+          async.forever((next) => {
+              receiveFromQueue(sqs, config.queueUrl, (job, fail, success) => {
+                  handleJob(job, (err) => {
+                      if (ERR(err, fail)) return;
+                      success();
+                  });
+              }, (err) => {
+                  if (ERR(err, (err) => globalLogger.error(err)));
+                  next();
+              });
+          });
+        }
     }
 ], (err) => {
     globalLogger.error(String(err));
