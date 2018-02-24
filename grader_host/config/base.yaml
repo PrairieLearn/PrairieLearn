@@ -1,4 +1,9 @@
 properties:
+  # How many grading jobs should run at once
+  maxConcurrentJobs:
+    default: 5
+    envVar: MAX_CONCURRENT_JOBS
+
   # Feature enable/disable
   useEc2MetadataService:
     default: true
