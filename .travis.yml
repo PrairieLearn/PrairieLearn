@@ -15,7 +15,7 @@ notifications:
 before_install:
   - docker build -t pltest .
 install:
-  - npm i coveralls
+  - npm i coveralls -g
 script:
   - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then sh ./tools/verify-changelog.sh; fi'
   - docker run -it --name=npm_test_container pltest /PrairieLearn/docker/npm_test.sh
