@@ -9,7 +9,7 @@
 
       <% if (devMode) { %>
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white">Development Mode</div>
+        <div class="card-header bg-primary text-white">HackIllinois Mode</div>
         <div class="card-body">
           <p>
             PrairieLearn is running in Development Mode. Click
@@ -35,7 +35,7 @@
       <% } %>
 
       <%- include('../partials/advertisement'); %>
-      
+
       <% if (courses && courses.length > 0) { %>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Courses</div>
@@ -99,6 +99,55 @@
             <% }); %>
           </tbody>
         </table>
+
+        <table class="card mb-4">
+          <div class="card-header bg-warning text-white">Upcoming Events</div>
+          <div class="card-body">
+            <p>
+              <strong><center>NEXT DUE:</center></strong>
+                  <% rules.forEach(function(rule) { %>
+                    <a href="<%= plainUrlPrefix %>/course_instance/<%= rule.courseID %>/assessment/<%= rule.assessmentID %>">
+                    <center><%= rule.title %></center>
+                  </a>
+                    <center><%= rule.deadline %></center>
+                  </br>
+                  <% }); %>
+            </p>
+            <p>
+            </p>
+            <p class="mb-0">
+              See
+              the <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/README.md">PrairieLearn
+              documentation</a> for information on creating questions
+              and assessments
+            </p>
+          </div>
+
+        </table>
+        <table class="card mb-4">
+          <div class="card-header bg-danger text-white">PASSED Events</div>
+          <div class="card-body">
+            <p>
+              <strong><center>PASSED DUE:</center></strong>
+                  <% rules_passed.forEach(function(rule) { %>
+                    <a href="<%= plainUrlPrefix %>/course_instance/<%= rule.courseID %>/assessment/<%= rule.assessmentID %>">
+                    <center><%= rule.title %></center>
+                  </a>
+                    <center><%= rule.deadline %></center>
+                  </br>
+                  <% }); %>
+            </p>
+            <p>
+            </p>
+            <p class="mb-0">
+              See
+              the <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/README.md">PrairieLearn
+              documentation</a> for information on creating questions
+              and assessments
+            </p>
+          </div>
+        </table>
+
 
         <% } %> <!-- course_instances.length -->
       </div>
