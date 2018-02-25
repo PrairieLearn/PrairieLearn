@@ -284,6 +284,9 @@ if (config.devMode) {
     app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 }
 
+//Gradebook for students.
+app.use('/pl/course_instance/:course_instance_id/gradebook', require('./pages/studentGradebook/studentGradebook'));
+
 // Allow access to effectiveUser as a Student page, but only for users have authn (not authz) as Instructor
 app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./middlewares/authzCourseInstanceAuthnHasInstructorView'));
 app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
