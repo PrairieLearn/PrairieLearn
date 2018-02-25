@@ -1003,3 +1003,5 @@
 * __1.0.0__ - 2015-08-18
 
   * First public release for pre-Fall-2015 bootcamp.
+
+Minor edit
