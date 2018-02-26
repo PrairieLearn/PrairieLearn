@@ -23,4 +23,6 @@ script:
   - docker run -it pltest /PrairieLearn/docker/lint_js.sh
   - docker run -it pltest /PrairieLearn/docker/lint_python.sh
 after_success:
-  - cat ./coverage/lcov.info | coveralls --verbose
+  - pwd
+  - ln -s . /PrairieLearn
+  - cat ./coverage/lcov.info | coveralls
