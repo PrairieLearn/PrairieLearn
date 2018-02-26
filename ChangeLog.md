@@ -77,6 +77,8 @@
 
   * Fix `readthedocs` build (Matt West).
 
+  * Fix Coveralls.io reporting (Dave Mussulman).
+
   * Change to Bootstrap 4 (Nathan Walters).
 
   * Change to NodeJS 8.x LTS (Matt West).
@@ -1003,5 +1005,3 @@
 * __1.0.0__ - 2015-08-18
 
   * First public release for pre-Fall-2015 bootcamp.
-
-Minor edit

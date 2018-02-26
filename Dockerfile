@@ -8,6 +8,9 @@ RUN python3 -m pip install --no-cache-dir -r /PrairieLearn/requirements.txt \
     && npm install \
     && npm --force cache clean
 
+# Will move to centos7-plbase once confirmed this works
+RUN yum install git -y
+
 # NOTE: Modify .dockerignore to whitelist files/directories to copy.
 COPY . /PrairieLearn/
 
