@@ -18,6 +18,10 @@ script:
   - docker exec -it npm_test_container /PrairieLearn/docker/lint_js.sh
   - docker exec -it npm_test_container /PrairieLearn/docker/lint_python.sh
 after_success:
+  - echo TRAVIS $TRAVIS
+  - echo TRAVIS_JOB_ID $TRAVIS_JOB_ID
+  - echo TRAVIS_PULL_REQUEST $TRAVIS_PULL_REQUEST
+  - echo TRAVIS_BRANCH $TRAVIS_BRANCH
   - > 
     docker exec
     -e TRAVIS=“$TRAVIS” -e TRAVIS_JOB_ID=“$TRAVIS_JOB_ID” -e TRAVIS_PULL_REQUEST=“$TRAVIS_PULL_REQUEST” -e TRAVIS_BRANCH=“$TRAVIS_BRANCH”
