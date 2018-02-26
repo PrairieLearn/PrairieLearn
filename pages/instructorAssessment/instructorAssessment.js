@@ -78,7 +78,7 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.expected_quintile_assessment_scores, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.expected_assessment_quintile_score_perc = result.rows;
-                console.log(result.rows);
+                // console.log(result.rows);
                 callback(null);
             });
         },
@@ -102,6 +102,7 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.questions, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.questions = result.rows;
+                console.log(res.locals.questions);
                 callback(null);
             });
         },

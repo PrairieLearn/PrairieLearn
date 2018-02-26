@@ -243,6 +243,9 @@ SELECT
                                        hw_qs.average_last_submission_score,
                                        aq.points_list,
                                        aq.max_points) AS predicted_mean_score,
+    qs.id AS qs_id,
+    a.type AS assessment_type,
+    a.mode AS assessment_mode,
     eaqqs.score_arr AS predicted_quintile_scores
 
 FROM

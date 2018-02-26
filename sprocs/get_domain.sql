@@ -4,9 +4,13 @@ CREATE OR REPLACE FUNCTION
         mode_var enum_mode
     ) RETURNS enum_statistic_domain AS $$
 BEGIN
-    IF type_var IS NULL OR mode_var IS NULL THEN
+    IF type_var IS NULL THEN
         RETURN NULL;
-    ELSIF type_var = 'Exam' AND mode_var = 'Exam' THEN
+    ELSIF mode_var IS NULL THEN
+        mode_var = 'Exam';
+    END IF;
+
+    IF type_var = 'Exam' AND mode_var = 'Exam' THEN
         RETURN 'Exams';
     ELSIF type_var = 'Exam' AND mode_var = 'Public' THEN
         RETURN 'PracticeExams';

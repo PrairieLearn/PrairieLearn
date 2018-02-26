@@ -1,8 +1,8 @@
 CREATE OR REPLACE FUNCTION
     slice(
-    IN input DOUBLE PRECISION[][],
+    IN input ANYARRAY,
     IN index_var INTEGER,
-    OUT output DOUBLE PRECISION[]
+    OUT output ANYARRAY
 )
 AS $$
 BEGIN
