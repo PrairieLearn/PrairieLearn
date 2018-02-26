@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: 'home'}); %>
+    <div id="content" class="container">
+
+      <% if (devMode) { %>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">HackIllinois Mode</div>
+        <div class="card-body">
+          <p>
+            PrairieLearn is running in Development Mode. Click
+            the <strong>“Load from disk”</strong> button above to load
+            question and assessment definitions from JSON files on
+            disk.
+          </p>
+          <p>
+            You need to click “Load from disk” every time that a JSON
+            file is changed on disk. Changes to other files (JS, HTML,
+            etc) will be automatically loaded every time you navigate
+            to a different page or if you reload the current page in
+            your web browser.
+          </p>
+          <p class="mb-0">
+            See
+            the <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/README.md">PrairieLearn
+            documentation</a> for information on creating questions
+            and assessments.
+          </p>
+        </div>
+      </div>
+      <% } %>
+
+      <%- include('../partials/advertisement'); %>
+
+      <% if (courses && courses.length > 0) { %>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Courses</div>
+        <table class="table table-sm table-hover table-striped">
+          <tbody>
+            <% courses.forEach(function(course) { %>
+            <tr>
+              <td>
+                <a href="<%= plainUrlPrefix %>/course/<%= course.id %>">
+                  <%= course.label %>
+                </a>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <% } %> <!-- course_instances.length -->
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          <% if (courses && courses.length > 0) { %>
+          Course instances
+          <% } else { %>
+          Courses
+          <% } %>
+          <a href="<%= plainUrlPrefix %>/enroll" class="btn btn-light btn-sm ml-auto">
+            <i class="fa fa-edit" aria-hidden="true"></i>
+            <span class="d-none d-sm-inline">Add or remove courses</span>
+          </a>
+        </div>
+
+        <% if (course_instances && course_instances.length == 0) { %>
+        <% if (devMode) { %>
+        <div class="card-body">
+          No courses loaded. Click <strong>“Load from disk”</strong>
+          above and then click <strong>“Home”</strong> to come back to
+          this page.
+        </div>
+        <% } else { %> <!-- devMode -->
+        <div class="card-body">
+          No courses found. Use the “Add or remove courses” button below.
+        </div>
+        <% } %> <!-- devMode -->
+        <% } else { %> <!-- course_instances.length -->
+        <table class="table table-sm table-hover table-striped">
+          <tbody>
+            <% course_instances.forEach(function(course_instance) { %>
+            <tr>
+              <td>
+                <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>">
+                  <%= course_instance.label %>
+                </a>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+        <table class="card mb-4">
+          <div class="card-header bg-warning text-white">Upcoming Events</div>
+          <div class="card-body">
+            <p>
+              <strong><center>NEXT DUE:</center></strong>
+                  <% rules.forEach(function(rule) { %>
+                    <a href="<%= plainUrlPrefix %>/course_instance/<%= rule.courseID %>/assessment/<%= rule.assessmentID %>">
+                    <center><%= rule.title %></center>
+                  </a>
+                    <center><%= rule.deadline %></center>
+                  </br>
+                  <% }); %>
+            </p>
+            <p>
+            </p>
+            <p class="mb-0">
+              See
+              the <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/README.md">PrairieLearn
+              documentation</a> for information on creating questions
+              and assessments
+            </p>
+          </div>
+        </table>
+        <table class="card mb-4">
+          <div class="card-header bg-danger text-white">PASSED Events</div>
+          <div class="card-body">
+            <p>
+              <strong><center>PASSED DUE:</center></strong>
+                  <% rules_passed.forEach(function(rule) { %>
+                    <a href="<%= plainUrlPrefix %>/course_instance/<%= rule.courseID %>/assessment/<%= rule.assessmentID %>">
+                    <center><%= rule.title %></center>
+                  </a>
+                    <center><%= rule.deadline %></center>
+                  </br>
+                  <% }); %>
+            </p>
+            <p>
+            </p>
+            <p class="mb-0">
+              See
+              the <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/README.md">PrairieLearn
+              documentation</a> for information on creating questions
+              and assessments
+            </p>
+          </div>
+        </table>
+        <% } %> <!-- course_instances.length -->
+      </div>
+    </div>
+  </body>
+</html>
