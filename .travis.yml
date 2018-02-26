@@ -24,5 +24,4 @@ script:
   - docker run -it pltest /PrairieLearn/docker/lint_python.sh
 after_success:
   - ls ./coverage
-  - cat ./coverage/lcov.info
-  - cat ./coverage/lcov.info | coveralls
+  - cat ./coverage/lcov.info | coveralls --verbose
