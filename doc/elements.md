@@ -49,6 +49,7 @@ Attribute | Type | Default | Description
 `min_correct` | integer | special | The minimum number of correct answers to display. Defaults to displaying all correct answers.
 `max_correct` | integer | special | The maximum number of correct answers to display. Defaults to displaying all correct answers.
 `fixed_order` | boolean | false | Disable the randomization of answer order.
+`partial_credit` | boolean | false | Gives partial credit according to how many correct choices a student has made. Correct choices include checking a correct answer and not checking a wrong one.
 
 A `pl_checkbox` element displays a subset of the answers in a random order as checkboxes.
 
