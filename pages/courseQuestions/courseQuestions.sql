@@ -1,13 +1,40 @@
 -- BLOCK course_instance_list
+WITH assessment_list AS (
+    SELECT
+        aset.abbreviation || a.number AS label,
+        a.id AS assessment_id,
+        aset.color AS color,
+        ci.id AS course_instance_id,
+        aset.number AS assessment_set_number,
+        a.number AS assessment_number
+    FROM
+        assessments AS a
+        JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+        JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    WHERE
+        ci.deleted_at IS NULL
+        AND a.deleted_at IS NULL
+        AND ci.course_id = $course_id
+    ORDER BY aset.number, a.number
+)
 SELECT
     ci.id AS course_instance_id,
     ci.number AS course_instance_number,
-    ci.short_name AS course_instance_short_name
+    ci.short_name AS course_instance_short_name,
+    ARRAY_AGG(
+        json_build_object(
+            'label', al.label,
+            'assessment_id', al.assessment_id,
+            'color', al.color
+        ) ORDER BY al.assessment_set_number, al.assessment_number
+    ) as assessments
 FROM
     course_instances AS ci
+    JOIN assessment_list AS al ON (al.course_instance_id = ci.id)
 WHERE
     ci.deleted_at IS NULL
     AND ci.course_id = $course_id
+GROUP BY ci.id, ci.number, ci.short_name
 ORDER BY
     ci.number DESC;
 
@@ -48,7 +75,7 @@ question_list AS (
          CROSS JOIN course_instance_list AS cil
     WHERE q.deleted_at IS NULL
           AND q.course_id = $course_id
-    GROUP BY q.id, q.uuid
+    GROUP BY q.id
 )
 SELECT
     q.*,

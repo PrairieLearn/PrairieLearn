@@ -30,7 +30,7 @@
                 <th class="filter-select filter-exact" data-placeholder="Choose topic">Topic</th>
                 <th data-placeholder="Choose tag">Tags</th>
                 <% course_instance_list.forEach( function(ci) { %>
-                <th><%= ci.course_instance_short_name %></th>
+                <th data-placeholder="Choose <%= ci.course_instance_short_name %> assessment"><%= ci.course_instance_short_name %></th>
                 <% }); %>
               </tr>
             </thead>
@@ -69,6 +69,13 @@
                                   "<%= tag.name %>": function(e, n, f, i, $r, c, data) { return /\b<%= tag.name %>\b/.test(e); },
                               <% }); %>
                           },
+                          <% course_instance_list.forEach(function(course_instance, ci_index) { %>
+                          <%= 4+ci_index %>: {
+                              <% course_instance.assessments.forEach(function(assessment) { %>
+                                  "<%= assessment.label %>": function(e, n, f, i, $r, c, data) { return /\b<%= assessment.label %>\b/.test(e); },
+                              <% }); %>
+                          },
+                          <% }); %>
                       },
                   },
               });
