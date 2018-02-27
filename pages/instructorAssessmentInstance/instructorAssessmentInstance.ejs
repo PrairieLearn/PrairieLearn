@@ -34,7 +34,11 @@
             <tr><th>UID</th><td colspan="2"><%= instance_user.uid %></td></tr>
             <tr><th>Name</th><td colspan="2"><%= instance_user.name %></td></tr>
             <tr><th>Role</th><td colspan="2"><%= instance_enrollment.role %></td></tr>
-            <tr><th>Instance</th><td colspan="2"><%= assessment_instance.number %></td></tr>
+            <tr><th>Instance</th><td colspan="2"><%= assessment_instance.number %>
+                <a class="btn btn-primary btn-xs"
+                   href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/assessment_instance/<%= assessment_instance.id %>">
+                   See student view</a>
+            </td></tr>
             <tr>
               <th>Points</th>
               <td colspan="2">
