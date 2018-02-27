@@ -346,7 +346,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
 // generatedFiles
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id/generatedFilesQuestion', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
-    require('./pages/instructorGeneratedFilesQuestion/instructorGeneratedFilesQuestion'),
+    require('./pages/courseGeneratedFilesQuestion/courseGeneratedFilesQuestion'),
 ]);
 
 // legacy client file paths
@@ -464,6 +464,35 @@ app.use('/pl/course/:course_id/question/:question_id', [
     require('./pages/courseQuestion/courseQuestion'),
 ]);
 app.use('/pl/course/:course_id/issues', require('./pages/courseIssues/courseIssues'));
+
+// clientFiles
+// It's not clear whether courseInstance or assessment clientFiles should be accessed from course-space, but I'm including them to avoid breaking anything
+app.use('/pl/course/:course_id/instructor/clientFilesCourse', require('./pages/clientFilesCourse/clientFilesCourse'));
+app.use('/pl/course/:course_id/clientFilesCourseInstance', require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'));
+app.use('/pl/course/:course_id/assessment/:assessment_id/clientFilesAssessment', [
+    require('./middlewares/selectAndAuthzAssessment'),
+    require('./pages/clientFilesAssessment/clientFilesAssessment'),
+]);
+app.use('/pl/course/:course_id/question/:question_id/clientFilesQuestion', [
+    require('./middlewares/selectAndAuthzCourseQuestion'),
+    require('./pages/clientFilesQuestion/clientFilesQuestion'),
+]);
+
+// generatedFiles
+app.use('/pl/course/:course_id/question/:question_id/generatedFilesQuestion', [
+    require('./middlewares/selectAndAuthzCourseQuestion'),
+    require('./pages/courseGeneratedFilesQuestion/courseGeneratedFilesQuestion'),
+]);
+
+// legacy client file paths
+app.use('/pl/course/:course_id/question/:question_id/file', [
+    require('./middlewares/selectAndAuthzCourseQuestion'),
+    require('./pages/legacyQuestionFile/legacyQuestionFile'),
+]);
+app.use('/pl/course/:course_id/question/:question_id/text', [
+    require('./middlewares/selectAndAuthzCourseQuestion'),
+    require('./pages/legacyQuestionText/legacyQuestionText'),
+]);
 
 //////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////
