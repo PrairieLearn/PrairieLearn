@@ -29,7 +29,10 @@ var serverJobs = require('./lib/server-jobs');
 var freeformServer = require('./question-servers/freeform.js');
 
 // If there is only one argument, legacy it into the config option
-if (argv['_'].length == 1) { argv['config'] = argv['_'][0]; argv['_'] = [] }
+if (argv['_'].length == 1) {
+	argv['config'] = argv['_'][0];
+	argv['_'] = [];
+}
 
 if ('h' in argv || 'help' in argv) {
 	var msg = `PrairieLearn command line options:
@@ -464,8 +467,8 @@ if (config.startServer) {
 				} else {
 					callback(null);
 				}
-            });
-        },
+			});
+		},
         function(callback) {
             cron.init(function(err) {
                 if (ERR(err, callback)) return;
