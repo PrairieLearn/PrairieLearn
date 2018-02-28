@@ -15,5 +15,11 @@ RUN chmod +x /PrairieLearn/docker/init.sh \
     && mv /PrairieLearn/docker/config.json /PrairieLearn \
     && mkdir /course
 
+# Run migrations on blank DB at docker build time
+RUN /PrairieLearn/docker/start_postgres.sh \
+    && cd /PrairieLearn \
+    && node server.js --migrate-and-exit \
+    && /PrairieLearn/docker/start_postgres.sh stop
+
 HEALTHCHECK CMD curl --fail http://localhost:3000/pl/webhooks/ping || exit 1
 CMD /PrairieLearn/docker/init.sh
