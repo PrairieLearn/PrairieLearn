@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: ''}); %>
+    <div id="content" class="container">
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
+        </div>
+
+        <div class="card-body">
+
+          <p class="lead text-center">
+            This <%= assessment.type.toLowerCase() %> is only available via Safe Exam Browser.
+          </p>
+
+          <p><a href="https://safeexambrowser.org/download_en.html">Download instructions for the Safe Exam Browser.</a></p>
+
+	<a class="btn btn-lg btn-success" href="?downloadSEBConfig=true">Download configuration file & launch the Safe Exam Browser</a>
+        </div> <!-- panel-body -->
+
+      </div>
+    </div>
+  </body>
+</html>
