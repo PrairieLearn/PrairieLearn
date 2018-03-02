@@ -9,7 +9,6 @@ var sqlLoader = require('../lib/sql-loader');
 
 module.exports = function(req, res, next) {
 
-    res.locals.authz_data.mode = 'SEB';
     //console.dir(res.locals);
     //console.dir(res.locals.authz_result);
 
