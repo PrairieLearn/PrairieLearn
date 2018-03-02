@@ -82,7 +82,7 @@
             "properties": {
                 "mode" : {
                     "description": "The server mode required for access.",
-                    "enum": ["Public", "Exam"]
+                    "enum": ["Public", "Exam", "SEB"]
                 },
                 "role" : {
                     "description": "The minimum user role required for access.",
