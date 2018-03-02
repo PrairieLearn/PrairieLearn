@@ -288,6 +288,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
 // which checks the assessment type and calls next() if it's not the right type
 app.use('/pl/course_instance/:course_instance_id/assessments', [
     require('./middlewares/logPageView')('studentAssessments'),
+    require('./middlewares/SEBAssessmentAccess'),
     require('./pages/studentAssessments/studentAssessments'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id', [
