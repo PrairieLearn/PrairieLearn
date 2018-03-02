@@ -1,8 +1,12 @@
 parent: base
 properties:
+  useDatabase:
+    default: true
   useEc2MetadataService:
     default: true
   useCloudWatchLogging:
+    default: true
+  useImagePreloading:
     default: true
   reportLoad:
     default: true

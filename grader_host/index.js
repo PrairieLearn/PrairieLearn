@@ -13,6 +13,7 @@ const globalLogger = require('./lib/logger');
 const jobLogger = require('./lib/jobLogger');
 const configManager = require('./lib/config');
 const config = require('./lib/config').config;
+const pullImages = require('./lib/pullImages');
 const receiveFromQueue = require('./lib/receiveFromQueue');
 const util = require('./lib/util');
 const load = require('./lib/load');
@@ -28,7 +29,7 @@ async.series([
         });
     },
     (callback) => {
-        if (!config.reportLoad) return callback(null);
+        if (!config.useDatabase) return callback(null);
         var pgConfig = {
             host: config.postgresqlHost,
             database: config.postgresqlDatabase,
@@ -48,9 +49,16 @@ async.series([
         });
     },
     (callback) => {
-        if (!config.reportLoad) return callback(null);
+        if (!config.useDatabase || !config.reportLoad) return callback(null);
         load.init(config.maxConcurrentJobs);
         callback(null);
+    },
+    (callback) => {
+        if (!config.useDatabase || !config.useImagePreloading) return callback(null);
+        pullImages((err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
     },
     () => {
         globalLogger.info('Initialization complete; beginning to process jobs');

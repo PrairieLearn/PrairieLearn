@@ -5,6 +5,9 @@ properties:
     envVar: MAX_CONCURRENT_JOBS
 
   # Feature enable/disable
+  useDatabase:
+    default: false
+    envVar: USE_DATABASE
   useEc2MetadataService:
     default: true
     envVar: USE_EC2_METADATA_SERVICE
@@ -14,6 +17,9 @@ properties:
   useConsoleLoggingForJobs:
     default: false
     envVar: USE_CONSOLE_LOGGING_FOR_JOBS
+  useImagePreloading:
+    default: false
+    envVar: USE_IMAGE_PRELOADING
 
   # CloudWatch logging
   globalLogGroup:
@@ -47,8 +53,8 @@ properties:
     default: 'postgres'
     envVar: PG_DATABASE
   postgresqlUser:
-    default: 'grader'
+    default: null
     envVar: PG_USER
   postgresqlPassword:
-    default: 'grader_password'
+    default: null
     envVar: PG_PASSWORD
