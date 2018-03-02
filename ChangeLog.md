@@ -77,6 +77,8 @@
 
   * Fix `readthedocs` build (Matt West).
 
+  * Fix course role edit icon (Nathan Walters).
+
   * Change to Bootstrap 4 (Nathan Walters).
 
   * Change to NodeJS 8.x LTS (Matt West).
