@@ -1,1 +1,390 @@
-Some XML here.
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple Computer//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>originatorVersion</key>
+    <string>SEB_Win_2.1</string>
+    <key>startURL</key>
+    <string>http://endeavour.engr.illinois.edu:3000/pl</string>
+    <key>sebServerURL</key>
+    <string />
+    <key>hashedAdminPassword</key>
+    <string />
+    <key>allowQuit</key>
+    <true />
+    <key>ignoreExitKeys</key>
+    <true />
+    <key>hashedQuitPassword</key>
+    <string />
+    <key>exitKey1</key>
+    <integer>2</integer>
+    <key>exitKey2</key>
+    <integer>10</integer>
+    <key>exitKey3</key>
+    <integer>5</integer>
+    <key>sebMode</key>
+    <integer>0</integer>
+    <key>browserMessagingSocket</key>
+    <string>ws://localhost:8706</string>
+    <key>browserMessagingPingTime</key>
+    <integer>120000</integer>
+    <key>sebConfigPurpose</key>
+    <integer>0</integer>
+    <key>allowPreferencesWindow</key>
+    <true />
+    <key>browserViewMode</key>
+    <integer>0</integer>
+    <key>mainBrowserWindowWidth</key>
+    <string>100%</string>
+    <key>mainBrowserWindowHeight</key>
+    <string>100%</string>
+    <key>mainBrowserWindowPositioning</key>
+    <integer>1</integer>
+    <key>enableBrowserWindowToolbar</key>
+    <false />
+    <key>hideBrowserWindowToolbar</key>
+    <false />
+    <key>showMenuBar</key>
+    <false />
+    <key>showTaskBar</key>
+    <true />
+    <key>taskBarHeight</key>
+    <integer>40</integer>
+    <key>touchOptimized</key>
+    <false />
+    <key>enableZoomText</key>
+    <true />
+    <key>enableZoomPage</key>
+    <true />
+    <key>zoomMode</key>
+    <integer>0</integer>
+    <key>allowSpellCheck</key>
+    <false />
+    <key>allowDictionaryLookup</key>
+    <false />
+    <key>showTime</key>
+    <true />
+    <key>showInputLanguage</key>
+    <true />
+    <key>enableTouchExit</key>
+    <false />
+    <key>browserScreenKeyboard</key>
+    <false />
+    <key>newBrowserWindowByLinkPolicy</key>
+    <integer>2</integer>
+    <key>newBrowserWindowByScriptPolicy</key>
+    <integer>2</integer>
+    <key>newBrowserWindowByLinkBlockForeign</key>
+    <false />
+    <key>newBrowserWindowByScriptBlockForeign</key>
+    <false />
+    <key>newBrowserWindowByLinkWidth</key>
+    <string>1000</string>
+    <key>newBrowserWindowByLinkHeight</key>
+    <string>100%</string>
+    <key>newBrowserWindowByLinkPositioning</key>
+    <integer>2</integer>
+    <key>enablePlugIns</key>
+    <true />
+    <key>enableJava</key>
+    <false />
+    <key>enableJavaScript</key>
+    <true />
+    <key>blockPopUpWindows</key>
+    <false />
+    <key>allowBrowsingBackForward</key>
+    <false />
+    <key>removeBrowserProfile</key>
+    <true />
+    <key>removeLocalStorage</key>
+    <true />
+    <key>enableSebBrowser</key>
+    <true />
+    <key>showReloadButton</key>
+    <true />
+    <key>showReloadWarning</key>
+    <true />
+    <key>browserUserAgentWinDesktopMode</key>
+    <integer>0</integer>
+    <key>browserUserAgentWinDesktopModeCustom</key>
+    <string />
+    <key>browserUserAgentWinTouchMode</key>
+    <integer>0</integer>
+    <key>browserUserAgentWinTouchModeCustom</key>
+    <string />
+    <key>browserUserAgent</key>
+    <string />
+    <key>browserUserAgentMac</key>
+    <integer>0</integer>
+    <key>browserUserAgentMacCustom</key>
+    <string />
+    <key>allowDownUploads</key>
+    <true />
+    <key>downloadDirectoryOSX</key>
+    <string>~/Downloads</string>
+    <key>downloadDirectoryWin</key>
+    <string />
+    <key>openDownloads</key>
+    <false />
+    <key>chooseFileToUploadPolicy</key>
+    <integer>0</integer>
+    <key>downloadPDFFiles</key>
+    <false />
+    <key>downloadAndOpenSebConfig</key>
+    <true />
+    <key>examKeySalt</key>
+    <data>kBfwCjiXzyGnirmK621aMgxDwTrGcuKDmZKNvSIpapg=</data>
+    <key>browserExamKey</key>
+    <string />
+    <key>browserURLSalt</key>
+    <true />
+    <key>sendBrowserExamKey</key>
+    <true />
+    <key>quitURL</key>
+    <string />
+    <key>restartExamURL</key>
+    <string />
+    <key>restartExamUseStartURL</key>
+    <true />
+    <key>restartExamText</key>
+    <string />
+    <key>restartExamPasswordProtected</key>
+    <true />
+    <key>monitorProcesses</key>
+    <true />
+    <key>allowSwitchToApplications</key>
+    <false />
+    <key>allowFlashFullscreen</key>
+    <false />
+    <key>permittedProcesses</key>
+    <array>
+      <dict>
+        <key>active</key>
+        <true />
+        <key>autostart</key>
+        <true />
+        <key>iconInTaskbar</key>
+        <true />
+        <key>runInBackground</key>
+        <false />
+        <key>allowUserToChooseApp</key>
+        <false />
+        <key>strongKill</key>
+        <true />
+        <key>os</key>
+        <integer>1</integer>
+        <key>title</key>
+        <string>SEB</string>
+        <key>description</key>
+        <string />
+        <key>executable</key>
+        <string>xulrunner.exe</string>
+        <key>path</key>
+        <string>../xulrunner/</string>
+        <key>identifier</key>
+        <string>XULRunner</string>
+        <key>windowHandlingProcess</key>
+        <string />
+        <key>arguments</key>
+        <array></array>
+      </dict>
+    </array>
+    <key>prohibitedProcesses</key>
+    <array></array>
+    <key>enableURLFilter</key>
+    <false />
+    <key>enableURLContentFilter</key>
+    <false />
+    <key>URLFilterRules</key>
+    <array></array>
+    <key>URLFilterEnable</key>
+    <true />
+    <key>URLFilterEnableContentFilter</key>
+    <false />
+    <key>blacklistURLFilter</key>
+    <string />
+    <key>whitelistURLFilter</key>
+    <string>http://endeavour.engr.illinois.edu:3000/*;https://shibboleth.illinois.edu/*</string>
+    <key>urlFilterTrustedContent</key>
+    <false />
+    <key>urlFilterRegex</key>
+    <false />
+    <key>embeddedCertificates</key>
+    <array></array>
+    <key>proxySettingsPolicy</key>
+    <integer>0</integer>
+    <key>proxies</key>
+    <dict>
+      <key>ExceptionsList</key>
+      <array></array>
+      <key>ExcludeSimpleHostnames</key>
+      <false />
+      <key>AutoDiscoveryEnabled</key>
+      <false />
+      <key>AutoConfigurationEnabled</key>
+      <false />
+      <key>AutoConfigurationJavaScript</key>
+      <string />
+      <key>AutoConfigurationURL</key>
+      <string />
+      <key>FTPPassive</key>
+      <true />
+      <key>HTTPEnable</key>
+      <false />
+      <key>HTTPPort</key>
+      <integer>80</integer>
+      <key>HTTPProxy</key>
+      <string />
+      <key>HTTPRequiresPassword</key>
+      <false />
+      <key>HTTPUsername</key>
+      <string />
+      <key>HTTPPassword</key>
+      <string />
+      <key>HTTPSEnable</key>
+      <false />
+      <key>HTTPSPort</key>
+      <integer>443</integer>
+      <key>HTTPSProxy</key>
+      <string />
+      <key>HTTPSRequiresPassword</key>
+      <false />
+      <key>HTTPSUsername</key>
+      <string />
+      <key>HTTPSPassword</key>
+      <string />
+      <key>FTPEnable</key>
+      <false />
+      <key>FTPPort</key>
+      <integer>21</integer>
+      <key>FTPProxy</key>
+      <string />
+      <key>FTPRequiresPassword</key>
+      <false />
+      <key>FTPUsername</key>
+      <string />
+      <key>FTPPassword</key>
+      <string />
+      <key>SOCKSEnable</key>
+      <false />
+      <key>SOCKSPort</key>
+      <integer>1080</integer>
+      <key>SOCKSProxy</key>
+      <string />
+      <key>SOCKSRequiresPassword</key>
+      <false />
+      <key>SOCKSUsername</key>
+      <string />
+      <key>SOCKSPassword</key>
+      <string />
+      <key>RTSPEnable</key>
+      <false />
+      <key>RTSPPort</key>
+      <integer>554</integer>
+      <key>RTSPProxy</key>
+      <string />
+      <key>RTSPRequiresPassword</key>
+      <false />
+      <key>RTSPUsername</key>
+      <string />
+      <key>RTSPPassword</key>
+      <string />
+    </dict>
+    <key>sebServicePolicy</key>
+    <integer>1</integer>
+    <key>allowVirtualMachine</key>
+    <false />
+    <key>createNewDesktop</key>
+    <true />
+    <key>killExplorerShell</key>
+    <false />
+    <key>allowUserSwitching</key>
+    <true />
+    <key>enableAppSwitcherCheck</key>
+    <true />
+    <key>forceAppFolderInstall</key>
+    <true />
+    <key>enableLogging</key>
+    <true />
+    <key>logDirectoryOSX</key>
+    <string>~/Documents</string>
+    <key>logDirectoryWin</key>
+    <string />
+    <key>allowWlan</key>
+    <false />
+    <key>insideSebEnableSwitchUser</key>
+    <false />
+    <key>insideSebEnableLockThisComputer</key>
+    <false />
+    <key>insideSebEnableChangeAPassword</key>
+    <false />
+    <key>insideSebEnableStartTaskManager</key>
+    <false />
+    <key>insideSebEnableLogOff</key>
+    <false />
+    <key>insideSebEnableShutDown</key>
+    <false />
+    <key>insideSebEnableEaseOfAccess</key>
+    <false />
+    <key>insideSebEnableVmWareClientShade</key>
+    <false />
+    <key>hookKeys</key>
+    <true />
+    <key>enableEsc</key>
+    <false />
+    <key>enableCtrlEsc</key>
+    <false />
+    <key>enableAltEsc</key>
+    <false />
+    <key>enableAltTab</key>
+    <true />
+    <key>enableAltF4</key>
+    <false />
+    <key>enableStartMenu</key>
+    <false />
+    <key>enableRightMouse</key>
+    <false />
+    <key>enablePrintScreen</key>
+    <false />
+    <key>enableAltMouseWheel</key>
+    <false />
+    <key>enableF1</key>
+    <false />
+    <key>enableF2</key>
+    <false />
+    <key>enableF3</key>
+    <false />
+    <key>enableF4</key>
+    <false />
+    <key>enableF5</key>
+    <true />
+    <key>enableF6</key>
+    <false />
+    <key>enableF7</key>
+    <false />
+    <key>enableF8</key>
+    <false />
+    <key>enableF9</key>
+    <false />
+    <key>enableF10</key>
+    <false />
+    <key>enableF11</key>
+    <false />
+    <key>enableF12</key>
+    <false />
+    <key>oskBehavior</key>
+    <integer>2</integer>
+    <key>allowPDFPlugIn</key>
+    <false />
+    <key>minMacOSVersion</key>
+    <integer>0</integer>
+    <key>allowDisplayMirroring</key>
+    <false />
+    <key>allowedDisplaysMaxNumber</key>
+    <integer>1</integer>
+    <key>allowedDisplayBuiltin</key>
+    <true />
+    <key>insideSebEnableEnableNetworkConnectionSelector</key>
+    <false />
+  </dict>
+</plist>
