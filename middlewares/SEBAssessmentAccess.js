@@ -9,11 +9,14 @@ var sqlLoader = require('../lib/sql-loader');
 
 module.exports = function(req, res, next) {
 
-    console.dir(res.locals);
-    console.dir(res.locals.authz_result);
+    res.locals.authz_data.mode = 'SEB';
+    //console.dir(res.locals);
+    //console.dir(res.locals.authz_result);
+
+    // Should do someting here if the exam is closed to tell the user
 
     if (res.locals.authz_result.mode == 'SEB' &&
-            res.locals.authz_result.mode != res.locals.authz_data.mode) {
+        res.locals.authz_result.mode != res.locals.authz_data.mode) {
 
                 if ('downloadSEBConfig' in req.query) {
                     var filename = 'config.seb';
@@ -32,6 +35,6 @@ module.exports = function(req, res, next) {
                 }
 
                 return res.render('./shared/SEBAssessmentAccess.ejs', res.locals);
-            }
-        next();
+    }
+    next();
 };

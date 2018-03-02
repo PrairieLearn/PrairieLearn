@@ -15,7 +15,8 @@
 	    "mode": "SEB",
 	    "credit": 100,
 	    "startDate": "2000-01-01T01:01:01",
-	    "endDate": "2300-01-01T02:02:02"
+	    "endDate": "2300-01-01T02:02:02",
+            "password": "secret"
 	}
     ],
     "zones": [
