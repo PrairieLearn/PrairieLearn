@@ -248,7 +248,8 @@ function runJob(info, callback) {
                 jobId,
                 image,
                 entrypoint,
-                timeout
+                timeout,
+                enableNetworking,
             }
         },
         initFiles: {
@@ -258,6 +259,7 @@ function runJob(info, callback) {
 
     let results = {};
     let jobTimeout = timeout || 30;
+    let jobEnableNetworking = enableNetworking || false;
 
     logger.info('Launching Docker container to run grading job');
 
@@ -268,7 +270,7 @@ function runJob(info, callback) {
                 AttachStdout: true,
                 AttachStderr: true,
                 Tty: true,
-                NetworkDisabled: true,
+                NetworkDisabled: !jobEnableNetworking,
                 HostConfig: {
                     Binds: [
                         `${tempDir}:/grade`
@@ -281,7 +283,6 @@ function runJob(info, callback) {
                     CpuPeriod: 100000, // microseconds
                     CpuQuota: 90000, // portion of the CpuPeriod for this container
                     PidsLimit: 1024,
-                    NetworkMode: 'none',
                 },
                 Entrypoint: entrypoint.split(' ')
             }, (err, container) => {
