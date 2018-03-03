@@ -98,7 +98,6 @@ def render(element_html, element_index, data):
         score = partial_score.get('score', None)
 
         html = ''
-        
         for answer in display_answers:
             item = '  <label class="form-check-label">\n' \
                 + '    <input type="checkbox" class="form-check-input"' \
@@ -129,15 +128,12 @@ def render(element_html, element_index, data):
                     html = html + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
             except Exception:
                 raise ValueError('invalid score' + score)
-                
-        
+
         # Adds decorative help text per bootstrap formatting guidelines:
         # http://getbootstrap.com/docs/4.0/components/forms/#help-text
-        
         # Determine whether we should add a choice selection requirement
         if not pl.get_boolean_attrib(element, 'hide_inst_prompt', False):
-            
-            # Should we reveal the depth of the choice? 
+            # Should we reveal the depth of the choice?
             if pl.get_boolean_attrib(element, 'detailed_inst_prompt', False):
                 min_correct = pl.get_integer_attrib(element, 'min_correct', 0)
                 max_correct = pl.get_integer_attrib(element, 'max_correct', len(correct_answer_list))
@@ -148,8 +144,6 @@ def render(element_html, element_index, data):
             # Generic prompt to differentiate from a radio input
             else:
                 html = html + '<small class="form-text text-muted">  Select all possible options that apply.</small>'
-        
-        
     elif data['panel'] == 'submission':
         if len(submitted_keys) == 0:
             html = 'No selected answers'
