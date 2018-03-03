@@ -43,6 +43,8 @@
 
   * Add form help text indicating multiple answer can be selected for `pl_checkbox` (James Balamuta).
 
+  * Add demo question showcasing all options for `pl_checkbox` (James Balamuta).
+  
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
