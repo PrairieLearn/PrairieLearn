@@ -79,6 +79,8 @@
 
   * Fix course role edit icon (Nathan Walters).
 
+  * Fix Coveralls.io reporting (Dave Mussulman).
+
   * Change to Bootstrap 4 (Nathan Walters).
 
   * Change to NodeJS 8.x LTS (Matt West).
