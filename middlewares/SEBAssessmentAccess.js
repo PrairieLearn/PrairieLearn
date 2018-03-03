@@ -3,11 +3,6 @@ var _ = require('lodash');
 var path = require('path');
 var sha256 = require('crypto-js/sha256');
 
-var sqldb = require('../lib/sqldb');
-var sqlLoader = require('../lib/sql-loader');
-
-//var sql = sqlLoader.loadSqlEquiv(__filename);
-
 module.exports = function(req, res, next) {
 
     var absoluteURL = req.protocol + '://' + req.get('host') + req.originalUrl;
@@ -65,6 +60,7 @@ module.exports = function(req, res, next) {
             });
         }
 
+        /*
         if ('SEBConfig' in req.query) {
             var filename = 'config.seb';
             var sebFile = path.join(
@@ -72,13 +68,14 @@ module.exports = function(req, res, next) {
                 'courseInstances',
                 res.locals.course_instance.short_name,
                 'assessments',
-                res.locals.assessment.tid,
+                res.locals.assessment.tid
             );
             return res.sendFile(filename, {root: sebFile}, function(err) {
                 if (ERR(err, next)) return;
             });
 
         }
+        */
         res.locals.SEBUrl = 'seb://' + req.get('host') + req.originalUrl;
         return res.render('./shared/SEBAssessmentAccess.ejs', res.locals);
     }

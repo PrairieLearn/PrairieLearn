@@ -66,6 +66,8 @@
   * Add predictive grader autoscaling (Matt West).
 
   * Add links to student questions on instructor assessment instance page (Matt West).
+  
+  * Add Safe Exam Browser support (Dave Mussulman).
 
   * Add instance question durations to CSV output (Matt West).
 
