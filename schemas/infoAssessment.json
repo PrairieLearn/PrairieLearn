@@ -116,6 +116,11 @@
                 "password": {
                     "description": "Password to begin the assessment (only for Exams).",
                     "type": "string"
+                },
+                "SEBKeys": {
+                    "description": "List of Browser Exam Keys for Safe Exam Browser",
+                    "type": "array",
+                    "items": {"type": "string"}
                 }
             }
         },

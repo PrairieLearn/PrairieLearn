@@ -14,7 +14,8 @@ CREATE OR REPLACE FUNCTION
         OUT credit_date_string TEXT, -- For display to the user.
         OUT time_limit_min integer,  -- The time limit (if any) for this assessment.
         OUT password text,           -- The password (if any) for this assessment.
-	OUT mode enum_mode,
+        OUT mode enum_mode,          -- The mode for this assessment.
+        OUT seb_keys text[],         -- The SEBKeys (if any) for this assessment.
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     )
 AS $$
@@ -74,5 +75,6 @@ BEGIN
     password := user_result.password;
     access_rules := user_result.access_rules;
     mode := user_result.mode;
+    seb_keys := user_result.seb_keys;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

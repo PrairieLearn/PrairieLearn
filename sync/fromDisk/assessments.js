@@ -153,6 +153,7 @@ module.exports = {
                 credit: _(dbRule).has('credit') ? dbRule.credit : null,
                 time_limit_min: _(dbRule).has('timeLimitMin') ? dbRule.timeLimitMin : null,
                 password: _(dbRule).has('password') ? dbRule.password : null,
+                seb_keys: _(dbRule).has('SEBKeys') ? dbRule.SEBKeys : null,
             };
             sqldb.query(sql.insert_assessment_access_rule, params, function(err, _result) {
                 if (ERR(err, callback)) return;

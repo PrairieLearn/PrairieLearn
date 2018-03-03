@@ -16,7 +16,8 @@ CREATE OR REPLACE FUNCTION
         OUT credit_date_string TEXT, -- For display to the user.
         OUT time_limit_min integer,  -- What is the time limit (if any) for this assessment.
         OUT password text,           -- What is the password (if any) for this assessment.
-	OUT mode enum_mode,
+        OUT mode enum_mode,          -- Mode of the assessment.
+        OUT seb_keys text[],         -- SEBKeys (if any) for this assessment.
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     ) AS $$
 DECLARE
@@ -38,7 +39,8 @@ BEGIN
         END AS credit_date_string,
         aar.time_limit_min,
         aar.password,
-	aar.mode,
+        aar.mode,
+        aar.seb_keys,
         aar.id
     INTO
         authorized,
@@ -46,7 +48,8 @@ BEGIN
         credit_date_string,
         time_limit_min,
         password,
-	mode,
+        mode,
+        seb_keys,
         active_access_rule_id
     FROM
         assessment_access_rules AS aar
@@ -67,7 +70,8 @@ BEGIN
         credit_date_string = 'None';
         time_limit_min = NULL;
         password = NULL;
-	mode = NULL;
+        mode = NULL;
+        seb_keys = NULL;
     END IF;
 
     -- Override if we are an Instructor
@@ -78,7 +82,8 @@ BEGIN
         active_access_rule_id = NULL;
         time_limit_min = NULL;
         password = NULL;
-	mode = NULL;
+        mode = NULL;
+        seb_keys = NULL;
     END IF;
 
     -- List of all access rules that will grant access to this user/mode/role at some date (past or future),
