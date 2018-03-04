@@ -30,21 +30,21 @@ var freeformServer = require('./question-servers/freeform.js');
 
 // If there is only one argument, legacy it into the config option
 if (argv['_'].length == 1) {
-	argv['config'] = argv['_'][0];
-	argv['_'] = [];
+    argv['config'] = argv['_'][0];
+    argv['_'] = [];
 }
 
 if ('h' in argv || 'help' in argv) {
-	var msg = `PrairieLearn command line options:
-	-h, --help                          Display this help and exit
-	--config <filename>
-	<filename> and no other args        Load an alternative config filename
-	--migrate-and-exit					Run the DB initialization parts and exit
-	--exit                              Run all the initialization and exit
-	`;
+    var msg = `PrairieLearn command line options:
+    -h, --help                          Display this help and exit
+    --config <filename>
+    <filename> and no other args        Load an alternative config filename
+    --migrate-and-exit					Run the DB initialization parts and exit
+    --exit                              Run all the initialization and exit
+`;
 
-	console.log(msg); // eslint-disable-line no-console
-	process.exit(0);
+    console.log(msg); // eslint-disable-line no-console
+    process.exit(0);
 }
 
 if (config.startServer) {
@@ -461,14 +461,17 @@ if (config.startServer) {
         function(callback) {
             sprocs.init(function(err) {
                 if (ERR(err, callback)) return;
-				if ('migrate-and-exit' in argv && argv['migrate-and-exit']) {
-					logger.info('option --migrate-and-exit passed, running DB setup and exiting');
-					process.exit(0);
-				} else {
-					callback(null);
-				}
-			});
-		},
+                callback(null);
+            });
+        },
+        function(callback) {
+            if ('migrate-and-exit' in argv && argv['migrate-and-exit']) {
+                logger.info('option --migrate-and-exit passed, running DB setup and exiting');
+                process.exit(0);
+            } else {
+                callback(null);
+            }
+        },
         function(callback) {
             cron.init(function(err) {
                 if (ERR(err, callback)) return;
