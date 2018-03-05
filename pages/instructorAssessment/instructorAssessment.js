@@ -85,7 +85,7 @@ router.get('/', function(req, res, next) {
         function(callback) {
             debug('query expected assessment score');
             var params = {
-                assessment_id: res.locals.assessment.id
+                assessment_id: res.locals.assessment.id,
             };
             sqldb.query(sql.expected_assessment_score, params, function(err, result) {
                 if (ERR(err, callback)) return;
