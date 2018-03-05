@@ -110,6 +110,7 @@
   * Add `load-test` support for v2 questions (Matt West).
 
   * Add submission info modal with external grading stats (Nathan Walters).
+  * Add additional information about indices to database descriptions (Nathan Walters).
 
   * Fix broken file upload element (Nathan Walters).
 
