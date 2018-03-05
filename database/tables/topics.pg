@@ -7,8 +7,8 @@ columns
     number: integer
 
 indexes
-    topics_pkey: PRIMARY KEY (id)
-    topics_course_id_name_key: UNIQUE (course_id, name)
+    topics_pkey: PRIMARY KEY (id) USING btree (id)
+    topics_course_id_name_key: UNIQUE (course_id, name) USING btree (course_id, name)
 
 foreign-key constraints
     topics_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE

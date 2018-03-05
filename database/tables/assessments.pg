@@ -22,10 +22,10 @@ columns
     uuid: uuid not null
 
 indexes
-    assessments_pkey: PRIMARY KEY (id)
-    assessments_uuid_key: UNIQUE (uuid)
-    assessments_assessment_set_id_idx: null
-    assessments_course_instance_id_idx: null
+    assessments_pkey: PRIMARY KEY (id) USING btree (id)
+    assessments_uuid_key: UNIQUE (uuid) USING btree (uuid)
+    assessments_assessment_set_id_idx: USING btree (assessment_set_id)
+    assessments_course_instance_id_idx: USING btree (course_instance_id)
 
 foreign-key constraints
     assessments_assessment_set_id_fkey: FOREIGN KEY (assessment_set_id) REFERENCES assessment_sets(id) ON UPDATE CASCADE ON DELETE SET NULL

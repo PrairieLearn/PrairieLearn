@@ -6,8 +6,8 @@ columns
     zone_id: bigint not null
 
 indexes
-    alternative_groups_pkey: PRIMARY KEY (id)
-    alternative_groups_assessment_id_number_key: UNIQUE (assessment_id, number)
+    alternative_groups_pkey: PRIMARY KEY (id) USING btree (id)
+    alternative_groups_assessment_id_number_key: UNIQUE (assessment_id, number) USING btree (assessment_id, number)
 
 foreign-key constraints
     alternative_groups_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

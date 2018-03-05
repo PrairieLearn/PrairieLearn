@@ -6,8 +6,8 @@ columns
     title: text
 
 indexes
-    zones_pkey: PRIMARY KEY (id)
-    zones_assessment_id_number_key: UNIQUE (assessment_id, number)
+    zones_pkey: PRIMARY KEY (id) USING btree (id)
+    zones_assessment_id_number_key: UNIQUE (assessment_id, number) USING btree (assessment_id, number)
 
 foreign-key constraints
     zones_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -6,8 +6,8 @@ columns
     open: boolean
 
 indexes
-    assessment_state_logs_pkey: PRIMARY KEY (id)
-    assessment_state_logs_assessment_instance_id_idx: null
+    assessment_state_logs_pkey: PRIMARY KEY (id) USING btree (id)
+    assessment_state_logs_assessment_instance_id_idx: USING btree (assessment_instance_id)
 
 foreign-key constraints
     assessment_state_logs_assessment_instance_id_fkey: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

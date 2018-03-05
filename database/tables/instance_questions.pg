@@ -32,9 +32,9 @@ columns
     variants_points_list: double precision[] not null default ARRAY[]::double precision[]
 
 indexes
-    instance_questions_pkey: PRIMARY KEY (id)
-    instance_questions_assessment_question_id_assessment_instan_key: UNIQUE (assessment_question_id, assessment_instance_id)
-    instance_questions_assessment_instance_id_idx: null
+    instance_questions_pkey: PRIMARY KEY (id) USING btree (id)
+    instance_questions_assessment_question_id_assessment_instan_key: UNIQUE (assessment_question_id, assessment_instance_id) USING btree (assessment_question_id, assessment_instance_id)
+    instance_questions_assessment_instance_id_idx: USING btree (assessment_instance_id)
 
 foreign-key constraints
     instance_questions_assessment_instance_id_fkey: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

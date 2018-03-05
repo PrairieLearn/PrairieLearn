@@ -23,10 +23,10 @@ columns
     uuid: uuid not null
 
 indexes
-    questions_pkey: PRIMARY KEY (id)
-    questions_course_id_number_key: UNIQUE (course_id, number)
-    questions_uuid_key: UNIQUE (uuid)
-    questions_topic_id_idx: null
+    questions_pkey: PRIMARY KEY (id) USING btree (id)
+    questions_course_id_number_key: UNIQUE (course_id, number) USING btree (course_id, number)
+    questions_uuid_key: UNIQUE (uuid) USING btree (uuid)
+    questions_topic_id_idx: USING btree (topic_id)
 
 foreign-key constraints
     questions_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
