@@ -45,17 +45,16 @@
             <div id="scoreHistOverall" class="scoreHistogram"></div>
             <script>
                 $(function() {
-                    var data = [ <%= result.filter(obj => obj.keep)[0].predicted_score %>];
-                    var negativeData = [ <%= result.filter(obj => !obj.keep)[0].predicted_score %>];
-                    console.log(data);
-                    console.log(negativeData);
-                    var xgrid = _.range(0, 110, 1);
-                    var options = {
+                    const data = [ <%= result.filter(obj => obj.keep)[0].predicted_score %>];
+                    const negativeData = [ <%= result.filter(obj => !obj.keep)[0].predicted_score %>];
+                    const xgrid = _.range(0, 100, 100 / <%= numBuckets %>);
+                    const options = {
                         ymin: 0,
                         xlabel: 'score / %',
                         ylabel: 'number of students',
                         xmin: 0,
                         xmax: 100,
+                        xAxisScale: d3.scale.linear().domain([0, 100]),
                     };
                     stacked_histogram("#scoreHistOverall<%= i %>", data, negativeData, xgrid, options);
                 });
@@ -68,44 +67,24 @@
                 <h6> SD: <%= (quintile_result.filter(obj => obj.keep && obj.quintile == (i+1))[0].sd * 100).toFixed(3) %> </h6>
                 <h6> Lower bound (mean - num_sds * sd) <%= (quintile_result.filter(obj => obj.keep && obj.quintile == (i+1))[0].lower_bound * 100).toFixed(3) %> </h6>
                 <h6> Upper bound (mean + num_sds * sd) <%= (quintile_result.filter(obj => obj.keep && obj.quintile == (i+1))[0].upper_bound * 100).toFixed(3) %> </h6>
-                <div id="scoreHistNew<%= i %>" class="scoreHistogram"></div>
+                <div id="scoreHistQuintile<%= i %>" class="scoreHistogram"></div>
                 <script>
                     $(function() {
-                        var data = [ <%= quintile_result.filter(obj => obj.keep && obj.quintile == (i+1))[0].predicted_quintile_score %>];
-                        var negativeData = [ <%= quintile_result.filter(obj => !obj.keep && obj.quintile == (i+1))[0].predicted_quintile_score %>];
-                        var xgrid = _.range(0, 110, 1);
-                        var options = {
+                        const data = [ <%= quintile_result.filter(obj => obj.keep && obj.quintile == (i+1))[0].predicted_quintile_score %>];
+                        const negativeData = [ <%= quintile_result.filter(obj => !obj.keep && obj.quintile == (i+1))[0].predicted_quintile_score %>];
+                        const xgrid = _.range(0, 100, 100 / <%= numBuckets %>);
+                        const options = {
                             ymin: 0,
                             xlabel: 'score / %',
                             ylabel: 'number of students',
                             xmin: 0,
                             xmax: 100,
+                            xAxisScale: d3.scale.linear().domain([0, 100]),
                         };
-                        stacked_histogram("#scoreHistNew<%= i %>", data, negativeData, xgrid, options);
+                        stacked_histogram("#scoreHistQuintile<%= i %>", data, negativeData, xgrid, options);
                     });
                 </script>
             <% } %>
-
-            <!--<% for (var i = 0; i < 5; i++) { %>-->
-                <!--<h3> Quintile: <%= (i+1) %> </h3>-->
-                <!--<h4> Mean: <%= (asdf[i].mean * 100).toFixed(3) %> </h4>-->
-                <!--<h4> SD: <%= (asdf[i].sd * 100).toFixed(3) %> </h4>-->
-                <!--<div id="scoreHist<%= i %>" class="scoreHistogram"></div>-->
-                <!--<script>-->
-                    <!--$(function() {-->
-                        <!--var data = [<%= asdf[i].histogram %>];-->
-                        <!--var xgrid = _.range(0, 110, 1);-->
-                        <!--var options = {-->
-                            <!--ymin: 0,-->
-                            <!--xlabel: 'score / %',-->
-                            <!--ylabel: 'number of students',-->
-                            <!--xmin: 0,-->
-                            <!--xmax: 100,-->
-                        <!--};-->
-                        <!--histogram("#scoreHist<%= i %>", data, xgrid, options);-->
-                    <!--});-->
-                <!--</script>-->
-            <!--<% } %>-->
         </div>
     </div>
 

@@ -55,15 +55,15 @@
               <td></td>
               <td></td>
               <td>
-                  <%= assessment_stat.mean.toFixed(3) %>%
+                  <%= assessment_stat.mean.toFixed(3) %>
               </td>
               <td>
                   <% if (expected_assessment_score_perc) { %>
-                  <%= expected_assessment_score_perc.toFixed(3) %>%
+                  <%= expected_assessment_score_perc.toFixed(3) %>
                   <% } %>
               </td>
               <td>
-                  <% if (expected_assessment_quintile_score_perc) { %>
+                  <% if (expected_assessment_quintile_score_perc[0].score_perc) { %>
                 <div id="expectedAssessmentScoreQuintiles" class="miniHist">
                 </div>
                   <% } %>
@@ -80,8 +80,8 @@
                     });
                 </script>
               </td>
-              <td></td>
-              <td></td>
+              <td>N/A</td>
+              <td>N/A</td>
             </tr>
             <% questions.forEach(function(question, i) { %>
               <% if (question.start_new_zone) { %>
@@ -139,11 +139,11 @@
                 </td>
                 <td>
                     <% if (question.predicted_mean_score) { %>
-                    <%= question.predicted_mean_score.toFixed(3) %> %
+                    <%= question.predicted_mean_score.toFixed(3) %>
                     <% } %>
                 </td>
                 <td>
-                    <% if (question.predicted_quintile_scores) { %>
+                    <% if (question.predicted_quintile_scores[0]) { %>
                   <div id="predictedQuintileScores<%= i %>" class="miniHist">
 
                   </div>

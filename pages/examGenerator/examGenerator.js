@@ -3,7 +3,7 @@ var _ = require('lodash');
 var async = require('async');
 var express = require('express');
 var router = express.Router();
-var debug = require('debug')('prairielearn:instructorAssessment');
+var debug = require('debug')('prairielearn:examGenerator');
 
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
@@ -16,12 +16,19 @@ router.get('/', function(req, res, next) {
         function(callback) {
             const params = {
                 assessment_id: res.locals.assessment.id,
-                num_sds: 1,
+                numSds: 1,
+                numBuckets: 10,
             };
 
-            if (req.query.num_sds) {
-                params.num_sds = req.query.num_sds;
+            if (req.query.numSds) {
+                params.numSds = req.query.numSds;
             }
+
+            if (req.query.numBuckets) {
+                params.numBuckets = req.query.numBuckets;
+            }
+            
+            res.locals.numBuckets = params.numBuckets;
 
             sqldb.queryOneRow(sql.generated_score_new, params, function(err, result) {
                 if (ERR(err, callback)) return;

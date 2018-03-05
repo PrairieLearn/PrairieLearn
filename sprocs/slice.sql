@@ -6,6 +6,10 @@ CREATE OR REPLACE FUNCTION
 )
 AS $$
 BEGIN
-    SELECT ARRAY (SELECT unnest(input[index_var:index_var])) INTO output;
+    IF input IS NULL THEN
+        output = NULL;
+    ELSE
+        SELECT ARRAY (SELECT unnest(input[index_var:index_var])) INTO output;
+    END IF;
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;

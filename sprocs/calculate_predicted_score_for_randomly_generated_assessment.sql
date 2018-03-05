@@ -76,14 +76,13 @@ BEGIN
                                      aq.points_list,
                                      aq.max_points) * aq.max_points / 100,
                                  -- SD
---                                  0
-                                         sqrt(
-                                             calculate_predicted_question_score(
-                                                 slice(qs.incremental_submission_score_array_variance_quintiles, quintiles.quintile),
-                                                 hw_qs.last_submission_score_variance_quintiles[quintiles.quintile],
-                                                 aq.points_list,
-                                                 aq.max_points) * aq.max_points / 100
-                                         )
+                                 sqrt(
+                                     calculate_predicted_question_score(
+                                         slice(qs.incremental_submission_score_array_variance_quintiles, quintiles.quintile),
+                                         hw_qs.last_submission_score_variance_quintiles[quintiles.quintile],
+                                         aq.points_list,
+                                         aq.max_points) * aq.max_points / 100
+                                 )
                     ) AS score_perc (question_score_perc) ON TRUE
         WHERE
             aq.id = ANY(generated_assessment_question_ids)

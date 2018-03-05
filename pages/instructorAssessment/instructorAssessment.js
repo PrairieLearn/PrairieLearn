@@ -102,7 +102,7 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.questions, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.questions = result.rows;
-                console.log(res.locals.questions);
+                // console.log(res.locals.questions);
                 callback(null);
             });
         },

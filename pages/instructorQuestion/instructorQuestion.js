@@ -177,7 +177,7 @@ router.get('/', function(req, res, next) {
                 res.locals.question_stats = question_stats;
                 res.locals.hw_stats = hw_stats;
                 res.locals.exam_stats = exam_stats;
-                console.log(JSON.stringify(question_stats, null, 3));
+                // console.log(JSON.stringify(question_stats, null, 3));
                 callback(null);
             });
         },

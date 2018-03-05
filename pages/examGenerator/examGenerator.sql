@@ -13,8 +13,8 @@ generated_aq_ids_flattened AS (
 quintile_stats_object AS (
     SELECT
         quintile_stats.*,
-        quintile_stats.mean - $num_sds * quintile_stats.sd AS lower_bound,
-        quintile_stats.mean + $num_sds * quintile_stats.sd AS upper_bound
+        quintile_stats.mean - $numSds * quintile_stats.sd AS lower_bound,
+        quintile_stats.mean + $numSds * quintile_stats.sd AS upper_bound
     FROM
         generated_aq_ids
         JOIN calculate_quintile_stats(get_domain($assessment_id), generated_aq_ids.generated_assessment_question_ids) quintile_stats (quintile INTEGER, mean DOUBLE PRECISION, sd DOUBLE PRECISION) ON TRUE
@@ -39,7 +39,7 @@ useful_data AS (
             quintile_stats.means,
             quintile_stats.sds,
             get_domain($assessment_id),
-            $num_sds
+            $numSds
         ) AS keep,
         calculate_predicted_score_quintiles(
             generated_aq_ids_flattened.generated_assessment_question_ids,
@@ -53,7 +53,7 @@ quintile_result AS (
     SELECT
         quintiles.quintile AS quintile,
         keep.keep,
-        histogram(useful_data.predicted_quintile_scores[quintiles.quintile], 0, 1, 100) AS predicted_quintile_score,
+        histogram(useful_data.predicted_quintile_scores[quintiles.quintile], 0, 1, $numBuckets) AS predicted_quintile_score,
         quintile_stats_object.mean,
         quintile_stats_object.sd,
         quintile_stats_object.lower_bound,
@@ -74,7 +74,7 @@ quintile_result AS (
 result AS (
     SELECT
         keep.keep,
-        histogram(useful_data.predicted_quintile_scores[quintiles.quintile], 0, 1, 100) AS predicted_score
+        histogram(useful_data.predicted_quintile_scores[quintiles.quintile], 0, 1, $numBuckets) AS predicted_score
     FROM
         generate_series(1, 5) AS quintiles (quintile)
         JOIN (VALUES (TRUE), (FALSE)) AS keep (keep) ON TRUE

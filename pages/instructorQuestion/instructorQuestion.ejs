@@ -100,45 +100,50 @@
 
       <%- include('../partials/question', {question_context: 'instructor'}); %>
 
-      <div class="panel panel-primary">
-        <div class="panel-heading">
-          <h3 class="panel-title">Num Attempts</h3>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          Num Attempts
         </div>
-        <div class="panel-body">
-          <table class="table table-condensed table-hover two-column-description">
-            <tbody>
-              <tr>
-                <th> Num Attempts Histogram Exams </th>
-                <td>
-                    <% if (exam_stats && exam_stats.number_submissions_hist_with_perfect_submission &&
-                            exam_stats.number_submissions_hist_with_no_perfect_submission) { %>
-                      <%- include('../partials/attempts-histogram', {
-                      question_attempts_histogram: exam_stats.number_submissions_hist_with_perfect_submission,
-                      question_attempts_before_giving_up_histogram: exam_stats.number_submissions_hist_with_no_perfect_submission,
-                      title: 'exams'
-                      }); %>
-                    <% } else { %>
-                      No data
-                    <% } %>
-                </td>
-              </tr>
-              <tr>
-                <th> Num Attempts Histogram HW </th>
-                <td>
-                    <% if (hw_stats && hw_stats.number_submissions_hist_with_perfect_submission &&
-                            hw_stats.number_submissions_hist_with_no_perfect_submission) { %>
-                      <%- include('../partials/attempts-histogram', {
-                      question_attempts_histogram: hw_stats.number_submissions_hist_with_perfect_submission,
-                      question_attempts_before_giving_up_histogram: hw_stats.number_submissions_hist_with_no_perfect_submission,
-                      title: 'hw'
-                      }); %>
-                    <% } else { %>
-                      No data
-                    <% } %>
-                </td>
-              </tr>
-            </tbody>
-          </table>
+        <table class="table table-condensed table-hover two-column-description">
+          <tbody>
+            <tr>
+              <th> Num Attempts Histogram Exams </th>
+              <td>
+                  <% if (exam_stats && exam_stats.number_submissions_hist_with_perfect_submission &&
+                          exam_stats.number_submissions_hist_with_no_perfect_submission) { %>
+                    <%- include('../partials/attempts-histogram', {
+                    question_attempts_histogram: exam_stats.number_submissions_hist_with_perfect_submission,
+                    question_attempts_before_giving_up_histogram: exam_stats.number_submissions_hist_with_no_perfect_submission,
+                    title: 'exams'
+                    }); %>
+                  <% } else { %>
+                    No data
+                  <% } %>
+              </td>
+            </tr>
+            <tr>
+              <th> Num Attempts Histogram HW </th>
+              <td>
+                  <% if (hw_stats && hw_stats.number_submissions_hist_with_perfect_submission &&
+                          hw_stats.number_submissions_hist_with_no_perfect_submission) { %>
+                    <%- include('../partials/attempts-histogram', {
+                    question_attempts_histogram: hw_stats.number_submissions_hist_with_perfect_submission,
+                    question_attempts_before_giving_up_histogram: hw_stats.number_submissions_hist_with_no_perfect_submission,
+                    title: 'hw'
+                    }); %>
+                  <% } else { %>
+                    No data
+                  <% } %>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="card-footer">
+          Key:
+          <br>
+          <span class="outlineBarColor">Blue</span>: some perfect submission
+          <br>
+          <span class="outlineBarRedColor">Red</span>: no perfect submission
         </div>
       </div>
 
