@@ -8,13 +8,16 @@ WITH first_calculation AS (
         count(s.id) > 0                        AS some_submission_var,
         coalesce(bool_or(s.score = 1), FALSE)  AS some_perfect_submission_var,
         coalesce(bool_or(s.score != 0), FALSE) AS some_nonzero_submission_var,
-        array_agg(s.score ORDER BY s.date)     AS submission_score_array_var,
+        array_agg(s.score ORDER BY s.date)
+            FILTER (WHERE s.graded_at IS NOT NULL)
+            AS submission_score_array_var,
         max(s.score)                           AS max_submission_score_var,
         avg(s.score)                           AS average_submission_score_var
     FROM
         variants AS v
         JOIN submissions AS s ON (s.variant_id = v.id)
     WHERE v.instance_question_id = instance_question_id_param
+        AND s.graded_at IS NOT NULL
 ),
 second_calculation AS (
     SELECT array_increments_above_max(submission_score_array_var) AS incremental_submission_score_array_var

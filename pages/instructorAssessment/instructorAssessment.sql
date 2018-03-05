@@ -1,3 +1,177 @@
+-- BLOCK assessment_score_quintiles
+WITH assessment_question_score_quintiles AS (
+    SELECT
+        aq.quintile_question_scores[quintile] / 100 * aq.max_points AS question_score,
+        aq.id AS assessment_question_id,
+        quintiles.quintile AS quintile,
+        aq.max_points AS max_score
+    FROM
+        assessment_questions AS aq
+        JOIN assessments AS a ON (a.id = aq.assessment_id)
+        JOIN generate_series(1,5) AS quintiles (quintile) ON TRUE
+    WHERE
+        a.id = $assessment_id AND
+        aq.quintile_question_scores[quintile] IS NOT NULL
+),
+alternative_group_score_quintiles AS (
+    SELECT
+        sum(aqsq.question_score) * coalesce(ag.number_choose::DOUBLE PRECISION / count(aq.id), 1) AS score,
+        sum(aqsq.max_score) * coalesce(ag.number_choose::DOUBLE PRECISION / count(aq.id), 1) AS max_score,
+        coalesce(ag.number_choose, count(aq.id)) AS num_chosen_questions,
+        ag.id AS alternative_group_id,
+        aqsq.quintile AS quintile
+    FROM
+        assessment_question_score_quintiles AS aqsq
+        JOIN assessment_questions AS aq ON (aq.id = aqsq.assessment_question_id)
+        JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+    GROUP BY
+        ag.id,
+        aqsq.quintile
+),
+zone_score_quintiles AS (
+    SELECT
+        sum(ag_score_quintiles.score) * coalesce(z.number_choose::DOUBLE PRECISION / sum(ag_score_quintiles.num_chosen_questions), 1) AS score,
+        sum(ag_score_quintiles.max_score) * coalesce(z.number_choose::DOUBLE PRECISION / sum(ag_score_quintiles.num_chosen_questions), 1) AS max_score,
+        ag_score_quintiles.quintile AS quintile
+    FROM
+        alternative_group_score_quintiles AS ag_score_quintiles
+        JOIN alternative_groups AS ag ON (ag.id = ag_score_quintiles.alternative_group_id)
+        JOIN zones AS z ON (z.id = ag.zone_id)
+    GROUP BY
+        z.id,
+        ag_score_quintiles.quintile
+),
+assessment_score_quintiles AS (
+    SELECT
+        sum(zone_score_quintiles.score)::DOUBLE PRECISION / sum(zone_score_quintiles.max_score) AS score,
+        zone_score_quintiles.quintile AS quintile
+    FROM
+        zone_score_quintiles
+    GROUP BY
+        zone_score_quintiles.quintile
+    ORDER BY
+        zone_score_quintiles.quintile
+)
+SELECT
+    assessment_score_quintiles.score
+FROM
+    assessment_score_quintiles;
+
+-- BLOCK expected_quintile_assessment_scores
+WITH expected_assessment_question_scores AS (
+    SELECT
+        aq.max_points AS max_score,
+        aq.id AS assessment_question_id,
+        quintiles.quintile AS quintile,
+        calculate_predicted_question_score(slice(qs.incremental_submission_score_array_quintile_averages, quintiles.quintile),
+                                           hw_qs.average_last_submission_score_quintiles[quintiles.quintile],
+                                           aq.points_list,
+                                           aq.max_points) * aq.max_points / 100::DOUBLE PRECISION AS score
+    FROM
+        assessment_questions AS aq
+        JOIN assessments AS a ON (a.id = aq.assessment_id)
+        LEFT JOIN question_statistics AS qs ON (qs.question_id = aq.question_id AND qs.domain = get_domain(a.type, a.mode))
+        LEFT JOIN question_statistics AS hw_qs ON (hw_qs.question_id = aq.question_id AND hw_qs.domain = get_domain('Homework', 'Public'))
+        JOIN generate_series(1,5) AS quintiles (quintile) ON TRUE
+    WHERE
+        a.id = $assessment_id
+),
+expected_alternative_group_scores AS (
+    SELECT
+        sum(eaqs.score) * coalesce(ag.number_choose::DOUBLE PRECISION / count(aq.id), 1) AS score,
+        sum(eaqs.max_score) * coalesce(ag.number_choose::DOUBLE PRECISION / count(aq.id), 1) AS max_score,
+        coalesce(ag.number_choose, count(aq.id)) AS num_chosen_questions,
+        ag.id AS alternative_group_id,
+        eaqs.quintile AS quintile
+    FROM
+        expected_assessment_question_scores AS eaqs
+        JOIN assessment_questions AS aq ON (aq.id = eaqs.assessment_question_id)
+        JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+    GROUP BY
+        ag.id,
+        eaqs.quintile
+),
+expected_zone_scores AS (
+    SELECT
+        sum(eags.score) * coalesce(z.number_choose::DOUBLE PRECISION / sum(eags.num_chosen_questions), 1) AS score,
+        sum(eags.max_score) * coalesce(z.number_choose::DOUBLE PRECISION / sum(eags.num_chosen_questions), 1) AS max_score,
+        eags.quintile AS quintile
+    FROM
+        expected_alternative_group_scores AS eags
+        JOIN alternative_groups AS ag ON (ag.id = eags.alternative_group_id)
+        JOIN zones AS z ON (z.id = ag.zone_id)
+    GROUP BY
+        z.id,
+        eags.quintile
+),
+expected_assessment_scores AS (
+    SELECT
+        sum(ezs.score)::DOUBLE PRECISION / sum(ezs.max_score) * 100 AS score_perc,
+        ezs.quintile AS quintile
+    FROM
+        expected_zone_scores AS ezs
+    GROUP BY
+        ezs.quintile
+    ORDER BY
+        ezs.quintile
+)
+SELECT
+    eas.score_perc
+FROM
+    expected_assessment_scores AS eas;
+
+-- BLOCK expected_assessment_score
+WITH expected_assessment_question_scores AS (
+    SELECT
+        aq.max_points AS max_score,
+        aq.id AS assessment_question_id,
+        calculate_predicted_question_score(qs.incremental_submission_score_array_averages,
+                                           hw_qs.average_last_submission_score,
+                                           aq.points_list,
+                                           aq.max_points) * aq.max_points / 100::DOUBLE PRECISION AS score
+    FROM
+        assessment_questions AS aq
+        JOIN assessments AS a ON (a.id = aq.assessment_id)
+        LEFT JOIN question_statistics AS qs ON (qs.question_id = aq.question_id AND qs.domain = get_domain(a.type, a.mode))
+        LEFT JOIN question_statistics AS hw_qs ON (hw_qs.question_id = aq.question_id AND hw_qs.domain = get_domain('Homework', 'Public'))
+    WHERE
+        a.id = $assessment_id
+),
+        expected_alternative_group_scores AS (
+        SELECT
+            sum(eaqs.score) * coalesce(ag.number_choose::DOUBLE PRECISION / count(aq.id), 1) AS score,
+            sum(eaqs.max_score) * coalesce(ag.number_choose::DOUBLE PRECISION / count(aq.id), 1) AS max_score,
+            coalesce(ag.number_choose, count(aq.id)) AS num_chosen_questions,
+            ag.id AS alternative_group_id
+        FROM
+            expected_assessment_question_scores AS eaqs
+            JOIN assessment_questions AS aq ON (aq.id = eaqs.assessment_question_id)
+            JOIN alternative_groups AS ag ON (ag.id = aq.alternative_group_id)
+        GROUP BY
+            ag.id
+    ),
+        expected_zone_scores AS (
+        SELECT
+            sum(eags.score) * coalesce(z.number_choose::DOUBLE PRECISION / sum(eags.num_chosen_questions), 1) AS score,
+            sum(eags.max_score) * coalesce(z.number_choose::DOUBLE PRECISION / sum(eags.num_chosen_questions), 1) AS max_score
+        FROM
+            expected_alternative_group_scores AS eags
+            JOIN alternative_groups AS ag ON (ag.id = eags.alternative_group_id)
+            JOIN zones AS z ON (z.id = ag.zone_id)
+        GROUP BY
+            z.id
+    ),
+        expected_assessment_scores AS (
+        SELECT
+            sum(ezs.score)::DOUBLE PRECISION / sum(ezs.max_score) * 100 AS score_perc
+        FROM
+            expected_zone_scores AS ezs
+    )
+SELECT
+    eas.score_perc
+FROM
+    expected_assessment_scores AS eas;
+
 -- BLOCK questions
 WITH issue_count AS (
     SELECT
@@ -20,6 +194,33 @@ question_scores AS (
         assessment_questions AS aq
     GROUP BY
         aq.question_id
+),
+expected_assessment_question_quintile_scores AS (
+    SELECT
+        aq.id AS assessment_question_id,
+        quintiles.quintile AS quintile,
+        calculate_predicted_question_score(
+            slice(qs.incremental_submission_score_array_quintile_averages, quintiles.quintile),
+            hw_qs.average_last_submission_score,
+            aq.points_list,
+            aq.max_points) / 100::DOUBLE PRECISION AS score
+    FROM
+        assessment_questions AS aq
+    JOIN assessments AS a ON (a.id = aq.assessment_id)
+    LEFT JOIN question_statistics AS qs ON (qs.question_id = aq.question_id AND qs.domain = get_domain(a.type, a.mode))
+    LEFT JOIN question_statistics AS hw_qs ON (hw_qs.question_id = aq.question_id AND hw_qs.domain = get_domain('Homework', 'Public'))
+    JOIN generate_series(1,5) AS quintiles (quintile) ON TRUE
+    WHERE
+        a.id = $assessment_id
+),
+expected_assessment_question_quintile_scores_arr AS (
+    SELECT
+        eaqqs.assessment_question_id,
+        array_agg(eaqqs.score ORDER BY eaqqs.quintile) AS score_arr
+    FROM
+        expected_assessment_question_quintile_scores AS eaqqs
+    GROUP BY
+        eaqqs.assessment_question_id
 )
 SELECT
     aq.*,q.qid,q.title,row_to_json(top) AS topic,
@@ -35,7 +236,18 @@ SELECT
     (lag(ag.id) OVER (PARTITION BY ag.id ORDER BY aq.number) IS NULL) AS start_new_alternative_group,
     assessments_format_for_question(q.id,ci.id,a.id) AS other_assessments,
     coalesce(ic.open_issue_count, 0) AS open_issue_count,
-    question_scores.question_score AS avg_question_score_perc
+    question_scores.question_score AS avg_question_score_perc,
+    qs.incremental_submission_score_array_averages AS qs_incremental_submission_score_array_averages,
+    hw_qs.average_last_submission_score AS hw_qs_average_last_submission_score,
+    calculate_predicted_question_score(qs.incremental_submission_score_array_averages,
+                                       hw_qs.average_last_submission_score,
+                                       aq.points_list,
+                                       aq.max_points) AS predicted_mean_score,
+    qs.id AS qs_id,
+    a.type AS assessment_type,
+    a.mode AS assessment_mode,
+    eaqqs.score_arr AS predicted_quintile_scores
+
 FROM
     assessment_questions AS aq
     JOIN questions AS q ON (q.id = aq.question_id)
@@ -46,6 +258,9 @@ FROM
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
     LEFT JOIN issue_count AS ic ON (ic.question_id = q.id)
     LEFT JOIN question_scores ON (question_scores.question_id = q.id)
+    LEFT JOIN question_statistics AS qs ON (qs.question_id = q.id AND qs.domain = get_domain(a.type, a.mode))
+    LEFT JOIN question_statistics AS hw_qs ON (hw_qs.question_id = q.id AND hw_qs.domain = get_domain('Homework', 'Public'))
+    JOIN expected_assessment_question_quintile_scores_arr AS eaqqs ON (aq.id = eaqqs.assessment_question_id)
 WHERE
     a.id = $assessment_id
     AND aq.deleted_at IS NULL

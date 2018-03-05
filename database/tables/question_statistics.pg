@@ -1,6 +1,4 @@
 columns
-    alternative_group_id: bigint
-    assessment_id: bigint not null
     average_average_submission_score: double precision
     average_first_submission_score: double precision
     average_last_submission_score: double precision
@@ -9,33 +7,27 @@ columns
     average_number_submissions: double precision
     average_submission_score_hist: double precision[]
     average_submission_score_variance: double precision
-    deleted_at: timestamp with time zone
     discrimination: double precision
+    domain: enum_statistic_domain
     first_submission_score_hist: double precision[]
     first_submission_score_variance: double precision
-    force_max_points: boolean default false
-    id: bigint not null default nextval('assessment_questions_id_seq'::regclass)
+    id: bigint not null default nextval('question_statistics_id_seq'::regclass)
     incremental_submission_points_array_averages: double precision[]
     incremental_submission_points_array_variances: double precision[]
     incremental_submission_score_array_averages: double precision[]
     incremental_submission_score_array_quintile_averages: double precision[]
     incremental_submission_score_array_variance_quintiles: double precision[]
     incremental_submission_score_array_variances: double precision[]
-    init_points: double precision
     last_submission_score_hist: double precision[]
     last_submission_score_variance: double precision
     last_submission_score_variance_quintiles: double precision[]
-    max_points: double precision
     max_submission_score_hist: double precision[]
     max_submission_score_variance: double precision
     mean_question_score: double precision
-    number: integer
-    number_in_alternative_group: integer
     number_submissions_hist: double precision[]
     number_submissions_hist_with_no_perfect_submission: double precision[]
     number_submissions_hist_with_perfect_submission: double precision[]
     number_submissions_variance: double precision
-    points_list: double precision[]
     question_id: bigint not null
     question_score_variance: double precision
     quintile_question_scores: double precision[]
@@ -44,18 +36,10 @@ columns
     some_submission_perc: double precision
     submission_score_array_averages: double precision[]
     submission_score_array_variances: double precision[]
-    tries_per_variant: integer default 1
 
 indexes
-    assessment_questions_pkey: PRIMARY KEY (id)
-    assessment_questions_question_id_assessment_id_key: UNIQUE (question_id, assessment_id)
-    assessment_questions_alternative_group_id_idx: null
-    assessment_questions_assessment_id_idx: null
+    question_statistics_pkey: PRIMARY KEY (id)
+    question_statistics_question_id_and_domain_idx: null
 
 foreign-key constraints
-    assessment_questions_alternative_group_id_fkey: FOREIGN KEY (alternative_group_id) REFERENCES alternative_groups(id) ON UPDATE CASCADE ON DELETE SET NULL
-    assessment_questions_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
-    assessment_questions_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
-
-referenced by
-    instance_questions: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    question_statistics_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id)

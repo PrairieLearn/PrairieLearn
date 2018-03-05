@@ -8,6 +8,8 @@ SELECT
     aset.color,
     (aset.abbreviation || a.number) as label,
     admin_assessment_question_number(aq.id) as number,
+    a.type,
+    a.course_instance_id,
     aq.*
 FROM
     assessment_questions AS aq
@@ -24,3 +26,11 @@ GROUP BY
     ci.id
 ORDER BY
     admin_assessment_question_number(aq.id);
+
+-- BLOCK question_statistics
+SELECT
+    qs.*
+FROM
+    question_statistics AS qs
+WHERE
+    qs.question_id=$question_id;

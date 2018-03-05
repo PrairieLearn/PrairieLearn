@@ -4,6 +4,8 @@ RETURNS anyelement LANGUAGE SQL IMMUTABLE STRICT AS $$
         SELECT $1;
 $$;
 
+DROP AGGREGATE IF EXISTS public.FIRST (ANYELEMENT) CASCADE;
+
 -- And then wrap an aggregate around it
 CREATE AGGREGATE public.FIRST (
         sfunc    = public.first_agg,

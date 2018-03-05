@@ -38,14 +38,52 @@
                 <th>Topic</th>
                 <th>Tags</th>
                 <th>Points</th>
-                <th width="100">Mean score</th>
-                <th width="100">Question score</th>
+                <th width="100">Mean score (%)</th>
+                <th width="100">Predicted mean score (%)</th>
+                <th width="100">Predicted mean score quintiles (%)</th>
                 <th>Num. Submissions Histogram</th>
                 <th>Other Assessments</th>
               </tr>
             </thead>
             <tbody>
-              <% questions.forEach(function(question, i) { %>
+            <tr>
+              <th>
+                Overall (for assessment):
+              </th>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td></td>
+              <td>
+                  <%= assessment_stat.mean.toFixed(3) %>
+              </td>
+              <td>
+                  <% if (expected_assessment_score_perc) { %>
+                  <%= expected_assessment_score_perc.toFixed(3) %>
+                  <% } %>
+              </td>
+              <td>
+                  <% if (expected_assessment_quintile_score_perc[0].score_perc) { %>
+                <div id="expectedAssessmentScoreQuintiles" class="miniHist">
+                </div>
+                  <% } %>
+
+                <script>
+                    $(function() {
+                        var data = [<% expected_assessment_quintile_score_perc.forEach(function(quintile) { %> <%= quintile.score_perc %>, <% }); %>];
+                        var options = {
+                            width: 60,
+                            height: 20,
+                            ymax: 100
+                        };
+                        histmini("#expectedAssessmentScoreQuintiles", data, options);
+                    });
+                </script>
+              </td>
+              <td>N/A</td>
+              <td>N/A</td>
+            </tr>
+            <% questions.forEach(function(question, i) { %>
               <% if (question.start_new_zone) { %>
               <tr>
                 <th colspan="9">
@@ -100,26 +138,40 @@
                   <% } %>
                 </td>
                 <td>
-                    <% if (question.avg_question_score_perc) { %>
-                    <%= question.avg_question_score_perc.toFixed(3) %> %
+                    <% if (question.predicted_mean_score) { %>
+                    <%= question.predicted_mean_score.toFixed(3) %>
+                    <% } %>
+                </td>
+                <td>
+                    <% if (question.predicted_quintile_scores[0]) { %>
+                  <div id="predictedQuintileScores<%= i %>" class="miniHist">
+
+                  </div>
                     <% } %>
                 </td>
                 <td class="text-center">
                   <% if (question.number_submissions_hist) { %>
                     <div id="attemptsHist<%= i %>" class="miniHist">
-
                     </div>
                   <% } %>
                 </td>
                 <script>
-                  $(function() {
-                    var data = [<%= question.number_submissions_hist %>];
-                    var options = {
-                      width: 60,
-                      height: 20,
-                    };
-                    histmini("#attemptsHist<%= i %>", data, options);
-                  });
+                    $(function() {
+                        var data = [<%= question.number_submissions_hist %>];
+                        var options = {
+                            width: 60,
+                            height: 20
+                        };
+                        histmini("#attemptsHist<%= i %>", data, options);
+
+                        data = [<%= question.predicted_quintile_scores %>];
+                        options = {
+                            width: 60,
+                            height: 20,
+                            ymax: 1
+                        };
+                        histmini("#predictedQuintileScores<%= i %>", data, options);
+                    });
                 </script>
                 <td>
                   <% if (question.other_assessments) { %>
@@ -193,6 +245,8 @@
                     ymin: 0,
                     xlabel: 'score / %',
                     ylabel: 'number of students',
+                    xmin: 0,
+                    xmax: 100
                 };
                 histogram("#scoreHist", data, xgrid, options);
             });
@@ -227,6 +281,80 @@
 
         <% }%>
       </div>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+
+        <% if (assessment_score_quintiles) { %>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Assessment score quintiles (%)
+        </div>
+        <div class="card-body">
+          <div id="assessmentScoreQuintiles" class="histogram">
+          </div>
+          <script>
+              $(function() {
+                  var data = [<% assessment_score_quintiles.forEach(function(quintile) { %> <%= 100 * quintile.score %>, <% }); %>];
+                  var options = {
+                      ymax: 100,
+                      ymin: 0,
+                      xlabel: 'Quintile',
+                      ylabel: 'Assessment score (%)',
+                      xOrdinal: true
+                  };
+                  histogram("#assessmentScoreQuintiles", data, _.range(1, 6), options);
+              });
+          </script>
+        </div>
+      </div>
+        <% } %>
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+
+
+        <% if (expected_assessment_score_perc) { %>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Predicted assessment score (%)
+        </div>
+        <div class="card-body">
+            <%= expected_assessment_score_perc.toFixed(3) %>%
+        </div>
+      </div>
+        <% } %>
+
+
+      <!-- ###################################################################### -->
+      <!-- ###################################################################### -->
+
+
+        <% if (expected_assessment_quintile_score_perc) { %>
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+          <%= assessment_set.name %> <%= assessment.number %>: Predicted assessment score (quintiles) (%)
+        </div>
+        <div class="card-body">
+          <div id="expectedAssessmentScoreQuintilesBig" class="histogram">
+          </div>
+          <script>
+              $(function() {
+                  var data = [<% expected_assessment_quintile_score_perc.forEach(function(quintile) { %> <%= quintile.score_perc %>, <% }); %>];
+                  console.log(data);
+                  var options = {
+                      ymax: 100,
+                      ymin: 0,
+                      xlabel: 'Quintile',
+                      ylabel: 'Expected assessment score (%)',
+                      xOrdinal: true
+                  };
+                  histogram("#expectedAssessmentScoreQuintilesBig", data, _.range(1, 6), options);
+              });
+          </script>
+        </div>
+      </div>
+        <% } %>
 
       <!-- ###################################################################### -->
       <!-- ###################################################################### -->
@@ -332,9 +460,9 @@
         <% if (assessment_stat.number > 0) { %>
         <div class="card-body">
           <p>
-            <a class="btn btn-xs btn-secondary" role="button"
+            <a class="btn btn-sm btn-light" role="button" tabindex="0"
                data-toggle="modal" data-target="#refreshAssessmentQuestionStatsModal">
-                <i class="fa fa-refresh" aria-hidden="true"></i> Recalculate statistics
+              <i class="fa fa-sync" aria-hidden="true"></i> Recalculate statistics
             </a>
             Last calculated: <%= stats_last_updated %>
           </p>
@@ -514,7 +642,7 @@
             </div>
             <div class="modal-footer">
               <form name="refresh-stats-form" method="POST">
-                <input type="hidden" name="postAction" value="refresh_stats">
+                <input type="hidden" name="__action" value="refresh_stats">
                 <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
                 <input type="hidden" name="assessment_id" value="<%= assessment.id %>">
                 <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>

@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <%- include('../partials/head'); %>
+    <script type="text/javascript" src="/javascripts/lodash.min.js"></script>
+    <script type="text/javascript" src="/javascripts/d3.min.js"></script>
+    <link href="/stylesheets/theme.bootstrap.css" rel="stylesheet" />
+    <script type="text/javascript" src="/javascripts/jquery.tablesorter.min.js"></script>
+    <script type="text/javascript" src="/javascripts/jquery.tablesorter.widgets.js"></script>
+    <script type="text/javascript" src="/localscripts/histogram.js"></script>
+    <script type="text/javascript" src="/localscripts/scatter.js"></script>
+    <script type="text/javascript" src="/localscripts/histmini.js"></script>
+    <script type="text/javascript" src="/localscripts/parallel_histograms.js"></script>
+    <script type="text/javascript" src="/localscripts/stacked_histogram.js"></script>
+</head>
+<body>
+<script>
+    $(function () {
+        $('[data-toggle="popover"]').popover()
+    });
+</script>
+<%- include('../partials/navbar', {navPage: 'assessment'}); %>
+<div id="content" class="container">
+
+    <!-- ###################################################################### -->
+    <!-- ###################################################################### -->
+
+    <div class="panel">
+        Key:
+        <br>
+        <span class="outlineBarColor">Blue</span> represents assessments that we keep
+        <br>
+        <span class="outlineBarRedColor">Red</span> represents assessments that we filter out
+    </div>
+
+    <div class="panel panel-primary">
+        <div class="panel-heading">
+            <h3 class="panel-title">Assessment Generator for
+                <a href="<%= urlPrefix %>/assessment/<%= assessment.id %>"><%= assessment.title %></a>
+            </h3>
+
+        </div>
+        <div class="panel-body">
+            <h3> Overall </h3>
+            <div id="scoreHistOverall" class="scoreHistogram"></div>
+            <script>
+                $(function() {
+                    const data = [ <%= result.filter(obj => obj.keep)[0].predicted_score %>];
+                    const negativeData = [ <%= result.filter(obj => !obj.keep)[0].predicted_score %>];
+                    const xgrid = _.range(0, 100, 100 / <%= numBuckets %>);
+                    const options = {
+                        ymin: 0,
+                        xlabel: 'score / %',
+                        ylabel: 'number of students',
+                        xmin: 0,
+                        xmax: 100,
+                        xAxisScale: d3.scale.linear().domain([0, 100]),
+                    };
+                    stacked_histogram("#scoreHistOverall<%= i %>", data, negativeData, xgrid, options);
+                });
+            </script>
+
+            <% for (var i = 0; i < 5; i++) { %>
+
+                <h3> Quintile: <%= (i+1) %> </h3>
+                <h6> Mean: <%= (quintile_result.filter(obj => obj.keep && obj.quintile == (i+1))[0].mean * 100).toFixed(3) %> </h6>
+                <h6> SD: <%= (quintile_result.filter(obj => obj.keep && obj.quintile == (i+1))[0].sd * 100).toFixed(3) %> </h6>
+                <h6> Lower bound (mean - num_sds * sd) <%= (quintile_result.filter(obj => obj.keep && obj.quintile == (i+1))[0].lower_bound * 100).toFixed(3) %> </h6>
+                <h6> Upper bound (mean + num_sds * sd) <%= (quintile_result.filter(obj => obj.keep && obj.quintile == (i+1))[0].upper_bound * 100).toFixed(3) %> </h6>
+                <div id="scoreHistQuintile<%= i %>" class="scoreHistogram"></div>
+                <script>
+                    $(function() {
+                        const data = [ <%= quintile_result.filter(obj => obj.keep && obj.quintile == (i+1))[0].predicted_quintile_score %>];
+                        const negativeData = [ <%= quintile_result.filter(obj => !obj.keep && obj.quintile == (i+1))[0].predicted_quintile_score %>];
+                        const xgrid = _.range(0, 100, 100 / <%= numBuckets %>);
+                        const options = {
+                            ymin: 0,
+                            xlabel: 'score / %',
+                            ylabel: 'number of students',
+                            xmin: 0,
+                            xmax: 100,
+                            xAxisScale: d3.scale.linear().domain([0, 100]),
+                        };
+                        stacked_histogram("#scoreHistQuintile<%= i %>", data, negativeData, xgrid, options);
+                    });
+                </script>
+            <% } %>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

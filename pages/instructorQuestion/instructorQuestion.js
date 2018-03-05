@@ -138,23 +138,50 @@ router.get('/', function(req, res, next) {
         },
         (callback) => {
             sqldb.query(sql.assessment_question_stats, {question_id: res.locals.question.id}, function(err, result) {
-                if (ERR(err, callback)) return;
+                if (ERR(err, next)) return;
                 res.locals.assessment_stats = result.rows;
                 callback(null);
             });
         },
         (callback) => {
-            res.locals.question_attempts_histogram = null;
-            res.locals.question_attempts_before_giving_up_histogram = null;
-            res.locals.question_attempts_histogram_hw = null;
-            res.locals.question_attempts_before_giving_up_histogram_hw = null;
-            // res.locals.question_attempts_histogram = res.locals.result.question_attempts_histogram;
-            // res.locals.question_attempts_before_giving_up_histogram = res.locals.result.question_attempts_before_giving_up_histogram;
-            // res.locals.question_attempts_histogram_hw = res.locals.result.question_attempts_histogram_hw;
-            // res.locals.question_attempts_before_giving_up_histogram_hw = res.locals.result.question_attempts_before_giving_up_histogram_hw;
-            callback(null);
+            sqldb.query(sql.question_statistics, {question_id: res.locals.question.id}, function(err, result) {
+                if (ERR(err, next)) return;
+                let question_stats = [];
+                const exam_stats = result.rows.filter(function (row) {
+                    return row.domain === 'Exams';
+                })[0];
+                question_stats.push({
+                    domain_code: 'exams',
+                    domain_name: 'exams',
+                    stats: exam_stats,
+                });
+
+                const practice_exam_stats = result.rows.filter(function (row) {
+                    return row.domain === 'PracticeExams';
+                })[0];
+                question_stats.push({
+                    domain_code: 'practice_exams',
+                    domain_name: 'practice exams',
+                    stats: practice_exam_stats,
+                });
+
+                const hw_stats = result.rows.filter(function (row) {
+                    return row.domain === 'HWs';
+                })[0];
+                question_stats.push({
+                    domain_code: 'hws',
+                    domain_name: 'homeworks',
+                    stats: hw_stats,
+                });
+
+                res.locals.question_stats = question_stats;
+                res.locals.hw_stats = hw_stats;
+                res.locals.exam_stats = exam_stats;
+                // console.log(JSON.stringify(question_stats, null, 3));
+                callback(null);
+            });
         },
-        (callback) => {
+       (callback) => {
             // req.query.variant_id might be undefined, which will generate a new variant
             question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
                 if (ERR(err, callback)) return;
