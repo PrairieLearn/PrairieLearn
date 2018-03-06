@@ -81,6 +81,8 @@
 
   * Fix Coveralls.io reporting (Dave Mussulman).
 
+  * Fix tag order display (Dave Mussulman, h/t Pengyu Cheng).
+
   * Change to Bootstrap 4 (Nathan Walters).
 
   * Change to NodeJS 8.x LTS (Matt West).
