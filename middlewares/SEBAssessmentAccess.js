@@ -5,39 +5,46 @@ var sha256 = require('crypto-js/sha256');
 
 module.exports = function(req, res, next) {
 
+    console.log(req.headers);
     var absoluteURL = req.protocol + '://' + req.get('host') + req.originalUrl;
 
     // Should do someting here if the exam is closed to tell the user?
 
-    if ('x-safeexambrowser-requesthash' in req.headers) {
+    if ('x-safeexambrowser-requesthash' in req.headers
+        || req.headers['user-agent'].includes("SEB/2")) {
 
-        // Just having the header sets the authz mode to SEB.
         res.locals.authz_data.mode = 'SEB';
+
+        var requesthash = req.headers['x-safeexambrowser-requesthash'] || null;
 
         // Pass through to next() if one of the keys matches
         if ('assessment' in res.locals
             && 'authz_result' in res.locals) {
 
-            //console.dir(res.locals.assessment);
-            //console.dir(res.locals.authz_result);
+            console.dir(res.locals.assessment);
+            console.dir(res.locals.authz_result);
 
             var SEBvalid = false;
             _.each(res.locals.authz_result.seb_keys, function(key) {
 
                 var ourhash = sha256(absoluteURL + key).toString();
 
-                //console.log("ours", ourhash);
-                //console.log("clin", req.headers['x-safeexambrowser-requesthash']);
+                console.log("ours", ourhash);
+                console.log("clin", requesthash);
 
-                if (ourhash == req.headers['x-safeexambrowser-requesthash']) {
+                if (ourhash == requesthash) {
                     SEBvalid = true;
                     return false;
                 }
             });
-
             if (SEBvalid) { return next(); }
+
+            if (req.headers['user-agent'].includes(res.locals.assessment.uuid)) {
+                return next();
+            }
         }
     }
+
 
     // Otherwise, if it's mode:SEB display the instructions
     if ('authz_result' in res.locals
@@ -76,7 +83,8 @@ module.exports = function(req, res, next) {
 
         }
         */
-        res.locals.SEBUrl = 'seb://' + req.get('host') + req.originalUrl;
+
+        res.locals.SEBUrl = 'seb://' + req.get('host') + '/pl/downloadSEBConfig/' + res.locals.assessment.id;
         return res.render('./shared/SEBAssessmentAccess.ejs', res.locals);
     }
     next();
