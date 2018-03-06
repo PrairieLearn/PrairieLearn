@@ -105,19 +105,19 @@
     <key>showReloadWarning</key>
     <true />
     <key>browserUserAgentWinDesktopMode</key>
-    <integer>0</integer>
+    <integer>1</integer>
     <key>browserUserAgentWinDesktopModeCustom</key>
-    <string />
+    <string>Mussulman Win b9e0c705-4344-4ee8-b7af-b7556c37002b</string>
     <key>browserUserAgentWinTouchMode</key>
-    <integer>0</integer>
+    <integer>1</integer>
     <key>browserUserAgentWinTouchModeCustom</key>
-    <string />
+    <string>Mussulman Touch</string>
     <key>browserUserAgent</key>
-    <string />
+    <string>Mussulman Agent</string>
     <key>browserUserAgentMac</key>
-    <integer>0</integer>
+    <integer>1</integer>
     <key>browserUserAgentMacCustom</key>
-    <string />
+    <string>Mussulman Mac</string>
     <key>allowDownUploads</key>
     <true />
     <key>downloadDirectoryOSX</key>
