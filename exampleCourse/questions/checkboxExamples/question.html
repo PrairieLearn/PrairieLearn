@@ -39,12 +39,12 @@
 
 <pl_question_panel>
     <p>In this variant, the <code>pl_checkbox</code> element is restrict to displaying no more than <b>5</b> choices with between <b>2</b> to <b>4</b> correct answers.
-	   Information regarding the range of correct answers users should select can be displayed by setting <code>detailed_inst_prompt="true"</code></p>
+	   Information regarding the range of correct answers users should select can be displayed by setting <code>detailed_help_text="true"</code></p>
 	<p> </p>
     <p> Group work provides which of the following benefits: </p>
 </pl_question_panel>
 
-<pl_checkbox answers_name="group_ans_restricted" min_correct="2" max_correct = "4" number_answers = "5" detailed_inst_prompt="true">
+<pl_checkbox answers_name="group_ans_restricted" min_correct="2" max_correct = "4" number_answers = "5" detailed_help_text="true">
   <pl_answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl_answer>
   <pl_answer correct="true">Improved creativity and overall work quality.</pl_answer>
   <pl_answer>               The ability to work on a project by yourself.</pl_answer>
@@ -87,13 +87,13 @@
 
 <pl_question_panel>
     <p>The last two options are to display options together on the same line, e.g. <code>inline="true"</code>, and to
-		suppress the help text prompt, e.g. <code>hide_inst_prompt = "true"</code>.
+		suppress the help text prompt, e.g. <code>hide_help_text = "true"</code>.
 		Displaying options inline is only ideal if the choice options are not verbose and the number of choices is low. </p>
 	<p> </p>
     <p> Group work provides which of the following benefits: </p>
 </pl_question_panel>
 
-<pl_checkbox answers_name="group_ans_v3" inline="true" number_answers = "3" hide_inst_prompt="true">
+<pl_checkbox answers_name="group_ans_v3" inline="true" number_answers = "3" hide_help_text="true">
   <pl_answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl_answer>
   <pl_answer correct="true">Improved creativity and overall work quality.</pl_answer>
   <pl_answer>               The ability to work on a project by yourself.</pl_answer>
