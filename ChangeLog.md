@@ -41,6 +41,10 @@
 
   * Add docs for generating LaTeX label images with Docker (Matt West).
 
+  * Add option to enable networking access on external grading containers (Nathan Walters).
+
+  * Add `sympy.ImmutableMatrix` to list of types accepted by `prairielearn.to_json()` (Tim Bretl).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
@@ -108,8 +112,6 @@
   * Change to Python 3.6 in `centos7-base` grader image (Matt West).
 
   * Remove HackIllinois advertisement (Matt West).
-
-  * Add option to enable networking access on external grading containers (Nathan Walters).
 
 * __2.11.0__ - 2017-12-29
 

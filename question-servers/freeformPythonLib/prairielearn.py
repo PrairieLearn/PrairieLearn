@@ -35,7 +35,7 @@ def to_json(v):
     elif isinstance(v, sympy.Expr):
         s = [str(a) for a in v.free_symbols]
         return {'_type': 'sympy', '_value': str(v), '_variables': s}
-    elif isinstance(v, sympy.Matrix):
+    elif isinstance(v, sympy.Matrix) or isinstance(v, sympy.ImmutableMatrix):
         s = [str(a) for a in v.free_symbols]
         num_rows, num_cols = v.shape
         M = []
