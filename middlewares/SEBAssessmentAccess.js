@@ -5,7 +5,7 @@ var sha256 = require('crypto-js/sha256');
 module.exports = function(req, res, next) {
 
     console.log(req.headers);
-    console.dir(res.locals.assessment_instance);
+    console.dir('ai', res.locals.assessment_instance);
     var absoluteURL = req.protocol + '://' + req.get('host') + req.originalUrl;
 
     if ('x-safeexambrowser-requesthash' in req.headers
@@ -47,8 +47,7 @@ module.exports = function(req, res, next) {
 
 
     // Otherwise, if it's mode:SEB display the instructions
-    if ('authz_result' in res.locals
-        && res.locals.authz_result.mode == 'SEB') {
+    if ('authz_result' in res.locals && res.locals.authz_result.mode == 'SEB') {
 
         res.locals.SEBUrl = req.get('host') + '/pl/downloadSEBConfig/' + res.locals.assessment.id;
         return res.render(__dirname + '/SEBAssessmentAccess.ejs', res.locals);
