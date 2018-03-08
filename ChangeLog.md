@@ -45,6 +45,10 @@
 
   * Add `sympy.ImmutableMatrix` to list of types accepted by `prairielearn.to_json()` (Tim Bretl).
 
+  * Add form help text indicating multiple answer can be selected for `pl_checkbox` (James Balamuta).
+
+  * Add demo question showcasing all options for `pl_checkbox` (James Balamuta).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
@@ -110,6 +114,8 @@
   * Change `requirements.txt` to include `rpy2` (James Balamuta).
 
   * Change to Python 3.6 in `centos7-base` grader image (Matt West).
+
+  * Change `pl_checkbox` to display form help text by default (James Balamuta).
 
   * Remove HackIllinois advertisement (Matt West).
 

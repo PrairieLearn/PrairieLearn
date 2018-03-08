@@ -49,6 +49,8 @@ Attribute | Type | Default | Description
 `min_correct` | integer | special | The minimum number of correct answers to display. Defaults to displaying all correct answers.
 `max_correct` | integer | special | The maximum number of correct answers to display. Defaults to displaying all correct answers.
 `fixed_order` | boolean | false | Disable the randomization of answer order.
+`hide_help_text` | boolean | false | Hide help text stating to pick one or more optinos. 
+`detailed_help_text` | boolean | false | Display detailed information in help text about the number of options to choose. 
 
 A `pl_checkbox` element displays a subset of the answers in a random order as checkboxes.
 
