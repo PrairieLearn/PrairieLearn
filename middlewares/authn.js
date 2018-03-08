@@ -54,6 +54,7 @@ module.exports = function(req, res, next) {
         //logger.error('no authn cookie');
         res.cookie('preAuthUrl', req.originalUrl);
         res.redirect('/');
+        return;
     }
     var authnData = csrf.getCheckedData(req.cookies.pl_authn, config.secretKey, {maxAge: 24 * 60 * 60 * 1000});
     if (authnData == null) {
