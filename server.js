@@ -39,7 +39,7 @@ if ('h' in argv || 'help' in argv) {
     -h, --help                          Display this help and exit
     --config <filename>
     <filename> and no other args        Load an alternative config filename
-    --migrate-and-exit					Run the DB initialization parts and exit
+    --migrate-and-exit                  Run the DB initialization parts and exit
     --exit                              Run all the initialization and exit
 `;
 
