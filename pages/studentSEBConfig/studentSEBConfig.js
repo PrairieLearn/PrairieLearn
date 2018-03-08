@@ -2,10 +2,12 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 var path = require('path');
-//var xml2js = require('xml2js');
 const plist = require('plist');
-var fs = require('fs');
-const util = require('util');
+const fs = require('fs');
+//const util = require('util');
+const zlib = require('zlib');
+//const crypto = require('crypto');
+const jscryptor = require('jscryptor');
 
 var sqldb = require('../../lib/sqldb');
 var sqlLoader = require('../../lib/sql-loader');
@@ -16,7 +18,7 @@ router.get('/:assessment_id', function(req, res, next) {
 
     //console.log(req.params.assessment_id);
 
-    var params = { assessment_id: req.params.assessment_id };
+    var params = { assessment_id: req.params.assessment_id || null };
 
     sqldb.queryZeroOrOneRow(sql.select_assessment, params, function(err, result) {
         if (ERR(err, next)) return;
@@ -27,7 +29,7 @@ router.get('/:assessment_id', function(req, res, next) {
 
         if (a) { //result.rows.length > 0) {
 
-            var defobj = plist.parse(fs.readFileSync(__dirname + '/seb-def.seb', 'utf8'));
+            var defobj = plist.parse(fs.readFileSync(__dirname + '/seb-default-exam.seb', 'utf8'));
             //console.log(JSON.stringify(defobj));
 
             defobj['startURL'] = `http://endeavour.engr.illinois.edu:3000/pl/course_instance/${a.ci_id}/assessment/${a.a_id}`;
@@ -35,10 +37,59 @@ router.get('/:assessment_id', function(req, res, next) {
             defobj['browserUserAgentWinDesktopMode'] = 1;
             defobj['browserUserAgentMac'] = 1;
             defobj['browserUserAgentWinTouchMode'] = 1;
+            defobj['sendBrowserExamKey'] = true;
+
+            defobj['URLFilterEnable'] = true;
+            var allowedURLs = [
+                /^http:\/\/endeavour\.engr\.illinois\.edu:3000\/.*?$/,
+                /^https:\/\/shibboleth\.illinois\.edu\/.*?$'/,
+                /^\/pl\/logout$/,
+            ];
+            defobj['whitelistURLFilter'] = allowedURLs.join(';');
+
+            defobj['quitURL'] = 'http://endeavour.engr.illinois.edu:3000/pl/logout';
+
+            // compress the config
+            var SEBconfig = zlib.gzipSync(plist.build(defobj));
+
+            /* Asymm key stuff
+             *
+            // create random symmetric key and encrypt the config with it
+            var sym_key = crypto.randomBytes(32); //.toString('hex').toUpperCase();
+            //console.log(`${sym_key.length} bytes: ${sym_key.toString('hex')}`);
+
+            var payload = jscryptor.Encrypt(SEBconfig, sym_key.toString('base64'));
+            //console.log(payload);
+
+            var publicKey = fs.readFileSync('/PrairieLearn/pages/studentSEBConfig/cert.pem', 'utf8');
+
+            var publicKeyHash = crypto.createHash('sha1').update(publicKey).digest('hex');
+            console.log(publicKeyHash);
+            console.log(publicKeyHash.length);
+
+            var encrypted_sym_key = crypto.publicEncrypt(publicKey, sym_key);
+
+            console.log(`${encrypted_sym_key.length} bytes: ${encrypted_sym_key.toString('hex')}`);
+            */
+
+            var SEBencrypted = jscryptor.Encrypt(SEBconfig, 'fishsticks');
+            var SEBheader = Buffer.from('pswd', 'utf8');
+            var SEBfile = Buffer.concat([SEBheader, Buffer.from(SEBencrypted, 'base64')]);
+
+            //console.log(SEBfile);
+            return res.send(zlib.gzipSync(SEBfile));
 
             //console.log(JSON.stringify(defobj, null, 4));
             return res.send(plist.build(defobj));
-            
+
+
+            /*
+            var SEBconfig = zlib.gzipSync(plist.build(defobj));
+            var SEBheader = Buffer.from('plnd', 'utf8');
+            var SEBfile = Buffer.concat([SEBheader, SEBconfig]);
+            return res.send(zlib.gzipSync(SEBfile));
+*/
+
             var filename = 'config.seb';
             var sebFile = path.join(
                 a.path,
@@ -57,7 +108,7 @@ router.get('/:assessment_id', function(req, res, next) {
                 });
 
         } else {
-            res.send("Unable to find SEB config");
+            res.send('Unable to find SEB config');
         }
     });
 });

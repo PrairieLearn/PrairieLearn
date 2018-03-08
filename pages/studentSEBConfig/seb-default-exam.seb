@@ -3,11 +3,9 @@
 <plist version="1.0">
   <dict>
     <key>originatorVersion</key>
-    <string>SEB_Win_2.1.1</string>
+    <string>SEB_Win_2.1</string>
     <key>startURL</key>
-    <string>http://www.safeexambrowser.org/start</string>
-    <key>startResource</key>
-    <string />
+    <string>http://www.safeexambrowser.org</string>
     <key>sebServerURL</key>
     <string />
     <key>hashedAdminPassword</key>
@@ -34,8 +32,6 @@
     <integer>0</integer>
     <key>allowPreferencesWindow</key>
     <true />
-    <key>useAsymmetricOnlyEncryption</key>
-    <false />
     <key>browserViewMode</key>
     <integer>0</integer>
     <key>mainBrowserWindowWidth</key>
@@ -66,23 +62,11 @@
     <false />
     <key>allowDictionaryLookup</key>
     <false />
-    <key>showReloadButton</key>
-    <true />
     <key>showTime</key>
     <true />
     <key>showInputLanguage</key>
     <true />
     <key>enableTouchExit</key>
-    <false />
-    <key>oskBehavior</key>
-    <integer>2</integer>
-    <key>audioControlEnabled</key>
-    <true />
-    <key>audioMute</key>
-    <false />
-    <key>audioVolumeLevel</key>
-    <integer>25</integer>
-    <key>audioSetVolumeLevel</key>
     <false />
     <key>browserScreenKeyboard</key>
     <false />
@@ -108,36 +92,24 @@
     <true />
     <key>blockPopUpWindows</key>
     <false />
-    <key>allowVideoCapture</key>
-    <false />
-    <key>allowAudioCapture</key>
-    <false />
     <key>allowBrowsingBackForward</key>
     <false />
-    <key>newBrowserWindowNavigation</key>
-    <true />
     <key>removeBrowserProfile</key>
-    <false />
+    <true />
     <key>removeLocalStorage</key>
-    <false />
+    <true />
     <key>enableSebBrowser</key>
     <true />
-    <key>browserWindowAllowReload</key>
-    <true />
-    <key>newBrowserWindowAllowReload</key>
+    <key>showReloadButton</key>
     <true />
     <key>showReloadWarning</key>
     <true />
-    <key>newBrowserWindowShowReloadWarning</key>
-    <false />
     <key>browserUserAgentWinDesktopMode</key>
     <integer>0</integer>
     <key>browserUserAgentWinDesktopModeCustom</key>
     <string />
     <key>browserUserAgentWinTouchMode</key>
     <integer>0</integer>
-    <key>browserUserAgentWinTouchModeIPad</key>
-    <string>Mozilla/5.0 (iPad; CPU OS 9_0_2 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13A452 Safari/601.1</string>
     <key>browserUserAgentWinTouchModeCustom</key>
     <string />
     <key>browserUserAgent</key>
@@ -145,8 +117,6 @@
     <key>browserUserAgentMac</key>
     <integer>0</integer>
     <key>browserUserAgentMacCustom</key>
-    <string />
-    <key>browserWindowTitleSuffix</key>
     <string />
     <key>allowDownUploads</key>
     <true />
@@ -160,12 +130,10 @@
     <integer>0</integer>
     <key>downloadPDFFiles</key>
     <false />
-    <key>allowPDFPlugIn</key>
-    <false />
     <key>downloadAndOpenSebConfig</key>
     <true />
     <key>examKeySalt</key>
-    <data>ZvtrQeI7tugCQ6ZU2ZPfUozb93Pr9ukl761yWFxo5uw=</data>
+    <data>DRiLnpoo3aBWvQhkyNS5WnY3/GK6YuC+SXMiAQOvPmY=</data>
     <key>browserExamKey</key>
     <string />
     <key>browserURLSalt</key>
@@ -174,20 +142,14 @@
     <false />
     <key>quitURL</key>
     <string />
-    <key>quitURLConfirm</key>
-    <true />
     <key>restartExamURL</key>
     <string />
     <key>restartExamUseStartURL</key>
-    <false />
+    <true />
     <key>restartExamText</key>
     <string />
     <key>restartExamPasswordProtected</key>
     <true />
-    <key>additionalResourcesIdentiﬁerCounter</key>
-    <integer>0</integer>
-    <key>additionalResources</key>
-    <array></array>
     <key>monitorProcesses</key>
     <true />
     <key>allowSwitchToApplications</key>
@@ -208,7 +170,7 @@
         <key>allowUserToChooseApp</key>
         <false />
         <key>strongKill</key>
-        <false />
+        <true />
         <key>os</key>
         <integer>1</integer>
         <key>title</key>
@@ -216,8 +178,6 @@
         <key>description</key>
         <string />
         <key>executable</key>
-        <string>firefox.exe</string>
-        <key>originalName</key>
         <string>firefox.exe</string>
         <key>path</key>
         <string>../xulrunner/</string>
@@ -227,6 +187,8 @@
         <string />
         <key>arguments</key>
         <array></array>
+        <key>originalName</key>
+        <string>firefox.exe</string>
       </dict>
     </array>
     <key>prohibitedProcesses</key>
@@ -589,23 +551,42 @@
     <key>enableURLContentFilter</key>
     <false />
     <key>URLFilterRules</key>
-    <array></array>
+    <array>
+      <dict>
+        <key>active</key>
+        <true />
+        <key>regex</key>
+        <false />
+        <key>expression</key>
+        <string>http://endeavour.engr.illinois.edu:3000/*</string>
+        <key>action</key>
+        <integer>1</integer>
+      </dict>
+      <dict>
+        <key>active</key>
+        <true />
+        <key>regex</key>
+        <false />
+        <key>expression</key>
+        <string>https://shibboleth.illinois.edu/*</string>
+        <key>action</key>
+        <integer>1</integer>
+      </dict>
+    </array>
     <key>URLFilterEnable</key>
-    <false />
+    <true />
     <key>URLFilterEnableContentFilter</key>
     <false />
     <key>blacklistURLFilter</key>
     <string />
     <key>whitelistURLFilter</key>
-    <string />
+    <string>^http:\/\/((endeavour\.engr\.illinois\.edu)|(.*?\.endeavour\.engr\.illinois\.edu)):3000\/.*?$;^https:\/\/((shibboleth\.illinois\.edu)|(.*?\.shibboleth\.illinois\.edu))\/.*?$;^http:\/\/((((www\.safeexambrowser\.org)|(.*?\.www\.safeexambrowser\.org)))|(((www\.safeexambrowser\.org)|(.*?\.www\.safeexambrowser\.org))\/.*?))$</string>
     <key>urlFilterTrustedContent</key>
-    <false />
+    <true />
     <key>urlFilterRegex</key>
-    <false />
+    <true />
     <key>embeddedCertificates</key>
     <array></array>
-    <key>pinEmbeddedCertificates</key>
-    <false />
     <key>proxySettingsPolicy</key>
     <integer>0</integer>
     <key>proxies</key>
@@ -723,12 +704,10 @@
     <false />
     <key>insideSebEnableVmWareClientShade</key>
     <false />
-    <key>insideSebEnableEnableNetworkConnectionSelector</key>
-    <false />
     <key>hookKeys</key>
     <true />
     <key>enableEsc</key>
-    <true />
+    <false />
     <key>enableCtrlEsc</key>
     <false />
     <key>enableAltEsc</key>
@@ -740,7 +719,7 @@
     <key>enableStartMenu</key>
     <false />
     <key>enableRightMouse</key>
-    <true />
+    <false />
     <key>enablePrintScreen</key>
     <false />
     <key>enableAltMouseWheel</key>
@@ -768,6 +747,48 @@
     <key>enableF11</key>
     <false />
     <key>enableF12</key>
+    <false />
+    <key>startResource</key>
+    <string />
+    <key>useAsymmetricOnlyEncryption</key>
+    <false />
+    <key>oskBehavior</key>
+    <integer>2</integer>
+    <key>audioControlEnabled</key>
+    <true />
+    <key>audioMute</key>
+    <false />
+    <key>audioVolumeLevel</key>
+    <integer>25</integer>
+    <key>audioSetVolumeLevel</key>
+    <false />
+    <key>allowVideoCapture</key>
+    <false />
+    <key>allowAudioCapture</key>
+    <false />
+    <key>newBrowserWindowNavigation</key>
+    <true />
+    <key>browserWindowAllowReload</key>
+    <true />
+    <key>newBrowserWindowAllowReload</key>
+    <true />
+    <key>newBrowserWindowShowReloadWarning</key>
+    <false />
+    <key>browserUserAgentWinTouchModeIPad</key>
+    <string>Mozilla/5.0 (iPad; CPU OS 9_0_2 like Mac OS X) AppleWebKit/601.1.46 (KHTML, like Gecko) Version/9.0 Mobile/13A452 Safari/601.1</string>
+    <key>browserWindowTitleSuffix</key>
+    <string />
+    <key>allowPDFPlugIn</key>
+    <false />
+    <key>quitURLConfirm</key>
+    <true />
+    <key>additionalResourcesIdentiﬁerCounter</key>
+    <integer>0</integer>
+    <key>additionalResources</key>
+    <array></array>
+    <key>pinEmbeddedCertificates</key>
+    <false />
+    <key>insideSebEnableEnableNetworkConnectionSelector</key>
     <false />
   </dict>
 </plist>

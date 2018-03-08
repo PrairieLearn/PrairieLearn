@@ -149,7 +149,21 @@
       </table>
 
       <div class="card-footer">
-        Submit your answer to each question with the <strong>Grade</strong> button on the question page. Look at <strong>Best submission</strong> to confirm that each question has been graded. When you are done, please logout and close your browser; there is no need to do anything else.
+        Submit your answer to each question with the <strong>Grade</strong> button on the question page.
+        Look at <strong>Best submission</strong> to confirm that each question has been graded.
+
+        <p>When you are done,
+        <% if (authz_result.mode == 'SEB') { %>
+            <form method="POST">
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+            <input type="hidden" name="__action" value="finish">
+            <button type="submit" class="btn btn-success">Click here to finish your exam and close the Safe Exam Browser.</button>
+            </form>
+            <a href="<%= plainUrlPrefix %>/logout">Logout</a>
+        <% } else { %>
+            please logout and close your browser; there is no need to do anything else.
+        <% } %>
+
       </div>
     </div>
   </div>

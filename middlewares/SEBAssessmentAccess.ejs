@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <%- include('../partials/head'); %>
+    <%- include('../pages/partials/head'); %>
 </head>
 <body>
-    <%- include('../partials/navbar', {navPage: ''}); %>
+    <%- include('../pages/partials/navbar', {navPage: ''}); %>
     <div id="content" class="container">
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">
@@ -16,10 +16,14 @@
                 <p class="lead text-center">
                     This <%= assessment.type.toLowerCase() %> is only available when running the Safe Exam Browser.
                 </p>
+                <% if (authz_data.mode == 'SEB') { %>
+                    <p class="lead text-center">Invalid access. Are you running the SEB config from a different exam?</p>
+                <% } %>
 
                 <p><a href="https://safeexambrowser.org/download_en.html">Download instructions for the Safe Exam Browser.</a></p>
 
-                <a class="btn btn-lg btn-success" href="<%= SEBUrl %>">Launch into the Safe Exam Browser</a>
+                <a class="btn btn-lg btn-success" href="seb://<%= SEBUrl %>">Launch into the Safe Exam Browser</a>
+                <a href="http://<%= SEBUrl %>">http link</a>
             </div> <!-- panel-body -->
         </div>
     </div>
