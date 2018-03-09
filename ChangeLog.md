@@ -121,9 +121,11 @@
 
   * Change authenication redirects to preserve originally visited URL (Dave Mussulman).
 
-  * Remove HackIllinois advertisement (Matt West).
-
   * Change Docker postgresql to do initializations/migrations at build (Dave Mussulman).
+
+  * Change the example course to be available to any institution (Matt West).
+
+  * Remove HackIllinois advertisement (Matt West).
 
 * __2.11.0__ - 2017-12-29
 

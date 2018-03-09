@@ -1,6 +1,6 @@
 {
     "uuid": "fcc5282c-a752-4146-9bd6-ee19aac53fc5",
-    "name": "TPL 101",
+    "name": "XC 101",
     "title": "Example Course",
     "assessmentSets": [
     ],
@@ -17,11 +17,10 @@
         {"name": "Test", "color": "gray3", "description": "Feature examples."}
     ],
     "tags": [
-        {"name": "exampleCourse", "color": "gray1", "description": "Question originally written for exampleCourse"},
         {"name": "mwest", "color": "gray1", "description": "Question originally written by mwest"},
         {"name": "tbretl", "color": "blue1", "description": "Question originally written by tbretl"},
         {"name": "balamut2", "color": "orange1", "description": "Question originally written by balamut2"},
-        {"name": "tpl101", "color": "gray1", "description": "Question originally written for the TPL 101 template course"},
+        {"name": "tpl101", "color": "gray1", "description": "Question originally written for the XC 101 example course"},
         {"name": "fa17", "color": "gray1", "description": "Question written in Fall 2017"},
         {"name": "sp18", "color": "gray1", "description": "Question written in Spring 2018"},
         {"name": "v2", "color": "red1", "description": "v2 generation question"},
