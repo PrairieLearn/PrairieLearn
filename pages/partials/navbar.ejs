@@ -1,3 +1,14 @@
+<nav class="navbar navbar-dark bg-dark navbar-expand-md mb-4">
+  <a class="navbar-brand" href="<%= plainUrlPrefix %>">
+    <span class="navbar-brand-label">PrairieLearn</span>
+    <span class="navbar-brand-hover-label text-secondary">Go home <i class="fa fa-angle-right" aria-hidden="true"></i></span>
+  </a>
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+  <div class="collapse navbar-collapse">
+    <ul class="nav navbar-nav mr-auto" id="main-nav">
+
 <% if (typeof navbarType == 'undefined' || navbarType == 'plain') { %>
 <%- include('navbarPlain'); %>
 <% } else if (navbarType == 'student') { %>
@@ -9,3 +20,77 @@
 <% } else { %>
 <% throw new Error('Unknown navbarType: ' + navbarType); %>
 <% } %>
+
+    <!-------------------------------------------------------------------------------->
+    <!-------------------------------------------------------------------------------->
+    <!-------------------------------------------------------------------------------->
+    <!-- User and logout ------------------------------------------------------------->
+
+<ul class="nav navbar-nav" id="username-nav">
+    <li class="nav-item mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %>">
+    <% if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) { %>
+        <a class="nav-link" href="<%= urlPrefix %>/effectiveUser">
+        <% if (authz_data.user.name) { %><%= authz_data.user.name %><% } else { %><%= authz_data.user.uid %><% } %>
+	(<%= authz_data.role %><% if (authz_data.mode == 'Exam') { %>, <%= authz_data.mode %><% } %>)
+        <i class="fa fa-edit" aria-hidden="true"></i>
+        </a>
+    <% } else { // authn_has_instructor_view %>
+        <% if (typeof authn_user == 'undefined') { %>
+        <span class="navbar-text">(No user)</span>
+        <% } else if (is_administrator) { %>
+        <span class="navbar-text"><%= authn_user.name %> (Administrator)</span>
+        <% } else { // is_administrator %>
+        <span class="navbar-text"><%= authn_user.name %></span>
+        <% } // is_administrator %>
+    <% } // authn_has_instructor_view %>
+    </li>
+
+<%
+if (typeof authz_data !== 'undefined' && authz_data.has_instructor_view) {
+
+    var rolebutton = { current: navbarType.charAt(0).toUpperCase() + navbarType.slice(1), };
+    if (navbarType == 'student') {
+        rolebutton.color = "btn-info";
+        rolebutton.other = "Switch to instructor view";
+        rolebutton.otherLink = `${urlPrefix}/instructor/assessments`;
+        // If we know its question or assessment id, link right to it.
+        if (typeof question !== 'undefined' && question.id) {
+            rolebutton.otherLink = `${urlPrefix}/instructor/question/${question.id}`;
+            rolebutton.other += " for " + question.qid;
+        } else if (typeof assessment_instance !== 'undefined' && assessment_instance.assessment_id) {
+            rolebutton.otherLink = `${urlPrefix}/instructor/assessment/${assessment_instance.assessment_id}`;
+            rolebutton.other += " for " + assessment.tid;
+        }
+    } else if (navbarType == 'instructor') {
+        rolebutton.color = "btn-danger";
+        rolebutton.other = "Switch to student view";
+        rolebutton.otherLink = `${plainUrlPrefix}/course_instance/${course_instance.id}/assessments`;
+        if (typeof assessment !== 'undefined' && assessment.id) {
+            rolebutton.otherLink = `${plainUrlPrefix}/course_instance/${course_instance.id}/assessment/${assessment.id}`;
+            rolebutton.other += " for " + assessment.tid;
+        }
+    }
+%>
+    <li class="nav-item mb-2 mb-md-0 mr-2">
+      <div class="dropdown">
+        <button class="btn <%= rolebutton.color %> dropdown-toggle" type="button" id="dropdownMenuButton"
+        data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+          <%= rolebutton.current %> view
+        </button>
+        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuButton">
+          <a class="dropdown-item"  href="<%= rolebutton.otherLink %>"><%= rolebutton.other %></a>
+        </div>
+      </div>
+    </li>
+<% } // has_instructor_view %>
+
+
+<% if (devMode) { %>
+    <li class="mb-2 mb-md-0 mr-2 "><a class="btn btn-success" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a></li>
+<% } %>
+
+
+    <li><%- include('logout'); %></li>
+</ul>
+</div>
+</nav>
