@@ -49,6 +49,24 @@ router.get('/:assessment_id', function(req, res, next) {
 
             defobj['quitURL'] = 'http://endeavour.engr.illinois.edu:3000/pl/logout';
 
+            defobj['permittedProcesses'].push({
+                active: true,
+                autostart: false,
+                iconInTaskbar: true,
+                runInBackground: false,
+                allowUserToChooseApp: false,
+                strongKill: false,
+                os: 1,
+                title: 'EXCEL',
+                description: '',
+                executable: 'excel.exe',
+                originalName: 'Excel.exe',
+                windowHandlingProcess: '',
+                path: '',
+                identifier: '',
+                arguments: [],
+            });
+
             // compress the config
             var SEBconfig = zlib.gzipSync(plist.build(defobj));
 
@@ -80,7 +98,7 @@ router.get('/:assessment_id', function(req, res, next) {
             return res.send(zlib.gzipSync(SEBfile));
 
             //console.log(JSON.stringify(defobj, null, 4));
-            return res.send(plist.build(defobj));
+            //return res.send(plist.build(defobj));
 
 
             /*
