@@ -51,7 +51,8 @@ module.exports = function(req, res, next) {
 
     // otherwise look for auth cookies
     if (req.cookies.pl_authn == null) {
-        logger.error('no authn cookie');
+        //logger.error('no authn cookie');
+        res.cookie('preAuthUrl', req.originalUrl);
         res.redirect('/');
         return;
     }

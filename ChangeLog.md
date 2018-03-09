@@ -119,6 +119,8 @@
 
   * Change `pl_checkbox` to display form help text by default (James Balamuta).
 
+  * Change authenication redirects to preserve originally visited URL (Dave Mussulman).
+
   * Remove HackIllinois advertisement (Matt West).
 
 * __2.11.0__ - 2017-12-29
