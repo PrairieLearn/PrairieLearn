@@ -4,12 +4,12 @@ var sha256 = require('crypto-js/sha256');
 
 module.exports = function(req, res, next) {
 
-    console.log(req.headers);
-    console.dir('ai', res.locals.assessment_instance);
+    //console.log(req.headers);
+    //console.dir('ai', res.locals.assessment_instance);
     var absoluteURL = req.protocol + '://' + req.get('host') + req.originalUrl;
 
     if ('x-safeexambrowser-requesthash' in req.headers
-        || req.headers['user-agent'].includes('SEB/2')) {
+        || ('user-agent' in req.headers && req.headers['user-agent'].includes('SEB/2')) ) {
 
         res.locals.authz_data.mode = 'SEB';
 
