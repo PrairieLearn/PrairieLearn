@@ -1,7 +1,54 @@
+# PrairieLearn Elements for use in `question.html`
 
-# Elements for use in `question.html`
+When writing questions, there exists a core pool of elements that provides 
+common structures associated with assessment items. These elements can be
+split into two distinct groups: **input fields** and **decorative**. Within this
+document, all of PrairieLearn's elements are displayed alongside links to sample
+elements within the example course.
 
-## `pl_multiple_choice` element
+**Input field** elements act as a way to receive a response or input from the
+student. These elements are traditionally referred to as form input fields. 
+PrairieLearn presently provides the following templated **input field** elements:
+
+- [`pl_multiple_choice`](#pl_multiple_choice-element): Selecting only 
+  **one option** from a list.
+- [`pl_checkbox`](#pl_checkbox-element): Selecting **multiple options** from a
+  list.
+- [`pl_number_input`](#pl_number_input-element): Inputing a **numerical** value 
+  within a specific tolerance level.
+- [`pl_matrix_input`](#pl_number_input-element): Answers that require a matrix
+  response.
+- [`pl_file_upload`](#pl_file_upload-element): Allows for file input to answer
+  questions.
+- [`pl_file_editor`](#pl_file_editor-element): Provides a way for students to
+  upload results.
+- [`pl_threejs`](#pl_threejs-element): Enables 3D scene display and problem
+  submission.
+
+**Decorative** elements are meant to improve how the question is displayed to
+students. Elements under this category include ways to specify question markup,
+images, files, and code display. The following **decorative** elements are available:
+
+- [`pl_question_panel`](#pl_question_panel-element): Displays the text of a question
+- [`pl_submission_panel`](#pl_submission_panel-element): Displays the inputted
+  answers of the student.
+- [`pl_answer_panel`](#pl_answer_panel-element): Displays the correct
+  answer to a given question.
+- [`pl_external_grader_results`](#pl_external_grader_results-element):
+  Displays results from the externally graded questions.
+- [`pl_variable_score`](#pl_variable_score-element): Displays a partial score
+  for answering a given variable.
+- [`pl_code`](#pl_code-element): Displays code rendered with the appropriate
+  syntax highlighting. 
+- [`pl_figure`](#pl_figure-element): Embed an image file in the question.
+- [`pl_file_download`](#pl_file_download-element): Enable file downloads for
+  data-centric questions.
+- [`pl_matrix_output`](#pl_matrix_output-element): Displays dynamically
+  generated matrices.
+
+## Input Field Elements
+
+### `pl_multiple_choice` element
 
 ```html
 <pl_multiple_choice answers_name="acc" weight="1" inline="true">
@@ -27,7 +74,7 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
 
-## `pl_checkbox` element
+### `pl_checkbox` element
 
 ```html
 <pl_checkbox answers_name="vpos" weight="1" inline="true">
@@ -60,7 +107,7 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
 
-## `pl_number_input` element
+### `pl_number_input` element
 
 ```html
 <pl_number_input answers_name="v_avg" comparison="sigfig" digits="2" />
@@ -80,7 +127,7 @@ Attribute | Type | Default | Description
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `allow_complex` | boolean | False | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers_name] = pl.to_json(ans)`.
 
-## `pl_matrix_input` element
+### `pl_matrix_input` element
 
 ```html
 <pl_matrix_input answers_name="C" comparison="sigfig" digits="3" label="$AB=$" />
@@ -116,102 +163,9 @@ In the answer panel, a `pl_matrix_input` element displays the correct answer, al
 
 In the submission panel, a `pl_matrix_input` element displays either the submitted answer (in the same format that it was submitted, either matlab or python), or a note that the submitted answer was invalid (with an explanation of why).
 
-## `pl_matrix_output` element
+See also [`pl_matrix_output`](#pl_matrix_output-element) to render a matrix.
 
-```html
-<pl_matrix_output digits="3">
-    <variable params_name="A">A</variable>
-    <variable params_name="B">B</variable>
-</pl_matrix_output>
-```
-
-Attributes for `<pl_matrix_output`:
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`digits` | integer | — | Number of digits to display after the decimal.
-
-Attributes for `<variable>` (one of these for each variable to display):
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`params_name` | string | — | Name of variable in `data['params']` to display.
-
-This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB or python (the user can switch between the two). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
-
-Here is an example of MATLAB format:
-```
-A = [1.23; 4.56];
-```
-
-Here is an example of python format:
-```
-import numpy as np
-
-A = np.array([[1.23], [4.56]])
-```
-
-If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data['params'][params_name] = pl.to_json(v)`.
-
-
-## `pl_figure` element
-
-```html
-<!-- show a figure from an existing file -->
-<pl_figure file_name="figure.png" directory="clientFilesCourse" />
-
-<!-- show a figure from a file that is generated by code -->
-<pl_figure file_name="figure.png" type="dynamic" />
-```
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`file_name` | string | — | Name of image file.
-`type` | text | 'static' | Type of file, either 'static' (an existing file) or 'dynamic' (a file generated by element or server code).
-`directory` | text | "clientFilesQuestion" | The directory that contains the file, either 'clientFilesQuestion' or 'clientFilesCourse' (see [client and server files](clientServerFiles.md)). A directory cannot be specified if `type='dynamic'`.
-`width` | number | `None` | Width of image (e.g., '250px').
-
-If `type="dynamic"`, then the contents of the image file must be returned by a function `file()` that is located either in element code or in `server.py`. The contents must be a string (with utf-8 encoding), a bytes-like object, or a file-like object. The filename will be available to this function as `data['filename']`. For example, this code might appear in `server.py` to generate a file called `figure.png`:
-
-```python
-def file(data):
-    if data['filename']=='figure.png':
-        plt.plot([1,2,3],[3,4,-2])
-        buf = io.BytesIO()
-        plt.savefig(buf,format='png')
-        return buf
-```
-
-If `file()` does not return anything, it will be treated as if `file()` returned the empty string.
-
-## `pl_file_download` element
-
-```html
-<!-- allow students to download an existing file -->
-<pl_file_download file_name="data.txt" directory="clientFilesCourse" />
-
-<!-- allow students to download a file that is generated by code -->
-<pl_file_download file_name="data.txt" type="dynamic" />
-```
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`file_name` | string | — | Name of file to download.
-`label` | text | file_name | Alternate text for file download link (e.g., `label="click here to download"`).
-`type` | text | "static" | Type of file, either "static" (an existing file) or "dynamic" (a file generated by element or server code).
-`directory` | text | "clientFilesQuestion" | The directory that contains the file, either "clientFilesQuestion" or "clientFilesCourse" (see [client and server files](clientServerFiles.md)). A directory cannot be specified if `type="dynamic"`.
-
-If `type="dynamic"`, then the contents of the file must be returned by a function `file()` that is located either in element code or in `server.py`. The contents must be a string (with utf-8 encoding), a bytes-like object, or a file-like object. The filename will be available to this function as `data['filename']`. For example, this code might appear in `server.py` to generate a file called `data.txt`:
-
-```python
-def file(data):
-    if data['filename']=='data.txt':
-        return 'This data is generated by code.'
-```
-
-If `file()` does not return anything, it will be treated as if `file()` returned the empty string.
-
-## `pl_file_upload` element
+### `pl_file_upload` element
 
 ```html
 <pl_file_upload file_names="foo.py, bar.c, filename with\, comma.txt" />
@@ -225,7 +179,10 @@ Attribute | Type | Default | description
 `answers_name` | string | \_file | Variable name to store data in. **For externally graded questions, you should rely on the default.**
 `file_names` | CSV list | "" | List of files that should and must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes.
 
-## `pl_file_editor` element
+See also [`pl_file_download`](#pl_file_download-element) to provide files
+for users to download.
+
+### `pl_file_editor` element
 
 ```html
 <pl_file_editor
@@ -247,58 +204,8 @@ Attribute | Type | Default | description
 `ace_mode` | string | None | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).
 `ace_theme` | string | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).
 
-## `pl_external_grader_results` element
 
-```html
-<pl_external_grader_results></pl_external_grader_results>
-```
-
-Displays results from externally-graded questions. It expects results to follow
-[the reference schema for external grading results](externalGrading.md#grading-result).
-
-## `pl_question_panel` element
-
-```html
-<pl_question_panel>
-  This is question-panel text.
-</pl_question_panel>
-```
-
-Only display contents when rendering the question panel.
-
-## `pl_submission_panel` element
-
-```html
-<pl_submission_panel>
-  This is submission-panel text.
-</pl_submission_panel>
-```
-
-Only display contents when rendering the submission panel.
-
-## `pl_answer_panel` element
-
-```html
-<pl_answer_panel>
-  This is answer-panel text.
-</pl_answer_panel>
-```
-
-Only display contents when rendering the answer panel.
-
-## `pl_variable_score` element
-
-```html
-<pl_variable_score answers_name="v_avg" />
-```
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`answers_name` | string | — | Variable name to display score for.
-
-Display the partial score for a specific answer variable.
-
-## `pl_threejs` element
+### `pl_threejs` element
 
 ```html
 <pl_threejs answer_name="a">
@@ -354,7 +261,60 @@ Attribute | Type | Default | Description
 Note that a 3D scene is also created to show each submitted answer. This means that if there are many submitted answers, the page will load slowly.
 
 
-## pl_code
+## Decorative Elements
+
+### `pl_question_panel` element
+
+```html
+<pl_question_panel>
+  This is question-panel text.
+</pl_question_panel>
+```
+
+Only display contents when rendering the question panel.
+
+### `pl_submission_panel` element
+
+```html
+<pl_submission_panel>
+  This is submission-panel text.
+</pl_submission_panel>
+```
+
+Only display contents when rendering the submission panel.
+
+### `pl_answer_panel` element
+
+```html
+<pl_answer_panel>
+  This is answer-panel text.
+</pl_answer_panel>
+```
+
+Only display contents when rendering the answer panel.
+
+### `pl_external_grader_results` element
+
+```html
+<pl_external_grader_results></pl_external_grader_results>
+```
+
+Displays results from externally-graded questions. It expects results to follow
+[the reference schema for external grading results](externalGrading.md#grading-result).
+
+### `pl_variable_score` element
+
+```html
+<pl_variable_score answers_name="v_avg" />
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers_name` | string | — | Variable name to display score for.
+
+Display the partial score for a specific answer variable.
+
+### `pl_code` element
 
 ```html
 <pl_code language="python">
@@ -408,3 +368,100 @@ The `language` can be one of the following values.
 `yaml` | YAML
 
 Please let the PrairieLearn developers know if you need a language that is not on the list above (any [highlight.js](https://highlightjs.org) language could be added).
+
+### `pl_figure` element
+
+```html
+<!-- show a figure from an existing file -->
+<pl_figure file_name="figure.png" directory="clientFilesCourse" />
+
+<!-- show a figure from a file that is generated by code -->
+<pl_figure file_name="figure.png" type="dynamic" />
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`file_name` | string | — | Name of image file.
+`type` | text | 'static' | Type of file, either 'static' (an existing file) or 'dynamic' (a file generated by element or server code).
+`directory` | text | "clientFilesQuestion" | The directory that contains the file, either 'clientFilesQuestion' or 'clientFilesCourse' (see [client and server files](clientServerFiles.md)). A directory cannot be specified if `type='dynamic'`.
+`width` | number | `None` | Width of image (e.g., '250px').
+
+If `type="dynamic"`, then the contents of the image file must be returned by a function `file()` that is located either in element code or in `server.py`. The contents must be a string (with utf-8 encoding), a bytes-like object, or a file-like object. The filename will be available to this function as `data['filename']`. For example, this code might appear in `server.py` to generate a file called `figure.png`:
+
+```python
+def file(data):
+    if data['filename']=='figure.png':
+        plt.plot([1,2,3],[3,4,-2])
+        buf = io.BytesIO()
+        plt.savefig(buf,format='png')
+        return buf
+```
+
+If `file()` does not return anything, it will be treated as if `file()` returned the empty string.
+
+### `pl_file_download` element
+
+```html
+<!-- allow students to download an existing file -->
+<pl_file_download file_name="data.txt" directory="clientFilesCourse" />
+
+<!-- allow students to download a file that is generated by code -->
+<pl_file_download file_name="data.txt" type="dynamic" />
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`file_name` | string | — | Name of file to download.
+`label` | text | file_name | Alternate text for file download link (e.g., `label="click here to download"`).
+`type` | text | "static" | Type of file, either "static" (an existing file) or "dynamic" (a file generated by element or server code).
+`directory` | text | "clientFilesQuestion" | The directory that contains the file, either "clientFilesQuestion" or "clientFilesCourse" (see [client and server files](clientServerFiles.md)). A directory cannot be specified if `type="dynamic"`.
+
+If `type="dynamic"`, then the contents of the file must be returned by a function `file()` that is located either in element code or in `server.py`. The contents must be a string (with utf-8 encoding), a bytes-like object, or a file-like object. The filename will be available to this function as `data['filename']`. For example, this code might appear in `server.py` to generate a file called `data.txt`:
+
+```python
+def file(data):
+    if data['filename']=='data.txt':
+        return 'This data is generated by code.'
+```
+
+If `file()` does not return anything, it will be treated as if `file()` returned the empty string.
+
+### `pl_matrix_output` element
+
+```html
+<pl_matrix_output digits="3">
+    <variable params_name="A">A</variable>
+    <variable params_name="B">B</variable>
+</pl_matrix_output>
+```
+
+Attributes for `<pl_matrix_output`:
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`digits` | integer | — | Number of digits to display after the decimal.
+
+Attributes for `<variable>` (one of these for each variable to display):
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`params_name` | string | — | Name of variable in `data['params']` to display.
+
+This element displays a list of variables inside `<pre>` tags that are formatted for import into either MATLAB or python (the user can switch between the two). Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags, followed by ` = `.
+
+Here is an example of MATLAB format:
+```
+A = [1.23; 4.56];
+```
+
+Here is an example of python format:
+```
+import numpy as np
+
+A = np.array([[1.23], [4.56]])
+```
+
+If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data['params'][params_name] = pl.to_json(v)`.
+
+See also [`pl_matrix_input`](#pl_matrix_input-element) for ways to accept
+a matrix as an input.

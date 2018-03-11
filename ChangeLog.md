@@ -126,6 +126,8 @@
   * Change Docker postgresql to do initializations/migrations at build (Dave Mussulman).
 
   * Change the example course to be available to any institution (Matt West).
+  
+  * Change the HTML element documentation to list elements under two categories with example links (James Balamuta).
 
   * Remove HackIllinois advertisement (Matt West).
 
