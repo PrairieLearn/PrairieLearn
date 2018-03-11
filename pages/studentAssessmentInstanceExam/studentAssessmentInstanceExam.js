@@ -69,7 +69,6 @@ router.get('/', function(req, res, next) {
                 res.locals.assessment_text_templated = assessment_text_templated;
 
                 res.locals.showTimeLimitExpiredModal = (req.query.timeLimitExpired == 'true');
-                console.log(res.locals);
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
         });

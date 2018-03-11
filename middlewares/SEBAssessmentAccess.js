@@ -19,11 +19,12 @@ module.exports = function(req, res, next) {
         if ('assessment' in res.locals
             && 'authz_result' in res.locals) {
 
-            console.dir(res.locals.assessment);
-            console.dir(res.locals.authz_result);
+            //console.dir(res.locals.assessment);
+            //console.dir(res.locals.authz_result);
 
 
             var SEBvalid = false;
+            /* FIXME
             _.each(res.locals.authz_result.seb_keys, function(key) {
 
                 var ourhash = sha256(absoluteURL + key).toString();
@@ -36,6 +37,7 @@ module.exports = function(req, res, next) {
                     return false;
                 }
             });
+            */
             if (SEBvalid) { return next(); }
 
             // Check user-agent header for exam string (easier)

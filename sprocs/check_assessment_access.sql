@@ -17,7 +17,7 @@ CREATE OR REPLACE FUNCTION
         OUT time_limit_min integer,  -- What is the time limit (if any) for this assessment.
         OUT password text,           -- What is the password (if any) for this assessment.
         OUT mode enum_mode,          -- Mode of the assessment.
-        OUT seb_keys text[],         -- SEBKeys (if any) for this assessment.
+        OUT seb_config JSONB,         -- SEBKeys (if any) for this assessment.
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     ) AS $$
 DECLARE
@@ -40,7 +40,7 @@ BEGIN
         aar.time_limit_min,
         aar.password,
         aar.mode,
-        aar.seb_keys,
+        aar.seb_config,
         aar.id
     INTO
         authorized,
@@ -49,7 +49,7 @@ BEGIN
         time_limit_min,
         password,
         mode,
-        seb_keys,
+        seb_config,
         active_access_rule_id
     FROM
         assessment_access_rules AS aar
@@ -71,7 +71,7 @@ BEGIN
         time_limit_min = NULL;
         password = NULL;
         mode = NULL;
-        seb_keys = NULL;
+        seb_config = NULL;
     END IF;
 
     -- Override if we are an Instructor
@@ -83,7 +83,7 @@ BEGIN
         time_limit_min = NULL;
         password = NULL;
         mode = NULL;
-        seb_keys = NULL;
+        seb_config = NULL;
     END IF;
 
     -- List of all access rules that will grant access to this user/mode/role at some date (past or future),
