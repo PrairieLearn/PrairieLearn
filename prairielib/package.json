@@ -1,0 +1,22 @@
+{
+  "name": "prairielib",
+  "version": "1.0.0",
+  "description": "A repository of code shared between various PrairieLearn projects",
+  "main": "index.js",
+  "files": [
+    "sql-db.js",
+    "sql-loader.js",
+    "error.js"
+  ],
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "async-stacktrace": "0.0.2",
+    "debug": "^3.1.0",
+    "lodash": "^4.17.5",
+    "pg": "^7.4.1"
+  }
+}
