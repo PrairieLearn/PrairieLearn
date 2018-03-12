@@ -31,7 +31,7 @@
     <% if (typeof authz_data !== 'undefined' && authz_data.authn_has_instructor_view) { %>
         <a class="nav-link" href="<%= urlPrefix %>/effectiveUser">
         <% if (authz_data.user.name) { %><%= authz_data.user.name %><% } else { %><%= authz_data.user.uid %><% } %>
-	(<%= authz_data.role %><% if (authz_data.mode == 'Exam') { %>, <%= authz_data.mode %><% } %>)
+	(<%= authz_data.role %><% if (authz_data.mode != 'Public') { %>, <%= authz_data.mode %><% } %>)
         <i class="fa fa-edit" aria-hidden="true"></i>
         </a>
     <% } else { // authn_has_instructor_view %>
