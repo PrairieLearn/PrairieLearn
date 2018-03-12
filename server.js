@@ -324,30 +324,41 @@ app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./midd
 app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
 
 // clientFiles
-app.use('/pl/course_instance/:course_instance_id/clientFilesCourse', require('./pages/clientFilesCourse/clientFilesCourse'));
-app.use('/pl/course_instance/:course_instance_id/clientFilesCourseInstance', require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'));
+app.use('/pl/course_instance/:course_instance_id/clientFilesCourse', [
+    require('./middlewares/SEBAssessmentAccess'),
+    require('./pages/clientFilesCourse/clientFilesCourse'),
+]);
+app.use('/pl/course_instance/:course_instance_id/clientFilesCourseInstance', [
+    require('./middlewares/SEBAssessmentAccess'),
+    require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
+]);
 app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesAssessment', [
     require('./middlewares/selectAndAuthzAssessment'),
+    require('./middlewares/SEBAssessmentAccess'),
     require('./pages/clientFilesAssessment/clientFilesAssessment'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
+    require('./middlewares/SEBAssessmentAccess'),
     require('./pages/clientFilesQuestion/clientFilesQuestion'),
 ]);
 
 // generatedFiles
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
+    require('./middlewares/SEBAssessmentAccess'),
     require('./pages/studentGeneratedFilesQuestion/studentGeneratedFilesQuestion'),
 ]);
 
 // legacy client file paths
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
+    require('./middlewares/SEBAssessmentAccess'),
     require('./pages/legacyQuestionFile/legacyQuestionFile'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
+    require('./middlewares/SEBAssessmentAccess'),
     require('./pages/legacyQuestionText/legacyQuestionText'),
 ]);
 
