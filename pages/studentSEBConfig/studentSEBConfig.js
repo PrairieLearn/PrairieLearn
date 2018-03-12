@@ -1,7 +1,7 @@
 var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
-var path = require('path');
+//var path = require('path');
 const plist = require('plist');
 const fs = require('fs');
 //const util = require('util');
@@ -25,7 +25,7 @@ router.get('/:assessment_id', function(req, res, next) {
         res.locals.rows = result.rows;
 
         var a = result.rows[0];
-        console.log(a);
+        //console.log(a);
 
         if (a) { //result.rows.length > 0) {
 
@@ -108,6 +108,7 @@ router.get('/:assessment_id', function(req, res, next) {
             return res.send(zlib.gzipSync(SEBfile));
 */
 
+    /*
             var filename = 'config.seb';
             var sebFile = path.join(
                 a.path,
@@ -124,7 +125,7 @@ router.get('/:assessment_id', function(req, res, next) {
                 return res.sendFile(filename, {root: sebFile}, function(err) {
                     if (ERR(err, next)) return;
                 });
-
+    */
         } else {
             res.send('Unable to find SEB config');
         }

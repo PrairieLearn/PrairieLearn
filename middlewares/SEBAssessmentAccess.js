@@ -1,19 +1,19 @@
 //var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var sha256 = require('crypto-js/sha256');
+//var _ = require('lodash');
+//var sha256 = require('crypto-js/sha256');
 
 module.exports = function(req, res, next) {
 
     //console.log(req.headers);
     //console.dir('ai', res.locals.assessment_instance);
-    var absoluteURL = req.protocol + '://' + req.get('host') + req.originalUrl;
+    //var absoluteURL = req.protocol + '://' + req.get('host') + req.originalUrl;
 
     if ('x-safeexambrowser-requesthash' in req.headers
         || ('user-agent' in req.headers && req.headers['user-agent'].includes('SEB/2')) ) {
 
         res.locals.authz_data.mode = 'SEB';
 
-        var requesthash = req.headers['x-safeexambrowser-requesthash'] || null;
+        //var requesthash = req.headers['x-safeexambrowser-requesthash'] || null;
 
         // Pass through to next() if one of the keys matches
         if ('assessment' in res.locals
@@ -22,6 +22,8 @@ module.exports = function(req, res, next) {
             //console.dir(res.locals.assessment);
             //console.dir(res.locals.authz_result);
 
+            //check_browser_exam_keys(res, req)
+            //check_user_agent(res, req)
 
             var SEBvalid = false;
             /* FIXME
