@@ -2,7 +2,7 @@ var ERR = require('async-stacktrace');
 const AWS = require('aws-sdk');
 
 var config = require('../lib/config');
-var sqldb = require('../lib/sqldb');
+var sqldb = require('@prairielearn/prairielib/sql-db');
 
 module.exports = {};
 

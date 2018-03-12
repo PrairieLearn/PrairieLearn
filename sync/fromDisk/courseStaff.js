@@ -3,9 +3,9 @@ var _ = require('lodash');
 var async = require('async');
 
 var logger = require('../../lib/logger');
-var sqldb = require('../../lib/sqldb');
+var sqldb = require('@prairielearn/prairielib/sql-db');
 var config = require('../../lib/config');
-var sqlLoader = require('../../lib/sql-loader');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 

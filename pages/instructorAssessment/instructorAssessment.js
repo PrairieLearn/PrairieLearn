@@ -6,14 +6,14 @@ var express = require('express');
 var router = express.Router();
 var debug = require('debug')('prairielearn:instructorAssessment');
 
-var error = require('../../lib/error');
+var error = require('@prairielearn/prairielib/error');
 var logger = require('../../lib/logger');
 var serverJobs = require('../../lib/server-jobs');
 var csvMaker = require('../../lib/csv-maker');
 var dataFiles = require('../../lib/data-files');
 var assessment = require('../../lib/assessment');
-var sqldb = require('../../lib/sqldb');
-var sqlLoader = require('../../lib/sql-loader');
+var sqldb = require('@prairielearn/prairielib/sql-db');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 

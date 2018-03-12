@@ -3,8 +3,8 @@ var ERR = require('async-stacktrace');
 var config = require('../lib/config');
 var csrf = require('../lib/csrf');
 var logger = require('../lib/logger');
-var sqldb = require('../lib/sqldb');
-var sqlLoader = require('../lib/sql-loader');
+var sqldb = require('@prairielearn/prairielib/sql-db');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 

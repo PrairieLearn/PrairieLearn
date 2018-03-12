@@ -4,8 +4,8 @@ const express = require('express');
 const router = express.Router();
 const AWS = require('aws-sdk');
 
-const sqldb = require('../../lib/sqldb');
-const sqlLoader = require('../../lib/sql-loader');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
