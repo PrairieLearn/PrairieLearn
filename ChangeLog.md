@@ -49,6 +49,8 @@
 
   * Add demo question showcasing all options for `pl_checkbox` (James Balamuta).
 
+  * Add example of how to use PL to learn student names (Tim Bretl).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).

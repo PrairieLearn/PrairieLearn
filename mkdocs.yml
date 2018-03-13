@@ -21,6 +21,7 @@ pages:
   - 'PrairieDraw graphics': 'PrairieDraw.md'
   - 'Externally graded questions': 'externalGrading.md'
   - 'What to tell students': 'whatToTellStudents.md'
+  - 'How to use PL to learn student names': 'howToLearnNames.md'
   - 'FAQ': 'faq.md'
 - Developer Guide:
   - 'Developer guide': 'dev-guide.md'
