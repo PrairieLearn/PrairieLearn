@@ -6,6 +6,7 @@ var router = express.Router();
 var error = require('@prairielearn/prairielib/error');
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+var config = require('../../lib/config');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -32,6 +33,18 @@ router.post('/', function(req, res, next) {
         res.clearCookie('pl_requested_mode');
         res.redirect(req.originalUrl);
     } else if (req.body.__action == 'changeUid') {
+        if (config.devMode) {
+            // Add the user in devmode to test access rules
+            var params = {
+                uid: req.body.pl_requested_uid,
+                course_instance_id: res.locals.course_instance.id,
+            };
+            return sqldb.query(sql.add_and_enroll, params, function(err) {
+                if (ERR(err, next)) return;
+                res.cookie('pl_requested_uid', req.body.pl_requested_uid, {maxAge: 60 * 60 * 1000});
+                res.redirect(req.originalUrl);
+            });
+        }
         res.cookie('pl_requested_uid', req.body.pl_requested_uid, {maxAge: 60 * 60 * 1000});
         res.redirect(req.originalUrl);
     } else if (req.body.__action == 'changeRole') {
