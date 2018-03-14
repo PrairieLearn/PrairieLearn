@@ -22,7 +22,11 @@
 
                 <p><a href="https://safeexambrowser.org/download_en.html">Download instructions for the Safe Exam Browser.</a></p>
 
-                <a class="btn btn-lg btn-success" href="seb://<%= SEBUrl %>">Launch into the Safe Exam Browser</a>
+                <form method="POST" action="/pl/downloadSEBConfig">
+                <input type="hidden" name="data" value="daveDave">
+                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                <button type="submit" class="btn btn-lg btn-success">Launch into the Safe Exam Browser</a>
+                </form>
             </div> <!-- panel-body -->
         </div>
     </div>

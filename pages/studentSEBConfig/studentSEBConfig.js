@@ -14,6 +14,13 @@ var sqlLoader = require('../../lib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
+router.post('', function(req, res, next) {
+
+    console.log(req.body.data);
+    return res.send('Thanks');
+
+});
+
 router.get('/:assessment_id', function(req, res, next) {
 
     //console.log(req.params.assessment_id);
