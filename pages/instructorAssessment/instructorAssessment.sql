@@ -18,6 +18,8 @@ question_scores AS (
         avg(aq.mean_question_score) AS question_score
     FROM
         assessment_questions AS aq
+    WHERE
+        aq.assessment_id = $assessment_id
     GROUP BY
         aq.question_id
 )
