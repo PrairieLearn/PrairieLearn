@@ -1,6 +1,8 @@
 //var ERR = require('async-stacktrace');
 //var _ = require('lodash');
 //var sha256 = require('crypto-js/sha256');
+var csrf = require('../lib/csrf');
+var config = require('../lib/config');
 
 module.exports = function(req, res, next) {
 
@@ -53,7 +55,16 @@ module.exports = function(req, res, next) {
     // Otherwise, if it's mode:SEB display the instructions
     if ('authz_result' in res.locals && res.locals.authz_result.mode == 'SEB') {
 
-        res.locals.SEBUrl = req.get('host') + '/pl/downloadSEBConfig/' + res.locals.assessment.id;
+        // Generate the CSRF-like data to send
+        var SEBdata = {
+            user_id: res.locals.user.user_id,
+            assessment_id: res.locals.assessment.id,
+        };
+
+        res.locals.SEBdata = csrf.generateToken(SEBdata, config.secretKey);
+
+        console.dir(res.locals);
+        res.locals.SEBUrl = 'seb://' + req.get('host') + '/pl/downloadSEBConfig/';
         return res.render(__dirname + '/SEBAssessmentAccess.ejs', res.locals);
     }
 

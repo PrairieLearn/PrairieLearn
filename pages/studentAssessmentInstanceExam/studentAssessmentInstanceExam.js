@@ -28,7 +28,7 @@ router.post('/', function(req, res, next) {
         if (req.body.__action == 'timeLimitFinish') {
             res.redirect(req.originalUrl + '?timeLimitExpired=true');
         } else if (res.locals.authz_result.mode == 'SEB') {
-            res.redirect('/pl/logout');
+            res.redirect('/SEBquit');
         } else {
             res.redirect(req.originalUrl);
         }
@@ -55,7 +55,7 @@ var tmp_upgrade = function(locals, callback) {
 
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
-
+    console.log(req.originalUrl);
     tmp_upgrade(res.locals, function(err) {
         if (ERR(err, next)) return;
 
