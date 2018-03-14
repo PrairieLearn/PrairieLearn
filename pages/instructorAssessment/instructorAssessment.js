@@ -421,7 +421,7 @@ router.get('/:filename', function(req, res, next) {
             if (ERR(err, next)) return;
             var questionStatsList = result.rows;
             var csvData = [];
-            var csvHeaders = ['Question number', 'Question title'];
+            var csvHeaders = ['Question number', 'Question title', 'Tags'];
             Object.keys(res.locals.stat_descriptions).forEach(key => {
                 csvHeaders.push(res.locals.stat_descriptions[key].non_html_title);
             });
@@ -432,6 +432,7 @@ router.get('/:filename', function(req, res, next) {
                 var questionStatsData = [];
                 questionStatsData.push(questionStats.number);
                 questionStatsData.push(questionStats.title);
+                questionStatsData.push(questionStats.tags_string);
                 questionStatsData.push(questionStats.mean_question_score);
                 questionStatsData.push(questionStats.question_score_variance);
                 questionStatsData.push(questionStats.discrimination);
