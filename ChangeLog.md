@@ -53,6 +53,8 @@
 
   * Add exception handling to python caller to display what can't be converted to valid JSON (Tim Bretl).
 
+  * Add tags list to question stats CSV (Matt West).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
