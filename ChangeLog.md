@@ -51,6 +51,8 @@
 
   * Add example of how to use PL to learn student names (Tim Bretl).
 
+  * Add exception handling to python caller to display what can't be converted to valid JSON (Tim Bretl).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
@@ -94,6 +96,8 @@
   * Fix tag order display (Dave Mussulman, h/t Pengyu Cheng).
 
   * Fix navbar role switching button text (Dave Mussulman).
+
+  * Fix all calls of `json.dumps` to make them produce valid JSON (Tim Bretl).
 
   * Change to Bootstrap 4 (Nathan Walters).
 
