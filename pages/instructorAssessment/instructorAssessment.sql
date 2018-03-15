@@ -60,7 +60,7 @@ FROM
     JOIN topics AS top ON (top.id = q.topic_id)
     JOIN assessments AS a ON (a.id = aq.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-    JOIN tags_list ON (tags_list.assessment_question_id = aq.id)
+    LEFT JOIN tags_list ON (tags_list.assessment_question_id = aq.id)
     LEFT JOIN issue_count AS ic ON (ic.question_id = q.id)
     LEFT JOIN question_scores ON (question_scores.question_id = q.id)
 WHERE
