@@ -101,6 +101,8 @@
 
   * Fix all calls of `json.dumps` to make them produce valid JSON (Tim Bretl).
 
+  * Fix error when rendering question score panel (Nathan Walters).
+
   * Fix questions without tags not displaying on instructor assessment page (Jake Bailey).
 
   * Change to Bootstrap 4 (Nathan Walters).
