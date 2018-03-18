@@ -3,6 +3,12 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add average rows on instructor question page (Paras Sud)
+  
+  * Add predicted scores on instructor assessment page (Paras Sud)
+  
+  * Add exam generator page (Paras Sud)
+
   * Add new issues page style and flexible filtering (Nathan Walters).
 
   * Add `pl_threejs` element (Tim Bretl).

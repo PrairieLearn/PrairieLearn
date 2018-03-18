@@ -16,6 +16,8 @@ BEGIN
         RETURN 'PracticeExams';
     ELSIF type_var = 'Homework' and mode_var = 'Public' THEN
         RETURN 'HWs';
+    ELSE
+        RETURN NULL;
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
