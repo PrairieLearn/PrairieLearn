@@ -45,7 +45,7 @@ module.exports = {
         if (!this.pool) {
             return callback(null);
         }
-        this.pool.end(function(err) {
+        this.pool.end((err) => {
             if (ERR(err, callback)) return;
             this.pool = null;
             callback(null);
