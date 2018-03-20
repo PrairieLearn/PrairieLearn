@@ -42,8 +42,12 @@ module.exports = {
     },
 
     close: function(callback) {
+        if (!this.pool) {
+            return callback(null);
+        }
         this.pool.end(function(err) {
             if (ERR(err, callback)) return;
+            this.pool = null;
             callback(null);
         });
     },
@@ -82,6 +86,9 @@ module.exports = {
     },
 
     getClient: function(callback) {
+        if (!this.pool) {
+            return callback(new Error('Connection pool is not open'));
+        }
         this.pool.connect(function(err, client, done) {
             if (err) {
                 if (client) {
@@ -208,6 +215,9 @@ module.exports = {
         debug('query()', 'sql:', debugString(sql));
         debug('query()', 'params:', debugParams(params));
         var that = this;
+        if (!this.pool) {
+            return callback(new Error('Connection pool is not open'));
+        }
         that.pool.connect(function(err, client, done) {
             var handleError = function(err) {
                 if (!err) return false;
