@@ -139,6 +139,8 @@
 
   * Change the example course to be available to any institution (Matt West).
 
+  * Move shared code to PrairieLib (Nathan Walters).
+
   * Remove HackIllinois advertisement (Matt West).
 
 * __2.11.0__ - 2017-12-29

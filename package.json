@@ -4,6 +4,7 @@
     "version": "2.10.0",
     "private": true,
     "dependencies": {
+        "@prairielearn/prairielib": "^1.0.3",
         "adm-zip": "^0.4.7",
         "archiver": "^2.1.0",
         "async": "^2.6.0",

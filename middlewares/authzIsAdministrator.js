@@ -1,4 +1,4 @@
-var error = require('../lib/error');
+var error = require('@prairielearn/prairielib/error');
 
 module.exports = function(req, res, next) {
     if (!res.locals.is_administrator) {

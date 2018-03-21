@@ -1,4 +1,4 @@
-var sqldb = require('../../lib/sqldb');
+var sqldb = require('@prairielearn/prairielib/sql-db');
 
 module.exports = {
     sync: function(courseInfo, callback) {
