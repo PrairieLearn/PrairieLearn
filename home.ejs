@@ -55,7 +55,7 @@
         </table>
 
       </div>
-      <% } %> <!-- course_instances.length -->
+      <% } %>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -78,13 +78,13 @@
           above and then click <strong>“Home”</strong> to come back to
           this page.
         </div>
-        <% } else { %> <!-- devMode -->
+        <% } else { %>
         <div class="card-body">
           No courses found. Use the “Add or remove courses” button below.
         </div>
-        <% } %> <!-- devMode -->
+        <% } %>
 
-        <% } else { %> <!-- course_instances.length -->
+        <% } else { %>
 
         <table class="table table-sm table-hover table-striped">
           <tbody>
@@ -100,14 +100,14 @@
           </tbody>
         </table>
 
-        <% } %> <!-- course_instances.length -->
+        <% } %>
       </div>
 
-      <!--calendar-->
+
       <div class="card mb-4">
-      <!--<table class="card mb-4">-->
+
         <div class="card-header bg-warning text-white">Due Next</div>
-        <!-- <div class="card-body"> -->
+
           <table class="table table-sm table-hover table-striped">
             <tbody>
               <td align='left'><strong> Title of Assessment </td></strong>
@@ -135,7 +135,7 @@
               <% }); %>
             </tbody>
           </table>
-        <!-- </div> -->
+
       </div>
 
       <div class="card mb-4">
@@ -146,7 +146,7 @@
               <td align='middle'><strong> Credit Attainable </td></strong>
               <td align='right'><strong> Due Date </td></strong>
               <% rules_passed.forEach(function(rule) { %>
-                <!-- <strong>PASSED DUE:</strong> -->
+
                 <tr>
                   <td>
                     <span class="badge color-<%= rule.color %>">
@@ -167,16 +167,11 @@
                   </td>
                 </tr>
             <% }); %>
-          <!-- <p class="mb-0">
-            See
-            the <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/README.md">PrairieLearn
-            documentation</a> for information on creating questions
-            and assessments
-          </p> -->
+
         </tbody>
       </table>
     </div>
-      <!--calendar-->
+
 
     </div>
   </body>
