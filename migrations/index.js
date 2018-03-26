@@ -2,6 +2,7 @@ const ERR = require('async-stacktrace');
 const fs = require('fs');
 const path = require('path');
 const async = require('async');
+const _ = require('lodash');
 
 const namedLocks = require('../lib/named-locks');
 const error = require('@prairielearn/prairielib/error');
@@ -58,7 +59,7 @@ module.exports._initWithLock = function(callback) {
             fs.readdir(__dirname, (err, files) => {
                 if (ERR(err, callback)) return;
 
-                const regex = /^([0-9]+).+\.sql$/;
+                const regex = /^([0-9]+)_.+\.sql$/;
                 files = files
                     .filter(file => regex.test(file))
                     .map(file => {
@@ -68,10 +69,21 @@ module.exports._initWithLock = function(callback) {
                             filename: file,
                         };
                     })
-                    .filter(file => file.index > last_migration)
                     .sort((a, b) => {
                         return a.index - b.index;
                     });
+
+                // check that we don't have repeated indexes
+                repeatedIndexes = _(files)
+                    .groupBy(file => file.index)
+                    .pickBy(fileList => (fileList.length > 1))
+                    .map((fileList, index) => `Repeated index ${index}:\n` + _.map(fileList, 'filename').join('\n'))
+                    .value();
+                if (repeatedIndexes.length > 0) {
+                    return callback(new Error(`Repeated migration indexes:\n${repeatedIndexes.join('\n')}`));
+                }
+
+                files = files.filter(file => file.index > last_migration)
                 callback(null, files);
             });
         },
