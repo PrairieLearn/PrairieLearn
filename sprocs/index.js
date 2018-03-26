@@ -3,9 +3,9 @@ var fs = require('fs');
 var path = require('path');
 var async = require('async');
 
-var error = require('../lib/error');
+var error = require('@prairielearn/prairielib/error');
 var logger = require('../lib/logger');
-var sqldb = require('../lib/sqldb');
+var sqldb = require('@prairielearn/prairielib/sql-db');
 
 module.exports = {
     init: function(callback) {

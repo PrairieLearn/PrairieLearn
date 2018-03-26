@@ -4,8 +4,8 @@ var request = require('request');
 var cheerio = require('cheerio');
 
 var config = require('../lib/config');
-var sqldb = require('../lib/sqldb');
-var sqlLoader = require('../lib/sql-loader');
+var sqldb = require('@prairielearn/prairielib/sql-db');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var helperServer = require('./helperServer');
@@ -98,7 +98,7 @@ describe('Access control', function() {
 
     /**********************************************************************/
 
-    var getPl = function(cookies, shouldContainTPL101, callback) {
+    var getPl = function(cookies, shouldContainXC101, callback) {
         request({url: baseUrl, jar: cookies}, function (error, response, body) {
             if (error) {
                 return callback(error);
@@ -109,8 +109,8 @@ describe('Access control', function() {
             page = body;
             try {
                 $ = cheerio.load(page);
-                elemList = $('#content td a:contains("TPL 101")');
-                assert.lengthOf(elemList, shouldContainTPL101 ? 1 : 0);
+                elemList = $('#content td a:contains("XC 101")');
+                assert.lengthOf(elemList, shouldContainXC101 ? 1 : 0);
             } catch (err) {
                 return callback(err);
             }
@@ -119,7 +119,7 @@ describe('Access control', function() {
     };
 
     describe('1. GET /pl', function() {
-        it('as student should not contain TPL 101', function(callback) {
+        it('as student should not contain XC 101', function(callback) {
             getPl(cookiesStudent(), false, callback);
         });
     });
@@ -145,13 +145,13 @@ describe('Access control', function() {
     });
 
     describe('4. GET /pl', function() {
-        it('as student should contain TPL 101', function(callback) {
+        it('as student should contain XC 101', function(callback) {
             getPl(cookiesStudent(), true, callback);
         });
-        it('as student in Exam mode before course instance time period should not contain TPL 101', function(callback) {
+        it('as student in Exam mode before course instance time period should not contain XC 101', function(callback) {
             getPl(cookiesStudentExamBeforeCourseInstance(), false, callback);
         });
-        it('as student in Exam mode after course instance time period should not contain TPL 101', function(callback) {
+        it('as student in Exam mode after course instance time period should not contain XC 101', function(callback) {
             getPl(cookiesStudentExamAfterCourseInstance(), false, callback);
         });
     });

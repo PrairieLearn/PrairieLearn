@@ -30,7 +30,7 @@ describe('GET /pl', function() {
     it('should parse', function() {
         $ = cheerio.load(page);
     });
-    it('should contain TPL 101', function() {
-        assert.ok($('td a:contains("TPL 101")').length);
+    it('should contain XC 101', function() {
+        assert.ok($('td a:contains("XC 101")').length);
     });
 });

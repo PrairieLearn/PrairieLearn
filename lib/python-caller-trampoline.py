@@ -16,6 +16,21 @@
 # Exceptions are not caught and so will trigger a process exit with non-zero exit code (signaling an error)
 
 import sys, os, json, importlib, copy, base64, io, matplotlib
+
+
+# This function tries to convert a python object to valid JSON. If an exception
+# is raised, this function prints the object and re-raises the exception. This is
+# helpful because the object - which contains something that cannot be converted
+# to JSON - would otherwise never be displayed to the developer, making it hard to
+# debug the problem.
+def try_dumps(obj, sort_keys=False, allow_nan=False):
+    try:
+        return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)
+    except:
+        print('Error converting this object to json:\n{:s}\n'.format(str(obj)))
+        raise
+
+
 matplotlib.use('PDF')
 
 saved_path = copy.copy(sys.path)
@@ -77,17 +92,17 @@ with open(3, 'w', encoding='utf-8') as outf:
             # should not be returning anything (because 'data' is mutable).
             if (fcn != 'file') and (fcn != 'render'):
                 if val is None:
-                    json_outp = json.dumps({"present": True, "val": args[-1]})
+                    json_outp = try_dumps({"present": True, "val": args[-1]}, allow_nan=False)
                 else:
-                    json_outp_passed = json.dumps({"present": True, "val": args[-1]}, sort_keys=True)
-                    json_outp = json.dumps({"present": True, "val": val}, sort_keys=True)
+                    json_outp_passed = try_dumps({"present": True, "val": args[-1]}, sort_keys=True, allow_nan=False)
+                    json_outp = try_dumps({"present": True, "val": val}, sort_keys=True, allow_nan=False)
                     if json_outp_passed != json_outp:
                         sys.stderr.write('WARNING: Passed and returned value of "data" differ in the function ' + str(fcn) + '() in the file ' + str(cwd) + '/' + str(file) + '.py.\n\n passed:\n  ' + str(args[-1]) + '\n\n returned:\n  ' + str(val) + '\n\nThere is no need to be returning "data" at all (it is mutable, i.e., passed by reference). In future, this code will throw a fatal error. For now, the returned value of "data" was used and the passed value was discarded.')
             else:
-                json_outp = json.dumps({"present": True, "val": val})
+                json_outp = try_dumps({"present": True, "val": val}, allow_nan=False)
         else:
             # the function wasn't present, so report this
-            json_outp = json.dumps({"present": False})
+            json_outp = try_dumps({"present": False}, allow_nan=False)
 
         # make sure all output streams are flushed
         sys.stderr.flush()

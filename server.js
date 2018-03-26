@@ -12,6 +12,7 @@ var https = require('https');
 var blocked = require('blocked-at');
 var onFinished = require('on-finished');
 var uuidv4 = require('uuid/v4');
+var argv = require('yargs-parser') (process.argv.slice(2));
 
 var logger = require('./lib/logger');
 var config = require('./lib/config');
@@ -19,7 +20,7 @@ var load = require('./lib/load');
 var externalGrader = require('./lib/externalGrader');
 var externalGradingSocket = require('./lib/externalGradingSocket');
 var assessment = require('./lib/assessment');
-var sqldb = require('./lib/sqldb');
+var sqldb = require('@prairielearn/prairielib/sql-db');
 var migrations = require('./migrations');
 var sprocs = require('./sprocs');
 var cron = require('./cron');
@@ -27,12 +28,31 @@ var socketServer = require('./lib/socket-server');
 var serverJobs = require('./lib/server-jobs');
 var freeformServer = require('./question-servers/freeform.js');
 
+// If there is only one argument, legacy it into the config option
+if (argv['_'].length == 1) {
+    argv['config'] = argv['_'][0];
+    argv['_'] = [];
+}
+
+if ('h' in argv || 'help' in argv) {
+    var msg = `PrairieLearn command line options:
+    -h, --help                          Display this help and exit
+    --config <filename>
+    <filename> and no other args        Load an alternative config filename
+    --migrate-and-exit                  Run the DB initialization parts and exit
+    --exit                              Run all the initialization and exit
+`;
+
+    console.log(msg); // eslint-disable-line no-console
+    process.exit(0);
+}
+
 if (config.startServer) {
     logger.info('PrairieLearn server start');
 
     var configFilename = 'config.json';
-    if (process.argv.length > 2) {
-        configFilename = process.argv[2];
+    if ('config' in argv) {
+        configFilename = argv['config'];
     }
 
     config.loadConfig(configFilename);
@@ -120,7 +140,6 @@ app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOA
 app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
 app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
 app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
-app.use('/pl/hackillinois', require('./pages/studentHackIllinois/studentHackIllinois'));
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
 app.use(require('./middlewares/logRequest'));
@@ -446,6 +465,14 @@ if (config.startServer) {
             });
         },
         function(callback) {
+            if ('migrate-and-exit' in argv && argv['migrate-and-exit']) {
+                logger.info('option --migrate-and-exit passed, running DB setup and exiting');
+                process.exit(0);
+            } else {
+                callback(null);
+            }
+        },
+        function(callback) {
             cron.init(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
@@ -511,6 +538,7 @@ if (config.startServer) {
             if (config.devMode) {
                 logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort + '/pl');
             }
+            if ('exit' in argv) { logger.info('exit option passed, quitting...'); process.exit(0); }
         }
     });
 }

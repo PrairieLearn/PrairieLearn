@@ -1,10 +1,10 @@
 var ERR = require('async-stacktrace');
 
 var courseDB = require('../lib/course-db');
-var sqldb = require('../lib/sqldb');
+var sqldb = require('@prairielearn/prairielib/sql-db');
 var helperDb = require('./helperDb');
 var syncCourseInfo = require('../sync/fromDisk/courseInfo');
-var sqlLoader = require('../lib/sql-loader');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -49,7 +49,7 @@ describe('sync/fromDisk/courseInfo', function() {
     });
 
     describe('the "pl_courses" table', function() {
-        it('should contain TPL 101', function(callback) {
+        it('should contain XC 101', function(callback) {
             sqldb.queryOneRow(sql.select_course, [], function(err, _result) {
                 if (ERR(err, callback)) return;
                 callback(null);

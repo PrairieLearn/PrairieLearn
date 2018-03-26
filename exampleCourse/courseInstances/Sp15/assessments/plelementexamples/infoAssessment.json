@@ -1,0 +1,40 @@
+{
+    "uuid": "69aa799b-9492-4db2-9102-7753263f3863",
+    "type": "Homework",
+    "title": "PrairieLearn element example gallery",
+    "set": "Homework",
+    "number": "4",
+    "allowAccess": [
+        {
+            "mode": "Public",
+            "credit": 120,
+            "startDate": "2014-04-07T00:00:01",
+            "endDate": "2014-07-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 100,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-07-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 80,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-08-10T23:59:59"
+        },
+        {
+            "mode": "Public",
+            "credit": 50,
+            "startDate": "2014-07-07T00:00:01",
+            "endDate": "2024-09-10T23:59:59"
+        }
+    ],
+    "zones": [
+        {
+            "questions": [
+				{"id": "checkboxExamples",           "points": 2, "maxPoints": 10}
+            ]
+        }
+    ]
+}

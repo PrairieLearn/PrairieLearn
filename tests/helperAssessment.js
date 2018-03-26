@@ -4,8 +4,8 @@ var request = require('request');
 var cheerio = require('cheerio');
 
 var config = require('../lib/config');
-var sqldb = require('../lib/sqldb');
-var sqlLoader = require('../lib/sql-loader');
+var sqldb = require('@prairielearn/prairielib/sql-db');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var res, page, elemList;
@@ -107,8 +107,8 @@ module.exports = {
                 elemList = locals.$('p.lead strong:contains("Exam 1")');
                 assert.lengthOf(elemList, 1);
             });
-            it('should contain "TPL 101"', function() {
-                elemList = locals.$('p.lead strong:contains("TPL 101")');
+            it('should contain "XC 101"', function() {
+                elemList = locals.$('p.lead strong:contains("XC 101")');
                 assert.lengthOf(elemList, 1);
             });
             it('should have a CSRF token', function() {

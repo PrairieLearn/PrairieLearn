@@ -3,6 +3,7 @@ columns
     course_id: bigint not null
     deleted_at: timestamp with time zone
     directory: text
+    external_grading_enable_networking: boolean
     external_grading_enabled: boolean default false
     external_grading_entrypoint: text
     external_grading_files: text[] default ARRAY[]::text[]

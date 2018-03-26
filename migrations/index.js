@@ -3,10 +3,10 @@ var fs = require('fs');
 var path = require('path');
 var async = require('async');
 
-var error = require('../lib/error');
+var error = require('@prairielearn/prairielib/error');
 var logger = require('../lib/logger');
-var sqldb = require('../lib/sqldb');
-var sqlLoader = require('../lib/sql-loader');
+var sqldb = require('@prairielearn/prairielib/sql-db');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 

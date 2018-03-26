@@ -5,10 +5,10 @@ const express = require('express');
 const router = express.Router();
 const SearchString = require('search-string');
 
-const error = require('../../lib/error');
+const error = require('@prairielearn/prairielib/error');
 const paginate = require('../../lib/paginate');
-const sqldb = require('../../lib/sqldb');
-const sqlLoader = require('../../lib/sql-loader');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 

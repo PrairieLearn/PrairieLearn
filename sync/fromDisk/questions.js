@@ -3,9 +3,9 @@ var _ = require('lodash');
 var async = require('async');
 
 var logger = require('../../lib/logger');
-var sqldb = require('../../lib/sqldb');
+var sqldb = require('@prairielearn/prairielib/sql-db');
 var config = require('../../lib/config');
-var sqlLoader = require('../../lib/sql-loader');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -83,7 +83,8 @@ module.exports = {
                         external_grading_image: (q.externalGradingOptions && q.externalGradingOptions.image),
                         external_grading_files: external_grading_files,
                         external_grading_entrypoint: (q.externalGradingOptions && q.externalGradingOptions.entrypoint),
-                        external_grading_timeout: (q.externalGradingOptions && q.externalGradingOptions.timeout)
+                        external_grading_timeout: (q.externalGradingOptions && q.externalGradingOptions.timeout),
+                        external_grading_enable_networking: (q.externalGradingOptions && q.externalGradingOptions.enableNetworking),
                     };
                     sqldb.queryOneRow(sql.insert_question, params, function(err, result) {
                         if (ERR(err, callback)) return;

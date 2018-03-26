@@ -4,10 +4,10 @@ var async = require('async');
 var naturalSort = require('javascript-natural-sort');
 
 var logger = require('../../lib/logger');
-var error = require('../../lib/error');
-var sqldb = require('../../lib/sqldb');
+var error = require('@prairielearn/prairielib/error');
+var sqldb = require('@prairielearn/prairielib/sql-db');
 var config = require('../../lib/config');
-var sqlLoader = require('../../lib/sql-loader');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
