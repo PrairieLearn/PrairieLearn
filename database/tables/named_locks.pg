@@ -1,6 +1,6 @@
 columns
     id: bigint not null default nextval('named_locks_id_seq'::regclass)
-    name: text not null unqiue
+    name: text not null
 
 indexes
     named_locks_pkey: PRIMARY KEY (id)
