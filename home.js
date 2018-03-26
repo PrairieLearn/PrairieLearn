@@ -12,6 +12,7 @@ router.get('/', function(req, res, next) {
         user_id: res.locals.authn_user.user_id,
         is_administrator: res.locals.is_administrator,
         req_date: res.locals.req_date,
+        authz_data: res.locals.authz_data,
     };
     sqldb.queryOneRow(sql.select_home, params, function(err, result) {
         if (ERR(err, next)) return;
@@ -20,10 +21,6 @@ router.get('/', function(req, res, next) {
         res.locals.course_instances = result.rows[0].course_instances;
         res.locals.rules = result.rows[0].aar;
         res.locals.rules_passed = result.rows[0].assessment_access_rules_passed;
-    /*    console.log(res.locals.rules);*/
-  /*  console.log("length", res.locals.rulesPassed.length);*/
-        console.log("rulesPassed", res.locals.rules_passed);
-        console.log("JSON", JSON.stringify(res.locals.rules_passed));
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });

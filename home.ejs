@@ -9,7 +9,7 @@
 
       <% if (devMode) { %>
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white">HackIllinois Mode</div>
+        <div class="card-header bg-primary text-white">Development Mode</div>
         <div class="card-body">
           <p>
             PrairieLearn is running in Development Mode. Click
@@ -39,6 +39,7 @@
       <% if (courses && courses.length > 0) { %>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Courses</div>
+
         <table class="table table-sm table-hover table-striped">
           <tbody>
             <% courses.forEach(function(course) { %>
@@ -52,6 +53,7 @@
             <% }); %>
           </tbody>
         </table>
+
       </div>
       <% } %> <!-- course_instances.length -->
 
@@ -69,6 +71,7 @@
         </div>
 
         <% if (course_instances && course_instances.length == 0) { %>
+
         <% if (devMode) { %>
         <div class="card-body">
           No courses loaded. Click <strong>“Load from disk”</strong>
@@ -80,7 +83,9 @@
           No courses found. Use the “Add or remove courses” button below.
         </div>
         <% } %> <!-- devMode -->
+
         <% } else { %> <!-- course_instances.length -->
+
         <table class="table table-sm table-hover table-striped">
           <tbody>
             <% course_instances.forEach(function(course_instance) { %>
@@ -94,54 +99,85 @@
             <% }); %>
           </tbody>
         </table>
-        <table class="card mb-4">
-          <div class="card-header bg-warning text-white">Upcoming Events</div>
-          <div class="card-body">
-            <p>
-              <strong><center>NEXT DUE:</center></strong>
-                  <% rules.forEach(function(rule) { %>
-                    <a href="<%= plainUrlPrefix %>/course_instance/<%= rule.courseID %>/assessment/<%= rule.assessmentID %>">
-                    <center><%= rule.title %></center>
-                  </a>
-                    <center><%= rule.deadline %></center>
-                  </br>
-                  <% }); %>
-            </p>
-            <p>
-            </p>
-            <p class="mb-0">
-              See
-              the <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/README.md">PrairieLearn
-              documentation</a> for information on creating questions
-              and assessments
-            </p>
-          </div>
-        </table>
-        <table class="card mb-4">
-          <div class="card-header bg-danger text-white">PASSED Events</div>
-          <div class="card-body">
-            <p>
-              <strong><center>PASSED DUE:</center></strong>
-                  <% rules_passed.forEach(function(rule) { %>
-                    <a href="<%= plainUrlPrefix %>/course_instance/<%= rule.courseID %>/assessment/<%= rule.assessmentID %>">
-                    <center><%= rule.title %></center>
-                  </a>
-                    <center><%= rule.deadline %></center>
-                  </br>
-                  <% }); %>
-            </p>
-            <p>
-            </p>
-            <p class="mb-0">
-              See
-              the <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/README.md">PrairieLearn
-              documentation</a> for information on creating questions
-              and assessments
-            </p>
-          </div>
-        </table>
+
         <% } %> <!-- course_instances.length -->
       </div>
+
+      <!--calendar-->
+      <div class="card mb-4">
+      <!--<table class="card mb-4">-->
+        <div class="card-header bg-warning text-white">Due Next</div>
+        <!-- <div class="card-body"> -->
+          <table class="table table-sm table-hover table-striped">
+            <tbody>
+              <td align='left'><strong> Title of Assessment </td></strong>
+              <td align='middle'><strong> Credit Attainable </td></strong>
+              <td align='right'><strong> Due Date </td></strong>
+
+              <% rules.forEach(function(rule) { %>
+                <tr>
+                  <td>
+                    <span class="badge color-<%= rule.color %>">
+                      <%= rule.abb %>
+                    </span>
+
+                    <a href="<%= plainUrlPrefix %>/course_instance/<%= rule.courseID %>/assessment/<%= rule.assessmentID %>">
+                      <%= rule.course_name%>:
+                      <%= rule.title %>
+                    </a>
+                    <td align='middle'><%= rule.string %>
+
+                  </td>
+                  <td align="right">
+                    <%= rule.deadline %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        <!-- </div> -->
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">Passed Due</div>
+          <table class="table table-sm table-hover table-striped">
+            <tbody>
+              <td align='left'><strong> Title of Assessment </td></strong>
+              <td align='middle'><strong> Credit Attainable </td></strong>
+              <td align='right'><strong> Due Date </td></strong>
+              <% rules_passed.forEach(function(rule) { %>
+                <!-- <strong>PASSED DUE:</strong> -->
+                <tr>
+                  <td>
+                    <span class="badge color-<%= rule.color %>">
+                      <%= rule.abb %>
+                    </span>
+
+                    <a href="<%= plainUrlPrefix %>/course_instance/<%= rule.courseID %>/assessment/<%= rule.assessmentID %>">
+
+                      <%= rule.course_name%>:
+                      <%= rule.title %>
+
+                    </a>
+                    <td align='middle'><%= rule.string %>
+
+                  </td>
+                  <td align="right">
+                    <%= rule.deadline %>
+                  </td>
+                </tr>
+            <% }); %>
+          <!-- <p class="mb-0">
+            See
+            the <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/README.md">PrairieLearn
+            documentation</a> for information on creating questions
+            and assessments
+          </p> -->
+        </tbody>
+      </table>
+    </div>
+      <!--calendar-->
+
     </div>
   </body>
 </html>
