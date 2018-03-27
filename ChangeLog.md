@@ -141,6 +141,8 @@
 
   * Change the example course to be available to any institution (Matt West).
 
+  * Change `centos7-plbase` docker image to not use `/PrairieLearn` directory (Matt West).
+
   * Move shared code to PrairieLib (Nathan Walters).
 
   * Remove HackIllinois advertisement (Matt West).
