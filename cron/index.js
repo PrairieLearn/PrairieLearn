@@ -81,14 +81,14 @@ module.exports = {
             } else {
                 setTimeout(check, 100);
             }
-        };
+        }
         check();
     },
 
     queueJobs(jobsList, intervalSec) {
         const that = this;
         function queueRun() {
-            jobTimeouts[intervalSec] = 0
+            jobTimeouts[intervalSec] = 0;
             that.runJobs(jobsList, () => {
                 if (jobTimeouts[intervalSec] == -1) {
                     // someone requested a stop
@@ -117,7 +117,7 @@ module.exports = {
             return tMS;
         }
         function queueRun() {
-            jobTimeouts['daily'] = 0
+            jobTimeouts['daily'] = 0;
             that.runJobs(jobsList, () => {
                 if (jobTimeouts['daily'] == -1) {
                     // someone requested a stop
