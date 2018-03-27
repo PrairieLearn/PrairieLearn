@@ -55,6 +55,8 @@
 
   * Add tags list to question stats CSV (Matt West).
 
+  * Add Redis to support websockets when running with multiple servers (Nathan Walters).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
