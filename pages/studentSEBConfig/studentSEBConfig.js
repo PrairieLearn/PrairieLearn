@@ -1,20 +1,20 @@
-var ERR = require('async-stacktrace');
-var express = require('express');
-var router = express.Router();
-var path = require('path');
+const ERR = require('async-stacktrace');
+const express = require('express');
+const router = express.Router();
+const path = require('path');
 const plist = require('plist');
 const fs = require('fs');
 //const util = require('util');
 const zlib = require('zlib');
 //const crypto = require('crypto');
 const jscryptor = require('jscryptor');
-var _ = require('lodash');
+const _ = require('lodash');
 
-var csrf = require('../../lib/csrf');
-var config = require('../../lib/config');
-var sqldb = require('../../lib/sqldb');
-var sqlLoader = require('../../lib/sql-loader');
-var error = require('../../lib/error');
+const csrf = require('../../lib/csrf');
+const config = require('../../lib/config');
+const sqldb = require('@prairielearn/prairielib').sqlDb;
+const sqlLoader = require('@prairielearn/prairielib').sqlLoader;
+const error = require('@prairielearn/prairielib').error;
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
