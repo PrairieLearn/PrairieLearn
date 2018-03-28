@@ -289,33 +289,33 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
 // which checks the assessment type and calls next() if it's not the right type
 app.use('/pl/course_instance/:course_instance_id/assessments', [
     require('./middlewares/logPageView')('studentAssessments'),
-    require('./middlewares/SEBAssessmentAccess'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessments/studentAssessments'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
     require('./middlewares/logPageView')('studentAssessment'),
-    require('./middlewares/SEBAssessmentAccess'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessmentHomework/studentAssessmentHomework'),
     require('./pages/studentAssessmentExam/studentAssessmentExam'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
     require('./middlewares/logPageView')('studentAssessmentInstance'),
-    require('./middlewares/SEBAssessmentAccess'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
     require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
     // don't use logPageView here, we load it inside the page so it can get the variant_id
-    require('./middlewares/SEBAssessmentAccess'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
 ]);
 if (config.devMode) {
     app.use('/pl/course_instance/:course_instance_id/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
-    app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./middlewares/authzCourseInstanceHasInstructorView'));
+    app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./middlewares/authzCourseInstanceAuthnHasInstructorView'));
     app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 }
 
@@ -325,40 +325,40 @@ app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./page
 
 // clientFiles
 app.use('/pl/course_instance/:course_instance_id/clientFilesCourse', [
-    require('./middlewares/SEBAssessmentAccess'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/clientFilesCourse/clientFilesCourse'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/clientFilesCourseInstance', [
-    require('./middlewares/SEBAssessmentAccess'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesAssessment', [
     require('./middlewares/selectAndAuthzAssessment'),
-    require('./middlewares/SEBAssessmentAccess'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/clientFilesAssessment/clientFilesAssessment'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
-    require('./middlewares/SEBAssessmentAccess'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/clientFilesQuestion/clientFilesQuestion'),
 ]);
 
 // generatedFiles
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
-    require('./middlewares/SEBAssessmentAccess'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentGeneratedFilesQuestion/studentGeneratedFilesQuestion'),
 ]);
 
 // legacy client file paths
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
-    require('./middlewares/SEBAssessmentAccess'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/legacyQuestionFile/legacyQuestionFile'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
-    require('./middlewares/SEBAssessmentAccess'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/legacyQuestionText/legacyQuestionText'),
 ]);
 

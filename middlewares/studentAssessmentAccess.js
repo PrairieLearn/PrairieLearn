@@ -1,14 +1,23 @@
 //var ERR = require('async-stacktrace');
 //var _ = require('lodash');
 //var sha256 = require('crypto-js/sha256');
+const express = require('express');
+var router = express.Router();
+
 var csrf = require('../lib/csrf');
 var config = require('../lib/config');
 
-module.exports = function(req, res, next) {
+var password_timeout = 6; // hours
 
-    //console.log(req.headers);
-    //console.dir('ai', res.locals.assessment_instance);
+router.get('/', function(req, res, next) {
+
+    //console.log(req.cookies);
+    //console.log('ai', res.locals.assessment_instance);
+    //console.log('a', res.locals.assessment);
+    //console.dir(res.locals.authz_result);
+    //console.log(res.locals);
     //var absoluteURL = req.protocol + '://' + req.get('host') + req.originalUrl;
+
 
     if ('x-safeexambrowser-requesthash' in req.headers
         || ('user-agent' in req.headers && req.headers['user-agent'].includes('SEB/2')) ) {
@@ -63,11 +72,54 @@ module.exports = function(req, res, next) {
 
         res.locals.SEBdata = csrf.generateToken(SEBdata, config.secretKey);
 
-        console.dir(res.locals);
         res.locals.SEBUrl = 'seb://' + req.get('host') + '/pl/downloadSEBConfig/';
-        return res.render(__dirname + '/SEBAssessmentAccess.ejs', res.locals);
+        return res.status(401).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+    }
+
+    // Password protect the assessment
+    if ('authz_result' in res.locals
+        && 'password' in res.locals.authz_result
+        && res.locals.authz_result.password) {
+
+        // No password yet case
+        if (req.cookies.pl_assessmentpw == null) {
+            res.locals.passwordMessage = '';
+            return res.status(401).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        }
+
+        // Invalid or expired password case
+        var pwData = csrf.getCheckedData(req.cookies.pl_assessmentpw, config.secretKey,
+                                         {maxAge: password_timeout * 60 * 60 * 1000});
+        if (pwData === null
+            || pwData.password !== res.locals.authz_result.password) {
+            res.clearCookie('pl_assessmentpw');
+            // FIXME Log a bad attempt somewhere
+            res.locals.passwordMessage = 'Password invalid or expired, please try again.';
+            return res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        }
+
+        // Successful password case: falls through
     }
 
     // Pass-through for everything else
     next();
-};
+});
+
+router.post('/', function(req, res, next) {
+
+    // For password protected things:
+    if ('authz_result' in res.locals
+        && 'password' in res.locals.authz_result
+        && res.locals.authz_result.password) {
+
+        if (req.body.__action == 'assessmentPassword') {
+            var pwCookie = csrf.generateToken({password: req.body.password}, config.secretKey);
+            res.cookie('pl_assessmentpw', pwCookie);
+            return res.redirect(req.originalUrl);
+        }
+    }
+
+    // Fallthrough for the middleware
+    next();
+});
+module.exports = router;

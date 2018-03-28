@@ -55,7 +55,6 @@ var tmp_upgrade = function(locals, callback) {
 
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
-    console.log(req.originalUrl);
     tmp_upgrade(res.locals, function(err) {
         if (ERR(err, next)) return;
 

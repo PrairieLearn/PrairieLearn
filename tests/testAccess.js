@@ -79,6 +79,12 @@ describe('Access control', function() {
         return cookies;
     };
 
+/*    var cookiesStudentExamWithPassword = function() {
+        var cookies = cookiesStudentExam();
+        cookies.setCookie(request.cookie('pl_requested_date=2301-06-13T13:12:00Z'), siteUrl);
+        return cookies;
+    }; */
+
     var cookiesStudentExamAfterAssessment = function() {
         var cookies = cookiesStudentExam();
         cookies.setCookie(request.cookie('pl_requested_date=2350-06-13T13:12:00Z'), siteUrl);
@@ -277,12 +283,14 @@ describe('Access control', function() {
         it('as student in Exam mode before time period should return 500', function(callback) {
             postAssessment(cookiesStudentExamBeforeAssessment(), true, 500, callback);
         });
-        it('in Exam mode after time period should return 500', function(callback) {
+        it('as student in Exam mode after time period should return 500', function(callback) {
             postAssessment(cookiesStudentExamAfterAssessment(), true, 500, callback);
         });
+/* need to move password protection out to its own tests
         it('as student in Exam mode without password should return 500', function(callback) {
             postAssessment(cookiesStudentExam(), false, 500, callback);
         });
+*/
         it('as student in Exam mode should load successfully', function(callback) {
             postAssessment(cookiesStudentExam(), true, 200, callback);
         });
@@ -435,7 +443,7 @@ describe('Access control', function() {
 
     /**********************************************************************/
 
-    describe('insert PrairieSchedule course link', function() {
+    describe('13. Insert PrairieSchedule course link', function() {
         it('should succeed', function(callback) {
             sqldb.query(sql.insert_ps_course_link, [], function(err, _result) {
                 if (ERR(err, callback)) return;
@@ -447,7 +455,7 @@ describe('Access control', function() {
         });
     });
 
-    describe('13. insert PrairieSchedule reservation', function() {
+    describe('14. Insert PrairieSchedule reservation', function() {
         it('should succeed', function(callback) {
             var params = {user_id: user.user_id};
             sqldb.query(sql.insert_ps_reservation, params, function(err, _result) {
@@ -466,7 +474,7 @@ describe('Access control', function() {
         });
     });
 
-    describe('14. check in PrairieSchedule reservation', function() {
+    describe('15. check in PrairieSchedule reservation', function() {
         it('should succeed', function(callback) {
             sqldb.query(sql.update_ps_reservation_to_checked_in, [], function(err, _result) {
                 if (ERR(err, callback)) return;

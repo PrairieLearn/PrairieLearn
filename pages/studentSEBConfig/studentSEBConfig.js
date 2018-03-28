@@ -52,6 +52,7 @@ var load_default_config = function(adata, req) {
     defobj['browserUserAgentMac'] = 1;
     defobj['browserUserAgentWinTouchMode'] = 1;
     //defobj['sendBrowserExamKey'] = true;
+    defobj['removeBrowserProfile'] = true;
 
     defobj['URLFilterEnable'] = true;
     var allowedURLs = [
