@@ -17,23 +17,19 @@
 
                     <p>This assessment is closed and is no longer available.
 
-                <% } else if (authz_result.mode == 'SEB') { %>
+                <% } else if (prompt == 'SEB') { %>
 
                     <p class="lead text-center">
                         This <%= assessment.type.toLowerCase() %> is only available when running the Safe Exam Browser.
                     </p>
-                    <% if (authz_data.mode == 'SEB') { %>
-                        <p class="lead text-center">Invalid access. Are you running the SEB config from a different exam?</p>
-                    <% } %>
 
                     <p><a href="https://safeexambrowser.org/download_en.html">Download instructions for the Safe Exam Browser.</a></p>
 
-                    <a class="btn btn-lg btn-success" href="<%= SEBUrl %>?data=<%= SEBdata %>"
-                    >
+                    <a class="btn btn-lg btn-success" href="<%= SEBUrl %>?data=<%= SEBdata %>">
                         Launch into the Safe Exam Browser
                     </a>
 
-                <% } else if (authz_result.password) { %>
+                <% } else if (prompt == 'password') { %>
 
                     <p class="lead text-center">
                     This <%= assessment.type.toLowerCase() %> is protected with a password.
