@@ -2,6 +2,7 @@
 
 cd /PrairieLearn
 
+
 if [[ -f /efs/container/config.json ]] ; then
     # we are running in production mode
     node server --config /efs/container/config.json
