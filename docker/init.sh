@@ -6,7 +6,7 @@ cd /PrairieLearn
 if [[ -f /efs/container/config.json ]] ; then
     # we are running in production mode
     node server --config /efs/container/config.json
-elif
+else
     # we are running in local development mode
     docker/start_postgres.sh
 
