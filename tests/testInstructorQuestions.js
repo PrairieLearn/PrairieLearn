@@ -5,8 +5,8 @@ var request = require('request');
 var cheerio = require('cheerio');
 
 var config = require('../lib/config');
-var sqldb = require('../lib/sqldb');
-var sqlLoader = require('../lib/sql-loader');
+var sqldb = require('@prairielearn/prairielib/sql-db');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var helperServer = require('./helperServer');

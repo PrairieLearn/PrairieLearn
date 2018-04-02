@@ -4,6 +4,7 @@
     "version": "2.10.0",
     "private": true,
     "dependencies": {
+        "@prairielearn/prairielib": "^1.0.3",
         "adm-zip": "^0.4.7",
         "archiver": "^2.1.0",
         "async": "^2.6.0",
@@ -45,16 +46,19 @@
         "pg": "^7.4.0",
         "popper.js": "^1.13.0",
         "qrcode-svg": "^1.0.0",
+        "redis": "^2.8.0",
         "requirejs": "^2.3.5",
         "s3-upload-stream": "^1.0.7",
         "search-string": "^3.0.0",
         "serve-favicon": "^2.4.5",
         "socket.io": "^2.0.4",
         "socket.io-client": "^2.0.4",
+        "socket.io-redis": "^5.2.0",
         "tar": "^4.2.0",
         "three": "^0.89.0",
         "uuid": "^3.2.1",
-        "winston": "^2.4.0"
+        "winston": "^2.4.0",
+        "yargs-parser": "^9.0.2"
     },
     "devDependencies": {
         "chai": "^4.1.2",

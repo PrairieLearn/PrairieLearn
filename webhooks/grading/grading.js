@@ -7,8 +7,8 @@ const AWS = require('aws-sdk');
 const logger = require('../../lib/logger');
 const assessment = require('../../lib/assessment');
 const externalGraderCommon = require('../../lib/externalGraderCommon');
-const sqldb = require('../../lib/sqldb');
-const sqlLoader = require('../../lib/sql-loader');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 const sql = sqlLoader.loadSqlEquiv(__filename);
 const externalGradingSocket = require('../../lib/externalGradingSocket');
 

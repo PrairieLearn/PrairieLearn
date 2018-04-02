@@ -47,7 +47,7 @@ def render(element_html, element_index, data):
     uuid = pl.get_uuid()
     raw_file_names = pl.get_string_attrib(element, 'file_names', '')
     file_names = get_file_names_as_array(raw_file_names)
-    file_names_json = json.dumps(file_names)
+    file_names_json = json.dumps(file_names, allow_nan=False)
     answer_name = get_answer_name(raw_file_names)
 
     html_params = {'name': answer_name, 'file_names': file_names_json, 'uuid': uuid}
@@ -57,7 +57,7 @@ def render(element_html, element_index, data):
         # Filter out any files not part of this element's file_names
         filtered_files = [x for x in files if x.get('name', '') in file_names]
         html_params['has_files'] = True
-        html_params['files'] = json.dumps(filtered_files)
+        html_params['files'] = json.dumps(filtered_files, allow_nan=False)
     else:
         html_params['has_files'] = False
 

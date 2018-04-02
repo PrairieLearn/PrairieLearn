@@ -5,7 +5,7 @@ ENV PYTHONIOENCODING=UTF-8
 
 # r-requirements.R contains a list of R packages
 # that should be installed from the Rstudio CRAN mirror
-COPY r-requirements.R /PrairieLearn/
+COPY r-requirements.R /
 
 RUN yum -y install \
         epel-release \
@@ -16,6 +16,7 @@ RUN yum -y install \
     && yum -y install \
         postgresql96-server \
         postgresql96-contrib \
+        redis \
         nodejs \
         python36u \
         python36u-pip \
@@ -31,14 +32,15 @@ RUN yum -y install \
         R \
         ImageMagick           `# for PrairieDraw label images` \
         texlive               `# for PrairieDraw label images` \
+        git                   `# for coveralls` \
     && yum clean all \
     && mkdir /var/postgres && chown postgres:postgres /var/postgres \
     && su postgres -c "/usr/pgsql-9.6/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log" \
     && ln -s /usr/bin/python3.6 /usr/bin/python3 \
-    && chmod +x /PrairieLearn/r-requirements.R `# Install a list of R packages to work with` \
+    && chmod +x /r-requirements.R `# Install a list of R packages to work with` \
     && mkdir -p /usr/share/doc/R-3.4.3/html/ \
     && touch /usr/share/doc/R-3.4.3/html/packages.html \
     && touch /usr/share/doc/R-3.4.3/html/R.css \
-    && su root -c "Rscript /PrairieLearn/r-requirements.R"
+    && su root -c "Rscript /r-requirements.R"
 
 CMD /bin/bash

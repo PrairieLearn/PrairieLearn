@@ -1,35 +1,6 @@
-<nav class="navbar navbar-dark bg-dark navbar-expand-md mb-4">
-  <a class="navbar-brand" href="<%= plainUrlPrefix %>">
-    <span class="navbar-brand-label">PrairieLearn</span>
-    <span class="navbar-brand-hover-label text-secondary">Go home <i class="fa fa-angle-right" aria-hidden="true"></i></span>
-  </a>
-  </div>
-  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target=".navbar-collapse" aria-expanded="false" aria-label="Toggle navigation">
-    <span class="navbar-toggler-icon"></span>
-  </button>
-  <div class="collapse navbar-collapse">
-    <ul class="nav navbar-nav mr-auto" id="main-nav">
 
       <% if (is_administrator) { %>
       <li class="nav-item <% if (navPage == "admin") { %>active<% } %>"><a class="nav-link" href="<%= plainUrlPrefix %>/administrator/overview">Admin</a></li>
       <% } %>
 
     </ul>
-
-    <ul class="nav navbar-nav" id="username-nav">
-      <li class="nav-item mb-2 mb-md-0 mr-2 <% if (navPage == "effective") { %>active<% } %>">
-        <% if (typeof authn_user == 'undefined') { %>
-        <span class="navbar-text">(No user)</span>
-        <% } else if (is_administrator) { %>
-        <span class="navbar-text"><%= authn_user.name %> (Administrator)</span>
-        <% } else { // is_administrator %>
-        <span class="navbar-text"><%= authn_user.name %></span>
-        <% } // is_administrator %>
-      </li>
-      <% if (devMode) { %>
-      <li class="mb-2 mb-md-0 mr-2 "><a class="btn btn-success" href="<%= urlPrefix %>/loadFromDisk">Load from disk</a></li>
-      <% } %>
-      <li><%- include('logout'); %></li>
-    </ul>
-  </div>
-</nav>

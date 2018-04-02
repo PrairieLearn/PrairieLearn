@@ -1,9 +1,15 @@
-var ERR = require('async-stacktrace');
-var async = require('async');
-var _ = require('lodash');
+const ERR = require('async-stacktrace');
+const async = require('async');
+const _ = require('lodash');
 
-var logger = require('../lib/logger');
-var config = require('../lib/config');
+const logger = require('../lib/logger');
+const config = require('../lib/config');
+
+// jobTimeouts meaning (used by stop()):
+//     Timeout object = timeout is running and can be canceled
+//     0 = job is currently running
+//     -1 = stop requested
+const jobTimeouts = {};
 
 module.exports = {
     init(callback) {
@@ -57,14 +63,42 @@ module.exports = {
         callback(null);
     },
 
+    stop(callback) {
+        _.forEach(jobTimeouts, (timeout, interval) => {
+            if (!_.isInteger(timeout)) {
+                // current pending timeout, which can be canceled
+                clearTimeout(timeout);
+                delete jobTimeouts[interval];
+            } else if (timeout == 0) {
+                // job is currently running, request that it stop
+                jobTimeouts[interval] = -1;
+            }
+        });
+
+        function check() {
+            if (_.size(jobTimeouts) == 0) {
+                callback(null);
+            } else {
+                setTimeout(check, 100);
+            }
+        }
+        check();
+    },
+
     queueJobs(jobsList, intervalSec) {
         const that = this;
         function queueRun() {
+            jobTimeouts[intervalSec] = 0;
             that.runJobs(jobsList, () => {
-                setTimeout(queueRun, intervalSec * 1000);
+                if (jobTimeouts[intervalSec] == -1) {
+                    // someone requested a stop
+                    delete jobTimeouts[intervalSec];
+                    return;
+                }
+                jobTimeouts[intervalSec] = setTimeout(queueRun, intervalSec * 1000);
             });
         }
-        setTimeout(queueRun, intervalSec * 1000);
+        jobTimeouts[intervalSec] = setTimeout(queueRun, intervalSec * 1000);
     },
 
     queueDailyJobs(jobsList) {
@@ -83,11 +117,17 @@ module.exports = {
             return tMS;
         }
         function queueRun() {
+            jobTimeouts['daily'] = 0;
             that.runJobs(jobsList, () => {
-                setTimeout(queueRun, timeToNextMS());
+                if (jobTimeouts['daily'] == -1) {
+                    // someone requested a stop
+                    delete jobTimeouts['daily'];
+                    return;
+                }
+                jobTimeouts['daily'] = setTimeout(queueRun, timeToNextMS());
             });
         }
-        setTimeout(queueRun, timeToNextMS());
+        jobTimeouts['daily'] = setTimeout(queueRun, timeToNextMS());
     },
 
     runJobs(jobsList, callback) {

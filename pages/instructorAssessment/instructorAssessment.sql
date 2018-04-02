@@ -18,11 +18,27 @@ question_scores AS (
         avg(aq.mean_question_score) AS question_score
     FROM
         assessment_questions AS aq
+    WHERE
+        aq.assessment_id = $assessment_id
     GROUP BY
         aq.question_id
+),
+tags_list AS (
+    SELECT
+        aq.id AS assessment_question_id,
+        string_agg(tags.name, ';' ORDER BY tags.number) AS tags_string
+    FROM
+        assessment_questions AS aq
+        JOIN questions AS q ON (q.id = aq.question_id)
+        JOIN question_tags AS qt ON (qt.question_id = q.id)
+        JOIN tags ON (tags.id = qt.tag_id)
+    WHERE
+        aq.assessment_id = $assessment_id
+    GROUP BY
+        aq.id
 )
 SELECT
-    aq.*,q.qid,q.title,row_to_json(top) AS topic,
+    aq.*,q.qid,q.title,tags_list.tags_string,row_to_json(top) AS topic,
     q.id AS question_id,
     admin_assessment_question_number(aq.id) as number,
     tags_for_question(q.id) AS tags,
@@ -44,6 +60,7 @@ FROM
     JOIN topics AS top ON (top.id = q.topic_id)
     JOIN assessments AS a ON (a.id = aq.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    LEFT JOIN tags_list ON (tags_list.assessment_question_id = aq.id)
     LEFT JOIN issue_count AS ic ON (ic.question_id = q.id)
     LEFT JOIN question_scores ON (question_scores.question_id = q.id)
 WHERE
