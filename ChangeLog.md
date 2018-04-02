@@ -49,6 +49,14 @@
 
   * Add demo question showcasing all options for `pl_checkbox` (James Balamuta).
 
+  * Add example of how to use PL to learn student names (Tim Bretl).
+
+  * Add exception handling to python caller to display what can't be converted to valid JSON (Tim Bretl).
+
+  * Add tags list to question stats CSV (Matt West).
+
+  * Add Redis to support websockets when running with multiple servers (Nathan Walters).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
@@ -93,6 +101,12 @@
 
   * Fix navbar role switching button text (Dave Mussulman).
 
+  * Fix all calls of `json.dumps` to make them produce valid JSON (Tim Bretl).
+
+  * Fix error when rendering question score panel (Nathan Walters).
+
+  * Fix questions without tags not displaying on instructor assessment page (Jake Bailey).
+
   * Change to Bootstrap 4 (Nathan Walters).
 
   * Change to NodeJS 8.x LTS (Matt West).
@@ -128,6 +142,10 @@
   * Change the example course to be available to any institution (Matt West).
   
   * Change the HTML element documentation to list elements under two categories with example links (James Balamuta).
+
+  * Change `centos7-plbase` docker image to not use `/PrairieLearn` directory (Matt West).
+
+  * Move shared code to PrairieLib (Nathan Walters).
 
   * Remove HackIllinois advertisement (Matt West).
 

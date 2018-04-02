@@ -3,7 +3,7 @@ var _ = require('lodash');
 var async = require('async');
 
 var courseDB = require('../lib/course-db');
-var sqldb = require('../lib/sqldb');
+var sqldb = require('@prairielearn/prairielib/sql-db');
 
 var syncCourseInfo = require('./fromDisk/courseInfo');
 var syncCourseInstances = require('./fromDisk/courseInstances');

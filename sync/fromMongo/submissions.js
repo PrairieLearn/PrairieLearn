@@ -4,7 +4,7 @@ var async = require('async');
 var moment = require('moment-timezone');
 var csvStringify = require('csv').stringify;
 
-var sqldb = require('../../lib/sqldb');
+var sqldb = require('@prairielearn/prairielib/sql-db');
 var config = require('../../lib/config');
 var db = require('../../lib/db');
 

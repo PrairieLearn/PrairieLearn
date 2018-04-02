@@ -86,7 +86,7 @@ if __name__ == '__main__':
         grading_result['tests'] = results
         grading_result['score'] = float(earned_points) / float(max_points)
         grading_result['succeeded'] = True
-        print(json.dumps(grading_result))
+        print(json.dumps(grading_result, allow_nan=False))
 
         with open('results.json', mode='w') as out:
             json.dump(grading_result, out)

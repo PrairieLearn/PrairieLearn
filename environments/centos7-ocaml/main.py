@@ -103,7 +103,7 @@ def finish(succeeded, info):
             final_data['event'] = 'grading_result'
             final_data['job_id'] = info['job_id']
 
-            r = requests.post(info['webhook_url'], data=json.dumps(final_data), headers=headers)
+            r = requests.post(info['webhook_url'], data=json.dumps(final_data, allow_nan=False), headers=headers)
 
     # We're all done now.
     sys.exit(0 if succeeded else 1)
@@ -204,7 +204,7 @@ def main():
             final_data['event'] = 'grading_start'
             final_data['job_id'] = info['job_id']
 
-            r = requests.post(info['webhook_url'], data=json.dumps(final_data), headers=headers)
+            r = requests.post(info['webhook_url'], data=json.dumps(final_data, allow_nan=False), headers=headers)
 
         # Load the job archive from S3
         jobs_bucket = info['jobs_bucket']

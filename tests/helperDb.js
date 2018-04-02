@@ -2,10 +2,9 @@ var ERR = require('async-stacktrace');
 var async = require('async');
 var pg = require('pg');
 
-var sqldb = require('../lib/sqldb');
+var sqldb = require('@prairielearn/prairielib/sql-db');
 var migrations = require('../migrations');
 var sprocs = require('../sprocs');
-var cron = require('../cron');
 
 var postgresqlUser = 'postgres';
 var postgresqlDatabase = 'pltest';
@@ -66,12 +65,6 @@ module.exports = {
             },
             function(callback) {
                 sprocs.init(function(err) {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            },
-            function(callback) {
-                cron.init(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });

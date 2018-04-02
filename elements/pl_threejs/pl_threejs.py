@@ -180,7 +180,7 @@ def render(element_html, element_index, data):
             'tol_translation': '{:.2f}'.format(pl.get_float_attrib(element, 'tol_translation', 0.5)),
             'tol_rotation': '{:.1f}'.format(pl.get_float_attrib(element, 'tol_rotation', 5)),
             'default_is_python': True,
-            'options': json.dumps(options)
+            'options': json.dumps(options, allow_nan=False)
         }
 
         with open('pl_threejs.mustache', 'r', encoding='utf-8') as f:
@@ -215,7 +215,7 @@ def render(element_html, element_index, data):
             'show_toggle': False,
             'show_pose': show_pose,
             'default_is_python': True,
-            'options': json.dumps(options)
+            'options': json.dumps(options, allow_nan=False)
         }
 
         partial_score = data['partial_scores'].get(answer_name, None)
@@ -291,7 +291,7 @@ def render(element_html, element_index, data):
             'show_toggle': False,
             'show_pose': show_pose,
             'default_is_python': True,
-            'options': json.dumps(options)
+            'options': json.dumps(options, allow_nan=False)
         }
 
         with open('pl_threejs.mustache', 'r', encoding='utf-8') as f:
@@ -446,7 +446,7 @@ def parse_correct_answer(f, a):
 
 
 def dict_to_b64(d):
-    return base64.b64encode(json.dumps(d).encode('utf-8')).decode()
+    return base64.b64encode(json.dumps(d, allow_nan=False).encode('utf-8')).decode()
 
 
 def b64_to_dict(b64):
