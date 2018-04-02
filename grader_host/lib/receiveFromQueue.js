@@ -67,10 +67,14 @@ module.exports = function(sqs, queueUrl, receiveCallback, doneCallback) {
         },
         (callback) => {
             const timeout = parsedMessage.timeout || config.defaultTimeout;
+            // Add additional time to account for work that PG has to do:
+            // downloading/uploading files, etc. This wasn't scientifically
+            // chosen at all.
+            const newTimeout = timeout + 10;
             const visibilityParams = {
                 QueueUrl: queueUrl,
                 ReceiptHandle: receiptHandle,
-                VisibilityTimeout: timeout + 10,
+                VisibilityTimeout: newTimeout,
             };
             sqs.changeMessageVisibility(visibilityParams, (err) => {
                 if (ERR(err, callback)) return;
