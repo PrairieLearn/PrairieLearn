@@ -5,10 +5,10 @@ var router = express.Router();
 var csvStringify = require('csv').stringify;
 
 var async = require('async');
-var error = require('../../lib/error');
+var error = require('@prairielearn/prairielib/error');
 var question = require('../../lib/question');
-var sqldb = require('../../lib/sqldb');
-var sqlLoader = require('../../lib/sql-loader');
+var sqldb = require('@prairielearn/prairielib/sql-db');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 var debug = require('debug')('prairielearn:instructorQuestion');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
