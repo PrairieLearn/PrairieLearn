@@ -83,7 +83,7 @@ app.use(function(req, res, next) {res.locals.navbarType = 'plain'; next();});
 app.use(function(req, res, next) {res.locals.devMode = config.devMode; next();});
 app.use(function(req, res, next) {res.locals.is_administrator = false; next();});
 
-if (!config.devMode) {
+if (config.hasAzure) {
     var OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
     const azureConfig = {
         identityMetadata: config.azureIdentityMetadata,
@@ -113,6 +113,11 @@ app.use(bodyParser.urlencoded({extended: false, limit: 200 * 1024}));
 app.use(cookieParser());
 app.use(passport.initialize());
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+
+if ('localRootFilesDir' in config) { 
+    logger.info(`localRootFilesDir: Mapping ${config.localRootFilesDir} into /`);
+    app.use(express.static(config.localRootFilesDir));
+}
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax')));
 app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));

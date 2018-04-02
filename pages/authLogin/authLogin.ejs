@@ -2,19 +2,52 @@
 <html>
   <head>
     <%- include('../partials/head'); %>
+    <style>
+td {
+    vertical-align: top;
+    padding-right: 1em;
+}
+
+.googlebutton { background: url(/images/btn_google_signin_light_normal_web.png) }
+.googlebutton:hover { background: url(/images/btn_google_signin_light_focus_web.png) }
+
+    </style>
   </head>
   <body>
-    <div class="container">
-      <div class="jumbotron text-center">
-        <h1>PrairieLearn</h1>
-        <p class="lead">An online system for problem-driven learning.</p>
-        <p>
-          <a class="btn btn-primary btn-lg" href="/pl/shibcallback" role="button">University of Illinois login</a>
-          <a class="btn btn-info btn-lg" href="/pl/oauth2login" role="button">Google login</a>
-          <a class="btn btn-success btn-lg" href="/pl/azure_login" role="button">INTL ID login</a>
-        </p>
-      </div>
-    <%- include('../partials/advertisement'); %>
-    </div>
+      <div class="container">
+          <div class="jumbotron">
+              <div class="text-center">
+                  <h1>PrairieLearn</h1>
+                  <p class="lead">An online system for problem-driven learning.</p>
+                  <hr>
+              </div>
+              <p>Select a login:
+
+                  <table><tr>
+                      <% if (devMode) { %>
+                          <td><a class="btn btn-success btn-lg" href="/pl" role="button">DevMode by-pass</a></td>
+                          <% } %>
+                          <% if (config.hasShib || showAll) { %>
+                              <td><a class="btn btn-primary" href="/pl/shibcallback" role="button">
+                              <img src="/images/Illinois-Wordmark-Horizontal-Full-Color-RGB.png" height="50">
+                              </a></td>
+                          <% } %>
+                          <% if (config.hasOauth || showAll) { %>
+                              <td><a class="" href="/pl/oauth2login" role="button">
+                              <img src="/images/btn_google_signin_light_normal_web.png">
+                              </a></td>
+                          <% } %>
+                          <% if (config.hasAzure || showAll) { %>
+                              <td class="text-left"><a class="" href="/pl/azure_login" role="button">
+                              <img src="/images/sign-in-with-microsoft-light.png"></a>
+                              <ul><li>Work or school accounts</li>
+                              <li>INTL ID</li>
+                              </ul>
+                              </td>
+                          <% } %>
+                  </tr></table>
+              </div>
+              <%- include('../partials/advertisement'); %>
+         </div>
   </body>
 </html>
