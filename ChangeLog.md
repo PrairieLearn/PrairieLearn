@@ -93,6 +93,7 @@
   * Add support for running in production inside Docker (Matt West).
 
   * Add submission info modal with external grading stats (Nathan Walters).
+  * Add configurable authentication sources menu (Dave Mussulman).
 
   * Fix broken file upload element (Nathan Walters).
 
