@@ -35,7 +35,7 @@
       <% } %>
 
       <%- include('../partials/advertisement'); %>
-      
+
       <% if (courses && courses.length > 0) { %>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">Courses</div>
@@ -55,7 +55,7 @@
         </table>
 
       </div>
-      <% } %> <!-- course_instances.length -->
+      <% } %>
 
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -78,13 +78,13 @@
           above and then click <strong>“Home”</strong> to come back to
           this page.
         </div>
-        <% } else { %> <!-- devMode -->
+        <% } else { %>
         <div class="card-body">
           No courses found. Use the “Add or remove courses” button below.
         </div>
-        <% } %> <!-- devMode -->
+        <% } %>
 
-        <% } else { %> <!-- course_instances.length -->
+        <% } else { %>
 
         <table class="table table-sm table-hover table-striped">
           <tbody>
@@ -100,8 +100,79 @@
           </tbody>
         </table>
 
-        <% } %> <!-- course_instances.length -->
+        <% } %>
       </div>
+
+
+      <div class="card mb-4">
+
+        <div class="card-header bg-warning text-white">Due Next</div>
+
+          <table class="table table-sm table-hover table-striped">
+            <tbody>
+              <td align='left'><strong> Title of Assessment </td></strong>
+              <td align='middle'><strong> Credit Attainable </td></strong>
+              <td align='right'><strong> Due Date </td></strong>
+
+              <% rules.forEach(function(rule) { %>
+                <tr>
+                  <td>
+                    <span class="badge color-<%= rule.color %>">
+                      <%= rule.abb %>
+                    </span>
+
+                    <a href="<%= plainUrlPrefix %>/course_instance/<%= rule.courseID %>/assessment/<%= rule.assessmentID %>">
+                      <%= rule.course_name%>:
+                      <%= rule.title %>
+                    </a>
+                    <td align='middle'><%= rule.string %>
+
+                  </td>
+                  <td align="right">
+                    <%= rule.deadline %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+
+      </div>
+
+      <div class="card mb-4">
+        <div class="card-header bg-secondary text-white">Passed Due</div>
+          <table class="table table-sm table-hover table-striped">
+            <tbody>
+              <td align='left'><strong> Title of Assessment </td></strong>
+              <td align='middle'><strong> Credit Attainable </td></strong>
+              <td align='right'><strong> Due Date </td></strong>
+              <% rules_passed.forEach(function(rule) { %>
+
+                <tr>
+                  <td>
+                    <span class="badge color-<%= rule.color %>">
+                      <%= rule.abb %>
+                    </span>
+
+                    <a href="<%= plainUrlPrefix %>/course_instance/<%= rule.courseID %>/assessment/<%= rule.assessmentID %>">
+
+                      <%= rule.course_name%>:
+                      <%= rule.title %>
+
+                    </a>
+                    <td align='middle'><%= rule.string %>
+
+                  </td>
+                  <td align="right">
+                    <%= rule.deadline %>
+                  </td>
+                </tr>
+            <% }); %>
+
+        </tbody>
+      </table>
+    </div>
+
+
     </div>
   </body>
 </html>
