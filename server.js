@@ -161,8 +161,8 @@ if (config.devMode) {
     app.use(require('./middlewares/undefCourseCode'));
 }
 
-// redirect / to /pl
-app.use(/^\/?$/, function(req, res, _next) {res.redirect('/pl');});
+// show authn options at /
+app.use(/^\/?$/, require('./pages/authLogin/authLogin'));
 
 // clear cookies on the homepage to reset any stale session state
 app.use(/^\/pl\/?/, require('./middlewares/clearCookies'));
