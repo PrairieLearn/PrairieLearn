@@ -5,6 +5,7 @@ const path = require('path');
 const Ajv = require('ajv');
 
 const globalLogger = require('./logger');
+const config = require('./config').config;
 
 let messageSchema = null;
 
@@ -63,6 +64,18 @@ module.exports = function(sqs, queueUrl, receiveCallback, doneCallback) {
             } else {
                 return callback(null);
             }
+        },
+        (callback) => {
+            const timeout = parsedMessage.timeout || config.defaultTimeout;
+            const visibilityParams = {
+                QueueUrl: queueUrl,
+                ReceiptHandle: receiptHandle,
+                VisibilityTimeout: timeout + 10,
+            };
+            sqs.changeMessageVisibility(visibilityParams, (err) => {
+                if (ERR(err, callback)) return;
+                return callback(null);
+            });
         },
         (callback) => {
             receiveCallback(parsedMessage, (err) => {

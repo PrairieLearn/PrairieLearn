@@ -44,6 +44,9 @@ properties:
   queueUrl:
     default: null
     envVar: QUEUE_URL
+  defaultTimeout:
+    default: 30
+    envVar: DEFAULT_TIMEOUT
 
   # Postgres config
   postgresqlHost:

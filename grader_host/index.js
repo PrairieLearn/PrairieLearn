@@ -99,7 +99,7 @@ function handleJob(job, done) {
         s3: new AWS.S3(),
         receivedTime,
         logger,
-        job
+        job,
     };
 
     logger.info(`Running job ${job.jobId}!`);
