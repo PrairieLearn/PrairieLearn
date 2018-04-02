@@ -56,6 +56,8 @@
   * Add tags list to question stats CSV (Matt West).
 
   * Add Redis to support websockets when running with multiple servers (Nathan Walters).
+  
+  * Add calendar (Tang Yiliu, Shuhua Zhang, Shroudie Shao, Crystal Wu, Xizi Yang, Chenhao Zhang).
 
   * Fix broken file upload element (Nathan Walters).
 
