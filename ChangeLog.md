@@ -54,6 +54,8 @@
   * Add exception handling to python caller to display what can't be converted to valid JSON (Tim Bretl).
 
   * Add tags list to question stats CSV (Matt West).
+  
+  * Add Calendar to home page (Hackathon 2018 Team Calendar).
 
   * Add Redis to support websockets when running with multiple servers (Nathan Walters).
 
