@@ -62,6 +62,7 @@ var load_default_config = function(adata, req) {
     ];
     defobj['whitelistURLFilter'] = allowedURLs.join(';');
     defobj['urlFilterRegex'] = true;
+    defobj['urlFilterTrustedContent'] = true;
     console.log(defobj.whitelistURLFilter);
 
     defobj['quitURL'] = fullUrlPrefix + '/SEBquit';
