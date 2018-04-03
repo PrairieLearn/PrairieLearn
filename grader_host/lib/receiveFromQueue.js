@@ -5,6 +5,7 @@ const path = require('path');
 const Ajv = require('ajv');
 
 const globalLogger = require('./logger');
+const config = require('./config').config;
 
 let messageSchema = null;
 
@@ -63,6 +64,22 @@ module.exports = function(sqs, queueUrl, receiveCallback, doneCallback) {
             } else {
                 return callback(null);
             }
+        },
+        (callback) => {
+            const timeout = parsedMessage.timeout || config.defaultTimeout;
+            // Add additional time to account for work that PG has to do:
+            // downloading/uploading files, etc. This wasn't scientifically
+            // chosen at all.
+            const newTimeout = timeout + 10;
+            const visibilityParams = {
+                QueueUrl: queueUrl,
+                ReceiptHandle: receiptHandle,
+                VisibilityTimeout: newTimeout,
+            };
+            sqs.changeMessageVisibility(visibilityParams, (err) => {
+                if (ERR(err, callback)) return;
+                return callback(null);
+            });
         },
         (callback) => {
             receiveCallback(parsedMessage, (err) => {
