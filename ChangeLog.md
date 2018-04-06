@@ -107,6 +107,8 @@
 
   * Fix questions without tags not displaying on instructor assessment page (Jake Bailey).
 
+  * Fix daily external grader statistics to split out receive time (Matt West).
+
   * Change to Bootstrap 4 (Nathan Walters).
 
   * Change to NodeJS 8.x LTS (Matt West).
