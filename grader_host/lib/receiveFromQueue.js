@@ -6,11 +6,13 @@ const Ajv = require('ajv');
 
 const globalLogger = require('./logger');
 const config = require('./config').config;
+const sqldb = require('./sqldb');
+const sql = require('./sql-loader').loadSqlEquiv(__filename);
 
 let messageSchema = null;
 
 module.exports = function(sqs, queueUrl, receiveCallback, doneCallback) {
-    let parsedMessage, receiptHandle;
+    let parsedMessage, jobCanceled, receiptHandle;
     async.series([
         (callback) => {
             globalLogger.info('Waiting for next job');
@@ -82,6 +84,26 @@ module.exports = function(sqs, queueUrl, receiveCallback, doneCallback) {
             });
         },
         (callback) => {
+            // If we're configured to use the database, ensure that this job
+            // wasn't canceled in the time since job submission
+            if (!config.useDatabase) return callback(null);
+
+            const params = {
+                grading_job_id: parsedMessage.jobId,
+            };
+            sqldb.queryOneRow(sql.check_job_cancelation, params, (err, result) => {
+                if (ERR(err, callback)) return;
+                jobCanceled = result.rows[0].canceled;
+                callback(null);
+            });
+        },
+        (callback) => {
+            // Don't execute the job if it was canceled
+            if (jobCanceled) {
+                globalLogger.info(`Job ${parsedMessage.jobId} was canceled; skipping job`);
+                return callback(null);
+            }
+
             receiveCallback(parsedMessage, (err) => {
                 globalLogger.error('err!');
                 callback(err);
