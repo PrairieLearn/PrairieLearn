@@ -19,8 +19,11 @@ def to_json(v):
         sympy.Expr (i.e., any scalar sympy expression) -> '_type': 'sympy'
         sympy.Matrix -> '_type': 'sympy_matrix'
 
-    This function does not try to preserve information like the dtype of an
-    ndarray or the assumptions on variables in a sympy expression.
+    If v is an ndarray, this function preserves its dtype (by adding '_dtype' as
+    a third field in the dictionary).
+
+    This function does not try to preserve information like the assumptions on
+    variables in a sympy expression.
 
     If v can be json serialized or does not have a standard type, then it is
     returned without change.
@@ -29,9 +32,9 @@ def to_json(v):
         return {'_type': 'complex', '_value': {'real': v.real, 'imag': v.imag}}
     elif isinstance(v, np.ndarray):
         if np.isrealobj(v):
-            return {'_type': 'ndarray', '_value': v.tolist()}
+            return {'_type': 'ndarray', '_value': v.tolist(), '_dtype': str(v.dtype)}
         elif np.iscomplexobj(v):
-            return {'_type': 'complex_ndarray', '_value': {'real': v.real.tolist(), 'imag': v.imag.tolist()}}
+            return {'_type': 'complex_ndarray', '_value': {'real': v.real.tolist(), 'imag': v.imag.tolist()}, '_dtype': str(v.dtype)}
     elif isinstance(v, sympy.Expr):
         s = [str(a) for a in v.free_symbols]
         return {'_type': 'sympy', '_value': str(v), '_variables': s}
@@ -61,8 +64,11 @@ def from_json(v):
         '_type': 'sympy' -> sympy.Expr
         '_type': 'sympy_matrix' -> sympy.Matrix
 
-    This function does not try to recover information like the dtype of an
-    ndarray or the assumptions on variables in a sympy expression.
+    If v encodes an ndarray and has the field '_dtype', this function recovers
+    its dtype.
+
+    This function does not try to recover information like the assumptions on
+    variables in a sympy expression.
 
     If v does not have the format {'_type':..., '_value':...}, then it is
     returned without change.
@@ -76,12 +82,18 @@ def from_json(v):
                     raise Exception('variable of type complex should have value with real and imaginary pair')
             elif v['_type'] == 'ndarray':
                 if ('_value' in v):
-                    return np.array(v['_value'])
+                    if ('_dtype' in v):
+                        return np.array(v['_value']).astype(v['_dtype'])
+                    else:
+                        return np.array(v['_value'])
                 else:
                     raise Exception('variable of type ndarray should have value')
             elif v['_type'] == 'complex_ndarray':
                 if ('_value' in v) and ('real' in v['_value']) and ('imag' in v['_value']):
-                    return np.array(v['_value']['real']) + np.array(v['_value']['imag']) * 1j
+                    if ('_dtype' in v):
+                        return (np.array(v['_value']['real']) + np.array(v['_value']['imag']) * 1j).astype(v['_dtype'])
+                    else:
+                        return np.array(v['_value']['real']) + np.array(v['_value']['imag']) * 1j
                 else:
                     raise Exception('variable of type complex_ndarray should have value with real and imaginary pair')
             elif v['_type'] == 'sympy':

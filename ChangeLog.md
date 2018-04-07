@@ -57,6 +57,8 @@
 
   * Add Redis to support websockets when running with multiple servers (Nathan Walters).
 
+  * Add support for dtype in `pl.to_json` and `pl.from_json` (Tim Bretl).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
