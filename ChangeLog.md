@@ -3,6 +3,12 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add new student gradebook page (Pratik Chaudhari).
+
+  * Change server.js to inclue route for the student gradebook page (Pratik Chaudhari).
+
+  * Change student navbar to include student gradebook (Pratik Chaudhari).
+
   * Add new issues page style and flexible filtering (Nathan Walters).
 
   * Add `pl_threejs` element (Tim Bretl).
