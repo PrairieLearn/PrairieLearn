@@ -20,6 +20,9 @@ properties:
   useImagePreloading:
     default: false
     envVar: USE_IMAGE_PRELOADING
+  useHealthCheck:
+    default: true
+    envVar: USE_HEALTH_CHECK
 
   # CloudWatch logging
   globalLogGroup:
@@ -36,6 +39,14 @@ properties:
   reportIntervalSec:
     default: 10
     envVar: REPORT_INTERVAL_SEC
+
+  # Health check config
+  healthCheckPort:
+    default: 4000
+    envVar: HEALTH_CHECK_PORT
+  healthCheckInterval: # In milliseconds
+    default: 30000 # 30 seconds
+    envVar: HEALTH_CHECK_INTERVAL
 
   # Queue config
   queueName:

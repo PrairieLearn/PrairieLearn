@@ -13,6 +13,7 @@ const globalLogger = require('./lib/logger');
 const jobLogger = require('./lib/jobLogger');
 const configManager = require('./lib/config');
 const config = require('./lib/config').config;
+const healthCheck = require('./lib/healthCheck');
 const pullImages = require('./lib/pullImages');
 const receiveFromQueue = require('./lib/receiveFromQueue');
 const util = require('./lib/util');
@@ -52,6 +53,13 @@ async.series([
         if (!config.useDatabase || !config.reportLoad) return callback(null);
         load.init(config.maxConcurrentJobs);
         callback(null);
+    },
+    (callback) => {
+        if (!config.useHealthCheck) return callback(null);
+        healthCheck.init((err) => {
+            if (ERR(err, callback)) return;
+            callback(null);
+        });
     },
     (callback) => {
         if (!config.useDatabase || !config.useImagePreloading) return callback(null);
