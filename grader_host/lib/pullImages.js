@@ -18,6 +18,7 @@ module.exports = function(callback) {
             });
         },
         (callback) => {
+            logger.info('Querying for recent images');
             sqldb.query(sql.select_recent_images, [], (err, results) => {
                 if (ERR(err, callback)) return;
                 const images = results.rows.map(row => row.external_grading_image);
@@ -25,6 +26,7 @@ module.exports = function(callback) {
             });
         },
         (images, callback) => {
+            logger.info(`Need to pull ${images.length} images`);
             async.each(images, (image, callback) => {
                 logger.info(`Pulling latest version of "${image}" image`);
                 const repository = util.parseRepositoryTag(image);
