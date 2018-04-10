@@ -23,7 +23,7 @@
 
       <li class="nav item <% if (navPage == "assessments") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/assessments">Assessments</a></li>
 
-      <li class="nav item <% if (navPage == "gradebook") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/gradebook">GradeBook</a></li>
+      <li class="nav item <% if (navPage == "gradebook") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/gradebook">Gradebook</a></li>
 
       <% if (typeof assessment_instance_label != 'undefined' && typeof assessment_instance != 'undefined') { %>
       <li class="nav item <% if (navPage == "assessment_instance") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/assessment_instance/<%= assessment_instance.id %>"><%= assessment_instance_label %></a></li>
