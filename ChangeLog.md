@@ -111,6 +111,8 @@
 
   * Fix daily external grader statistics to split out receive time (Matt West).
 
+  * Fix crash in `pl_external_grader_results` caused by malformed results (Nathan Walters).
+
   * Change to Bootstrap 4 (Nathan Walters).
 
   * Change to NodeJS 8.x LTS (Matt West).
