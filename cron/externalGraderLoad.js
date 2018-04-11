@@ -3,6 +3,7 @@ const _ = require('lodash');
 const AWS = require('aws-sdk');
 
 const config = require('../lib/config');
+const logger = require('../lib/logger');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 
 module.exports = {};
@@ -142,6 +143,7 @@ function setAutoScalingGroupCapacity(stats, callback) {
         DesiredCapacity: stats.desired_instances,
         HonorCooldown: false,
     };
+    logger.verbose('setting AutoScalingGroup capacity', params);
     autoscaling.setDesiredCapacity(params, (err) => {
         if (ERR(err, callback)) return;
         callback(null);
