@@ -16,6 +16,7 @@ CREATE OR REPLACE FUNCTION
         OUT time_limit_expired boolean, -- Is the time limit expired?
         OUT password text,           -- Password (if any) for this assessment.
         OUT mode enum_mode,
+        OUT seb_config JSONB,
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     )
 AS $$
@@ -39,6 +40,7 @@ BEGIN
     password := assessment_result.password;
     access_rules := assessment_result.access_rules;
     mode := assessment_result.mode;
+    seb_config := assessment_result.seb_config;
 
     time_limit_expired := FALSE;
     IF assessment_instance.date_limit IS NOT NULL AND assessment_instance.date_limit < req_date THEN

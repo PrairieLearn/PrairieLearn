@@ -18,15 +18,15 @@ const error = require('@prairielearn/prairielib').error;
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-var check_and_send_assessment_config_seb = function(adata, res, callback) {
+var check_and_send_assessment_config_seb = function(res, callback) {
 
     var filename = 'config.seb';
     var sebPath = path.join(
-        adata.path,
+        res.locals.course.path,
         'courseInstances',
-        adata.ci_short_name,
+        res.locals.course_instance.short_name,
         'assessments',
-        adata.tid
+        res.locals.assessment.tid
     );
 
     if (fs.existsSync(`${sebPath}/${filename}`, 'utf8')) {
@@ -35,39 +35,46 @@ var check_and_send_assessment_config_seb = function(adata, res, callback) {
             if (ERR(err, callback)) return;
         });
     }
-    console.log("no assessment specific config.seb found");
+    //console.log('no assessment specific config.seb found');
     callback(null);
-}
+};
 
-var load_default_config = function(adata, req) {
+var load_default_config = function(res, req) {
     var defobj = plist.parse(fs.readFileSync(__dirname + '/seb-default-exam.seb', 'utf8'));
     //console.log(JSON.stringify(defobj));
 
     var fullUrlPrefix = 'http://' + req.get('host');
 
+    defobj['startURL'] = `${fullUrlPrefix}/pl/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`;
 
-    defobj['startURL'] = `${fullUrlPrefix}/pl/course_instance/${adata.ci_id}/assessment/${adata.a_id}`;
-    defobj['browserUserAgent'] = adata.a_uuid;
+    //console.log(qdata);
+    var hashdata = {
+        assessment_id: res.locals.assessment.id,
+        user_id: res.locals.authz_data.user.user_id,
+    };
+
+    defobj['browserUserAgent'] = 'prairielearn:' + csrf.generateToken(hashdata, config.secretKey);
     defobj['browserUserAgentWinDesktopMode'] = 1;
     defobj['browserUserAgentMac'] = 1;
     defobj['browserUserAgentWinTouchMode'] = 1;
     //defobj['sendBrowserExamKey'] = true;
     defobj['removeBrowserProfile'] = true;
 
-    defobj['URLFilterEnable'] = true;
-    var allowedURLs = [
-        //new RegExp('^' + _.escapeRegExp(fullUrlPrefix) + '\/.*?$'),
-        "^http:\\/\\/endeavour\\.engr\\.illinois\\.edu\\/.*?$",
-        "^https:\/\/shibboleth\.illinois\.edu\/.*?$",
+    defobj['URLFilterRules'] = [
+        {   active: true,
+            regex: false,
+            expression: req.get('host') + '/*', //"endeavour.engr.illinois.edu:3000/*",
+            action: 1 },
+        {   active: true,
+            regex: false,
+            expression: 'shibboleth.illinois.edu/*',
+            action: 1 },
     ];
-    defobj['whitelistURLFilter'] = allowedURLs.join(';');
-    defobj['urlFilterRegex'] = true;
-    defobj['urlFilterTrustedContent'] = true;
-    console.log(defobj.whitelistURLFilter);
 
-    defobj['quitURL'] = fullUrlPrefix + '/SEBquit';
+    defobj['quitURL'] = fullUrlPrefix + '/pl/SEBquit';
+    //defobj['allowQuit'] = false;
 
-    /*
+
     defobj['permittedProcesses'].push({
         active: true,
         autostart: false,
@@ -85,72 +92,98 @@ var load_default_config = function(adata, req) {
         identifier: '',
         arguments: [],
     });
-    */
-    console.log(defobj);
+
+    //console.log(defobj);
     return defobj;
-}
+};
 
 
 router.get('/', function(req, res, next) {
 
     var encodedData = req.query.data || null;
 
-    var data = csrf.getCheckedData(encodedData, config.secretKey, {});
+    var data = csrf.getCheckedData(encodedData, config.secretKey);
 
     if (data === null) {
         return next(error.make(403, 'Unrecognized config request, please try again', res.locals));
     }
 
-    if (!('assessment_id' in data)) {
-        return next(error.make(403, 'Unrecognized config request, please try again', res.locals));
-    }
+    var params = {
+        assessment_id: data.assessment_id || null,
+        course_instance_id: data.course_instance_id,
+        authz_data: data.authz_data,
+        req_date: res.locals.req_date,
+    };
 
-    var params = { assessment_id: data.assessment_id || null };
+    res.locals.authz_data = data.authz_data;
 
-    sqldb.queryZeroOrOneRow(sql.select_assessment, params, function(err, result) {
+    sqldb.queryZeroOrOneRow(sql.select_and_auth, params, function(err, result) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) return next(error.make(403, 'Unrecognized config request, please try again', res.locals));
 
-        var a = result.rows[0];
-        console.log(a);
+        _.assign(res.locals, result.rows[0]);
+        console.log(res.locals);
 
-        check_and_send_assessment_config_seb(a, res, function(err) {
+        check_and_send_assessment_config_seb(res, function(err) {
+            if (ERR(err, next)) return;
 
-            var SEBconfig = load_default_config(a, req);
+            var SEBconfig = load_default_config(res, req);
 
+            var SEBdressing = 'xml';
 
-            // compress the config
-            var SEBinner= zlib.gzipSync(plist.build(SEBconfig));
+            if (SEBdressing == 'xml')
+                return res.send(dressPlainXML(SEBconfig));
 
-            /* Asymm key stuff
-             *
-            // create random symmetric key and encrypt the config with it
-            var sym_key = crypto.randomBytes(32); //.toString('hex').toUpperCase();
-            //console.log(`${sym_key.length} bytes: ${sym_key.toString('hex')}`);
+            if (SEBdressing == 'gzip')
+                return res.send(dressPlainGzip(SEBconfig));
 
-            var payload = jscryptor.Encrypt(SEBconfig, sym_key.toString('base64'));
-            //console.log(payload);
-
-            var publicKey = fs.readFileSync('/PrairieLearn/pages/studentSEBConfig/cert.pem', 'utf8');
-
-            var publicKeyHash = crypto.createHash('sha1').update(publicKey).digest('hex');
-            console.log(publicKeyHash);
-            console.log(publicKeyHash.length);
-
-            var encrypted_sym_key = crypto.publicEncrypt(publicKey, sym_key);
-
-            console.log(`${encrypted_sym_key.length} bytes: ${encrypted_sym_key.toString('hex')}`);
-            */
-
-            var SEBencrypted = jscryptor.Encrypt(SEBinner, 'fishsticks');
-            var SEBheader = Buffer.from('pswd', 'utf8');
-            var SEBfile = Buffer.concat([SEBheader, Buffer.from(SEBencrypted, 'base64')]);
-
-            //console.log(SEBfile);
-            return res.send(zlib.gzipSync(SEBfile));
-
+            if (SEBdressing == 'password')
+                return res.send(dressPassword(SEBconfig, 'fishsticks'));
         });
     });
 });
 
 module.exports = router;
+
+function dressPlainXML(obj) {
+    return plist.build(obj);
+}
+
+function dressPlainGzip(obj) {
+    var SEBinner = zlib.gzipSync(plist.build(obj));
+    var SEBheader = Buffer.from('plnd', 'utf8');
+    var SEBfile = Buffer.concat([SEBheader, Buffer.from(SEBinner, 'base64')]);
+    return zlib.gzipSync(SEBfile);
+}
+
+function dressPassword(obj, password) {
+    var SEBinner = zlib.gzipSync(plist.build(obj));
+    var SEBencrypted = jscryptor.Encrypt(SEBinner, password);
+    var SEBheader = Buffer.from('pswd', 'utf8');
+    var SEBfile = Buffer.concat([SEBheader, Buffer.from(SEBencrypted, 'base64')]);
+    return zlib.gzipSync(SEBfile);
+}
+
+//function dressRSA(obj) {
+    // Not implemented
+
+    /* Asymm key stuff
+     *
+    // create random symmetric key and encrypt the config with it
+    var sym_key = crypto.randomBytes(32); //.toString('hex').toUpperCase();
+    //console.log(`${sym_key.length} bytes: ${sym_key.toString('hex')}`);
+
+    var payload = jscryptor.Encrypt(SEBconfig, sym_key.toString('base64'));
+    //console.log(payload);
+
+    var publicKey = fs.readFileSync('/PrairieLearn/pages/studentSEBConfig/cert.pem', 'utf8');
+
+    var publicKeyHash = crypto.createHash('sha1').update(publicKey).digest('hex');
+    console.log(publicKeyHash);
+    console.log(publicKeyHash.length);
+
+    var encrypted_sym_key = crypto.publicEncrypt(publicKey, sym_key);
+
+    console.log(`${encrypted_sym_key.length} bytes: ${encrypted_sym_key.toString('hex')}`);
+    */
+//}

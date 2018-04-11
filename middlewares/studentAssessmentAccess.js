@@ -7,76 +7,56 @@ var router = express.Router();
 var csrf = require('../lib/csrf');
 var config = require('../lib/config');
 
-var password_timeout = 6; // hours
+var timeout = 24; // hours
 
 router.get('/', function(req, res, next) {
 
-    //console.log(req.cookies);
-    //console.log('ai', res.locals.assessment_instance);
-    //console.log('a', res.locals.assessment);
-    //console.dir(res.locals.authz_result);
     //console.log(res.locals);
-    //var absoluteURL = req.protocol + '://' + req.get('host') + req.originalUrl;
 
-    // Should we trigger mode='SEB'?
-    if ('x-safeexambrowser-requesthash' in req.headers
-        || ('user-agent' in req.headers && req.headers['user-agent'].includes('SEB/2')) ) {
-
-        res.locals.authz_data.mode = 'SEB';
+    // SEB: check BrowserExamKey
+    if ('x-safeexambrowser-requesthash' in req.headers) {
+        checkBrowserExamKeys(res, req.headers['x-safeexambrowser-requesthash']);
     }
 
+    // SEB: check user-agent
+    if ('user-agent' in req.headers) {
+        checkUserAgent(res, req.headers['user-agent']);
+    }
 
-    if ('assessment' in res.locals && 'authz_result' in res.locals
-        && res.locals.authz_result.mode == 'SEB') {
+    // Course Instance view (only show allowed exam)
+    if (!('assessment' in res.locals)) {
+        console.log('In Course Instance Page');
+        //res.locals.authz_data.mode = 'SEB';
+        console.log(res.locals);
+    }
 
-        // Check user-agent header for exam string
-        if (!req.headers['user-agent'].includes(res.locals.assessment.uuid)) {
+    // SafeExamBrowser protect the assesment
+    if ('authz_result' in res.locals &&
+        res.locals.authz_result.mode == 'SEB') {
 
-            // Generate the CSRF-like data to send
-            var SEBdata = {
-                user_id: res.locals.user.user_id,
-                assessment_id: res.locals.assessment.id,
-            };
-
-            res.locals.SEBdata = csrf.generateToken(SEBdata, config.secretKey);
-
-            res.locals.SEBUrl = 'seb://' + req.get('host') + '/pl/downloadSEBConfig/';
-            console.log(res.locals);
-            res.locals.prompt = 'SEB';
-            return res.status(401).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-
-        } else  {
-            console.log(req.headers['user-agent']);
-
-            // matches so fall-through
+        // If any of our auth checks didn't pass, fail (send to download)
+        if (res.locals.authz_data.mode != 'SEB') {
+            return badSEB(req, res);
         }
     }
 
 
     // Password protect the assessment
-    if ('authz_result' in res.locals
-        && 'password' in res.locals.authz_result
-        && res.locals.authz_result.password) {
+    if ('authz_result' in res.locals &&
+        'password' in res.locals.authz_result &&
+        res.locals.authz_result.password) {
 
         // No password yet case
         if (req.cookies.pl_assessmentpw == null) {
-            res.locals.passwordMessage = '';
-            res.locals.prompt = 'password';
-            console.log(res.locals);
-            return res.status(401).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            return badPassword(res, '');
         }
 
         // Invalid or expired password case
         var pwData = csrf.getCheckedData(req.cookies.pl_assessmentpw, config.secretKey,
-                                         {maxAge: password_timeout * 60 * 60 * 1000});
+                                         {maxAge: timeout * 60 * 60 * 1000});
         if (pwData === null
             || pwData.password !== res.locals.authz_result.password) {
-            res.clearCookie('pl_assessmentpw');
-            // FIXME Log a bad attempt somewhere
-            res.locals.passwordMessage = 'Password invalid or expired, please try again.';
-            res.locals.prompt = 'password';
-            console.log(res.locals);
-            return res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+            return badPassword(res, 'Password invalid or expired, please try again.');
         }
 
         // Successful password case: falls through
@@ -94,9 +74,14 @@ router.post('/', function(req, res, next) {
         && res.locals.authz_result.password) {
 
         if (req.body.__action == 'assessmentPassword') {
-            var pwCookie = csrf.generateToken({password: req.body.password}, config.secretKey);
-            res.cookie('pl_assessmentpw', pwCookie);
-            return res.redirect(req.originalUrl);
+
+            if (req.body.password == res.locals.authz_result.password) {
+                var pwCookie = csrf.generateToken({password: req.body.password}, config.secretKey);
+                res.cookie('pl_assessmentpw', pwCookie);
+                return res.redirect(req.originalUrl);
+            } else {
+                return badPassword(res);
+            }
         }
     }
 
@@ -105,16 +90,80 @@ router.post('/', function(req, res, next) {
 });
 module.exports = router;
 
-var notneeded = function() {
+function badPassword(res, msg) {
 
+    res.clearCookie('pl_assessmentpw');
+    // FIXME Log a bad attempt somewhere
+    res.locals.passwordMessage = msg;
+    res.locals.prompt = 'password';
+    //console.log(res.locals);
+    return res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+}
 
-    //console.dir(res.locals.assessment);
-    //console.dir(res.locals.authz_result);
+function badSEB(req, res) {
 
-    //check_browser_exam_keys(res, req)
-    //check_user_agent(res, req)
+    //console.log(res.locals);
 
-    var SEBvalid = false;
+    var SEBdata = {
+        user_id: res.locals.user.user_id,
+        assessment_id: res.locals.assessment.id,
+        course_instance_id: res.locals.course_instance.id,
+        authz_data: res.locals.authz_data,
+    };
+    //console.log('SEBdata', SEBdata);
+    res.locals.SEBdata = csrf.generateToken(SEBdata, config.secretKey);
+    res.locals.SEBUrl = 'seb://' + req.get('host') + '/pl/downloadSEBConfig/';
+    //console.log(res.locals);
+    res.locals.prompt = 'SEB';
+    return res.status(401).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+}
+
+function checkUserAgent(res, userAgent) {
+
+    // Check the useragent has SEB in it
+    if (!userAgent.includes('SEB/2')) return;
+
+    // Check user-agent header for exam string
+    var examHash = userAgent.match(/prairielearn:(.+)$/);
+    if (examHash === null) return;
+    var key = examHash[1];
+
+    var fromSEB = csrf.getCheckedData(key, config.secretKey, {maxAge: timeout * 60 * 60 * 1000});
+    //console.log(fromSEB);
+
+    if ('assessment' in res.locals &&
+        fromSEB.assessment_id == res.locals.assessment.id &&
+        fromSEB.user_id == res.locals.authz_data.user.user_id) {
+
+        res.locals.authz_data.mode = 'SEB';
+    }
+
+    if (!('assessment' in res.locals)) {
+        res.locals.authz_data.mode = 'SEB';
+    }
+
+    res.locals.authz_data.allowed_assessment_id = fromSEB.assessment_id;
+    /*
+    //console.log(res.locals);
+    var fromAssessment = {
+        user_id: res.locals.authz_data.user.user_id,
+        assessment_id: res.locals.assessment.id || null,
+    };
+
+    console.log(fromAssessment);
+
+    if (csrf.checkToken(key, fromAssessment, config.secretKey, {maxAge: timeout * 60 * 60 * 1000})) {
+        //console.log(`key ${key} checks out, setting mode to SEB`);
+        res.locals.authz_data.mode = 'SEB';
+        //res.locals.authz_data.allowed_assessment_id = fromAssessment.ass
+    } else {
+        //console.log(`key ${key} fails check`);
+    }
+    */
+}
+
+function checkBrowserExamKeys(res, key) {
+
     /* FIXME
     _.each(res.locals.authz_result.seb_keys, function(key) {
 
@@ -129,11 +178,4 @@ var notneeded = function() {
         }
     });
     */
-                if (SEBvalid) { return next(); }
-
-
-                //var requesthash = req.headers['x-safeexambrowser-requesthash'] || null;
-
-                // Pass through to next() if one of the keys matches
-
 }
