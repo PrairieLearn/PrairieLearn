@@ -36,8 +36,20 @@ def render(element_html, element_index, data):
                 results_tests = results.get('tests', None)
                 html_params['has_tests'] = bool(results.get('tests', None))
                 if results_tests:
-                    html_params['points'] = sum(test['points'] for test in results_tests)
-                    html_params['max_points'] = sum(test['max_points'] for test in results_tests)
+                    # Let's not assume that people give us a valid array of tests
+                    # If any test is missing either points or max_points, we'll
+                    # disable detailed scores for all questions
+                    tests_missing_points = False
+                    for test in results_tests:
+                        if test.get('points', None) is None:
+                            tests_missing_points = True
+                        if test.get('max_points', None) is None:
+                            tests_missing_points = True
+                    html_params['tests_missing_points'] = tests_missing_points
+
+                    if not tests_missing_points:
+                        html_params['points'] = sum(test['points'] for test in results_tests)
+                        html_params['max_points'] = sum(test['max_points'] for test in results_tests)
 
                     # We need to build a new tests array to massage data a bit
                     tests = []
@@ -49,14 +61,14 @@ def render(element_html, element_index, data):
                         test['message'] = results_test.get('message', None)
                         test['has_output'] = bool(results_test.get('output', None))
                         test['output'] = results_test.get('output', None)
-                        test['max_points'] = results_test.get('max_points')
-                        test['points'] = results_test.get('points')
-                        correct = test['max_points'] == test['points']
-                        test['results_color'] = '#4CAF50' if correct else '#F44336'
-                        test['results_icon'] = 'fa-check' if correct else 'fa-times'
                         test['has_description'] = bool(results_test.get('description', None))
                         test['description'] = results_test.get('description', None)
-
+                        if not tests_missing_points:
+                            test['max_points'] = results_test.get('max_points')
+                            test['points'] = results_test.get('points')
+                            correct = test['max_points'] == test['points']
+                            test['results_color'] = '#4CAF50' if correct else '#F44336'
+                            test['results_icon'] = 'fa-check' if correct else 'fa-times'
                         tests.append(test)
 
                     html_params['tests'] = tests

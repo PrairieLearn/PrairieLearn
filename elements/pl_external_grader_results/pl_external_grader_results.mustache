@@ -40,13 +40,18 @@
       <p>No detailed test results available.</p>
     {{/has_tests}}
     {{#has_tests}}
+      {{#tests_missing_points}}
+        <div class="alert alert-warning">One or more tests were missing <code>points</code> or <code>max_points</code> values, so some detailed feedback and score information has been omitted.</div>
+      {{/tests_missing_points}}
       {{#tests}}
         <div class="card mb-1">
           <div class="card-header d-flex collapsed" data-toggle="collapse" data-target="#card-{{uuid}}-{{index}}" style="cursor: pointer;">
             <div class="mr-auto">
               <span class="card-title">
-                <i class="fa {{results_icon}}" aria-hidden="true" style="color: {{results_color}}"></i>
-                <span style="color: {{results_color}}; margin-left: 5px;"><strong>[{{points}}/{{max_points}}]</strong></span>
+                {{^tests_missing_points}}
+                  <i class="fa {{results_icon}}" aria-hidden="true" style="color: {{results_color}}"></i>
+                  <span style="color: {{results_color}}; margin-left: 5px;"><strong>[{{points}}/{{max_points}}]</strong></span>
+                {{/tests_missing_points}}
                 <span style="margin-left: 5px;">{{name}}</span>
               </span>
             </div>
@@ -59,8 +64,10 @@
               {{#has_description}}
                 <li class="list-group-item"><strong>Description:</strong> {{description}}</li>
               {{/has_description}}
-              <li class="list-group-item"><strong>Max points:</strong> {{max_points}}</li>
-              <li class="list-group-item"><strong>Earned points:</strong> {{points}}</li>
+              {{^tests_missing_points}}
+                <li class="list-group-item"><strong>Max points:</strong> {{max_points}}</li>
+                <li class="list-group-item"><strong>Earned points:</strong> {{points}}</li>
+              {{/tests_missing_points}}
               {{#has_message}}
                 <li class="list-group-item">
                   <div><strong>Message</strong></div>
