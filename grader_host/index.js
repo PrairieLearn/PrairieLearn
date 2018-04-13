@@ -16,6 +16,7 @@ const config = require('./lib/config').config;
 const healthCheck = require('./lib/healthCheck');
 const pullImages = require('./lib/pullImages');
 const receiveFromQueue = require('./lib/receiveFromQueue');
+const timeReporter = require('./lib/timeReporter');
 const util = require('./lib/util');
 const load = require('./lib/load');
 const sqldb = require('./lib/sqldb');
@@ -115,6 +116,7 @@ function handleJob(job, done) {
 
     async.auto({
         context: (callback) => callback(null, context),
+        updateReceivedTime: ['context', updateReceivedTime],
         initDocker: ['context', initDocker],
         initFiles: ['context', initFiles],
         runJob: ['initDocker', 'initFiles', runJob],
@@ -130,6 +132,22 @@ function handleJob(job, done) {
         if (ERR(err, done)) return;
         done(null);
     });
+}
+
+function updateReceivedTime(info, callback) {
+  const {
+    context: {
+      receivedTime,
+      job: {
+          jobId,
+      }
+    }
+  } = info;
+
+  timeReporter.reportReceivedTime(jobId, receivedTime, (err) => {
+      if (ERR(err, callback)) return;
+      callback(null);
+  });
 }
 
 function initDocker(info, callback) {
@@ -329,6 +347,12 @@ function runJob(info, callback) {
             });
         },
         (container, callback) => {
+            timeReporter.reportStartTime(jobId, results.start_time, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null, container);
+            });
+        },
+        (container, callback) => {
             const timeoutId = setTimeout(() => {
                 results.timedOut = true;
                 container.kill();
@@ -338,6 +362,12 @@ function runJob(info, callback) {
                 clearTimeout(timeoutId);
                 if (ERR(err, callback)) return;
                 results.end_time = new Date().toISOString();
+                callback(null, container);
+            });
+        },
+        (container, callback) => {
+            timeReporter.reportEndTime(jobId, results.end_time, (err) => {
+                if (ERR(err, callback)) return;
                 callback(null, container);
             });
         },
@@ -457,6 +487,7 @@ function uploadResults(info, callback) {
                 job_id: jobId,
                 __csrf_token: csrfToken,
             };
+            callback(null);
             request.post({method: 'POST', url: webhookUrl, json: true, body: webhookResults}, function (err, _response, _body) {
                 if (ERR(err, callback)) return;
                 callback(null);
