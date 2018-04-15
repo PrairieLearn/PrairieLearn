@@ -85,6 +85,9 @@ BEGIN
             JOIN variants AS v ON (v.question_id = ceq.question_id)
             JOIN submissions AS s ON (s.variant_id = v.id)
             JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
+        WHERE
+            gj.date > now() - interval '1 day'
+            AND gj.graded_at IS NOT NULL
         GROUP BY ceq.question_id
     )
     SELECT
@@ -137,9 +140,12 @@ BEGIN
     INSERT INTO time_series (name, value) VALUES ('load_perc', load_perc);
     INSERT INTO time_series (name, value) VALUES ('ungraded_jobs', ungraded_jobs);
     INSERT INTO time_series (name, value) VALUES ('history_jobs', history_jobs);
+    INSERT INTO time_series (name, value) VALUES ('current_users', current_users);
+    INSERT INTO time_series (name, value) VALUES ('predicted_jobs_by_current_users', predicted_jobs_by_current_users);
     INSERT INTO time_series (name, value) VALUES ('desired_instances_by_ungraded_jobs', desired_instances_by_ungraded_jobs);
     INSERT INTO time_series (name, value) VALUES ('desired_instances_by_current_jobs', desired_instances_by_current_jobs);
     INSERT INTO time_series (name, value) VALUES ('desired_instances_by_history_jobs', desired_instances_by_history_jobs);
+    INSERT INTO time_series (name, value) VALUES ('desired_instances_by_current_users', desired_instances_by_current_users);
     INSERT INTO time_series (name, value) VALUES ('desired_instances', desired_instances);
 
     -- ######################################################################
