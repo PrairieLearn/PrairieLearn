@@ -9,9 +9,11 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 module.exports = {};
 
 module.exports.run = function(callback) {
-    if (!config.externalGradingUseAws) return callback(null);
+    //if (!config.externalGradingUseAws) return callback(null);
     getLoadStats((err, stats) => {
         if (ERR(err, callback)) return;
+        console.log(stats);
+        return callback(null);
         sendStatsToCloudWatch(stats, (err) => {
             if (ERR(err, callback)) return;
             setAutoScalingGroupCapacity(stats, (err) => {

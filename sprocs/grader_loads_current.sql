@@ -88,12 +88,12 @@ BEGIN
         GROUP BY ceq.question_id
     )
     SELECT
-        sum(ceq.user_count),
-        sum(
+        coalesce(sum(ceq.user_count), 0),
+        coalesce(sum(
             ceq.user_count
             / seconds_per_submission_per_user
-            * coalesce(agt.grading_duration, interval '10 seconds') -- use 10 s if we don't have any data
-        )
+            * coalesce(extract(epoch FROM agt.grading_duration), 10) -- use 10 s if we don't have any data
+        ), 0)
     INTO
         current_users,
         predicted_jobs_by_current_users
