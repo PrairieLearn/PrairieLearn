@@ -25,6 +25,7 @@ columns
     variant_id: bigint not null
 
 indexes
+    submissions_date_idx: null
     submissions_pkey: PRIMARY KEY (id)
     submissions_sid_key: UNIQUE (sid)
     submissions_variant_id_idx: null

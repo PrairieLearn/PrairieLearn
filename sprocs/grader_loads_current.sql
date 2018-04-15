@@ -1,4 +1,6 @@
-DROP FUNCTION IF EXISTS grader_loads_current(text,interval,integer,double precision,double precision,double precision,text);
+DROP FUNCTION IF EXISTS grader_loads_current(text,interval);
+DROP FUNCTION IF EXISTS grader_loads_current(text,interval,interval,double precision, double precision);
+DROP FUNCTION IF EXISTS grader_loads_current(text,interval,interval,double precision, double precision, double precision);
 
 CREATE OR REPLACE FUNCTION
     grader_loads_current(
@@ -7,15 +9,19 @@ CREATE OR REPLACE FUNCTION
         IN history_interval interval,       -- how far back to look to estimate max load
         IN current_capacity_factor double precision, -- how much current capacity to maintain (e.g., 1.5 means 50% more than needed)
         IN history_capacity_factor double precision, -- how much capacity based on historical load
+        IN seconds_per_submission_per_user double precision, -- predicted time between submissions for each user
         OUT instance_count integer,         -- current number of graders
         OUT current_jobs double precision,  -- current number of grading jobs in grading
         OUT max_jobs double precision,      -- current grading job capacity (max simultaneous jobs)
         OUT load_perc double precision,     -- current percentage load (0 to 100)
         OUT ungraded_jobs double precision, -- current jobs that have not yet been graded (waiting or in grading)
         OUT history_jobs double precision,  -- max simultaneous jobs in previous history_interval
+        OUT current_users integer,          -- current number of users viewing externally graded questions
+        OUT predicted_jobs_by_current_users double precision, -- estimated jobs based on active users
         OUT desired_instances_by_ungraded_jobs double precision,
         OUT desired_instances_by_current_jobs double precision,
         OUT desired_instances_by_history_jobs double precision,
+        OUT desired_instances_by_current_users double precision,
         OUT desired_instances integer,      -- the actual number of requested grading instances
         OUT timestamp_formatted text
     )
@@ -53,6 +59,49 @@ BEGIN
         AND (now() - gl.date) < grader_load_interval;
 
     -- ######################################################################
+    -- get user counts on externally graded questions
+
+    WITH
+    -- first determine the number of users currently looking at an externally-graded question
+    current_external_questions AS (
+        SELECT
+            q.id AS question_id,
+            count(*) AS user_count
+        FROM
+            current_pages AS cp
+            JOIN questions AS q ON (q.id = cp.question_id)
+        WHERE
+            cp.date > now() - interval '1 hour'
+            AND q.grading_method = 'External'
+        GROUP BY q.id
+    ),
+    -- next determine the average grading time for each of these questions
+    average_grading_times AS (
+        SELECT
+            ceq.question_id,
+            avg(gj.grading_finished_at - gj.grading_started_at) AS grading_duration
+        FROM
+            current_external_questions AS ceq
+            JOIN variants AS v ON (v.question_id = ceq.question_id)
+            JOIN submissions AS s ON (s.variant_id = v.id)
+            JOIN grading_jobs AS gj ON (gj.submission_id = s.id)
+        GROUP BY ceq.question_id
+    )
+    SELECT
+        sum(ceq.user_count),
+        sum(
+            ceq.user_count
+            / seconds_per_submission_per_user
+            * coalesce(agt.grading_duration, interval '10 seconds') -- use 10 s if we don't have any data
+        )
+    INTO
+        current_users,
+        predicted_jobs_by_current_users
+    FROM
+        current_external_questions AS ceq
+        LEFT JOIN average_grading_times AS agt ON (agt.question_id = ceq.question_id);
+
+    -- ######################################################################
     -- get recent historical load information
 
     SELECT coalesce(max(value), 0)
@@ -68,13 +117,15 @@ BEGIN
     load_perc := current_jobs / greatest(max_jobs, 1) * 100;
     jobs_per_instance := greatest(max_jobs / greatest(instance_count, 1), 1);
     desired_instances_by_ungraded_jobs := ungraded_jobs / jobs_per_instance;
-    desired_instances_by_current_jobs := current_jobs * 1.5 / jobs_per_instance;
-    desired_instances_by_history_jobs := history_jobs * 1.5 / jobs_per_instance;
+    desired_instances_by_current_jobs := current_jobs * current_capacity_factor / jobs_per_instance;
+    desired_instances_by_history_jobs := history_jobs * history_capacity_factor / jobs_per_instance;
+    desired_instances_by_current_users := predicted_jobs_by_current_users / jobs_per_instance;
     desired_instances := ceiling(greatest(
         1,
         desired_instances_by_ungraded_jobs,
         desired_instances_by_current_jobs,
-        desired_instances_by_history_jobs
+        desired_instances_by_history_jobs,
+        desired_instances_by_current_users
     ));
 
     -- ######################################################################

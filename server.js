@@ -218,8 +218,12 @@ app.use('/pl/course_instance/:course_instance_id/elements', require('./pages/ele
 //////////////////////////////////////////////////////////////////////
 // Instructor pages //////////////////////////////////////////////////
 
-app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
-app.use('/pl/course_instance/:course_instance_id/instructor/assessments', require('./pages/instructorAssessments/instructorAssessments'));
+app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', [
+    require('./pages/instructorEffectiveUser/instructorEffectiveUser'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessments', [
+    require('./pages/instructorAssessments/instructorAssessments'),
+]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
     require('./pages/shared/assessmentStatDescriptions'),
@@ -282,19 +286,25 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
 
 // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
 // which checks the assessment type and calls next() if it's not the right type
-app.use('/pl/course_instance/:course_instance_id/assessments', require('./pages/studentAssessments/studentAssessments'));
+app.use('/pl/course_instance/:course_instance_id/assessments', [
+    require('./middlewares/logPageView')('studentAssessments'),
+    require('./pages/studentAssessments/studentAssessments'),
+]);
 app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
+    require('./middlewares/logPageView')('studentAssessment'),
     require('./pages/studentAssessmentHomework/studentAssessmentHomework'),
     require('./pages/studentAssessmentExam/studentAssessmentExam'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
+    require('./middlewares/logPageView')('studentAssessmentInstance'),
     require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
     require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
+    // don't use logPageView here, we load it inside the page so it can get the variant_id
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
 ]);

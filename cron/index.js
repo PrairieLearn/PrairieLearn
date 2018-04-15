@@ -40,6 +40,11 @@ module.exports = {
                 intervalSec: config.cronIntervalServerLoadSec,
             },
             {
+                name: 'serverUsage',
+                module: require('./serverUsage'),
+                intervalSec: config.cronIntervalServerUsageSec,
+            },
+            {
                 name: 'calculateAssessmentQuestionStats',
                 module: require('./calculateAssessmentQuestionStats'),
                 intervalSec: 'daily',
