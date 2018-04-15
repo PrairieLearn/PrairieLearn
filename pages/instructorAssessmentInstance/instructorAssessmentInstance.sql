@@ -33,7 +33,7 @@ GROUP BY
     aq.id,
     ai.id
 ORDER BY
-    admin_assessment_question_number(aq.id);
+    aq.number;
 
 -- BLOCK select_formatted_duration
 SELECT

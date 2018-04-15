@@ -121,6 +121,8 @@
 
   * Fix crash in `pl_external_grader_results` caused by malformed results (Nathan Walters).
 
+  * Fix question order on instructor assessment instance page (Matt West).
+
   * Change to Bootstrap 4 (Nathan Walters).
 
   * Change to NodeJS 8.x LTS (Matt West).
