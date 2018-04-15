@@ -1,4 +1,3 @@
-const _ = require('lodash');
 const ERR = require('async-stacktrace');
 const AWS = require('aws-sdk');
 

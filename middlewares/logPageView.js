@@ -1,5 +1,4 @@
 var ERR = require('async-stacktrace');
-var _ = require('lodash');
 
 var logger = require('../lib/logger');
 var sqldb = require('@prairielearn/prairielib/sql-db');
@@ -34,7 +33,7 @@ module.exports = function(pageType) {
             page_type: pageType,
             path: req.originalUrl,
         };
-        sqldb.queryOneRow(sql.log_page_view, params, function(err, result) {
+        sqldb.queryOneRow(sql.log_page_view, params, function(err, _result) {
             if (ERR(err, () => {})) logger.error('error logging page view', err);
             // no callback here
         });
