@@ -275,7 +275,14 @@ function runJob(info, callback) {
 
     let results = {};
     let jobTimeout = timeout || 30;
+    let globalJobTimeout = jobTimeout * 2;
     let jobEnableNetworking = enableNetworking || false;
+
+    let jobFailed = false;
+    const globalJobTimeoutId = setTimeout(() => {
+        jobFailed = true;
+        return callback(new Error(`Job timeout of ${globalJobTimeout} exceeded.`));
+    }, globalJobTimeout);
 
     logger.info('Launching Docker container to run grading job');
 
@@ -360,6 +367,8 @@ function runJob(info, callback) {
             });
         },
         (callback) => {
+            // We made it throught the Docker danger zone!
+            clearTimeout(globalJobTimeoutId);
             logger.info('Reading course results');
             // Now that the job has completed, let's extract the results
             // First up: results.json
@@ -402,6 +411,12 @@ function runJob(info, callback) {
         }
     ], (err) => {
         if (ERR(err, (err) => logger.error(err)));
+
+        // If we somehow eventually get here after exceeding the global tieout,
+        // we should avoid calling the callback again
+        if (jobFailed) {
+            return;
+        }
 
         results.job_id = jobId;
         results.received_time = receivedTime;
