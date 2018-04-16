@@ -281,6 +281,7 @@ function runJob(info, callback) {
     let jobFailed = false;
     const globalJobTimeoutId = setTimeout(() => {
         jobFailed = true;
+        healthCheck.flagUnhealthy('Job timeout exceeded; Docker presumed dead.');
         return callback(new Error(`Job timeout of ${globalJobTimeout} exceeded.`));
     }, globalJobTimeout);
 
