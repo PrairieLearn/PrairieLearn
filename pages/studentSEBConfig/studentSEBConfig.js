@@ -63,7 +63,7 @@ var load_default_config = function(res, req) {
     defobj['URLFilterRules'] = [
         {   active: true,
             regex: false,
-            expression: req.get('host') + '/*', //"endeavour.engr.illinois.edu:3000/*",
+            expression: req.get('host') + '/*',
             action: 1 },
         {   active: true,
             regex: false,
@@ -129,7 +129,10 @@ router.get('/', function(req, res, next) {
 
             var SEBconfig = load_default_config(res, req);
 
-            var SEBdressing = 'xml';
+            var SEBdressing = 'password';
+            if ('dressing' in res.locals.authz_result.seb_config) {
+                SEBdressing = res.locals.authz_result.seb_config.dressing;
+            }
 
             if (SEBdressing == 'xml')
                 return res.send(dressPlainXML(SEBconfig));
@@ -137,8 +140,13 @@ router.get('/', function(req, res, next) {
             if (SEBdressing == 'gzip')
                 return res.send(dressPlainGzip(SEBconfig));
 
-            if (SEBdressing == 'password')
-                return res.send(dressPassword(SEBconfig, 'fishsticks'));
+            if (SEBdressing == 'password') {
+                var password = 'fishsticks';
+                if ('password' in res.locals.authz_result.seb_config) {
+                    password = res.locals.authz_result.seb_config.password;
+                }
+                return res.send(dressPassword(SEBconfig, password));
+            }
         });
     });
 });
