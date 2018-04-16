@@ -34,7 +34,7 @@ BEGIN
 
     SELECT
         count(*),
-        max(extract(epoch FROM now() - gj.date))
+        coalesce(max(extract(epoch FROM now() - gj.date)), 0)
     INTO
         ungraded_jobs,
         age_of_oldest_job_sec
