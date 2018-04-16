@@ -5,15 +5,12 @@ const sqldb = require('./sqldb');
 const sql = require('./sql-loader').loadSqlEquiv(__filename);
 
 function reportTime(sqlBlockName) {
-  return function(jobId, time, callback) {
+  return function(jobId, callback) {
     if (!config.useDatabase) return callback(null);
-    const params = {
-      job_id: jobId,
-      time,
-    };
-    sqldb.queryOneRow(sql[sqlBlockName], params, (err) => {
+    const params = { job_id: jobId };
+    sqldb.queryOneRow(sql[sqlBlockName], params, (err, results) => {
       if (ERR(err, callback)) return;
-      callback(null);
+      callback(null, results.rows[0].time);
     });
   };
 }
