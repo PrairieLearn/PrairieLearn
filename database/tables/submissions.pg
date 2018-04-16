@@ -27,6 +27,7 @@ columns
 indexes
     submissions_pkey: PRIMARY KEY (id)
     submissions_sid_key: UNIQUE (sid)
+    submissions_date_idx: null
     submissions_variant_id_idx: null
 
 foreign-key constraints

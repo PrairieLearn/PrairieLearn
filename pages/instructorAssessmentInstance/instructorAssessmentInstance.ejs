@@ -226,8 +226,8 @@
               <th>Time</th>
               <th>User</th>
               <th>Event</th>
-              <th>Question</th>
-              <th>Variant</th>
+              <th>Instructor question</th>
+              <th>Student question</th>
               <th>Data</th>
             </tr>
           </thead>
@@ -237,8 +237,24 @@
               <td><%= row.formatted_date %></td>
               <td><%= row.auth_user_uid %></td>
               <td><span class="badge color-<%= row.event_color %>"><%= row.event_name %></span></td>
-              <td><% if (row.qid) { %><a href="<%= urlPrefix %>/question/<%= row.question_id %>/"><%= row.qid %></a><% } %></td>
-              <td><% if (row.question_id && row.variant_id) { %><%= row.variant_number %><% } %></td>
+              <td>
+                <% if (row.qid) { %>
+                <a href="<%= urlPrefix %>/question/<%= row.question_id %>/">
+                  I-<%= row.instructor_question_number %> (<%= row.qid %>)
+                </a>
+                <% } %>
+              </td>
+              <td>
+                <% if (row.student_question_number) { %>
+                <% if (row.variant_id) { %>
+                <a href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instance_question/<%= row.instance_question_id %>/?variant_id=<%= row.variant_id %>">
+                  S-<%= row.student_question_number %>#<%= row.variant_number %>
+                </a>
+                <% } else { %>
+                  S-<%= row.student_question_number %>
+                <% } %>
+                <% } %>
+              </td>
               <% if (row.event_name != 'External grading results') { %>
               <td style="word-break: break-all;"><%= (row.data != null) ? JSON.stringify(row.data) : null %></td>
               <% } else { %>

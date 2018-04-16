@@ -61,6 +61,12 @@
 
   * Add better grading-instance autoscaling calculations (Matt West).
 
+  * Add student page view tracking (Matt West).
+
+  * Add predictive grader autoscaling (Matt West).
+
+  * Add links to student questions on instructor assessment instance page (Matt West).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
@@ -114,6 +120,8 @@
   * Fix daily external grader statistics to split out receive time (Matt West).
 
   * Fix crash in `pl_external_grader_results` caused by malformed results (Nathan Walters).
+
+  * Fix question order on instructor assessment instance page (Matt West).
 
   * Change to Bootstrap 4 (Nathan Walters).
 

@@ -9,7 +9,7 @@ const sqldb = require('@prairielearn/prairielib/sql-db');
 module.exports = {};
 
 module.exports.run = function(callback) {
-    if (!config.externalGradingUseAws) return callback(null);
+    //if (!config.externalGradingUseAws) return callback(null);
     getLoadStats((err, stats) => {
         if (ERR(err, callback)) return;
         sendStatsToCloudWatch(stats, (err) => {
@@ -29,6 +29,7 @@ function getLoadStats(callback) {
         config.externalGradingHistoryLoadIntervalSec,
         config.externalGradingCurrentCapacityFactor,
         config.externalGradingHistoryCapacityFactor,
+        config.externalGradingSecondsPerSubmissionPerUser,
     ];
     sqldb.callOneRow('grader_loads_current', params, (err, result) => {
         if (ERR(err, callback)) return;
@@ -83,12 +84,44 @@ function sendStatsToCloudWatch(stats, callback) {
                 Value: stats.ungraded_jobs,
             },
             {
+                MetricName: 'AgeOfOldestJob',
+                Dimensions: dimensions,
+                StorageResolution: 1,
+                Timestamp: stats.timestamp_formatted,
+                Unit: 'Seconds',
+                Value: stats.age_of_oldest_job_sec,
+            },
+            {
                 MetricName: 'HistoryJobs',
                 Dimensions: dimensions,
                 StorageResolution: 1,
                 Timestamp: stats.timestamp_formatted,
                 Unit: 'Count',
                 Value: stats.history_jobs,
+            },
+            {
+                MetricName: 'CurrentUsers',
+                Dimensions: dimensions,
+                StorageResolution: 1,
+                Timestamp: stats.timestamp_formatted,
+                Unit: 'Count',
+                Value: stats.current_users,
+            },
+            {
+                MetricName: 'PredictedJobsByCurrentUsers',
+                Dimensions: dimensions,
+                StorageResolution: 1,
+                Timestamp: stats.timestamp_formatted,
+                Unit: 'Count',
+                Value: stats.predicted_jobs_by_current_users,
+            },
+            {
+                MetricName: 'JobsPerInstance',
+                Dimensions: dimensions,
+                StorageResolution: 1,
+                Timestamp: stats.timestamp_formatted,
+                Unit: 'Count',
+                Value: stats.jobs_per_instance,
             },
             {
                 MetricName: 'DesiredInstancesByUngradedJobs',
@@ -113,6 +146,14 @@ function sendStatsToCloudWatch(stats, callback) {
                 Timestamp: stats.timestamp_formatted,
                 Unit: 'Count',
                 Value: stats.desired_instances_by_history_jobs,
+            },
+            {
+                MetricName: 'DesiredInstancesByCurrentUsers',
+                Dimensions: dimensions,
+                StorageResolution: 1,
+                Timestamp: stats.timestamp_formatted,
+                Unit: 'Count',
+                Value: stats.desired_instances_by_current_users,
             },
             {
                 MetricName: 'DesiredInstances',

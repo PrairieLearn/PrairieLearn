@@ -33,7 +33,7 @@ GROUP BY
     aq.id,
     ai.id
 ORDER BY
-    admin_assessment_question_number(aq.id);
+    aq.number;
 
 -- BLOCK select_formatted_duration
 SELECT
@@ -71,7 +71,8 @@ WINDOW
 ORDER BY qo.row_order;
 
 -- BLOCK select_log
-WITH event_log AS (
+WITH
+event_log AS (
     (
         SELECT
             1 AS event_order,
@@ -82,6 +83,7 @@ WITH event_log AS (
             u.uid AS auth_user_uid,
             NULL::TEXT as qid,
             NULL::INTEGER as question_id,
+            NULL::INTEGER as instance_question_id,
             NULL::INTEGER as variant_id,
             NULL::INTEGER as variant_number,
             NULL::JSONB as data
@@ -102,6 +104,7 @@ WITH event_log AS (
             u.uid AS auth_user_uid,
             q.qid as qid,
             q.id as question_id,
+            iq.id AS instance_question_id,
             v.id AS variant_id,
             v.number AS variant_number,
             jsonb_build_object(
@@ -130,6 +133,7 @@ WITH event_log AS (
             u.uid AS auth_user_uid,
             q.qid,
             q.id AS question_id,
+            iq.id AS instance_question_id,
             v.id as variant_id,
             v.number as variant_number,
             jsonb_build_object('submitted_answer', s.submitted_answer) AS data
@@ -154,6 +158,7 @@ WITH event_log AS (
             u.uid AS auth_user_uid,
             q.qid,
             q.id AS question_id,
+            iq.id AS instance_question_id,
             v.id as variant_id,
             v.number as variant_number,
             to_jsonb(gj.*) AS data
@@ -181,6 +186,7 @@ WITH event_log AS (
             u.uid AS auth_user_uid,
             q.qid,
             q.id AS question_id,
+            iq.id AS instance_question_id,
             v.id as variant_id,
             v.number as variant_number,
             jsonb_build_object(
@@ -213,8 +219,9 @@ WITH event_log AS (
             u.uid AS auth_user_uid,
             q.qid,
             q.id AS question_id,
-            NULL::INTEGER as variant_id,
-            NULL::INTEGER as variant_number,
+            iq.id AS instance_question_id,
+            v.id as variant_id,
+            v.number as variant_number,
             jsonb_build_object(
                 'points', qsl.points,
                 'max_points', qsl.max_points,
@@ -226,6 +233,9 @@ WITH event_log AS (
             JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
             JOIN questions AS q ON (q.id = aq.question_id)
             LEFT JOIN users AS u ON (u.user_id = qsl.auth_user_id)
+            LEFT JOIN grading_jobs AS gj ON (gj.id = qsl.grading_job_id)
+            LEFT JOIN submissions AS s ON (s.id = gj.submission_id)
+            LEFT JOIN variants AS v ON (v.id = s.variant_id)
         WHERE
             iq.assessment_instance_id = $assessment_instance_id
     )
@@ -240,6 +250,7 @@ WITH event_log AS (
             u.uid AS auth_user_uid,
             NULL::TEXT as qid,
             NULL::INTEGER as question_id,
+            NULL::INTEGER as instance_question_id,
             NULL::INTEGER as variant_id,
             NULL::INTEGER as variant_number,
             jsonb_build_object(
@@ -264,6 +275,7 @@ WITH event_log AS (
             u.uid AS auth_user_uid,
             NULL::TEXT as qid,
             NULL::INTEGER as question_id,
+            NULL::INTEGER as instance_question_id,
             NULL::INTEGER as variant_id,
             NULL::INTEGER as variant_number,
             NULL::JSONB as data
@@ -273,14 +285,78 @@ WITH event_log AS (
         WHERE
             asl.assessment_instance_id = $assessment_instance_id
     )
+    UNION
+    (
+        SELECT
+            8 AS event_order,
+            'View variant'::TEXT AS event_name,
+            'green3'::TEXT AS event_color,
+            pvl.date,
+            u.user_id AS auth_user_id,
+            u.uid AS auth_user_uid,
+            q.qid as qid,
+            q.id as question_id,
+            iq.id AS instance_question_id,
+            v.id AS variant_id,
+            v.number AS variant_number,
+            NULL::JSONB as data
+        FROM
+            page_view_logs AS pvl
+            JOIN variants AS v ON (v.id = pvl.variant_id)
+            JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+            JOIN questions AS q ON (q.id = pvl.question_id)
+            JOIN users AS u ON (u.user_id = pvl.authn_user_id)
+        WHERE
+            pvl.assessment_instance_id = $assessment_instance_id
+            AND pvl.page_type = 'studentInstanceQuestion'
+    )
+    UNION
+    (
+        SELECT
+            9 AS event_order,
+            'View assessment overview'::TEXT AS event_name,
+            'green1'::TEXT AS event_color,
+            pvl.date,
+            u.user_id AS auth_user_id,
+            u.uid AS auth_user_uid,
+            NULL::TEXT as qid,
+            NULL::INTEGER as question_id,
+            NULL::INTEGER as instance_question_id,
+            NULL::INTEGER as variant_id,
+            NULL::INTEGER as variant_number,
+            NULL::JSONB as data
+        FROM
+            page_view_logs AS pvl
+            JOIN users AS u ON (u.user_id = pvl.authn_user_id)
+        WHERE
+            pvl.assessment_instance_id = $assessment_instance_id
+            AND pvl.page_type = 'studentAssessmentInstance'
+    )
     ORDER BY date, event_order, question_id
+),
+question_data AS (
+    SELECT
+        iq.id AS instance_question_id,
+        qo.question_number AS student_question_number,
+        admin_assessment_question_number(aq.id) as instructor_question_number
+    FROM
+        instance_questions AS iq
+        JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
+        JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+        JOIN question_order(ai.id) AS qo ON (qo.instance_question_id = iq.id)
+    WHERE
+        ai.id = $assessment_instance_id
 )
 SELECT
     el.*,
     format_date_full_compact(el.date, ci.display_timezone) AS formatted_date,
-    format_date_iso8601(el.date, ci.display_timezone) AS date_iso8601
+    format_date_iso8601(el.date, ci.display_timezone) AS date_iso8601,
+    qd.student_question_number,
+    qd.instructor_question_number
 FROM
-    event_log AS el,
+    event_log AS el
+    LEFT JOIN question_data AS qd ON (qd.instance_question_id = el.instance_question_id)
+    ,
     assessment_instances AS ai
     JOIN assessments AS a ON (a.id = ai.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
