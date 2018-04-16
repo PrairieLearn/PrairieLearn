@@ -84,6 +84,14 @@ function sendStatsToCloudWatch(stats, callback) {
                 Value: stats.ungraded_jobs,
             },
             {
+                MetricName: 'AgeOfOldestJob',
+                Dimensions: dimensions,
+                StorageResolution: 1,
+                Timestamp: stats.timestamp_formatted,
+                Unit: 'Seconds',
+                Value: stats.age_of_oldest_job_sec,
+            },
+            {
                 MetricName: 'HistoryJobs',
                 Dimensions: dimensions,
                 StorageResolution: 1,
@@ -106,6 +114,14 @@ function sendStatsToCloudWatch(stats, callback) {
                 Timestamp: stats.timestamp_formatted,
                 Unit: 'Count',
                 Value: stats.predicted_jobs_by_current_users,
+            },
+            {
+                MetricName: 'JobsPerInstance',
+                Dimensions: dimensions,
+                StorageResolution: 1,
+                Timestamp: stats.timestamp_formatted,
+                Unit: 'Count',
+                Value: stats.jobs_per_instance,
             },
             {
                 MetricName: 'DesiredInstancesByUngradedJobs',

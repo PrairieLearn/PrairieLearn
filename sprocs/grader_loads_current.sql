@@ -15,9 +15,11 @@ CREATE OR REPLACE FUNCTION
         OUT max_jobs double precision,      -- current grading job capacity (max simultaneous jobs)
         OUT load_perc double precision,     -- current percentage load (0 to 100)
         OUT ungraded_jobs double precision, -- current jobs that have not yet been graded (waiting or in grading)
+        OUT age_of_oldest_job_sec double precision, -- time since creation of oldest job
         OUT history_jobs double precision,  -- max simultaneous jobs in previous history_interval
         OUT current_users integer,          -- current number of users viewing externally graded questions
         OUT predicted_jobs_by_current_users double precision, -- estimated jobs based on active users
+        OUT jobs_per_instance double precision, -- estimated jobs that run per grader instance
         OUT desired_instances_by_ungraded_jobs double precision,
         OUT desired_instances_by_current_jobs double precision,
         OUT desired_instances_by_history_jobs double precision,
@@ -26,20 +28,22 @@ CREATE OR REPLACE FUNCTION
         OUT timestamp_formatted text
     )
 AS $$
-DECLARE
-    jobs_per_instance double precision;
 BEGIN
     -- ######################################################################
     -- get information from the DB about jobs that still need to be graded
 
-    SELECT count(*)
-    INTO ungraded_jobs
-    FROM grading_jobs
+    SELECT
+        count(*),
+        max(extract(epoch FROM now() - gj.date))
+    INTO
+        ungraded_jobs,
+        age_of_oldest_job_sec
+    FROM grading_jobs AS gj
     WHERE
-        grading_method = 'External'
-        AND grading_request_canceled_at IS NULL
-        AND graded_at IS NULL
-        AND date > now() - interval '1 hour'; -- ignore very old jobs where something went wrong
+        gj.grading_method = 'External'
+        AND gj.grading_request_canceled_at IS NULL
+        AND gj.graded_at IS NULL
+        AND gj.date > now() - interval '1 hour'; -- ignore very old jobs where something went wrong
 
     -- ######################################################################
     -- get current information from the grader instances themselves
