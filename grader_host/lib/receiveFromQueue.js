@@ -105,10 +105,10 @@ module.exports = function(sqs, queueUrl, receiveCallback, doneCallback) {
             }
 
             receiveCallback(parsedMessage, (err) => {
-                globalLogger.info(`Job ${parsedMessage.jobId} finished successfully.`);
+                globalLogger.info(`Job ${parsedMessage.jobId} errored.`);
                 callback(err);
             }, () => {
-                globalLogger.info(`Job ${parsedMessage.jobId} errored.`);
+                globalLogger.info(`Job ${parsedMessage.jobId} finished successfully.`);
                 callback(null);
             });
         },
