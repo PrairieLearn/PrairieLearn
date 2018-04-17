@@ -282,8 +282,8 @@ function runJob(info, callback) {
     const globalJobTimeoutId = setTimeout(() => {
         jobFailed = true;
         healthCheck.flagUnhealthy('Job timeout exceeded; Docker presumed dead.');
-        return callback(new Error(`Job timeout of ${globalJobTimeout} exceeded.`));
-    }, globalJobTimeout);
+        return callback(new Error(`Job timeout of ${globalJobTimeout}s exceeded.`));
+    }, globalJobTimeout * 1000);
 
     logger.info('Launching Docker container to run grading job');
 
@@ -327,6 +327,11 @@ function runJob(info, callback) {
                 });
                 callback(null, container);
             });
+        },
+        (container, callback) => {
+            setTimeout(() => {
+                callback(null, container);
+            }, globalJobTimeout * 1000);
         },
         (container, callback) => {
             container.start((err) => {

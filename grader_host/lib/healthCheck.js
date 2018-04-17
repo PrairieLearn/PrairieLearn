@@ -56,6 +56,7 @@ module.exports.init = function(callback) {
 };
 
 module.exports.flagUnhealthy = function(reason) {
+    globalLogger.error(`A health check failed: ${reason}`);
     healthy = false;
     unhealthyReason = reason;
 };

@@ -15,7 +15,7 @@ module.exports = function(sqs, queueUrl, receiveCallback, doneCallback) {
     let parsedMessage, jobCanceled, receiptHandle;
     async.series([
         (callback) => {
-            globalLogger.info('Waiting for next job');
+            globalLogger.info('Waiting for next job...');
             async.doUntil((done) => {
                 const params = {
                     MaxNumberOfMessages: 1,
@@ -47,7 +47,7 @@ module.exports = function(sqs, queueUrl, receiveCallback, doneCallback) {
             if (!messageSchema) {
                 fs.readJson(path.join(__dirname, 'messageSchema.json'), (err, data) => {
                     if (ERR(err, (err) => globalLogger.error(err))) {
-                        globalLogger.error('Failed to read message schema; exiting process');
+                        globalLogger.error('Failed to read message schema; exiting process.');
                         process.exit(1);
                     }
                     const ajv = new Ajv();
@@ -100,15 +100,15 @@ module.exports = function(sqs, queueUrl, receiveCallback, doneCallback) {
         (callback) => {
             // Don't execute the job if it was canceled
             if (jobCanceled) {
-                globalLogger.info(`Job ${parsedMessage.jobId} was canceled; skipping job`);
+                globalLogger.info(`Job ${parsedMessage.jobId} was canceled; skipping job.`);
                 return callback(null);
             }
 
             receiveCallback(parsedMessage, (err) => {
-                globalLogger.error('err!');
+                globalLogger.info(`Job ${parsedMessage.jobId} finished successfully.`);
                 callback(err);
             }, () => {
-                globalLogger.info('success!');
+                globalLogger.info(`Job ${parsedMessage.jobId} errored.`);
                 callback(null);
             });
         },
@@ -123,7 +123,6 @@ module.exports = function(sqs, queueUrl, receiveCallback, doneCallback) {
             });
         }
     ], (err) => {
-        globalLogger.info('done!');
         if (ERR(err, doneCallback)) return;
         doneCallback(null);
     });
