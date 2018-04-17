@@ -329,11 +329,6 @@ function runJob(info, callback) {
             });
         },
         (container, callback) => {
-            setTimeout(() => {
-                callback(null, container);
-            }, globalJobTimeout * 1000);
-        },
-        (container, callback) => {
             container.start((err) => {
                 if (ERR(err, callback)) return;
                 logger.info('Container started!');
