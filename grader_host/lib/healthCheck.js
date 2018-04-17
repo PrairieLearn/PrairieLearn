@@ -4,7 +4,14 @@ const Docker = require('dockerode');
 const globalLogger = require('./logger');
 const config = require('./config').config;
 
-/*
+/**
+ * Stores our current status. Once we transition to an unhealthy state, there's
+ * no going back. We'll be killed eventually.
+ */
+let healthy = true;
+let unhealthyReason = null;
+
+/**
  * We have two levels of health checks here:
  *
  * 1) a /ping endpoint that will send a 200 status if we can connect to the
@@ -17,11 +24,8 @@ module.exports.init = function(callback) {
 
     const handler = (req, res) => {
         if (req.url === '/ping') {
-            docker.ping((err) => {
-                const healthy = !err;
-                res.statusCode = healthy ? 200 : 500;
-                res.end(healthy ? 'Healthy' : 'Unhealthy');
-            });
+            res.statusCode = healthy ? 200 : 500;
+            res.end(healthy ? 'Healthy' : `Unhealthy: ${unhealthyReason}`);
         } else {
             res.statusCode = 404;
             res.end('Not found');
@@ -31,8 +35,7 @@ module.exports.init = function(callback) {
     const doHealthCheck = () => {
         docker.ping((err) => {
             if (err) {
-                globalLogger.error('Failed health check: Docker unreachable');
-                process.exit(1);
+                module.exports.flagUnhealthy('Docker unreachable');
             }
             setTimeout(doHealthCheck, config.healthCheckInterval);
         });
@@ -50,4 +53,10 @@ module.exports.init = function(callback) {
             callback(null);
         }
     });
+};
+
+module.exports.flagUnhealthy = function(reason) {
+    globalLogger.error(`A health check failed: ${reason}`);
+    healthy = false;
+    unhealthyReason = reason;
 };
