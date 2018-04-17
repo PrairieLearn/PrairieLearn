@@ -159,9 +159,11 @@
 
   * Change `centos7-plbase` docker image to not use `/PrairieLearn` directory (Matt West).
 
-  * Move shared code to PrairieLib (Nathan Walters).
+  * Change shared code to PrairieLib (Nathan Walters).
 
   * Remove HackIllinois advertisement (Matt West).
+
+  * Remove external grading timestamps that are now handled by PrairieGrader (Matt West).
 
 * __2.11.0__ - 2017-12-29
 

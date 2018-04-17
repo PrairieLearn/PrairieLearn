@@ -54,9 +54,6 @@ BEGIN
     UPDATE grading_jobs
     SET
         graded_at = now(),
-        grading_received_at = received_time,
-        grading_started_at = start_time,
-        grading_finished_at = finish_time,
         score = grading_jobs_process_external.score,
         correct = (grading_jobs_process_external.score >= 1.0),
         feedback = grading_jobs_process_external.feedback
