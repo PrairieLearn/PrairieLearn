@@ -17,7 +17,9 @@
         "startDate": "2000-01-01T01:01:01",
         "endDate": "2300-01-01T02:02:02",
         "SEBConfig": {
-            "password": "baseball"
+            "password": "baseball",
+            "quitPassword": "out",
+            "allowedPrograms": ["excel"]
         }
 	}
     ],

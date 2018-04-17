@@ -25,14 +25,19 @@ router.get('/', function(req, res, next) {
 
     // Course Instance view (only show allowed exam)
     if (!('assessment' in res.locals)) {
-        console.log('In Course Instance Page');
+        //console.log('In Course Instance Page');
         //res.locals.authz_data.mode = 'SEB';
-        console.log(res.locals);
+        //console.log(res.locals);
     }
 
     // SafeExamBrowser protect the assesment
     if ('authz_result' in res.locals &&
         res.locals.authz_result.mode == 'SEB') {
+
+        // If the assessment is complete, use this middleware to show the logout page
+        if ('assessment_instance' in res.locals && res.locals.assessment_instance.open == false) {
+            return badSEB(req, res);
+        }
 
         // If any of our auth checks didn't pass, fail (send to download)
         if (res.locals.authz_data.mode != 'SEB') {
@@ -112,7 +117,9 @@ function badSEB(req, res) {
     };
     //console.log('SEBdata', SEBdata);
     res.locals.SEBdata = csrf.generateToken(SEBdata, config.secretKey);
-    res.locals.SEBUrl = 'seb://' + req.get('host') + '/pl/downloadSEBConfig/';
+    //var proto = 'http://';
+    var proto = 'seb://';
+    res.locals.SEBUrl = proto + req.get('host') + '/pl/downloadSEBConfig/';
     //console.log(res.locals);
     res.locals.prompt = 'SEB';
     return res.status(401).render(__filename.replace(/\.js$/, '.ejs'), res.locals);

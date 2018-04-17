@@ -27,8 +27,6 @@ router.post('/', function(req, res, next) {
         if (ERR(err, next)) return;
         if (req.body.__action == 'timeLimitFinish') {
             res.redirect(req.originalUrl + '?timeLimitExpired=true');
-        } else if (res.locals.authz_result.mode == 'SEB') {
-            res.redirect('/pl/SEBquit');
         } else {
             res.redirect(req.originalUrl);
         }

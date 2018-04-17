@@ -6,7 +6,7 @@ const plist = require('plist');
 const fs = require('fs');
 //const util = require('util');
 const zlib = require('zlib');
-//const crypto = require('crypto');
+const crypto = require('crypto');
 const jscryptor = require('jscryptor');
 const _ = require('lodash');
 
@@ -43,7 +43,7 @@ var load_default_config = function(res, req) {
     var defobj = plist.parse(fs.readFileSync(__dirname + '/seb-default-exam.seb', 'utf8'));
     //console.log(JSON.stringify(defobj));
 
-    var fullUrlPrefix = 'http://' + req.get('host');
+    var fullUrlPrefix = req.protocol + '://' + req.get('host');
 
     defobj['startURL'] = `${fullUrlPrefix}/pl/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`;
 
@@ -72,12 +72,14 @@ var load_default_config = function(res, req) {
     ];
 
     defobj['quitURL'] = fullUrlPrefix + '/pl/SEBquit';
-    //defobj['allowQuit'] = false;
 
-    defobj['hashedQuitPassword'] = crypto.createHash('sha256').update('amen');
+    //console.log(defobj);
+    return defobj;
+};
 
+var add_allowed_program = function(SEBconfig, program) {
 
-    defobj['permittedProcesses'].push({
+    var template_program = {
         active: true,
         autostart: false,
         iconInTaskbar: true,
@@ -85,20 +87,25 @@ var load_default_config = function(res, req) {
         allowUserToChooseApp: false,
         strongKill: false,
         os: 1,
-        title: 'EXCEL',
+//        title: 'EXCEL',
         description: '',
-        executable: 'excel.exe',
-        originalName: 'Excel.exe',
+//        executable: 'excel.exe',
+//        originalName: 'Excel.exe',
         windowHandlingProcess: '',
         path: '',
         identifier: '',
         arguments: [],
-    });
+    };
 
-    //console.log(defobj);
-    return defobj;
+    if (program == 'excel') {
+        var progObj = _.clone(template_program);
+        progObj['title'] = 'EXCEL';
+        progObj['executable'] = 'excel.exe';
+        progObj['originalName'] = 'Excel.exe';
+    }
+
+    SEBconfig['permittedProcesses'].push(progObj);
 };
-
 
 router.get('/', function(req, res, next) {
 
@@ -124,14 +131,28 @@ router.get('/', function(req, res, next) {
         if (result.rowCount == 0) return next(error.make(403, 'Unrecognized config request, please try again', res.locals));
 
         _.assign(res.locals, result.rows[0]);
-        console.log(res.locals);
+        //console.log(res.locals);
 
         check_and_send_assessment_config_seb(res, function(err) {
             if (ERR(err, next)) return;
 
             var SEBconfig = load_default_config(res, req);
 
-            var SEBdressing = 'password';
+            if ('quitPassword' in res.locals.authz_result.seb_config) {
+                SEBconfig['hashedQuitPassword'] = crypto.createHash('sha256').update(res.locals.authz_result.seb_config.quitPassword).digest('hex');
+            }
+
+            if ('allowedPrograms' in res.locals.authz_result.seb_config) {
+                //console.log(res.locals.authz_result.seb_config);
+                _.each(res.locals.authz_result.seb_config.allowedPrograms, function(program) {
+                    add_allowed_program(SEBconfig, program);
+                });
+            }
+
+            //
+            // Finish up the file, dress it, and send it along
+            //
+            var SEBdressing = 'xml'; // default case
             if ('dressing' in res.locals.authz_result.seb_config) {
                 SEBdressing = res.locals.authz_result.seb_config.dressing;
             }
@@ -143,7 +164,7 @@ router.get('/', function(req, res, next) {
                 return res.send(dressPlainGzip(SEBconfig));
 
             if (SEBdressing == 'password') {
-                var password = 'fishsticks';
+                var password = 'fishsticks'; // default case
                 if ('password' in res.locals.authz_result.seb_config) {
                     password = res.locals.authz_result.seb_config.password;
                 }
