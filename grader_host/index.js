@@ -16,6 +16,7 @@ const config = require('./lib/config').config;
 const healthCheck = require('./lib/healthCheck');
 const pullImages = require('./lib/pullImages');
 const receiveFromQueue = require('./lib/receiveFromQueue');
+const timeReporter = require('./lib/timeReporter');
 const util = require('./lib/util');
 const load = require('./lib/load');
 const sqldb = require('./lib/sqldb');
@@ -92,7 +93,6 @@ async.series([
 
 function handleJob(job, done) {
     load.startJob();
-    const receivedTime = new Date().toISOString();
 
     const loggerOptions = {
         bucket: job.s3Bucket,
@@ -102,10 +102,9 @@ function handleJob(job, done) {
     const logger = jobLogger(loggerOptions);
     globalLogger.info(`Logging job ${job.jobId} to S3: ${job.s3Bucket}/${job.s3RootKey}`);
 
-    const context = {
+    const info = {
         docker: new Docker(),
         s3: new AWS.S3(),
-        receivedTime,
         logger,
         job,
     };
@@ -114,7 +113,7 @@ function handleJob(job, done) {
     logger.info(job);
 
     async.auto({
-        context: (callback) => callback(null, context),
+        context: (callback) => context(info, callback),
         initDocker: ['context', initDocker],
         initFiles: ['context', initFiles],
         runJob: ['initDocker', 'initFiles', runJob],
@@ -129,6 +128,23 @@ function handleJob(job, done) {
         load.endJob();
         if (ERR(err, done)) return;
         done(null);
+    });
+}
+
+function context(info, callback) {
+    const {
+        job: {
+            jobId,
+        },
+    } = info;
+
+    timeReporter.reportReceivedTime(jobId, (err, time) => {
+        if (ERR(err, callback)) return;
+        const context = {
+            ...info,
+            receivedTime: time,
+        };
+        callback(null, context);
     });
 }
 
@@ -324,7 +340,13 @@ function runJob(info, callback) {
             container.start((err) => {
                 if (ERR(err, callback)) return;
                 logger.info('Container started!');
-                results.start_time = new Date().toISOString();
+                callback(null, container);
+            });
+        },
+        (container, callback) => {
+            timeReporter.reportStartTime(jobId, (err, time) => {
+                if (ERR(err, callback)) return;
+                results.start_time = time;
                 callback(null, container);
             });
         },
@@ -337,7 +359,13 @@ function runJob(info, callback) {
             container.wait((err) => {
                 clearTimeout(timeoutId);
                 if (ERR(err, callback)) return;
-                results.end_time = new Date().toISOString();
+                callback(null, container);
+            });
+        },
+        (container, callback) => {
+            timeReporter.reportEndTime(jobId, (err, time) => {
+                if (ERR(err, callback)) return;
+                results.end_time = time;
                 callback(null, container);
             });
         },
