@@ -74,6 +74,8 @@ var load_default_config = function(res, req) {
     defobj['quitURL'] = fullUrlPrefix + '/pl/SEBquit';
     //defobj['allowQuit'] = false;
 
+    defobj['hashedQuitPassword'] = crypto.createHash('sha256').update('amen');
+
 
     defobj['permittedProcesses'].push({
         active: true,
