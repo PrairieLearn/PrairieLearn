@@ -30,15 +30,7 @@ router.post('/', function(req, res, next) {
             return next(new Error('Grading result does not contain a valid grading job id.'));
         }
 
-        const params = {
-            grading_job_id: jobId,
-            received_time: data.data.received_time,
-        };
-
-        sqldb.queryOneRow(sql.update_grading_received_time, params, (err, _result) => {
-            if (ERR(err, (err) => logger.error(err))) return;
-            externalGradingSocket.gradingJobStatusUpdated(jobId);
-        });
+        externalGradingSocket.gradingJobStatusUpdated(jobId);
 
         res.status(200);
         res.send();
