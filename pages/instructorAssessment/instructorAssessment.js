@@ -333,6 +333,7 @@ router.get('/:filename', function(req, res, next) {
                 ['Highest submission score', 'highest_submission_score'],
                 ['Last submission score', 'last_submission_score'],
                 ['Number attempts', 'number_attempts'],
+                ['Duration seconds', 'duration_seconds'],
             ];
             csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
                 if (ERR(err, next)) return;

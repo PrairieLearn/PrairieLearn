@@ -67,6 +67,8 @@
 
   * Add links to student questions on instructor assessment instance page (Matt West).
 
+  * Add instance question durations to CSV output (Matt West).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
@@ -159,7 +161,7 @@
 
   * Change `centos7-plbase` docker image to not use `/PrairieLearn` directory (Matt West).
 
-  * Move shared code to PrairieLib (Nathan Walters).
+  * Change shared code to be in external PrairieLib library (Nathan Walters).
 
   * Remove HackIllinois advertisement (Matt West).
 

@@ -221,7 +221,8 @@ SELECT
     format_date_iso8601(iq.created_at, ci.display_timezone) AS date_formatted,
     iq.highest_submission_score,
     iq.last_submission_score,
-    iq.number_attempts
+    iq.number_attempts,
+    extract(epoch FROM iq.duration) AS duration_seconds
 FROM
     instance_questions AS iq
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
