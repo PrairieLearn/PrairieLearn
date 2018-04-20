@@ -8,9 +8,13 @@ const argv = require('yargs-parser') (process.argv.slice(2));
 
 if ('h' in argv || 'help' in argv) {
     const msg = `command line options:
-    -h, --help                 Display this help and exit
-    --config <filename>        Use this config file
-    --server <url>             Use this remote server URL
+    -h, --help             Display this help and exit
+    --config <filename>    Use this config file
+    --server <url>         Use this remote server URL
+
+Examples:
+node tools/load-test.js --server https://pl-dev.engr.illinois.edu --config ~/git/ansible-pl/prairielearn/config_pl-dev.json
+node tools/load-test.js --server https://prairielearn.engr.illinois.edu --config ~/git/ansible-pl/prairielearn/config_prairielearn.json
 `;
 
     console.log(msg); // eslint-disable-line no-console
