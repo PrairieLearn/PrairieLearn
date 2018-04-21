@@ -32,7 +32,7 @@ const siteUrl = serverUrl;
 const baseUrl = siteUrl + '/pl';
 
 const cookies = request.jar();
-cookies.setCookie(request.cookie(`example_course_secret_secret=${config.exampleCourseCookieSecret}`), siteUrl);
+cookies.setCookie(request.cookie(`load_test_secret=${config.loadTestSecretCookie}`), siteUrl);
 
 const testList = [
     {'clients': 1, 'iterations': 10},
@@ -83,8 +83,7 @@ async function postQuestionAnswer(questionSubmitInfo) {
         __csrf_token: questionSubmitInfo.csrf_token,
         __variant_id: questionSubmitInfo.variant_id,
     };
-    const body = request.post({uri: questionSubmitInfo.questionUrl, form, followAllRedirects: true});
-    const $ = cheerio.load(body);
+    const body = await request.post({uri: questionSubmitInfo.questionUrl, jar: cookies, form, followAllRedirects: true});
 }
 
 async function singleRequest() {
