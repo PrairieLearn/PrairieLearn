@@ -3,20 +3,41 @@ const ERR = require('async-stacktrace');
 const request = require('request-promise-native');
 const cheerio = require('cheerio');
 const assert = require('assert');
-const argv = require('yargs-parser') (process.argv.slice(2));
+const yargsParser = require('yargs-parser');
 
 const config = require('../lib/config');
 const csrf = require('../lib/csrf');
 
-if ('h' in argv || 'help' in argv) {
-    const msg = `command line options:
-    -h, --help             Display this help and exit
-    --config <filename>    Use this config file
-    --server <url>         Use this remote server URL
+
+const argv = yargsParser(process.argv.slice(2), {
+    alias: {
+        'help': ['h'],
+        'config': ['f'],
+        'server': ['s'],
+        'iterations': ['n'],
+        'clients': ['c'],
+    },
+    default: {
+        'config': 'config.json',
+        'server': 'https://pl-dev.engr.illinois.edu',
+        'iterations': 10,
+        'clients': 1,
+    },
+});
+
+if ('help' in argv) {
+    const msg = `${process.argv[0]} ${process.argv[1]} [options]
+
+command line options:
+    -h, --help                Display this help and exit
+    -f,--config <filename>    Config file
+    -s,--server <url>         Remote server URL
+    -n,--iterations <num>     Number of iterations of the test
+    -c,--clients <num>        Number of simultaneous clients to test with
 
 Examples:
-node tools/load-test.js --server https://pl-dev.engr.illinois.edu --config ~/git/ansible-pl/prairielearn/config_pl-dev.json
-node tools/load-test.js --server https://prairielearn.engr.illinois.edu --config ~/git/ansible-pl/prairielearn/config_prairielearn.json
+node tools/load-test.js -n 10 -c 3 -s https://pl-dev.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_pl-dev.json
+node tools/load-test.js -n 10 -c 3 -s https://prairielearn.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_prairielearn.json
 `;
 
     console.log(msg); // eslint-disable-line no-console
@@ -26,22 +47,15 @@ node tools/load-test.js --server https://prairielearn.engr.illinois.edu --config
 const exampleCourseName = 'XC 101: Example Course, Spring 2015';
 const questionTitle = 'Add two numbers';
 
-const configFilename = _.get(argv, 'config', 'config.json');
-config.loadConfig(configFilename);
+config.loadConfig(argv.config);
 
-const serverUrl = _.get(argv, 'server', 'https://pl-dev.engr.illinois.edu');
+const serverUrl = argv.server;
 const siteUrl = serverUrl;
 const baseUrl = siteUrl + '/pl';
 
 const cookies = request.jar();
 const loadTestToken = csrf.generateToken('load_test', config.secretKey);
 cookies.setCookie(request.cookie(`load_test_token=${loadTestToken}`), siteUrl);
-
-const testList = [
-    {'clients': 1, 'iterations': 10},
-    {'clients': 3, 'iterations': 10},
-    {'clients': 10, 'iterations': 10},
-];
 
 function avg(values) {
     return _.reduce(values, (a,b) => (a+b)) / _.size(values);
@@ -120,16 +134,9 @@ async function singleTest(clients, iterations) {
 
 async function main() {
     try {
-        for (let test of testList) {
-            console.log('######################################################################');
-            test.time = await singleTest(test.clients, test.iterations);
-            console.log(`Average request time for ${test.clients} clients and ${test.iterations} iterations: ${test.time} seconds`);
-        };
         console.log('######################################################################');
-        console.log('Summary:');
-        for (let test of testList) {
-            console.log(`Average request time for ${test.clients} clients and ${test.iterations} iterations: ${test.time} seconds`);
-        }
+        const time = await singleTest(argv.clients, argv.iterations);
+        console.log(`Average request time for ${argv.clients} clients and ${argv.iterations} iterations: ${time} seconds`);
     } catch (e) {
         console.log('Error', e);
     }
