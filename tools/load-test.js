@@ -3,8 +3,10 @@ const ERR = require('async-stacktrace');
 const request = require('request-promise-native');
 const cheerio = require('cheerio');
 const assert = require('assert');
-const config = require('../lib/config');
 const argv = require('yargs-parser') (process.argv.slice(2));
+
+const config = require('../lib/config');
+const csrf = require('../lib/csrf');
 
 if ('h' in argv || 'help' in argv) {
     const msg = `command line options:
@@ -32,7 +34,8 @@ const siteUrl = serverUrl;
 const baseUrl = siteUrl + '/pl';
 
 const cookies = request.jar();
-cookies.setCookie(request.cookie(`load_test_secret=${config.loadTestSecretCookie}`), siteUrl);
+const loadTestToken = csrf.generateToken('load_test', config.secretKey);
+cookies.setCookie(request.cookie(`load_test_token=${loadTestToken}`), siteUrl);
 
 const testList = [
     {'clients': 1, 'iterations': 10},

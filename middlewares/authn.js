@@ -24,7 +24,11 @@ module.exports = function(req, res, next) {
     }
 
     // look for load-testing override cookie
-    if (req.cookies.load_test_secret == config.loadTestSecretCookie) {
+    if (req.cookies.load_test_token) {
+        if (!csrf.checkToken(req.cookies.load_test_token, 'load_test', config.secretKey, {maxAge: 24 * 60 * 60 * 1000})) {
+            return next(new Error('invalid load_test_token'));
+        }
+
         let params = {
             uid: 'loadtest@prairielearn.org',
             name: 'Load Test',
