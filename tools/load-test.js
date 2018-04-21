@@ -1,5 +1,6 @@
+/* eslint no-console: 0 */ // allow console.log() in this file
+
 const _ = require('lodash');
-const ERR = require('async-stacktrace');
 const request = require('request-promise-native');
 const cheerio = require('cheerio');
 const assert = require('assert');
@@ -40,7 +41,7 @@ node tools/load-test.js -n 10 -c 3 -s https://pl-dev.engr.illinois.edu -f ~/git/
 node tools/load-test.js -n 10 -c 3 -s https://prairielearn.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_prairielearn.json
 `;
 
-    console.log(msg); // eslint-disable-line no-console
+    console.log(msg);
     process.exit(0);
 }
 
@@ -101,6 +102,9 @@ async function postQuestionAnswer(questionSubmitInfo) {
         __variant_id: questionSubmitInfo.variant_id,
     };
     const body = await request.post({uri: questionSubmitInfo.questionUrl, jar: cookies, form, followAllRedirects: true});
+    const $ = cheerio.load(body);
+    let elemList = $('.question-form input[name="__variant_id"]');
+    assert(elemList.length == 1);
 }
 
 async function singleRequest() {

@@ -44,13 +44,13 @@ module.exports = function(req, res, next) {
                 uid: 'loadtest@prairielearn.org',
                 course_short_name: 'XC 101',
             };
-            sqldb.query(sql.enroll_user_as_instructor, params, (err, result) => {
+            sqldb.query(sql.enroll_user_as_instructor, params, (err, _result) => {
                 if (ERR(err, next)) return;
                 next();
             });
         });
         return;
-    };
+    }
 
     // bypass auth for local /pl/ serving
     if (config.authType === 'none') {
