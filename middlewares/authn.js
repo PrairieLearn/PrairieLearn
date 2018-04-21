@@ -23,6 +23,35 @@ module.exports = function(req, res, next) {
       return;
     }
 
+    // look for load-testing override cookie
+    if (req.cookies.load_test_token) {
+        if (!csrf.checkToken(req.cookies.load_test_token, 'load_test', config.secretKey, {maxAge: 24 * 60 * 60 * 1000})) {
+            return next(new Error('invalid load_test_token'));
+        }
+
+        let params = {
+            uid: 'loadtest@prairielearn.org',
+            name: 'Load Test',
+            uin: '999999999',
+            provider: 'dev',
+        };
+        sqldb.queryOneRow(sql.insert_user, params, (err, result) => {
+            if (ERR(err, next)) return;
+            res.locals.authn_user = result.rows[0].user;
+            res.locals.is_administrator = result.rows[0].is_administrator;
+
+            let params = {
+                uid: 'loadtest@prairielearn.org',
+                course_short_name: 'XC 101',
+            };
+            sqldb.query(sql.enroll_user_as_instructor, params, (err, _result) => {
+                if (ERR(err, next)) return;
+                next();
+            });
+        });
+        return;
+    }
+
     // bypass auth for local /pl/ serving
     if (config.authType === 'none') {
         var authUid = 'dev@illinois.edu';
