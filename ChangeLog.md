@@ -69,6 +69,8 @@
 
   * Add instance question durations to CSV output (Matt West).
 
+  * Add load-testing script (Matt West).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
