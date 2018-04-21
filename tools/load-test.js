@@ -4,51 +4,50 @@ const _ = require('lodash');
 const request = require('request-promise-native');
 const cheerio = require('cheerio');
 const assert = require('assert');
-const yargsParser = require('yargs-parser');
+const yargs = require('yargs');
 
 const config = require('../lib/config');
 const csrf = require('../lib/csrf');
 
 
-const argv = yargsParser(process.argv.slice(2), {
-    alias: {
-        'help': ['h'],
-        'config': ['f'],
-        'server': ['s'],
-        'iterations': ['n'],
-        'clients': ['c'],
-    },
-    default: {
-        'config': 'config.json',
-        'server': 'https://pl-dev.engr.illinois.edu',
-        'iterations': 10,
-        'clients': 1,
-    },
-});
+const argv = yargs
+      .option('config', {
+          alias: 'f',
+          describe: 'JSON configuration file',
+          default: 'config.json',
+          type: 'string',
+      })
+      .option('server', {
+          alias: 's',
+          describe: 'Remote server URL',
+          default: 'https://pl-dev.engr.illinois.edu',
+          type: 'string',
+      })
+      .option('iterations', {
+          alias: 'n',
+          describe: 'Number of test iterations per client',
+          default: 3,
+          type: 'number',
+      })
+      .option('clients', {
+          alias: 'c',
+          describe: 'Number of simultaneous clients to test with',
+          default: 1,
+          type: 'number',
+      })
+      .example('node tools/load-test.js -n 10 -c 3 -s https://pl-dev.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_pl-dev.json')
+      .example('node tools/load-test.js -n 10 -c 3 -s https://prairielearn.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_prairielearn.json')
+      .wrap(null)
+      .help()
+      .alias('help', 'h')
+      .version(false)
+      .strict()
+      .argv;
 
-if ('help' in argv) {
-    const msg = `${process.argv[0]} ${process.argv[1]} [options]
-
-command line options:
-    -h, --help                Display this help and exit
-    -f,--config <filename>    Config file
-    -s,--server <url>         Remote server URL
-    -n,--iterations <num>     Number of iterations of the test
-    -c,--clients <num>        Number of simultaneous clients to test with
-
-Examples:
-node tools/load-test.js -n 10 -c 3 -s https://pl-dev.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_pl-dev.json
-node tools/load-test.js -n 10 -c 3 -s https://prairielearn.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_prairielearn.json
-`;
-
-    console.log(msg);
-    process.exit(0);
-}
+config.loadConfig(argv.config);
 
 const exampleCourseName = 'XC 101: Example Course, Spring 2015';
 const questionTitle = 'Add two numbers';
-
-config.loadConfig(argv.config);
 
 const serverUrl = argv.server;
 const siteUrl = serverUrl;
