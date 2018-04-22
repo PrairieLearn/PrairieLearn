@@ -31,12 +31,12 @@ const argv = yargs
       })
       .option('clients', {
           alias: 'c',
-          describe: 'Number of simultaneous clients to test with',
+          describe: 'Number of simultaneous clients to test with (repeat for multiple tests)',
           default: 1,
-          type: 'number',
+          type: 'array',
       })
-      .example('node tools/load-test.js -n 10 -c 3 -s https://pl-dev.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_pl-dev.json')
-      .example('node tools/load-test.js -n 10 -c 3 -s https://prairielearn.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_prairielearn.json')
+      .example('node tools/load-test.js -n 10 -c 1 3 5 -s https://pl-dev.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_pl-dev.json')
+      .example('node tools/load-test.js -n 10 -c 1 3 5 -s https://prairielearn.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_prairielearn.json')
       .wrap(null)
       .help()
       .alias('help', 'h')
@@ -136,12 +136,21 @@ async function singleTest(clients, iterations) {
 }
 
 async function main() {
-    try {
-        console.log('######################################################################');
-        const time = await singleTest(argv.clients, argv.iterations);
-        console.log(`Average request time for ${argv.clients} clients and ${argv.iterations} iterations: ${time} seconds`);
-    } catch (e) {
-        console.log('Error', e);
+    let results = [];
+    for (let c of argv.clients) {
+        try {
+            console.log('######################################################################');
+            const time = await singleTest(c, argv.iterations);
+            console.log(`Average request time for ${c} clients and ${argv.iterations} iterations: ${time} seconds`);
+            results.push({clients: c, iterations: argv.iterations, time});
+        } catch (e) {
+            console.log('Error', e);
+            results.push({clients: c, iterations: argv.iterations, time: null});
+        }
+    }
+    console.log('######################################################################');
+    for (let r of results) {
+        console.log(`Average request time for ${r.clients} clients and ${r.iterations} iterations: ${r.time} seconds`);
     }
 }
 
