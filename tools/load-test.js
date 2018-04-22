@@ -46,6 +46,7 @@ const argv = yargs
 
 config.loadConfig(argv.config);
 
+const sleepTimeSec = 10;
 const exampleCourseName = 'XC 101: Example Course, Spring 2015';
 const questionTitle = 'Add two numbers';
 
@@ -59,6 +60,10 @@ cookies.setCookie(request.cookie(`load_test_token=${loadTestToken}`), siteUrl);
 
 function avg(values) {
     return _.reduce(values, (a,b) => (a+b)) / _.size(values);
+}
+
+async function sleep(sec) {
+    return new Promise(resolve => setTimeout(resolve, sec * 1000));
 }
 
 async function getCourseInstanceUrl() {
@@ -120,7 +125,12 @@ async function singleClientTest(iterations, iClient) {
     let totalTime = 0;
     for (let i = 0; i < iterations; i++) {
         console.log(`start (iteration ${i}, client ${iClient})`);
-        totalTime += await singleRequest();
+        try {
+            totalTime += await singleRequest();
+        } catch (e) {
+            console.log('Error', e);
+            totalTime = NaN
+        }
         console.log(`end (iteration ${i}, client ${iClient})`);
     }
     return totalTime / iterations;
@@ -136,21 +146,23 @@ async function singleTest(clients, iterations) {
 }
 
 async function main() {
-    let results = [];
-    for (let c of argv.clients) {
-        try {
+    try {
+        let results = [];
+        for (let c of argv.clients) {
             console.log('######################################################################');
+            console.log(`Starting test with ${c} clients and ${argv.iterations} iterations`);
+            console.log(`Sleeping for ${sleepTimeSec} seconds...`);
+            await sleep(sleepTimeSec);
             const time = await singleTest(c, argv.iterations);
             console.log(`Average request time for ${c} clients and ${argv.iterations} iterations: ${time} seconds`);
             results.push({clients: c, iterations: argv.iterations, time});
-        } catch (e) {
-            console.log('Error', e);
-            results.push({clients: c, iterations: argv.iterations, time: null});
         }
-    }
-    console.log('######################################################################');
-    for (let r of results) {
-        console.log(`Average request time for ${r.clients} clients and ${r.iterations} iterations: ${r.time} seconds`);
+        console.log('######################################################################');
+        for (let r of results) {
+            console.log(`Average request time for ${r.clients} clients and ${r.iterations} iterations: ${r.time} seconds`);
+        }
+    } catch (e) {
+        console.log('Error', e);
     }
 }
 
