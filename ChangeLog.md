@@ -71,6 +71,8 @@
 
   * Add load-testing script (Matt West).
 
+  * Add documentation for the `shuffleQuestions` option (Matt West).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).

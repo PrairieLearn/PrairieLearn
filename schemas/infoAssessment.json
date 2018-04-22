@@ -42,7 +42,7 @@
             "default": false
         },
         "shuffleQuestions": {
-            "description": "Whether the questions will be shuffled in the student",
+            "description": "Whether the questions will be shuffled in the student view of an assessment (Homework only)",
             "type": "boolean",
             "default": false
         },
