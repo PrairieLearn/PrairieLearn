@@ -6,7 +6,11 @@ const sql = require('./sql-loader').loadSqlEquiv(__filename);
 
 function reportTime(sqlBlockName) {
   return function(jobId, callback) {
-    if (!config.useDatabase) return callback(null);
+    if (!config.useDatabase) {
+      // Fall back to machine time if DB isn't enabled
+      const time = new Date().toISOString();
+      return callback(null, time);
+    }
     const params = { job_id: jobId };
     sqldb.queryOneRow(sql[sqlBlockName], params, (err, results) => {
       if (ERR(err, callback)) return;

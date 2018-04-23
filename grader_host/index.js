@@ -114,6 +114,7 @@ function handleJob(job, done) {
 
     async.auto({
         context: (callback) => context(info, callback),
+        reportReceived: ['context', reportReceived],
         initDocker: ['context', initDocker],
         initFiles: ['context', initFiles],
         runJob: ['initDocker', 'initFiles', runJob],
@@ -145,6 +146,30 @@ function context(info, callback) {
             receivedTime: time,
         };
         callback(null, context);
+    });
+}
+
+function reportReceived(info, callback) {
+    const {
+        context: {
+            job,
+            receivedTime,
+            logger,
+        }
+    } = info;
+    logger.info('Pinging webhook to acknowledge that job was received');
+    const webhookData = {
+        event: 'job_received',
+        job_id: job.jobId,
+        data: {
+            received_time: receivedTime,
+        },
+        __csrf_token: job.csrfToken,
+    };
+    request.post({method: 'POST', url: job.webhookUrl, json: true, body: webhookData}, function (err, _response, _body) {
+        // We don't want to fail the job if this notification fails
+        if (ERR(err, (err) => logger.error(err)));
+        callback(null);
     });
 }
 
