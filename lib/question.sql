@@ -15,6 +15,8 @@ ORDER BY
 -- BLOCK select_submissions
 SELECT
     s.*,
+    to_jsonb(gj) AS grading_job,
+    -- These are separate for historical reasons
     gj.id AS grading_job_id,
     grading_job_status(gj.id) AS grading_job_status,
     format_date_full_compact(s.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date,

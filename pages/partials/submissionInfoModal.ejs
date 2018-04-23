@@ -1,0 +1,39 @@
+<div class="modal fade" id="submissionInfoModal-<%= submission.id %>" tabindex="-1" role="dialog" aria-labelledby="submissionInfoModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="submissionInfoModalLabel">Submission info</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <table class="table table-sm table-bordered two-column-description mb-0">
+          <tbody>
+            <tr>
+              <th class="align-middle">Grading Job</th>
+              <td>
+                <a class="btn btn-primary" href="<%= urlPrefix %>/grading_job/<%= submission.grading_job_id %>">View grading job <%= submission.grading_job_id %></a>
+              </td>
+            </tr>
+            <tr>
+              <th>Submission Time</th>
+              <td><%- submission.formatted_date %></td>
+            </tr>
+            <tr>
+              <th>Queue Duration</th>
+              <td><%- submission.grading_job_stats.queueDuration %></td>
+            </tr>
+            <tr>
+              <th>Grading Duration</th>
+              <td><%- submission.grading_job_stats.gradingDuration %></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>

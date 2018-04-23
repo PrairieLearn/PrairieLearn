@@ -1,13 +1,22 @@
 <!-- Keeping "graded" state in the DOM is bad, yet here we are. -->
 <div class="card mb-4 pastsubmission-block" data-grading-job-status="<%= submission.grading_job_status %>" data-grading-job-id="<%= submission.grading_job_id %>" id="submission-<%= submission.id %>">
   <div class="card-header bg-light text-dark d-flex align-items-center submission-header <% if (submissionIdx != submissionCount) { %> collapsed <% } %>" data-toggle="collapse" data-target="#submission-<%= submission.id %>-body">
-    Submitted answer
-    <% if (submissionCount > 1) { %>
-    <%= submissionIdx %>
-    <% } %>
-    <span class="ml-2"><%- include('submissionStatus', {submission: submission}); %></span>
-    <small class="ml-auto">Submitted at <%- submission.formatted_date %></small>
-    <button type="button" class="expand-icon-container btn btn-outline-secondary btn-sm ml-2">
+    <div class="mr-auto">
+      <div>
+        <span class="mr-2">
+          Submitted answer
+          <% if (submissionCount > 1) { %>
+          <%= submissionIdx %>
+          <% } %>
+        </span>
+        <span><%- include('submissionStatus', {submission: submission}); %></span>
+      </div>
+      <small>Submitted at <%- submission.formatted_date %></small>
+    </div>
+    <button type="button" class="btn btn-outline-secondary btn-sm mr-2" data-submission-id="<%= submission.id %>">
+      <i class="fa fa-info-circle fa-fw"></i>
+    </button>
+    <button type="button" class="expand-icon-container btn btn-outline-secondary btn-sm">
       <i class="fa fa-angle-up fa-fw ml-1 expand-icon"></i>
     </button>
   </div>
@@ -17,4 +26,16 @@
       <%- submissionHtml %>
     </div>
   </div>
+
+  <%- include('submissionInfoModal', {submission: submission}); %>
 </div>
+
+<script>
+$(function() {
+  $('button[data-submission-id="<%= submission.id %>"]').on('click', function(e) {
+    // Prevent this click from also expanding the submission
+    $('#submissionInfoModal-<%= submission.id %>').modal('show');
+    e.stopPropagation();
+  });
+});
+</script>

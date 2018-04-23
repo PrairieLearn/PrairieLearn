@@ -47,6 +47,11 @@ requirejs.config({
     },
 });
 
+if (typeof jQuery === 'function') {
+  //jQuery already loaded, just use that
+  define('jquery', function() { return jQuery; });
+}
+
 function CalculationClient() {
     this.qClient = null;
 };
