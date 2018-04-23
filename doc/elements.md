@@ -237,6 +237,7 @@ Attribute | Type | Default | Description
 `grade` | boolean | true | If the element will be graded, i.e., if it is being used to ask a question. If `grade` is `false`, then this element will never produce any html in the answer panel or in the submission panel.
 
 A `pl_threejs_stl` element inside a `pl_threejs` element allows you to add a mesh described by an `stl` file to the scene, and has these attributes:
+
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `file_name` | string | — | Name of `.stl` file.
@@ -249,6 +250,7 @@ Attribute | Type | Default | Description
 `format` | string | rpy | Determines how `orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
 
 A `pl_threejs_txt` element inside a `pl_threejs` element allows you to add whatever text appears between the `<pl_threejs_txt> ... </pl_threejs_txt>` tags as a mesh to the scene, and has these attributes:
+
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `frame` | string | body | Which frame the object is fixed to, either `body` or `space`.
@@ -259,7 +261,6 @@ Attribute | Type | Default | Description
 `format` | string | rpy | Determines how `orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
 
 Note that a 3D scene is also created to show each submitted answer. This means that if there are many submitted answers, the page will load slowly.
-
 
 ## Decorative Elements
 
