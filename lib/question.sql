@@ -57,6 +57,7 @@ SELECT
     to_jsonb(aset) AS assessment_set,
     to_jsonb(ci) AS course_instance,
     to_jsonb(c) AS course,
+    to_jsonb(ci) AS course_instance,
     gj.id AS grading_job_id,
     grading_job_status(gj.id) AS grading_job_status,
     format_date_full_compact(s.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date,

@@ -16,22 +16,41 @@
             </tr>
             <% if (question.grading_method == 'External') { %>
             <tr>
-              <th>Queue duration</th>
-              <td><%- submission.grading_job_stats.queueDuration %></td>
+              <th><span class="text-dark mr-2">&bull;</span>Submit duration</th>
+              <td><%- submission.grading_job_stats.submitDuration %>s</td>
             </tr>
             <tr>
-              <th>Grading duration</th>
-              <td><%- submission.grading_job_stats.gradingDuration %></td>
+              <th><span class="text-warning mr-2">&bull;</span>Queue duration</th>
+              <td><%- submission.grading_job_stats.queueDuration %>s</td>
+            </tr>
+            <tr>
+              <th><span class="text-primary mr-2">&bull;</span>Start duration</th>
+              <td><%- submission.grading_job_stats.startDuration %>s</td>
+            </tr>
+            <tr>
+              <th><span class="text-success mr-2">&bull;</span>Grade duration</th>
+              <td><%- submission.grading_job_stats.gradeDuration %>s</td>
+            </tr>
+            <tr>
+              <th><span class="text-danger mr-2">&bull;</span>Report duration</th>
+              <td><%- submission.grading_job_stats.reportDuration %>s</td>
             </tr>
             <tr>
               <th>Total duration</th>
-              <td><%- submission.grading_job_stats.totalDuration %></td>
+              <td><%- submission.grading_job_stats.totalDuration %>s</td>
             </tr>
             <% } %>
           </tbody>
         </table>
         <% if (question.grading_method == 'External') { %>
-        <a class="btn btn-primary mt-2" href="<%= urlPrefix %>/grading_job/<%= submission.grading_job_id %>">View grading job <%= submission.grading_job_id %></a>
+        <div class="d-flex mt-2 mb-2">
+          <span style="display: inline-block; width: <%- submission.grading_job_stats.phases[0] %>%; height: 10px;" class="bg-dark m-0"></span>
+          <span style="display: inline-block; width: <%- submission.grading_job_stats.phases[1] %>%; height: 10px;" class="bg-warning m-0"></span>
+          <span style="display: inline-block; width: <%- submission.grading_job_stats.phases[2] %>%; height: 10px;" class="bg-primary m-0"></span>
+          <span style="display: inline-block; width: <%- submission.grading_job_stats.phases[3] %>%; height: 10px;" class="bg-success m-0"></span>
+          <span style="display: inline-block; width: <%- submission.grading_job_stats.phases[4] %>%; height: 10px;" class="bg-danger m-0"></span>
+        </div>
+        <a class="btn btn-primary mt-2" href="<%= plainUrlPrefix %>/course_instance/<%= course_instance.id %>/instructor/grading_job/<%= submission.grading_job_id %>">View grading job <%= submission.grading_job_id %></a>
         <% } %>
       </div>
       <div class="modal-footer">
