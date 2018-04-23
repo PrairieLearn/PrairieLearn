@@ -79,12 +79,6 @@ describe('Access control', function() {
         return cookies;
     };
 
-/*    var cookiesStudentExamWithPassword = function() {
-        var cookies = cookiesStudentExam();
-        cookies.setCookie(request.cookie('pl_requested_date=2301-06-13T13:12:00Z'), siteUrl);
-        return cookies;
-    }; */
-
     var cookiesStudentExamAfterAssessment = function() {
         var cookies = cookiesStudentExam();
         cookies.setCookie(request.cookie('pl_requested_date=2350-06-13T13:12:00Z'), siteUrl);
@@ -286,11 +280,11 @@ describe('Access control', function() {
         it('as student in Exam mode after time period should return 500', function(callback) {
             postAssessment(cookiesStudentExamAfterAssessment(), true, 500, callback);
         });
-/* need to move password protection out to its own tests
-        it('as student in Exam mode without password should return 500', function(callback) {
-            postAssessment(cookiesStudentExam(), false, 500, callback);
-        });
-*/
+// need to move password protection out to its own tests
+//        it('as student in Exam mode without password should return 500', function(callback) {
+//            postAssessment(cookiesStudentExam(), false, 500, callback);
+//        });
+
         it('as student in Exam mode should load successfully', function(callback) {
             postAssessment(cookiesStudentExam(), true, 200, callback);
         });
