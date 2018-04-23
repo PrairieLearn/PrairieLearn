@@ -46,6 +46,8 @@
     }
 
     function fetchResults(submissionId) {
+      var wasModalOpen = ($('#submissionInfoModal-' + submissionId).data('bs.modal') || {})._isShown;
+      $('#submissionInfoModal-' + submissionId).modal('hide');
       socket.emit('getResults', {
         variant_id: variantId,
         variant_token: variantToken,
@@ -58,6 +60,10 @@
           $('#submission-' + submissionId).replaceWith(function() {
             return $(msg.submissionPanel).fadeIn('slow');
           });
+          // Restore modal state if need be
+          if (wasModalOpen) {
+            $('#submissionInfoModal-' + submissionId).modal('show');
+          }
           resultsLoaded = true;
         }
         if (msg.questionScorePanel) {

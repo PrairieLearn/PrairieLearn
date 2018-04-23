@@ -8,28 +8,31 @@
         </button>
       </div>
       <div class="modal-body">
-        <table class="table table-sm table-bordered two-column-description mb-0">
+        <table class="table table-sm table-borderless two-column-description mb-0">
           <tbody>
             <tr>
-              <th class="align-middle">Grading Job</th>
-              <td>
-                <a class="btn btn-primary" href="<%= urlPrefix %>/grading_job/<%= submission.grading_job_id %>">View grading job <%= submission.grading_job_id %></a>
-              </td>
-            </tr>
-            <tr>
-              <th>Submission Time</th>
+              <th>Submission time</th>
               <td><%- submission.formatted_date %></td>
             </tr>
+            <% if (question.grading_method == 'External') { %>
             <tr>
-              <th>Queue Duration</th>
+              <th>Queue duration</th>
               <td><%- submission.grading_job_stats.queueDuration %></td>
             </tr>
             <tr>
-              <th>Grading Duration</th>
+              <th>Grading duration</th>
               <td><%- submission.grading_job_stats.gradingDuration %></td>
             </tr>
+            <tr>
+              <th>Total duration</th>
+              <td><%- submission.grading_job_stats.totalDuration %></td>
+            </tr>
+            <% } %>
           </tbody>
         </table>
+        <% if (question.grading_method == 'External') { %>
+        <a class="btn btn-primary mt-2" href="<%= urlPrefix %>/grading_job/<%= submission.grading_job_id %>">View grading job <%= submission.grading_job_id %></a>
+        <% } %>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
