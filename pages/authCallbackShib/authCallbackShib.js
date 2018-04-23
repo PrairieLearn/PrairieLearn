@@ -4,7 +4,7 @@ var router = express.Router();
 
 var config = require('../../lib/config');
 var csrf = require('../../lib/csrf');
-var sqldb = require('../../lib/sqldb');
+var sqldb = require('@prairielearn/prairielib/sql-db');
 
 router.get('/:action?/:target(*)?', function(req, res, next) {
     var authUid = null;

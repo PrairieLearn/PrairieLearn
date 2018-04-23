@@ -4,6 +4,7 @@ var path = require('path');
 
 var config = require('../lib/config');
 var load = require('../lib/load');
+var cron = require('../cron');
 var socketServer = require('../lib/socket-server');
 var serverJobs = require('../lib/server-jobs');
 var syncFromDisk = require('../sync/syncFromDisk');
@@ -25,6 +26,12 @@ module.exports = {
             function(callback) {
                 // pass "this" explicitly to enable this.timeout() calls
                 helperDb.before.call(that, function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            function(callback) {
+                cron.init(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -94,6 +101,12 @@ module.exports = {
             },
             function(callback) {
                 server.stopServer(function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
+            function(callback) {
+                cron.stop(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });

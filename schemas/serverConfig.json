@@ -16,10 +16,6 @@
             "description": "Secret key for authenticating users (should be a long random string).",
             "type": "string"
         },
-        "dbAddress": {
-            "description": "The address for connecting to the database.",
-            "type": "string"
-        },
         "postgresqlUser": {
             "description": "The user for connecting to the PostgreSQL database.",
             "type": "string"
@@ -32,16 +28,8 @@
             "description": "The host for connecting to the PostgreSQL database.",
             "type": "string"
         },
-        "amqpAddress": {
-            "description": "Address of the message queue server, or null to disable",
-            "type": "string"
-        },
-        "amqpGradingQueue": {
-            "description": "Name of the grading message queue",
-            "type": "string"
-        },
-        "amqpResultQueue": {
-            "description": "Name of the grading results message queue",
+        "redisUrl": {
+            "description": "The url for connecting to Redis.",
             "type": "string"
         },
         "logFilename": {

@@ -3,9 +3,9 @@ var _ = require('lodash');
 var express = require('express');
 var router = express.Router();
 
-var error = require('../../lib/error');
+var error = require('@prairielearn/prairielib/error');
 var question = require('../../lib/question');
-var sqldb = require('../../lib/sqldb');
+var sqldb = require('@prairielearn/prairielib/sql-db');
 
 function processSubmission(req, res, callback) {
     let variant_id, submitted_answer;

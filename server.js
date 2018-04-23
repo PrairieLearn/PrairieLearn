@@ -1,32 +1,33 @@
-var ERR = require('async-stacktrace');
-var fs = require('fs');
-var path = require('path');
-var favicon = require('serve-favicon');
-var async = require('async');
-var express = require('express');
-var bodyParser = require('body-parser');
-var cookieParser = require('cookie-parser');
-var passport = require('passport');
-var http = require('http');
-var https = require('https');
-var blocked = require('blocked-at');
-var onFinished = require('on-finished');
-var uuidv4 = require('uuid/v4');
-var argv = require('yargs-parser') (process.argv.slice(2));
+const ERR = require('async-stacktrace');
+const fs = require('fs');
+const path = require('path');
+const favicon = require('serve-favicon');
+const async = require('async');
+const express = require('express');
+const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
+const passport = require('passport');
+const http = require('http');
+const https = require('https');
+const blocked = require('blocked-at');
+const onFinished = require('on-finished');
+const uuidv4 = require('uuid/v4');
+const argv = require('yargs-parser') (process.argv.slice(2));
 
-var logger = require('./lib/logger');
-var config = require('./lib/config');
-var load = require('./lib/load');
-var externalGrader = require('./lib/externalGrader');
-var externalGradingSocket = require('./lib/externalGradingSocket');
-var assessment = require('./lib/assessment');
-var sqldb = require('./lib/sqldb');
-var migrations = require('./migrations');
-var sprocs = require('./sprocs');
-var cron = require('./cron');
-var socketServer = require('./lib/socket-server');
-var serverJobs = require('./lib/server-jobs');
-var freeformServer = require('./question-servers/freeform.js');
+const logger = require('./lib/logger');
+const config = require('./lib/config');
+const load = require('./lib/load');
+const externalGrader = require('./lib/externalGrader');
+const externalGradingSocket = require('./lib/externalGradingSocket');
+const assessment = require('./lib/assessment');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const migrations = require('./migrations');
+const sprocs = require('./sprocs');
+const cron = require('./cron');
+const redis = require('./lib/redis');
+const socketServer = require('./lib/socket-server');
+const serverJobs = require('./lib/server-jobs');
+const freeformServer = require('./question-servers/freeform.js');
 
 // If there is only one argument, legacy it into the config option
 if (argv['_'].length == 1) {
@@ -474,6 +475,12 @@ if (config.startServer) {
         },
         function(callback) {
             cron.init(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            redis.init((err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });

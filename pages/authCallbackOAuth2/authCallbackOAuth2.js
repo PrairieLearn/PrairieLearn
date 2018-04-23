@@ -6,7 +6,7 @@ var router = express.Router();
 var logger = require('../../lib/logger');
 var config = require('../../lib/config');
 var csrf = require('../../lib/csrf');
-var sqldb = require('../../lib/sqldb');
+var sqldb = require('@prairielearn/prairielib/sql-db');
 
 var google = require('googleapis');
 var OAuth2 = google.auth.OAuth2;
