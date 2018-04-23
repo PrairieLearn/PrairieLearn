@@ -90,6 +90,7 @@
   * Add developer docs about question rendering (Matt West).
 
   * Add `load-test` support for v2 questions (Matt West).
+  * Add submission info modal with external grading stats (Nathan Walters).
 
   * Fix broken file upload element (Nathan Walters).
 
