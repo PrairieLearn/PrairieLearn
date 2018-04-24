@@ -80,6 +80,21 @@ Attribute | Type | Default | Description
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `allow_complex` | boolean | False | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers_name] = pl.to_json(ans)`.
 
+## `pl_integer_input` element
+
+```html
+<pl_integer_input answers_name="x" />
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers_name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`correct_answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers_name]`.
+`label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
+`suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
+`display` | "block" or "inline" | "inline" | How to display the input field.
+
 ## `pl_matrix_input` element
 
 ```html

@@ -79,6 +79,8 @@
 
   * Add ability to restore original file in `pl_file_editor` (Nathan Walters).
 
+  * Add `pl_integer_input` element (Tim Bretl).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
