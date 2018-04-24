@@ -33,7 +33,8 @@
     "zones": [
         {
             "questions": [
-				{"id": "checkboxExamples",           "points": 2, "maxPoints": 10}
+				{"id": "checkboxExamples",           "points": 2, "maxPoints": 10},
+				{"id": "numberExamples",           "points": 2, "maxPoints": 10}
             ]
         }
     ]
