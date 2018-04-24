@@ -33,13 +33,21 @@ def render(element_html, element_index, data):
         if comparison == 'relabs':
             rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
             atol = pl.get_float_attrib(element, 'atol', 1e-8)
-            info_params = {'format': True, 'relabs': True, 'rtol': rtol, 'atol': atol}
+            if (rtol < 0):
+                raise ValueError('Attribute rtol = {:g} must be non-negative'.format(rtol))
+            if (atol < 0):
+                raise ValueError('Attribute atol = {:g} must be non-negative'.format(atol))
+            info_params = {'format': True, 'relabs': True, 'rtol': '{:g}'.format(rtol), 'atol': '{:g}'.format(atol)}
         elif comparison == 'sigfig':
             digits = pl.get_integer_attrib(element, 'digits', 2)
-            info_params = {'format': True, 'sigfig': True, 'digits': digits, 'comparison_eps': 0.51 * (10**-(digits - 1))}
+            if (digits < 0):
+                raise ValueError('Attribute digits = {:d} must be non-negative'.format(digits))
+            info_params = {'format': True, 'sigfig': True, 'digits': '{:d}'.format(digits), 'comparison_eps': 0.51 * (10**-(digits - 1))}
         elif comparison == 'decdig':
             digits = pl.get_integer_attrib(element, 'digits', 2)
-            info_params = {'format': True, 'decdig': True, 'digits': digits, 'comparison_eps': 0.51 * (10**-(digits - 0))}
+            if (digits < 0):
+                raise ValueError('Attribute digits = {:d} must be non-negative'.format(digits))
+            info_params = {'format': True, 'decdig': True, 'digits': '{:d}'.format(digits), 'comparison_eps': 0.51 * (10**-(digits - 0))}
         else:
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
         info_params['allow_complex'] = pl.get_boolean_attrib(element, 'allow_complex', False)
