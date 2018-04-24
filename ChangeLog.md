@@ -73,6 +73,8 @@
 
   * Add documentation for the `shuffleQuestions` option (Matt West).
 
+  * Add `pl_integer_input` element (Tim Bretl).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
