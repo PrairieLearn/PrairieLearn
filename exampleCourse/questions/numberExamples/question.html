@@ -1,0 +1,69 @@
+<pl_question_panel>
+    <p>
+        Questions below were designed to showcase the different features of 
+		<a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl_number_input-element"><code>pl_number_input</code></a>. 
+		The goal of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl_number_input-element"><code>pl_number_input</code></a>
+		is to allow users to enter <b>real or imaginary values</b> to be checked within a specific tolerance. 
+    </p>
+</pl_question_panel>
+
+<pl_question_panel>
+    <hr />
+</pl_question_panel>
+
+<pl_question_panel>
+    <p>Within this question, you can observe the default behavior of the <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl_number_input-element"><code>pl_number_input</code></a> element.
+	   In particular, the default input field has help text as a placeholder as well as a question button and is set to use <code>"relabs"</code> to check the tolerance, which is a combination of relative (<code>"rtol"</code>) and absolute (<code>"atol"</code>) tolerances.</p>
+	<p> </p>
+    <p> Solve for the value of $c$ given $c^2 = {{params.a}}^2 + {{params.b}}^2$ </p>
+</pl_question_panel>
+
+<pl_number_input answers_name="c" />
+
+<pl_question_panel>
+    <hr />
+</pl_question_panel>
+
+<pl_question_panel>
+    <p>This question modifies the default relative tolerance (of <code>1e-3</code>) and absolute tolerance (of <code>1e-8</code>) underneath <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl_number_input-element"><code>pl_number_input</code></a> element. Furthermore, we add a label to the front of the input field to specify what the field should receive. </p>
+	<p> </p>
+    <p> Solve for the value of $c$ given $c^2 = {{params.a}}^2 + {{params.b}}^2$ </p>
+</pl_question_panel>
+
+<pl_number_input answers_name="c" label = "Enter the Value for $c$:" rtol = "1e-3" atol="1e-10"/>
+
+<pl_question_panel>
+    <hr />
+</pl_question_panel>
+
+<pl_question_panel>
+    <p>Under this variant, we opt to change the default comparison of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl_number_input-element"><code>pl_number_input</code></a>  from relative and absolute tolerances (<code>comparison="relabs"</code>) to significant digits (<code>comparison="sigfigs"</code>), which has a default of two digits. In addition, we've opted to add a suffix or a unit classification to the input via <code>suffix="$units$"</code>. </p>
+	<p> </p>
+    <p> Solve for the value of $c$ given $c^2 = {{params.a}}^2 + {{params.b}}^2$ </p>
+</pl_question_panel>
+
+<pl_number_input answers_name="c" label = "Enter the Value for $c$:" comparison="sigfig" suffix="$units$"/>
+
+<pl_question_panel>
+    <hr />
+</pl_question_panel>
+
+<pl_question_panel>
+    <p>Another option is to set the comparison for <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl_number_input-element"><code>pl_number_input</code></a> to decimal digits (<code>"decdig"</code>) with a requirement for four digits (<code>digits="4'"</code>). Furthermore, we changed the weight of this question to be more impactful vs the previous entries via <code>weight="2"</code>. Lastly, we allow students to enter complex numbers by setting <code>allow_complex="true"</code>. </p>
+	<p> </p>
+    <p> Solve for the value of $c$ given $c^2 = {{params.a}}^2 + {{params.b}}^2$ </p>
+</pl_question_panel>
+
+<pl_number_input answers_name="c" label = "Enter the Value for $c$:" comparison="decdig" digits="4" weight="2" allow_complex="true" suffix="$units$"/>
+
+<pl_question_panel>
+    <hr />
+</pl_question_panel>
+
+<pl_question_panel>
+    <p>As a final example, we remove the placeholder text found in <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl_number_input-element"><code>pl_number_input</code></a> by setting <code>hide_help_text="true"</code>.</p>
+	<p> </p>
+    <p> Solve for the value of $c$ given $c^2 = {{params.a}}^2 + {{params.b}}^2$ </p>
+</pl_question_panel>
+
+<pl_number_input answers_name="c" label = "Enter the Value for $c$:" hide_help_text="true" suffix="$units$"/>
