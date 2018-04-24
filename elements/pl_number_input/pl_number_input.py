@@ -10,7 +10,7 @@ import random
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers_name']
-    optional_attribs = ['weight', 'correct_answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits', 'allow_complex']
+    optional_attribs = ['weight', 'correct_answer', 'label', 'suffix', 'display', 'comparison', 'rtol', 'atol', 'digits', 'allow_complex', 'hide_help_text']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers_name')
 
@@ -59,7 +59,9 @@ def render(element_html, element_index, data):
             info = chevron.render(f, info_params).strip()
         with open('pl_number_input.mustache', 'r', encoding='utf-8') as f:
             info_params.pop('format', None)
-            info_params['shortformat'] = True
+            # Within mustache, the shortformat generates the shortinfo that is used as a placeholder inside of the numeric entry.
+            # Here we opt to not generate the value, hence the placeholder is empty.
+            info_params['shortformat'] = not pl.get_boolean_attrib(element, 'hide_help_text', False)
             shortinfo = chevron.render(f, info_params).strip()
 
         html_params = {

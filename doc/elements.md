@@ -79,6 +79,7 @@ Attribute | Type | Default | Description
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `allow_complex` | boolean | False | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers_name] = pl.to_json(ans)`.
+`hide_help_text` | boolean | False | Hide help text stating the default comparison. 
 
 ## `pl_integer_input` element
 
