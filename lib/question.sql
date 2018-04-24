@@ -53,6 +53,7 @@ SELECT
     to_jsonb(ai) AS assessment_instance,
     to_jsonb(a) AS assessment,
     to_jsonb(aset) AS assessment_set,
+    to_jsonb(ci) AS course_instance,
     to_jsonb(c) AS course,
     gj.id AS grading_job_id,
     grading_job_status(gj.id) AS grading_job_status,
@@ -78,7 +79,7 @@ FROM
     LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
     LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-    LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
     JOIN pl_courses AS c ON (c.id = q.course_id)
 WHERE
     s.id = $submission_id
