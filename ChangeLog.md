@@ -81,6 +81,8 @@
 
   * Add `pl_integer_input` element (Tim Bretl).
 
+  * Add consistency checks for `course_instance_id` in `variants` (Matt West).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
