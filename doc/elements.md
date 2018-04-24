@@ -88,21 +88,7 @@ Attribute | Type | Default | Description
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `allow-complex` | boolean | False | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers-name] = pl.to_json(ans)`.
-
-## `pl-integer-input` element
-
-```html
-<pl-integer-input answers-name="x"></pl-integer-input>
-```
-
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`answers-name` | string | — | Variable name to store data in.
-`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`correct-answer` | float | special | Correct answer for grading. Defaults to `data["correct_answers"][answers-name]`.
-`label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
-`suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
-`display` | "block" or "inline" | "inline" | How to display the input field.
+`hide-help-text` | boolean | False | Hide help text stating the default comparison. 
 
 ## `pl-string-input` element
 
