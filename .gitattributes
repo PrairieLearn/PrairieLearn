@@ -3,3 +3,4 @@
 * text=auto
 
 *.sh text eol=lf
+ChangeLog.md merge=union
