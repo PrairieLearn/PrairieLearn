@@ -16,6 +16,15 @@ $(function() {
     <div class="card">
         <div class="card-header">{{file_name}}</div>
         <div class="editor"></div>
+        <div class="card-footer d-flex">
+            <div class="ml-auto">
+                <a class="btn btn-outline-secondary btn-sm restore-original" role="button" tabindex="-1">Restore original file</a>
+                <div class="restore-original-confirm-container" style="display: none;">
+                    <a class="btn btn-success btn-sm restore-original-confirm" role="button" tabindex="-1">Confirm restore original</a>
+                    <a class="btn btn-secondary btn-sm restore-original-cancel" role="button" tabindex="-1">Cancel</a>
+                </div>
+            </div>
+        </div>
     </div>
     {{submission}}
 </div>

@@ -6,9 +6,14 @@ window.PLFileEditor = function(uuid, options) {
     if (!this.element) {
         throw new Error('File upload element ' + elementId + ' was not found!');
     }
+    this.originalContents = options.originalContents || '';
 
     this.inputElement = this.element.find('input');
     this.editorElement = this.element.find('.editor');
+    this.restoreOriginalButton = this.element.find('.restore-original');
+    this.restoreOriginalConfirmContainer = this.element.find('.restore-original-confirm-container');
+    this.restoreOriginalConfirm = this.element.find('.restore-original-confirm');
+    this.restoreOriginalCancel = this.element.find('.restore-original-cancel');
     this.editor = ace.edit(this.editorElement.get(0));
     this.editor.setTheme('ace/theme/chrome');
     this.editor.getSession().setUseWrapMode(true);
@@ -29,7 +34,32 @@ window.PLFileEditor = function(uuid, options) {
     if (options.currentContents) {
         currentContents = this.b64DecodeUnicode(options.currentContents);
     }
-    this.editor.setValue(currentContents);
+    this.setEditorContents(currentContents);
+
+    this.initRestoreOriginalButton();
+};
+
+window.PLFileEditor.prototype.initRestoreOriginalButton = function() {
+    var that = this;
+    this.restoreOriginalButton.click(function() {
+        that.restoreOriginalButton.hide();
+        that.restoreOriginalConfirmContainer.show();
+    });
+
+    this.restoreOriginalConfirm.click(function() {
+        that.restoreOriginalConfirmContainer.hide();
+        that.restoreOriginalButton.show();
+        that.setEditorContents(that.b64DecodeUnicode(that.originalContents));
+    });
+
+    this.restoreOriginalCancel.click(function() {
+        that.restoreOriginalConfirmContainer.hide();
+        that.restoreOriginalButton.show();
+    });
+};
+
+window.PLFileEditor.prototype.setEditorContents = function(contents) {
+    this.editor.setValue(contents);
     this.editor.gotoLine(1, 0);
     this.editor.focus();
     this.syncFileToHiddenInput();
