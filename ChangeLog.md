@@ -75,6 +75,8 @@
 
   * Add course instance id to all question variants (Nathan Walters).
 
+  * Add docs for external grading statistics (Matt West).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).

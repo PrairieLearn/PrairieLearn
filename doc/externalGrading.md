@@ -13,6 +13,47 @@ You can define a number of resources for the external grading process:
 
 When a student clicks "Submit" on an externally-graded question, PrairieLearn will assemble all of those resources that you've defined into an archive. That archive will be submitted to be run as a job on AWS infrasctructure inside the environment that you specify. Results are then sent back to PrairieLearn; once they are processed, the student can refresh the page to see their score, individual test cases, `stdout`/`stderr`, and more.
 
+## External grading timestamps and phases
+
+An external grading job goes through various phases and the times when these phases start are recorded in the grading job. These are:
+
+```text
+--- Timestamp 1: grading_requested_at (reported by PrairieLearn)
+        ^
+        | Phase 1: submit
+        |
+        | PrairieLearn writes the grading job information to S3
+        | and puts the job on the grading queue.
+        v
+--- Timestamp 2: grading_submitted_at (reported by PrairieLearn)
+        ^
+        | Phase 2: queue
+        |
+        | The job waits on the grading queue until received by a grader.
+        v
+--- Timestamp 3: grading_received_at (reported by PrairieGrader)
+        ^
+        | Phase 3: prepare
+        |
+        | The grader reads the grading information from S3,
+        | writes it to local disk, pulls the appropriate grading
+        | Docker image, and starts the grading container.
+        v
+--- Timestamp 4: grading_started_at (reported by PrairieGrader)
+        ^
+        | Phase 4: run
+        |
+        | The course grading code runs inside the Docker container.
+        v
+--- Timestamp 5: grading_finished_at (reported by PrairieGrader)
+        ^
+        | Phase 4: report
+        |
+        | The grader sends the grading results back to PrairieLearn.
+        v
+--- Timestamp 6: graded_at (reported by PrairieLearn)
+```
+
 ## The Grading Process
 
 PrairieLearn external grading is set up to enable courses to use their existing grading infrastructure. All external grading jobs will be run in self-contained Docker containers (you can think of them as lightweight VMs) which can be configured to a course's specifications.
