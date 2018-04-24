@@ -31,7 +31,7 @@ BEGIN
     IF instance_question_id IS NOT NULL THEN
         PERFORM instance_questions_lock(instance_question_id);
 
-        SELECT           q.id,    u.user_id,                  ai.id                    ci.id
+        SELECT           q.id,    u.user_id,                  ai.id,                   ci.id
         INTO real_question_id, real_user_id, assessment_instance_id, real_course_instance_id
         FROM
             instance_questions AS iq
