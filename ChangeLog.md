@@ -82,6 +82,7 @@
   * Add `pl_integer_input` element (Tim Bretl).
 
   * Add consistency checks for `course_instance_id` in `variants` (Matt West).
+
   * Add `merge=union` strategy for `ChangeLog.md` (Matt West).
 
   * Fix broken file upload element (Nathan Walters).
@@ -141,6 +142,8 @@
   * Fix question order on instructor assessment instance page (Matt West).
 
   * Fix bug in display of input element tolerances (Tim Bretl).
+
+  * Fix `variants.course_instance_id` migration (Matt West).
 
   * Change to Bootstrap 4 (Nathan Walters).
 
