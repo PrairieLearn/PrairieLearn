@@ -82,6 +82,7 @@
   * Add `pl_integer_input` element (Tim Bretl).
 
   * Add consistency checks for `course_instance_id` in `variants` (Matt West).
+  * Add `merge=union` strategy for `ChangeLog.md` (Matt West).
 
   * Fix broken file upload element (Nathan Walters).
 
