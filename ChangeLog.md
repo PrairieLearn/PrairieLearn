@@ -337,6 +337,8 @@
   * Add consistency checks for `course_instance_id` in `variants` (Matt West).
 
   * Add `merge=union` strategy for `ChangeLog.md` (Matt West).
+  
+  * Add course-level questions and issues page (Ray Essick).
 
   * Add developer docs about question rendering (Matt West).
 
