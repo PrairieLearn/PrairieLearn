@@ -1,5 +1,3 @@
-ALTER TABLE variants ADD COLUMN course_instance_id bigint REFERENCES course_instances ON UPDATE CASCADE ON DELETE CASCADE;
-
 UPDATE variants AS v
 SET
     course_instance_id = ci.id
