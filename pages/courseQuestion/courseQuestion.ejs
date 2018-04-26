@@ -61,7 +61,7 @@
                 <td><%- include('../partials/assessments', {assessments: assessments}); %></td>
               </tr>
               <% } %>
-              <% if (question.type == 'Freeform') { %>
+              <% if (question.type == 'Freeform' && typeof course_instance !== 'undefined') { %>
               <tr>
                 <th class="align-middle">Tests</th>
                 <td>
