@@ -4,7 +4,6 @@ const router = express.Router();
 const path = require('path');
 const plist = require('plist');
 const fs = require('fs');
-//const util = require('util');
 const zlib = require('zlib');
 const crypto = require('crypto');
 const jscryptor = require('jscryptor');
@@ -35,25 +34,22 @@ var check_and_send_assessment_config_seb = function(res, callback) {
             if (ERR(err, callback)) return;
         });
     }
-    //console.log('no assessment specific config.seb found');
     callback(null);
 };
 
 var load_default_config = function(res, req) {
     var defobj = plist.parse(fs.readFileSync(__dirname + '/seb-default-exam.seb', 'utf8'));
-    //console.log(JSON.stringify(defobj));
 
     var fullUrlPrefix = req.protocol + '://' + req.get('host');
 
     defobj['startURL'] = `${fullUrlPrefix}/pl/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`;
 
-    //console.log(qdata);
     var hashdata = {
         assessment_id: res.locals.assessment.id,
         user_id: res.locals.authz_data.user.user_id,
     };
-
     defobj['browserUserAgent'] = 'prairielearn:' + csrf.generateToken(hashdata, config.secretKey);
+
     defobj['browserUserAgentWinDesktopMode'] = 1;
     defobj['browserUserAgentMac'] = 1;
     defobj['browserUserAgentWinTouchMode'] = 1;
@@ -87,10 +83,7 @@ var add_allowed_program = function(SEBconfig, program) {
         allowUserToChooseApp: false,
         strongKill: false,
         os: 1,
-//        title: 'EXCEL',
         description: '',
-//        executable: 'excel.exe',
-//        originalName: 'Excel.exe',
         windowHandlingProcess: '',
         path: '',
         identifier: '',
@@ -152,7 +145,7 @@ router.get('/', function(req, res, next) {
             //
             // Finish up the file, dress it, and send it along
             //
-            var SEBdressing = 'xml'; // default case
+            var SEBdressing = 'gzip'; // default case
             if ('dressing' in res.locals.authz_result.seb_config) {
                 SEBdressing = res.locals.authz_result.seb_config.dressing;
             }

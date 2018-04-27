@@ -4,6 +4,7 @@
 const express = require('express');
 var router = express.Router();
 
+var logger = require('../lib/logger');
 var csrf = require('../lib/csrf');
 var config = require('../lib/config');
 
@@ -11,24 +12,24 @@ var timeout = 24; // hours
 
 router.get('/', function(req, res, next) {
 
-    //console.log(res.locals);
-
-    // SEB: check BrowserExamKey
-    if ('x-safeexambrowser-requesthash' in req.headers) {
-        checkBrowserExamKeys(res, req.headers['x-safeexambrowser-requesthash']);
-    }
+// Future feature
+//    // SEB: check BrowserExamKey
+//    if ('x-safeexambrowser-requesthash' in req.headers) {
+//        checkBrowserExamKeys(res, req.headers['x-safeexambrowser-requesthash']);
+//    }
 
     // SEB: check user-agent
     if ('user-agent' in req.headers) {
         checkUserAgent(res, req.headers['user-agent']);
     }
 
-    // Course Instance view (only show allowed exam)
-    if (!('assessment' in res.locals)) {
-        //console.log('In Course Instance Page');
-        //res.locals.authz_data.mode = 'SEB';
-        //console.log(res.locals);
-    }
+// Future feature
+//    // Course Instance view (only show allowed exam)
+//    if (!('assessment' in res.locals)) {
+//        //console.log('In Course Instance Page');
+//        //res.locals.authz_data.mode = 'SEB';
+//        //console.log(res.locals);
+//    }
 
     // SafeExamBrowser protect the assesment
     if ('authz_result' in res.locals &&
@@ -97,17 +98,14 @@ module.exports = router;
 
 function badPassword(res, msg) {
 
+    logger.info(`invalid password attempt for ${res.locals.user.uid}`);
     res.clearCookie('pl_assessmentpw');
-    // FIXME Log a bad attempt somewhere
     res.locals.passwordMessage = msg;
     res.locals.prompt = 'password';
-    //console.log(res.locals);
     return res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 }
 
 function badSEB(req, res) {
-
-    //console.log(res.locals);
 
     var SEBdata = {
         user_id: res.locals.user.user_id,
@@ -115,12 +113,10 @@ function badSEB(req, res) {
         course_instance_id: res.locals.course_instance.id,
         authz_data: res.locals.authz_data,
     };
-    //console.log('SEBdata', SEBdata);
     res.locals.SEBdata = csrf.generateToken(SEBdata, config.secretKey);
-    //var proto = 'http://';
     var proto = 'seb://';
+    //var proto = 'http://';  // For testing
     res.locals.SEBUrl = proto + req.get('host') + '/pl/downloadSEBConfig/';
-    //console.log(res.locals);
     res.locals.prompt = 'SEB';
     return res.status(401).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 }
@@ -136,7 +132,6 @@ function checkUserAgent(res, userAgent) {
     var key = examHash[1];
 
     var fromSEB = csrf.getCheckedData(key, config.secretKey, {maxAge: timeout * 60 * 60 * 1000});
-    //console.log(fromSEB);
 
     if ('assessment' in res.locals &&
         fromSEB.assessment_id == res.locals.assessment.id &&
@@ -145,31 +140,16 @@ function checkUserAgent(res, userAgent) {
         res.locals.authz_data.mode = 'SEB';
     }
 
+    // Assessment list view, enable the mode
     if (!('assessment' in res.locals)) {
         res.locals.authz_data.mode = 'SEB';
     }
 
     res.locals.authz_data.allowed_assessment_id = fromSEB.assessment_id;
-    /*
-    //console.log(res.locals);
-    var fromAssessment = {
-        user_id: res.locals.authz_data.user.user_id,
-        assessment_id: res.locals.assessment.id || null,
-    };
-
-    console.log(fromAssessment);
-
-    if (csrf.checkToken(key, fromAssessment, config.secretKey, {maxAge: timeout * 60 * 60 * 1000})) {
-        //console.log(`key ${key} checks out, setting mode to SEB`);
-        res.locals.authz_data.mode = 'SEB';
-        //res.locals.authz_data.allowed_assessment_id = fromAssessment.ass
-    } else {
-        //console.log(`key ${key} fails check`);
-    }
-    */
 }
 
-function checkBrowserExamKeys(res, key) {
+// Future feature
+//function checkBrowserExamKeys(res, key) {
 
     /* FIXME
     _.each(res.locals.authz_result.seb_keys, function(key) {
@@ -185,4 +165,4 @@ function checkBrowserExamKeys(res, key) {
         }
     });
     */
-}
+//}
