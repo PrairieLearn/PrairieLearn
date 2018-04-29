@@ -147,6 +147,8 @@
 
   * Fix `variants.course_instance_id` migration (Matt West).
 
+  * Fix typo in `exampleCourse/questions/positionTimeGraph` (Matt West).
+
   * Change to Bootstrap 4 (Nathan Walters).
 
   * Change to NodeJS 8.x LTS (Matt West).
