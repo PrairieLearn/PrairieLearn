@@ -172,7 +172,7 @@ async function getQuestionSubmitInfo(questionUrl) {
         assert(elemList[0].children.length == 1);
         assert(elemList[0].children[0].data != null);
         const questionData = JSON.parse(decodeURIComponent(new Buffer(elemList[0].children[0].data, 'base64').toString()));
-        assert(questionData.variant != null)
+        assert(questionData.variant != null);
         questionSubmitInfo.variant = questionData.variant;
     } else if (argv.type == 'v3') {
         const elemList = $('.question-form input[name="__variant_id"]');
