@@ -19,13 +19,13 @@ const argv = yargs
       .option('server', {
           alias: 's',
           describe: 'Remote server URL',
-          default: 'https://pl-dev.engr.illinois.edu',
+          default: 'http://localhost:3000',
           type: 'string',
       })
       .option('iterations', {
           alias: 'n',
           describe: 'Number of test iterations per client',
-          default: 3,
+          default: 1,
           type: 'number',
       })
       .option('clients', {
@@ -34,6 +34,13 @@ const argv = yargs
           default: 1,
           type: 'array',
       })
+      .option('type', {
+          alias: 't',
+          describe: 'type of question to test',
+          default: 'v3',
+          choices: ['v2', 'v3'],
+      })
+      .example('node tools/load-test.js -s http://localhost:3000')
       .example('node tools/load-test.js -n 10 -c 1 3 5 -s https://pl-dev.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_pl-dev.json')
       .example('node tools/load-test.js -n 10 -c 1 3 5 -s https://prairielearn.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_prairielearn.json')
       .wrap(null)
@@ -47,7 +54,14 @@ config.loadConfig(argv.config);
 
 const sleepTimeSec = 10;
 const exampleCourseName = 'XC 101: Example Course, Spring 2015';
-const questionTitle = 'Add two numbers';
+let questionTitle;
+if (argv.type == 'v2') {
+    const questionTitle = 'Add two vectors';
+} else if (argv.type == 'v3') {
+    const questionTitle = 'Add two numbers';
+} else {
+    throw new Error(`unknown type: ${argv.type}`);
+}
 
 const serverUrl = argv.server;
 const siteUrl = serverUrl;
@@ -140,27 +154,51 @@ async function getQuestionSubmitInfo(questionUrl) {
     const body = await request({uri: questionUrl, jar: cookies});
     const $ = cheerio.load(body);
 
-    const elemListVariantId = $('.question-form input[name="__variant_id"]');
-    assert(elemListVariantId.length == 1);
-    const variant_id = Number.parseInt(elemListVariantId[0].attribs.value);
-
     const elemListCsrfToken = $('.question-form input[name="__csrf_token"]');
     assert(elemListCsrfToken.length == 1);
     const csrf_token = elemListCsrfToken[0].attribs.value;
+
+    let variant_id;
+    
+    if (argv.type == 'v2') {
+        elemList = $('.question-data');
+        assert(elemListVariantId.length == 1);
+        assert(elemList[0].children != null);
+        assert(elemList[0].children.length == 1);
+        assert(elemList[0].children[0].data != null);
+        const questionData = JSON.parse(decodeURIComponent(new Buffer(elemList[0].children[0].data, 'base64').toString()));
+        assert(questionData.variant != null)
+        variant_id = questionData.variant.id;
+    } else if (argv.type == 'v3') {
+        const elemListVariantId = $('.question-form input[name="__variant_id"]');
+        assert(elemListVariantId.length == 1);
+        variant_id = Number.parseInt(elemListVariantId[0].attribs.value);
+    } else {
+        throw new Error(`unknown type: ${argv.type}`);
+    }
 
     return {questionUrl, variant_id, csrf_token};
 }
 
 async function postQuestionAnswer(questionSubmitInfo) {
     const form = {
-        c: Math.floor(Math.random() * 10),
         __action: 'grade',
         __csrf_token: questionSubmitInfo.csrf_token,
         __variant_id: questionSubmitInfo.variant_id,
     };
+
+    if (argv.type == 'v2') {
+        form.wx = Math.floor(Math.random() * 10);
+        form.wy = Math.floor(Math.random() * 10);
+    } else if (argv.type == 'v3') {
+        form.c = Math.floor(Math.random() * 10);
+    } else {
+        throw new Error(`unknown type: ${argv.type}`);
+    }
+
     const body = await request.post({uri: questionSubmitInfo.questionUrl, jar: cookies, form, followAllRedirects: true});
     const $ = cheerio.load(body);
-    const elemListVariantId = $('.question-form input[name="__variant_id"]');
+    const elemListVariantId = $('.question-form input[name="__csrf_token"]');
     assert(elemListVariantId.length == 1);
 }
 
