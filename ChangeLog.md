@@ -132,6 +132,7 @@
   * Add submission info modal with external grading stats (Nathan Walters).
 
   * Add `load-test` support for v2 questions (Matt West).
+  * Add `Makefile` to main directory to handle docker builds and previews (James Balamuta).
 
   * Fix broken file upload element (Nathan Walters).
 
