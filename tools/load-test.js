@@ -34,6 +34,12 @@ const argv = yargs
           default: 1,
           type: 'array',
       })
+      .option('delay', {
+          alias: 'd',
+          describe: 'Delay between tests (seconds)',
+          default: 10,
+          type: 'number',
+      })
       .option('type', {
           alias: 't',
           describe: 'type of question to test',
