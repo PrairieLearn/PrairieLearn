@@ -418,7 +418,8 @@ function runJob(info, callback) {
                         }
 
                         try {
-                            results.results = JSON.parse(data);
+                            const parsedResults = JSON.parse(data);
+                            results.results = sanitizeObject(parsedResults);
                             results.succeeded = true;
                         } catch (e) {
                             logger.error('Could not parse results.json');
@@ -458,6 +459,32 @@ function runJob(info, callback) {
             return callback(null, results);
         }
     });
+}
+
+/**
+ * Recursively traverse an object and replace null bytes (\u0000) with the
+ * literal string "\u0000". This produces a new object and does not modify the
+ * provided object.
+ * @param  {Object} obj The object to be sanitized.
+ * @return {Object}     The sanitized object.
+ */
+function sanitizeObject(obj) {
+    const sanitized = Object.entries(obj).map(([key, value]) => {
+        if (Array.isArray(value)) {
+            return [key, value.map(sanitizeObject)];
+        } else if (typeof value === 'string') {
+            const sanitizedString = value.replace('\u0000', '\\u0000');
+            return [key, sanitizedString];
+        } else if (typeof value === 'object') {
+            return [key, sanitizeObject(value)];
+        } else {
+            return [key, value];
+        }
+    });
+    return sanitized.reduce((acc, [key, value]) => {
+        acc[key] = value;
+        return acc;
+    }, {});
 }
 
 function uploadResults(info, callback) {
