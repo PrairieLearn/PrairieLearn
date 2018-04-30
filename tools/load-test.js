@@ -240,7 +240,7 @@ async function singleRequest() {
     return {timeHomepage, timeQuestions, timeQuestion, timeSubmit, timeTotal};
 }
 
-async function singleClientTest(iterations, iClient) {
+async function singleClientTest(iterations, iClient, clients) {
     let results = {
         success: [],
         timeHomepage: [],
@@ -250,7 +250,7 @@ async function singleClientTest(iterations, iClient) {
         timeTotal: [],
     };
     for (let i = 0; i < iterations; i++) {
-        console.log(`start (iteration ${i}, client ${iClient})`);
+        console.log(`start (iteration ${i} of ${iterations}, client ${iClient} of ${clients})`);
         try {
             const r = await singleRequest();
             results.success.push(1);
@@ -263,7 +263,7 @@ async function singleClientTest(iterations, iClient) {
             console.log('Error', e);
             results.success.push(0);
         }
-        console.log(`end (iteration ${i}, client ${iClient})`);
+        console.log(`end (iteration ${i} of ${iterations}, client ${iClient} of ${clients})`);
     }
     return results;
 }
@@ -271,7 +271,7 @@ async function singleClientTest(iterations, iClient) {
 async function singleTest(clients, iterations) {
     const clientArray = [];
     for (let i = 0; i < clients; i++) {
-        clientArray.push(singleClientTest(iterations, i));
+        clientArray.push(singleClientTest(iterations, i, clients));
     }
     const clientResults = await Promise.all(clientArray);
     const aggResults = aggregate(clientResults);
