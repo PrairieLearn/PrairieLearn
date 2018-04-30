@@ -87,6 +87,8 @@
 
   * Add developer docs about question rendering (Matt West).
 
+  * Add `load-test` support for v2 questions (Matt West).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
