@@ -244,6 +244,7 @@
   * Change CSRF codes to be URL-safe (Dave Mussulman).
 
   * Change closed exams to not be reviewable for students (Dave Mussulman).
+  * Change `Makefile` for documentation to support `mkdocs` generation (James Balamuta).
 
   * Remove HackIllinois advertisement (Matt West).
 
