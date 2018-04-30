@@ -58,13 +58,12 @@ const argv = yargs
 
 config.loadConfig(argv.config);
 
-const sleepTimeSec = 10;
 const exampleCourseName = 'XC 101: Example Course, Spring 2015';
 let questionTitle;
 if (argv.type == 'v2') {
-    const questionTitle = 'Add two vectors';
+    questionTitle = 'Addition of vectors in Cartesian coordinates';
 } else if (argv.type == 'v3') {
-    const questionTitle = 'Add two numbers';
+    questionTitle = 'Add two numbers';
 } else {
     throw new Error(`unknown type: ${argv.type}`);
 }
@@ -142,62 +141,70 @@ async function sleep(sec) {
 async function getCourseInstanceUrl() {
     const body = await request({uri: baseUrl, jar: cookies});
     const $ = cheerio.load(body);
-    const elemListCourse = $(`td a:contains("${exampleCourseName}")`);
-    assert(elemListCourse.length == 1);
-    return serverUrl + elemListCourse[0].attribs.href;
+    const elemList = $(`td a:contains("${exampleCourseName}")`);
+    assert(elemList.length == 1);
+    return serverUrl + elemList[0].attribs.href;
 }
 
 async function getQuestionUrl(courseInstanceUrl) {
     const questionsUrl = courseInstanceUrl + '/instructor/questions';
     const body = await request({uri: questionsUrl, jar: cookies});
     const $ = cheerio.load(body);
-    const elemListQuestion = $(`td a:contains("${questionTitle}")`);
-    assert(elemListQuestion.length == 1);
-    return serverUrl + elemListQuestion[0].attribs.href;
+    const elemList = $(`td a:contains("${questionTitle}")`);
+    assert(elemList.length == 1);
+    return serverUrl + elemList[0].attribs.href;
 }
 
 async function getQuestionSubmitInfo(questionUrl) {
     const body = await request({uri: questionUrl, jar: cookies});
     const $ = cheerio.load(body);
 
-    const elemListCsrfToken = $('.question-form input[name="__csrf_token"]');
-    assert(elemListCsrfToken.length == 1);
-    const csrf_token = elemListCsrfToken[0].attribs.value;
+    const elemList = $('.question-form input[name="__csrf_token"]');
+    assert(elemList.length == 1);
+    const csrf_token = elemList[0].attribs.value;
 
-    let variant_id;
+    const questionSubmitInfo = {questionUrl, csrf_token};
     
     if (argv.type == 'v2') {
-        elemList = $('.question-data');
-        assert(elemListVariantId.length == 1);
+        const elemList = $('.question-data');
+        assert(elemList.length == 1);
         assert(elemList[0].children != null);
         assert(elemList[0].children.length == 1);
         assert(elemList[0].children[0].data != null);
         const questionData = JSON.parse(decodeURIComponent(new Buffer(elemList[0].children[0].data, 'base64').toString()));
         assert(questionData.variant != null)
-        variant_id = questionData.variant.id;
+        questionSubmitInfo.variant = questionData.variant;
     } else if (argv.type == 'v3') {
-        const elemListVariantId = $('.question-form input[name="__variant_id"]');
-        assert(elemListVariantId.length == 1);
-        variant_id = Number.parseInt(elemListVariantId[0].attribs.value);
+        const elemList = $('.question-form input[name="__variant_id"]');
+        assert(elemList.length == 1);
+        questionSubmitInfo.variant_id = Number.parseInt(elemList[0].attribs.value);
     } else {
         throw new Error(`unknown type: ${argv.type}`);
     }
 
-    return {questionUrl, variant_id, csrf_token};
+    return questionSubmitInfo;
 }
 
 async function postQuestionAnswer(questionSubmitInfo) {
-    const form = {
-        __action: 'grade',
-        __csrf_token: questionSubmitInfo.csrf_token,
-        __variant_id: questionSubmitInfo.variant_id,
-    };
+    let form;
 
     if (argv.type == 'v2') {
-        form.wx = Math.floor(Math.random() * 10);
-        form.wy = Math.floor(Math.random() * 10);
+        const submittedAnswer = {
+            wx: Math.floor(Math.random() * 10),
+            wy: Math.floor(Math.random() * 10),
+        };
+        form = {
+            __action: 'grade',
+            __csrf_token: questionSubmitInfo.csrf_token,
+            postData: JSON.stringify({variant: questionSubmitInfo.variant, submittedAnswer}),
+        };
     } else if (argv.type == 'v3') {
-        form.c = Math.floor(Math.random() * 10);
+        form = {
+            __action: 'grade',
+            __csrf_token: questionSubmitInfo.csrf_token,
+            __variant_id: questionSubmitInfo.variant_id,
+            c: Math.floor(Math.random() * 10),
+        };
     } else {
         throw new Error(`unknown type: ${argv.type}`);
     }
@@ -277,10 +284,10 @@ async function main() {
         for (let c of argv.clients) {
             console.log('######################################################################');
             console.log(`Starting test with ${c} clients and ${argv.iterations} iterations`);
-            console.log(`Sleeping for ${sleepTimeSec} seconds...`);
-            await sleep(sleepTimeSec);
+            console.log(`Sleeping for ${argv.delay} seconds...`);
+            await sleep(argv.delay);
             const result = await singleTest(c, argv.iterations);
-            console.log(`${c} clients, ${argv.iterations} iterations, ${result.success.mean} success`);
+            console.log(`${c} clients, ${argv.iterations} iterations, ${result.success.mean * 100}% success`);
             console.log(`homepage: ${result.timeHomepage.mean} +/- ${result.timeHomepage.stddev} s`);
             console.log(`questions: ${result.timeQuestions.mean} +/- ${result.timeQuestions.stddev} s`);
             console.log(`question: ${result.timeQuestion.mean} +/- ${result.timeQuestion.stddev} s`);
@@ -291,7 +298,7 @@ async function main() {
             results.push(result);
         }
         console.log('######################################################################');
-        console.log('clients,iterations,success,homepage mean,homepage stddev,questions mean,questions stddev,question mean,question stddev,submit mean,submit stddev,total mean,total stddev');
+        console.log('clients,iterations,success fraction,homepage mean,homepage stddev,questions mean,questions stddev,question mean,question stddev,submit mean,submit stddev,total mean,total stddev');
         for (let result of results) {
             console.log(`${result.clients},${result.iterations},${result.success.mean},${result.timeHomepage.mean},${result.timeHomepage.stddev},${result.timeQuestions.mean},${result.timeQuestions.stddev},${result.timeQuestion.mean},${result.timeQuestion.stddev},${result.timeSubmit.mean},${result.timeSubmit.stddev},${result.timeTotal.mean},${result.timeTotal.stddev}`);
         }
