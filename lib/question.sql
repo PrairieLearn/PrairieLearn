@@ -1,11 +1,14 @@
 -- BLOCK select_issues
 SELECT
     i.*,
-    format_date_full(i.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date
+    format_date_full(i.date, coalesce(ci.display_timezone, c.display_timezone)) AS formatted_date,
+    u.uid AS user_uid,
+    u.name AS user_name
 FROM
     issues AS i
     LEFT JOIN course_instances AS ci ON (ci.id = i.course_instance_id)
     JOIN pl_courses AS c ON (c.id = i.course_id)
+    LEFT JOIN users AS u ON (u.user_id = i.user_id)
 WHERE
     i.variant_id = $variant_id
     AND i.course_caused

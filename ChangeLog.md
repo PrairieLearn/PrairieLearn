@@ -126,6 +126,7 @@
   * Add `load-test` support for v2 questions (Matt West).
 
   * Add submission info modal with external grading stats (Nathan Walters).
+  * Add student name and clickable e-mail address to issue report on question page (James Balamuta).
 
   * Fix broken file upload element (Nathan Walters).
 
