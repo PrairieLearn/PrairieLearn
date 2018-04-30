@@ -49,7 +49,9 @@ describe('sanitizeObject', () => {
       },
     };
     const expected = {
-      test: ['testing', 'test\\u0000ing']
+      test: {
+        test2: ['testing', 'test\\u0000ing'],
+      },
     };
     check(input, expected);
   });
