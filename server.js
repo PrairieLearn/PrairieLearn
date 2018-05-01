@@ -75,6 +75,7 @@ if (config.blockedWarnEnable) {
 const app = express();
 app.set('views', path.join(__dirname, 'pages'));
 app.set('view engine', 'ejs');
+app.enable('view cache');
 
 config.devMode = (app.get('env') == 'development');
 
@@ -144,6 +145,7 @@ app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzu
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
 app.use(require('./middlewares/logRequest'));
+app.use(require('./middlewares/injectRenderAsync'));
 
 // load accounting for authenticated accesses
 app.use(function(req, res, next) {load.startJob('authed_request', res.locals.response_id); next();});

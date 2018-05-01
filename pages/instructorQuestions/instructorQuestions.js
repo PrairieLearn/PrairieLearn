@@ -1,6 +1,7 @@
 var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
+const spawn = require('threads').spawn;
 
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -29,8 +30,7 @@ router.get('/', function(req, res, next) {
             sqldb.query(sql.assessments, params, function(err, result) {
                 if (ERR(err, next)) return;
                 res.locals.all_assessments = result.rows;
-
-                res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+                res.renderAsync(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
         });
     });
