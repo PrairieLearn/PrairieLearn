@@ -7,10 +7,12 @@
     "lib",
     "sql-db.js",
     "sql-loader.js",
-    "error.js"
+    "error.js",
+    "util.js"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "NODE_ENV=test jest",
+    "lint": "eslint --ext js \"**/*.js\""
   },
   "author": "",
   "license": "AGPL-3.0",
@@ -19,5 +21,9 @@
     "debug": "^3.1.0",
     "lodash": "^4.17.5",
     "pg": "^7.4.1"
+  },
+  "devDependencies": {
+    "eslint": "^4.19.1",
+    "jest": "^22.4.3"
   }
 }
