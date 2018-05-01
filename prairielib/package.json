@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/prairielib",
-  "version": "1.0.3",
+  "version": "1.1.0",
   "description": "A repository of code shared between various PrairieLearn projects",
   "main": "index.js",
   "files": [
