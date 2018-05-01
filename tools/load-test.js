@@ -19,13 +19,13 @@ const argv = yargs
       .option('server', {
           alias: 's',
           describe: 'Remote server URL',
-          default: 'https://pl-dev.engr.illinois.edu',
+          default: 'http://localhost:3000',
           type: 'string',
       })
       .option('iterations', {
           alias: 'n',
           describe: 'Number of test iterations per client',
-          default: 3,
+          default: 1,
           type: 'number',
       })
       .option('clients', {
@@ -34,6 +34,19 @@ const argv = yargs
           default: 1,
           type: 'array',
       })
+      .option('delay', {
+          alias: 'd',
+          describe: 'Delay between tests (seconds)',
+          default: 10,
+          type: 'number',
+      })
+      .option('type', {
+          alias: 't',
+          describe: 'type of question to test',
+          default: 'v3',
+          choices: ['v2', 'v3'],
+      })
+      .example('node tools/load-test.js -s http://localhost:3000')
       .example('node tools/load-test.js -n 10 -c 1 3 5 -s https://pl-dev.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_pl-dev.json')
       .example('node tools/load-test.js -n 10 -c 1 3 5 -s https://prairielearn.engr.illinois.edu -f ~/git/ansible-pl/prairielearn/config_prairielearn.json')
       .wrap(null)
@@ -45,9 +58,15 @@ const argv = yargs
 
 config.loadConfig(argv.config);
 
-const sleepTimeSec = 10;
 const exampleCourseName = 'XC 101: Example Course, Spring 2015';
-const questionTitle = 'Add two numbers';
+let questionTitle;
+if (argv.type == 'v2') {
+    questionTitle = 'Addition of vectors in Cartesian coordinates';
+} else if (argv.type == 'v3') {
+    questionTitle = 'Add two numbers';
+} else {
+    throw new Error(`unknown type: ${argv.type}`);
+}
 
 const serverUrl = argv.server;
 const siteUrl = serverUrl;
@@ -122,45 +141,77 @@ async function sleep(sec) {
 async function getCourseInstanceUrl() {
     const body = await request({uri: baseUrl, jar: cookies});
     const $ = cheerio.load(body);
-    const elemListCourse = $(`td a:contains("${exampleCourseName}")`);
-    assert(elemListCourse.length == 1);
-    return serverUrl + elemListCourse[0].attribs.href;
+    const elemList = $(`td a:contains("${exampleCourseName}")`);
+    assert(elemList.length == 1);
+    return serverUrl + elemList[0].attribs.href;
 }
 
 async function getQuestionUrl(courseInstanceUrl) {
     const questionsUrl = courseInstanceUrl + '/instructor/questions';
     const body = await request({uri: questionsUrl, jar: cookies});
     const $ = cheerio.load(body);
-    const elemListQuestion = $(`td a:contains("${questionTitle}")`);
-    assert(elemListQuestion.length == 1);
-    return serverUrl + elemListQuestion[0].attribs.href;
+    const elemList = $(`td a:contains("${questionTitle}")`);
+    assert(elemList.length == 1);
+    return serverUrl + elemList[0].attribs.href;
 }
 
 async function getQuestionSubmitInfo(questionUrl) {
     const body = await request({uri: questionUrl, jar: cookies});
     const $ = cheerio.load(body);
 
-    const elemListVariantId = $('.question-form input[name="__variant_id"]');
-    assert(elemListVariantId.length == 1);
-    const variant_id = Number.parseInt(elemListVariantId[0].attribs.value);
+    const elemList = $('.question-form input[name="__csrf_token"]');
+    assert(elemList.length == 1);
+    const csrf_token = elemList[0].attribs.value;
 
-    const elemListCsrfToken = $('.question-form input[name="__csrf_token"]');
-    assert(elemListCsrfToken.length == 1);
-    const csrf_token = elemListCsrfToken[0].attribs.value;
+    const questionSubmitInfo = {questionUrl, csrf_token};
+    
+    if (argv.type == 'v2') {
+        const elemList = $('.question-data');
+        assert(elemList.length == 1);
+        assert(elemList[0].children != null);
+        assert(elemList[0].children.length == 1);
+        assert(elemList[0].children[0].data != null);
+        const questionData = JSON.parse(decodeURIComponent(new Buffer(elemList[0].children[0].data, 'base64').toString()));
+        assert(questionData.variant != null);
+        questionSubmitInfo.variant = questionData.variant;
+    } else if (argv.type == 'v3') {
+        const elemList = $('.question-form input[name="__variant_id"]');
+        assert(elemList.length == 1);
+        questionSubmitInfo.variant_id = Number.parseInt(elemList[0].attribs.value);
+    } else {
+        throw new Error(`unknown type: ${argv.type}`);
+    }
 
-    return {questionUrl, variant_id, csrf_token};
+    return questionSubmitInfo;
 }
 
 async function postQuestionAnswer(questionSubmitInfo) {
-    const form = {
-        c: Math.floor(Math.random() * 10),
-        __action: 'grade',
-        __csrf_token: questionSubmitInfo.csrf_token,
-        __variant_id: questionSubmitInfo.variant_id,
-    };
+    let form;
+
+    if (argv.type == 'v2') {
+        const submittedAnswer = {
+            wx: Math.floor(Math.random() * 10),
+            wy: Math.floor(Math.random() * 10),
+        };
+        form = {
+            __action: 'grade',
+            __csrf_token: questionSubmitInfo.csrf_token,
+            postData: JSON.stringify({variant: questionSubmitInfo.variant, submittedAnswer}),
+        };
+    } else if (argv.type == 'v3') {
+        form = {
+            __action: 'grade',
+            __csrf_token: questionSubmitInfo.csrf_token,
+            __variant_id: questionSubmitInfo.variant_id,
+            c: Math.floor(Math.random() * 10),
+        };
+    } else {
+        throw new Error(`unknown type: ${argv.type}`);
+    }
+
     const body = await request.post({uri: questionSubmitInfo.questionUrl, jar: cookies, form, followAllRedirects: true});
     const $ = cheerio.load(body);
-    const elemListVariantId = $('.question-form input[name="__variant_id"]');
+    const elemListVariantId = $('.question-form input[name="__csrf_token"]');
     assert(elemListVariantId.length == 1);
 }
 
@@ -189,7 +240,7 @@ async function singleRequest() {
     return {timeHomepage, timeQuestions, timeQuestion, timeSubmit, timeTotal};
 }
 
-async function singleClientTest(iterations, iClient) {
+async function singleClientTest(iterations, iClient, clients) {
     let results = {
         success: [],
         timeHomepage: [],
@@ -199,7 +250,7 @@ async function singleClientTest(iterations, iClient) {
         timeTotal: [],
     };
     for (let i = 0; i < iterations; i++) {
-        console.log(`start (iteration ${i}, client ${iClient})`);
+        console.log(`start (iteration ${i} of ${iterations}, client ${iClient} of ${clients})`);
         try {
             const r = await singleRequest();
             results.success.push(1);
@@ -212,7 +263,7 @@ async function singleClientTest(iterations, iClient) {
             console.log('Error', e);
             results.success.push(0);
         }
-        console.log(`end (iteration ${i}, client ${iClient})`);
+        console.log(`end (iteration ${i} of ${iterations}, client ${iClient} of ${clients})`);
     }
     return results;
 }
@@ -220,7 +271,7 @@ async function singleClientTest(iterations, iClient) {
 async function singleTest(clients, iterations) {
     const clientArray = [];
     for (let i = 0; i < clients; i++) {
-        clientArray.push(singleClientTest(iterations, i));
+        clientArray.push(singleClientTest(iterations, i, clients));
     }
     const clientResults = await Promise.all(clientArray);
     const aggResults = aggregate(clientResults);
@@ -233,10 +284,10 @@ async function main() {
         for (let c of argv.clients) {
             console.log('######################################################################');
             console.log(`Starting test with ${c} clients and ${argv.iterations} iterations`);
-            console.log(`Sleeping for ${sleepTimeSec} seconds...`);
-            await sleep(sleepTimeSec);
+            console.log(`Sleeping for ${argv.delay} seconds...`);
+            await sleep(argv.delay);
             const result = await singleTest(c, argv.iterations);
-            console.log(`${c} clients, ${argv.iterations} iterations, ${result.success.mean} success`);
+            console.log(`${c} clients, ${argv.iterations} iterations, ${result.success.mean * 100}% success`);
             console.log(`homepage: ${result.timeHomepage.mean} +/- ${result.timeHomepage.stddev} s`);
             console.log(`questions: ${result.timeQuestions.mean} +/- ${result.timeQuestions.stddev} s`);
             console.log(`question: ${result.timeQuestion.mean} +/- ${result.timeQuestion.stddev} s`);
@@ -247,9 +298,9 @@ async function main() {
             results.push(result);
         }
         console.log('######################################################################');
-        console.log('clients,iterations,success,homepage mean,homepage stddev,questions mean,questions stddev,question mean,question stddev,submit mean,submit stddev,total mean,total stddev');
+        console.log('clients,iterations,success fraction,homepage mean,homepage stddev,questions mean,questions stddev,question mean,question stddev,submit mean,submit stddev,total mean,total stddev,throughput');
         for (let result of results) {
-            console.log(`${result.clients},${result.iterations},${result.success.mean},${result.timeHomepage.mean},${result.timeHomepage.stddev},${result.timeQuestions.mean},${result.timeQuestions.stddev},${result.timeQuestion.mean},${result.timeQuestion.stddev},${result.timeSubmit.mean},${result.timeSubmit.stddev},${result.timeTotal.mean},${result.timeTotal.stddev}`);
+            console.log(`${result.clients},${result.iterations},${result.success.mean},${result.timeHomepage.mean},${result.timeHomepage.stddev},${result.timeQuestions.mean},${result.timeQuestions.stddev},${result.timeQuestion.mean},${result.timeQuestion.stddev},${result.timeSubmit.mean},${result.timeSubmit.stddev},${result.timeTotal.mean},${result.timeTotal.stddev},${result.clients * result.success.mean / result.timeTotal.mean}`);
         }
     } catch (e) {
         console.log('Error', e);
