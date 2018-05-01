@@ -298,9 +298,9 @@ async function main() {
             results.push(result);
         }
         console.log('######################################################################');
-        console.log('clients,iterations,success fraction,homepage mean,homepage stddev,questions mean,questions stddev,question mean,question stddev,submit mean,submit stddev,total mean,total stddev');
+        console.log('clients,iterations,success fraction,homepage mean,homepage stddev,questions mean,questions stddev,question mean,question stddev,submit mean,submit stddev,total mean,total stddev,throughput');
         for (let result of results) {
-            console.log(`${result.clients},${result.iterations},${result.success.mean},${result.timeHomepage.mean},${result.timeHomepage.stddev},${result.timeQuestions.mean},${result.timeQuestions.stddev},${result.timeQuestion.mean},${result.timeQuestion.stddev},${result.timeSubmit.mean},${result.timeSubmit.stddev},${result.timeTotal.mean},${result.timeTotal.stddev}`);
+            console.log(`${result.clients},${result.iterations},${result.success.mean},${result.timeHomepage.mean},${result.timeHomepage.stddev},${result.timeQuestions.mean},${result.timeQuestions.stddev},${result.timeQuestion.mean},${result.timeQuestion.stddev},${result.timeSubmit.mean},${result.timeSubmit.stddev},${result.timeTotal.mean},${result.timeTotal.stddev},${result.clients * result.success.mean / result.timeTotal.mean}`);
         }
     } catch (e) {
         console.log('Error', e);
