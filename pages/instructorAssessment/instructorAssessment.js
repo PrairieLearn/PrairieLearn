@@ -142,7 +142,7 @@ router.get('/', function(req, res, next) {
     ], function(err) {
         if (ERR(err, next)) return;
         debug('render page');
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        res.renderAsync(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
 
