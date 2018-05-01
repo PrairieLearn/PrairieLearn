@@ -75,7 +75,6 @@ if (config.blockedWarnEnable) {
 const app = express();
 app.set('views', path.join(__dirname, 'pages'));
 app.set('view engine', 'ejs');
-app.enable('view cache');
 
 config.devMode = (app.get('env') == 'development');
 
