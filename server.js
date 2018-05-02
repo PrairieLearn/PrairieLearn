@@ -227,19 +227,14 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessments', [
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
-    require('./pages/shared/assessmentStatDescriptions'),
-    require('./pages/shared/floatFormatters'),
     require('./pages/instructorAssessment/instructorAssessment'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
-    require('./pages/shared/floatFormatters'),
     require('./pages/instructorAssessmentInstance/instructorAssessmentInstance'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
-    require('./pages/shared/assessmentStatDescriptions'),
-    require('./pages/shared/floatFormatters'),
     require('./pages/instructorQuestion/instructorQuestion'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/gradebook', require('./pages/instructorGradebook/instructorGradebook'));

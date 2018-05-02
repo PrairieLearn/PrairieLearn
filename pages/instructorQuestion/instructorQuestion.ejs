@@ -132,6 +132,7 @@
                 <a href="/pl/course_instance/<%= row.course_instance_id %>/instructor/assessment/<%= row.assessment_id %>/" class="badge color-<%=
                   row.color %> color-hover" role="button"><%= row.label %></a>
               </td>
+              <%- include('../partials/floatFormatter') %>
               <td class="text-center">
                   <%= formatFloat(row.mean_question_score, 1) %>
               </td>

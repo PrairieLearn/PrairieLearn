@@ -1,6 +1,6 @@
 const Pool = require('threads').Pool;
 
-const pool = new Pool(10);
+const pool = new Pool();
 
 pool.run(([filename, locals], done) => {
     const ejs = require('ejs');
@@ -22,6 +22,9 @@ module.exports = function(req, res, next) {
             } else {
                 res.send(data);
             }
+        });
+        renderJob.on('error', (err) => {
+            next(err);
         });
     };
     next();

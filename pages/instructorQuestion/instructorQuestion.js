@@ -10,6 +10,8 @@ var question = require('../../lib/question');
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 var debug = require('debug')('prairielearn:instructorQuestion');
+var logger = require('../../lib/logger');
+var assessmentStatDescriptions = require('../../lib/assessmentStatDescriptions');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -129,17 +131,26 @@ router.post('/', function(req, res, next) {
     }
 });
 
+let num = 0;
+
+const logDelta = (label, i, start) => logger.info(`[${i}] ${label}: ${new Date() - start}ms`);
+
 router.get('/', function(req, res, next) {
+    const i = num;
+    num++;
     async.series([
         (callback) => {
-            debug('set filenames');
+            debug('setup locals');
             _.assign(res.locals, filenames(res.locals));
+            res.locals.stat_descriptions = assessmentStatDescriptions;
             callback(null);
         },
         (callback) => {
+            const start = new Date();
             sqldb.query(sql.assessment_question_stats, {question_id: res.locals.question.id}, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.assessment_stats = result.rows;
+                logDelta('assessment_question_stats', i, start);
                 callback(null);
             });
         },
@@ -156,8 +167,10 @@ router.get('/', function(req, res, next) {
         },
         (callback) => {
             // req.query.variant_id might be undefined, which will generate a new variant
+            const start = new Date();
             question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
                 if (ERR(err, callback)) return;
+                logDelta('get_and_render_variant', i, start);
                 callback(null);
             });
         },
@@ -178,7 +191,9 @@ router.get('/', function(req, res, next) {
         },
     ], (err) => {
         if (ERR(err, next)) return;
+        const start = new Date();
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        logDelta('render', i, start);
     });
 });
 
@@ -191,8 +206,8 @@ router.get('/:filename', function(req, res, next) {
             var questionStatsList = result.rows;
             var csvData = [];
             var csvHeaders = ['Course instance', 'Assessment'];
-            Object.keys(res.locals.stat_descriptions).forEach(key => {
-                csvHeaders.push(res.locals.stat_descriptions[key].non_html_title);
+            Object.keys(assessmentStatDescriptions).forEach(key => {
+                csvHeaders.push(assessmentStatDescriptions[key].non_html_title);
             });
 
             csvData.push(csvHeaders);

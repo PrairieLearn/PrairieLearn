@@ -563,6 +563,7 @@
                     <%= row.number %>. <%= row.qid %>
                 </a>
               </td>
+              <%- include('../partials/floatFormatter') %>
               <td class="text-center">
                 <%= formatFloat(row.mean_question_score, 1) %>
               </td>

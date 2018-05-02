@@ -14,6 +14,7 @@ var dataFiles = require('../../lib/data-files');
 var assessment = require('../../lib/assessment');
 var sqldb = require('@prairielearn/prairielib/sql-db');
 var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+var assessmentStatDescriptions = require('../../lib/assessmentStatDescriptions');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -66,8 +67,9 @@ router.get('/', function(req, res, next) {
           });
         },
         function(callback) {
-            debug('set filenames');
+            debug('setup locals');
             _.assign(res.locals, filenames(res.locals));
+            res.locals.stat_descriptions = assessmentStatDescriptions;
             callback(null);
         },
         function(callback) {
@@ -423,8 +425,8 @@ router.get('/:filename', function(req, res, next) {
             var questionStatsList = result.rows;
             var csvData = [];
             var csvHeaders = ['Question number', 'Question title', 'Tags'];
-            Object.keys(res.locals.stat_descriptions).forEach(key => {
-                csvHeaders.push(res.locals.stat_descriptions[key].non_html_title);
+            Object.keys(assessmentStatDescriptions).forEach(key => {
+                csvHeaders.push(assessmentStatDescriptions[key].non_html_title);
             });
 
             csvData.push(csvHeaders);

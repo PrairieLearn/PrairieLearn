@@ -180,6 +180,7 @@
               I-<%= row.number %>.
               <a href="<%= urlPrefix %>/question/<%= row.question_id %>/"><%= row.qid %></a>
             </td>
+            <%- include('../partials/floatFormatter') %>
             <td><%= row.some_submission %></td>
             <td><%= row.some_perfect_submission %></td>
             <td><%= row.some_nonzero_submission %></td>
