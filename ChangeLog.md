@@ -89,6 +89,8 @@
 
   * Add `load-test` support for v2 questions (Matt West).
 
+  * Add node process clustering (Dave Mussulman).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
