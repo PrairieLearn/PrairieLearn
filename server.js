@@ -28,6 +28,7 @@ const redis = require('./lib/redis');
 const socketServer = require('./lib/socket-server');
 const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
+const workerPool = require('./lib/worker-pool');
 
 // If there is only one argument, legacy it into the config option
 if (argv['_'].length == 1) {
@@ -513,6 +514,12 @@ if (config.startServer) {
             load.initEstimator('authed_request', 1);
             load.initEstimator('python', 1);
             callback(null);
+        },
+        function(callback) {
+            workerPool.init(5, (err) => {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
         },
         function(callback) {
             logger.verbose('Starting server...');
