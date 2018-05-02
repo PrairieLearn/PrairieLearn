@@ -14,6 +14,7 @@ const onFinished = require('on-finished');
 const uuidv4 = require('uuid/v4');
 const argv = require('yargs-parser') (process.argv.slice(2));
 const cluster = require('cluster');
+const sticky = require('sticky-session');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -404,8 +405,13 @@ module.exports.startServer = function(callback) {
         callback(null);
     } else if (config.serverType === 'http') {
         server = http.createServer(app);
-        server.listen(config.serverPort);
-        logger.verbose('server listening to HTTP on port ' + config.serverPort);
+        //server.listen(config.serverPort);
+        if (!sticky.listen(server, config.serverPort)) {
+            // Master code
+            server.once('listening', function() {
+                logger.verbose('server listening to HTTP on port ' + config.serverPort);
+            });
+        }
         callback(null);
     } else {
         callback('unknown serverType: ' + config.serverType);
@@ -520,29 +526,11 @@ if (config.startServer) {
             callback(null);
         },
         function(callback) {
-            if (cluster.isMaster) {
-
-                var numWorkers = require('os').cpus().length;
-                //var numWorkers = 4;
-                logger.info('Master cluster setting up ' + numWorkers + ' workers...');
-
-                for (var i = 0 ; i < numWorkers ; i++) {
-                    cluster.fork();
-                }
-
-                cluster.on('online', function(worker) {
-                    logger.info(`Worker ${worker.process.pid} is online`);
-                });
-
+            logger.verbose('Starting server...');
+            module.exports.startServer(function(err) {
+                if (ERR(err, callback)) return;
                 callback(null);
-            } else {
-
-                logger.verbose(`Starting server (${cluster.worker.id})...`);
-                module.exports.startServer(function(err) {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            }
+            });
         },
         function(callback) {
             socketServer.init(server, function(err) {
@@ -574,11 +562,9 @@ if (config.startServer) {
             logger.error('Exiting...');
             process.exit(1);
         } else {
-            if (cluster.isWorker) {
-                logger.info('PrairieLearn server ready ' + cluster.worker.id);
-                if (config.devMode) {
-                    logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort + '/pl');
-                }
+            logger.info('PrairieLearn server ready');
+            if (config.devMode) {
+                logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort + '/pl');
             }
             if ('exit' in argv) { logger.info('exit option passed, quitting...'); process.exit(0); }
         }
