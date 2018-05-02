@@ -516,7 +516,8 @@ if (config.startServer) {
             callback(null);
         },
         function(callback) {
-            workerPool.init(5, (err) => {
+            if (!config.useWorkers) return callback(null);
+            workerPool.init(config.workerPoolSize, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
