@@ -13,6 +13,7 @@ const blocked = require('blocked-at');
 const onFinished = require('on-finished');
 const uuidv4 = require('uuid/v4');
 const argv = require('yargs-parser') (process.argv.slice(2));
+const cluster = require('cluster');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -464,18 +465,21 @@ if (config.startServer) {
             });
         },
         function(callback) {
+            if (cluster.isWorker) return callback(null);
             migrations.init(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
         },
         function(callback) {
+            if (cluster.isWorker) return callback(null);
             sprocs.init(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
         },
         function(callback) {
+            if (cluster.isWorker) return callback(null);
             if ('migrate-and-exit' in argv && argv['migrate-and-exit']) {
                 logger.info('option --migrate-and-exit passed, running DB setup and exiting');
                 process.exit(0);
@@ -484,6 +488,7 @@ if (config.startServer) {
             }
         },
         function(callback) {
+            if (cluster.isWorker) return callback(null);
             cron.init(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
@@ -515,11 +520,29 @@ if (config.startServer) {
             callback(null);
         },
         function(callback) {
-            logger.verbose('Starting server...');
-            module.exports.startServer(function(err) {
-                if (ERR(err, callback)) return;
+            if (cluster.isMaster) {
+
+                var numWorkers = require('os').cpus().length;
+                //var numWorkers = 4;
+                logger.info('Master cluster setting up ' + numWorkers + ' workers...');
+
+                for (var i = 0 ; i < numWorkers ; i++) {
+                    cluster.fork();
+                }
+
+                cluster.on('online', function(worker) {
+                    logger.info(`Worker ${worker.process.pid} is online`);
+                });
+
                 callback(null);
-            });
+            } else {
+
+                logger.verbose(`Starting server (${cluster.worker.id})...`);
+                module.exports.startServer(function(err) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            }
         },
         function(callback) {
             socketServer.init(server, function(err) {
@@ -551,9 +574,11 @@ if (config.startServer) {
             logger.error('Exiting...');
             process.exit(1);
         } else {
-            logger.info('PrairieLearn server ready');
-            if (config.devMode) {
-                logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort + '/pl');
+            if (cluster.isWorker) {
+                logger.info('PrairieLearn server ready ' + cluster.worker.id);
+                if (config.devMode) {
+                    logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort + '/pl');
+                }
             }
             if ('exit' in argv) { logger.info('exit option passed, quitting...'); process.exit(0); }
         }
