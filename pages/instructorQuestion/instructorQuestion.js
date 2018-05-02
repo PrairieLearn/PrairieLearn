@@ -54,7 +54,7 @@ function processSubmission(req, res, callback) {
         if (ERR(err, callback)) return;
         const variant = result.rows[0];
         if (req.body.__action == 'grade') {
-            question.saveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
+            question.workerSaveAndGradeSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null, submission.variant_id);
             });
