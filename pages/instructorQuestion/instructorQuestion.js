@@ -59,7 +59,7 @@ function processSubmission(req, res, callback) {
                 callback(null, submission.variant_id);
             });
         } else if (req.body.__action == 'save') {
-            question.saveSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
+            question.workerSaveSubmission(submission, variant, res.locals.question, res.locals.course, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null, submission.variant_id);
             });
@@ -156,7 +156,7 @@ router.get('/', function(req, res, next) {
         },
         (callback) => {
             // req.query.variant_id might be undefined, which will generate a new variant
-            question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
+            question.workerGetAndRenderVariant(req.query.variant_id, res.locals, function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
