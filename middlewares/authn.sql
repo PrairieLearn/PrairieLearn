@@ -43,4 +43,6 @@ INSERT INTO enrollments
         u.uid = $uid
         AND c.short_name = $course_short_name
 )
-ON CONFLICT DO NOTHING;
+ON CONFLICT (user_id, course_instance_id) DO UPDATE
+SET
+    role = 'Instructor';
