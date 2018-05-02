@@ -12,6 +12,7 @@ var freeformServer = require('../question-servers/freeform');
 
 config.startServer = false;
 config.serverPort = 3007;
+delete config.clusterWorkers;
 var server = require('../server');
 
 var logger = require('./dummyLogger');

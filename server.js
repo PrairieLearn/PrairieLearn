@@ -405,12 +405,16 @@ module.exports.startServer = function(callback) {
         callback(null);
     } else if (config.serverType === 'http') {
         server = http.createServer(app);
-        //server.listen(config.serverPort);
-        if (!sticky.listen(server, config.serverPort)) {
-            // Master code
-            server.once('listening', function() {
-                logger.verbose('server listening to HTTP on port ' + config.serverPort);
-            });
+        if (config.clusterWorkers && config.clusterWorkers > 0) { 
+            if (!sticky.listen(server, config.serverPort, {workers: config.clusterWorkers})) {
+                // Master code
+                server.once('listening', function() {
+                    logger.verbose('server listening to HTTP on port ' + config.serverPort);
+                });
+            }
+        } else {
+            server.listen(config.serverPort);
+            logger.verbose('server listening to HTTP on port ' + config.serverPort);
         }
         callback(null);
     } else {
