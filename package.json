@@ -55,8 +55,6 @@
         "socket.io": "^2.0.4",
         "socket.io-client": "^2.0.4",
         "socket.io-redis": "^5.2.0",
-        "sticky-cluster": "^0.3.5",
-        "sticky-session": "^1.1.2",
         "tar": "^4.2.0",
         "three": "^0.89.0",
         "uuid": "^3.2.1",
