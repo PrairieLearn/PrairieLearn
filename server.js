@@ -13,6 +13,7 @@ const blocked = require('blocked-at');
 const onFinished = require('on-finished');
 const uuidv4 = require('uuid/v4');
 const argv = require('yargs-parser') (process.argv.slice(2));
+const cluster = require('cluster');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -403,8 +404,34 @@ module.exports.startServer = function(callback) {
         callback(null);
     } else if (config.serverType === 'http') {
         server = http.createServer(app);
-        server.listen(config.serverPort);
-        logger.verbose('server listening to HTTP on port ' + config.serverPort);
+        if (config.clusterWorkers && config.clusterWorkers > 0) {
+
+            if (cluster.isMaster) {
+                var workers = [];
+
+                var spawn = function(i) {
+                    workers[i] = cluster.fork();
+
+                    workers[i].on('exit', function(_code, _signal) {
+                        logger.info('respawning worker', i);
+                        spawn(i);
+                    });
+                };
+
+                for (var i = 0 ; i < config.clusterWorkers; i++) {
+                    spawn(i);
+                }
+
+
+            } else {
+                server.listen(config.serverPort);
+            }
+
+        } else {
+
+            server.listen(config.serverPort);
+            logger.verbose('server listening to HTTP on port ' + config.serverPort);
+        }
         callback(null);
     } else {
         callback('unknown serverType: ' + config.serverType);
@@ -464,18 +491,21 @@ if (config.startServer) {
             });
         },
         function(callback) {
+            if (cluster.isWorker) return callback(null);
             migrations.init(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
         },
         function(callback) {
+            if (cluster.isWorker) return callback(null);
             sprocs.init(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
         },
         function(callback) {
+            if (cluster.isWorker) return callback(null);
             if ('migrate-and-exit' in argv && argv['migrate-and-exit']) {
                 logger.info('option --migrate-and-exit passed, running DB setup and exiting');
                 process.exit(0);
@@ -484,6 +514,7 @@ if (config.startServer) {
             }
         },
         function(callback) {
+            if (cluster.isWorker) return callback(null);
             cron.init(function(err) {
                 if (ERR(err, callback)) return;
                 callback(null);

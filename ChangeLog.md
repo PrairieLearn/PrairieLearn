@@ -89,6 +89,8 @@
 
   * Add `load-test` support for v2 questions (Matt West).
 
+  * Add node process clustering (Dave Mussulman).
+
   * Fix broken file upload element (Nathan Walters).
 
   * Fix broken popover and improve assessment label styles (Nathan Walters).
@@ -188,6 +190,8 @@
   * Change `centos7-plbase` docker image to not use `/PrairieLearn` directory (Matt West).
 
   * Change shared code to be in external PrairieLib library (Nathan Walters).
+
+  * Change socket.io to use websockets transport directly (Dave Mussulman).
 
   * Remove HackIllinois advertisement (Matt West).
 

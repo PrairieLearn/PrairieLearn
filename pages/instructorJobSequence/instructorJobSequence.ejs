@@ -7,7 +7,7 @@
   <body>
     <script>
       $(function() {
-      var socket = io();
+      var socket = io({transports: ['websocket']});
 
       socket.on('update', function() {window.location.reload(true);});
       socket.on('change:stderr', function(msg) {$("#stderr-" + msg.job_id).text(msg.stderr);});
