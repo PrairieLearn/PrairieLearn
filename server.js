@@ -412,7 +412,7 @@ module.exports.startServer = function(callback) {
                 var spawn = function(i) {
                     workers[i] = cluster.fork();
 
-                    workers[i].on('exit', function(code, signal) {
+                    workers[i].on('exit', function(_code, _signal) {
                         logger.info('respawning worker', i);
                         spawn(i);
                     });
