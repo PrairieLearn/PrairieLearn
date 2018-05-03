@@ -1,7 +1,7 @@
 <% if (question.grading_method == 'External') { %>
 <script>
   $(function() {
-    var socket = io('/external-grading');
+    var socket = io('/external-grading', {transports: ['websocket']});
     var variantId = '<%= variant.id %>';
     var variantToken = '<%= variantToken %>';
     var urlPrefix = '<%= urlPrefix %>';

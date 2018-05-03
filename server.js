@@ -14,7 +14,6 @@ const onFinished = require('on-finished');
 const uuidv4 = require('uuid/v4');
 const argv = require('yargs-parser') (process.argv.slice(2));
 const cluster = require('cluster');
-//const sticky = require('sticky-session');
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -406,27 +405,30 @@ module.exports.startServer = function(callback) {
     } else if (config.serverType === 'http') {
         server = http.createServer(app);
         if (config.clusterWorkers && config.clusterWorkers > 0) {
-/***
-            if (!sticky.listen(server, config.serverPort, {workers: config.clusterWorkers})) {
-                // Master code
-                server.once('listening', function() {
-                    logger.verbose('server listening to HTTP on port ' + config.serverPort);
-                });
-            }
-***/
-            require('sticky-cluster')(
-                // server initialization function
-                function(callback) {
-                    callback(server);
-                },
-                // options
-                {
-                    concurrency: config.clusterWorkers,
-                    port: config.serverPort,
-                    debug: true,
+
+            if (cluster.isMaster) {
+                var workers = [];
+
+                var spawn = function(i) {
+                    workers[i] = cluster.fork();
+
+                    workers[i].on('exit', function(code, signal) {
+                        logger.info('respawning worker', i);
+                        spawn(i);
+                    });
+                };
+
+                for (var i = 0 ; i < config.clusterWorkers; i++) {
+                    spawn(i);
                 }
-            );
+
+
+            } else {
+                server.listen(config.serverPort);
+            }
+
         } else {
+
             server.listen(config.serverPort);
             logger.verbose('server listening to HTTP on port ' + config.serverPort);
         }

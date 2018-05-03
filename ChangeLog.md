@@ -191,6 +191,8 @@
 
   * Change shared code to be in external PrairieLib library (Nathan Walters).
 
+  * Change socket.io to use websockets transport directly (Dave Mussulman).
+
   * Remove HackIllinois advertisement (Matt West).
 
 * __2.11.0__ - 2017-12-29
