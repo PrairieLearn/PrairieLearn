@@ -114,7 +114,7 @@ app.use(cookieParser());
 app.use(passport.initialize());
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
 
-if ('localRootFilesDir' in config) { 
+if ('localRootFilesDir' in config) {
     logger.info(`localRootFilesDir: Mapping ${config.localRootFilesDir} into /`);
     app.use(express.static(config.localRootFilesDir));
 }
@@ -146,6 +146,7 @@ app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOA
 app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
 app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
 app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
+app.use('/pl/login', require('./pages/authLogin/authLogin'));
 app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
@@ -166,14 +167,11 @@ if (config.devMode) {
     app.use(require('./middlewares/undefCourseCode'));
 }
 
-// show authn options at /
-app.use(/^\/?$/, require('./pages/authLogin/authLogin'));
-
 // clear cookies on the homepage to reset any stale session state
 app.use(/^\/pl\/?/, require('./middlewares/clearCookies'));
 
 // some pages don't need authorization
-app.use('/pl', require('./pages/home/home'));
+app.use('/', require('./pages/home/home'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
 app.use('/pl/logout', require('./pages/authLogout/authLogout'));
 

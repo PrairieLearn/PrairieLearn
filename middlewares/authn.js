@@ -80,17 +80,17 @@ module.exports = function(req, res, next) {
 
     // otherwise look for auth cookies
     if (req.cookies.pl_authn == null) {
-        //logger.error('no authn cookie');
+        // if no authn cookie then redirect to the login page
         res.cookie('preAuthUrl', req.originalUrl);
-        res.redirect('/');
+        res.redirect('/pl/login');
         return;
     }
     var authnData = csrf.getCheckedData(req.cookies.pl_authn, config.secretKey, {maxAge: 24 * 60 * 60 * 1000});
     if (authnData == null) {
-        // if CSRF checking failed then clear the cookie and redirect to / to prompt re-login
+        // if CSRF checking failed then clear the cookie and redirect to login
         logger.error('authn cookie CSRF failure');
         res.clearCookie('pl_authn');
-        res.redirect('/');
+        res.redirect('/pl/login');
         return;
     }
 
