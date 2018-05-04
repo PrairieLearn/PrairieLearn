@@ -53,6 +53,7 @@ var tmp_upgrade = function(locals, callback) {
 
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
+
     tmp_upgrade(res.locals, function(err) {
         if (ERR(err, next)) return;
 
@@ -66,6 +67,7 @@ router.get('/', function(req, res, next) {
                 res.locals.assessment_text_templated = assessment_text_templated;
 
                 res.locals.showTimeLimitExpiredModal = (req.query.timeLimitExpired == 'true');
+
                 res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
             });
         });
