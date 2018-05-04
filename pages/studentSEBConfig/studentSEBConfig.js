@@ -126,6 +126,8 @@ router.get('/', function(req, res, next) {
         _.assign(res.locals, result.rows[0]);
         //console.log(res.locals);
 
+        // FIXME check that res.locals.authz_result.seb_config exists or exit with error
+
         check_and_send_assessment_config_seb(res, function(err) {
             if (ERR(err, next)) return;
 
@@ -145,7 +147,7 @@ router.get('/', function(req, res, next) {
             //
             // Finish up the file, dress it, and send it along
             //
-            var SEBdressing = 'gzip'; // default case
+            var SEBdressing = 'password'; // default case
             if ('dressing' in res.locals.authz_result.seb_config) {
                 SEBdressing = res.locals.authz_result.seb_config.dressing;
             }
@@ -156,6 +158,7 @@ router.get('/', function(req, res, next) {
             if (SEBdressing == 'gzip')
                 return res.send(dressPlainGzip(SEBconfig));
 
+            // FIXME Change this logic to just be the default (and trigger off password being present)
             if (SEBdressing == 'password') {
                 var password = 'fishsticks'; // default case
                 if ('password' in res.locals.authz_result.seb_config) {
