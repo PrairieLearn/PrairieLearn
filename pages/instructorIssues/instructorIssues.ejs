@@ -167,8 +167,11 @@
               <i class="fa fa-check-circle text-success issue-status-icon"></i>
               <% } %>
               <a class="d-block" href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>">
-                <%= row.question_qid ? (row.question_qid + ': ') : '' %><%= getFormattedMessage(row) %>
+                <%= row.question_qid %>
               </a>
+              <p class="mb-0">
+                <%= getFormattedMessage(row) %>
+              </p>
               <small class="text-muted mr-2">#<%= row.issue_id %> reported <span title="<%= row.formatted_date %>"><%= row.relative_date %></span> by <%= row.user_uid || '-' %></small>
 
               <% if (row.manually_reported) { %>
