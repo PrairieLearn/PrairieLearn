@@ -101,6 +101,7 @@ router.post('/', function(req, res, next) {
 
 module.exports = router;
 
+/*
 function badPassword(res, msg) {
 
     logger.info(`invalid password attempt for ${res.locals.user.uid}`);
@@ -109,6 +110,7 @@ function badPassword(res, msg) {
     res.locals.prompt = 'password';
     return res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 }
+*/
 
 function badSEB(req, res) {
 
@@ -138,19 +140,17 @@ function checkUserAgent(res, userAgent) {
 
     var fromSEB = csrf.getCheckedData(key, config.secretKey, {maxAge: timeout * 60 * 60 * 1000});
 
-    if ('assessment' in res.locals &&
-        fromSEB.assessment_id == res.locals.assessment.id &&
-        fromSEB.user_id == res.locals.authz_data.user.user_id) {
+    if ('assessment' in res.locals) {
+        if (fromSEB.assessment_id == res.locals.assessment.id &&
+            fromSEB.user_id == res.locals.authz_data.user.user_id) {
 
+            res.locals.authz_data.mode = 'SEB';
+        }
+
+    } else {
+        // Assessment list view, enable the mode
         res.locals.authz_data.mode = 'SEB';
     }
-
-    // Assessment list view, enable the mode
-    if (!('assessment' in res.locals)) {
-        res.locals.authz_data.mode = 'SEB';
-    }
-
-    res.locals.authz_data.allowed_assessment_id = fromSEB.assessment_id;
 }
 
 // Future feature
