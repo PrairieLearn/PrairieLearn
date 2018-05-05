@@ -152,6 +152,7 @@
   * Fix `variants.course_instance_id` migration (Matt West).
 
   * Fix typo in `exampleCourse/questions/positionTimeGraph` (Matt West).
+
   * Fix 'Load from disk' works when emulating non-instructor roles (Dave Mussulman).
 
   * Change to Bootstrap 4 (Nathan Walters).
@@ -191,8 +192,6 @@
   * Change `centos7-plbase` docker image to not use `/PrairieLearn` directory (Matt West).
 
   * Change shared code to be in external PrairieLib library (Nathan Walters).
-
-  * Change assessment password protection to cover all assessment activities. (Dave Mussulman).
 
   * Change CSRF codes to be URL-safe (Dave Mussulman).
 

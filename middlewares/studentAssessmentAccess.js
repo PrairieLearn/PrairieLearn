@@ -46,6 +46,7 @@ router.get('/', function(req, res, next) {
         }
     }
 
+/********
 
     // Password protect the assessment
     if ('authz_result' in res.locals &&
@@ -67,11 +68,13 @@ router.get('/', function(req, res, next) {
 
         // Successful password case: falls through
     }
+**********/
 
     // Pass-through for everything else
     next();
 });
 
+/***
 router.post('/', function(req, res, next) {
 
     // For password protected things:
@@ -94,6 +97,8 @@ router.post('/', function(req, res, next) {
     // Fallthrough for the middleware
     next();
 });
+******/
+
 module.exports = router;
 
 function badPassword(res, msg) {
