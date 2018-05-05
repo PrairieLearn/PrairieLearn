@@ -5,9 +5,9 @@ var cheerio = require('cheerio');
 var config = require('../lib/config');
 var helperServer = require('./helperServer');
 
-var baseUrl = 'http://localhost:' + config.serverPort + '/pl';
+var baseUrl = 'http://localhost:' + config.serverPort;
 
-describe('GET /pl', function() {
+describe('GET /', function() {
     this.timeout(20000);
 
     before('set up testing server', helperServer.before);
