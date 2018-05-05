@@ -189,6 +189,8 @@
 
   * Change shared code to be in external PrairieLib library (Nathan Walters).
 
+  * Change instructor issues page to show student message on new line; remove `is:automatically-reported` filter (Nathan Walters).
+
   * Remove HackIllinois advertisement (Matt West).
 
 * __2.11.0__ - 2017-12-29
