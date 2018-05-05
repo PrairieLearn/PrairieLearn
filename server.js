@@ -172,6 +172,7 @@ app.use(/^\/pl\/?/, require('./middlewares/clearCookies'));
 
 // some pages don't need authorization
 app.use('/', require('./pages/home/home'));
+app.use('/pl', require('./pages/home/home'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
 app.use('/pl/logout', require('./pages/authLogout/authLogout'));
 
