@@ -1,7 +1,7 @@
 const ERR = require('async-stacktrace');
 const express = require('express');
 const router = express.Router();
-const path = require('path');
+//const path = require('path');
 const plist = require('plist');
 const fs = require('fs');
 const zlib = require('zlib');
@@ -16,28 +16,6 @@ const sqlLoader = require('@prairielearn/prairielib').sqlLoader;
 const error = require('@prairielearn/prairielib').error;
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
-
-/*** Future feature
-var check_and_send_assessment_config_seb = function(res, callback) {
-
-    var filename = 'config.seb';
-    var sebPath = path.join(
-        res.locals.course.path,
-        'courseInstances',
-        res.locals.course_instance.short_name,
-        'assessments',
-        res.locals.assessment.tid
-    );
-
-    if (fs.existsSync(`${sebPath}/${filename}`, 'utf8')) {
-
-        return res.sendFile(filename, {root: sebPath}, function(err) {
-            if (ERR(err, callback)) return;
-        });
-    }
-    callback(null);
-};
-****/
 
 var load_default_config = function(res, req) {
     var defobj = plist.parse(fs.readFileSync(__dirname + '/seb-default-exam.seb', 'utf8'));
@@ -146,51 +124,20 @@ router.get('/', function(req, res, next) {
             });
         }
 
-        //
-        // Finish up the file, dress it, and send it along
-        //
-        var SEBdressing = 'password'; // default case
-        if ('dressing' in res.locals.authz_result.seb_config) {
-            SEBdressing = res.locals.authz_result.seb_config.dressing;
-        }
-
-        if (SEBdressing == 'xml')
-            return res.send(dressPlainXML(SEBconfig));
-
-        if (SEBdressing == 'gzip')
-            return res.send(dressPlainGzip(SEBconfig));
-
-        // FIXME Change this logic to just be the default (and trigger off password being present)
-        if (SEBdressing == 'password') {
-            var password = 'fishsticks'; // default case
-            if ('password' in res.locals.authz_result.seb_config) {
-                password = res.locals.authz_result.seb_config.password;
-            }
-            return res.send(dressPassword(SEBconfig, password));
+        // If password is defined, use that dressing
+        if ('password' in res.locals.authz_result.seb_config) {
+          var password = res.locals.authz_result.seb_config.password;
+          dressPassword(SEBconfig, password, function(err, result) {
+            if (ERR(err, next)) return;
+            return res.send(result);
+          });
         }
     });
 });
 
 module.exports = router;
 
-function dressPlainXML(obj) {
-    return plist.build(obj);
-}
-
-function dressPlainGzip(obj) {
-    zlib.gzip(plist.build(obj), function(err, result) {
-        if (ERR(err)) return;
-        var SEBinner = result;
-        var SEBheader = Buffer.from('plnd', 'utf8');
-        var SEBfile = Buffer.concat([SEBheader, Buffer.from(SEBinner, 'base64')]);
-        zlib.gzip(SEBfile, function(err, result) {
-            if (ERR(err)) return;
-            return result;
-        });
-    });
-}
-
-function dressPassword(obj, password) {
+function dressPassword(obj, password, callback) {
     zlib.gzip(plist.build(obj), function(err, result) {
         if (ERR(err)) return;
         var SEBinner = result;
@@ -199,31 +146,7 @@ function dressPassword(obj, password) {
         var SEBfile = Buffer.concat([SEBheader, Buffer.from(SEBencrypted, 'base64')]);
         zlib.gzip(SEBfile, function(err, result) {
             if (ERR(err)) return;
-            return result;
+            return callback(null, result);
         });
     });
 }
-
-//function dressRSA(obj) {
-    // Not implemented
-
-    /* Asymm key stuff
-     *
-    // create random symmetric key and encrypt the config with it
-    var sym_key = crypto.randomBytes(32); //.toString('hex').toUpperCase();
-    //console.log(`${sym_key.length} bytes: ${sym_key.toString('hex')}`);
-
-    var payload = jscryptor.Encrypt(SEBconfig, sym_key.toString('base64'));
-    //console.log(payload);
-
-    var publicKey = fs.readFileSync('/PrairieLearn/pages/studentSEBConfig/cert.pem', 'utf8');
-
-    var publicKeyHash = crypto.createHash('sha1').update(publicKey).digest('hex');
-    console.log(publicKeyHash);
-    console.log(publicKeyHash.length);
-
-    var encrypted_sym_key = crypto.publicEncrypt(publicKey, sym_key);
-
-    console.log(`${encrypted_sym_key.length} bytes: ${encrypted_sym_key.toString('hex')}`);
-    */
-//}

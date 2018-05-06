@@ -4,7 +4,7 @@
 const express = require('express');
 var router = express.Router();
 
-var logger = require('../lib/logger');
+//var logger = require('../lib/logger');
 var csrf = require('../lib/csrf');
 var config = require('../lib/config');
 
@@ -12,24 +12,10 @@ var timeout = 24; // hours
 
 router.get('/', function(req, res, next) {
 
-// Future feature
-//    // SEB: check BrowserExamKey
-//    if ('x-safeexambrowser-requesthash' in req.headers) {
-//        checkBrowserExamKeys(res, req.headers['x-safeexambrowser-requesthash']);
-//    }
-
     // SEB: check user-agent
     if ('user-agent' in req.headers) {
         checkUserAgent(res, req.headers['user-agent']);
     }
-
-// Future feature
-//    // Course Instance view (only show allowed exam)
-//    if (!('assessment' in res.locals)) {
-//        //console.log('In Course Instance Page');
-//        //res.locals.authz_data.mode = 'SEB';
-//        //console.log(res.locals);
-//    }
 
     // SafeExamBrowser protect the assesment
     if ('authz_result' in res.locals &&
@@ -46,71 +32,11 @@ router.get('/', function(req, res, next) {
         }
     }
 
-/********
-
-    // Password protect the assessment
-    if ('authz_result' in res.locals &&
-        'password' in res.locals.authz_result &&
-        res.locals.authz_result.password) {
-
-        // No password yet case
-        if (req.cookies.pl_assessmentpw == null) {
-            return badPassword(res, '');
-        }
-
-        // Invalid or expired password case
-        var pwData = csrf.getCheckedData(req.cookies.pl_assessmentpw, config.secretKey,
-                                         {maxAge: timeout * 60 * 60 * 1000});
-        if (pwData === null
-            || pwData.password !== res.locals.authz_result.password) {
-            return badPassword(res, 'Password invalid or expired, please try again.');
-        }
-
-        // Successful password case: falls through
-    }
-**********/
-
     // Pass-through for everything else
     next();
 });
 
-/***
-router.post('/', function(req, res, next) {
-
-    // For password protected things:
-    if ('authz_result' in res.locals
-        && 'password' in res.locals.authz_result
-        && res.locals.authz_result.password) {
-
-        if (req.body.__action == 'assessmentPassword') {
-
-            if (req.body.password == res.locals.authz_result.password) {
-                var pwCookie = csrf.generateToken({password: req.body.password}, config.secretKey);
-                res.cookie('pl_assessmentpw', pwCookie);
-                return res.redirect(req.originalUrl);
-            } else {
-                return badPassword(res);
-            }
-        }
-    }
-
-    // Fallthrough for the middleware
-    next();
-});
-******/
-
 module.exports = router;
-
-/*
-function badPassword(res, msg) {
-
-    logger.info(`invalid password attempt for ${res.locals.user.uid}`);
-    res.clearCookie('pl_assessmentpw');
-    res.locals.passwordMessage = msg;
-    res.locals.prompt = 'password';
-    return res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
-}
-*/
 
 function badSEB(req, res) {
 
@@ -152,22 +78,3 @@ function checkUserAgent(res, userAgent) {
         res.locals.authz_data.mode = 'SEB';
     }
 }
-
-// Future feature
-//function checkBrowserExamKeys(res, key) {
-
-    /* FIXME
-    _.each(res.locals.authz_result.seb_keys, function(key) {
-
-        var ourhash = sha256(absoluteURL + key).toString();
-
-        //console.log('ours', ourhash);
-        //console.log('clin', requesthash);
-
-        if (ourhash == requesthash) {
-            SEBvalid = true;
-            return false;
-        }
-    });
-    */
-//}
