@@ -1,11 +1,11 @@
 DROP FUNCTION IF EXISTS issues_select_with_filter (boolean,boolean,boolean,text[],text[],text[],text[],text);
-DROP FUNCTION IF EXISTS issues_select_with_filter (boolean,boolean,boolean,boolean,text[],text[],text[],text[],text);
 
 CREATE OR REPLACE FUNCTION
     issues_select_with_filter (
         filter_is_open boolean,
         filter_is_closed boolean,
         filter_manually_reported boolean,
+        filter_automatically_reported boolean,
         filter_qids text[],
         filter_not_qids text[],
         filter_users text[],

@@ -37,6 +37,7 @@ FROM
         $filter_is_open,
         $filter_is_closed,
         $filter_manually_reported,
+        $filter_automatically_reported,
         $filter_qids,
         $filter_not_qids,
         $filter_users,
