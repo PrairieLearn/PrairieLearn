@@ -17,6 +17,7 @@ const error = require('@prairielearn/prairielib').error;
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
+/*** Future feature
 var check_and_send_assessment_config_seb = function(res, callback) {
 
     var filename = 'config.seb';
@@ -36,6 +37,7 @@ var check_and_send_assessment_config_seb = function(res, callback) {
     }
     callback(null);
 };
+****/
 
 var load_default_config = function(res, req) {
     var defobj = plist.parse(fs.readFileSync(__dirname + '/seb-default-exam.seb', 'utf8'));
@@ -128,45 +130,44 @@ router.get('/', function(req, res, next) {
 
         // FIXME check that res.locals.authz_result.seb_config exists or exit with error
 
-        check_and_send_assessment_config_seb(res, function(err) {
-            if (ERR(err, next)) return;
+        //check_and_send_assessment_config_seb(res, function(err) {
+        //    if (ERR(err, next)) return;
 
-            var SEBconfig = load_default_config(res, req);
+        var SEBconfig = load_default_config(res, req);
 
-            if ('quitPassword' in res.locals.authz_result.seb_config) {
-                SEBconfig['hashedQuitPassword'] = crypto.createHash('sha256').update(res.locals.authz_result.seb_config.quitPassword).digest('hex');
+        if ('quitPassword' in res.locals.authz_result.seb_config) {
+            SEBconfig['hashedQuitPassword'] = crypto.createHash('sha256').update(res.locals.authz_result.seb_config.quitPassword).digest('hex');
+        }
+
+        if ('allowedPrograms' in res.locals.authz_result.seb_config) {
+            //console.log(res.locals.authz_result.seb_config);
+            _.each(res.locals.authz_result.seb_config.allowedPrograms, function(program) {
+                add_allowed_program(SEBconfig, program);
+            });
+        }
+
+        //
+        // Finish up the file, dress it, and send it along
+        //
+        var SEBdressing = 'password'; // default case
+        if ('dressing' in res.locals.authz_result.seb_config) {
+            SEBdressing = res.locals.authz_result.seb_config.dressing;
+        }
+
+        if (SEBdressing == 'xml')
+            return res.send(dressPlainXML(SEBconfig));
+
+        if (SEBdressing == 'gzip')
+            return res.send(dressPlainGzip(SEBconfig));
+
+        // FIXME Change this logic to just be the default (and trigger off password being present)
+        if (SEBdressing == 'password') {
+            var password = 'fishsticks'; // default case
+            if ('password' in res.locals.authz_result.seb_config) {
+                password = res.locals.authz_result.seb_config.password;
             }
-
-            if ('allowedPrograms' in res.locals.authz_result.seb_config) {
-                //console.log(res.locals.authz_result.seb_config);
-                _.each(res.locals.authz_result.seb_config.allowedPrograms, function(program) {
-                    add_allowed_program(SEBconfig, program);
-                });
-            }
-
-            //
-            // Finish up the file, dress it, and send it along
-            //
-            var SEBdressing = 'password'; // default case
-            if ('dressing' in res.locals.authz_result.seb_config) {
-                SEBdressing = res.locals.authz_result.seb_config.dressing;
-            }
-
-            if (SEBdressing == 'xml')
-                return res.send(dressPlainXML(SEBconfig));
-
-            if (SEBdressing == 'gzip')
-                return res.send(dressPlainGzip(SEBconfig));
-
-            // FIXME Change this logic to just be the default (and trigger off password being present)
-            if (SEBdressing == 'password') {
-                var password = 'fishsticks'; // default case
-                if ('password' in res.locals.authz_result.seb_config) {
-                    password = res.locals.authz_result.seb_config.password;
-                }
-                return res.send(dressPassword(SEBconfig, password));
-            }
-        });
+            return res.send(dressPassword(SEBconfig, password));
+        }
     });
 });
 
@@ -177,18 +178,30 @@ function dressPlainXML(obj) {
 }
 
 function dressPlainGzip(obj) {
-    var SEBinner = zlib.gzipSync(plist.build(obj));
-    var SEBheader = Buffer.from('plnd', 'utf8');
-    var SEBfile = Buffer.concat([SEBheader, Buffer.from(SEBinner, 'base64')]);
-    return zlib.gzipSync(SEBfile);
+    zlib.gzip(plist.build(obj), function(err, result) {
+        if (ERR(err)) return;
+        var SEBinner = result;
+        var SEBheader = Buffer.from('plnd', 'utf8');
+        var SEBfile = Buffer.concat([SEBheader, Buffer.from(SEBinner, 'base64')]);
+        zlib.gzip(SEBfile, function(err, result) {
+            if (ERR(err)) return;
+            return result;
+        });
+    });
 }
 
 function dressPassword(obj, password) {
-    var SEBinner = zlib.gzipSync(plist.build(obj));
-    var SEBencrypted = jscryptor.Encrypt(SEBinner, password);
-    var SEBheader = Buffer.from('pswd', 'utf8');
-    var SEBfile = Buffer.concat([SEBheader, Buffer.from(SEBencrypted, 'base64')]);
-    return zlib.gzipSync(SEBfile);
+    zlib.gzip(plist.build(obj), function(err, result) {
+        if (ERR(err)) return;
+        var SEBinner = result;
+        var SEBencrypted = jscryptor.Encrypt(SEBinner, password);
+        var SEBheader = Buffer.from('pswd', 'utf8');
+        var SEBfile = Buffer.concat([SEBheader, Buffer.from(SEBencrypted, 'base64')]);
+        zlib.gzip(SEBfile, function(err, result) {
+            if (ERR(err)) return;
+            return result;
+        });
+    });
 }
 
 //function dressRSA(obj) {
