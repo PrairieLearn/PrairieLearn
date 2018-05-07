@@ -136,6 +136,12 @@
                   <% } else { %>
                   <option value="Exam">Exam</option>
                   <% } %>
+
+                  <% if (authz_data.mode == 'SEB') { %>
+                  <option value='SEB' selected>SEB (current)</option>
+                  <% } else { %>
+                  <option value='SEB'>SEB</option>
+                  <% } %>
                 </select>
               </div>
               <input type="hidden" name="__action" value="changeMode">

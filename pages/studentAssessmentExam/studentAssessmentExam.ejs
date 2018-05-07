@@ -17,7 +17,7 @@
             Please wait until instructed to start by a proctor
           </p>
           <p class="lead text-center">
-            This is <strong><%= assessment_set.name %> <%= assessment.number %></strong> for <strong><%= course.short_name %></strong>
+            This is <strong><%= assessment_set.name %> <%= assessment.number %>: <%= assessment.title %></strong> for <strong><%= course.short_name %></strong>
           </p>
           <% if (authz_result.time_limit_min != undefined) { %>
           <p class="lead text-center">

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <%- include('../pages/partials/head'); %>
+    <% if (prompt == 'SEB') { %>
+    <script>
+        function backOnFocus() {
+            window.addEventListener("focus", function(event) {
+                window.history.back();
+            }, false);
+        }
+    </script>
+    <% } %>
+</head>
+<body>
+    <%- include('../pages/partials/navbar', {navPage: ''}); %>
+    <div id="content" class="container">
+        <div class="card mb-4">
+            <div class="card-header bg-danger text-white">
+                <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
+            </div>
+
+            <div class="card-body">
+
+                <% if (typeof assessment_instance !== 'undefined' && assessment_instance.open === false) { %>
+
+                    <p>This assessment is closed and is no longer available.
+
+                    <% if (authz_data.mode == 'SEB') { %>
+                        <p><a href="/pl/SEBquit">Click here to quit the Safe Exam Browser</a>
+                    <% } %>
+
+                <% } else if (prompt == 'SEB') { %>
+
+                    <p class="lead text-center">
+                        This <%= assessment.type.toLowerCase() %> is only available when running the Safe Exam Browser.
+                    </p>
+
+                    <p><a href="https://safeexambrowser.org/download_en.html">Download instructions for the Safe Exam Browser.</a></p>
+
+                    <a class="btn btn-lg btn-success" href="<%= SEBUrl %>?data=<%= SEBdata %>" onClick="backOnFocus();">
+                        Launch into the Safe Exam Browser
+                    </a>
+
+                <% } else if (prompt == 'password') { %>
+
+                    <p class="lead text-center">
+                    This <%= assessment.type.toLowerCase() %> is protected with a password.
+                    </p>
+
+                    <p class="text-center"><%= passwordMessage %></p>
+
+                    <form method="POST">
+                    <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                    <input type="hidden" name="__action" value="assessmentPassword">
+                    <p class="lead text-center">
+                      Password: <input type="password" name="password" autofocus>
+                      <input type="submit" class="btn btn-default">
+                    </p>
+                    </form>
+
+                <% } %>
+            </div> <!-- panel-body -->
+        </div>
+    </div>
+</body>
+</html>
