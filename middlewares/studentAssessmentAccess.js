@@ -47,7 +47,7 @@ function badSEB(req, res) {
         authz_data: res.locals.authz_data,
     };
     res.locals.SEBdata = csrf.generateToken(SEBdata, config.secretKey);
-    var proto = 'seb://';
+    //var proto = 'seb://';
     //var proto = 'http://';  // For testing
     //res.locals.SEBUrl = proto + req.get('host') + '/pl/downloadSEBConfig/';
     res.locals.SEBUrl = config.SEBDownloadUrl;

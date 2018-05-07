@@ -17,7 +17,7 @@ const error = require('@prairielearn/prairielib').error;
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
-var load_default_config = function(res, req) {
+var load_default_config = function(res, _req) {
     var defobj = plist.parse(fs.readFileSync(__dirname + '/seb-default-exam.seb', 'utf8'));
 
     //var fullUrlPrefix = req.protocol + '://' + req.get('host');
