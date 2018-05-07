@@ -199,6 +199,8 @@
 
   * Remove HackIllinois advertisement (Matt West).
 
+  * Update external grading documentation (Nathan Walters).
+
 * __2.11.0__ - 2017-12-29
 
   * Add support for partial credit in Homeworks (Tim Bretl).
