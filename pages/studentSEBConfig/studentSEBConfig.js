@@ -20,7 +20,8 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 var load_default_config = function(res, req) {
     var defobj = plist.parse(fs.readFileSync(__dirname + '/seb-default-exam.seb', 'utf8'));
 
-    var fullUrlPrefix = req.protocol + '://' + req.get('host');
+    //var fullUrlPrefix = req.protocol + '://' + req.get('host');
+    var fullUrlPrefix = config.SEBServerUrl;
 
     defobj['startURL'] = `${fullUrlPrefix}/pl/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`;
 
@@ -39,7 +40,7 @@ var load_default_config = function(res, req) {
     defobj['URLFilterRules'] = [
         {   active: true,
             regex: false,
-            expression: req.get('host') + '/*',
+            expression: config.SEBServerFilter,
             action: 1 },
         {   active: true,
             regex: false,
