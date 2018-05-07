@@ -197,8 +197,6 @@
 
   * Change closed exams to not be reviewable for students (Dave Mussulman).
 
-  * Move shared code to PrairieLib (Nathan Walters).
-
   * Remove HackIllinois advertisement (Matt West).
 
 * __2.11.0__ - 2017-12-29
