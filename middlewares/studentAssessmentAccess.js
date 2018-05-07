@@ -49,7 +49,8 @@ function badSEB(req, res) {
     res.locals.SEBdata = csrf.generateToken(SEBdata, config.secretKey);
     var proto = 'seb://';
     //var proto = 'http://';  // For testing
-    res.locals.SEBUrl = proto + req.get('host') + '/pl/downloadSEBConfig/';
+    //res.locals.SEBUrl = proto + req.get('host') + '/pl/downloadSEBConfig/';
+    res.locals.SEBUrl = config.SEBDownloadUrl;
     res.locals.prompt = 'SEB';
     return res.status(401).render(__filename.replace(/\.js$/, '.ejs'), res.locals);
 }
