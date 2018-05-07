@@ -283,7 +283,6 @@ describe('Access control', function() {
         it('as student in Exam mode without password should return 500', function(callback) {
             postAssessment(cookiesStudentExam(), false, 500, callback);
         });
-
         it('as student in Exam mode should load successfully', function(callback) {
             postAssessment(cookiesStudentExam(), true, 200, callback);
         });
