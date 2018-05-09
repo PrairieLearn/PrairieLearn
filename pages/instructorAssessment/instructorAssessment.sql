@@ -297,8 +297,9 @@ ORDER BY
 
 
 -- BLOCK assessment_instance_files
-WITH all_file_submissions AS (
+WITH all_submissions_with_files AS (
     SELECT
+        s.id AS submission_id,
         u.uid,
         ai.number AS assessment_instance_number,
         q.qid,
@@ -308,15 +309,7 @@ WITH all_file_submissions AS (
         s.submitted_answer,
         row_number() OVER (PARTITION BY v.id ORDER BY s.date) AS submission_number,
         (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1 AS final_submission_per_variant,
-        (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC, s.id DESC)) = 1 AS best_submission_per_variant,
-        (CASE
-            WHEN s.submitted_answer ? 'fileData' THEN v.params->>'fileName'
-            WHEN s.submitted_answer ? '_files' THEN f.file->>'name'
-        END) as filename,
-        (CASE
-            WHEN s.submitted_answer ? 'fileData' THEN s.submitted_answer->>'fileData'
-            WHEN s.submitted_answer ? '_files' THEN f.file->>'contents'
-        END) as contents
+        (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC, s.id DESC)) = 1 AS best_submission_per_variant
     FROM
         assessments AS a
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
@@ -326,18 +319,46 @@ WITH all_file_submissions AS (
         JOIN questions AS q ON (q.id = aq.question_id)
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
-        LEFT JOIN (
-            SELECT
-                id,
-                jsonb_array_elements(submitted_answer->'_files') AS file
-            FROM submissions
-        ) f ON (f.id = s.id)
     WHERE
         a.id = $assessment_id
         AND (
             (v.params ? 'fileName' AND s.submitted_answer ? 'fileData')
             OR (s.submitted_answer ? '_files')
         )
+),
+use_submissions_with_files AS (
+    SELECT *
+    FROM all_submissions_with_files
+    WHERE
+        $include_all
+        OR ($include_final AND final_submission_per_variant)
+        OR ($include_best AND best_submission_per_variant)
+),
+all_files AS (
+    SELECT
+        uid,
+        assessment_instance_number,
+        qid,
+        variant_number,
+        date,
+        submission_number,
+        (CASE
+            WHEN submitted_answer ? 'fileData' THEN params->>'fileName'
+            WHEN submitted_answer ? '_files' THEN f.file->>'name'
+        END) as filename,
+        (CASE
+            WHEN submitted_answer ? 'fileData' THEN submitted_answer->>'fileData'
+            WHEN submitted_answer ? '_files' THEN f.file->>'contents'
+        END) as contents
+    FROM
+        use_submissions_with_files AS s
+        LEFT JOIN (
+            SELECT
+                submission_id AS id,
+                jsonb_array_elements(submitted_answer->'_files') AS file
+            FROM use_submissions_with_files
+            WHERE submitted_answer ? '_files'
+        ) f ON (f.id = submission_id)
 )
 SELECT
     (
@@ -350,11 +371,7 @@ SELECT
     ) AS filename,
     decode(contents, 'base64') AS contents
 FROM
-    all_file_submissions
-WHERE
-    $include_all
-    OR ($include_final AND final_submission_per_variant)
-    OR ($include_best AND best_submission_per_variant)
+    all_files
 ORDER BY
     uid, assessment_instance_number, qid, variant_number, date;
 

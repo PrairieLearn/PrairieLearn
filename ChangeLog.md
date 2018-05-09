@@ -155,6 +155,8 @@
 
   * Fix 'Load from disk' works when emulating non-instructor roles (Dave Mussulman).
 
+  * Fix slow query for file downloads (Matt West).
+
   * Change to Bootstrap 4 (Nathan Walters).
 
   * Change to NodeJS 8.x LTS (Matt West).
