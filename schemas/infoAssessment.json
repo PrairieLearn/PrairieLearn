@@ -82,7 +82,7 @@
             "properties": {
                 "mode" : {
                     "description": "The server mode required for access.",
-                    "enum": ["Public", "Exam"]
+                    "enum": ["Public", "Exam", "SEB"]
                 },
                 "role" : {
                     "description": "The minimum user role required for access.",
@@ -116,6 +116,26 @@
                 "password": {
                     "description": "Password to begin the assessment (only for Exams).",
                     "type": "string"
+                },
+                "SEBConfig": {
+                    "description": "Configuration related to Safe Exam Browser",
+                    "type": "object",
+                    "properties": {
+                        "password": {
+                            "description": "Password protect the SEB exam and config file",
+                            "type": "string"
+                        },
+                        "quitPassword": {
+                            "description": "If set, requires password to quit SEB other than visiting the quitURL page",
+                            "type": "string"
+                        },
+                        "allowPrograms": {
+                            "description": "Keyword array for allowed programs in SEB",
+                            "type": "array",
+                            "minItems": 0,
+                            "items": {"type": "string"}
+                        }
+                    }
                 }
             }
         },

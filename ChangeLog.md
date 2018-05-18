@@ -67,6 +67,8 @@
 
   * Add links to student questions on instructor assessment instance page (Matt West).
 
+  * Add Safe Exam Browser support (Dave Mussulman).
+
   * Add instance question durations to CSV output (Matt West).
 
   * Add load-testing script (Matt West).
@@ -151,6 +153,12 @@
 
   * Fix typo in `exampleCourse/questions/positionTimeGraph` (Matt West).
 
+  * Fix 'Load from disk' works when emulating non-instructor roles (Dave Mussulman).
+
+  * Fix slow query for file downloads (Matt West).
+
+  * Fix external grading documentation to describe the current code (Nathan Walters).
+
   * Change to Bootstrap 4 (Nathan Walters).
 
   * Change to NodeJS 8.x LTS (Matt West).
@@ -190,6 +198,10 @@
   * Change shared code to be in external PrairieLib library (Nathan Walters).
 
   * Change instructor issues page to show student message on new line; remove `is:automatically-reported` filter (Nathan Walters).
+
+  * Change CSRF codes to be URL-safe (Dave Mussulman).
+
+  * Change closed exams to not be reviewable for students (Dave Mussulman).
 
   * Remove HackIllinois advertisement (Matt West).
 
