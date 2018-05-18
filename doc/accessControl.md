@@ -122,7 +122,7 @@ To require that students are taking a particular exam in the Computer-Based Test
 ```
 "allowAccess": [
     {
-        "examId": "Public",
+        "examId": 547,
         "credit": 100
     }
 ]
