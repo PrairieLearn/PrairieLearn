@@ -157,6 +157,8 @@
 
   * Fix slow query for file downloads (Matt West).
 
+  * Fix external grading documentation to describe the current code (Nathan Walters).
+
   * Change to Bootstrap 4 (Nathan Walters).
 
   * Change to NodeJS 8.x LTS (Matt West).
@@ -195,13 +197,13 @@
 
   * Change shared code to be in external PrairieLib library (Nathan Walters).
 
+  * Change instructor issues page to show student message on new line; remove `is:automatically-reported` filter (Nathan Walters).
+
   * Change CSRF codes to be URL-safe (Dave Mussulman).
 
   * Change closed exams to not be reviewable for students (Dave Mussulman).
 
   * Remove HackIllinois advertisement (Matt West).
-
-  * Update external grading documentation (Nathan Walters).
 
 * __2.11.0__ - 2017-12-29
 
