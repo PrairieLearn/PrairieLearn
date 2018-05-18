@@ -258,7 +258,7 @@
               <% if (row.event_name != 'External grading results') { %>
               <td style="word-break: break-all;"><%= (row.data != null) ? JSON.stringify(row.data) : null %></td>
               <% } else { %>
-              <td><a class="btn btn-primary" href="<%= urlPrefix %>/grading_job/<%= row.data.id %>">View grading job <%= row.data.id %></td>
+              <td><a class="btn btn-primary" href="<%= urlPrefix %>/grading_job/<%= row.data.id %>">View grading job <%= row.data.id %></a></td>
               <% } %>
             </tr>
             <% }); %>
