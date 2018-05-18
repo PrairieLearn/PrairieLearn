@@ -14,9 +14,14 @@ function fakeSqs(options = {}) {
             jobId: randomString(),
             image: randomString(),
             entrypoint: randomString(),
-            s3JobsBucket: randomString(),
-            s3ResultsBucket: randomString(),
-            s3ArchivesBucket: randomString()
+            s3Bucket: randomString(),
+            s3RootKey: randomString(),
+        };
+    }
+    if (options.mergeMessage) {
+        message = {
+            ...message,
+            ...options.mergeMessage,
         };
     }
 
@@ -38,6 +43,7 @@ function fakeSqs(options = {}) {
             });
         }),
         deleteMessage: jest.fn((params, callback) => callback(null)),
+        changeMessageVisibility: jest.fn((params, callback) => callback(null)),
         message,
         receiptHandle
     };
@@ -82,13 +88,29 @@ describe('queueReceiver', () => {
         const sqs = fakeSqs({
             message: {
                 timeout: 'abc',
-                s3ArchivesBucket: 123
+                s3Bucket: 123
             }
         });
 
         queueReceiver(sqs, '', (message, errCb, successCb) => successCb(), (err) => {
             expect(err).not.toBeNull();
             expect(sqs.deleteMessage.mock.calls.length).toBe(0);
+            done();
+        });
+    });
+
+    it('updates the timeout of received messages', (done) => {
+        const sqs = fakeSqs({
+            mergeMessage: {
+                timeout: 10,
+            }
+        });
+
+        queueReceiver(sqs, '', (message, errCb, successCb) => successCb(), (err) => {
+            expect(err).toBeNull();
+            expect(sqs.changeMessageVisibility.mock.calls.length).toBe(1);
+            const params = sqs.changeMessageVisibility.mock.calls[0][0];
+            expect(params.VisibilityTimeout).toBeGreaterThan(10);
             done();
         });
     });

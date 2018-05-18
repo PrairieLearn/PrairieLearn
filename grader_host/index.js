@@ -8,6 +8,8 @@ const { exec } = require('child_process');
 const path = require('path');
 const request = require('request');
 const byline = require('byline');
+const { sqldb } = require('@prairielearn/prairielib');
+const sanitizeObject = require('@prairielearn/prairielib').util.sanitizeObject;
 
 const globalLogger = require('./lib/logger');
 const jobLogger = require('./lib/jobLogger');
@@ -19,7 +21,6 @@ const receiveFromQueue = require('./lib/receiveFromQueue');
 const timeReporter = require('./lib/timeReporter');
 const util = require('./lib/util');
 const load = require('./lib/load');
-const sqldb = require('./lib/sqldb');
 
 async.series([
     (callback) => {
@@ -418,7 +419,8 @@ function runJob(info, callback) {
                         }
 
                         try {
-                            results.results = JSON.parse(data);
+                            const parsedResults = JSON.parse(data);
+                            results.results = sanitizeObject(parsedResults);
                             results.succeeded = true;
                         } catch (e) {
                             logger.error('Could not parse results.json');

@@ -3,11 +3,11 @@ const async = require('async');
 const fs = require('fs-extra');
 const path = require('path');
 const Ajv = require('ajv');
+const { sqldb, sqlLoader } = require('@prairielearn/prairielib');
 
 const globalLogger = require('./logger');
 const config = require('./config').config;
-const sqldb = require('./sqldb');
-const sql = require('./sql-loader').loadSqlEquiv(__filename);
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 let messageSchema = null;
 

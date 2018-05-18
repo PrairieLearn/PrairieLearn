@@ -1,8 +1,8 @@
 const ERR = require('async-stacktrace');
+const { sqldb, sqlLoader } = require('@prairielearn/prairielib');
 
 const config = require('./config').config;
-const sqldb = require('./sqldb');
-const sql = require('./sql-loader').loadSqlEquiv(__filename);
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 function reportTime(sqlBlockName) {
   return function(jobId, callback) {
