@@ -145,6 +145,7 @@ app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBCon
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
 app.use(require('./middlewares/logRequest'));
+app.use(require('./middlewares/injectRenderAsync'));
 
 // load accounting for authenticated accesses
 app.use(function(req, res, next) {load.startJob('authed_request', res.locals.response_id); next();});
@@ -227,19 +228,14 @@ app.use('/pl/course_instance/:course_instance_id/instructor/assessments', [
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
-    require('./pages/shared/assessmentStatDescriptions'),
-    require('./pages/shared/floatFormatters'),
     require('./pages/instructorAssessment/instructorAssessment'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
-    require('./pages/shared/floatFormatters'),
     require('./pages/instructorAssessmentInstance/instructorAssessmentInstance'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_id', [
     require('./middlewares/selectAndAuthzInstructorQuestion'),
-    require('./pages/shared/assessmentStatDescriptions'),
-    require('./pages/shared/floatFormatters'),
     require('./pages/instructorQuestion/instructorQuestion'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instructor/gradebook', require('./pages/instructorGradebook/instructorGradebook'));
