@@ -1,6 +1,12 @@
 
 # ChangeLog
 
+* __next version__ - XXXX-XX-XX
+
+  * Add support for running in production inside Docker (Matt West).
+
+  * Add configurable authentication sources menu (Dave Mussulman).
+
 * 2.12.0 - 2018-05-19
 
   * Add new issues page style and flexible filtering (Nathan Walters).
@@ -91,10 +97,7 @@
 
   * Add `load-test` support for v2 questions (Matt West).
 
-  * Add support for running in production inside Docker (Matt West).
-
   * Add submission info modal with external grading stats (Nathan Walters).
-  * Add configurable authentication sources menu (Dave Mussulman).
 
   * Fix broken file upload element (Nathan Walters).
 
