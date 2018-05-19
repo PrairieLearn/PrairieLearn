@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add improved support for very large file downloads (Nathan Walters).
+
   * Fix migration 111 to allow re-running (Matt West).
 
 * 2.12.0 - 2018-05-19
@@ -56,8 +58,6 @@
   * Add example of how to use PL to learn student names (Tim Bretl).
 
   * Add exception handling to python caller to display what can't be converted to valid JSON (Tim Bretl).
-
-  * Add imporved support for very large file downloads (Nathan Walters).
 
   * Add tags list to question stats CSV (Matt West).
 
