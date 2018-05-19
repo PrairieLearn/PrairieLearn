@@ -1,4 +1,4 @@
-ALTER TABLE variants ADD COLUMN course_instance_id bigint REFERENCES course_instances ON UPDATE CASCADE ON DELETE CASCADE;
+ALTER TABLE variants ADD COLUMN IF NOT EXISTS course_instance_id bigint REFERENCES course_instances ON UPDATE CASCADE ON DELETE CASCADE;
 
 UPDATE variants AS v
 SET

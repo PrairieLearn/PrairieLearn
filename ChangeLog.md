@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __next version__ - XXXX-XX-XX
+
+  * Fix migration 111 to allow re-running (Matt West).
+
 * 2.12.0 - 2018-05-19
 
   * Add new issues page style and flexible filtering (Nathan Walters).
