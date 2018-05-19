@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __next version__ - XXXX-XX-XX
+
+  * Add locking to enable multi-server deployments (Matt West).
+
 * 2.12.0 - 2018-05-19
 
   * Add new issues page style and flexible filtering (Nathan Walters).
@@ -92,8 +96,6 @@
   * Add `load-test` support for v2 questions (Matt West).
 
   * Add submission info modal with external grading stats (Nathan Walters).
-
-  * Add locking to enable multi-server deployments (Matt West).
 
   * Fix broken file upload element (Nathan Walters).
 
