@@ -1,0 +1,20 @@
+version: '3'
+services:
+  prairielearn:
+    build: .
+    ports:
+      - '3000:3000'
+  prairiegrader:
+    image: 'prairielearn/prairiegrader'
+    environment:
+      - QUEUE_TYPE=rabbitmq
+      - RABBITMQ_QUEUE_HOST=amqp://rabbitmq
+      - AWS_DEFAULT_REGION=us-east-2
+      - AWS_ACCESS_KEY_ID
+      - AWS_SECRET_ACCESS_KEY
+  rabbitmq:
+    image: 'rabbitmq:3'
+    expose:
+      - 5672
+    environment:
+      - 'RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit log_levels [{connection,error}]'
