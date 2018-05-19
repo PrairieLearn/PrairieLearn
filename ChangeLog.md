@@ -1,7 +1,7 @@
 
 # ChangeLog
 
-* __next version__ - XXXX-XX-XX
+* 2.12.0 - 2018-05-19
 
   * Add new issues page style and flexible filtering (Nathan Walters).
 
@@ -90,6 +90,7 @@
   * Add developer docs about question rendering (Matt West).
 
   * Add `load-test` support for v2 questions (Matt West).
+
   * Add submission info modal with external grading stats (Nathan Walters).
 
   * Fix broken file upload element (Nathan Walters).
