@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/prairielib",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A repository of code shared between various PrairieLearn projects",
   "main": "index.js",
   "files": [
@@ -8,7 +8,8 @@
     "sql-db.js",
     "sql-loader.js",
     "error.js",
-    "util.js"
+    "util.js",
+    "config.js"
   ],
   "scripts": {
     "test": "NODE_ENV=test jest",
