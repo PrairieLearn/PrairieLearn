@@ -5,11 +5,13 @@
 
   * Add improved support for very large file downloads (Nathan Walters).
 
-  * Fix migration 111 to allow re-running (Matt West).
-
   * Add support for running in production inside Docker (Matt West).
 
   * Add configurable authentication sources menu (Dave Mussulman).
+
+  * Add locking to enable multi-server deployments (Matt West).
+
+  * Fix migration 111 to allow re-running (Matt West).
 
 * 2.12.0 - 2018-05-19
 
