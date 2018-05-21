@@ -11,6 +11,8 @@
 
   * Add locking to enable multi-server deployments (Matt West).
 
+  * Add per-assessment PrairieSchedule exam linking (Matt West).
+
   * Fix migration 111 to allow re-running (Matt West).
 
 * 2.12.0 - 2018-05-19

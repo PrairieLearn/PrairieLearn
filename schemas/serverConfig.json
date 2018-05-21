@@ -52,6 +52,10 @@
             "description": "The group of servers we belong to, used for load reporting and autoscaling.",
             "type": "string"
         },
+        "syncExamIdAccessRules": {
+            "description": "If we should sync examIds to PrairieSchedule exams (default false).",
+            "type": "boolean"
+        },
         "cronIntervalMS": {
             "description": "Time between cron job runs (milliseconds).",
             "type": "integer"

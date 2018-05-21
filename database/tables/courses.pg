@@ -1,6 +1,7 @@
 columns
     course_id: bigint not null default nextval('courses_course_id_seq'::regclass)
     pl_course_id: bigint
+    rubric: text not null
 
 indexes
     courses_pkey: PRIMARY KEY (course_id)

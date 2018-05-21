@@ -9,9 +9,11 @@ const archiver = require('archiver');
 
 const error = require('@prairielearn/prairielib/error');
 const logger = require('../../lib/logger');
+const config = require('../../lib/config');
 const serverJobs = require('../../lib/server-jobs');
 const csvMaker = require('../../lib/csv-maker');
 const { paginateQuery } = require('../../lib/paginate');
+const dataFiles = require('../../lib/data-files');
 const assessment = require('../../lib/assessment');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');
@@ -85,7 +87,10 @@ router.get('/', function(req, res, next) {
         },
         function(callback) {
             debug('query assessment_access_rules');
-            var params = {assessment_id: res.locals.assessment.id};
+            var params = {
+                assessment_id: res.locals.assessment.id,
+                link_exam_id: config.syncExamIdAccessRules,
+            };
             sqldb.query(sql.assessment_access_rules, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.access_rules = result.rows;

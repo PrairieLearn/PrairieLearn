@@ -40,6 +40,7 @@ Access restriction | courseInstance | assessment | Meaning | Example
 `credit`           |   | ✓ | Maximum credit as percentage of full credit (can be more than 100). | `"credit": 100`
 `timeLimitMin`     |   | ✓ | Time limit in minutes to complete an assessment (only for Exams).   | `"timeLimitMin": 60`
 `password`         |   | ✓ | Password required to start an assessment (only for Exams).          | `"password": "mysecret"`
+`examId`           |   | ✓ | Exam scheduler ID that students must register for.                  | `"examId": 547`
 
 Each access rule will only grant access if all of the restrictions are satisfied.
 
@@ -86,7 +87,8 @@ For students taking remote exams it can be helpful to have an enforced time limi
     {
         "startDate": "2015-01-19T00:00:01",
         "endDate": "2015-05-13T23:59:59",
-        "timeLimitMin": 50
+        "timeLimitMin": 50,
+        "credit": 100
     }
 ]
 ```
@@ -105,12 +107,28 @@ Remote or online exams sometimes use a “proctor password” to control access 
         "mode": "Public",
         "startDate": "2015-01-19T00:00:01",
         "endDate": "2015-05-13T23:59:59",
-        "password": "mysecret"
+        "password": "mysecret",
+        "credit": 100
     }
 ]
 ```
 
 Before a student can do the exam, a proctor will need to type the phrase `mysecret` into the password field on the exam start page.
+
+## Exam IDs
+
+To require that students are taking a particular exam in the Computer-Based Testing Facility (CBTF), the `examId` should be set to the integer ID value from the scheduler app. For example:
+
+```
+"allowAccess": [
+    {
+        "examId": 547,
+        "credit": 100
+    }
+]
+```
+
+Note that in this case it is not necessary to specify the `mode` or any date ranges. These will be automatically determined by the scheduler app.
 
 ## Course instance example
 

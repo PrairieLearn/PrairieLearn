@@ -51,7 +51,10 @@ BEGIN
         END IF;
     END IF;
 
-    << schedule_access >> -- check access with PrairieSchedule
+    -- ############################################################
+    -- check access with PrairieSchedule using a linked course
+
+    << schedule_access >>
     DECLARE
         ps_course_id bigint;
         reservation reservations;
@@ -101,5 +104,41 @@ BEGIN
             EXIT schedule_access;
         END IF;
     END schedule_access;
+
+    -- ############################################################
+    -- check access with a specific PrairieSchedule exam
+
+    << schedule_exam >>
+    DECLARE
+        reservation reservations;
+    BEGIN
+        -- this block is only for exam_id checking
+        EXIT schedule_exam WHEN assessment_access_rule.exam_id IS NULL;
+
+        -- require Exam mode
+        IF mode IS DISTINCT FROM 'Exam' THEN
+            authorized := FALSE;
+            EXIT schedule_exam;
+        END IF;
+
+        -- is there a current checked-in reservation?
+        SELECT r.*
+        INTO reservation
+        FROM
+            reservations AS r
+        WHERE
+            r.exam_id = assessment_access_rule.exam_id
+            AND r.user_id = check_assessment_access_rule.user_id
+            AND r.delete_date IS NULL
+            AND date BETWEEN r.access_start AND r.access_end
+        ORDER BY r.access_end DESC -- choose the longest-lasting if more than one
+        LIMIT 1;
+
+        IF NOT FOUND THEN
+            -- no reservation, so block access
+            authorized := FALSE;
+            EXIT schedule_exam;
+        END IF;
+    END schedule_exam;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

@@ -138,26 +138,57 @@ module.exports = {
         });
     },
 
+    ensurePSExamIfNeeded: function(dbRule, callback) {
+        if (!_(dbRule).has('examId')) {
+            return callback(null);
+        }
+
+        if (config.syncExamIdAccessRules) {
+            const params = {
+                exam_id: dbRule.examId,
+            };
+            sqldb.query(sql.select_exams_by_id, params, function(err, result) {
+                if (ERR(err, callback)) return;
+                if (result.rowCount == 0) return callback(new Error('No such examId: ' + dbRule.examId));
+                callback(null);
+            });
+        } else {
+            const params = {
+                exam_id: dbRule.examId,
+                exam_string: 'Exam ' + dbRule.examId,
+            };
+            sqldb.query(sql.insert_fake_ps_exam_if_needed, params, function(err, _result) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        }
+    },
+
     syncAccessRules: function(assessmentId, dbAssessment, callback) {
+        var that = module.exports;
         var allowAccess = dbAssessment.allowAccess || [];
         async.forEachOfSeries(allowAccess, function(dbRule, i, callback) {
             logger.debug('Syncing assessment access rule number ' + (i + 1));
-            var params = {
-                assessment_id: assessmentId,
-                number: i + 1,
-                mode: _(dbRule).has('mode') ? dbRule.mode : null,
-                role: _(dbRule).has('role') ? dbRule.role : null,
-                uids: _(dbRule).has('uids') ? dbRule.uids : null,
-                start_date: _(dbRule).has('startDate') ? dbRule.startDate : null,
-                end_date: _(dbRule).has('endDate') ? dbRule.endDate : null,
-                credit: _(dbRule).has('credit') ? dbRule.credit : null,
-                time_limit_min: _(dbRule).has('timeLimitMin') ? dbRule.timeLimitMin : null,
-                password: _(dbRule).has('password') ? dbRule.password : null,
-                seb_config: _(dbRule).has('SEBConfig') ? dbRule.SEBConfig : null,
-            };
-            sqldb.query(sql.insert_assessment_access_rule, params, function(err, _result) {
+            that.ensurePSExamIfNeeded(dbRule, function(err) {
                 if (ERR(err, callback)) return;
-                callback(null);
+                var params = {
+                    assessment_id: assessmentId,
+                    number: i + 1,
+                    mode: _(dbRule).has('mode') ? dbRule.mode : null,
+                    role: _(dbRule).has('role') ? dbRule.role : null,
+                    uids: _(dbRule).has('uids') ? dbRule.uids : null,
+                    start_date: _(dbRule).has('startDate') ? dbRule.startDate : null,
+                    end_date: _(dbRule).has('endDate') ? dbRule.endDate : null,
+                    credit: _(dbRule).has('credit') ? dbRule.credit : null,
+                    time_limit_min: _(dbRule).has('timeLimitMin') ? dbRule.timeLimitMin : null,
+                    password: _(dbRule).has('password') ? dbRule.password : null,
+                    seb_config: _(dbRule).has('SEBConfig') ? dbRule.SEBConfig : null,
+                    exam_id: _(dbRule).has('examId') ? dbRule.examId : null,
+                };
+                sqldb.query(sql.insert_assessment_access_rule, params, function(err, _result) {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
             });
         }, function(err) {
             if (ERR(err, callback)) return;
