@@ -13,7 +13,6 @@ const config = require('../../lib/config');
 const serverJobs = require('../../lib/server-jobs');
 const csvMaker = require('../../lib/csv-maker');
 const { paginateQuery } = require('../../lib/paginate');
-const dataFiles = require('../../lib/data-files');
 const assessment = require('../../lib/assessment');
 const sqldb = require('@prairielearn/prairielib/sql-db');
 const sqlLoader = require('@prairielearn/prairielib/sql-loader');

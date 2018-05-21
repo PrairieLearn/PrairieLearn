@@ -212,7 +212,7 @@ module.exports = {
             } else {
                 logger.verbose('cron: ' + job.name + ' job was not recently run');
                 const params = {name: job.name};
-                sqldb.query(sql.update_cron_job_time, params, (err, result) => {
+                sqldb.query(sql.update_cron_job_time, params, (err, _result) => {
                     if (ERR(err, callback)) return;
                     logger.verbose('cron: ' + job.name + ' updated date');
                     this.runJob(job, (err) => {

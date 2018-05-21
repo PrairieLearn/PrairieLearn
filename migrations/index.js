@@ -74,7 +74,7 @@ module.exports._initWithLock = function(callback) {
                     });
 
                 // check that we don't have repeated indexes
-                repeatedIndexes = _(files)
+                const repeatedIndexes = _(files)
                     .groupBy(file => file.index)
                     .pickBy(fileList => (fileList.length > 1))
                     .map((fileList, index) => `Repeated index ${index}:\n` + _.map(fileList, 'filename').join('\n'))
@@ -83,7 +83,7 @@ module.exports._initWithLock = function(callback) {
                     return callback(new Error(`Repeated migration indexes:\n${repeatedIndexes.join('\n')}`));
                 }
 
-                files = files.filter(file => file.index > last_migration)
+                files = files.filter(file => file.index > last_migration);
                 callback(null, files);
             });
         },
