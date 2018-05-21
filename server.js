@@ -17,7 +17,6 @@ const migrations = require('./migrations');
 const sprocs = require('./sprocs');
 const cron = require('./cron');
 const redis = require('./lib/redis');
-const externalGraderRabbitMq = require('./lib/externalGraderRabbitMq');
 const socketServer = require('./lib/socket-server');
 const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
@@ -174,16 +173,6 @@ module.exports.startServer = function() {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
-        },
-        (callback) => {
-            if (config.externalGradingQueueType === 'rabbitmq') {
-                externalGraderRabbitMq.init((err) => {
-                    if (ERR(err, callback)) return;
-                    callback(null);
-                });
-            } else {
-                callback(null);
-            }
         },
         function(callback) {
             externalGrader.init(assessment, function(err) {

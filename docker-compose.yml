@@ -4,6 +4,7 @@ services:
     build: .
     environment:
       - RABBITMQ_HOST=amqp://rabbitmq
+      - EXTERNAL_GRADING_ENABLED=true
       - EXTERNAL_GRADING_FILE_STORE_TYPE=disk
       - EXTERNAL_GRADING_QUEUE_TYPE=rabbitmq
       - EXTERNAL_GRADING_FILE_STORE_PATH=/jobs
@@ -11,6 +12,7 @@ services:
       - '3000:3000'
     volumes:
       - jobs:/jobs
+      - /var/run/docker.sock:/var/run/docker.sock
   prairiegrader:
     image: 'prairielearn/prairiegrader'
     environment:
@@ -21,8 +23,11 @@ services:
       - AWS_SECRET_ACCESS_KEY
     volumes:
       - jobs:/jobs
+      - /var/run/docker.sock:/var/run/docker.sock
   rabbitmq:
     image: 'rabbitmq:3'
+    logging:
+      driver: none # Disable logs to keep the focus on PL/PG
     expose:
       - 5672
     environment:

@@ -150,7 +150,7 @@ properties:
 
   # Required
   azureIdentityMetadata:
-    default: 'https://login.microsoftonline.com/common/.well-known/openid-configuration',
+    default: 'https://login.microsoftonline.com/common/.well-known/openid-configuration'
   # azureIdentityMetadata: \'https://login.microsoftonline.com/<tenant_name>.onmicrosoft.com/.well-known/openid-configuration',
   # or equivalently: 'https://login.microsoftonline.com/<tenant_guid>/.well-known/openid-configuration'
   #
@@ -160,11 +160,11 @@ properties:
 
   # Required, the client ID of your app in AAD
   azureClientID:
-    default: '<your_client_id>',
+    default: '<your_client_id>'
 
   # Required, must be 'code', 'code id_token', 'id_token code' or 'id_token'
   azureResponseType:
-    default: 'code id_token',
+    default: 'code id_token'
 
   # Required
   azureResponseMode:

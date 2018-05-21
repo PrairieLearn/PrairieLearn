@@ -345,4 +345,6 @@ module.exports = function(config) {
 
     app.use(require('./middlewares/notFound')); // if no earlier routes matched, this will match and generate a 404 error
     app.use(require('./pages/error/error'));
+
+    return app;
 };
