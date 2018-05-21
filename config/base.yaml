@@ -19,6 +19,7 @@ properties:
     default: null # redis://localhost:6379/ for dev
   rabbitMqHost:
     default: 'amqp://localhost'
+    envVar: RABBITMQ_HOST
   logFilename:
     default: 'server.log'
   authType:
@@ -47,36 +48,6 @@ properties:
     default: THIS_IS_THE_SECRET_KEY # override
   secretSlackOpsBotEndpoint:
     default: null # override
-
-  # External grading config
-  externalGradingUseAws:
-    default: false
-    envVar: EXTERNAL_GRADING_USE_AWS
-  externalGradingQueueType:
-    default: sqs
-    envVar: EXTERNAL_GRADING_QUEUE_TYPE
-  externalGradingQueueName:
-    default: grading
-    envVar: EXTERNAL_GRADING_QUEUE_NAME
-  externalGradingAutoScalingGroupName:
-    default: null
-    envVar: EXTERNAL_GRADING_AUTOSCALING_GROUP_NAME
-  externalGradingS3Bucket:
-    default: 'prairielearn.dev.grading'
-  externalGradingWebhookUrl:
-    default: null
-  externalGradingDefaultTimeout:
-    default: 30 # Seconds
-  externalGradingLoadAverageIntervalSec:
-    default: 30
-  externalGradingHistoryLoadIntervalSec:
-    default: 3600
-  externalGradingCurrentCapacityFactor:
-    default: 1.5
-  externalGradingHistoryCapacityFactor:
-    default: 1.5
-  externalGradingSecondsPerSubmissionPerUser:
-    default: 120
 
   groupName:
     default: 'local' # used for load reporting
@@ -112,6 +83,65 @@ properties:
     default: false
   syncExamIdAccessRules:
     default: false
+
+  ##############################
+  # EXTERNAL GRADING CONFIG
+  ##############################
+  # Whether external grading is enabled. Defaults to false to handle the
+  # average case where someone is running PrairieLearn without a connection to
+  # an instance of PrairieGrader
+  externalGradingEnabled:
+    default: false
+    envVar: EXTERNAL_GRADING_ENABLED
+
+  # What type of queue to use
+  # One of: sqs, rabbitmq
+  externalGradingQueueType:
+    default: sqs
+    envVar: EXTERNAL_GRADING_QUEUE_TYPE
+
+  # Where to send files for submitted external grading jobs
+  # One of: s3, disk
+  externalGradingFileStoreType:
+    default: s3
+    envVar: EXTERNAL_GRADING_FILE_STORE_TYPE
+
+  # Where to write files to, if externalGradingFileStoreType is 'disk'
+  externalGradingFileStorePath:
+    default: '/jobs'
+    envVar: EXTERNAL_GRADING_FILE_STORE_PATH
+
+  externalGradingQueueName:
+    default: grading
+    envVar: EXTERNAL_GRADING_QUEUE_NAME
+
+  externalGradingAutoScalingGroupName:
+    default: null
+    envVar: EXTERNAL_GRADING_AUTOSCALING_GROUP_NAME
+
+  externalGradingS3Bucket:
+    default: 'prairielearn.dev.grading'
+
+  externalGradingWebhookUrl:
+    default: null
+
+  externalGradingDefaultTimeout:
+    default: 30 # Seconds
+
+  externalGradingLoadAverageIntervalSec:
+    default: 30
+
+  externalGradingHistoryLoadIntervalSec:
+    default: 3600
+
+  externalGradingCurrentCapacityFactor:
+    default: 1.5
+
+  externalGradingHistoryCapacityFactor:
+    default: 1.5
+
+  externalGradingSecondsPerSubmissionPerUser:
+    default: 120
 
 
   ##################

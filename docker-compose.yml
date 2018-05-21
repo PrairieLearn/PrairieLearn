@@ -2,8 +2,15 @@ version: '3'
 services:
   prairielearn:
     build: .
+    environment:
+      - RABBITMQ_HOST=amqp://rabbitmq
+      - EXTERNAL_GRADING_FILE_STORE_TYPE=disk
+      - EXTERNAL_GRADING_QUEUE_TYPE=rabbitmq
+      - EXTERNAL_GRADING_FILE_STORE_PATH=/jobs
     ports:
       - '3000:3000'
+    volumes:
+      - jobs:/jobs
   prairiegrader:
     image: 'prairielearn/prairiegrader'
     environment:
@@ -12,9 +19,13 @@ services:
       - AWS_DEFAULT_REGION=us-east-2
       - AWS_ACCESS_KEY_ID
       - AWS_SECRET_ACCESS_KEY
+    volumes:
+      - jobs:/jobs
   rabbitmq:
     image: 'rabbitmq:3'
     expose:
       - 5672
     environment:
       - 'RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit log_levels [{connection,error}]'
+volumes:
+  jobs:
