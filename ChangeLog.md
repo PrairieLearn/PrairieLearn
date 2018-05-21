@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add improved support for very large file downloads (Nathan Walters).
+
   * Fix migration 111 to allow re-running (Matt West).
 
 * 2.12.0 - 2018-05-19

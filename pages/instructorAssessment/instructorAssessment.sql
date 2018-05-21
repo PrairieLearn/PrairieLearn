@@ -373,7 +373,11 @@ SELECT
 FROM
     all_files
 ORDER BY
-    uid, assessment_instance_number, qid, variant_number, date;
+    uid, assessment_instance_number, qid, variant_number, date
+LIMIT
+    $limit
+OFFSET
+    $offset;
 
 
 -- BLOCK open
