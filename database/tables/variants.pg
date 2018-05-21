@@ -19,9 +19,9 @@ columns
     variant_seed: text
 
 indexes
-    variants_pkey: PRIMARY KEY (id)
-    variants_instance_question_id_number_key: UNIQUE (instance_question_id, number)
-    variants_qiid_key: UNIQUE (qiid)
+    variants_pkey: PRIMARY KEY (id) USING btree (id)
+    variants_instance_question_id_number_key: UNIQUE (instance_question_id, number) USING btree (instance_question_id, number)
+    variants_qiid_key: UNIQUE (qiid) USING btree (qiid)
 
 foreign-key constraints
     variants_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

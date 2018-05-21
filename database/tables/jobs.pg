@@ -27,9 +27,9 @@ columns
     working_directory: text
 
 indexes
-    jobs_pkey: PRIMARY KEY (id)
-    jobs_course_id_number_key: UNIQUE (course_id, number)
-    jobs_job_sequence_id_number_in_sequence_key: UNIQUE (job_sequence_id, number_in_sequence)
+    jobs_pkey: PRIMARY KEY (id) USING btree (id)
+    jobs_course_id_number_key: UNIQUE (course_id, number) USING btree (course_id, number)
+    jobs_job_sequence_id_number_in_sequence_key: UNIQUE (job_sequence_id, number_in_sequence) USING btree (job_sequence_id, number_in_sequence)
 
 foreign-key constraints
     jobs_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

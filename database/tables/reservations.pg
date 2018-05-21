@@ -7,7 +7,7 @@ columns
     user_id: bigint
 
 indexes
-    reservations_pkey: PRIMARY KEY (reservation_id)
+    reservations_pkey: PRIMARY KEY (reservation_id) USING btree (reservation_id)
 
 foreign-key constraints
     reservations_exam_id_fkey: FOREIGN KEY (exam_id) REFERENCES exams(exam_id)

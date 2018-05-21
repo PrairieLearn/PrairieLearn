@@ -14,8 +14,8 @@ columns
     uids: text[]
 
 indexes
-    assessment_access_rules_pkey: PRIMARY KEY (id)
-    assessment_access_rules_assessment_id_number_key: UNIQUE (assessment_id, number)
+    assessment_access_rules_pkey: PRIMARY KEY (id) USING btree (id)
+    assessment_access_rules_assessment_id_number_key: UNIQUE (assessment_id, number) USING btree (assessment_id, number)
 
 foreign-key constraints
     assessment_access_rules_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

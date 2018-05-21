@@ -5,9 +5,9 @@ columns
     user_id: bigint not null
 
 indexes
-    enrollments_pkey: PRIMARY KEY (id)
-    enrollments_user_id_course_instance_id_key: UNIQUE (user_id, course_instance_id)
-    enrollments_course_instance_id_idx: null
+    enrollments_pkey: PRIMARY KEY (id) USING btree (id)
+    enrollments_user_id_course_instance_id_key: UNIQUE (user_id, course_instance_id) USING btree (user_id, course_instance_id)
+    enrollments_course_instance_id_idx: USING btree (course_instance_id)
 
 foreign-key constraints
     enrollments_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

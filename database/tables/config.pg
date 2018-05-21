@@ -5,5 +5,5 @@ columns
     value: text
 
 indexes
-    config_pkey: PRIMARY KEY (id)
-    config_key_key: UNIQUE (key)
+    config_pkey: PRIMARY KEY (id) USING btree (id)
+    config_key_key: UNIQUE (key) USING btree (key)

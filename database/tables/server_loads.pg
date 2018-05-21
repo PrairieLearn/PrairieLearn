@@ -8,5 +8,5 @@ columns
     max_jobs: double precision not null
 
 indexes
-    server_loads_pkey: PRIMARY KEY (id)
-    server_loads_instance_id_job_type_key: UNIQUE (instance_id, job_type)
+    server_loads_pkey: PRIMARY KEY (id) USING btree (id)
+    server_loads_instance_id_job_type_key: UNIQUE (instance_id, job_type) USING btree (instance_id, job_type)

@@ -10,9 +10,9 @@ columns
     uuid: uuid not null
 
 indexes
-    course_instances_pkey: PRIMARY KEY (id)
-    course_instances_uuid_key: UNIQUE (uuid)
-    course_instances_course_id_idx: null
+    course_instances_pkey: PRIMARY KEY (id) USING btree (id)
+    course_instances_uuid_key: UNIQUE (uuid) USING btree (uuid)
+    course_instances_course_id_idx: USING btree (course_id)
 
 foreign-key constraints
     course_instances_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE

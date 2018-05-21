@@ -4,7 +4,7 @@ columns
     exam_string: text not null
 
 indexes
-    exams_pkey: PRIMARY KEY (exam_id)
+    exams_pkey: PRIMARY KEY (exam_id) USING btree (exam_id)
 
 foreign-key constraints
     exams_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(course_id)

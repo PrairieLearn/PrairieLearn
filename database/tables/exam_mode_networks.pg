@@ -7,4 +7,4 @@ columns
     purpose: text
 
 indexes
-    exam_mode_networks_pkey: PRIMARY KEY (id)
+    exam_mode_networks_pkey: PRIMARY KEY (id) USING btree (id)

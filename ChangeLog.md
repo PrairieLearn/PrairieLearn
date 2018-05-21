@@ -17,6 +17,8 @@
 
   * Add `package-lock.json` to Docker image build (Matt West).
 
+  * Add additional information about indices to database descriptions (Nathan Walters).
+
   * Fix migration 111 to allow re-running (Matt West).
 
 * 2.12.0 - 2018-05-19

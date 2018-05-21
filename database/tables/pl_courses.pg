@@ -10,7 +10,7 @@ columns
     title: text
 
 indexes
-    pl_courses_pkey: PRIMARY KEY (id)
+    pl_courses_pkey: PRIMARY KEY (id) USING btree (id)
 
 referenced by
     assessment_sets: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE

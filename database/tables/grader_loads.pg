@@ -7,5 +7,5 @@ columns
     queue_name: text not null
 
 indexes
-    grader_loads_pkey: PRIMARY KEY (id)
-    grader_loads_instance_id_key: UNIQUE (instance_id)
+    grader_loads_pkey: PRIMARY KEY (id) USING btree (id)
+    grader_loads_instance_id_key: UNIQUE (instance_id) USING btree (instance_id)

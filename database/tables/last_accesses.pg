@@ -4,8 +4,8 @@ columns
     user_id: bigint not null
 
 indexes
-    last_accesses_pkey: PRIMARY KEY (id)
-    last_accesses_user_id_key: UNIQUE (user_id)
+    last_accesses_pkey: PRIMARY KEY (id) USING btree (id)
+    last_accesses_user_id_key: UNIQUE (user_id) USING btree (user_id)
 
 foreign-key constraints
     last_accesses_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

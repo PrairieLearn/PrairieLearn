@@ -12,11 +12,11 @@ columns
     variant_id: bigint
 
 indexes
-    page_view_logs_pkey: PRIMARY KEY (id)
-    page_view_logs_assessment_id_date_idx: null
-    page_view_logs_course_instance_id_date_idx: null
-    page_view_logs_date_idx: null
-    page_view_logs_user_id_assessment_instance_id_date_idx: null
+    page_view_logs_pkey: PRIMARY KEY (id) USING btree (id)
+    page_view_logs_assessment_id_date_idx: USING btree (assessment_id, date)
+    page_view_logs_course_instance_id_date_idx: USING btree (course_instance_id, date)
+    page_view_logs_date_idx: USING btree (date)
+    page_view_logs_user_id_assessment_instance_id_date_idx: USING btree (user_id, assessment_instance_id, date)
 
 foreign-key constraints
     page_view_logs_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

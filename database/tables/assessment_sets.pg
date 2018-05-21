@@ -8,8 +8,8 @@ columns
     number: integer
 
 indexes
-    assessment_sets_pkey: PRIMARY KEY (id)
-    assessment_sets_course_id_name_key: UNIQUE (course_id, name)
+    assessment_sets_pkey: PRIMARY KEY (id) USING btree (id)
+    assessment_sets_course_id_name_key: UNIQUE (course_id, name) USING btree (course_id, name)
 
 foreign-key constraints
     assessment_sets_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
