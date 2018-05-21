@@ -99,7 +99,7 @@ describe('Access control', function() {
     /**********************************************************************/
 
     var getPl = function(cookies, shouldContainXC101, callback) {
-        request({url: baseUrl, jar: cookies}, function (error, response, body) {
+        request({url: siteUrl, jar: cookies}, function (error, response, body) {
             if (error) {
                 return callback(error);
             }

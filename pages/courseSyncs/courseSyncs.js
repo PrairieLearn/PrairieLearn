@@ -5,6 +5,7 @@ var router = express.Router();
 
 var error = require('@prairielearn/prairielib/error');
 var logger = require('../../lib/logger');
+var config = require('../../lib/config');
 var serverJobs = require('../../lib/server-jobs');
 var syncFromDisk = require('../../sync/syncFromDisk');
 var requireFrontend = require('../../lib/require-frontend');
@@ -35,6 +36,11 @@ var pullAndUpdate = function(locals, callback) {
         if (ERR(err, callback)) return;
         callback(null, job_sequence_id);
 
+        const gitEnv = process.env;
+        if (config.gitSshCommand != null) {
+            gitEnv.GIT_SSH_COMMAND = config.gitSshCommand;
+        }
+
         // We've now triggered the callback to our caller, but we
         // continue executing below to launch the jobs themselves.
 
@@ -52,6 +58,7 @@ var pullAndUpdate = function(locals, callback) {
                 description: 'Clone from remote git repository',
                 command: 'git',
                 arguments: ['clone', locals.course.repository, locals.course.path],
+                env: gitEnv,
                 on_success: syncStage2,
             };
             serverJobs.spawnJob(jobOptions);
@@ -68,6 +75,7 @@ var pullAndUpdate = function(locals, callback) {
                 command: 'git',
                 arguments: ['pull', '--force'],
                 working_directory: locals.course.path,
+                env: gitEnv,
                 on_success: syncStage2,
             };
             serverJobs.spawnJob(jobOptions);

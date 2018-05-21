@@ -31,7 +31,7 @@ router.all('/', function(req, res, next) {
             };
             var pl_authn = csrf.generateToken(tokenData, config.secretKey);
             res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});
-            var redirUrl = res.locals.plainUrlPrefix;
+            var redirUrl = res.locals.homeUrl;
             if ('preAuthUrl' in req.cookies) {
                 redirUrl = req.cookies.preAuthUrl;
                 res.clearCookie('preAuthUrl');

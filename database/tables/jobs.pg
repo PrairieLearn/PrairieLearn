@@ -6,6 +6,7 @@ columns
     course_id: bigint
     course_instance_id: bigint
     description: text
+    env: jsonb
     error_message: text
     exit_code: integer
     exit_signal: text

@@ -87,6 +87,18 @@
         "externalGradingDefaultTimeout": {
             "description": "The default timeout to use for external grading if none is specified by a question.",
             "type": "integer"
+        },
+        "hasShib": {
+            "description": "Enables Shibboleth authentication",
+            "type": "boolean"
+        },
+        "hasAzure": {
+            "description": "Enables Azure authentication",
+            "type": "boolean"
+        },
+        "hasOauth": {
+            "description": "Enables OAuth authentication",
+            "type": "boolean"
         }
     }
 }

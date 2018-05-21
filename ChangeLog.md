@@ -7,6 +7,10 @@
 
   * Fix migration 111 to allow re-running (Matt West).
 
+  * Add support for running in production inside Docker (Matt West).
+
+  * Add configurable authentication sources menu (Dave Mussulman).
+
 * 2.12.0 - 2018-05-19
 
   * Add new issues page style and flexible filtering (Nathan Walters).

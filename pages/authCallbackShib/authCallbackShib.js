@@ -32,7 +32,7 @@ router.get('/:action?/:target(*)?', function(req, res, next) {
         var pl_authn = csrf.generateToken(tokenData, config.secretKey);
         res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});
         if (req.params.action == 'redirect') return res.redirect('/' + req.params.target);
-        var redirUrl = res.locals.plainUrlPrefix;
+        var redirUrl = res.locals.homeUrl;
         if ('preAuthUrl' in req.cookies) {
             redirUrl = req.cookies.preAuthUrl;
             res.clearCookie('preAuthUrl');
