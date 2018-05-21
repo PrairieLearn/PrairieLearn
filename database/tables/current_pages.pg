@@ -12,9 +12,9 @@ columns
     variant_id: bigint
 
 indexes
-    current_pages_pkey: PRIMARY KEY (id)
-    current_pages_user_id_key: UNIQUE (user_id)
-    current_pages_date_idx: null
+    current_pages_pkey: PRIMARY KEY (id) USING btree (id)
+    current_pages_user_id_key: UNIQUE (user_id) USING btree (user_id)
+    current_pages_date_idx: USING btree (date)
 
 foreign-key constraints
     current_pages_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
