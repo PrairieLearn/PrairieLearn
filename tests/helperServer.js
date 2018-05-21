@@ -10,7 +10,6 @@ var serverJobs = require('../lib/server-jobs');
 var syncFromDisk = require('../sync/syncFromDisk');
 var freeformServer = require('../question-servers/freeform');
 
-config.startServer = false;
 config.serverPort = 3007;
 var server = require('../server');
 
@@ -55,7 +54,7 @@ module.exports = {
                 callback(null);
             },
             function(callback) {
-                server.startServer(function(err) {
+                server.startHttpServer(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });
@@ -100,7 +99,7 @@ module.exports = {
                 callback(null);
             },
             function(callback) {
-                server.stopServer(function(err) {
+                server.stopHttpServer(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
                 });

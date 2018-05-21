@@ -1,0 +1,114 @@
+properties:
+  # Postgres config
+  postgresqlUser:
+    default: postgres
+    envVar: POSTGRESQL_USER
+  postgresqlPassword:
+    default: null
+    envVar: POSTGRESQL_PASSWORD
+  postgresqlDatabase:
+    default: postgres
+    envVar: POSTGRESQL_DATABASE
+  postgresqlHost:
+    default: localhost
+    envVar: POSTGRESQL_HOST
+
+  urlPrefix:
+    default: '/pl'
+  redisUrl:
+    default: null # redis://localhost:6379/ for dev
+  rabbitMqHost:
+    default: 'amqp://localhost'
+  logFilename:
+    default: 'server.log'
+  authType:
+    default: none
+  serverType:
+    default: http
+  serverPort:
+    default: 3000
+  cronIntervalAutoFinishExamsSec:
+    default: 600 # 10 * 60
+  cronIntervalErrorAbandonedJobsSec:
+    default: 600 # 10 * 60
+  cronIntervalExternalGraderLoadSec:
+    default: 8
+  cronIntervalServerLoadSec:
+    default: 8
+  cronIntervalServerUsageSec:
+    default: 8
+  cronDailySec:
+    default: 2880 # 8 * 60 * 60
+  autoFinishAgeMins:
+    default: 360 # 6 hours
+  questionDefaultsDir:
+    default: 'question-servers/default-calculation'
+  secretKey:
+    default: THIS_IS_THE_SECRET_KEY # override
+  secretSlackOpsBotEndpoint:
+    default: null # override
+
+  # External grading config
+  externalGradingUseAws:
+    default: false
+    envVar: EXTERNAL_GRADING_USE_AWS
+  externalGradingQueueType:
+    default: sqs
+    envVar: EXTERNAL_GRADING_QUEUE_TYPE
+  externalGradingQueueName:
+    default: grading
+    envVar: EXTERNAL_GRADING_QUEUE_NAME
+  externalGradingAutoScalingGroupName:
+    default: null
+    envVar: EXTERNAL_GRADING_AUTOSCALING_GROUP_NAME
+  externalGradingS3Bucket:
+    default: 'prairielearn.dev.grading'
+  externalGradingWebhookUrl:
+    default: null
+  externalGradingDefaultTimeout:
+    default: 30 # Seconds
+  externalGradingLoadAverageIntervalSec:
+    default: 30
+  externalGradingHistoryLoadIntervalSec:
+    default: 3600
+  externalGradingCurrentCapacityFactor:
+    default: 1.5
+  externalGradingHistoryCapacityFactor:
+    default: 1.5
+  externalGradingSecondsPerSubmissionPerUser:
+    default: 120
+
+  groupName:
+    default: 'local' # used for load reporting
+  instanceId:
+    default: 'server' # FIXME: needs to be determed dynamically with new config code
+  reportIntervalSec:
+    default: 10 # load reporting
+  maxResponseTimeSec:
+    default: 600
+  serverLoadAverageIntervalSec:
+    default: 30
+  serverUsageIntervalSec:
+    default: 10
+  PLpeekUrl:
+    default: 'https://cbtf.engr.illinois.edu/sched/proctor/plpeek'
+  blockedWarnEnable:
+    default: false
+    envVar: BLOCKED_WARN_ENABLE
+  blockedWarnThresholdMS:
+    default: 100
+    envVar: BLOCKED_WARN_THRESHOLD_MS
+  SEBServerUrl:
+    default: null
+  SEBServerFilter:
+    default: null
+  SEBDownloadUrl:
+    default: null
+  hasShib:
+    default: false
+  hasAzure:
+    default: false
+  hasOauth:
+    default: false
+  syncExamIdAccessRules:
+    default: false
