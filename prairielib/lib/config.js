@@ -21,6 +21,16 @@ module.exports.loadConfigForEnvironment = function (configDir, environment, call
     let inheritedConfigs = [];
     async.series([
         (callback) => {
+            fs.access(path.join(configDir, `${environment}.yaml`), fs.constants.F_OK, (err) => {
+                if (err) {
+                    // There's no specific config for this environment
+                    // Default to the base config
+                    environment = 'base';
+                }
+                callback(null);
+            });
+        },
+        (callback) => {
             // Load configs, following the inheritance chain
             let parent = environment;
             async.whilst(
@@ -72,9 +82,9 @@ module.exports.loadConfigForEnvironment = function (configDir, environment, call
                             return;
                         }
                     } else if (typeof configItem.default === 'boolean') {
-                        if (envValue === 'true' || envValue === 'True' || envValue === 1) {
+                        if (envValue.toLowerCase() === 'true' || envValue === 1) {
                             builtConfig[itemKey] = true;
-                        } else if (envValue === 'false' || envValue === 'False' || envValue === 0) {
+                        } else if (envValue.toLowerCase() === 'false' || envValue === 0) {
                             builtConfig[itemKey] = false;
                         } else {
                             callback(new Error(`Unable to parse ${configItem.envVar}=${envValue} as a boolean`));
@@ -101,7 +111,8 @@ module.exports.loadConfigForEnvironment = function (configDir, environment, call
  * @param  {Object}   options      Any options
  * @param  {Function} callback     Callback to receive either an error of the loaded config
  */
-module.exports.loadConfig = function(configDir, options = {}, callback) {
+module.exports.loadConfig = function(configDir, opts, callback) {
+    const options = opts || {};
     const env = options.env || process.env.NODE_ENV || 'development';
     module.exports.loadConfigForEnvironment(configDir, env, (err, loadedConfig) => {
         if (ERR(err, callback)) return;
