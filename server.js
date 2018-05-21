@@ -464,6 +464,9 @@ app.use('/pl/course/:course_id/question/:question_id', [
     require('./pages/courseQuestion/courseQuestion'),
 ]);
 app.use('/pl/course/:course_id/issues', require('./pages/courseIssues/courseIssues'));
+// Right now grading jobs are only linked from instructorAssessment; if we link from courseQuestion (i.e., instructorQuestion) we'll need this routing
+app.use('/pl/course/:course_id/grading_job', require('./pages/courseGradingJob/courseGradingJob'));
+
 
 // clientFiles
 // It's not clear whether courseInstance or assessment clientFiles should be accessed from course-space, but I'm including them to avoid breaking anything
