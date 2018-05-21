@@ -15,6 +15,7 @@
 !migrations/
 !models/
 !package.json
+!package-lock.json
 !pages/
 !public/
 !question-servers/
