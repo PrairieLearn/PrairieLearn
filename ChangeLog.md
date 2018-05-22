@@ -23,6 +23,8 @@
 
   * Fix docs to provide workaround for `mcrypt` install error on OSX (Tim Bretl).
 
+  * Change `popper.js` to version `1.14.0` (Tim Bretl).
+
 * 2.12.0 - 2018-05-19
 
   * Add new issues page style and flexible filtering (Nathan Walters).
