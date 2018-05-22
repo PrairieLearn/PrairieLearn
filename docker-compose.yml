@@ -3,6 +3,9 @@ services:
   prairielearn:
     build: .
     environment:
+      - NO_POSTGRES=true
+      - POSTGRESQL_HOST=postgres
+      - POSTGRESQL_PASSWORD=securepassword
       - RABBITMQ_HOST=amqp://rabbitmq
       - EXTERNAL_GRADING_ENABLED=true
       - EXTERNAL_GRADING_FILE_STORE_TYPE=disk
@@ -16,9 +19,13 @@ services:
     volumes:
       - jobs:/jobs
       - /var/run/docker.sock:/var/run/docker.sock
+
   prairiegrader:
     image: 'prairielearn/prairiegrader'
     environment:
+      - USE_DATABASE=true
+      - PG_HOST=postgres
+      - PG_PASSWORD=securepassword
       - RABBITMQ_QUEUE_HOST=amqp://rabbitmq
       - QUEUE_TYPE=rabbitmq
       - FILE_STORE_TYPE=disk
@@ -28,18 +35,26 @@ services:
       - MAX_CONCURRENT_JOBS=1
       - JOB_FILES_VOLUME_NAME=prairiegrader_job_files
       - JOB_FILES_VOLUME_PATH=/job_files
+      - GLOBAL_LOGGER_LEVEL=info
+      - JOB_LOGGER_LEVEL=info
     volumes:
       - jobs:/jobs
       - prairiegrader_job_files:/job_files
       - /var/run/docker.sock:/var/run/docker.sock
+
   rabbitmq:
     image: 'rabbitmq:3'
     logging:
       driver: none # Disable logs to keep the focus on PL/PG
     expose:
       - 5672
+
+  postgres:
+    image: 'postgres:10.4'
     environment:
-      - 'RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit log_levels [{connection,error}]'
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=securepassword
+
 volumes:
   jobs:
   prairiegrader_job_files:
