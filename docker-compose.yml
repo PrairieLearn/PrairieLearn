@@ -1,4 +1,4 @@
-version: '3'
+version: '3.4'
 services:
   prairielearn:
     build: .
@@ -19,12 +19,18 @@ services:
   prairiegrader:
     image: 'prairielearn/prairiegrader'
     environment:
+      - RABBITMQ_QUEUE_HOST=amqp://rabbitmq
       - QUEUE_TYPE=rabbitmq
       - FILE_STORE_TYPE=disk
       - FILE_STORE_PATH=/jobs
-      - RABBITMQ_QUEUE_HOST=amqp://rabbitmq
+      # Because we have to use a single volume to move files between this
+      # container and the job container, we can only run one job at a time
+      - MAX_CONCURRENT_JOBS=1
+      - JOB_FILES_VOLUME_NAME=prairiegrader_job_files
+      - JOB_FILES_VOLUME_PATH=/job_files
     volumes:
       - jobs:/jobs
+      - prairiegrader_job_files:/job_files
       - /var/run/docker.sock:/var/run/docker.sock
   rabbitmq:
     image: 'rabbitmq:3'
@@ -36,3 +42,5 @@ services:
       - 'RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS=-rabbit log_levels [{connection,error}]'
 volumes:
   jobs:
+  prairiegrader_job_files:
+    name: prairiegrader_job_files
