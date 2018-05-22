@@ -8,8 +8,11 @@ services:
       - EXTERNAL_GRADING_FILE_STORE_TYPE=disk
       - EXTERNAL_GRADING_QUEUE_TYPE=rabbitmq
       - EXTERNAL_GRADING_FILE_STORE_PATH=/jobs
+      - 'EXTERNAL_GRADING_WEBHOOK_URL=http://prairielearn:3000/pl/webhooks/grading'
     ports:
       - '3000:3000'
+    expose:
+      - 3000
     volumes:
       - jobs:/jobs
       - /var/run/docker.sock:/var/run/docker.sock
@@ -17,10 +20,9 @@ services:
     image: 'prairielearn/prairiegrader'
     environment:
       - QUEUE_TYPE=rabbitmq
+      - FILE_STORE_TYPE=disk
+      - FILE_STORE_PATH=/jobs
       - RABBITMQ_QUEUE_HOST=amqp://rabbitmq
-      - AWS_DEFAULT_REGION=us-east-2
-      - AWS_ACCESS_KEY_ID
-      - AWS_SECRET_ACCESS_KEY
     volumes:
       - jobs:/jobs
       - /var/run/docker.sock:/var/run/docker.sock

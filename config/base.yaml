@@ -124,6 +124,7 @@ properties:
 
   externalGradingWebhookUrl:
     default: null
+    envVar: EXTERNAL_GRADING_WEBHOOK_URL
 
   externalGradingDefaultTimeout:
     default: 30 # Seconds
