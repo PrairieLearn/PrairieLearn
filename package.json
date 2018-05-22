@@ -47,7 +47,7 @@
         "passport-azure-ad": "^3.0.9",
         "pg": "^7.4.0",
         "plist": "^2.1.0",
-        "popper.js": "^1.13.0",
+        "popper.js": "^1.14.0",
         "qrcode-svg": "^1.0.0",
         "redis": "^2.8.0",
         "request-promise-native": "^1.0.5",
