@@ -26,7 +26,7 @@ services:
       - USE_DATABASE=true
       - PG_HOST=postgres
       - PG_PASSWORD=securepassword
-      - RABBITMQ_QUEUE_HOST=amqp://rabbitmq
+      - RABBITMQ_HOST=amqp://rabbitmq
       - QUEUE_TYPE=rabbitmq
       - FILE_STORE_TYPE=disk
       - FILE_STORE_PATH=/jobs
