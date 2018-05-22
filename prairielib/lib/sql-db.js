@@ -33,12 +33,36 @@ module.exports = {
         } catch (err) {
             error.addData(err, {pgConfig: pgConfig});
             callback(err);
+            return;
         }
         this.pool.on('error', function(err, client) {
             idleErrorHandler(err, client);
         });
 
-        callback(null);
+        let retryCount = 0;
+        const retryTimeouts = [500, 1000, 2000, 5000, 10000];
+        const tryConnect = () => {
+            this.pool.connect((err, client, done) => {
+                if (err) {
+                    if (client) {
+                        done(client);
+                    }
+
+                    if (retryCount >= retryTimeouts.length) {
+                        err.message = `Couldn't connect to Postgres after ${retryTimeouts.length} retries: ${err.message}`;
+                        callback(err);
+                        return;
+                    }
+
+                    const timeout = retryTimeouts[retryCount];
+                    retryCount++;
+                    setTimeout(tryConnect, timeout);
+                } else {
+                    callback(null);
+                }
+            });
+        };
+        tryConnect();
     },
 
     close: function(callback) {
