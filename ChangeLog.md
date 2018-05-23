@@ -19,6 +19,8 @@
 
   * Add additional information about indices to database descriptions (Nathan Walters).
 
+  * Add configurable `homeUrl` to support container deployments (Matt West).
+
   * Fix migration 111 to allow re-running (Matt West).
 
   * Fix docs to provide workaround for `mcrypt` install error on OSX (Tim Bretl).

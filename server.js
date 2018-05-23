@@ -78,7 +78,7 @@ app.set('view engine', 'ejs');
 
 config.devMode = (app.get('env') == 'development');
 
-app.use(function(req, res, next) {res.locals.homeUrl = '/'; next();});
+app.use(function(req, res, next) {res.locals.homeUrl = config.homeUrl; next();});
 app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPrefix = config.urlPrefix; next();});
 app.use(function(req, res, next) {res.locals.navbarType = 'plain'; next();});
 app.use(function(req, res, next) {res.locals.devMode = config.devMode; next();});
