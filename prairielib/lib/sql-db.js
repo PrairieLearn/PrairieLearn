@@ -58,6 +58,7 @@ module.exports = {
                     retryCount++;
                     setTimeout(tryConnect, timeout);
                 } else {
+                    done();
                     callback(null);
                 }
             });
