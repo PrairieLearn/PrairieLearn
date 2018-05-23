@@ -1,7 +1,7 @@
 {
     "name": "PrairieLearn",
     "description": "PrairieLearn online problem-solving system",
-    "version": "2.10.0",
+    "version": "3.0.0",
     "private": true,
     "dependencies": {
         "@prairielearn/prairielib": "^1.0.3",
