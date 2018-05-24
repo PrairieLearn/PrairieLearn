@@ -646,7 +646,7 @@ module.exports = {
                 // We don't actually want to fail if the cache has an error; we'll
                 // just render the panel as normal
                 if (ERR(err, callback)) logger.error(err);
-                if (cachedData !== null) {
+                if (!err && cachedData !== null) {
                     const {
                         courseIssues,
                         html,
