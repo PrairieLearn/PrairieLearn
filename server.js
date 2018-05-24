@@ -148,7 +148,8 @@ app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib')
 app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
 app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
 app.use('/pl/login', require('./pages/authLogin/authLogin'));
-app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
+// disable SEB until we can fix the mcrypt issues
+// app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
 app.use(require('./middlewares/logRequest'));
