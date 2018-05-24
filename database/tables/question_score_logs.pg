@@ -1,6 +1,6 @@
 columns
     auth_user_id: bigint
-    date: timestamp with time zone default now()
+    date: timestamp with time zone default CURRENT_TIMESTAMP
     grading_job_id: bigint
     id: bigint not null default nextval('question_score_logs_id_seq'::regclass)
     instance_question_id: bigint not null

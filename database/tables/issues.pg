@@ -5,7 +5,7 @@ columns
     course_data: jsonb
     course_id: bigint
     course_instance_id: bigint
-    date: timestamp with time zone default now()
+    date: timestamp with time zone default CURRENT_TIMESTAMP
     id: bigint not null default nextval('issues_id_seq'::regclass)
     instance_question_id: bigint
     instructor_message: text

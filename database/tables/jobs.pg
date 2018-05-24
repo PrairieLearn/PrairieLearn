@@ -17,7 +17,7 @@ columns
     number: integer
     number_in_sequence: integer
     output: text
-    start_date: timestamp with time zone default now()
+    start_date: timestamp with time zone default CURRENT_TIMESTAMP
     status: enum_job_status
     stderr: text
     stdin: text
