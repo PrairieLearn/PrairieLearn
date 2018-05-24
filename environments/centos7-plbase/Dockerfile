@@ -3,9 +3,9 @@ FROM centos:7
 # Needed for AWS to properly handle UTF-8
 ENV PYTHONIOENCODING=UTF-8
 
-# r-requirements.R contains a list of R packages
-# that should be installed from the Rstudio CRAN mirror
-COPY r-requirements.R /
+# python-requirements.txt - list of python packages to be installed by pip
+# r-requirements.R        - list of R packages that should be installed from the Rstudio CRAN mirror
+COPY python-requirements.txt r-requirements.R /
 
 RUN yum -y install \
         epel-release \
@@ -37,6 +37,7 @@ RUN yum -y install \
     && mkdir /var/postgres && chown postgres:postgres /var/postgres \
     && su postgres -c "/usr/pgsql-9.6/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log" \
     && ln -s /usr/bin/python3.6 /usr/bin/python3 \
+    && python3 -m pip install --no-cache-dir -r /python-requirements.txt \
     && chmod +x /r-requirements.R `# Install a list of R packages to work with` \
     && mkdir -p /usr/share/doc/R-3.4.3/html/ \
     && touch /usr/share/doc/R-3.4.3/html/packages.html \
