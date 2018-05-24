@@ -5,10 +5,13 @@ const fs = require('fs-extra');
 const path = require('path');
 const mustache = require('mustache');
 const cheerio = require('cheerio');
+const hash = require('crypto').createHash;
 
 const logger = require('../lib/logger');
 const codeCaller = require('../lib/code-caller');
 const jsonLoader = require('../lib/json-load');
+const cache = require('../lib/cache');
+
 
 // Maps core element names to element info
 let coreElementsCache = {};
@@ -589,6 +592,10 @@ module.exports = {
         });
     },
 
+    _getCacheKey: function(data) {
+        return hash('sha1').update(JSON.stringify(data)).digest('base64');
+    },
+
     renderPanel: function(panel, pc, variant, question, submission, course, locals, callback) {
         // broken variant kills all rendering
         if (variant.broken) return callback(null, [], 'Broken question due to error in question code');
@@ -603,6 +610,7 @@ module.exports = {
                 submission = null;
             }
         }
+
         module.exports.getContext(question, course, (err, context) => {
             if (err) {
                 return callback(new Error(`Error generating options: ${err}`));
@@ -632,9 +640,33 @@ module.exports = {
             data.options.question_path = context.question_dir;
             data.options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
 
-            module.exports.processQuestion('render', pc, data, context, (err, courseIssues, _data, html, _fileData, renderedElementNames) => {
-                if (ERR(err, callback)) return;
-                callback(null, courseIssues, html, renderedElementNames);
+            // Let's see if our data was cached
+            const cacheKey = module.exports._getCacheKey(data);
+            cache.get(cacheKey, (err, cachedData) => {
+                // We don't actually want to fail if the cache has an error; we'll
+                // just render the panel as normal
+                if (ERR(err, callback)) logger.error(err);
+                if (cachedData !== null) {
+                    logger.info(`cache hit: ${cacheKey}`);
+                    const {
+                        courseIssues,
+                        html,
+                        renderedElementNames,
+                    } = cachedData;
+
+                    return callback(null, courseIssues, html, renderedElementNames);
+                }
+                logger.info(`cache miss: ${cacheKey}`);
+
+                module.exports.processQuestion('render', pc, data, context, (err, courseIssues, _data, html, _fileData, renderedElementNames) => {
+                    if (ERR(err, callback)) return;
+                    cache.set(cacheKey, {
+                        courseIssues,
+                        html,
+                        renderedElementNames,
+                    });
+                    callback(null, courseIssues, html, renderedElementNames);
+                });
             });
         });
     },
