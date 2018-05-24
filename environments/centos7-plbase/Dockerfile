@@ -10,14 +10,12 @@ COPY python-requirements.txt r-requirements.R /
 RUN yum -y install \
         epel-release \
         https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/pgdg-centos96-9.6-3.noarch.rpm \
-        https://rpm.nodesource.com/pub_8.x/el/7/x86_64/nodesource-release-el7-1.noarch.rpm \
         https://centos7.iuscommunity.org/ius-release.rpm \
     && yum -y update \
     && yum -y install \
         postgresql96-server \
         postgresql96-contrib \
         redis \
-        nodejs \
         python36u \
         python36u-pip \
         python36u-devel \
@@ -32,16 +30,28 @@ RUN yum -y install \
         R \
         ImageMagick           `# for PrairieDraw label images` \
         texlive               `# for PrairieDraw label images` \
-        git2u                 `# for coveralls` \
+        git2u \
     && yum clean all \
-    && mkdir /var/postgres && chown postgres:postgres /var/postgres \
-    && su postgres -c "/usr/pgsql-9.6/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log" \
-    && ln -s /usr/bin/python3.6 /usr/bin/python3 \
-    && python3 -m pip install --no-cache-dir -r /python-requirements.txt \
-    && chmod +x /r-requirements.R `# Install a list of R packages to work with` \
-    && mkdir -p /usr/share/doc/R-3.4.3/html/ \
-    && touch /usr/share/doc/R-3.4.3/html/packages.html \
-    && touch /usr/share/doc/R-3.4.3/html/R.css \
-    && su root -c "Rscript /r-requirements.R"
+    && echo "installing node via nvm" \
+        && git clone https://github.com/creationix/nvm.git /nvm \
+        && cd /nvm \
+        && git checkout `git describe --abbrev=0 --tags --match "v[0-9]*" $(git rev-list --tags --max-count=1)` \
+        && source /nvm/nvm.sh \
+        && export NVM_SYMLINK_CURRENT=true \
+        && nvm install 10 \
+        && npm install npm@latest -g \
+        && for f in /nvm/current/bin/* ; do ln -s $f /usr/local/bin/`basename $f` ; done \
+    && echo "setting up postgres..." \
+        && mkdir /var/postgres && chown postgres:postgres /var/postgres \
+        && su postgres -c "/usr/pgsql-9.6/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log" \
+    && echo "setting up python3..." \
+        && ln -s /usr/bin/python3.6 /usr/bin/python3 \
+        && python3 -m pip install --no-cache-dir -r /python-requirements.txt \
+    && echo "installing R packages..." \
+        && chmod +x /r-requirements.R `# Install a list of R packages to work with` \
+        && mkdir -p /usr/share/doc/R-3.4.3/html/ \
+        && touch /usr/share/doc/R-3.4.3/html/packages.html \
+        && touch /usr/share/doc/R-3.4.3/html/R.css \
+        && su root -c "Rscript /r-requirements.R"
 
 CMD /bin/bash
