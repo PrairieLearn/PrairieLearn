@@ -9,12 +9,12 @@ COPY python-requirements.txt r-requirements.R /
 
 RUN yum -y install \
         epel-release \
-        https://download.postgresql.org/pub/repos/yum/9.6/redhat/rhel-7-x86_64/pgdg-centos96-9.6-3.noarch.rpm \
+        https://download.postgresql.org/pub/repos/yum/10/redhat/rhel-7-x86_64/pgdg-centos10-10-2.noarch.rpm \
         https://centos7.iuscommunity.org/ius-release.rpm \
     && yum -y update \
     && yum -y install \
-        postgresql96-server \
-        postgresql96-contrib \
+        postgresql10-server \
+        postgresql10-contrib \
         redis \
         python36u \
         python36u-pip \
@@ -43,7 +43,7 @@ RUN yum -y install \
         && for f in /nvm/current/bin/* ; do ln -s $f /usr/local/bin/`basename $f` ; done \
     && echo "setting up postgres..." \
         && mkdir /var/postgres && chown postgres:postgres /var/postgres \
-        && su postgres -c "/usr/pgsql-9.6/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log" \
+        && su postgres -c "/usr/pgsql-10/bin/initdb -D /var/postgres && mkdir /var/postgres/pg_log" \
     && echo "setting up python3..." \
         && ln -s /usr/bin/python3.6 /usr/bin/python3 \
         && python3 -m pip install --no-cache-dir -r /python-requirements.txt \
