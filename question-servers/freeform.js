@@ -647,7 +647,6 @@ module.exports = {
                 // just render the panel as normal
                 if (ERR(err, callback)) logger.error(err);
                 if (cachedData !== null) {
-                    logger.info(`cache hit: ${cacheKey}`);
                     const {
                         courseIssues,
                         html,
@@ -656,7 +655,6 @@ module.exports = {
 
                     return callback(null, courseIssues, html, renderedElementNames);
                 }
-                logger.info(`cache miss: ${cacheKey}`);
 
                 module.exports.processQuestion('render', pc, data, context, (err, courseIssues, _data, html, _fileData, renderedElementNames) => {
                     if (ERR(err, callback)) return;
