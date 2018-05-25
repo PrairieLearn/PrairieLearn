@@ -20,7 +20,7 @@
         "clipboard": "^2.0.0",
         "cookie-parser": "^1.4.3",
         "crypto-js": "^3.1.8",
-        "csv": "^2.0.0",
+        "csv": "^3.1.0",
         "debug": "^3.1.0",
         "diff": "^3.5.0",
         "dockerode": "^2.5.5",
