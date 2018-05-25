@@ -1,26 +1,26 @@
-var ERR = require('async-stacktrace');
-var express = require('express');
-var router = express.Router();
+const ERR = require('async-stacktrace');
+const express = require('express');
+const router = express.Router();
 
-var logger = require('../../lib/logger');
-var config = require('../../lib/config');
+const logger = require('../../lib/logger');
+const config = require('../../lib/config');
 
-var google = require('googleapis');
-var OAuth2 = google.auth.OAuth2;
+const {google} = require('googleapis');
+const OAuth2 = google.auth.OAuth2;
 
 router.get('/', function(req, res, next) {
     try {
-        var oauth2Client = new OAuth2(
+        const oauth2Client = OAuth2(
             config.googleClientId,
             config.googleClientSecret,
             config.googleRedirectUrl
         );
-        var scopes = [
+        const scopes = [
             'openid',
             'profile',
             'email',
         ];
-        var url = oauth2Client.generateAuthUrl({
+        const url = oauth2Client.generateAuthUrl({
             access_type: 'online',
             scope: scopes,
             // FIXME: should add some state here to avoid CSRF
