@@ -58,7 +58,7 @@
         "socket.io-client": "^2.1.1",
         "socket.io-redis": "^5.2.0",
         "tar": "^4.4.4",
-        "three": "^0.89.0",
+        "three": "^0.92.0",
         "uuid": "^3.2.1",
         "winston": "^2.4.2",
         "yargs": "^10.1.2",
