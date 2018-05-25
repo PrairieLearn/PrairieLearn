@@ -1,24 +1,26 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var express = require('express');
-var router = express.Router();
-var csvStringify = require('csv').stringify;
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+const express = require('express');
+const router = express.Router();
+const csvStringify = require('csv').stringify;
 
-var async = require('async');
-var error = require('@prairielearn/prairielib/error');
-var question = require('../../lib/question');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
-var debug = require('debug')('prairielearn:instructorQuestion');
+const async = require('async');
+const error = require('@prairielearn/prairielib/error');
+const question = require('../../lib/question');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const debug = require('debug')('prairielearn:instructorQuestion');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const logPageView = require('../../middlewares/logPageView')('instructorQuestion');
 
-var sanitizeName = function(name) {
+const sql = sqlLoader.loadSqlEquiv(__filename);
+
+const sanitizeName = function(name) {
     return name.replace(/[^a-zA-Z0-9]/g, '_');
 };
 
-var filenames = function(locals) {
-    var prefix = sanitizeName(locals.course.short_name)
+const filenames = function(locals) {
+    const prefix = sanitizeName(locals.course.short_name)
         + '_'
         + sanitizeName(locals.course_instance.short_name)
         + '_'
@@ -153,6 +155,12 @@ router.get('/', function(req, res, next) {
             // res.locals.question_attempts_histogram_hw = res.locals.result.question_attempts_histogram_hw;
             // res.locals.question_attempts_before_giving_up_histogram_hw = res.locals.result.question_attempts_before_giving_up_histogram_hw;
             callback(null);
+        },
+        (callback) => {
+            logPageView(req, res, (err) => {
+                if (ERR(err, next)) return;
+                callback(null);
+            });
         },
         (callback) => {
             // req.query.variant_id might be undefined, which will generate a new variant

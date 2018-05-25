@@ -8,20 +8,19 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(pageType) {
     return function(req, res, next) {
-        // Return immediately to keep processing the request. We are
-        // only going to log, so nothing here will be used to generate
-        // the response.
-        next();
-        
         if (req.method != 'GET') return;
-        
+
         if (!res.locals.user) return;
         if (!res.locals.authn_user) return;
 
         const user_id = res.locals.user ? res.locals.user.user_id : res.locals.authn_user.user_id;
-        // only log if we are the user who owns the viewed page
-        if (res.locals.instance_user && res.locals.instance_user.user_id != user_id) return;
-        
+
+        // Originally, we opted to only record page views for assessments if
+        // the authn'ed user is also the owner of the assessment instance.
+        // However, we now track all page views, so be sure to filter by
+        // authn_user_id if you only want page views from the student taking
+        // the assessment.
+
         var params = {
             authn_user_id: res.locals.authn_user.user_id,
             user_id: user_id,
@@ -33,9 +32,10 @@ module.exports = function(pageType) {
             page_type: pageType,
             path: req.originalUrl,
         };
-        sqldb.queryOneRow(sql.log_page_view, params, function(err, _result) {
-            if (ERR(err, () => {})) logger.error('error logging page view', err);
-            // no callback here
+        sqldb.queryOneRow(sql.log_page_view, params, function(err, result) {
+            res.locals.page_view_id = result.rows[0].id;
+            if (ERR(err, (e) => logger.error('error logging page view', e)));
+            next();
         });
     };
 };

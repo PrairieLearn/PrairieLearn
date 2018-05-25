@@ -6,11 +6,16 @@ const path = require('path');
 const mustache = require('mustache');
 const cheerio = require('cheerio');
 const hash = require('crypto').createHash;
+const { sqlDb, sqlLoader } = require('@prairielearn/prairielib');
 
 const logger = require('../lib/logger');
 const codeCaller = require('../lib/code-caller');
 const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
+
+
+
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 
 // Maps core element names to element info
@@ -653,7 +658,7 @@ module.exports = {
                         renderedElementNames,
                     } = cachedData;
 
-                    return callback(null, courseIssues, html, renderedElementNames);
+                    return callback(null, courseIssues, html, renderedElementNames, true /* cache hit */);
                 }
 
                 module.exports.processQuestion('render', pc, data, context, (err, courseIssues, _data, html, _fileData, renderedElementNames) => {
@@ -663,7 +668,7 @@ module.exports = {
                         html,
                         renderedElementNames,
                     });
-                    callback(null, courseIssues, html, renderedElementNames);
+                    callback(null, courseIssues, html, renderedElementNames, false /* cache miss */);
                 });
             });
         });
@@ -679,14 +684,17 @@ module.exports = {
         let allRenderedElementNames = [];
         const courseIssues = [];
         const pc = new codeCaller.PythonCaller();
+        let panelCount = 0, cacheHitCount = 0;
         async.series([
             // FIXME: suppprt 'header'
             (callback) => {
                 if (!renderSelection.question) return callback(null);
-                module.exports.renderPanel('question', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames) => {
+                module.exports.renderPanel('question', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
                     if (ERR(err, callback)) return;
                     courseIssues.push(...ret_courseIssues);
                     htmls.questionHtml = html;
+                    panelCount++;
+                    if (cacheHit) cacheHitCount++;
                     allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
                     callback(null);
                 });
@@ -694,9 +702,11 @@ module.exports = {
             (callback) => {
                 if (!renderSelection.submissions) return callback(null);
                 async.mapSeries(submissions, (submission, callback) => {
-                    module.exports.renderPanel('submission', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames) => {
+                    module.exports.renderPanel('submission', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
                         if (ERR(err, callback)) return;
                         courseIssues.push(...ret_courseIssues);
+                        panelCount++;
+                        if (cacheHit) cacheHitCount++;
                         allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
                         callback(null, html);
                     });
@@ -708,13 +718,31 @@ module.exports = {
             },
             (callback) => {
                 if (!renderSelection.answer) return callback(null);
-                module.exports.renderPanel('answer', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames) => {
+                module.exports.renderPanel('answer', pc, variant, question, submission, course, locals, (err, ret_courseIssues, html, renderedElementNames, cacheHit) => {
                     if (ERR(err, callback)) return;
                     courseIssues.push(...ret_courseIssues);
                     htmls.answerHtml = html;
+                    panelCount++;
+                    if (cacheHit) cacheHitCount++;
                     allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
                     callback(null);
                 });
+            },
+            (callback) => {
+                if (locals.page_view_id) {
+                    const params = {
+                        page_view_log_id: locals.page_view_id,
+                        panel_render_count: panelCount,
+                        panel_render_cache_hit_count: cacheHitCount,
+                    };
+                    sqlDb.queryOneRow(sql.update_page_view_logs_panel_render_info, params, (err, _result) => {
+                        // We don't want errors here to fail page rendering
+                        if (ERR(err, (e) => logger.error(e)));
+                        callback(null);
+                    });
+                } else {
+                    callback(null);
+                }
             },
             (callback) => {
                 module.exports.getContext(question, course, (err, context) => {
