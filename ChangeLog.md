@@ -1,6 +1,10 @@
 
 # ChangeLog
 
+* __next version__ - XXXX-XX-XX
+
+  * Upgrade to Node.js 10 and PostgreSQL 10 (Matt West).
+
 * __3.0.0__ - 2018-05-23
 
   * Add improved support for very large file downloads (Nathan Walters).
