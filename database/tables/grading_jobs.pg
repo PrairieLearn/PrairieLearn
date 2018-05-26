@@ -1,7 +1,7 @@
 columns
     auth_user_id: bigint
     correct: boolean
-    date: timestamp with time zone default now()
+    date: timestamp with time zone default CURRENT_TIMESTAMP
     feedback: jsonb
     graded_at: timestamp with time zone
     graded_by: bigint

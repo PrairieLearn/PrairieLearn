@@ -2,10 +2,9 @@ FROM prairielearn/centos7-plbase
 
 # Install Python/NodeJS dependencies before copying code to limit download size
 # when code changes.
-COPY requirements.txt package.json /PrairieLearn/
-RUN python3 -m pip install --no-cache-dir -r /PrairieLearn/requirements.txt \
-    && cd /PrairieLearn \
-    && npm install \
+COPY package.json package-lock.json /PrairieLearn/
+RUN cd /PrairieLearn \
+    && npm ci \
     && npm --force cache clean
 
 # NOTE: Modify .dockerignore to whitelist files/directories to copy.

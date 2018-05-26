@@ -3,7 +3,7 @@ columns
     broken: boolean default false
     correct: boolean
     credit: integer
-    date: timestamp with time zone default now()
+    date: timestamp with time zone default CURRENT_TIMESTAMP
     duration: interval default '00:00:00'::interval
     feedback: jsonb
     format_errors: jsonb
