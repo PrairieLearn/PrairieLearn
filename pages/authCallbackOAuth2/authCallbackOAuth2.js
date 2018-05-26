@@ -17,8 +17,9 @@ router.get('/', function(req, res, next) {
         return next(new Error('No "code" query parameter for authCallbackOAuth2'));
     }
     // FIXME: should check req.query.state to avoid CSRF
+    let oauth2Client, identity;
     try {
-        const oauth2Client = new OAuth2(
+        oauth2Client = new OAuth2(
             config.googleClientId,
             config.googleClientSecret,
             config.googleRedirectUrl
@@ -38,7 +39,7 @@ router.get('/', function(req, res, next) {
             // A JWT has the form HEADER.PAYLOAD.SIGNATURE
             // We get the PAYLOAD, un-base64, parse to JSON:
             const parts = tokens.id_token.split('.');
-            const identity = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
+            identity = JSON.parse(Buffer.from(parts[1], 'base64').toString('utf-8'));
             logger.verbose('Got Google auth identity: ' + JSON.stringify(identity));
             assert(identity.email);
         } catch (err) {
@@ -58,7 +59,7 @@ router.get('/', function(req, res, next) {
             };
             const pl_authn = csrf.generateToken(tokenData, config.secretKey);
             res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});
-            const redirUrl = res.locals.homeUrl;
+            let redirUrl = res.locals.homeUrl;
             if ('preAuthUrl' in req.cookies) {
                 redirUrl = req.cookies.preAuthUrl;
                 res.clearCookie('preAuthUrl');

@@ -9,6 +9,7 @@ const {google} = require('googleapis');
 const OAuth2 = google.auth.OAuth2;
 
 router.get('/', function(req, res, next) {
+    let url;
     try {
         const oauth2Client = OAuth2(
             config.googleClientId,
@@ -20,7 +21,7 @@ router.get('/', function(req, res, next) {
             'profile',
             'email',
         ];
-        const url = oauth2Client.generateAuthUrl({
+        url = oauth2Client.generateAuthUrl({
             access_type: 'online',
             scope: scopes,
             // FIXME: should add some state here to avoid CSRF
