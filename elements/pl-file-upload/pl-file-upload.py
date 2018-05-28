@@ -61,7 +61,7 @@ def render(element_html, element_index, data):
     else:
         html_params['has_files'] = False
 
-    with open('pl_file_upload.mustache', 'r', encoding='utf-8') as f:
+    with open('pl-file-upload.mustache', 'r', encoding='utf-8') as f:
         html = chevron.render(f, html_params).strip()
 
     return html

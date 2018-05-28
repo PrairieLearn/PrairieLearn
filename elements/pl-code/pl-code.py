@@ -78,7 +78,7 @@ def render(element_html, element_index, data):
         'code': code,
     }
 
-    with open('pl_code.mustache', 'r', encoding='utf-8') as f:
+    with open('pl-code.mustache', 'r', encoding='utf-8') as f:
         html = chevron.render(f, html_params).strip()
 
     return html

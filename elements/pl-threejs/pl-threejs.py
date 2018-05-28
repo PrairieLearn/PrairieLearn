@@ -183,7 +183,7 @@ def render(element_html, element_index, data):
             'options': json.dumps(options, allow_nan=False)
         }
 
-        with open('pl_threejs.mustache', 'r', encoding='utf-8') as f:
+        with open('pl-threejs.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'submission':
         will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
@@ -236,7 +236,7 @@ def render(element_html, element_index, data):
                 except Exception:
                     raise ValueError('invalid score' + score)
 
-        with open('pl_threejs.mustache', 'r', encoding='utf-8') as f:
+        with open('pl-threejs.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'answer':
         will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
@@ -294,7 +294,7 @@ def render(element_html, element_index, data):
             'options': json.dumps(options, allow_nan=False)
         }
 
-        with open('pl_threejs.mustache', 'r', encoding='utf-8') as f:
+        with open('pl-threejs.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     else:
         raise Exception('Invalid panel type: %s' % data['panel'])

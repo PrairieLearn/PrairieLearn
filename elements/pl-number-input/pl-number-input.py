@@ -55,9 +55,9 @@ def render(element_html, element_index, data):
         else:
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
         info_params['allow_complex'] = pl.get_boolean_attrib(element, 'allow_complex', False)
-        with open('pl_number_input.mustache', 'r', encoding='utf-8') as f:
+        with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
             info = chevron.render(f, info_params).strip()
-        with open('pl_number_input.mustache', 'r', encoding='utf-8') as f:
+        with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
             info_params.pop('format', None)
             info_params['shortformat'] = True
             shortinfo = chevron.render(f, info_params).strip()
@@ -95,7 +95,7 @@ def render(element_html, element_index, data):
             raise ValueError('method of display "%s" is not valid (must be "inline" or "block")' % display)
         if raw_submitted_answer is not None:
             html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
-        with open('pl_number_input.mustache', 'r', encoding='utf-8') as f:
+        with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
 
     elif data['panel'] == 'submission':
@@ -138,7 +138,7 @@ def render(element_html, element_index, data):
             except Exception:
                 raise ValueError('invalid score' + score)
 
-        with open('pl_number_input.mustache', 'r', encoding='utf-8') as f:
+        with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'answer':
         a_tru = pl.from_json(data['correct_answers'].get(name, None))
@@ -162,7 +162,7 @@ def render(element_html, element_index, data):
 
             # FIXME: render correctly with respect to method of comparison
             html_params = {'answer': True, 'label': label, 'a_tru': a_tru, 'suffix': suffix}
-            with open('pl_number_input.mustache', 'r', encoding='utf-8') as f:
+            with open('pl-number-input.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params).strip()
         else:
             html = ''
