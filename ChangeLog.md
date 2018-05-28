@@ -7,6 +7,8 @@
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
 
+  * Add simple HTML validation for invalid self-closing tags (Nathan Walters).
+
 * __3.0.0__ - 2018-05-23
 
   * Add improved support for very large file downloads (Nathan Walters).
