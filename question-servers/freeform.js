@@ -12,8 +12,7 @@ const logger = require('../lib/logger');
 const codeCaller = require('../lib/code-caller');
 const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
-
-
+const courseUtil = require('../lib/courseUtil');
 
 const sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -597,8 +596,12 @@ module.exports = {
         });
     },
 
-    _getCacheKey: function(data) {
-        return hash('sha1').update(JSON.stringify(data)).digest('base64');
+    _getCacheKey: function(course, data, callback) {
+        courseUtil.getOrUpdateCourseCommitHash(course, (err, commitHash) => {
+            if (ERR(err, callback)) return;
+            const dataHash = hash('sha1').update(JSON.stringify(data)).digest('base64');
+            callback(null, `${commitHash}-${dataHash}`);
+        });
     },
 
     renderPanel: function(panel, pc, variant, question, submission, course, locals, callback) {
@@ -645,32 +648,62 @@ module.exports = {
             data.options.question_path = context.question_dir;
             data.options.client_files_question_path = path.join(context.question_dir, 'clientFilesQuestion');
 
-            // Let's see if our data was cached
-            const cacheKey = module.exports._getCacheKey(data);
-            cache.get(cacheKey, (err, cachedData) => {
-                // We don't actually want to fail if the cache has an error; we'll
-                // just render the panel as normal
-                if (ERR(err, callback)) logger.error(err);
-                if (!err && cachedData !== null) {
-                    const {
-                        courseIssues,
-                        html,
-                        renderedElementNames,
-                    } = cachedData;
-
-                    return callback(null, courseIssues, html, renderedElementNames, true /* cache hit */);
-                }
-
+            // This function will render the panel and then cache the results
+            // if cacheKey is not null
+            const doRender = (cacheKey) => {
                 module.exports.processQuestion('render', pc, data, context, (err, courseIssues, _data, html, _fileData, renderedElementNames) => {
                     if (ERR(err, callback)) return;
-                    cache.set(cacheKey, {
-                        courseIssues,
-                        html,
-                        renderedElementNames,
-                    });
+                    if (cacheKey) {
+                        cache.set(cacheKey, {
+                            courseIssues,
+                            html,
+                            renderedElementNames,
+                        });
+                    }
                     callback(null, courseIssues, html, renderedElementNames, false /* cache miss */);
                 });
-            });
+            };
+
+            // This function will check the cache for the specified cache key
+            // and either return the cached render for a cache hit, or render
+            // the panel for a cache miss
+            const getFromCacheOrRender = (cacheKey) => {
+                cache.get(cacheKey, (err, cachedData) => {
+                    // We don't actually want to fail if the cache has an error; we'll
+                    // just render the panel as normal
+                    if (ERR(err, callback)) logger.error(err);
+                    if (!err && cachedData !== null) {
+                        const {
+                            courseIssues,
+                            html,
+                            renderedElementNames,
+                        } = cachedData;
+
+                        callback(null, courseIssues, html, renderedElementNames, true /* cache hit */);
+                    } else {
+                        doRender(cacheKey);
+                    }
+                });
+            };
+
+            if (locals.devMode) {
+                // In dev mode, we should skip caching so that we'll immediately
+                // pick up new changes from disk
+                doRender(null);
+            } else {
+                module.exports._getCacheKey(course, data, (err, cacheKey) => {
+                    // If for some reason we failed to get a cache key, don't
+                    // actually fail the request, just skip the cache entirely
+                    // and render as usual
+                    ERR(err, e => logger.error(e));
+                    logger.info(`Using cache key ${cacheKey}`);
+                    if (err || !cacheKey) {
+                        doRender(null);
+                    } else {
+                        getFromCacheOrRender(cacheKey);
+                    }
+                });
+            }
         });
     },
 
