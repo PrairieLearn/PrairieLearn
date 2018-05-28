@@ -5,6 +5,8 @@
 
   * Upgrade to Node.js 10 and PostgreSQL 10 (Matt West).
 
+  * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
+
 * __3.0.0__ - 2018-05-23
 
   * Add improved support for very large file downloads (Nathan Walters).
