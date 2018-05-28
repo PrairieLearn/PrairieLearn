@@ -8,10 +8,10 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(pageType) {
     return function(req, res, next) {
-        if (req.method != 'GET') return;
-
-        if (!res.locals.user) return;
-        if (!res.locals.authn_user) return;
+        if (req.method != 'GET' || !res.locals.user || !res.locals.authn_user) {
+            next();
+            return;
+        }
 
         const user_id = res.locals.user ? res.locals.user.user_id : res.locals.authn_user.user_id;
 
