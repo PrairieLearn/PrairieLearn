@@ -1,0 +1,1 @@
+ALTER TABLE pl_courses ADD COLUMN IF NOT EXISTS commit_hash VARCHAR(40);
