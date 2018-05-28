@@ -21,7 +21,10 @@
           <table class="table table-sm">
             <tbody>
               <tr>
-                <th class="align-middle">Path on disk:</th>
+                <th class="align-middle">Current commit hash</th>
+                <td><%= course.commit_hash %></td>
+              <tr>
+                <th class="align-middle">Path on disk</th>
                 <td class="align-middle"><%= course.path %></td>
                 <td>
                   <form name="confirm-form" method="POST">
@@ -35,7 +38,7 @@
                 </td>
               </tr>
               <tr>
-                <th class="align-middle">Remote repository:</th>
+                <th class="align-middle">Remote repository</th>
                 <td class="align-middle"><%= course.repository %></td>
                 <td>
                   <form name="confirm-form" method="POST">

@@ -1,22 +1,23 @@
-var ERR = require('async-stacktrace');
-var fs = require('fs');
-var express = require('express');
-var router = express.Router();
+const ERR = require('async-stacktrace');
+const fs = require('fs');
+const express = require('express');
+const router = express.Router();
+const error = require('@prairielearn/prairielib/error');
+const { sqlDb, sqlLoader } = require('@prairielearn/prairielib');
 
-var error = require('@prairielearn/prairielib/error');
-var logger = require('../../lib/logger');
-var config = require('../../lib/config');
-var serverJobs = require('../../lib/server-jobs');
-var syncFromDisk = require('../../sync/syncFromDisk');
-var requireFrontend = require('../../lib/require-frontend');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const logger = require('../../lib/logger');
+const config = require('../../lib/config');
+const serverJobs = require('../../lib/server-jobs');
+const syncFromDisk = require('../../sync/syncFromDisk');
+const requireFrontend = require('../../lib/require-frontend');
+const courseUtil = require('../../lib/courseUtil');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
-    var params = {course_id: res.locals.course.id};
-    sqldb.query(sql.select_sync_job_sequences, params, function(err, result) {
+    const params = {course_id: res.locals.course.id};
+    sqlDb.query(sql.select_sync_job_sequences, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.job_sequences = result.rows;
 
@@ -24,8 +25,8 @@ router.get('/', function(req, res, next) {
     });
 });
 
-var pullAndUpdate = function(locals, callback) {
-    var options = {
+const pullAndUpdate = function(locals, callback) {
+    const options = {
         course_id: locals.course.id,
         user_id: locals.user.user_id,
         authn_user_id: locals.authz_data.authn_user.user_id,
@@ -45,11 +46,20 @@ var pullAndUpdate = function(locals, callback) {
         // continue executing below to launch the jobs themselves.
 
         // First define the jobs.
+        //
+        // After either cloning or pulling from Git, we'll need to load and
+        // store the current commit hash in the database
+        const updateCommitHash = () => {
+            courseUtil.updateCourseCommitHash(locals.course, (err) => {
+                ERR(err, (e) => logger.error(e));
+                syncStage2();
+            });
+        };
 
-        // We will use either 1A or 1B below.
+        // We will start with either 1A or 1B below.
 
-        var syncStage1A = function() {
-            var jobOptions = {
+        const syncStage1A = function() {
+            const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
                 authn_user_id: locals.authz_data.authn_user.user_id,
@@ -59,13 +69,13 @@ var pullAndUpdate = function(locals, callback) {
                 command: 'git',
                 arguments: ['clone', locals.course.repository, locals.course.path],
                 env: gitEnv,
-                on_success: syncStage2,
+                on_success: updateCommitHash,
             };
             serverJobs.spawnJob(jobOptions);
         };
 
-        var syncStage1B = function() {
-            var jobOptions = {
+        const syncStage1B = function() {
+            const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
                 authn_user_id: locals.authz_data.authn_user.user_id,
@@ -76,13 +86,13 @@ var pullAndUpdate = function(locals, callback) {
                 arguments: ['pull', '--force'],
                 working_directory: locals.course.path,
                 env: gitEnv,
-                on_success: syncStage2,
+                on_success: updateCommitHash,
             };
             serverJobs.spawnJob(jobOptions);
         };
 
-        var syncStage2 = function() {
-            var jobOptions = {
+        const syncStage2 = function() {
+            const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
                 authn_user_id: locals.authz_data.authn_user.user_id,
@@ -107,8 +117,8 @@ var pullAndUpdate = function(locals, callback) {
             });
         };
 
-        var syncStage3 = function() {
-            var jobOptions = {
+        const syncStage3 = function() {
+            const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
                 authn_user_id: locals.authz_data.authn_user.user_id,
@@ -123,7 +133,7 @@ var pullAndUpdate = function(locals, callback) {
                     serverJobs.failJobSequence(job_sequence_id);
                     return;
                 }
-                var coursePath = locals.course.path;
+                const coursePath = locals.course.path;
                 requireFrontend.undefQuestionServers(coursePath, job, function(err) {
                     if (err) {
                         job.fail(err);
@@ -147,8 +157,8 @@ var pullAndUpdate = function(locals, callback) {
     });
 };
 
-var gitStatus = function(locals, callback) {
-    var options = {
+const gitStatus = function(locals, callback) {
+    const options = {
         course_id: locals.course.id,
         user_id: locals.user.user_id,
         authn_user_id: locals.authz_data.authn_user.user_id,
@@ -164,8 +174,8 @@ var gitStatus = function(locals, callback) {
 
         // First define the jobs.
 
-        var statusStage1 = function() {
-            var jobOptions = {
+        const statusStage1 = function() {
+            const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
                 authn_user_id: locals.authz_data.authn_user.user_id,
@@ -180,8 +190,8 @@ var gitStatus = function(locals, callback) {
             serverJobs.spawnJob(jobOptions);
         };
 
-        var statusStage2 = function() {
-            var jobOptions = {
+        const statusStage2 = function() {
+            const jobOptions = {
                 course_id: locals.course.id,
                 user_id: locals.user.user_id,
                 authn_user_id: locals.authz_data.authn_user.user_id,
