@@ -9,6 +9,7 @@ const cheerio = require('cheerio');
 const logger = require('../lib/logger');
 const codeCaller = require('../lib/code-caller');
 const jsonLoader = require('../lib/json-load');
+const { validateHtml } = require('../lib/html-validate');
 
 // Maps core element names to element info
 let coreElementsCache = {};
@@ -239,6 +240,14 @@ module.exports = {
                 err = e;
             }
             if (ERR(err, callback)) return;
+
+            try {
+                validateHtml(html);
+            } catch (e) {
+                err = e;
+            }
+            if (ERR(err, callback)) return;
+
             let $;
             try {
                 $ = cheerio.load(html, {

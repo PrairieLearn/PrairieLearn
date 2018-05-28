@@ -29,6 +29,7 @@
         "fs-extra": "^6.0.0",
         "googleapis": "^31.0.0",
         "handlebars": "^4.0.11",
+        "htmlparser2": "^3.9.2",
         "is-my-json-valid": "^2.17.2",
         "javascript-natural-sort": "^0.7.1",
         "jju": "^1.3.0",
