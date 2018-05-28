@@ -33,9 +33,9 @@ def render(element_html, element_index, data):
         raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
 
         # Get info strings
-        info-params = {'format': True}
+        info_params = {'format': True}
         with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
-            info = chevron.render(f, info-params).strip()
+            info = chevron.render(f, info_params).strip()
         with open('pl-integer-input.mustache', 'r', encoding='utf-8') as f:
             info_params.pop('format', None)
             info_params['shortformat'] = True
