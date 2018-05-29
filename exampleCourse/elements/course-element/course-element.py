@@ -11,5 +11,5 @@ def render(element_html, element_index, data):
     html_params = {
         'number': data['params']['random_number']
     }
-    with open('course_element.mustache', 'r') as f:
+    with open('course-element.mustache', 'r') as f:
         return chevron.render(f, html_params).strip()

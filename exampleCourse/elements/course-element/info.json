@@ -1,11 +1,11 @@
 {
-    "controller": "course_element.py",
+    "controller": "course-element.py",
     "dependencies": {
         "elementScripts": [
-            "course_element.js"
+            "course-element.js"
         ],
         "elementStyles": [
-            "course_element.css"
+            "course-element.css"
         ],
         "clientFilesCourseScripts": [
             "sharedElementCode.js"
