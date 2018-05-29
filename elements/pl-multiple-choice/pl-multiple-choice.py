@@ -15,7 +15,7 @@ def prepare(element_html, element_index, data):
     incorrect_answers = []
     index = 0
     for child in element:
-        if child.tag == 'pl_answer':
+        if child.tag in ['pl-answer', 'pl_answer']:
             pl.check_attribs(child, required_attribs=[], optional_attribs=['correct'])
             correct = pl.get_boolean_attrib(child, 'correct', False)
             child_html = pl.inner_html(child)
@@ -31,7 +31,7 @@ def prepare(element_html, element_index, data):
     len_total = len_correct + len_incorrect
 
     if len_correct < 1:
-        raise Exception('pl_multiple_choice element must have at least one correct answer')
+        raise Exception('pl-multiple-choice element must have at least one correct answer')
 
     number_answers = pl.get_integer_attrib(element, 'number_answers', len_total)
 

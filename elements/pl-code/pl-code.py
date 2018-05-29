@@ -59,9 +59,9 @@ def render(element_html, element_index, data):
     # Strip a single leading newline from the code, if present. This
     # avoids having spurious newlines because of HTML like:
     #
-    # <pl_code>
+    # <pl-code>
     # some_code
-    # </pl_code>
+    # </pl-code>
     #
     # which technically starts with a newline, but we probably
     # don't want a blank line at the start of the code block.

@@ -15,7 +15,7 @@ def get_file_names_as_array(raw_file_names):
         return row
 
 
-# Each pl_file_upload element is uniquely identified by the SHA1 hash of its
+# Each pl-file-upload element is uniquely identified by the SHA1 hash of its
 # file_names attribute
 def get_answer_name(file_names):
     return '_file_upload_{0}'.format(hashlib.sha1(file_names.encode('utf-8')).hexdigest())

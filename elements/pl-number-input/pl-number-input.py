@@ -238,7 +238,7 @@ def grade(element_html, element_index, data):
     #       according to the casting rule ''safe''
     #
     #   Casting as np.float64 avoids this error. This is reasonable in any case,
-    #   because <pl_number_input> accepts double-precision floats, not ints.
+    #   because <pl-number-input> accepts double-precision floats, not ints.
     #
     if np.iscomplexobj(a_sub) or np.iscomplexobj(a_tru):
         a_sub = np.complex128(a_sub)

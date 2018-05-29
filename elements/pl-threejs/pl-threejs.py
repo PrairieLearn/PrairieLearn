@@ -38,8 +38,8 @@ def get_objects(element, data):
     obj_list = []
 
     for child in element:
-        is_stl = (child.tag == 'pl_threejs_stl')
-        is_txt = (child.tag == 'pl_threejs_txt')
+        is_stl = (child.tag in ['pl-threejs-stl', 'pl_threejs_stl'])
+        is_txt = (child.tag == ['pl-threejs-txt', 'pl_threejs_txt'])
         if not (is_stl or is_txt):
             continue
 
