@@ -6,12 +6,11 @@ const logger = require('../../lib/logger');
 const config = require('../../lib/config');
 
 const {google} = require('googleapis');
-const OAuth2 = google.auth.OAuth2;
 
 router.get('/', function(req, res, next) {
     let url;
     try {
-        const oauth2Client = OAuth2(
+        const oauth2Client = new google.auth.OAuth2(
             config.googleClientId,
             config.googleClientSecret,
             config.googleRedirectUrl
