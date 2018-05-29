@@ -5,6 +5,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const mustache = require('mustache');
 const cheerio = require('cheerio');
+const parse5 = require('parse5');
 
 const logger = require('../lib/logger');
 const codeCaller = require('../lib/code-caller');
@@ -181,6 +182,45 @@ module.exports = {
         }
     },
 
+    elementFunction2: function(pc, fcn, elementName, elementHtml, index, data, context) {
+        return new Promise((resolve, reject) => {
+            let controller, cwd;
+            if (_.has(context.course_elements, elementName)) {
+                cwd = path.join(context.course.path, 'elements', elementName);
+                controller = context.course_elements[elementName].controller;
+            } else if (_.has(coreElementsCache, elementName)) {
+                cwd = path.join(__dirname, '..', 'elements', elementName);
+                controller = coreElementsCache[elementName].controller;
+            } else {
+                return reject(new Error('Invalid element name: ' + elementName), null);
+            }
+            if (_.isString(controller)) {
+                // python module
+                const pythonArgs = [elementHtml, index, data];
+                const pythonFile = controller.replace(/\.[pP][yY]$/, '');
+                const opts = {
+                    cwd,
+                    paths: [path.join(__dirname, 'freeformPythonLib')],
+                };
+                pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
+                    if (err instanceof codeCaller.FunctionMissingError) {
+                        // function wasn't present in server
+                        return resolve(module.exports.defaultElementFunctionRet(fcn, data), '');
+                    }
+                    if (ERR(err, reject)) return;
+                    resolve([ret, consoleLog]);
+                });
+            } else {
+                // JS module
+                const jsArgs = [elementHtml, index, data];
+                controller[fcn](...jsArgs, (err, ret) => {
+                    if (ERR(err, reject)) return;
+                    resolve([ret, '']);
+                });
+            }
+        });
+    },
+
     defaultElementFunctionRet: function(phase, data) {
         if (phase == 'render') {
             return '';
@@ -318,34 +358,176 @@ module.exports = {
         return null;
     },
 
+    traverseQuestionAndExecuteFunctions: async function(phase, pc, data, context, html, cb) {
+        const origData = JSON.parse(JSON.stringify(data));
+        const renderedElementNames = [];
+        const courseIssues = [];
+        let fileData = Buffer.from('');
+        let index = 0;
+        const ast = parse5.parseFragment(html);
+
+        const questionElements = new Set([..._.keys(coreElementsCache), ..._.keys(context.course_elements)]);
+
+        const visitNode = async (node, indent) => {
+            if (node.tagName && questionElements.has(node.tagName)) {
+                const elementName = node.tagName;
+                if (phase === 'render' && !_.includes(renderedElementNames, elementName)) {
+                    renderedElementNames.push(elementName);
+                }
+
+                // We need to wrap it in another node, since only child nodes
+                // are serialized
+                const serializedNode = parse5.serialize({
+                    childNodes: [node],
+                });
+
+                let ret_val, consoleLog;
+                try {
+                    [ret_val, consoleLog] = await this.elementFunction2(pc, phase, node.tagName, serializedNode, index, data, context);
+                } catch (e) {
+                    const elementFile = module.exports.getElementFilename(elementName, context);
+                    const courseIssue = new Error(elementFile + ': Error calling ' + phase + '(): ' + e.toString());
+                    courseIssue.data = e.data;
+                    courseIssue.fatal = true;
+                    // We'll catch this and add it to the course issues list
+                    throw courseIssue;
+                }
+
+                if (_.isString(consoleLog) && consoleLog.length > 0) {
+                    const elementFile = module.exports.getElementFilename(elementName, context);
+                    const courseIssue = new Error(elementFile + ': output logged on console during ' + phase + '()');
+                    courseIssue.data = {outputBoth: consoleLog};
+                    courseIssue.fatal = false;
+                    courseIssues.push(courseIssue);
+                }
+
+                if (phase == 'render') {
+                    if (!_.isString(ret_val)) {
+                        const elementFile = module.exports.getElementFilename(elementName, context);
+                        const courseIssue = new Error(elementFile + ': Error calling ' + phase + '(): return value is not a string');
+                        courseIssue.data = {ret_val};
+                        courseIssue.fatal = true;
+                        throw courseIssue;
+                    }
+                    const renderedNode = parse5.parseFragment(ret_val);
+                    if (renderedNode.childNodes.length === 0) {
+                        node = null;
+                    } else {
+                        node = renderedNode.childNodes[0];
+                    }
+                } else if (phase == 'file') {
+                    // Convert ret_val from base64 back to buffer (this always works,
+                    // whether or not ret_val is valid base64)
+                    var buf = Buffer.from(ret_val, 'base64');
+
+                    // If the buffer has non-zero length...
+                    if (buf.length > 0) {
+                        if (fileData.length > 0) {
+                            // If fileData already has non-zero length, throw an error
+                            const elementFile = module.exports.getElementFilename(elementName, context);
+                            const courseIssue = new Error(elementFile + ': Error calling ' + phase + '(): attempting to overwrite non-empty fileData');
+                            courseIssue.fatal = true;
+                            throw courseIssue;
+                        } else {
+                            // If not, replace fileData with buffer
+                            fileData = buf;
+                        }
+                    }
+                } else {
+                    data = ret_val;
+                    const checkErr = module.exports.checkData(data, origData, phase);
+                    if (checkErr) {
+                        const elementFile = module.exports.getElementFilename(elementName, context);
+                        const courseIssue = new Error(elementFile + ': Invalid state after ' + phase + '(): ' + checkErr);
+                        courseIssue.fatal = true;
+                        throw courseIssue;
+                    }
+                }
+
+                index++;
+            }
+
+            // It's possible that the child node will be null if an element
+            // returns an empty string.
+            if (node && node.childNodes) {
+                const newChildren = [];
+                for (let i = 0; i < node.childNodes.length; i++) {
+                    const childRes = await visitNode(node.childNodes[i], indent + 2);
+                    if (childRes) {
+                        newChildren.push(childRes);
+                    }
+                }
+                node.childNodes = newChildren;
+            }
+
+            return node;
+        };
+
+        let questionHtml = '';
+        try {
+            const res = await visitNode(ast);
+            console.log(JSON.stringify(res));
+            questionHtml = parse5.serialize(res);
+            console.log(questionHtml);
+        } catch (e) {
+            courseIssues.push(e);
+        }
+        cb(courseIssues, data, questionHtml, fileData, renderedElementNames);
+    },
+
     processQuestionHtml: function(phase, pc, data, context, callback) {
         const courseIssues = [];
         const origData = JSON.parse(JSON.stringify(data));
-        const renderedElementNames = [];
-
-        var fileData = Buffer.from('');
 
         const checkErr = module.exports.checkData(data, origData, phase);
         if (checkErr) {
             const courseIssue = new Error('Invalid state before ' + phase + ': ' + checkErr);
             courseIssue.fatal = true;
             courseIssues.push(courseIssue);
-            return callback(null, courseIssues, data, '', fileData);
+            return callback(null, courseIssues, data, '', Buffer.from(''));
         }
 
         const htmlFilename = path.join(context.question_dir, 'question.html');
-        this.execTemplate(htmlFilename, data, (err, html, $) => {
+        this.execTemplate(htmlFilename, data, (err, html) => {
             if (err) {
                 const courseIssue = new Error(htmlFilename + ': ' + err.toString());
                 courseIssue.fatal = true;
                 courseIssues.push(courseIssue);
-                return callback(null, courseIssues, data, '', fileData);
+                return callback(null, courseIssues, data, '', Buffer.from(''));
             }
 
-            const questionElements = new Set([..._.keys(coreElementsCache), ..._.keys(context.course_elements)]).values();
+            module.exports.traverseQuestionAndExecuteFunctions(phase, pc, data, context, html, (courseIssues, data, questionHtml, fileData, renderedElementNames) => {
+                ERR(err, () => {});
 
-            let index = 0;
-            async.eachSeries(questionElements, (elementName, callback) => {
+                if (phase == 'grade' || phase == 'test') {
+                    if (context.question.partial_credit) {
+                        let total_weight = 0, total_weight_score = 0;
+                        _.each(data.partial_scores, value => {
+                            const score = _.get(value, 'score', 0);
+                            const weight = _.get(value, 'weight', 1);
+                            total_weight += weight;
+                            total_weight_score += weight * score;
+                        });
+                        data.score = total_weight_score / (total_weight == 0 ? 1 : total_weight);
+                        data.feedback = {};
+                    } else {
+                        let score = 0;
+                        if (_.size(data.partial_scores) > 0 && _.every(data.partial_scores, value => _.get(value, 'score', 0) >= 1)) {
+                            score = 1;
+                        }
+                        data.score = score;
+                        data.feedback = {};
+                    }
+                }
+
+                callback(null, courseIssues, data, questionHtml, fileData, renderedElementNames);
+            });
+        });
+
+
+
+
+            /*async.eachSeries(questionElements, (elementName, callback) => {
                 async.eachSeries($(elementName).toArray(), (element, callback) => {
                     if (phase === 'render' && !_.includes(renderedElementNames, element)) {
                         renderedElementNames.push(elementName);
@@ -442,7 +624,7 @@ module.exports = {
 
                 callback(null, courseIssues, data, $.html(), fileData, renderedElementNames);
             });
-        });
+        });*/
     },
 
     processQuestionServer: function(phase, pc, data, html, fileData, context, callback) {
