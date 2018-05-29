@@ -144,45 +144,7 @@ module.exports = {
         }
     },
 
-    elementFunction: function(pc, fcn, elementName, $, element, index, data, context, callback) {
-        let controller, cwd;
-        if (_.has(context.course_elements, elementName)) {
-            cwd = path.join(context.course.path, 'elements', elementName);
-            controller = context.course_elements[elementName].controller;
-        } else if (_.has(coreElementsCache, elementName)) {
-            cwd = path.join(__dirname, '..', 'elements', elementName);
-            controller = coreElementsCache[elementName].controller;
-        } else {
-            return callback(new Error('Invalid element name: ' + elementName), null);
-        }
-        if (_.isString(controller)) {
-            // python module
-            const elementHtml = $(element).clone().wrap('<container/>').parent().html();
-            const pythonArgs = [elementHtml, index, data];
-            const pythonFile = controller.replace(/\.[pP][yY]$/, '');
-            const opts = {
-                cwd,
-                paths: [path.join(__dirname, 'freeformPythonLib')],
-            };
-            pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
-                if (err instanceof codeCaller.FunctionMissingError) {
-                    // function wasn't present in server
-                    return callback(null, module.exports.defaultElementFunctionRet(fcn, data), '');
-                }
-                if (ERR(err, callback)) return;
-                callback(null, ret, consoleLog);
-            });
-        } else {
-            // JS module
-            const jsArgs = [$, element, index, data];
-            controller[fcn](...jsArgs, (err, ret) => {
-                if (ERR(err, callback)) return;
-                callback(null, ret, '');
-            });
-        }
-    },
-
-    elementFunction2: function(pc, fcn, elementName, elementHtml, index, data, context) {
+    elementFunction: function(pc, fcn, elementName, elementHtml, index, data, context) {
         return new Promise((resolve, reject) => {
             let controller, cwd;
             if (_.has(context.course_elements, elementName)) {
@@ -383,7 +345,7 @@ module.exports = {
 
                 let ret_val, consoleLog;
                 try {
-                    [ret_val, consoleLog] = await this.elementFunction2(pc, phase, node.tagName, serializedNode, index, data, context);
+                    [ret_val, consoleLog] = await this.elementFunction(pc, phase, node.tagName, serializedNode, index, data, context);
                 } catch (e) {
                     const elementFile = module.exports.getElementFilename(elementName, context);
                     const courseIssue = new Error(elementFile + ': Error calling ' + phase + '(): ' + e.toString());
