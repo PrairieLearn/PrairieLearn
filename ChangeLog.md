@@ -7,6 +7,8 @@
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
 
+  * Fix Google auth using new API (Matt West).
+  
   * Fix several issues with various elements (Nathan Walters).
 
 * __3.0.0__ - 2018-05-23
