@@ -256,7 +256,7 @@ module.exports = {
                 return callback(null, module.exports.defaultServerRet(phase, data, html, context), '');
             }
 
-            debug(`execPythonServer(): pc.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`)
+            debug(`execPythonServer(): pc.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`);
             pc.call(pythonFile, pythonFunction, pythonArgs, opts, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
