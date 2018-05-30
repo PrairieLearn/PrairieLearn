@@ -320,19 +320,20 @@ module.exports = {
         return null;
     },
 
-    traverseQuestionAndExecuteFunctions: async function(phase, pc, data, context, html, cb) {
+    traverseQuestionAndExecuteFunctions: async function(phase, pc, data, context, html, callback) {
         const origData = JSON.parse(JSON.stringify(data));
         const renderedElementNames = [];
         const courseIssues = [];
         let fileData = Buffer.from('');
         let index = 0;
-        const ast = parse5.parseFragment(html);
 
         const questionElements = new Set([..._.keys(coreElementsCache), ..._.keys(context.course_elements)]);
 
         const visitNode = async (node) => {
             if (node.tagName && questionElements.has(node.tagName)) {
                 const elementName = node.tagName;
+                const elementFile = module.exports.getElementFilename(elementName, context);
+
                 if (phase === 'render' && !_.includes(renderedElementNames, elementName)) {
                     renderedElementNames.push(elementName);
                 }
@@ -345,10 +346,9 @@ module.exports = {
 
                 let ret_val, consoleLog;
                 try {
-                    [ret_val, consoleLog] = await this.elementFunction(pc, phase, node.tagName, serializedNode, index, data, context);
+                    [ret_val, consoleLog] = await this.elementFunction(pc, phase, elementName, serializedNode, index, data, context);
                 } catch (e) {
-                    const elementFile = module.exports.getElementFilename(elementName, context);
-                    const courseIssue = new Error(elementFile + ': Error calling ' + phase + '(): ' + e.toString());
+                    const courseIssue = new Error(`${elementFile}: Error calling ${phase}(): ${e.toString()}`);
                     courseIssue.data = e.data;
                     courseIssue.fatal = true;
                     // We'll catch this and add it to the course issues list
@@ -356,8 +356,7 @@ module.exports = {
                 }
 
                 if (_.isString(consoleLog) && consoleLog.length > 0) {
-                    const elementFile = module.exports.getElementFilename(elementName, context);
-                    const courseIssue = new Error(elementFile + ': output logged on console during ' + phase + '()');
+                    const courseIssue = new Error(`${elementFile}: output logged on console during ${phase}()`);
                     courseIssue.data = {outputBoth: consoleLog};
                     courseIssue.fatal = false;
                     courseIssues.push(courseIssue);
@@ -365,8 +364,7 @@ module.exports = {
 
                 if (phase == 'render') {
                     if (!_.isString(ret_val)) {
-                        const elementFile = module.exports.getElementFilename(elementName, context);
-                        const courseIssue = new Error(elementFile + ': Error calling ' + phase + '(): return value is not a string');
+                        const courseIssue = new Error(`${elementFile}: Error calling ${phase}(): return value is not a string`);
                         courseIssue.data = {ret_val};
                         courseIssue.fatal = true;
                         throw courseIssue;
@@ -375,14 +373,13 @@ module.exports = {
                 } else if (phase == 'file') {
                     // Convert ret_val from base64 back to buffer (this always works,
                     // whether or not ret_val is valid base64)
-                    var buf = Buffer.from(ret_val, 'base64');
+                    const buf = Buffer.from(ret_val, 'base64');
 
                     // If the buffer has non-zero length...
                     if (buf.length > 0) {
                         if (fileData.length > 0) {
                             // If fileData already has non-zero length, throw an error
-                            const elementFile = module.exports.getElementFilename(elementName, context);
-                            const courseIssue = new Error(elementFile + ': Error calling ' + phase + '(): attempting to overwrite non-empty fileData');
+                            const courseIssue = new Error(`${elementFile}: Error calling ${phase}(): attempting to overwrite non-empty fileData`);
                             courseIssue.fatal = true;
                             throw courseIssue;
                         } else {
@@ -394,8 +391,7 @@ module.exports = {
                     data = ret_val;
                     const checkErr = module.exports.checkData(data, origData, phase);
                     if (checkErr) {
-                        const elementFile = module.exports.getElementFilename(elementName, context);
-                        const courseIssue = new Error(elementFile + ': Invalid state after ' + phase + '(): ' + checkErr);
+                        const courseIssue = new Error(`${elementFile}: Invalid state after ${phase}(): ${checkErr}`);
                         courseIssue.fatal = true;
                         throw courseIssue;
                     }
@@ -404,34 +400,30 @@ module.exports = {
                 index++;
             }
 
-            // It's possible that the child node will be null if an element
-            // returns an empty string.
-            if (node && node.childNodes) {
-                const newChildren = [];
-                for (let i = 0; i < node.childNodes.length; i++) {
-                    const childRes = await visitNode(node.childNodes[i]);
-                    if (childRes) {
-                        if (childRes.nodeName === '#document-fragment') {
-                            newChildren.push(...childRes.childNodes);
-                        } else {
-                            newChildren.push(childRes);
-                        }
+            const newChildren = [];
+            for (let i = 0; i < (node.childNodes || []).length; i++) {
+                const childRes = await visitNode(node.childNodes[i]);
+                if (childRes) {
+                    if (childRes.nodeName === '#document-fragment') {
+                        newChildren.push(...childRes.childNodes);
+                    } else {
+                        newChildren.push(childRes);
                     }
                 }
-                node.childNodes = newChildren;
             }
+            node.childNodes = newChildren;
 
             return node;
         };
 
         let questionHtml = '';
         try {
-            const res = await visitNode(ast);
+            const res = await visitNode(parse5.parseFragment(html));
             questionHtml = parse5.serialize(res);
         } catch (e) {
             courseIssues.push(e);
         }
-        cb(courseIssues, data, questionHtml, fileData, renderedElementNames);
+        callback(courseIssues, data, questionHtml, fileData, renderedElementNames);
     },
 
     processQuestionHtml: function(phase, pc, data, context, callback) {
