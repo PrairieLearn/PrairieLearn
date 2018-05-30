@@ -154,32 +154,23 @@ module.exports = {
                 cwd = path.join(__dirname, '..', 'elements', elementName);
                 controller = coreElementsCache[elementName].controller;
             } else {
-                return reject(new Error('Invalid element name: ' + elementName), null);
+                return reject(new Error('Unknown element name: ' + elementName), null);
             }
-            if (_.isString(controller)) {
-                // python module
-                const pythonArgs = [elementHtml, index, data];
-                const pythonFile = controller.replace(/\.[pP][yY]$/, '');
-                const opts = {
-                    cwd,
-                    paths: [path.join(__dirname, 'freeformPythonLib')],
-                };
-                pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
-                    if (err instanceof codeCaller.FunctionMissingError) {
-                        // function wasn't present in server
-                        return resolve(module.exports.defaultElementFunctionRet(fcn, data), '');
-                    }
-                    if (ERR(err, reject)) return;
-                    resolve([ret, consoleLog]);
-                });
-            } else {
-                // JS module
-                const jsArgs = [elementHtml, index, data];
-                controller[fcn](...jsArgs, (err, ret) => {
-                    if (ERR(err, reject)) return;
-                    resolve([ret, '']);
-                });
-            }
+
+            const pythonArgs = [elementHtml, index, data];
+            const pythonFile = controller.replace(/\.[pP][yY]$/, '');
+            const opts = {
+                cwd,
+                paths: [path.join(__dirname, 'freeformPythonLib')],
+            };
+            pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
+                if (err instanceof codeCaller.FunctionMissingError) {
+                    // function wasn't present in server
+                    return resolve([module.exports.defaultElementFunctionRet(fcn, data), '']);
+                }
+                if (ERR(err, reject)) return;
+                resolve([ret, consoleLog]);
+            });
         });
     },
 
