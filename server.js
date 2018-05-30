@@ -4,7 +4,6 @@ const async = require('async');
 const http = require('http');
 const https = require('https');
 const blocked = require('blocked-at');
-const argv = require('yargs-parser') (process.argv.slice(2));
 
 const logger = require('./lib/logger');
 const config = require('./lib/config');
@@ -21,24 +20,24 @@ const socketServer = require('./lib/socket-server');
 const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
 
-// If there is only one argument, legacy it into the config option
-if (argv['_'].length == 1) {
-    argv['config'] = argv['_'][0];
-    argv['_'] = [];
-}
-
-if ('h' in argv || 'help' in argv) {
-    var msg = `PrairieLearn command line options:
-    -h, --help                          Display this help and exit
-    --config <filename>
-    <filename> and no other args        Load an alternative config filename
-    --migrate-and-exit                  Run the DB initialization parts and exit
-    --exit                              Run all the initialization and exit
-`;
-
-    console.log(msg); // eslint-disable-line no-console
-    process.exit(0);
-}
+const argv = require('yargs')
+    .version(false)
+    .option('config', {
+        describe: 'The config file to read from',
+        default: 'config.json',
+    })
+    .option('migrate-and-exit', {
+        describe: 'Run the DB initialization parts and exit',
+        boolean: 'true',
+        default: false,
+    })
+    .option('exit', {
+        describe: 'Run all the initialization and exit',
+        boolean: true,
+        default: false,
+    })
+    .help()
+    .argv;
 
 let server;
 
@@ -100,7 +99,7 @@ module.exports.startServer = function() {
 
     async.series([
         function(callback) {
-            const configFilename = argv['config'] || 'config.json';
+            const configFilename = argv.config;
             config.loadConfig(configFilename, (err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
@@ -155,7 +154,7 @@ module.exports.startServer = function() {
             });
         },
         function(callback) {
-            if ('migrate-and-exit' in argv && argv['migrate-and-exit']) {
+            if (argv['migrate-and-exit']) {
                 logger.info('option --migrate-and-exit passed, running DB setup and exiting');
                 process.exit(0);
             } else {
@@ -234,7 +233,7 @@ module.exports.startServer = function() {
             if (config.devMode) {
                 logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort + '/pl');
             }
-            if ('exit' in argv) { logger.info('exit option passed, quitting...'); process.exit(0); }
+            if (argv['exit']) { logger.info('exit option passed, quitting...'); process.exit(0); }
         }
     });
 };
