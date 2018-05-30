@@ -3,7 +3,7 @@
 
 # whitelist things to copy
 !.eslintignore
-!.eslintrc.json
+!.eslintrc.yml
 !app.js
 !config/
 !cron/
