@@ -3,7 +3,7 @@
 
 This page describes the procedure to run PrairieLearn within Docker, but using a locally-installed version of the PrairieLearn source code. This is the recommended way to do PrairieLearn development. This is tested and supported on MacOS, Linux, and Windows.
 
-* First install the Docker version of PrairieLearn as described in the [installation documentation](installing.md).
+* First install the Docker version of PrairieLearn as described in the [Docker instructions](running-docker.md).
 
 * Clone PrairieLearn from the main repository:
 

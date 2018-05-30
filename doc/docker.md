@@ -9,7 +9,7 @@ In the base `PrairieLearn` directory run:
 
 ## Running the container
 
-See [the installation page](installing.md).
+See [the Docker instructions](running-docker.md).
 
 ## `docker run` primer
 
