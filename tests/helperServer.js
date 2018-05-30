@@ -10,6 +10,7 @@ var serverJobs = require('../lib/server-jobs');
 var syncFromDisk = require('../sync/syncFromDisk');
 var freeformServer = require('../question-servers/freeform');
 var cache = require('../lib/cache');
+const workers = require('../lib/workers');
 
 config.startServer = false;
 config.serverPort = 3007;
@@ -56,6 +57,10 @@ module.exports = {
                 callback(null);
             },
             function(callback) {
+                workers.init();
+                callback(null);
+            },
+            function(callback) {
                 server.startServer(function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
@@ -96,6 +101,12 @@ module.exports = {
         // call close()/stop() functions in reverse order to the
         // start() functions above
         async.series([
+            function(callback) {
+                workers.finish(err => {
+                    if (ERR(err, callback)) return;
+                    callback(null);
+                });
+            },
             function(callback) {
                 freeformServer.close(function(err) {
                     if (ERR(err, callback)) return;

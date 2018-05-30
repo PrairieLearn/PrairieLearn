@@ -29,6 +29,7 @@ const socketServer = require('./lib/socket-server');
 const serverJobs = require('./lib/server-jobs');
 const freeformServer = require('./question-servers/freeform.js');
 const cache = require('./lib/cache');
+const workers = require('./lib/workers');
 
 // If there is only one argument, legacy it into the config option
 if (argv['_'].length == 1) {
@@ -545,6 +546,10 @@ if (config.startServer) {
             load.initEstimator('request', 1);
             load.initEstimator('authed_request', 1);
             load.initEstimator('python', 1);
+            callback(null);
+        },
+        function(callback) {
+            workers.init();
             callback(null);
         },
         function(callback) {

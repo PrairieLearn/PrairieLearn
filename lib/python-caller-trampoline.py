@@ -65,12 +65,16 @@ with open(3, 'w', encoding='utf-8') as outf:
         os.chdir(cwd)
 
         # load the "file" as a module
-        mod = importlib.import_module(file);
+        #mod = importlib.import_module('.' + file, os.path.basename(os.getcwd()));
+        mod = {}
+        with open(os.path.join(cwd, file + '.py')) as inf:
+            contents = inf.read()
+            exec(contents, mod)
 
         # check whether we have the desired fcn in the module
-        if hasattr(mod, fcn):
+        if fcn in mod: #hasattr(mod, fcn):
             # get the desired function in the loaded module
-            method = getattr(mod, fcn)
+            method = mod[fcn] #getattr(mod, fcn)
 
             # check if the desired function is a legacy element function - if
             # so, we add an argument for element_index
