@@ -10,7 +10,6 @@ var serverJobs = require('../lib/server-jobs');
 var syncFromDisk = require('../sync/syncFromDisk');
 var freeformServer = require('../question-servers/freeform');
 
-config.serverPort = 3007;
 var server = require('../server');
 
 var logger = require('./dummyLogger');
@@ -22,6 +21,13 @@ module.exports = {
     before: function(callback) {
         var that = this;
         async.series([
+            function(callback) {
+                config.loadDefaultConfig(function(err) {
+                    if (ERR(err, callback)) return;
+                    config.serverPort = 3007;
+                    callback(null);
+                });
+            },
             function(callback) {
                 // pass "this" explicitly to enable this.timeout() calls
                 helperDb.before.call(that, function(err) {
