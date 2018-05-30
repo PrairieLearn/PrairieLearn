@@ -76,6 +76,9 @@
   * Add student name and clickable e-mail address information to issue reports (James Balamuta).
 
   * Add `tools/dump_*` scripts to filter and anonymize per-course dumps (Matt West).
+  * Upgrade to Node.js 10 and PostgreSQL 10 (Matt West).
+  
+  * Add course-level questions and issues page (Ray Essick).
 
   * Add `pl-prairiedraw-figure` element and update PrairieDraw graphics documentation. (Ray Essick).
 
@@ -337,8 +340,6 @@
   * Add consistency checks for `course_instance_id` in `variants` (Matt West).
 
   * Add `merge=union` strategy for `ChangeLog.md` (Matt West).
-  
-  * Add course-level questions and issues page (Ray Essick).
 
   * Add developer docs about question rendering (Matt West).
 
