@@ -25,10 +25,9 @@ pages:
   - 'FAQ': 'faq.md'
 - Developer Guide:
   - 'Developer guide': 'dev-guide.md'
-  - 'Installing with local source': 'installingLocal.md'
-  - 'Installing natively': 'installingNative.md'
+  - 'Running with local source': 'running-local.md'
+  - 'Running natively': 'running-native.md'
   - 'Question element writing': 'devElements.md'
   - 'Docker packaging': 'docker.md'
-  - 'Setting up AWS for external grading': 'externalGradingAws.md'
   - 'Contributing to PL development': 'contributing.md'
   - 'Old v1/v2 question format': 'oldQuestion.md'
