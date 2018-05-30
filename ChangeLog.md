@@ -4,6 +4,7 @@
 * __next version__ - XXXX-XX-XX
 
   * Add student name and clickable e-mail address information to issue reports (James Balamuta).
+  * Add new code + instructions for running with `docker-compose` (Nathan Walters).
 
   * Upgrade to Node.js 10 and PostgreSQL 10 (Matt West).
 
