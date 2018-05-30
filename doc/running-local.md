@@ -1,5 +1,5 @@
 
-# Installing with local source code
+# Running with local source code
 
 This page describes the procedure to run PrairieLearn within Docker, but using a locally-installed version of the PrairieLearn source code. This is the recommended way to do PrairieLearn development. This is tested and supported on MacOS, Linux, and Windows.
 

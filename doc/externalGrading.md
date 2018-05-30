@@ -190,29 +190,13 @@ If you want to write your own submission mechanism (as a custom element, for ins
 
 For a working example of this, see `PrairieLearn/elements/pl_file_upload/pl_file_upload.py`.
 
-## Running locally for development
+## Running locally with docker-compose
 
-In production, PrairieLearn runs external grading jobs on a distributed system called [https://github.com/PrairieLearn/PrairieGrader](PrairieGrader). This system uses a variety of AWS services to efficiently run many jobs in parallel. When developing questions locally, you won't have access to this infrastructure, but PrairieLearn allows you to still run external grading jobs locally with a few workarounds.
+In production, PrairieLearn runs external grading jobs on a distributed system called [https://github.com/PrairieLearn/PrairieGrader](PrairieGrader). This system uses a variety of AWS services to efficiently run many jobs in parallel. When developing questions locally, you won't have access to this infrastructure. However, you can use [https://docs.docker.com/compose/overview/](`docker-compose`) to run PrairieLearn, PrairieGrader, and substitutes for the AWS services inside Docker containers on your own machine.
 
 * Instead of running jobs on an EC2 instance, they will be run locally and directly with Docker on the host machine.
-* Instead of sending jobs to the grading containers with S3, we write them to a directory on the host machine and then mount that directory directly into the grading container as `/grade`.
-* Instead of receiving a webhook to indicate that results are available, PrairieLearn will simply wait for the grading container to die, and then attempt to read `results/results.json` from the folder that was mounted in as `/grade`.
+* Instead of using SQS to enqueue jobs, we use [https://www.rabbitmq.com/](RabbitMQ).
+* Instead of writing job files to S3, we write them to a Docker volume and then mount that volume into the grading container as `/grade`.
 
-PrairieLearn supports two ways of running on your own machine: natively, and inside a Docker container. We support running external autograders for each way. If the `HOST_JOBS_DIR` environment variable is set (more on that later), PrairieLearn will assume it's running in a container; otherwise, it assumes it's running natively.
-
-#### Running locally (on Docker)
-
-We have to do a couple interesting things to run external grading jobs when PrairieLearn is running locally inside Docker:
-
-* We need a way of starting up Docker containers on the host machine from within another Docker container. We achieve this by mounting the Docker socket from the host into the Docker container running PrairieLearn; this allows us to run 'sibling' containers.
-* We need to get job files from inside the Docker container running PrairieLearn to the host machine so that Docker can mount them to `/grade` on the grading machine. We achieve this by mounting a directory on the host machine to `/jobs` on the grading machine, and setting an environment variable `HOST_JOBS_DIR` containing the absolute path of that directory on the host machine.
-
-So, the command to run PrairieLearn locally will now look something like this:
-
-```sh
-docker run --rm -p 3000:3000 -v /path/to/PrairieLearn:/PrairieLearn -v /home/nathan/pl_ag_jobs:/jobs -e HOST_JOBS_DIR=/home/nathan/pl_ag_jobs -v /var/run/docker.sock:/var/run/docker.sock prairielearn/prairielearn
-```
-
-#### Running locally (native, not on Docker)
-
-When not running in Docker, things are easier. The Docker socket can be used normally, and we're able to store job files automatically. By default, they are stored in `$HOME/pl_ag_jobs` on Unix-based systems and `$USERPROFILE/pl_ag_jobs` on Windows. However, if you run PrairieLearn with a an environment variable `JOBS_DIR=/abs/path/to/my/custom/directory/`, that directory will be used instead. Note that this environment variable has no effect when running on Docker.
+To run with `docker-compose`, you'll first have to have cloned the [https://github.com/PrairieLearn/PrairieLearn](PrairieLearn GitHub repo). Once you've done that, simply run
+`docker-compose up`

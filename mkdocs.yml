@@ -7,7 +7,7 @@ docs_dir: doc
 pages:
 - Main: 'index.md'
 - User Guide:
-  - 'Installing and running PrairieLearn': 'installing.md'
+  - 'Running PrairieLearn': 'running.md'
   - 'Syncing course content': 'sync.md'
   - 'Course configuration': 'course.md'
   - 'Course instance configuration': 'courseInstance.md'

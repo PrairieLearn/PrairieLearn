@@ -1,22 +1,21 @@
+# Running the PrairieLearn docker image
 
-# Installing and running PrairieLearn
-
-* Step 1: Install [Docker Community Edition](https://www.docker.com/community-edition). It's free. 
+1. Install [Docker Community Edition](https://www.docker.com/community-edition). It's free.
     * On Linux and MacOS this is straightforward. [Download from here](https://store.docker.com/search?type=edition&offering=community).
     * On Windows the best version is [Docker Community Edition for Windows](https://store.docker.com/editions/community/docker-ce-desktop-windows), which requires Windows 10 Pro/Edu. You should install this if at all possible because it is much better than the older "Docker Toolbox".
         * UIUC students and staff can download Windows 10 from [the WebStore](https://webstore.illinois.edu/).
 
-* Step 2: Run PrairieLearn using the example course with:
+2. Run PrairieLearn using the example course with:
 
 ```sh
 docker run -it --rm -p 3000:3000 prairielearn/prairielearn
 ```
 
-* Step 3: Open a web browser and connect to [http://localhost:3000/pl](http://localhost:3000/pl)
+3. Open a web browser and connect to [http://localhost:3000/pl](http://localhost:3000/pl)
 
-* Step 4: When you are finished with PrairieLearn, type Control-C on the commandline where your ran the server to stop it.
+4. When you are finished with PrairieLearn, type Ctrl-C in the terminal where your ran the server to stop it.
 
-* Step 5: To use your own course, point Docker to the correct directory (replace the precise path with your own) on Windows:
+5. To use your own course, point Docker to the correct directory (replace the precise path with your own) on Windows:
 
 ```sh
 docker run -it --rm -p 3000:3000 -v C:\GitHub\pl-tam212:/course prairielearn/prairielearn

@@ -19,6 +19,7 @@ services:
     volumes:
       - jobs:/jobs
       - /var/run/docker.sock:/var/run/docker.sock
+      - ${COURSE_DIR:-dummy_course}:/course
 
   prairiegrader:
     image: 'prairielearn/prairiegrader'
@@ -57,5 +58,6 @@ services:
 
 volumes:
   jobs:
+  dummy_course:
   prairiegrader_job_files:
     name: prairiegrader_job_files
