@@ -1,0 +1,31 @@
+---
+parserOptions:
+  ecmaVersion: 2018
+env:
+  node: true
+  es6: true
+  mocha: true
+extends: eslint:recommended
+plugins:
+  - import
+rules:
+  import/no-unresolved:
+    - error
+    - commonjs: true
+  import/no-extraneous-dependencies: error
+  handle-callback-err: error
+  quotes:
+    - error
+    - single
+    - avoidEscape: true
+      allowTemplateLiterals: true
+  semi:
+    - error
+    - always
+  no-unused-vars:
+    - error
+    - args: after-used
+      argsIgnorePattern: "^_"
+  comma-dangle:
+    - error
+    - always-multiline

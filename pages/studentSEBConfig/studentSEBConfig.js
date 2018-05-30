@@ -6,7 +6,9 @@ const plist = require('plist');
 const fs = require('fs');
 const zlib = require('zlib');
 const crypto = require('crypto');
-const jscryptor = require('jscryptor');
+// TODO replace with better library; commented out to avoid linter errors
+// const jscryptor = require('jscryptor');
+const jscryptor = null;
 const _ = require('lodash');
 
 const csrf = require('../../lib/csrf');
