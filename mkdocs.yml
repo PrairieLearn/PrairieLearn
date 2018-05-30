@@ -6,8 +6,10 @@ docs_dir: doc
 
 pages:
 - Main: 'index.md'
+- Getting Started: 'running.md'
 - User Guide:
-  - 'Running PrairieLearn': 'running.md'
+  - 'Running PrairieLearn with Docker': 'running-docker.md'
+  - 'Running PrairieLearn with Docker Compose': 'running-docker-compose.md'
   - 'Syncing course content': 'sync.md'
   - 'Course configuration': 'course.md'
   - 'Course instance configuration': 'courseInstance.md'
