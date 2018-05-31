@@ -202,12 +202,15 @@ module.exports = {
                 cwd,
                 paths: [path.join(__dirname, 'freeformPythonLib')],
             };
+            debug(`elementFunction(): pc.call(pythonFile=${pythonFile}, pythonFunction=${fcn})`);
             pc.call(pythonFile, fcn, pythonArgs, opts, (err, ret, consoleLog) => {
                 if (err instanceof codeCaller.FunctionMissingError) {
                     // function wasn't present in server
+                    debug(`elementFunction(): function not present`);
                     return callback(null, module.exports.defaultElementFunctionRet(fcn, data), '');
                 }
                 if (ERR(err, callback)) return;
+                debug(`elementFunction(): completed`);
                 callback(null, ret, consoleLog);
             });
         } else {
