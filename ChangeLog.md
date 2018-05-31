@@ -68,6 +68,10 @@
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
 
   * Fix Google auth using new API (Matt West).
+  
+  * Add option to toggle placeholder help text for `pl_number_input` (James Balamuta).
+
+  * Add demo question showcasing all options for `pl_number_input` (James Balamuta).
 
   * Fix several issues with various elements (Nathan Walters).
 
@@ -244,10 +248,8 @@
   * Add `sympy.ImmutableMatrix` to list of types accepted by `prairielearn.to_json()` (Tim Bretl).
 
   * Add form help text indicating multiple answer can be selected for `pl_checkbox` (James Balamuta).
-  
-  * Add option to toggle placeholder help text for `pl_number_input` (James Balamuta).
 
-  * Add demo questions showcasing all options for `pl_checkbox` and `pl_number_input` (James Balamuta).
+  * Add demo question showcasing all options for `pl_checkbox` (James Balamuta).
 
   * Add example of how to use PL to learn student names (Tim Bretl).
 

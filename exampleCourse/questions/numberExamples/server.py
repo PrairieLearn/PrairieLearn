@@ -8,7 +8,7 @@ def generate(data):
     b = random.randint(2, 10)
     
     # Compute answer
-    c = math.sqrt(a^2 + b^2)
+    c = math.sqrt(a**2 + b**2)
     
     # Release parameters
     data["params"]["a"] = a
