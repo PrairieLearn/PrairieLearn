@@ -228,14 +228,12 @@ module.exports = {
     runJob(job, callback) {
         logger.verbose('cron: starting ' + job.name);
         var startTime = new Date();
-        setTimeout(() => {
-            job.module.run((err) => {
-                if (ERR(err, callback)) return;
-                var endTime = new Date();
-                var elapsedTimeMS = endTime - startTime;
-                logger.verbose('cron: ' + job.name + ' success, duration: ' + elapsedTimeMS + ' ms');
-                callback(null);
-            });
-        }, 3000);
+        job.module.run((err) => {
+            if (ERR(err, callback)) return;
+            var endTime = new Date();
+            var elapsedTimeMS = endTime - startTime;
+            logger.verbose('cron: ' + job.name + ' success, duration: ' + elapsedTimeMS + ' ms');
+            callback(null);
+        });
     },
 };
