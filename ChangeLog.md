@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add student name and clickable e-mail address information to issue reports (James Balamuta).
+  
   * Upgrade to Node.js 10 and PostgreSQL 10 (Matt West).
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
@@ -126,7 +128,6 @@
   * Add `load-test` support for v2 questions (Matt West).
 
   * Add submission info modal with external grading stats (Nathan Walters).
-  * Add student name and clickable e-mail address to issue report on question page (James Balamuta).
 
   * Fix broken file upload element (Nathan Walters).
 
