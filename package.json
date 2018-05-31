@@ -57,6 +57,7 @@
         "socket.io": "^2.1.1",
         "socket.io-client": "^2.1.1",
         "socket.io-redis": "^5.2.0",
+        "supports-color": "^5.4.0",
         "tar": "^4.4.4",
         "three": "^0.92.0",
         "uuid": "^3.2.1",
