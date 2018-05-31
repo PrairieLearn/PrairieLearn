@@ -1,6 +1,7 @@
 const ERR = require('async-stacktrace');
 const async = require('async');
 const _ = require('lodash');
+const debug = require('debug')('prairielearn:cron');
 
 const logger = require('../lib/logger');
 const config = require('../lib/config');
@@ -26,6 +27,7 @@ const jobTimeouts = {};
 
 module.exports = {
     init(callback) {
+       debug(`init()`);
         const jobs = [
             {
                 name: 'autoFinishExams',
@@ -82,21 +84,26 @@ module.exports = {
     },
 
     stop(callback) {
+        debug(`stop()`);
         _.forEach(jobTimeouts, (timeout, interval) => {
             if (!_.isInteger(timeout)) {
                 // current pending timeout, which can be canceled
+                debug(`stop(): clearing timeout for ${interval}`);
                 clearTimeout(timeout);
                 delete jobTimeouts[interval];
             } else if (timeout == 0) {
                 // job is currently running, request that it stop
+                debug(`stop(): requesting stop for ${interval}`);
                 jobTimeouts[interval] = -1;
             }
         });
 
         function check() {
             if (_.size(jobTimeouts) == 0) {
+                debug(`stop(): all jobs stopped`);
                 callback(null);
             } else {
+                debug(`stop(): waiting for ${_.size(jobTimeouts)} jobs to stop`);
                 setTimeout(check, 100);
             }
         }
@@ -104,15 +111,20 @@ module.exports = {
     },
 
     queueJobs(jobsList, intervalSec) {
+        debug(`queueJobs(): ${intervalSec}`);
         const that = this;
         function queueRun() {
+            debug(`queueJobs(): ${intervalSec}: starting run`);
             jobTimeouts[intervalSec] = 0;
             that.runJobs(jobsList, () => {
+                debug(`queueJobs(): ${intervalSec}: completed run`);
                 if (jobTimeouts[intervalSec] == -1) {
                     // someone requested a stop
+                    debug(`queueJobs(): ${intervalSec}: stop requested`);
                     delete jobTimeouts[intervalSec];
                     return;
                 }
+                debug(`queueJobs(): ${intervalSec}: waiting for next run time`);
                 jobTimeouts[intervalSec] = setTimeout(queueRun, intervalSec * 1000);
             });
         }
@@ -120,6 +132,7 @@ module.exports = {
     },
 
     queueDailyJobs(jobsList) {
+        debug(`queueDailyJobs()`);
         const that = this;
         function timeToNextMS() {
             const now = new Date();
@@ -135,13 +148,17 @@ module.exports = {
             return tMS;
         }
         function queueRun() {
+            debug(`queueDailyJobs(): starting run`);
             jobTimeouts['daily'] = 0;
             that.runJobs(jobsList, () => {
+                debug(`queueDailyJobs(): completed run`);
                 if (jobTimeouts['daily'] == -1) {
                     // someone requested a stop
+                    debug(`queueDailyJobs(): stop requested`);
                     delete jobTimeouts['daily'];
                     return;
                 }
+                debug(`queueDailyJobs(): waiting for next run time`);
                 jobTimeouts['daily'] = setTimeout(queueRun, timeToNextMS());
             });
         }
@@ -150,17 +167,22 @@ module.exports = {
 
     // run a list of jobs
     runJobs(jobsList, callback) {
+        debug(`runJobs()`);
         logger.verbose('cron: jobs starting');
         async.eachSeries(jobsList, (job, callback) => {
+            debug(`runJobs(): running ${job.name}`);
             this.tryJobWithLock(job, (err) => {
                 if (ERR(err, () => {})) {
+                    debug(`runJobs(): error running ${job.name}: ${err}`);
                     logger.error('cron: ' + job.name + ' failure: ' + String(err),
                                  {message: err.message, stack: err.stack, data: JSON.stringify(err.data)});
                 }
                 // return null even on error so that we run all jobs even if one fails
+                debug(`runJobs(): completed ${job.name}`);
                 callback(null);
             });
         }, () => {
+            debug(`runJobs(): done`);
             logger.verbose('cron: jobs finished');
             callback(null);
         });
@@ -168,18 +190,22 @@ module.exports = {
 
     // try and get the job lock, and run the job if we get it
     tryJobWithLock(job, callback) {
+        debug(`tryJobWithLock(): ${job.name}`);
         const lockName = 'cron:' + job.name;
         namedLocks.tryLock(lockName, (err, lock) => {
             if (ERR(err, callback)) return;
             if (lock == null) {
+                debug(`tryJobWithLock(): ${job.name}: did not acquire lock`);
                 logger.verbose('cron: ' + job.name + ' did not acquire lock');
                 callback(null);
             } else {
+                debug(`tryJobWithLock(): ${job.name}: acquired lock`);
                 logger.verbose('cron: ' + job.name + ' acquired lock');
                 this.tryJobWithTime(job, (err) => {
                     namedLocks.releaseLock(lock, (lockErr) => {
                         if (ERR(lockErr, callback)) return;
                         if (ERR(err, callback)) return;
+                        debug(`tryJobWithLock(): ${job.name}: released lock`);
                         logger.verbose('cron: ' + job.name + ' released lock');
                         callback(null);
                     });
@@ -192,6 +218,7 @@ module.exports = {
     // enough time has elapsed. We are protected by a lock here so we
     // have exclusive access.
     tryJobWithTime(job, callback) {
+        debug(`tryJobWithTime(): ${job.name}`);
         var interval_secs;
         if (Number.isInteger(job.intervalSec)) {
             interval_secs = job.intervalSec;
@@ -207,16 +234,20 @@ module.exports = {
         sqldb.query(sql.select_recent_cron_job, params, (err, result) => {
             if (ERR(err, callback)) return;
             if (result.rowCount > 0) {
+                debug(`tryJobWithTime(): ${job.name}: job was recently run, skipping`);
                 logger.verbose('cron: ' + job.name + ' job was recently run, skipping');
                 callback(null);
             } else {
+                debug(`tryJobWithTime(): ${job.name}: job was not recently run`);
                 logger.verbose('cron: ' + job.name + ' job was not recently run');
                 const params = {name: job.name};
                 sqldb.query(sql.update_cron_job_time, params, (err, _result) => {
                     if (ERR(err, callback)) return;
+                    debug(`tryJobWithTime(): ${job.name}: updated run time`);
                     logger.verbose('cron: ' + job.name + ' updated date');
                     this.runJob(job, (err) => {
                         if (ERR(err, callback)) return;
+                        debug(`tryJobWithTime(): ${job.name}: done`);
                         callback(null);
                     });
                 });
@@ -226,12 +257,14 @@ module.exports = {
 
     // actually run the job
     runJob(job, callback) {
+        debug(`runJob(): ${job.name}`);
         logger.verbose('cron: starting ' + job.name);
         var startTime = new Date();
         job.module.run((err) => {
             if (ERR(err, callback)) return;
             var endTime = new Date();
             var elapsedTimeMS = endTime - startTime;
+            debug(`runJob(): ${job.name}: success, duration ${elapsedTimeMS} ms`);
             logger.verbose('cron: ' + job.name + ' success, duration: ' + elapsedTimeMS + ' ms');
             callback(null);
         });
