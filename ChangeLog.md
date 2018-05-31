@@ -98,6 +98,7 @@
   * Change maximum JSON POST size to 1MB or local grader (Nathan Walters).
 
   * Remove `element_index` from list of arguments passed to elements (Tim Bretl).
+  * Use persistent forking python processes for v3 questions (Matt West).
 
 * __3.0.0__ - 2018-05-23
 
