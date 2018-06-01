@@ -1,6 +1,6 @@
 # Running PrairieLearn + PrairieGrader with `docker-compose`
 
-If you need to develop or test [externalGrading.md](externally-graded questions), you should use this method of running PrairieLearn. This method will spin up PrairieLearn, PrairieGrader, and several other services, and ensure they are connected properly to enable external grading to work.
+If you need to develop or test [externally-graded questions](externalGrading.md), you should use this method of running PrairieLearn. This method will spin up PrairieLearn, PrairieGrader, and several other services, and ensure they are connected properly to enable external grading to work.
 
 ## Instructions
 
@@ -11,7 +11,7 @@ If you need to develop or test [externalGrading.md](externally-graded questions)
 
 2. Depending on your operating system and the version of Docker you have, you may have to install Docker Compose separately. Visit [https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/) to determine if this is necessary for you.
 
-3. If you haven't already, clone the [https://github.com/PrairieLearn/PrairieLearn](PrairieLearn repository) to your machine:
+3. If you haven't already, clone the [PrairieLearn repository](https://github.com/PrairieLearn/PrairieLearn) to your machine:
 
 ```sh
 git clone https://github.com/PrairieLearn/PrairieLearn.git
