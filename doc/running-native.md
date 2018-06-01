@@ -2,11 +2,11 @@
 
 This page describes the procedure to install and run PrairieLearn without any use of Docker. This means that PrairieLearn is running fully natively on the local OS. This installation method is tested and supported on MacOS and Linux, but not on Windows. It should also work on Windows, but it is not tested.
 
-1. Install the pre-requisites:
+* Install the pre-requisites:
 
-    * [Node.js](http://nodejs.org/) version  or higher
+    * [Node.js](http://nodejs.org/) version 10 or higher
     * [npm](https://npmjs.org/) (included with Node.js on Windows)
-    * [PostgreSQL](https://www.postgresql.org) version 9.6 or higher
+    * [PostgreSQL](https://www.postgresql.org) version 10 or higher
     * [Python 3](https://www.python.org) version 3.6 or higher
     * command-line git or [GitHub Desktop](https://desktop.github.com)
 
@@ -14,13 +14,13 @@ On OS X these can be installed with [MacPorts](http://www.macports.org/) or [Hom
 
 Note that with MacPorts you need to select the active version of PostgreSQL, for example `port select postgresql postgresql96`.
 
-2. Clone the latest code:
+* Clone the latest code:
 
 ```sh
 git clone https://github.com/PrairieLearn/PrairieLearn.git
 ```
 
-3. Install the Node.js libraries:
+* Install the Node.js libraries:
 
 ```sh
 cd PrairieLearn
@@ -39,14 +39,14 @@ For example, this might be:
 npm install --python=/usr/bin/python2.7
 ```
 
-4. Make sure `python3` and `python3.6` will run the right version, and make executable links if needed:
+* Make sure `python3` and `python3.6` will run the right version, and make executable links if needed:
 
 ```sh
 python3 --version     # should return "Python 3.6" or higher
 python3.6 --version   # should return "Python 3.6" or higher
 ```
 
-5. Install the Python libraries:
+* Install the Python libraries:
 
 ```sh
 cd PrairieLearn
@@ -59,27 +59,27 @@ python3 -m pip install -r requirements.txt
 initdb -D ~/defaultdb
 ```
 
-6. Run the database:
+* Run the database:
 
 ```sh
 pg_ctl -D ~/defaultdb -l ~/logfile start
 ```
 
-7. Make sure the `postgres` database user exists and is a superuser (these might error if the user already exists):
+* Make sure the `postgres` database user exists and is a superuser (these might error if the user already exists):
 
 ```sh
 psql -c "CREATE USER postgres;"
 psql -c "ALTER USER postgres WITH SUPERUSER;"
 ```
 
-8. Run the test suite:
+* Run the test suite:
 
 ```sh
 cd PrairieLearn
 npm test
 ```
 
-9. Run the linters:
+* Run the linters:
 
 ```sh
 cd PrairieLearn
@@ -87,7 +87,7 @@ npm run lint-js -s
 npm run lint-python -s
 ```
 
-10. Create the file `PrairieLearn/config.json` with the absolute path of your local course repository (edit the path as needed):
+* Create the file `PrairieLearn/config.json` with the absolute path of your local course repository (edit the path as needed):
 
 ```json
 {
@@ -98,7 +98,7 @@ npm run lint-python -s
 }
 ```
 
-11. Run the server:
+* Run the server:
 
 ```sh
 cd PrairieLearn
