@@ -1,0 +1,14 @@
+{
+    "controller": "pl-code.py",
+    "dependencies": {
+        "coreScripts": [
+            "highlight.js"
+        ],
+        "coreStyles": [
+            "highlight-default.css"
+        ],
+        "elementScripts": [
+            "pl-code.js"
+        ]
+    }
+}

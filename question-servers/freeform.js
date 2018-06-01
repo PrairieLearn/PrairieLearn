@@ -96,7 +96,15 @@ module.exports = {
                         if (ERR(err, callback)) return;
                         jsonLoader.validateJSON(info, elementSchema, (err) => {
                             if (ERR(err, callback)) return;
+                            info.name = elementName;
+                            info.directory = path.join(sourceDir, elementName);
+                            info.type = elementType;
                             elements[elementName] = info;
+                            // For backwards compatibility
+                            // TODO remove once everyone is using the new version
+                            if (elementType === 'core') {
+                                elements[elementName.replace(/-/g, '_')] = info;
+                            }
                             callback(null);
                         });
                     });
@@ -131,29 +139,32 @@ module.exports = {
         });
     },
 
-    getElementFilename: function(elementName, context) {
-        if (context.course_elements[elementName]) {
-            const element = context.course_elements[elementName];
-            return path.join(context.course.path, 'elements', elementName, element.controller);
-        } else if (coreElementsCache[elementName]) {
-            const element = coreElementsCache[elementName];
-            return path.join(__dirname, '..', 'elements', elementName, element.controller);
+    resolveElement: function(elementName, context) {
+        if (_.has(context.course_elements, elementName)) {
+            return context.course_elements[elementName];
+        } else if (_.has(coreElementsCache, elementName)) {
+            return coreElementsCache[elementName];
         } else {
-            return 'No such element: "' + elementName + '"';
+            throw new Error(`No such element: ${elementName}`);
         }
     },
 
+    getElementController: function(elementName, context) {
+        const element = module.exports.resolveElement(elementName, context);
+        return path.join(element.directory, element.controller);
+    },
+
     elementFunction: function(pc, fcn, elementName, $, element, index, data, context, callback) {
-        let controller, cwd;
-        if (_.has(context.course_elements, elementName)) {
-            cwd = path.join(context.course.path, 'elements', elementName);
-            controller = context.course_elements[elementName].controller;
-        } else if (_.has(coreElementsCache, elementName)) {
-            cwd = path.join(__dirname, '..', 'elements', elementName);
-            controller = coreElementsCache[elementName].controller;
-        } else {
-            return callback(new Error('Invalid element name: ' + elementName), null);
+        let resolvedElement;
+        try {
+            resolvedElement = module.exports.resolveElement(elementName, context);
+        } catch (e) {
+            return callback(e);
         }
+
+        const cwd = resolvedElement.directory;
+        const controller = resolvedElement.controller;
+
         if (_.isString(controller)) {
             // python module
             const elementHtml = $(element).clone().wrap('<container/>').parent().html();
@@ -351,9 +362,10 @@ module.exports = {
                         renderedElementNames.push(elementName);
                     }
 
+                    const elementFile = module.exports.getElementController(elementName, context);
+
                     this.elementFunction(pc, phase, elementName, $, element, index, data, context, (err, ret_val, consoleLog) => {
                         if (err) {
-                            const elementFile = module.exports.getElementFilename(elementName, context);
                             const courseIssue = new Error(elementFile + ': Error calling ' + phase + '(): ' + err.toString());
                             courseIssue.data = err.data;
                             courseIssue.fatal = true;
@@ -361,7 +373,6 @@ module.exports = {
                             return callback(courseIssue);
                         }
                         if (_.isString(consoleLog) && consoleLog.length > 0) {
-                            const elementFile = module.exports.getElementFilename(elementName, context);
                             const courseIssue = new Error(elementFile + ': output logged on console during ' + phase + '()');
                             courseIssue.data = {outputBoth: consoleLog};
                             courseIssue.fatal = false;
@@ -370,7 +381,6 @@ module.exports = {
 
                         if (phase == 'render') {
                             if (!_.isString(ret_val)) {
-                                const elementFile = module.exports.getElementFilename(elementName, context);
                                 const courseIssue = new Error(elementFile + ': Error calling ' + phase + '(): return value is not a string');
                                 courseIssue.data = {ret_val};
                                 courseIssue.fatal = true;
@@ -387,7 +397,6 @@ module.exports = {
                             if (buf.length > 0) {
                                 if (fileData.length > 0) {
                                     // If fileData already has non-zero length, throw an error
-                                    const elementFile = module.exports.getElementFilename(elementName, context);
                                     const courseIssue = new Error(elementFile + ': Error calling ' + phase + '(): attempting to overwrite non-empty fileData');
                                     courseIssue.fatal = true;
                                     courseIssues.push(courseIssue);
@@ -401,7 +410,6 @@ module.exports = {
                             data = ret_val;
                             const checkErr = module.exports.checkData(data, origData, phase);
                             if (checkErr) {
-                                const elementFile = module.exports.getElementFilename(elementName, context);
                                 const courseIssue = new Error(elementFile + ': Invalid state after ' + phase + '(): ' + checkErr);
                                 courseIssue.fatal = true;
                                 courseIssues.push(courseIssue);
@@ -699,29 +707,21 @@ module.exports = {
 
                     // Gather dependencies for all rendered elements
                     allRenderedElementNames.forEach((elementName) => {
-                        let elementDependencies;
-                        let isCourseElement = false;
-                        if (_.has(context.course_elements, elementName)) {
-                            elementDependencies = context.course_elements[elementName].dependencies || {};
-                            isCourseElement = true;
-                        } else {
-                            elementDependencies = coreElementsCache[elementName].dependencies || {};
-                        }
-
-                        elementDependencies = _.cloneDeep(elementDependencies);
+                        let resolvedElement = module.exports.resolveElement(elementName, context);
+                        const elementDependencies = _.cloneDeep(resolvedElement.dependencies || {});
 
                         // Transform non-global dependencies to be prefixed by the element name,
                         // since they'll be served from their element's directory
                         if (_.has(elementDependencies, 'elementStyles')) {
-                            elementDependencies.elementStyles = elementDependencies.elementStyles.map(dep => `${elementName}/${dep}`);
+                            elementDependencies.elementStyles = elementDependencies.elementStyles.map(dep => `${resolvedElement.name}/${dep}`);
                         }
                         if (_.has(elementDependencies, 'elementScripts')) {
-                            elementDependencies.elementScripts = elementDependencies.elementScripts.map(dep => `${elementName}/${dep}`);
+                            elementDependencies.elementScripts = elementDependencies.elementScripts.map(dep => `${resolvedElement.name}/${dep}`);
                         }
 
                         // Rename properties so we can track core and course
                         // element dependencies separately
-                        if (isCourseElement) {
+                        if (resolvedElement.type === 'course') {
                             if (_.has(elementDependencies, 'elementStyles')) {
                                 elementDependencies.courseElementStyles = elementDependencies.elementStyles;
                                 delete elementDependencies.elementStyles;
@@ -762,7 +762,7 @@ module.exports = {
                                         }
                                     }
                                 } else {
-                                    const courseIssue = new Error(`Error getting dependencies for ${elementName}: "${type}" is not an array`);
+                                    const courseIssue = new Error(`Error getting dependencies for ${resolvedElement.name}: "${type}" is not an array`);
                                     courseIssue.data = {elementDependencies};
                                     courseIssue.fatal = true;
                                     courseIssues.push(courseIssue);

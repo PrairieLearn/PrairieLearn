@@ -4,14 +4,16 @@
 * __next version__ - XXXX-XX-XX
 
   * Add student name and clickable e-mail address information to issue reports (James Balamuta).
-  
+
   * Upgrade to Node.js 10 and PostgreSQL 10 (Matt West).
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
 
   * Fix Google auth using new API (Matt West).
-  
+
   * Fix several issues with various elements (Nathan Walters).
+
+  * Change element names to use dashes instead of underscores (Nathan Walters).
 
 * __3.0.0__ - 2018-05-23
 

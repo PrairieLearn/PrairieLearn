@@ -1,14 +1,14 @@
 
 # Elements for use in `question.html`
 
-## `pl_multiple_choice` element
+## `pl-multiple-choice` element
 
 ```html
-<pl_multiple_choice answers_name="acc" weight="1" inline="true">
-  <pl_answer correct="false">positive</pl_answer>
-  <pl_answer correct="true">negative</pl_answer>
-  <pl_answer correct="false">zero</pl_answer>
-</pl_multiple_choice>
+<pl-multiple-choice answers_name="acc" weight="1" inline="true">
+  <pl-answer correct="false">positive</pl-answer>
+  <pl-answer correct="true">negative</pl-answer>
+  <pl-answer correct="false">zero</pl-answer>
+</pl-multiple-choice>
 ```
 
 Attribute | Type | Default | Description
@@ -19,25 +19,25 @@ Attribute | Type | Default | Description
 `number_answers` | integer | special | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.
 `fixed_order` | boolean | false | Disable the randomization of answer order.
 
-A `pl_multiple_choice` element selects one correct answer and zero or more incorrect answers and displays them in a random order as radio buttons.
+A `pl-multiple-choice` element selects one correct answer and zero or more incorrect answers and displays them in a random order as radio buttons.
 
-An `pl_answer` element inside a `pl_multiple_choice` element has attributes:
+An `pl-answer` element inside a `pl-multiple-choice` element has attributes:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
 
-## `pl_checkbox` element
+## `pl-checkbox` element
 
 ```html
-<pl_checkbox answers_name="vpos" weight="1" inline="true">
-  <pl_answer correct="true">A-B</pl_answer>
-  <pl_answer correct="true">B-C</pl_answer>
-  <pl_answer>               C-D</pl_answer>
-  <pl_answer correct="true">D-E</pl_answer>
-  <pl_answer>               E-F</pl_answer>
-  <pl_answer>               F-G</pl_answer>
-</pl_checkbox>
+<pl-checkbox answers_name="vpos" weight="1" inline="true">
+  <pl-answer correct="true">A-B</pl-answer>
+  <pl-answer correct="true">B-C</pl-answer>
+  <pl-answer>               C-D</pl-answer>
+  <pl-answer correct="true">D-E</pl-answer>
+  <pl-answer>               E-F</pl-answer>
+  <pl-answer>               F-G</pl-answer>
+</pl-checkbox>
 ```
 
 Attribute | Type | Default | Description
@@ -49,21 +49,21 @@ Attribute | Type | Default | Description
 `min_correct` | integer | special | The minimum number of correct answers to display. Defaults to displaying all correct answers.
 `max_correct` | integer | special | The maximum number of correct answers to display. Defaults to displaying all correct answers.
 `fixed_order` | boolean | false | Disable the randomization of answer order.
-`hide_help_text` | boolean | false | Hide help text stating to pick one or more optinos. 
-`detailed_help_text` | boolean | false | Display detailed information in help text about the number of options to choose. 
+`hide_help_text` | boolean | false | Hide help text stating to pick one or more optinos.
+`detailed_help_text` | boolean | false | Display detailed information in help text about the number of options to choose.
 
-A `pl_checkbox` element displays a subset of the answers in a random order as checkboxes.
+A `pl-checkbox` element displays a subset of the answers in a random order as checkboxes.
 
-An `pl_answer` element inside a `pl_multiple_choice` element has attributes:
+An `pl-answer` element inside a `pl-multiple-choice` element has attributes:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
 
-## `pl_number_input` element
+## `pl-number-input` element
 
 ```html
-<pl_number_input answers_name="v_avg" comparison="sigfig" digits="2" />
+<pl-number-input answers_name="v_avg" comparison="sigfig" digits="2"></pl-number-input>
 ```
 
 Attribute | Type | Default | Description
@@ -80,10 +80,10 @@ Attribute | Type | Default | Description
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `allow_complex` | boolean | False | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers_name] = pl.to_json(ans)`.
 
-## `pl_integer_input` element
+## `pl-integer-input` element
 
 ```html
-<pl_integer_input answers_name="x" />
+<pl-integer-input answers_name="x"></pl-integer-input>
 ```
 
 Attribute | Type | Default | Description
@@ -95,10 +95,10 @@ Attribute | Type | Default | Description
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 
-## `pl_matrix_input` element
+## `pl-matrix-input` element
 
 ```html
-<pl_matrix_input answers_name="C" comparison="sigfig" digits="3" label="$AB=$" />
+<pl-matrix-input answers_name="C" comparison="sigfig" digits="3" label="$AB=$"></pl-matrix-input>
 ```
 
 Attribute | Type | Default | Description
@@ -113,7 +113,7 @@ Attribute | Type | Default | Description
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
 `allow_complex` | boolean | False | Whether or not to allow complex numbers as answers. If the correct answer `ans` is a complex object, you should use `import prairielearn as pl` and `data['correct_answer'][answers_name] = pl.to_json(ans)`.
 
-In the question panel, a `pl_matrix_input` element displays an input field that accepts a matrix (i.e., a 2-D array) expressed either in matlab or python format.
+In the question panel, a `pl-matrix-input` element displays an input field that accepts a matrix (i.e., a 2-D array) expressed either in matlab or python format.
 
 Here is an example of valid MATLAB format:
 ```
@@ -127,20 +127,20 @@ Here is an example of valid python format:
 
 A scalar will be accepted either as a matrix of size $1\times 1$ (e.g., `[1.23]` or `[[1.23]]`) or just as a single number (e.g., `1.23`).
 
-In the answer panel, a `pl_matrix_input` element displays the correct answer, allowing the user to switch between matlab and python format.
+In the answer panel, a `pl-matrix-input` element displays the correct answer, allowing the user to switch between matlab and python format.
 
-In the submission panel, a `pl_matrix_input` element displays either the submitted answer (in the same format that it was submitted, either matlab or python), or a note that the submitted answer was invalid (with an explanation of why).
+In the submission panel, a `pl-matrix-input` element displays either the submitted answer (in the same format that it was submitted, either matlab or python), or a note that the submitted answer was invalid (with an explanation of why).
 
-## `pl_matrix_output` element
+## `pl-matrix-output` element
 
 ```html
-<pl_matrix_output digits="3">
+<pl-matrix-output digits="3">
     <variable params_name="A">A</variable>
     <variable params_name="B">B</variable>
-</pl_matrix_output>
+</pl-matrix-output>
 ```
 
-Attributes for `<pl_matrix_output`:
+Attributes for `<pl-matrix-output`:
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
@@ -169,14 +169,14 @@ A = np.array([[1.23], [4.56]])
 If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data['params'][params_name] = pl.to_json(v)`.
 
 
-## `pl_figure` element
+## `pl-figure` element
 
 ```html
 <!-- show a figure from an existing file -->
-<pl_figure file_name="figure.png" directory="clientFilesCourse" />
+<pl-figure file_name="figure.png" directory="clientFilesCourse"></pl-figure>
 
 <!-- show a figure from a file that is generated by code -->
-<pl_figure file_name="figure.png" type="dynamic" />
+<pl-figure file_name="figure.png" type="dynamic"></pl-figure>
 ```
 
 Attribute | Type | Default | Description
@@ -199,14 +199,14 @@ def file(data):
 
 If `file()` does not return anything, it will be treated as if `file()` returned the empty string.
 
-## `pl_file_download` element
+## `pl-file-download` element
 
 ```html
 <!-- allow students to download an existing file -->
-<pl_file_download file_name="data.txt" directory="clientFilesCourse" />
+<pl-file-download file_name="data.txt" directory="clientFilesCourse"></pl-file-download>
 
 <!-- allow students to download a file that is generated by code -->
-<pl_file_download file_name="data.txt" type="dynamic" />
+<pl-file-download file_name="data.txt" type="dynamic"></pl-file-download>
 ```
 
 Attribute | Type | Default | Description
@@ -226,10 +226,10 @@ def file(data):
 
 If `file()` does not return anything, it will be treated as if `file()` returned the empty string.
 
-## `pl_file_upload` element
+## `pl-file-upload` element
 
 ```html
-<pl_file_upload file_names="foo.py, bar.c, filename with\, comma.txt" />
+<pl-file-upload file_names="foo.py, bar.c, filename with\, comma.txt"></pl-file-upload>
 ```
 
 Provides a way to accept file uploads as part of an answer. They will be stored
@@ -240,17 +240,17 @@ Attribute | Type | Default | description
 `answers_name` | string | \_file | Variable name to store data in. **For externally graded questions, you should rely on the default.**
 `file_names` | CSV list | "" | List of files that should and must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes.
 
-## `pl_file_editor` element
+## `pl-file-editor` element
 
 ```html
-<pl_file_editor
+<pl-file-editor
   file_name="fib.py"
   ace_mode="ace/mode/python"
   ace_theme="ace/theme/monokai"
 >
 def fib(n):
     pass
-</pl_file_editor>
+</pl-file-editor>
 ```
 
 Provides an in-broswer file editor that's compatible with the other file elements
@@ -262,49 +262,49 @@ Attribute | Type | Default | description
 `ace_mode` | string | None | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).
 `ace_theme` | string | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).
 
-## `pl_external_grader_results` element
+## `pl-external-grader-results` element
 
 ```html
-<pl_external_grader_results></pl_external_grader_results>
+<pl-external-grader-results></pl-external-grader-results>
 ```
 
 Displays results from externally-graded questions. It expects results to follow
 [the reference schema for external grading results](externalGrading.md#grading-result).
 
-## `pl_question_panel` element
+## `pl-question-panel` element
 
 ```html
-<pl_question_panel>
+<pl-question-panel>
   This is question-panel text.
-</pl_question_panel>
+</pl-question-panel>
 ```
 
 Only display contents when rendering the question panel.
 
-## `pl_submission_panel` element
+## `pl-submission-panel` element
 
 ```html
-<pl_submission_panel>
+<pl-submission-panel>
   This is submission-panel text.
-</pl_submission_panel>
+</pl-submission-panel>
 ```
 
 Only display contents when rendering the submission panel.
 
-## `pl_answer_panel` element
+## `pl-answer-panel` element
 
 ```html
-<pl_answer_panel>
+<pl-answer-panel>
   This is answer-panel text.
-</pl_answer_panel>
+</pl-answer-panel>
 ```
 
 Only display contents when rendering the answer panel.
 
-## `pl_variable_score` element
+## `pl-variable-score` element
 
 ```html
-<pl_variable_score answers_name="v_avg" />
+<pl-variable-score answers_name="v_avg"></pl-variable-score>
 ```
 
 Attribute | Type | Default | Description
@@ -313,14 +313,14 @@ Attribute | Type | Default | Description
 
 Display the partial score for a specific answer variable.
 
-## `pl_threejs` element
+## `pl-threejs` element
 
 ```html
-<pl_threejs answer_name="a">
-    <pl_threejs_stl file_name="MAKE_Robot_V6.stl" frame="body" scale="0.1" />
-    <pl_threejs_stl file_name="MAKE_Robot_V6.stl" frame="body" scale="0.025" position="[-1,1,2]" orientation="[0,0,30]" />
-    <pl_threejs_txt frame="body" position="[-1,1,2.6]" orientation="[0,0,30]">mini-me</pl_threejs_txt>
-</pl_threejs>
+<pl-threejs answer_name="a">
+    <pl-threejs-stl file_name="MAKE_Robot_V6.stl" frame="body" scale="0.1"></pl-threejs-stl>
+    <pl-threejs-stl file_name="MAKE_Robot_V6.stl" frame="body" scale="0.025" position="[-1,1,2]" orientation="[0,0,30]"></pl-threejs-stl>
+    <pl-threejs-txt frame="body" position="[-1,1,2.6]" orientation="[0,0,30]">mini-me</pl-threejs-txt>
+</pl-threejs>
 ```
 
 This element displays a 3D scene with objects that the student can (optionally) translate and/or rotate. It can be used only for output (e.g., as part of a question that asks for something else to be submitted). Or, it can be used for input (e.g., comparing a submitted pose of the body-fixed objects to a correct orientation). Information about the current pose can be hidden from the student and, if visible, can be displayed in a variety of formats, so the element can be used for many different types of questions.
@@ -344,7 +344,7 @@ Attribute | Type | Default | Description
 `tol_rotation` | float | 5.0 | Error in rotation must be no more than this for the answer to be marked correct.
 `grade` | boolean | true | If the element will be graded, i.e., if it is being used to ask a question. If `grade` is `false`, then this element will never produce any html in the answer panel or in the submission panel.
 
-A `pl_threejs_stl` element inside a `pl_threejs` element allows you to add a mesh described by an `stl` file to the scene, and has these attributes:
+A `pl-threejs-stl` element inside a `pl-threejs` element allows you to add a mesh described by an `stl` file to the scene, and has these attributes:
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `file_name` | string | — | Name of `.stl` file.
@@ -356,7 +356,7 @@ Attribute | Type | Default | Description
 `orientation` | list | special | Orientation of object. Defaults to zero orientation. Interpretation depends on `format`.
 `format` | string | rpy | Determines how `orientation` is interpreted. If `rpy` then `[roll, pitch, yaw]`. If `matrix` then 3x3 rotation matrix `[[...], [...], [...]]`. If `quaternion` then `[x, y, z, w]`. If `axisangle` then `[x, y, z, theta]` where `x, y, z` are coordinates of axis and `theta` is angle.
 
-A `pl_threejs_txt` element inside a `pl_threejs` element allows you to add whatever text appears between the `<pl_threejs_txt> ... </pl_threejs_txt>` tags as a mesh to the scene, and has these attributes:
+A `pl-threejs-txt` element inside a `pl-threejs` element allows you to add whatever text appears between the `<pl-threejs-txt> ... </pl-threejs-txt>` tags as a mesh to the scene, and has these attributes:
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `frame` | string | body | Which frame the object is fixed to, either `body` or `space`.
@@ -369,13 +369,13 @@ Attribute | Type | Default | Description
 Note that a 3D scene is also created to show each submitted answer. This means that if there are many submitted answers, the page will load slowly.
 
 
-## pl_code
+## pl-code
 
 ```html
-<pl_code language="python">
+<pl-code language="python">
 def square(x):
     return x * x
-</pl_code>
+</pl-code>
 ```
 
 This element displays a block of code with syntax highlighting.
