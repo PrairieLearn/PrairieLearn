@@ -16,6 +16,7 @@
     <table class="table table-sm table-hover two-column-description">
       <tbody>
         <% if (devMode || authz_data.has_instructor_view) { %>
+        <tr><th>Student:</th><td><%= issue.user_name || '-'  %> (<a href="mailto:<%= issue.user_uid  || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=Hello%20<%= issue.user_name %>,%0A%0ARegarding%20the%20issue%20of:%0A%0A%22<%= issue.student_message || '-' %>%22%0A%0AWe've..."><%= issue.user_uid || '-' %></a>)</td></tr>
         <tr><th>Student message:</th><td><%= issue.student_message %></td></tr>
         <tr><th>Instructor message:</th><td><%= issue.instructor_message %></td></tr>
         <% } else { %>
