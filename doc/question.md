@@ -90,25 +90,25 @@ def generate(data):
 The `question.html` is a template used to render the question to the student. A complete `question.html` example looks like:
 
 ```html
-<pl_question_panel>
+<pl-question-panel>
   <p> A particle of mass $m = {{params.m}}\rm\ kg$ is observed to have acceleration $a = {{params.a}}\rm\ m/s^2$.
   <p> What is the total force $F$ currently acting on the particle?
-</pl_question_panel>
+</pl-question-panel>
 
-<p>$F = $ <pl_number_input answers_name="F" comparison="sigfig" digits="2" /> $\rm m/s^2$
+<p>$F = $ <pl-number-input answers_name="F" comparison="sigfig" digits="2" /> $\rm m/s^2$
 ```
 
 The `question.html` is regular HTML, with two special features:
 
 1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
 
-2. Special HTML elements (like `<pl_number_input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md).
+2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md).
 
 
 ## Rendering panels from `question.html`
 
 When a question is displayed to a student, there are three "panels" that will be shown at different stages: the "question" panel, the "submission" panel, and the "answer" panel. These display the question prompt, the solution provided by the student, and the correct answer.
 
-All three panels display the same `question.html` template, but elements will render differently in each panel. For example, the `<pl_number_input>` element displays an input box in the "question" panel, the submitted answer in the "submissions" panel, and the corretc answer in the "answer" panel.
+All three panels display the same `question.html` template, but elements will render differently in each panel. For example, the `<pl-number-input>` element displays an input box in the "question" panel, the submitted answer in the "submissions" panel, and the correct answer in the "answer" panel.
 
-Text in `question.html` can be set to only display in the "question" panel by wrapping it in the `<pl_question_panel>` element. This is useful for the question prompt, which doesn't need to be repeated in the "submission" and "answer" panels. There are also elements that only render in the other two panels.
+Text in `question.html` can be set to only display in the "question" panel by wrapping it in the `<pl-question-panel>` element. This is useful for the question prompt, which doesn't need to be repeated in the "submission" and "answer" panels. There are also elements that only render in the other two panels.

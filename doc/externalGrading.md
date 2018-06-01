@@ -141,7 +141,7 @@ Your grading process must write its results to `/grade/results/results.json`. Th
 
 As long as those two fields are present, you may add any additional data to that object that you want. This could include information like detailed test results, stdout/stderr, compiler errors, rendered plots, and so on.
 
-The `<pl_external_grader_results>` element is capable of rendering a list of tests with associated test names, descriptions, point values, output, and messages. Here's an example of well-formed results that can be rendered by this element:
+The `<pl-external-grader-results>` element is capable of rendering a list of tests with associated test names, descriptions, point values, output, and messages. Here's an example of well-formed results that can be rendered by this element:
 
 ```json
 {
@@ -172,9 +172,9 @@ The `<pl_external_grader_results>` element is capable of rendering a list of tes
 
 ## Writing questions
 
-To enable students to submit files, you can use one of PrairieLearn's file elements. `<pl_file_editor>` gives students an in-browser editor that they can use to write code. `<pl_file_upload>` allows students to upload files from their own computer. For examples of both style of question, you can look at `PrairieLearn/exampleCourse/questions/fibonacciEditor` and `PrairieLearn/exampleCourse/questions/fibonacciUpload`.
+To enable students to submit files, you can use one of PrairieLearn's file elements. `<pl-file-editor>` gives students an in-browser editor that they can use to write code. `<pl-file-upload>` allows students to upload files from their own computer. For examples of both style of question, you can look at `PrairieLearn/exampleCourse/questions/fibonacciEditor` and `PrairieLearn/exampleCourse/questions/fibonacciUpload`.
 
-If you want to write your own submission mechanism (as a custom element, for instance), you can do that as well. We expect files to be present in a `_files` array on the `submitted_answers` object. They should be represented as objects containing the `name` of the file and base-64 encoded `contents`. Here's an example of a well-formed `_files` array:
+If you want to write your own submission mechanism (as a custom element, for instance), you can do that as well. We expect files to be present in a `_files` array on the `submitted_answers` dict. They should be represented as objects containing the `name` of the file and base-64 encoded `contents`. Here's an example of a well-formed `_files` array:
 
 ```json
 "_files": [
