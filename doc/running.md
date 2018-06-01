@@ -3,7 +3,7 @@
 
 Running PrairieLearn on your own machine is the easiest and best way to get started with developing course content. PrairieLearn supports several different ways of running on your own machine; these are outlined below.
 
-## Running the PrairieLearn docker image
+## Running the PrairieLearn Docker image
 
 **This is the recommended method** for all users who don't need to develop or test [externally-graded questions](externalGrading.md). This runs PrairieLearn inside a pre-built Docker image that includes all the code and dependencies needed to run PrairieLearn.
 
@@ -37,7 +37,7 @@ Please visit [the instructions](running-docker-compose.md) for more information,
 
 These methods are for more advanced users, or people who want to develop PrairieLearn itself. Most users will not need these.
 
-#### Running the PrairieLearn docker image with local source code
+#### Running the PrairieLearn Docker image with local source code
 
 If you want to develop PrairieLearn itself (for instance, add a feature or fix a bug), you'll need to clone the PrairieLearn repository so that you can edit the source code. You can then mount the source code into the PrairieLearn docker container. This gives you the best of both Docker and local development: the Docker container will pick up any changes you make to the source code without having to rebuild the image, but you can still take advantage of the isolation and included dependencies provided by the Docker container.
 

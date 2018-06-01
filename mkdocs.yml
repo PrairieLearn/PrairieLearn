@@ -10,6 +10,7 @@ pages:
 - User Guide:
   - 'Running PrairieLearn with Docker': 'running-docker.md'
   - 'Running PrairieLearn with Docker Compose': 'running-docker-compose.md'
+  - 'Updating PrairieLearn': 'updating.md'
   - 'Syncing course content': 'sync.md'
   - 'Course configuration': 'course.md'
   - 'Course instance configuration': 'courseInstance.md'

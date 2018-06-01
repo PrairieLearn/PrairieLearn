@@ -1,4 +1,4 @@
-# Running the PrairieLearn docker image
+# Running the PrairieLearn Docker image
 
 1. Install [Docker Community Edition](https://www.docker.com/community-edition). It's free.
     * On Linux and MacOS this is straightforward. [Download from here](https://store.docker.com/search?type=edition&offering=community).
