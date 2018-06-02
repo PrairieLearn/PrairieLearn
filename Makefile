@@ -1,34 +1,54 @@
+#!make
+
+# Include config variables for custom course
+include envfile
+export $(shell sed 's/=.*//' envfile)
+
 # Execute commands regardless of physical state of files
-.PHONY: build-docker run-docker up-docker test-pl test-linters test-all build-docs run-docs up-docs
+.PHONY: build-docs build-dev dev dcourse lcourse  pltest lint unit test docs clean node  
+
+# Install node dependencies (requires node > 10.0)
+node: 
+	npm ci
 
 # Generates a development docker from current directory
-build-docker:
+build-dev:
 	docker build -t pltestlocal .
 
-# Previews the development docker container
-run-docker:
+# Show the development version of the prairielearn
+dev: build-dev
 	docker run -it --rm -p 3000:3000 pltestlocal
 
-up-docker: 
-	build-docker run-docker
+dcourse: build-dev
+	docker run -it --rm -p 3000:3000 -v ${COURSE_REPO_PATH}:/course prairielearn/prairielearn
+
+# Show a live version of the prairielearn
+live:
+	docker run -it --rm -p 3000:3000 prairielearn/prairielearn
+
+lcourse:
+	docker run -it --rm -p 3000:3000 -v ${COURSE_REPO_PATH}:/course prairielearn/prairielearn
+
+# Remove the docker container
+clean:
+	docker stop pltestlocal; docker rm pltestlocal
+
+####### documentation
 
 # These calls rely on the Makefile in the documentation directory
 
-# Build the documentation
+# Build the docs
 build-docs:
 	cd doc/ && $(MAKE) all
 
 # View the documentation
-run-docs: 
+docs: build-docs
 	cd doc/ && $(MAKE) preview
 
-# Build and view the documentation
-up-docs:
-	build-docs run-docs
-
+######## Unit Tests
 
 # Test code against the linter settings
-test-linters:
+lint:
 	{ \
 	docker run -itd --name=pltestcontainer pltestlocal /bin/bash        ; \
 	docker exec -it pltestcontainer /PrairieLearn/docker/lint_js.sh     ; \
@@ -38,7 +58,7 @@ test-linters:
 	}
 
 # Run prairielearn's unit testing suite	
-test-pl:
+unit:
 	{ \
 	docker run -itd --name=pltestcontainer pltestlocal /bin/bash        ; \
 	docker exec -it pltestcontainer /PrairieLearn/docker/npm_test.sh    ; \
@@ -47,5 +67,4 @@ test-pl:
 	}
 
 # Test everything
-test-all:
-	test-pl test-linters
+test: lint unit
