@@ -5,6 +5,8 @@
 
   * Add student name and clickable e-mail address information to issue reports (James Balamuta).
 
+  * Add `Makefile` to main directory to handle docker builds and previews (James Balamuta).
+
   * Upgrade to Node.js 10 and PostgreSQL 10 (Matt West).
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
@@ -14,6 +16,8 @@
   * Fix several issues with various elements (Nathan Walters).
 
   * Change element names to use dashes instead of underscores (Nathan Walters).
+
+  * Change `Makefile` for documentation to support `mkdocs` generation (James Balamuta).
 
 * __3.0.0__ - 2018-05-23
 
@@ -132,7 +136,6 @@
   * Add submission info modal with external grading stats (Nathan Walters).
 
   * Add `load-test` support for v2 questions (Matt West).
-  * Add `Makefile` to main directory to handle docker builds and previews (James Balamuta).
 
   * Fix broken file upload element (Nathan Walters).
 
@@ -245,7 +248,6 @@
   * Change CSRF codes to be URL-safe (Dave Mussulman).
 
   * Change closed exams to not be reviewable for students (Dave Mussulman).
-  * Change `Makefile` for documentation to support `mkdocs` generation (James Balamuta).
 
   * Remove HackIllinois advertisement (Matt West).
 
