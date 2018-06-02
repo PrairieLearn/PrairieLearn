@@ -17,15 +17,23 @@ docker run -it --rm -p 3000:3000 prairielearn/prairielearn
 
 ## Using your own course content
 
-To use your own course, point Docker to the correct directory (replace the precise path with your own) on MacOS/Linux:
+To use your own course, you'll need to mount your course directory into the Docker container when you start it up:
 
 ```sh
+docker run -it --rm -p 3000:3000 -v PATH_TO_COURSE:/course prairielearn/prairielearn
+```
+
+You should substitute `PATH_TO_COURSE` with the actual absolute path to your course. Don't forget about the `:/course` at the end of the path!
+
+On macOS or Linux, your full command would look something like this:
+
+```
 docker run -it --rm -p 3000:3000 -v /Users/mwest/git/pl-tam212:/course prairielearn/prairielearn
 ```
 
-or on Windows:
+On Windows, your command might be:
 
-```sh
+```
 docker run -it --rm -p 3000:3000 -v C:\GitHub\pl-tam212:/course prairielearn/prairielearn
 ```
 
