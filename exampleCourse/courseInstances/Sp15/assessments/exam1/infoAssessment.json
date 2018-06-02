@@ -22,14 +22,14 @@
         {
             "title": "Hard questions",
             "questions": [
-                {"id": "addNumbers",       "points": [5, 3, 1]},
-                {"id": "addVectors",       "points": [11, 9]},
-                {"id": "fossilFuelsRadio", "points": [17, 13, 7, 2]},
-                {"id": "partialCredit1",   "points": [19]},
-                {"id": "partialCredit2",   "points": [9, 7, 5, 3]},
-                {"id": "partialCredit3",   "points": [13, 13, 8, 0.5, 0.1]}
-            ]
+                {"id": "addNumbers",              "points": [5, 3, 1]},
+                {"id": "addVectors",              "points": [11, 9]},
+                {"id": "fossilFuelsRadio",        "points": [17, 13, 7, 2]},
+                {"id": "partialCredit1",          "points": [19]},
+                {"id": "partialCredit2",          "points": [9, 7, 5, 3]},
+                {"id": "partialCredit3",          "points": [13, 13, 8, 0.5, 0.1]},
+                {"id": "checkboxPartialCredit",   "points": [5,1]}
+              ]
         }
-    ],
-    "text": "For this exam you can use the <a target=\"_blank\" href=\"<%= clientFilesAssessment %>/formulas.pdf\">PDF formula sheet</a> or the <a target=\"_blank\" href=\"<%= clientFilesAssessment %>/formulas.html\">HTML formula sheet</a>."
+    ]
 }

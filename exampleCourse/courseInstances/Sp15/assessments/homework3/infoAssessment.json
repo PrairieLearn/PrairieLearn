@@ -38,7 +38,8 @@
                 {"id": "partialCredit2",            "points": 2, "maxPoints": 10},
                 {"id": "partialCredit3",            "points": 2, "maxPoints": 10, "triesPerVariant": 3},
                 {"id": "partialCredit4_v2",         "points": 2, "maxPoints": 10},
-                {"id": "partialCredit6_no_partial", "points": 3, "maxPoints": 11}
+                {"id": "partialCredit6_no_partial", "points": 3, "maxPoints": 11},
+                {"id": "checkboxPartialCredit",     "points": 2, "maxPoints": 4}
             ]
         }
     ]
