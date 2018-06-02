@@ -5,6 +5,8 @@
 
   * Add student name and clickable e-mail address information to issue reports (James Balamuta).
 
+  * Add `Makefile` to main directory to handle docker builds and previews (James Balamuta).
+
   * Upgrade to Node.js 10 and PostgreSQL 10 (Matt West).
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
@@ -14,6 +16,8 @@
   * Fix several issues with various elements (Nathan Walters).
 
   * Change element names to use dashes instead of underscores (Nathan Walters).
+
+  * Change `Makefile` for documentation to support `mkdocs` generation (James Balamuta).
 
 * __3.0.0__ - 2018-05-23
 
