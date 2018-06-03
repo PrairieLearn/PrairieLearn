@@ -186,7 +186,44 @@ A = np.array([[1.23], [4.56]])
 If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data['params'][params-name] = pl.to_json(v)`.
 
 
-## `pl-figure` element
+## `pl_latex_matrix_display` element
+
+```html
+<pl_latex_matrix_display>
+    <variable params_name="A"  digits="2"> A = </variable>
+    <variable params_name="B"  digits="0"> </variable>
+</pl_latex_matrix_display>
+```
+
+Attributes for `<variable>` (one of these for each variable to display):
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`params_name` | string | — | Name of variable in `data['params']` to display.
+`digits` | integer | — | Number of digits to display after the decimal.
+
+ Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags.
+
+For example, if we want to display the following matrix operations
+```
+x = [A][b] + [c]
+```
+we write
+
+```html
+<pl_latex_matrix_display>
+    <variable params_name="A"  digits="1"> x = </variable>
+    <variable params_name="b"  digits="1"> </variable>
+    <variable params_name="c"  digits="0"> + </variable>
+</pl_latex_matrix_display>
+```
+
+
+
+
+
+
+## `pl_figure` element
 
 ```html
 <!-- show a figure from an existing file -->
