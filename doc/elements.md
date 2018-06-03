@@ -95,6 +95,24 @@ Attribute | Type | Default | Description
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 
+## `pl_string_input` element
+
+```html
+<pl_string_input answers_name="x" />
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers_name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`correct_answer` | string | special | Correct answer for grading. Defaults to `data["correct_answers"][answers_name]`.
+`label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
+`suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
+`display` | "block" or "inline" | "inline" | How to display the input field.
+`remove_leading_trailing` | boolean | False | Whether or not to remove leading and trailing blank spaces from the input string.
+`emove_between_spaces` | boolean | False | Whether or not to remove blank spaces between characters from the input string.
+
+
 ## `pl-matrix-input` element
 
 ```html
