@@ -77,7 +77,7 @@
 
   * Add `tools/dump_*` scripts to filter and anonymize per-course dumps (Matt West).
   * Upgrade to Node.js 10 and PostgreSQL 10 (Matt West).
-  
+
   * Add course-level questions and issues page (Ray Essick).
 
   * Add `pl-prairiedraw-figure` element and update PrairieDraw graphics documentation. (Ray Essick).
