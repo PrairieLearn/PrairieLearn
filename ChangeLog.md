@@ -12,6 +12,8 @@
   * Fix Google auth using new API (Matt West).
 
   * Fix several issues with various elements (Nathan Walters).
+  
+  * Fix sync failure if a course instance has no `assessments` directory and add warning in sync log (Ray Essick).
 
   * Change element names to use dashes instead of underscores (Nathan Walters).
 
