@@ -44,19 +44,19 @@ def render(element_html, element_index, data):
         else:
             raise Exception('Value in data["correct_answers"] for variable %s in pl_matrix_component_input element has more than two dimensions' % name)
 
-        ''' ***** I am not able to render submitted answers correctly when entry is left blank! ****'''
         input_array = '<div>'
         for i in range(m):
             for j in range(n):
                 each_entry_name = 'name' + str(n*i+j+1)
                 raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
-                input_array += ' <input name=' + each_entry_name +  '  type="text" size="8"  {{^editable}}disabled{{/editable}}'
+                print("raw_submitted_answer = ", raw_submitted_answer)
+                input_array += ' <input name= "' + each_entry_name +  '" type="text" size="8"  '
+                if not editable:
+                    input_array += ' disabled '
                 if raw_submitted_answer is not None:
-                    #input_array += ' {{#raw_submitted_answer}}value='
-                    input_array += ' {{^editable}}disabled{{/editable}} value='
-                    input_array += raw_submitted_answer
-                    #input_array += '{{/raw_submitted_answer}}'
-                input_array += ' /> '
+                    input_array += '  value= "'
+                    input_array += escape(raw_submitted_answer)
+                input_array += '" /> '
             input_array += '<br>'
         input_array += '</div>'
 
@@ -118,9 +118,6 @@ def render(element_html, element_index, data):
                     html_params['incorrect'] = True
             except Exception:
                 raise ValueError('invalid score' + score)
-
-        '''if raw_submitted_answer is not None:
-            html_params['raw_submitted_answer'] = escape(raw_submitted_answer)'''
 
         with open('pl_matrix_component_input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
@@ -246,27 +243,17 @@ def parse(element_html, element_index, data):
         for j in range(n):
             each_entry_name = 'name' + str(n*i+j+1)
             a_sub = data['submitted_answers'].get(each_entry_name, None)
+
+            raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
+            print("raw_submitted_answer = ", raw_submitted_answer)
+            print("submitted_answer = ", a_sub)
+
             if a_sub is None:
                 data['format_errors'][each_entry_name] = 'No submitted answer.'
                 data['submitted_answers'][each_entry_name] = None
                 return
+            #A[i,j] = a_sub #a_sub_parsed
 
-            # Convert to float or complex
-            try:
-                a_sub_parsed = pl.string_to_number(a_sub, allow_complex=allow_complex)
-                if a_sub_parsed is None:
-                    raise ValueError('invalid submitted answer (wrong type)')
-                if not np.isfinite(a_sub_parsed):
-                    raise ValueError('invalid submitted answer (not finite)')
-                data['submitted_answers'][each_entry_name] = pl.to_json(a_sub_parsed)
-                A[i,j] = a_sub_parsed
-
-            except Exception:
-                if allow_complex:
-                    data['format_errors'][each_entry_name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point or complex number.'
-                else:
-                    data['format_errors'][each_entry_name] = 'Invalid format. The submitted answer could not be interpreted as a double-precision floating-point number.'
-                    data['submitted_answers'][each_entry_name] = None
     data['submitted_answers'][name] = pl.to_json(A)
 
 
