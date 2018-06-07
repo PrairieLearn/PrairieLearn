@@ -15,6 +15,8 @@
 
   * Change element names to use dashes instead of underscores (Nathan Walters).
 
+  * Change deprecated `new Buffer()` calls to `Buffer.from()` (Ray Essick).
+
 * __3.0.0__ - 2018-05-23
 
   * Add improved support for very large file downloads (Nathan Walters).
