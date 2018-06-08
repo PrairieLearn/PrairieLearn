@@ -10,10 +10,10 @@ import random
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers_name']
-    optional_attribs = ['weight', 'correct_answer', 'label', 'suffix', 'display', 'remove_leading_trailing' , 'remove_between_spaces']
+    optional_attribs = ['weight', 'correct_answer', 'label', 'suffix', 'display', 'remove_leading_trailing' , 'remove_between_spaces', 'allow_blank']
     pl.check_attribs(element, required_attribs, optional_attribs)
-    name = pl.get_string_attrib(element, 'answers_name')
 
+    name = pl.get_string_attrib(element, 'answers_name')
     correct_answer = pl.get_string_attrib(element, 'correct_answer', None)
 
     if correct_answer is not None:
@@ -30,6 +30,7 @@ def render(element_html, element_index, data):
     display = pl.get_string_attrib(element, 'display', 'inline')
     remove_leading_trailing =  pl.get_string_attrib(element, 'remove_leading_trailing', False)
     remove_between_spaces = pl.get_string_attrib(element, 'remove_between_spaces', False)
+    allow_blank = pl.get_string_attrib(element, 'allow_blank', False)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -141,6 +142,8 @@ def render(element_html, element_index, data):
 def parse(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers_name')
+    # Get allow_blank option
+    allow_blank = pl.get_string_attrib(element, 'allow_blank', False)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
@@ -148,13 +151,15 @@ def parse(element_html, element_index, data):
         data['format_errors'][name] = 'No submitted answer.'
         data['submitted_answers'][name] = None
         return
-    # Convert to integer
+
     try:
-        if not isinstance(a_sub,str):
-            raise ValueError('invalid submitted answer (wrong type)')
+        # check if answer is left blank
+        if not a_sub:
+            if not allow_blank:
+                raise ValueError('invalid submitted answer (left blank)')
         data['submitted_answers'][name] = pl.to_json(a_sub)
     except Exception:
-        data['format_errors'][name] = 'Invalid format. The submitted answer was not a string.'
+        data['format_errors'][name] = 'Invalid format. The submitted answer was left blank.'
         data['submitted_answers'][name] = None
 
 
@@ -204,6 +209,8 @@ def test(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers_name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
+    # Get allow_blank option
+    allow_blank = pl.get_string_attrib(element, 'allow_blank', False)
 
     # Get correct answer
     a_tru = data['correct_answers'][name]
@@ -212,20 +219,14 @@ def test(element_html, element_index, data):
     # back to a standard type (otherwise, do nothing)
     a_tru = pl.from_json(a_tru)
 
-    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    result = random.choices(['correct', 'incorrect'], [5, 5])[0]
+
     if result == 'correct':
         data['raw_submitted_answers'][name] = a_tru
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
     elif result == 'incorrect':
         data['raw_submitted_answers'][name] = a_tru + str((random.randint(1, 11) * random.choice([-1, 1])))
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
-    elif result == 'invalid':
-        # FIXME: add more invalid expressions, make text of format_errors
-        # correct, and randomize
-        if random.choice([True, False]):
-            data['raw_submitted_answers'][name] = '1 + 2'
-        else:
-            data['raw_submitted_answers'][name] = '3.4'
-        data['format_errors'][name] = 'invalid'
+    # No test for 'invalid' implemented at this time
     else:
         raise Exception('invalid result: %s' % result)

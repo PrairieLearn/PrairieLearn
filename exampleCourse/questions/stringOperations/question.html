@@ -7,10 +7,10 @@ a = "{{params.stringname}}"*{{params.a}}
 
 </pl_question_panel>
 
-<p><pl_string_input answers_name="ans1"  label = "a"/> </p>
+<p><pl_string_input answers_name="ans1"  label = "a = "/> </p>
 
 <pl_question_panel>
-<p> 2) What is d = b + c?
+<p> 2) For the following python code snippet, what is d = b + c?
   <pl_code language="python">
   b = "{{params.b}}"
   c = "{{params.c}}"
@@ -18,4 +18,36 @@ a = "{{params.stringname}}"*{{params.a}}
 
 </pl_question_panel>
 
-<p><pl_string_input answers_name="ans2" label = "b + c = "/> </p>
+<p><pl_string_input answers_name="ans2" label = "b + c = " /> </p>
+
+<pl_question_panel>
+  <p>3) Enter the string below, but include trailing and leading blanks.
+ When using the attribute "remove_leading_trailing"=True, the answer will
+ still be evaluated as correct. </p>
+  <pl_code language="python">
+"{{params.d}}"
+  </pl_code>
+</pl_question_panel>
+
+<p><pl_string_input answers_name="ans3" remove_leading_trailing=True /> </p>
+
+<pl_question_panel>
+<p> 4) Enter the string below, but include blank spaces between some of the numbers.
+When using the attribute "remove_between_spaces"=True, the answer will
+still be evaluated as correct. </p>
+  <pl_code language="python">
+"{{params.d}}"
+  </pl_code>
+</pl_question_panel>
+
+<p><pl_string_input answers_name="ans4" remove_between_spaces=True /> </p>
+
+
+<pl_question_panel>
+<p> 5) The attribute "allow_blank"=True allows users to submit answers left blank, without
+  receiving the "invalid format" error. Leave the box below empty, and notice
+that you will not receive the "Invalid" feedback, and hence the question is graded.</p>
+
+</pl_question_panel>
+
+<p><pl_string_input answers_name="ans5" label = "blank input box = " allow_blank=True /> </p>

@@ -110,8 +110,8 @@ Attribute | Type | Default | Description
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 `remove_leading_trailing` | boolean | False | Whether or not to remove leading and trailing blank spaces from the input string.
-`emove_between_spaces` | boolean | False | Whether or not to remove blank spaces between characters from the input string.
-
+`remove_between_spaces` | boolean | False | Whether or not to remove blank spaces between characters from the input string.
+`allow_blank` | boolean | False | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
 
 ## `pl-matrix-input` element
 
