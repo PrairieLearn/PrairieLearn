@@ -35,21 +35,17 @@ def render(element_html, element_index, data):
             else:
                 a_tru = np.array(a_tru)
 
-        # create array of input text boxes in html
-        if (a_tru.ndim == 1):
-            m = a_tru.size
-            n = 1
-        elif (a_tru.ndim == 2):
-            m,n = np.shape(a_tru)
+        if a_tru.ndim != 2:
+            raise Exception('Value in data["correct_answers"] for variable %s in pl_matrix_component_input element must be a 2D array.' % name)
         else:
-            raise Exception('Value in data["correct_answers"] for variable %s in pl_matrix_component_input element has more than two dimensions' % name)
+            m,n = np.shape(a_tru)
 
+        # create array of input text boxes in html
         input_array = '<div>'
         for i in range(m):
             for j in range(n):
                 each_entry_name = 'name' + str(n*i+j+1)
                 raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
-                print("raw_submitted_answer = ", raw_submitted_answer)
                 input_array += ' <input name= "' + each_entry_name +  '" type="text" size="8"  '
                 if not editable:
                     input_array += ' disabled '
@@ -146,15 +142,15 @@ def render(element_html, element_index, data):
             # Format answer as a string
             if format_type == 'python':
                 html_params['a_sub'] = pl.string_from_2darray(a_sub, language='python', digits=12, presentation_type='g')
-            elif format_type == 'latex':
-                html_params['a_sub'] = '$' + latex_array_from_numpy_array(a_sub, presentation_type='g', digits=12) + '$'
-            #else:
-                ''' NEED TO WRITE ERROR'''
+            else:
+                html_params['a_sub'] = '$' + pl.latex_array_from_numpy_array(a_sub, presentation_type='g', digits=12) + '$'
+
 
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             if raw_submitted_answer is not None:
                 html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
+
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
@@ -180,22 +176,22 @@ def render(element_html, element_index, data):
         if a_tru is not None:
             a_tru = np.array(a_tru)
 
-            # Get comparison parameters
+            # Get comparison parameters and create the display data (python or latex format)
             comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
             if comparison == 'relabs':
                 rtol = pl.get_float_attrib(element, 'rtol', 1e-2)
                 atol = pl.get_float_attrib(element, 'atol', 1e-8)
                 # FIXME: render correctly with respect to rtol and atol
                 python_data = pl.string_from_2darray(a_tru, language='python', digits=12, presentation_type='g')
-                latex_data = '$' + latex_array_from_numpy_array(a_tru, presentation_type='g', digits=12) + '$'
+                latex_data = '$' + pl.latex_array_from_numpy_array(a_tru, presentation_type='g', digits=12) + '$'
             elif comparison == 'sigfig':
                 digits = pl.get_integer_attrib(element, 'digits', 2)
                 python_data = pl.string_from_2darray(a_tru, language='python', digits=digits, presentation_type='sigfig')
-                latex_data = '$' + latex_array_from_numpy_array(a_tru, presentation_type='sigfig', digits=digits) + '$'
+                latex_data = '$' + pl.latex_array_from_numpy_array(a_tru, presentation_type='sigfig', digits=digits) + '$'
             elif comparison == 'decdig':
                 digits = pl.get_integer_attrib(element, 'digits', 2)
                 python_data = pl.string_from_2darray(a_tru, language='python', digits=digits, presentation_type='f')
-                latex_data = '$' + latex_array_from_numpy_array(a_tru, presentation_type='f', digits=digits) + '$'
+                latex_data = '$' + pl.latex_array_from_numpy_array(a_tru, presentation_type='f', digits=digits) + '$'
             else:
                 raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
 
@@ -208,10 +204,10 @@ def render(element_html, element_index, data):
                 'uuid': pl.get_uuid()
             }
 
-            if format_type == 'latex':
-                html_params['default_is_latex'] = True
-            else:
+            if format_type == 'python':
                 html_params['default_is_python'] = True
+            else:
+                html_params['default_is_latex'] = True
 
             with open('pl_matrix_component_input.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params).strip()
@@ -231,28 +227,52 @@ def parse(element_html, element_index, data):
     name = pl.get_string_attrib(element, 'answers_name')
     allow_complex = pl.get_boolean_attrib(element, 'allow_complex', False)
 
+    # Get true answer
     a_tru = pl.from_json(data['correct_answers'].get(name, None))
-    if (a_tru.ndim == 1):
-        m = a_tru.size
-        n = 1
-    elif (a_tru.ndim == 2):
+    if a_tru is None:
+        return
+    a_tru = np.array(a_tru)
+    if a_tru.ndim != 2:
+        raise ValueError('true answer must be a 2D array')
+    else:
         m,n = np.shape(a_tru)
+        A = np.empty([m,n])
 
-    A = np.zeros([m,n])
+    # Create an array for the submitted answer
+    # to be stored in data['submitted_answer'][name]
+    # this is used for display in the answer and submission panels
+
     for i in range(m):
         for j in range(n):
             each_entry_name = 'name' + str(n*i+j+1)
             a_sub = data['submitted_answers'].get(each_entry_name, None)
 
-            raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
-            print("raw_submitted_answer = ", raw_submitted_answer)
-            print("submitted_answer = ", a_sub)
-
             if a_sub is None:
-                data['format_errors'][each_entry_name] = 'No submitted answer.'
-                data['submitted_answers'][each_entry_name] = None
+                data['format_errors'][name] = 'No submitted answer.'
+                data['submitted_answers'][name] = None
                 return
-            #A[i,j] = a_sub #a_sub_parsed
+            # check if one of the entries was left blank
+            if not a_sub:
+                data['format_errors'][name] = 'At least one of the matrix entries was left blank.  Make sure you are entering all matrix components.'
+                data['submitted_answers'][name] = None
+                return
+
+            # Convert to float or complex
+            try:
+                a_sub_parsed = pl.string_to_number(a_sub, allow_complex=allow_complex)
+                if a_sub_parsed is None:
+                    raise ValueError('invalid submitted answer (wrong type)')
+                if not np.isfinite(a_sub_parsed):
+                    raise ValueError('invalid submitted answer (not finite)')
+                data['submitted_answers'][each_entry_name] = pl.to_json(a_sub_parsed)
+                A[i,j] = a_sub_parsed
+
+            except Exception:
+                if allow_complex:
+                    data['format_errors'][name] = 'Invalid format. At least one of the submitted answers could not be interpreted as a double-precision floating-point or complex number.'
+                else:
+                    data['format_errors'][name] = 'Invalid format. At least one of the submitted answers could not be interpreted as a double-precision floating-point number.'
+                data['submitted_answers'][name] = None
 
     data['submitted_answers'][name] = pl.to_json(A)
 
@@ -272,7 +292,7 @@ def grade(element_html, element_index, data):
     # Wrap true answer in ndarray (if it already is one, this does nothing)
     a_tru = np.array(a_tru)
     # Throw an error if true answer is not a 2D numpy array
-    if a_tru.ndim > 2:
+    if a_tru.ndim != 2:
         raise ValueError('true answer must be a 2D array')
 
     # Get submitted answer (if it does not exist, score is zero)
@@ -312,44 +332,3 @@ def grade(element_html, element_index, data):
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
     else:
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
-
-
-
-
-
-''' =========================================== '''
-''' Move this function later to prairielearn.py '''
-''' =========================================== '''
-
-def latex_array_from_numpy_array(A, presentation_type='f', digits=2):
-
-    """Returns a LaTeX bmatrix
-    :A: numpy array
-    :returns: LaTeX bmatrix as a string
-    """
-    # if A is a scalar
-    if np.isscalar(A):
-        if presentation_type == 'sigfig':
-            return string_from_number_sigfig(A, digits=digits)
-        else:
-            return '{:.{digits}{presentation_type}}'.format(A, digits=digits, presentation_type=presentation_type)
-    else:
-
-        if presentation_type == 'sigfig':
-            formatter = {
-                'float_kind': lambda x: to_precision.to_precision(x, digits),
-                'complex_kind': lambda x: _string_from_complex_sigfig(x, digits)
-            }
-        else:
-            formatter = {
-                'float_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type),
-                'complex_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type)
-            }
-
-        if len(A.shape) > 2:
-            raise ValueError('bmatrix can at most display two dimensions')
-        lines = np.array2string(A, formatter = formatter).replace('[', '').replace(']', '').splitlines()
-        rv = [r'\begin{bmatrix}']
-        rv += ['  ' + ' & '.join(l.split()).replace("'","")  + r'\newline' for l in lines]
-        rv +=  [r'\end{bmatrix}']
-        return ''.join(rv)

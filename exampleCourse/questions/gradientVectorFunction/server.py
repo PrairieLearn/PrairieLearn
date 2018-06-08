@@ -11,7 +11,9 @@ def generate(data):
     g = np.random.rand(3,2)
     g = np.array([[2],[1]])
 
-    #g = [['x',2.42345],[4,3.444433],[4,4]]
+    g = [[3.22,2.42345],[4,3.444433],[4,4]]
+    #g = [[3.22,2.42345],[4,3.444433],[4]]
+
     data["params"]["f"] = pl.to_json(f)
 
     data["correct_answers"]["g"] = pl.to_json(g)
