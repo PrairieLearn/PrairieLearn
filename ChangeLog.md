@@ -5,6 +5,8 @@
 
   * Add student name and clickable e-mail address information to issue reports (James Balamuta).
 
+  * Add `tools/dump_*` scripts to filter and anonymize per-course dumps (Matt West).
+
   * Upgrade to Node.js 10 and PostgreSQL 10 (Matt West).
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
