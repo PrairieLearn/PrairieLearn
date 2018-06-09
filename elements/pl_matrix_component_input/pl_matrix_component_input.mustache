@@ -1,4 +1,38 @@
 
+    <style>
+    .top-and-left {
+      padding: 5px;
+      border-top: thin solid black;
+      border-left: thin solid black;
+    }
+
+    .top-and-right {
+      padding: 5px;
+      border-top: thin solid black;
+      border-right: thin solid black;
+    }
+
+    .bottom-and-left {
+      padding: 5px;
+      border-bottom: thin solid black;
+      border-left: thin solid black;
+    }
+
+    .bottom-and-right {
+      padding: 5px;
+      border-bottom: thin solid black;
+      border-right: thin solid black;
+    }
+
+    .left {
+      border-left: thin solid black;
+    }
+
+    .right {
+      border-right: thin solid black;
+    }
+
+    </style>
 
 {{#question}}
 <script>
@@ -50,6 +84,18 @@
 {{#partial}}<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
 {{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 {{/parse_error}}
+
+{{#feedback_message}}
+<div class="card">
+  <div class="card-header">
+    Feedback
+  </div>
+  <div class="card-body">
+    <p class="card-title">The following matrix components are incorrect:</p>
+    <p class="card-text">{{feedback_message}}</p>
+  </div>
+</div>
+{{/feedback_message}}
 {{/submission}}
 
 {{#answer}}
@@ -75,12 +121,7 @@
 Your must enter all the components of the matrix.
 </p>
 <p>
-{{#allow_complex}}
-Each entry must be either a real number between <code>-1e308</code> and <code>1e308</code> or a complex number with both real and imaginary parts between <code>-1e308</code> and <code>1e308</code> (i.e., it must be interpretable as a double-precision real or complex number). Complex numbers must use either <code>i</code> or <code>j</code> as the imaginary unit, must place the imaginary unit after the imaginary part (e.g., <code>2j</code> not <code>j2</code>), must write the imaginary part even when <code>1</code> or <code>-1</code> (e.g., <code>1j</code> not <code>j</code>), and must write the real part before the imaginary part (e.g., <code>1+2j</code> not <code>2j+1</code>). Standard python print format is accepted for complex numbers (e.g., <code>(1+2j)</code>).
-{{/allow_complex}}
-{{^allow_complex}}
 Each entry must be a real number between <code>-1e308</code> and <code>1e308</code> (i.e., it must be interpretable as a double-precision floating-point number).
-{{/allow_complex}}
 No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted. Scientific notation is accepted (e.g., <code>1.2e03</code>).
 </p>
 <p>

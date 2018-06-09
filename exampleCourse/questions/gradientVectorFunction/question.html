@@ -4,22 +4,26 @@
   Consider the vector-valued function ${\bf f(x)}$: </p>
 
 <p>
-    <pl_latex_matrix_display>
-      <variable params_name="f" digits="2"> ${\bf f(x)} = $  </variable>
-    </pl_latex_matrix_display>
+  $$
+  {\bf f(x)} =  \begin{pmatrix}
+  {{params.a1}} x_1^2 + {{params.a2}} x_2 \\
+  {{params.b1}} x_2^3 - {{params.b2}} x_1^2 \\
+  -{{params.c1}} x_1^2 + {{params.c2}} x_2
+  \end{pmatrix}
+  $$
+
+
+
 </p>
 
-<p>  Obtain the gradient of ${\bf f(x)}$, i.e. $\nabla {\bf f(x)} $. </p>
+<p>  Obtain the gradient of ${\bf f(x)}$ at ${\bf x_o} = \left[ x_1 , x_2   \right] = \left[ {{params.x1}} , {{params.x2}}   \right]$</p>
 
 
 </pl_question_panel>
 
 
 <p>
-<pl_matrix_component_input answers_name="g" comparison="sigfig" digits="3" label=" $\nabla {\bf f(x)} = $" />
-<!--<pl_matrix_component_input answers_name="g" comparison="sigfig" digits="3" label=" $\nabla {\bf f(x)} = $" format_type='python'/>-->
-<!--<pl_matrix_component_input answers_name="g" comparison="decdig" digits="5" label=" $\nabla {\bf f(x)} = $"
-<pl_matrix_component_input answers_name="g" comparison="relabs" atol="1e-6" rtol="1e-2" label=" $\nabla {\bf f(x)} = $"/>-->
+<pl_matrix_component_input answers_name="g" comparison="sigfig" digits="3" label=" $\nabla {\bf f(x_o)} = $" allow_partial_credit=True allow_feedback=True />
 </p>
 
 <pl_question_panel>
