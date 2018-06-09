@@ -834,6 +834,42 @@ def matlab_to_numpy(a):
             return (None, 'Invalid format (missing square brackets and not a real number).')
 
 
+def latex_array_from_numpy_array(A, presentation_type='f', digits=2):
+
+    '''
+    This function assumes that A is one of these things:
+            - a number (float or complex)
+            - a 2D ndarray (float or complex)
+    It returns A as a Latex-formatted matrix
+    '''
+    # if A is a scalar
+    if np.isscalar(A):
+        if presentation_type == 'sigfig':
+            return string_from_number_sigfig(A, digits=digits)
+        else:
+            return '{:.{digits}{presentation_type}}'.format(A, digits=digits, presentation_type=presentation_type)
+    else:
+
+        if presentation_type == 'sigfig':
+            formatter = {
+                'float_kind': lambda x: to_precision.to_precision(x, digits),
+                'complex_kind': lambda x: _string_from_complex_sigfig(x, digits)
+            }
+        else:
+            formatter = {
+                'float_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type),
+                'complex_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type)
+            }
+
+        if len(A.shape) > 2:
+            raise ValueError('bmatrix can at most display two dimensions')
+        lines = np.array2string(A, formatter = formatter).replace('[', '').replace(']', '').splitlines()
+        rv = [r'\begin{bmatrix}']
+        rv += ['  ' + ' & '.join(l.split()).replace("'","")  + r'\newline' for l in lines]
+        rv +=  [r'\end{bmatrix}']
+        return ''.join(rv)
+
+
 def is_correct_ndarray2D_dd(a_sub, a_tru, digits=2):
     # Check if each element is correct
     m = a_sub.shape[0]

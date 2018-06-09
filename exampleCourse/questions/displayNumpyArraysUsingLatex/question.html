@@ -1,0 +1,46 @@
+
+<pl_question_panel>
+<p>
+  Display a 2D array of floats with {{params.sf}} significant figures,  by setting
+   <code>"presentation_type" = "sigfig"</code> and <code>"digits" = "{{params.sf}}"</code> </p>
+
+<p>
+    <pl_latex_matrix_display>
+      <variable params_name="U" digits="{{params.sf}}" presentation_type = "sigfig"> ${\bf A} = $  </variable>
+    </pl_latex_matrix_display>
+</p>
+
+<p>
+  Display 1D array of floats with {{params.sf}} decimal digits, by setting
+   <code>"presentation_type" = "f"</code> and <code>"digits" = "{{params.sf}}"</code> </p>
+
+<p>
+    <pl_latex_matrix_display>
+      <variable params_name="b" digits="{{params.sf}}" presentation_type = "f"> ${\bf b} = $  </variable>
+    </pl_latex_matrix_display>
+</p>
+
+<p>
+  Display 2D array of floats with shape ({{params.M}},1) and 4 decimal digits, by setting
+ <code>"digits" = "4"</code>  </p>
+
+<p>
+    <pl_latex_matrix_display>
+      <variable params_name="c"  digits = "4"> ${\bf c} = $  </variable>
+    </pl_latex_matrix_display>
+</p>
+
+<p>It is also possible to use the element <code>pl_latex_matrix_display</code> to display
+  arrays with symbols (i.e. strings). For example, the linear system of equations ${\bf A\,x} = {\bf c}$
+  can be
+expressed as:</p>
+
+<p>
+    <pl_latex_matrix_display>
+      <variable params_name="U" presentation_type = "f" digits = "3">   </variable>
+      <variable params_name="x" >  </variable>
+      <variable params_name="c" presentation_type = "f" digits = "4"> $ = $  </variable>
+    </pl_latex_matrix_display>
+</p>
+
+</pl_question_panel>
