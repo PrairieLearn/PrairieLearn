@@ -43,7 +43,7 @@ def render(element_html, element_index, data):
             m,n = np.shape(a_tru)
 
         # create array of input text boxes in html
-        input_array = '<div>'
+        '''input_array = '<div>'
         for i in range(m):
             for j in range(n):
                 each_entry_name = 'name' + str(n*i+j+1)
@@ -56,7 +56,34 @@ def render(element_html, element_index, data):
                     input_array += escape(raw_submitted_answer)
                 input_array += '" /> '
             input_array += '<br>'
-        input_array += '</div>'
+        input_array += '</div>' '''
+
+        input_array = '<table cellspacing="0">'
+        for i in range(m):
+            if i == 0:
+                input_array +=  ' <tr> <td class="top-and-left"> </td> '
+            elif i == m-1:
+                input_array +=  ' <tr> <td class="bottom-and-left"> </td> '
+            else:
+                input_array +=  ' <tr> <td class="left"> </td> '
+            for j in range(n):
+                each_entry_name = 'name' + str(n*i+j+1)
+                raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
+                input_array += ' <td> <input name= "' + each_entry_name +  '" type="text" size="8"  '
+                if not editable:
+                    input_array += ' disabled '
+                if raw_submitted_answer is not None:
+                    input_array += '  value= "'
+                    input_array += escape(raw_submitted_answer)
+                input_array += '" /> </td>'
+            if i == 0:
+                input_array +=  ' <td class="top-and-right"></td> </tr> '
+            elif i == m-1:
+                input_array +=  ' <td class="bottom-and-right"> </td> </tr>'
+            else:
+                input_array +=  ' <td class="right"> </td> </tr>'
+        input_array += '</table>'
+
 
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
