@@ -80,6 +80,14 @@ def prepare(element_html, element_index, data):
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
+    partial_credit = pl.get_boolean_attrib(element, 'partial_credit', False)
+
+    editable = data['editable']
+    # answer feedback is not displayed when partial credit is True
+    #(unless the question is disabled)
+    show_answer_feedback = True
+    if partial_credit and editable:
+        show_answer_feedback = False
 
     display_answers = data['params'].get(name, [])
 
@@ -95,7 +103,6 @@ def render(element_html, element_index, data):
     correct_keys = [answer['key'] for answer in correct_answer_list]
 
     if data['panel'] == 'question':
-        editable = data['editable']
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
 
@@ -109,7 +116,7 @@ def render(element_html, element_index, data):
                 + ' />\n' \
                 + '    (' + answer['key'] + ') ' + answer['html'].strip() + '\n' \
                 + '  </label>\n'
-            if score is not None:
+            if score is not None and show_answer_feedback:
                 if answer['key'] in submitted_keys:
                     if answer['key'] in correct_keys:
                         item = item + '<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
@@ -160,7 +167,7 @@ def render(element_html, element_index, data):
                     item = 'ERROR: Invalid submitted value selected: %s' % submitted_key
                 else:
                     item = '(%s) %s' % (submitted_key, submitted_html)
-                    if score is not None:
+                    if score is not None and show_answer_feedback:
                         if submitted_key in correct_keys:
                             item = item + '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
                         else:
