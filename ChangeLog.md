@@ -15,6 +15,8 @@
 
   * Fix several issues with various elements (Nathan Walters).
 
+  * Fix error when rendering ungraded external grading submissions (Matt West).
+
   * Change element names to use dashes instead of underscores (Nathan Walters).
 
 * __3.0.0__ - 2018-05-23
