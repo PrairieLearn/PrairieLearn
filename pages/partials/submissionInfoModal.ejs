@@ -8,6 +8,11 @@
         </button>
       </div>
       <div class="modal-body">
+
+      <% if (!submission.grading_job_stats) { %>
+        <p>This submission has not been graded.</p>
+      <% } else { %>
+
         <table class="table table-sm table-borderless two-column-description mb-0">
           <tbody>
             <tr>
@@ -56,6 +61,9 @@
         <a class="btn btn-primary mt-2" href="<%= urlPrefix %>/grading_job/<%= submission.grading_job_id %>">View grading job <%= submission.grading_job_id %></a>
         <% } %>
         <% } %>
+
+      <% } %>
+
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
