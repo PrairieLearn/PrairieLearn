@@ -6,16 +6,12 @@ const path = require('path');
 const mustache = require('mustache');
 const cheerio = require('cheerio');
 const hash = require('crypto').createHash;
-const { sqlDb, sqlLoader } = require('@prairielearn/prairielib');
 
 const logger = require('../lib/logger');
 const codeCaller = require('../lib/code-caller');
 const jsonLoader = require('../lib/json-load');
 const cache = require('../lib/cache');
 const courseUtil = require('../lib/courseUtil');
-
-const sql = sqlLoader.loadSqlEquiv(__filename);
-
 
 // Maps core element names to element info
 let coreElementsCache = {};
@@ -763,20 +759,11 @@ module.exports = {
                 });
             },
             (callback) => {
-                if (locals.page_view_id) {
-                    const params = {
-                        page_view_log_id: locals.page_view_id,
-                        panel_render_count: panelCount,
-                        panel_render_cache_hit_count: cacheHitCount,
-                    };
-                    sqlDb.queryOneRow(sql.update_page_view_logs_panel_render_info, params, (err, _result) => {
-                        // We don't want errors here to fail page rendering
-                        ERR(err, (e) => logger.error(e));
-                        callback(null);
-                    });
-                } else {
-                    callback(null);
-                }
+                // The logPageView middleware knows to write this to the DB
+                // when we log the page view - sorry for mutable object hell
+                locals.panel_render_count = panelCount;
+                locals.panel_render_cache_hit_count = cacheHitCount;
+                callback(null);
             },
             (callback) => {
                 module.exports.getContext(question, course, (err, context) => {

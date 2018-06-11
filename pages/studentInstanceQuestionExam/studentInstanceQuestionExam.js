@@ -114,14 +114,14 @@ router.post('/', function(req, res, next) {
 
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
-    logPageView(req, res, (err) => {
+    const variant_id = null;
+    question.getAndRenderVariant(variant_id, res.locals, function(err) {
         if (ERR(err, next)) return;
-        question.getAndRenderVariant(variant_id, res.locals, function(err) {
+        logPageView(req, res, (err) => {
             if (ERR(err, next)) return;
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });
     });
-    const variant_id = null;
 
 });
 

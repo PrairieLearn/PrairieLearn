@@ -1,10 +1,9 @@
-var ERR = require('async-stacktrace');
+const ERR = require('async-stacktrace');
 
-var logger = require('../lib/logger');
-var sqldb = require('@prairielearn/prairielib/sql-db');
-var sqlLoader = require('@prairielearn/prairielib/sql-loader');
+const logger = require('../lib/logger');
+const { sqlDb, sqlLoader } = require('@prairielearn/prairielib/sql-db');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = function(pageType) {
     return function(req, res, next) {
@@ -15,13 +14,20 @@ module.exports = function(pageType) {
 
         const user_id = res.locals.user ? res.locals.user.user_id : res.locals.authn_user.user_id;
 
+        // If this page view required a v3 question render, these properties
+        // will be defined
+        const {
+            panel_render_count = null,
+            panel_render_cache_hit_count = null,
+        } = res.locals;
+
         // Originally, we opted to only record page views for assessments if
         // the authn'ed user is also the owner of the assessment instance.
         // However, we now track all page views, so be sure to filter by
         // authn_user_id if you only want page views from the student taking
         // the assessment.
 
-        var params = {
+        const params = {
             authn_user_id: res.locals.authn_user.user_id,
             user_id: user_id,
             course_instance_id: res.locals.course_instance ? res.locals.course_instance.id : null,
@@ -31,8 +37,11 @@ module.exports = function(pageType) {
             variant_id: res.locals.variant ? res.locals.variant.id : null,
             page_type: pageType,
             path: req.originalUrl,
+            panel_render_count,
+            panel_render_cache_hit_count,
         };
-        sqldb.queryOneRow(sql.log_page_view, params, function(err, result) {
+
+        sqlDb.queryOneRow(sql.log_page_view, params, function(err, result) {
             res.locals.page_view_id = result.rows[0].id;
             if (ERR(err, (e) => logger.error('error logging page view', e)));
             next();

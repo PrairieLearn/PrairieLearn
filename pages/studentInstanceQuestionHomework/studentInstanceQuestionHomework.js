@@ -103,10 +103,9 @@ router.post('/', function(req, res, next) {
 
 router.get('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Homework') return next();
-    logPageView(req, res, (err) => {
+    question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
         if (ERR(err, next)) return;
-        // req.query.variant_id might be undefined, which will generate a new variant
-        question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
+        logPageView(req, res, (err) => {
             if (ERR(err, next)) return;
             res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
         });
