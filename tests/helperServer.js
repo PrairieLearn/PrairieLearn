@@ -119,6 +119,12 @@ module.exports = {
                 });
             },
             function(callback) {
+                cache.reset(function(err) {
+                  if (ERR(err, callback)) return;
+                  callback(null);
+                });
+            },
+            function(callback) {
                 helperDb.after.call(that, function(err) {
                     if (ERR(err, callback)) return;
                     callback(null);
