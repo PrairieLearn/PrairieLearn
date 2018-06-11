@@ -38,9 +38,9 @@ def render(element_html, element_index, data):
 
         # Get info strings
         info_params = {'format': True}
-        with open('pl_string_input.mustache', 'r', encoding='utf-8') as f:
+        with open('pl-string-input.mustache', 'r', encoding='utf-8') as f:
             info = chevron.render(f, info_params).strip()
-        with open('pl_string_input.mustache', 'r', encoding='utf-8') as f:
+        with open('pl-string-input.mustache', 'r', encoding='utf-8') as f:
             info_params.pop('format', None)
             info_params['shortformat'] = True
             shortinfo = chevron.render(f, info_params).strip()
@@ -80,7 +80,7 @@ def render(element_html, element_index, data):
             raise ValueError('method of display "%s" is not valid (must be "inline" or "block")' % display)
         if raw_submitted_answer is not None:
             html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
-        with open('pl_string_input.mustache', 'r', encoding='utf-8') as f:
+        with open('pl-string-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
 
     elif data['panel'] == 'submission':
@@ -123,13 +123,13 @@ def render(element_html, element_index, data):
             except Exception:
                 raise ValueError('invalid score' + score)
 
-        with open('pl_string_input.mustache', 'r', encoding='utf-8') as f:
+        with open('pl-string-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
     elif data['panel'] == 'answer':
         a_tru = pl.from_json(data['correct_answers'].get(name, None))
         if a_tru is not None:
             html_params = {'answer': True, 'label': label, 'a_tru': a_tru, 'suffix': suffix}
-            with open('pl_string_input.mustache', 'r', encoding='utf-8') as f:
+            with open('pl-string-input.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params).strip()
         else:
             html = ''

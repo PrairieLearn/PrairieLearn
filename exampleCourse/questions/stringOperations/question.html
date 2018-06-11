@@ -1,53 +1,66 @@
-<pl_question_panel>
+<pl-question-panel>
   <p> 1) For the following python code snippet, enter below the resulting string:</p>
 
-  <pl_code language="python">
+<pl-code language="python">
 a = "{{params.stringname}}"*{{params.a}}
-  </pl_code>
+</pl-code>
 
-</pl_question_panel>
+</pl-question-panel>
 
-<p><pl_string_input answers_name="ans1"  label = "a = "/> </p>
+<p>
+<pl-string-input answers_name="ans1"  label = "a = ">
+</pl-string-input>
+</p>
 
-<pl_question_panel>
-<p> 2) For the following python code snippet, what is d = b + c?
-  <pl_code language="python">
+<pl-question-panel>
+<p> 2) For the following python code snippet, what is d = b + c?</p>
+<pl-code language="python">
   b = "{{params.b}}"
   c = "{{params.c}}"
-  </pl_code>
+</pl-code>
+</pl-question-panel>
 
-</pl_question_panel>
+<p>
+<pl-string-input answers_name="ans2" label = "b + c = " >
+</pl-string-input>
+</p>
 
-<p><pl_string_input answers_name="ans2" label = "b + c = " /> </p>
-
-<pl_question_panel>
-  <p>3) Enter the string below, but include trailing and leading blanks.
- When using the attribute "remove_leading_trailing"=True, the answer will
+<pl-question-panel>
+<p>3) Enter the string below, however include trailing and leading blanks.
+ When using the attribute <code>remove_leading_trailing=True</code>, the answer will
  still be evaluated as correct. </p>
-  <pl_code language="python">
+<pl-code language="python">
 "{{params.d}}"
-  </pl_code>
-</pl_question_panel>
+</pl-code>
+</pl-question-panel>
 
-<p><pl_string_input answers_name="ans3" remove_leading_trailing=True /> </p>
+<p>
+<pl-string-input answers_name="ans3" remove_leading_trailing=True >
+</pl-string-input>
+</p>
 
-<pl_question_panel>
-<p> 4) Enter the string below, but include blank spaces between some of the numbers.
-When using the attribute "remove_between_spaces"=True, the answer will
+<pl-question-panel>
+<p> 4) Enter the string below, however include blank spaces between some of the numbers.
+When using the attribute <code>remove_between_spaces=True</code>, the answer will
 still be evaluated as correct. </p>
-  <pl_code language="python">
+<pl-code language="python">
 "{{params.d}}"
-  </pl_code>
-</pl_question_panel>
+</pl-code>
+</pl-question-panel>
 
-<p><pl_string_input answers_name="ans4" remove_between_spaces=True /> </p>
+<p>
+<pl-string-input answers_name="ans4" remove_between_spaces=True >
+</pl-string-input>
+</p>
 
 
-<pl_question_panel>
-<p> 5) The attribute "allow_blank"=True allows users to submit answers left blank, without
-  receiving the "invalid format" error. Leave the box below empty, and notice
-that you will not receive the "Invalid" feedback, and hence the question is graded.</p>
+<pl-question-panel>
+<p> 5) The attribute <code>allow_blank=True</code> allows users to submit blank answers, without
+  receiving the <code>INVALID</code> error. Leave the box below empty, and notice
+that you will not receive the <code>INVALID</code> feedback (and hence the question is graded). </p>
+</pl-question-panel>
 
-</pl_question_panel>
-
-<p><pl_string_input answers_name="ans5" label = "blank input box = " allow_blank=True /> </p>
+<p>
+<pl-string-input answers_name="ans5" label = "blank input box = " allow_blank=True >
+</pl-string-input>
+</p>

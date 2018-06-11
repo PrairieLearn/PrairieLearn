@@ -95,10 +95,10 @@ Attribute | Type | Default | Description
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
 
-## `pl_string_input` element
+## `pl-string-input` element
 
 ```html
-<pl_string_input answers_name="x" />
+<pl-string-input answers_name="x"></pl-string-input>
 ```
 
 Attribute | Type | Default | Description

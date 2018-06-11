@@ -1,9 +1,0 @@
-{
-    "controller": "pl_string_input.py",
-    "dependencies": {
-        "elementStyles": [
-            "pl_string_input.css"
-        ]
-    }
-
-}
