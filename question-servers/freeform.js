@@ -672,7 +672,7 @@ module.exports = {
                 cache.get(cacheKey, (err, cachedData) => {
                     // We don't actually want to fail if the cache has an error; we'll
                     // just render the panel as normal
-                    if (ERR(err, callback)) logger.error(err);
+                    ERR(err, (e) => logger.error(e));
                     if (!err && cachedData !== null) {
                         const {
                             courseIssues,
@@ -698,7 +698,6 @@ module.exports = {
                     // actually fail the request, just skip the cache entirely
                     // and render as usual
                     ERR(err, e => logger.error(e));
-                    logger.info(`Using cache key ${cacheKey}`);
                     if (err || !cacheKey) {
                         doRender(null);
                     } else {
@@ -772,7 +771,7 @@ module.exports = {
                     };
                     sqlDb.queryOneRow(sql.update_page_view_logs_panel_render_info, params, (err, _result) => {
                         // We don't want errors here to fail page rendering
-                        if (ERR(err, (e) => logger.error(e)));
+                        ERR(err, (e) => logger.error(e));
                         callback(null);
                     });
                 } else {
