@@ -660,7 +660,8 @@ module.exports = {
                             renderedElementNames,
                         });
                     }
-                    callback(null, courseIssues, html, renderedElementNames, false /* cache miss */);
+                    const cacheHit = false; // Cache miss
+                    callback(null, courseIssues, html, renderedElementNames, cacheHit);
                 });
             };
 
@@ -679,7 +680,8 @@ module.exports = {
                             renderedElementNames,
                         } = cachedData;
 
-                        callback(null, courseIssues, html, renderedElementNames, true /* cache hit */);
+                        const cacheHit = true;
+                        callback(null, courseIssues, html, renderedElementNames, cacheHit);
                     } else {
                         doRender(cacheKey);
                     }
