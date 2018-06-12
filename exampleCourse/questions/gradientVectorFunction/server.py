@@ -18,8 +18,6 @@ def generate(data):
     x2 = random.choice([0,1,2])
 
     g = [[2*a1*x1, a2],[-b2*2*x1,3*b1*(x2**2)],[-2*c1*x1,c2]]
-    #g = [[1,2],[3,4],[5,6]]
-
 
     data["params"]["a1"] = a1
     data["params"]["a2"] = a2

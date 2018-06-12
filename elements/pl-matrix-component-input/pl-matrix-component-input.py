@@ -40,21 +40,6 @@ def render(element_html, element_index, data):
             m, n = np.shape(a_tru)
 
         # create array of input text boxes in html
-        '''input_array = '<div>'
-        for i in range(m):
-            for j in range(n):
-                each_entry_name = 'name' + str(n*i+j+1)
-                raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
-                input_array += ' <input name= "' + each_entry_name +  '" type="text" size="8"  '
-                if not editable:
-                    input_array += ' disabled '
-                if raw_submitted_answer is not None:
-                    input_array += '  value= "'
-                    input_array += escape(raw_submitted_answer)
-                input_array += '" /> '
-            input_array += '<br>'
-        input_array += '</div>' '''
-
         input_array = '<table cellspacing="0">'
         for i in range(m):
             if i == 0:
