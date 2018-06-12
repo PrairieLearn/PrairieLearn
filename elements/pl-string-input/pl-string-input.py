@@ -3,14 +3,13 @@ from html import escape
 import chevron
 import math
 import prairielearn as pl
-import numpy as np
 import random
 
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers_name']
-    optional_attribs = ['weight', 'correct_answer', 'label', 'suffix', 'display', 'remove_leading_trailing' , 'remove_between_spaces', 'allow_blank']
+    optional_attribs = ['weight', 'correct_answer', 'label', 'suffix', 'display', 'remove_leading_trailing', 'remove_between_spaces', 'allow_blank']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     name = pl.get_string_attrib(element, 'answers_name')
@@ -28,9 +27,8 @@ def render(element_html, element_index, data):
     label = pl.get_string_attrib(element, 'label', None)
     suffix = pl.get_string_attrib(element, 'suffix', None)
     display = pl.get_string_attrib(element, 'display', 'inline')
-    remove_leading_trailing =  pl.get_string_attrib(element, 'remove_leading_trailing', False)
+    remove_leading_trailing = pl.get_string_attrib(element, 'remove_leading_trailing', False)
     remove_between_spaces = pl.get_string_attrib(element, 'remove_between_spaces', False)
-    allow_blank = pl.get_string_attrib(element, 'allow_blank', False)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -197,7 +195,7 @@ def grade(element_html, element_index, data):
 
     # Remove the blank spaces between characters
     if (remove_between_spaces):
-        a_sub = a_sub.replace(" ","")
+        a_sub = a_sub.replace(" ", "")
 
     if a_tru == a_sub:
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
@@ -209,8 +207,6 @@ def test(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers_name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
-    # Get allow_blank option
-    allow_blank = pl.get_string_attrib(element, 'allow_blank', False)
 
     # Get correct answer
     a_tru = data['correct_answers'][name]
