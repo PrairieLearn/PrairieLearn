@@ -1,9 +1,7 @@
 import prairielearn as pl
-import to_precision
 import lxml.html
 from html import escape
 import numpy as np
-import random
 import math
 import chevron
 
@@ -21,7 +19,6 @@ def render(element_html, element_index, data):
     name = pl.get_string_attrib(element, 'answers_name')
     label = pl.get_string_attrib(element, 'label', None)
     format_type = pl.get_string_attrib(element, 'format_type', 'latex')
-    allow_partial_credit = pl.get_boolean_attrib(element, 'allow_partial_credit', False)
     allow_feedback = pl.get_boolean_attrib(element, 'allow_feedback', False)
 
     if data['panel'] == 'question':
@@ -30,17 +27,17 @@ def render(element_html, element_index, data):
         # Get true answer
         a_tru = pl.from_json(data['correct_answers'].get(name, None))
         if a_tru is None:
-            raise Exception('No value in data["correct_answers"] for variable %s in pl_matrix_component_input element' % name)
+            raise Exception('No value in data["correct_answers"] for variable %s in pl-matrix-component-input element' % name)
         else:
             if np.isscalar(a_tru):
-                raise Exception('Value in data["correct_answers"] for variable %s in pl_matrix_component_input element cannot be a scalar.' % name)
+                raise Exception('Value in data["correct_answers"] for variable %s in pl-matrix-component-input element cannot be a scalar.' % name)
             else:
                 a_tru = np.array(a_tru)
 
         if a_tru.ndim != 2:
-            raise Exception('Value in data["correct_answers"] for variable %s in pl_matrix_component_input element must be a 2D array.' % name)
+            raise Exception('Value in data["correct_answers"] for variable %s in pl-matrix-component-input element must be a 2D array.' % name)
         else:
-            m,n = np.shape(a_tru)
+            m, n = np.shape(a_tru)
 
         # create array of input text boxes in html
         '''input_array = '<div>'
@@ -61,15 +58,15 @@ def render(element_html, element_index, data):
         input_array = '<table cellspacing="0">'
         for i in range(m):
             if i == 0:
-                input_array +=  ' <tr> <td class="top-and-left"> </td> '
-            elif i == m-1:
-                input_array +=  ' <tr> <td class="bottom-and-left"> </td> '
+                input_array += ' <tr> <td class="top-and-left"> </td> '
+            elif i == m - 1:
+                input_array += ' <tr> <td class="bottom-and-left"> </td> '
             else:
-                input_array +=  ' <tr> <td class="left"> </td> '
+                input_array += ' <tr> <td class="left"> </td> '
             for j in range(n):
-                each_entry_name = 'name' + str(n*i+j+1)
+                each_entry_name = 'name' + str(n * i + j + 1)
                 raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
-                input_array += ' <td> <input name= "' + each_entry_name +  '" type="text" size="8"  '
+                input_array += ' <td> <input name= "' + each_entry_name + '" type="text" size="8"  '
                 if not editable:
                     input_array += ' disabled '
                 if raw_submitted_answer is not None:
@@ -77,13 +74,12 @@ def render(element_html, element_index, data):
                     input_array += escape(raw_submitted_answer)
                 input_array += '" /> </td>'
             if i == 0:
-                input_array +=  ' <td class="top-and-right"></td> </tr> '
-            elif i == m-1:
-                input_array +=  ' <td class="bottom-and-right"> </td> </tr>'
+                input_array += ' <td class="top-and-right"></td> </tr> '
+            elif i == m - 1:
+                input_array += ' <td class="bottom-and-right"> </td> </tr>'
             else:
-                input_array +=  ' <td class="right"> </td> </tr>'
+                input_array += ' <td class="right"> </td> </tr>'
         input_array += '</table>'
-
 
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
@@ -108,9 +104,9 @@ def render(element_html, element_index, data):
         else:
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
 
-        with open('pl_matrix_component_input.mustache', 'r', encoding='utf-8') as f:
+        with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
             info = chevron.render(f, info_params).strip()
-        with open('pl_matrix_component_input.mustache', 'r', encoding='utf-8') as f:
+        with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
             info_params.pop('format', None)
             info_params['shortformat'] = True
             shortinfo = chevron.render(f, info_params).strip()
@@ -123,7 +119,7 @@ def render(element_html, element_index, data):
             'info': info,
             'shortinfo': shortinfo,
             'input_array': input_array,
-            'inline': True, # only option to diplay inline
+            'inline': True,
             'uuid': pl.get_uuid()
         }
 
@@ -141,9 +137,8 @@ def render(element_html, element_index, data):
             except Exception:
                 raise ValueError('invalid score' + score)
 
-        with open('pl_matrix_component_input.mustache', 'r', encoding='utf-8') as f:
+        with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
-
 
     elif data['panel'] == 'submission':
 
@@ -171,12 +166,10 @@ def render(element_html, element_index, data):
             else:
                 html_params['a_sub'] = '$' + pl.latex_array_from_numpy_array(a_sub, presentation_type='g', digits=12) + '$'
 
-
         else:
             raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
             if raw_submitted_answer is not None:
                 html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
-
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
@@ -198,10 +191,8 @@ def render(element_html, element_index, data):
             if feedback_message is not None:
                 html_params['feedback_message'] = feedback_message
 
-
-        with open('pl_matrix_component_input.mustache', 'r', encoding='utf-8') as f:
+        with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
-
 
     elif data['panel'] == 'answer':
 
@@ -243,17 +234,15 @@ def render(element_html, element_index, data):
             else:
                 html_params['default_is_latex'] = True
 
-            with open('pl_matrix_component_input.mustache', 'r', encoding='utf-8') as f:
+            with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params).strip()
         else:
             html = ''
-
 
     else:
         raise Exception('Invalid panel type: %s' % data['panel'])
 
     return html
-
 
 
 def parse(element_html, element_index, data):
@@ -268,8 +257,8 @@ def parse(element_html, element_index, data):
     if a_tru.ndim != 2:
         raise ValueError('true answer must be a 2D array')
     else:
-        m,n = np.shape(a_tru)
-        A = np.empty([m,n])
+        m, n = np.shape(a_tru)
+        A = np.empty([m, n])
 
     # Create an array for the submitted answer
     # to be stored in data['submitted_answer'][name]
@@ -277,7 +266,7 @@ def parse(element_html, element_index, data):
 
     for i in range(m):
         for j in range(n):
-            each_entry_name = 'name' + str(n*i+j+1)
+            each_entry_name = 'name' + str(n * i + j + 1)
             a_sub = data['submitted_answers'].get(each_entry_name, None)
 
             if a_sub is None:
@@ -298,7 +287,7 @@ def parse(element_html, element_index, data):
                 if not np.isfinite(a_sub_parsed):
                     raise ValueError('invalid submitted answer (not finite)')
                 data['submitted_answers'][each_entry_name] = pl.to_json(a_sub_parsed)
-                A[i,j] = a_sub_parsed
+                A[i, j] = a_sub_parsed
 
             except Exception:
                 data['format_errors'][name] = 'Invalid format. At least one of the submitted answers could not be interpreted as a double-precision floating-point number.'
@@ -338,13 +327,13 @@ def grade(element_html, element_index, data):
     if a_tru.ndim != 2:
         raise ValueError('true answer must be a 2D array')
     else:
-        m,n = np.shape(a_tru)
+        m, n = np.shape(a_tru)
 
     number_of_correct = 0
     feedback = ''
     for i in range(m):
         for j in range(n):
-            each_entry_name = 'name' + str(n*i+j+1)
+            each_entry_name = 'name' + str(n * i + j + 1)
             a_sub = data['submitted_answers'].get(each_entry_name, None)
             # Get submitted answer (if it does not exist, score is zero)
             if a_sub is None:
@@ -356,22 +345,22 @@ def grade(element_html, element_index, data):
 
             # Compare submitted answer with true answer
             if comparison == 'relabs':
-                correct = pl.is_correct_scalar_ra(a_sub, a_tru[i,j], rtol, atol)
+                correct = pl.is_correct_scalar_ra(a_sub, a_tru[i, j], rtol, atol)
             elif comparison == 'sigfig':
-                correct = pl.is_correct_scalar_sf(a_sub, a_tru[i,j], digits)
+                correct = pl.is_correct_scalar_sf(a_sub, a_tru[i, j], digits)
             elif comparison == 'decdig':
-                correct = pl.is_correct_scalar_dd(a_sub, a_tru[i,j], digits)
+                correct = pl.is_correct_scalar_dd(a_sub, a_tru[i, j], digits)
 
             if correct:
                 number_of_correct += 1
             else:
-                feedback += ' (' + str(i+1) + ', ' + str(j+1) + '), '
+                feedback += ' (' + str(i + 1) + ', ' + str(j + 1) + '), '
 
-    if number_of_correct == m*n:
+    if number_of_correct == m * n:
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
     else:
         if not allow_partial_credit:
             score_value = 0
         else:
-            score_value = number_of_correct / (m*n)
-        data['partial_scores'][name] = {'score': score_value, 'weight': weight , 'feedback': feedback}
+            score_value = number_of_correct / (m * n)
+        data['partial_scores'][name] = {'score': score_value, 'weight': weight, 'feedback': feedback}

@@ -1,5 +1,5 @@
 {
-    "controller": "pl_matrix_component_input.py",
+    "controller": "pl-matrix-component-input.py",
     "dependencies": {
         "nodeModulesScripts": [
             "clipboard/dist/clipboard.min.js"
@@ -8,7 +8,7 @@
             "PrairieUtil.js"
         ],
         "elementStyles": [
-            "pl_matrix_component_input.css"
+            "pl-matrix-component-input.css"
         ]
     }
 }
