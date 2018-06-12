@@ -1,5 +1,5 @@
 {
-    "controller": "pl_latex_matrix_display.py",
+    "controller": "pl-latex-matrix-display.py",
     "dependencies": {
         "nodeModulesScripts": [
             "clipboard/dist/clipboard.min.js"
