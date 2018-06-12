@@ -84,7 +84,7 @@ def render(element_html, element_index, data):
 
     editable = data['editable']
     # answer feedback is not displayed when partial credit is True
-    #(unless the question is disabled)
+    # (unless the question is disabled)
     show_answer_feedback = True
     if partial_credit and editable:
         show_answer_feedback = False
