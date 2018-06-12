@@ -219,6 +219,27 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 ```
 
 
+## `pl-matrix-component-input` element
+
+```html
+<pl-matrix-component-input answers_name="C" comparison="sigfig" digits="3" label="$AB=$"> </pl-matrix-component-input>
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`params-name` | string | — | Name of variable in `data['params']` to display.
+`presentation-type` | string | `'f'` | Number display format. If `presentation-type` is `'sigfig'`, each number is formatted using the `to_precision` module to `digits` significant figures.  Otherwise, each number is formatted as `'{:.{digits}{presentation-type}}'`.
+`digits` | integer | `"2"` | Number of digits to display according to the choice of `presentation-type`
+
+The variable in `data['params']` must be a scalar or 2D numpy array of numbers.
+
+In the question panel, a `pl-matrix-component-input` element displays a grid of input fields with the same shape of the variable stored in `answers_name` (only 2D arrays of real numbers can be stored in `answers_name`). The question will only be graded when all matrix components are entered.
+
+In the answer panel, a `pl-matrix-component-input` element displays the correct answer, in either latex or python format, depending on the attribute `format_type`.
+
+In the submission panel, a `pl-matrix-component-input` element displays either the submitted answer (in the same format as the answer panel), or a note that the submitted answer was invalid (with an explanation of why). There is an option to display feedback, indicating which matrix components are incorrect.
+
+
 ## `pl-figure` element
 
 ```html
