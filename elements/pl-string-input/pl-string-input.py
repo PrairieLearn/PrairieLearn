@@ -195,7 +195,7 @@ def grade(element_html, element_index, data):
 
     # Remove the blank spaces between characters
     if (remove_between_spaces):
-        a_sub = a_sub.replace(" ", "")
+        a_sub = a_sub.replace(' ', '')
 
     if a_tru == a_sub:
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
