@@ -7,8 +7,6 @@
 
   * Add `tools/dump_*` scripts to filter and anonymize per-course dumps (Matt West).
 
-  * Upgrade to Node.js 10 and PostgreSQL 10 (Matt West).
-
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
 
   * Fix Google auth using new API (Matt West).
@@ -20,6 +18,10 @@
   * Change element names to use dashes instead of underscores (Nathan Walters).
 
   * Change deprecated `new Buffer()` calls to `Buffer.from()` (Ray Essick).
+
+  * Change to Node.js 10 and PostgreSQL 10 (Matt West).
+
+  * Change `centos7-ocaml` grader image to `ocaml-4.05` (Matt West).
 
 * __3.0.0__ - 2018-05-23
 
