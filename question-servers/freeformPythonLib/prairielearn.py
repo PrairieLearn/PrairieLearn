@@ -836,12 +836,12 @@ def matlab_to_numpy(a):
 
 def latex_array_from_numpy_array(A, presentation_type='f', digits=2):
 
-    '''
+    """latex_array_from_numpy_array
     This function assumes that A is one of these things:
             - a number (float or complex)
             - a 2D ndarray (float or complex)
     It returns A as a Latex-formatted matrix
-    '''
+    """
     # if A is a scalar
     if np.isscalar(A):
         if presentation_type == 'sigfig':
@@ -863,10 +863,10 @@ def latex_array_from_numpy_array(A, presentation_type='f', digits=2):
 
         if len(A.shape) > 2:
             raise ValueError('bmatrix can at most display two dimensions')
-        lines = np.array2string(A, formatter = formatter).replace('[', '').replace(']', '').splitlines()
+        lines = np.array2string(A, formatter=formatter).replace('[', '').replace(']', '').splitlines()
         rv = [r'\begin{bmatrix}']
-        rv += ['  ' + ' & '.join(l.split()).replace("'","")  + r'\newline' for l in lines]
-        rv +=  [r'\end{bmatrix}']
+        rv += ['  ' + ' & '.join(l.split()).replace("'", '') + r'\newline' for l in lines]
+        rv += [r'\end{bmatrix}']
         return ''.join(rv)
 
 

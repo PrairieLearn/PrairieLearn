@@ -18,7 +18,7 @@ def render(element_html, element_index, data):
 
         if child.tag == 'variable':
             # Raise exception of variable does not have a name
-            pl.check_attribs(child, required_attribs=['params_name'], optional_attribs=['digits','presentation_type'])
+            pl.check_attribs(child, required_attribs=['params_name'], optional_attribs=['digits', 'presentation_type'])
 
             # Get name of variable
             var_name = pl.get_string_attrib(child, 'params_name')
@@ -26,7 +26,7 @@ def render(element_html, element_index, data):
             # Get value of variable, raising exception if variable does not exist
             var_data = data['params'].get(var_name, None)
             if var_data is None:
-                raise Exception('No value in data["params"] for variable %s in pl_latex_matrix_display element' % var_name)
+                raise Exception('No value in data["params"] for variable %s in pl-latex-matrix-display element' % var_name)
 
             # Get the number of digits to output
             digits = pl.get_integer_attrib(child, 'digits', 2)
@@ -38,13 +38,13 @@ def render(element_html, element_index, data):
             var_data = pl.from_json(var_data)
 
             if np.isscalar(var_data):
-                raise Exception('Value in data["params"] for variable %s in pl_latex_matrix_display element must be an 1D or 2D array' % var_name)
+                raise Exception('Value in data["params"] for variable %s in pl-latex-matrix-display element must be an 1D or 2D array' % var_name)
             else:
                 # Wrap the variable in an ndarray (if it's already one, this does nothing)
                 var_data = np.array(var_data)
                 # Check shape of variable
                 if var_data.ndim > 2:
-                    raise Exception('Value in data["params"] for variable %s in pl_latex_matrix_display element must be an 1D or 2D array' % var_name)
+                    raise Exception('Value in data["params"] for variable %s in pl-latex-matrix-display element must be an 1D or 2D array' % var_name)
                 # Create prefix/suffix so python string is np.array( ... )
 
             # Create string for latex matrix format
@@ -57,7 +57,7 @@ def render(element_html, element_index, data):
         'uuid': pl.get_uuid()
     }
 
-    with open('pl_latex_matrix_display.mustache', 'r', encoding='utf-8') as f:
+    with open('pl-latex-matrix-display.mustache', 'r', encoding='utf-8') as f:
         html = chevron.render(f, html_params).strip()
 
     return html
