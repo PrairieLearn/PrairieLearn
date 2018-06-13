@@ -248,6 +248,7 @@ def test(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
+    partial_credit = pl.get_boolean_attrib(element, 'partial_credit', False)
 
     correct_answer_list = data['correct_answers'].get(name, [])
     correct_keys = [answer['key'] for answer in correct_answer_list]
@@ -255,6 +256,7 @@ def test(element_html, element_index, data):
     all_keys = [chr(ord('a') + i) for i in range(number_answers)]
 
     result = random.choice(['correct', 'incorrect'])
+
     if result == 'correct':
         if len(correct_keys) == 1:
             data['raw_submitted_answers'][name] = correct_keys[0]
@@ -270,8 +272,13 @@ def test(element_html, element_index, data):
             # break and use this choice if it isn't correct
             if set(ans) != set(correct_keys):
                 break
+        if partial_credit:
+            number_wrong = len(set(ans) - set(correct_keys)) + len(set(correct_keys) - set(ans))
+            score = 1 - 1.0 * number_wrong / number_answers
+        else:
+            score = 0
         data['raw_submitted_answers'][name] = ans
-        data['partial_scores'][name] = {'score': 0, 'weight': weight}
+        data['partial_scores'][name] = {'score': score, 'weight': weight}
 
         # FIXME: test invalid answers
     else:
