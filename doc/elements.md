@@ -103,15 +103,15 @@ Attribute | Type | Default | Description
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
-`answers_name` | string | — | Variable name to store data in.
+`answers-name` | string | — | Variable name to store data in.
 `weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
-`correct_answer` | string | special | Correct answer for grading. Defaults to `data["correct_answers"][answers_name]`.
+`correct-answer` | string | special | Correct answer for grading. Defaults to `data["correct-answers"][answers-name]`.
 `label` | text | — | A prefix to display before the input box (e.g., `label="$x =$"`).
 `suffix` | text | — | A suffix to display after the input box (e.g., `suffix="items"`).
 `display` | "block" or "inline" | "inline" | How to display the input field.
-`remove_leading_trailing` | boolean | False | Whether or not to remove leading and trailing blank spaces from the input string.
-`remove_between_spaces` | boolean | False | Whether or not to remove blank spaces between characters from the input string.
-`allow_blank` | boolean | False | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
+`remove-leading-trailing` | boolean | False | Whether or not to remove leading and trailing blank spaces from the input string.
+`remove-spaces` | boolean | False | Whether or not to remove blank spaces from the input string.
+`allow-blank` | boolean | False | Whether or not an empty input box is allowed. By default, empty input boxes will not be graded (invalid format).
 
 ## `pl-matrix-input` element
 

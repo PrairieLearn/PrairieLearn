@@ -8,12 +8,12 @@ import random
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ['answers_name']
-    optional_attribs = ['weight', 'correct_answer', 'label', 'suffix', 'display', 'remove_leading_trailing', 'remove_between_spaces', 'allow_blank']
+    required_attribs = ['answers-name']
+    optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display', 'remove-leading-trailing', 'remove-spaces', 'allow-blank']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
-    name = pl.get_string_attrib(element, 'answers_name')
-    correct_answer = pl.get_string_attrib(element, 'correct_answer', None)
+    name = pl.get_string_attrib(element, 'answers-name')
+    correct_answer = pl.get_string_attrib(element, 'correct-answer', None)
 
     if correct_answer is not None:
         if name in data['correct_answers']:
@@ -23,12 +23,12 @@ def prepare(element_html, element_index, data):
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
     label = pl.get_string_attrib(element, 'label', None)
     suffix = pl.get_string_attrib(element, 'suffix', None)
     display = pl.get_string_attrib(element, 'display', 'inline')
-    remove_leading_trailing = pl.get_string_attrib(element, 'remove_leading_trailing', False)
-    remove_between_spaces = pl.get_string_attrib(element, 'remove_between_spaces', False)
+    remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', False)
+    remove_spaces = pl.get_string_attrib(element, 'remove-spaces', False)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -37,19 +37,19 @@ def render(element_html, element_index, data):
         # Get info strings
         info_params = {'format': True}
         with open('pl-string-input.mustache', 'r', encoding='utf-8') as f:
-            info = chevron.render(f, info_params).strip()
-        with open('pl-string-input.mustache', 'r', encoding='utf-8') as f:
+            template = f.read()
+            info = chevron.render(template, info_params).strip()
             info_params.pop('format', None)
             info_params['shortformat'] = True
-            shortinfo = chevron.render(f, info_params).strip()
+            shortinfo = chevron.render(template, info_params).strip()
 
         html_params = {
             'question': True,
             'name': name,
             'label': label,
             'suffix': suffix,
-            'remove_leading_trailing': remove_leading_trailing,
-            'remove_between_spaces': remove_between_spaces,
+            'remove-leading-trailing': remove_leading_trailing,
+            'remove-spaces': remove_spaces,
             'editable': editable,
             'info': info,
             'shortinfo': shortinfo,
@@ -139,9 +139,9 @@ def render(element_html, element_index, data):
 
 def parse(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
-    # Get allow_blank option
-    allow_blank = pl.get_string_attrib(element, 'allow_blank', False)
+    name = pl.get_string_attrib(element, 'answers-name')
+    # Get allow-blank option
+    allow_blank = pl.get_string_attrib(element, 'allow-blank', False)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
@@ -150,29 +150,25 @@ def parse(element_html, element_index, data):
         data['submitted_answers'][name] = None
         return
 
-    try:
-        # check if answer is left blank
-        if not a_sub:
-            if not allow_blank:
-                raise ValueError('invalid submitted answer (left blank)')
-        data['submitted_answers'][name] = pl.to_json(a_sub)
-    except Exception:
+    if not a_sub and not allow_blank:
         data['format_errors'][name] = 'Invalid format. The submitted answer was left blank.'
         data['submitted_answers'][name] = None
+    else:
+        data['submitted_answers'][name] = pl.to_json(a_sub)
 
 
 def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
 
     # Get weight
     weight = pl.get_integer_attrib(element, 'weight', 1)
 
-    # Get remove_between_spaces option
-    remove_between_spaces = pl.get_string_attrib(element, 'remove_between_spaces', False)
+    # Get remove-spaces option
+    remove_spaces = pl.get_string_attrib(element, 'remove-spaces', False)
 
-    # Get remove_leading_trailing option
-    remove_leading_trailing = pl.get_string_attrib(element, 'remove_leading_trailing', False)
+    # Get remove-leading-trailing option
+    remove_leading_trailing = pl.get_string_attrib(element, 'remove-leading-trailing', False)
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
@@ -194,7 +190,7 @@ def grade(element_html, element_index, data):
         a_sub = a_sub.strip()
 
     # Remove the blank spaces between characters
-    if (remove_between_spaces):
+    if (remove_spaces):
         a_sub = a_sub.replace(' ', '')
 
     if a_tru == a_sub:
@@ -205,8 +201,9 @@ def grade(element_html, element_index, data):
 
 def test(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
+    allow_blank = pl.get_string_attrib(element, 'allow-blank', False)
 
     # Get correct answer
     a_tru = data['correct_answers'][name]
@@ -215,7 +212,11 @@ def test(element_html, element_index, data):
     # back to a standard type (otherwise, do nothing)
     a_tru = pl.from_json(a_tru)
 
-    result = random.choices(['correct', 'incorrect'], [5, 5])[0]
+    if allow_blank:
+        # no invalid answer implemented when allow-blank="true"
+        result = random.choices(['correct', 'incorrect'], [5, 5])[0]
+    else:
+        result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
 
     if result == 'correct':
         data['raw_submitted_answers'][name] = a_tru
@@ -223,6 +224,8 @@ def test(element_html, element_index, data):
     elif result == 'incorrect':
         data['raw_submitted_answers'][name] = a_tru + str((random.randint(1, 11) * random.choice([-1, 1])))
         data['partial_scores'][name] = {'score': 0, 'weight': weight}
-    # No test for 'invalid' implemented at this time
+    elif result == 'invalid':
+        data['raw_submitted_answers'][name] = ''
+        data['format_errors'][name] = 'invalid'
     else:
         raise Exception('invalid result: %s' % result)

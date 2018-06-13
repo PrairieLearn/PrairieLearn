@@ -8,7 +8,7 @@ a = "{{params.stringname}}"*{{params.a}}
 </pl-question-panel>
 
 <p>
-<pl-string-input answers_name="ans1"  label="a = ">
+<pl-string-input answers-name="ans1"  label="a = ">
 </pl-string-input>
 </p>
 
@@ -21,13 +21,13 @@ a = "{{params.stringname}}"*{{params.a}}
 </pl-question-panel>
 
 <p>
-<pl-string-input answers_name="ans2" label="b + c = " >
+<pl-string-input answers-name="ans2" label="b + c = " >
 </pl-string-input>
 </p>
 
 <pl-question-panel>
 <p>3) Enter the string below, however include trailing and leading blanks.
- When using the attribute <code>remove_leading_trailing="true"</code>, the answer will
+ When using the attribute <code>remove-leading-trailing="true"</code>, the answer will
  still be evaluated as correct. </p>
 <pl-code language="python">
 "{{params.d}}"
@@ -35,13 +35,13 @@ a = "{{params.stringname}}"*{{params.a}}
 </pl-question-panel>
 
 <p>
-<pl-string-input answers_name="ans3" remove_leading_trailing="true" >
+<pl-string-input answers-name="ans3" remove-leading-trailing="true" >
 </pl-string-input>
 </p>
 
 <pl-question-panel>
 <p> 4) Enter the string below, however include blank spaces between some of the numbers.
-When using the attribute <code>remove_between_spaces="true"</code>, the answer will
+When using the attribute <code>remove-spaces="true"</code>, the answer will
 still be evaluated as correct. </p>
 <pl-code language="python">
 "{{params.d}}"
@@ -49,18 +49,18 @@ still be evaluated as correct. </p>
 </pl-question-panel>
 
 <p>
-<pl-string-input answers_name="ans4" remove_between_spaces="true" >
+<pl-string-input answers-name="ans4" remove-spaces="true" >
 </pl-string-input>
 </p>
 
 
 <pl-question-panel>
-<p> 5) The attribute <code>allow_blank="true"</code> allows users to submit blank answers, without
+<p> 5) The attribute <code>allow-blank="true"</code> allows users to submit blank answers, without
   receiving the <code>INVALID</code> error. Leave the box below empty, and notice
 that you will not receive the <code>INVALID</code> feedback (and hence the question is graded). </p>
 </pl-question-panel>
 
 <p>
-<pl-string-input answers_name="ans5" label="blank input box = " allow_blank="true" >
+<pl-string-input answers-name="ans5" label="blank input box = " allow-blank="true" >
 </pl-string-input>
 </p>
