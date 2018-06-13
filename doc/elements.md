@@ -190,8 +190,8 @@ If a variable `v` is a complex object, you should use `import prairielearn as pl
 
 ```html
 <pl-latex-matrix-display>
-    <variable params_name="A"  digits="2"> A = </variable>
-    <variable params_name="B"  digits="0"> </variable>
+    <variable params-name="A"  digits="2"> A = </variable>
+    <variable params-name="B"  digits="0"> </variable>
 </pl-latex-matrix-display>
 ```
 
@@ -199,7 +199,7 @@ Attributes for `<variable>` (one of these for each variable to display):
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
-`params_name` | string | — | Name of variable in `data['params']` to display.
+`params-name` | string | — | Name of variable in `data['params']` to display.
 `digits` | integer | — | Number of digits to display after the decimal.
 
  Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags.
@@ -212,9 +212,9 @@ we write
 
 ```html
 <pl-latex-matrix-display>
-    <variable params_name="A"  digits="1"> x = </variable>
-    <variable params_name="b"  digits="1"> </variable>
-    <variable params_name="c"  digits="0"> + </variable>
+    <variable params-name="A"  digits="1"> x = </variable>
+    <variable params-name="b"  digits="1"> </variable>
+    <variable params-name="c"  digits="0"> + </variable>
 </pl-latex-matrix-display>
 ```
 
