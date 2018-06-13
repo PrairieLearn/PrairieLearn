@@ -306,9 +306,11 @@ event_log AS (
             JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
             JOIN questions AS q ON (q.id = pvl.question_id)
             JOIN users AS u ON (u.user_id = pvl.authn_user_id)
+            JOIN assessment_instances AS ai ON (ai.id = pvl.assessment_instance_id)
         WHERE
             pvl.assessment_instance_id = $assessment_instance_id
             AND pvl.page_type = 'studentInstanceQuestion'
+            AND pvl.authn_user_id = ai.user_id
     )
     UNION
     (
@@ -328,9 +330,11 @@ event_log AS (
         FROM
             page_view_logs AS pvl
             JOIN users AS u ON (u.user_id = pvl.authn_user_id)
+            JOIN assessment_instances AS ai ON (ai.id = pvl.assessment_instance_id)
         WHERE
             pvl.assessment_instance_id = $assessment_instance_id
             AND pvl.page_type = 'studentAssessmentInstance'
+            AND pvl.authn_user_id = ai.user_id
     )
     ORDER BY date, event_order, question_id
 ),
