@@ -222,20 +222,25 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 ## `pl-matrix-component-input` element
 
 ```html
-<pl-matrix-component-input answers_name="C" comparison="sigfig" digits="3" label="$AB=$"> </pl-matrix-component-input>
+<pl-matrix-component-input answers-name="C" comparison="sigfig" digits="3" label="$AB=$"> </pl-matrix-component-input>
 ```
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
-`params-name` | string | — | Name of variable in `data['params']` to display.
-`presentation-type` | string | `'f'` | Number display format. If `presentation-type` is `'sigfig'`, each number is formatted using the `to_precision` module to `digits` significant figures.  Otherwise, each number is formatted as `'{:.{digits}{presentation-type}}'`.
-`digits` | integer | `"2"` | Number of digits to display according to the choice of `presentation-type`
+`answers-name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`label` | text | — | A prefix to display before the input box (e.g., `label="$F =$"`).
+`comparison` | "relabs", "sigfig", or "decdig" | "relabs" | How to grade. "relabs" uses relative ("rtol") and absolute ("atol") tolerances. "sigfig" and "decdig" use "digits" significant or decimal digits.
+`rtol` | number | 1e-2 | Relative tolerance for `comparison="relabs"`.
+`atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
+`digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
+`format-type` | string | 'latex' | format of the answer displayed in the answer and submission panels.
+`allow-partial-credit` | boolean | False | Whether or not to allow credit for each correct matrix component. By default, the variable is graded as correct only when all matrix components are correct.
+`allow-feedback` | boolean | False | Whether or not to allow feedback indicating which matrix components are incorrect.
 
-The variable in `data['params']` must be a scalar or 2D numpy array of numbers.
+In the question panel, a `pl-matrix-component-input` element displays a grid of input fields with the same shape of the variable stored in `answers-name` (only 2D arrays of real numbers can be stored in `answers-name`). The question will only be graded when all matrix components are entered.
 
-In the question panel, a `pl-matrix-component-input` element displays a grid of input fields with the same shape of the variable stored in `answers_name` (only 2D arrays of real numbers can be stored in `answers_name`). The question will only be graded when all matrix components are entered.
-
-In the answer panel, a `pl-matrix-component-input` element displays the correct answer, in either latex or python format, depending on the attribute `format_type`.
+In the answer panel, a `pl-matrix-component-input` element displays the correct answer, in either latex or python format, depending on the attribute `format-type`.
 
 In the submission panel, a `pl-matrix-component-input` element displays either the submitted answer (in the same format as the answer panel), or a note that the submitted answer was invalid (with an explanation of why). There is an option to display feedback, indicating which matrix components are incorrect.
 
