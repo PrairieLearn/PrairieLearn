@@ -15,6 +15,8 @@
 
   * Fix error when rendering ungraded external grading submissions (Matt West).
 
+  * Fix sync failure if a course instance has no `assessments` directory and add warning in sync log (Ray Essick).
+
   * Change element names to use dashes instead of underscores (Nathan Walters).
 
   * Change deprecated `new Buffer()` calls to `Buffer.from()` (Ray Essick).
