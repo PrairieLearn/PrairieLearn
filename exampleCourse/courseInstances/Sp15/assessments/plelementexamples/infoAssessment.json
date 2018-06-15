@@ -35,7 +35,8 @@
             "questions": [
 				{"id": "checkboxExamples",           "points": 2, "maxPoints": 10},
 				{"id": "examplesStringInput",           "points": 2, "maxPoints": 10},
-				{"id": "elementsMatrixLatexDisplay",        "points": 2, "maxPoints": 10}
+				{"id": "elementsMatrixLatexDisplay",        "points": 2, "maxPoints": 10},
+        {"id": "examplesMatrixInput",        "points": 2, "maxPoints": 10}
             ]
         }
     ]

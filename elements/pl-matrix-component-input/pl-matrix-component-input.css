@@ -23,6 +23,18 @@
   border-bottom: thin solid black;
   border-right: thin solid black;
 }
+.close-left {
+  padding: 5px;
+  border-bottom: thin solid black;
+  border-left: thin solid black;
+  border-top: thin solid black;
+}
+.close-right {
+  padding: 5px;
+  border-bottom: thin solid black;
+  border-right: thin solid black;
+  border-top: thin solid black;
+}
 .left {
   border-left: thin solid black;
 }

@@ -43,14 +43,16 @@ def render(element_html, element_index, data):
         # create array of input text boxes in html
         input_array = '<table cellspacing="0">'
         for i in range(m):
-            if i == 0:
+            if m == 1:
+                input_array += ' <td class="close-left"></td> </tr> '
+            elif i == 0:
                 input_array += ' <tr> <td class="top-and-left"> </td> '
             elif i == m - 1:
                 input_array += ' <tr> <td class="bottom-and-left"> </td> '
             else:
                 input_array += ' <tr> <td class="left"> </td> '
             for j in range(n):
-                each_entry_name = 'name' + str(n * i + j + 1)
+                each_entry_name = name + str(n * i + j + 1)
                 raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
                 input_array += ' <td> <input name= "' + each_entry_name + '" type="text" size="8"  '
                 if not editable:
@@ -59,7 +61,9 @@ def render(element_html, element_index, data):
                     input_array += '  value= "'
                     input_array += escape(raw_submitted_answer)
                 input_array += '" /> </td>'
-            if i == 0:
+            if m == 1:
+                input_array += ' <td class="close-right"></td> </tr> '
+            elif i == 0:
                 input_array += ' <td class="top-and-right"></td> </tr> '
             elif i == m - 1:
                 input_array += ' <td class="bottom-and-right"> </td> </tr>'
@@ -250,7 +254,7 @@ def parse(element_html, element_index, data):
     # used for display in the answer and submission panels
     for i in range(m):
         for j in range(n):
-            each_entry_name = 'name' + str(n * i + j + 1)
+            each_entry_name = name + str(n * i + j + 1)
             a_sub = data['submitted_answers'].get(each_entry_name, None)
 
             if a_sub is None:
@@ -317,7 +321,7 @@ def grade(element_html, element_index, data):
     feedback = ''
     for i in range(m):
         for j in range(n):
-            each_entry_name = 'name' + str(n * i + j + 1)
+            each_entry_name = name + str(n * i + j + 1)
             a_sub = data['submitted_answers'].get(each_entry_name, None)
             # Get submitted answer (if it does not exist, score is zero)
             if a_sub is None:
@@ -379,7 +383,7 @@ def test(element_html, element_index, data):
     format_errors_feedback = ''
     for i in range(m):
         for j in range(n):
-            each_entry_name = 'name' + str(n * i + j + 1)
+            each_entry_name = name + str(n * i + j + 1)
             if result == 'correct':
                 data['raw_submitted_answers'][each_entry_name] = str(a_tru[i, j])
                 number_of_correct += 1
