@@ -25,6 +25,8 @@
 
   * Change `centos7-ocaml` grader image to `ocaml-4.05` (Matt West).
 
+  * Change TravisCI tasks to run linters first (Matt West, h/t James Balamuta).
+
 * __3.0.0__ - 2018-05-23
 
   * Add improved support for very large file downloads (Nathan Walters).
