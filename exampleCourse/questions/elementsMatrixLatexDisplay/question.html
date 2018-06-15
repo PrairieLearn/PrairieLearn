@@ -6,9 +6,7 @@
  </p>
 
 <p>
-    <pl-latex-matrix-display>
-      <variable params-name="U" digits="{{params.sf}}" presentation-type="sigfig"> ${\bf A} = $ </variable>
-    </pl-latex-matrix-display>
+<pl-latex-matrix-display params-name="U" digits="{{params.sf}}" presentation-type="sigfig" label="${\bf A} = $"></pl-latex-matrix-display>
 </p>
 
 <p>
@@ -17,9 +15,7 @@
  </p>
 
 <p>
-    <pl-latex-matrix-display>
-      <variable params-name="b" digits="{{params.sf}}" presentation-type="f"> ${\bf b} = $  </variable>
-    </pl-latex-matrix-display>
+<pl-latex-matrix-display params-name="b" digits="{{params.sf}}" presentation-type="f" label="${\bf b} = $"></pl-latex-matrix-display>
 </p>
 
 <p>
@@ -28,9 +24,7 @@
 </p>
 
 <p>
-    <pl-latex-matrix-display>
-      <variable params-name="c" digits="4"> ${\bf c} = $  </variable>
-    </pl-latex-matrix-display>
+ <pl-latex-matrix-display params-name="c" digits="4" label="${\bf c} = $"></pl-latex-matrix-display>
 </p>
 
 <p>It is also possible to use the element <code>pl-latex-matrix-display</code> to display
@@ -40,11 +34,9 @@ expressed as:
 </p>
 
 <p>
-    <pl-latex-matrix-display>
-      <variable params-name="U" presentation-type="f" digits="3">   </variable>
-      <variable params-name="x" >  </variable>
-      <variable params-name="c" presentation-type="f" digits="4"> $ = $  </variable>
-    </pl-latex-matrix-display>
+    <pl-latex-matrix-display params-name="U" presentation-type="f" digits="3"> </pl-latex-matrix-display>
+    <pl-latex-matrix-display params-name="x"></pl-latex-matrix-display>
+    <pl-latex-matrix-display params-name="c" presentation-type="f" digits="4" label="$ = $"></pl-latex-matrix-display>
 </p>
 
 </pl-question-panel>
