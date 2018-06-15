@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add string input element (Mariana Silva)
+
   * Add student name and clickable e-mail address information to issue reports (James Balamuta).
 
   * Add `tools/dump_*` scripts to filter and anonymize per-course dumps (Matt West).
