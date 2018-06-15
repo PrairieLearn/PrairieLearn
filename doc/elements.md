@@ -189,33 +189,26 @@ If a variable `v` is a complex object, you should use `import prairielearn as pl
 ## `pl-latex-matrix-display` element
 
 ```html
-<pl-latex-matrix-display>
-    <variable params-name="A"  digits="2"> A = </variable>
-    <variable params-name="B"  digits="0"> </variable>
-</pl-latex-matrix-display>
+<pl-latex-matrix-display params-name="A"></pl-latex-matrix-display>
 ```
-
-Attributes for `<variable>` (one of these for each variable to display):
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `params-name` | string | — | Name of variable in `data['params']` to display.
-`digits` | integer | — | Number of digits to display after the decimal.
+`label` | text | — | A prefix to display before the matrix (e.g., `label="${\bf A} = $"`).
+`presentation-type` | string | `'f'` | Number display format. If `presentation-type` is `'sigfig'`, each number is formatted using the `to_precision` module to `digits` significant figures.  Otherwise, each number is formatted as `'{:.{digits}{presentation-type}}'`.
+`digits` | integer | `"2"` | Number of digits to display according to the choice of `presentation-type`
 
- Each variable must be either a scalar or a 2D numpy array (expressed as a list). Each variable will be prefixed by the text that appears between the `<variable>` and `</variable>` tags.
-
-For example, if we want to display the following matrix operations
+The variable in `data['params']` must be a 1D or 2D numpy array. For example, if we want to display the following matrix operations
 ```
 x = [A][b] + [c]
 ```
 we write
 
 ```html
-<pl-latex-matrix-display>
-    <variable params-name="A"  digits="1"> x = </variable>
-    <variable params-name="b"  digits="1"> </variable>
-    <variable params-name="c"  digits="0"> + </variable>
-</pl-latex-matrix-display>
+<pl-latex-matrix-display params-name="A"  digits="1" label="${\bf x} = $"></pl-latex-matrix-display>
+<pl-latex-matrix-display params-name="b"  digits="1"></pl-latex-matrix-display>
+<pl-latex-matrix-display params-name="c"  digits="0" label="$ + $"></pl-latex-matrix-display>
 ```
 
 

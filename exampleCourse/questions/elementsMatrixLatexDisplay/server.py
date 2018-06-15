@@ -23,15 +23,11 @@ def generate(data):
 
     x = np.array([['x'],['y'],['z']])
 
-
     data["params"]["sf"] = sf
     data["params"]["M"] = M
     data["params"]["U"] = pl.to_json(U)
     data["params"]["b"] = pl.to_json(b)
     data["params"]["c"] = pl.to_json(c)
     data["params"]["x"] = pl.to_json(x)
-
-
-
 
     return data
