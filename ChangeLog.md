@@ -19,6 +19,8 @@
 
   * Fix sync failure if a course instance has no `assessments` directory and add warning in sync log (Ray Essick).
 
+  * Fix Slack posting for student cheating reports (Matt West).
+
   * Change element names to use dashes instead of underscores (Nathan Walters).
 
   * Change deprecated `new Buffer()` calls to `Buffer.from()` (Ray Essick).
