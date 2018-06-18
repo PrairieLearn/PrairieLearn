@@ -4,7 +4,7 @@
 const express = require('express');
 var router = express.Router();
 
-//var logger = require('../lib/logger');
+var logger = require('../lib/logger');
 var csrf = require('../lib/csrf');
 var config = require('../lib/config');
 
@@ -32,11 +32,44 @@ router.get('/', function(req, res, next) {
         }
     }
 
+    // Password protect the assessment
+    if ('authz_result' in res.locals &&
+        'password' in res.locals.authz_result &&
+        res.locals.authz_result.password) {
+
+            // If the assessment is complete, use this middleware to show the logout page
+            if ('assessment_instance' in res.locals && res.locals.assessment_instance.open == false) {
+                return badSEB(req, res);
+            }
+
+            // No password yet case
+            if (req.cookies.pl_assessmentpw == null) {
+                return badPassword(res, req);
+            }
+
+            // Invalid or expired password case
+            var pwData = csrf.getCheckedData(req.cookies.pl_assessmentpw, config.secretKey,
+                                             {maxAge: timeout * 60 * 60 * 1000});
+            if (pwData == null
+                || pwData.password !== res.locals.authz_result.password) {
+                    return badPassword(res, req);
+            }
+
+            // Successful password case: falls though
+        }
+
     // Pass-through for everything else
     next();
 });
 
 module.exports = router;
+
+function badPassword(res, req) {
+
+    logger.info(`invalid password attempt for ${res.locals.user.uid}`);
+    res.cookie('pl_pw_origUrl', req.originalUrl);
+    res.redirect('/pl/password');
+}
 
 function badSEB(req, res) {
 
