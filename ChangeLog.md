@@ -23,6 +23,8 @@
 
   * Change `centos7-ocaml` grader image to `ocaml-4.05` (Matt West).
 
+  * Change element attributes to use hyphens instead of underscores (Nathan Walters).
+
 * __3.0.0__ - 2018-05-23
 
   * Add improved support for very large file downloads (Nathan Walters).
