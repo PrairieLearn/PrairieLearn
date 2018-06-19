@@ -18,21 +18,21 @@ def get_variables_list(variables_string):
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ['answers_name']
-    optional_attribs = ['weight', 'correct_answer', 'variables']
+    required_attribs = ['answers-name']
+    optional_attribs = ['weight', 'correct-answer', 'variables']
     pl.check_attribs(element, required_attribs, optional_attribs)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
 
-    correct_answer = pl.get_string_attrib(element, 'correct_answer', None)
+    correct_answer = pl.get_string_attrib(element, 'correct-answer', None)
     if correct_answer is not None:
-        if name in data['correct_answers']:
-            raise Exception('duplicate correct_answers variable name: %s' % name)
-        data['correct_answers'][name] = correct_answer
+        if name in data['correct-answers']:
+            raise Exception('duplicate correct-answers variable name: %s' % name)
+        data['correct-answers'][name] = correct_answer
 
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
     variables_string = pl.get_string_attrib(element, 'variables', None)
     variables = get_variables_list(variables_string)
 
@@ -131,7 +131,7 @@ def render(element_html, element_index, data):
 
 def parse(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
     variables = get_variables_list(pl.get_string_attrib(element, 'variables', None))
 
     # Get submitted answer or return parse_error if it does not exist
@@ -203,7 +203,7 @@ def parse(element_html, element_index, data):
 
 def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
 
     # Get weight
     weight = pl.get_integer_attrib(element, 'weight', 1)
@@ -237,7 +237,7 @@ def grade(element_html, element_index, data):
 
 def test(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
 
     result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]

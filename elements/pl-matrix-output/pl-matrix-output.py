@@ -18,10 +18,10 @@ def render(element_html, element_index, data):
     for child in element:
         if child.tag == 'variable':
             # Raise exception of variable does not have a name
-            pl.check_attribs(child, required_attribs=['params_name'], optional_attribs=[])
+            pl.check_attribs(child, required_attribs=['params-name'], optional_attribs=[])
 
             # Get name of variable
-            var_name = pl.get_string_attrib(child, 'params_name')
+            var_name = pl.get_string_attrib(child, 'params-name')
 
             # Get value of variable, raising exception if variable does not exist
             var_data = data['params'].get(var_name, None)

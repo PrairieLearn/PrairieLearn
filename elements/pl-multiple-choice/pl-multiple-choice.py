@@ -6,10 +6,10 @@ import math
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ['answers_name']
-    optional_attribs = ['weight', 'number_answers', 'fixed_order', 'inline']
+    required_attribs = ['answers-name']
+    optional_attribs = ['weight', 'number-answers', 'fixed-order', 'inline']
     pl.check_attribs(element, required_attribs, optional_attribs)
-    name = element.get('answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
 
     correct_answers = []
     incorrect_answers = []
@@ -33,7 +33,7 @@ def prepare(element_html, element_index, data):
     if len_correct < 1:
         raise Exception('pl-multiple-choice element must have at least one correct answer')
 
-    number_answers = pl.get_integer_attrib(element, 'number_answers', len_total)
+    number_answers = pl.get_integer_attrib(element, 'number-answers', len_total)
 
     number_answers = max(1, min(1 + len_incorrect, number_answers))
     number_correct = 1
@@ -47,7 +47,7 @@ def prepare(element_html, element_index, data):
     sampled_answers = sampled_correct + sampled_incorrect
     random.shuffle(sampled_answers)
 
-    fixed_order = pl.get_boolean_attrib(element, 'fixed_order', False)
+    fixed_order = pl.get_boolean_attrib(element, 'fixed-order', False)
     if fixed_order:
         # we can't simply skip the shuffle because we already broke the original
         # order by separating into correct/incorrect lists
@@ -71,7 +71,7 @@ def prepare(element_html, element_index, data):
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = element.get('answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
 
     answers = data['params'].get(name, [])
     inline = pl.get_boolean_attrib(element, 'inline', False)
@@ -152,7 +152,7 @@ def render(element_html, element_index, data):
 
 def parse(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
 
     submitted_key = data['submitted_answers'].get(name, None)
     all_keys = [a['key'] for a in data['params'][name]]
@@ -168,7 +168,7 @@ def parse(element_html, element_index, data):
 
 def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
 
     submitted_key = data['submitted_answers'].get(name, None)
@@ -183,7 +183,7 @@ def grade(element_html, element_index, data):
 
 def test(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
 
     correct_key = data['correct_answers'].get(name, {'key': None}).get('key', None)

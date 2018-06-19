@@ -17,13 +17,13 @@ def add_format_error(data, error_string):
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ['file_name']
-    optional_attribs = ['ace_mode', 'ace_theme', 'editor_config_function']
+    required_attribs = ['file-name']
+    optional_attribs = ['ace-mode', 'ace-theme', 'editor-config-function']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     if '_required_file_names' not in data['params']:
         data['params']['_required_file_names'] = []
-    data['params']['_required_file_names'].append(pl.get_string_attrib(element, 'file_name'))
+    data['params']['_required_file_names'].append(pl.get_string_attrib(element, 'file-name'))
 
 
 def render(element_html, element_index, data):
@@ -31,11 +31,11 @@ def render(element_html, element_index, data):
         return ''
 
     element = lxml.html.fragment_fromstring(element_html)
-    file_name = pl.get_string_attrib(element, 'file_name', '')
+    file_name = pl.get_string_attrib(element, 'file-name', '')
     answer_name = get_answer_name(file_name)
-    editor_config_function = pl.get_string_attrib(element, 'editor_config_function', None)
-    ace_mode = pl.get_string_attrib(element, 'ace_mode', None)
-    ace_theme = pl.get_string_attrib(element, 'ace_theme', None)
+    editor_config_function = pl.get_string_attrib(element, 'editor-config-function', None)
+    ace_mode = pl.get_string_attrib(element, 'ace-mode', None)
+    ace_theme = pl.get_string_attrib(element, 'ace-theme', None)
     uuid = pl.get_uuid()
 
     html_params = {
@@ -67,7 +67,7 @@ def render(element_html, element_index, data):
 
 def parse(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    file_name = pl.get_string_attrib(element, 'file_name', '')
+    file_name = pl.get_string_attrib(element, 'file-name', '')
     answer_name = get_answer_name(file_name)
 
     # Get submitted answer or return parse_error if it does not exist

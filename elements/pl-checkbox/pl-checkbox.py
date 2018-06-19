@@ -6,10 +6,10 @@ import math
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ['answers_name']
-    optional_attribs = ['weight', 'number_answers', 'min_correct', 'max_correct', 'fixed_order', 'inline', 'hide_help_text', 'detailed_help_text']
+    required_attribs = ['answers-name']
+    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-help-text', 'detailed-help-text']
     pl.check_attribs(element, required_attribs, optional_attribs)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
 
     correct_answers = []
     incorrect_answers = []
@@ -30,9 +30,9 @@ def prepare(element_html, element_index, data):
     len_incorrect = len(incorrect_answers)
     len_total = len_correct + len_incorrect
 
-    number_answers = pl.get_integer_attrib(element, 'number_answers', len_total)
-    min_correct = pl.get_integer_attrib(element, 'min_correct', 0)
-    max_correct = pl.get_integer_attrib(element, 'max_correct', len(correct_answers))
+    number_answers = pl.get_integer_attrib(element, 'number-answers', len_total)
+    min_correct = pl.get_integer_attrib(element, 'min-correct', 0)
+    max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answers))
 
     number_answers = max(0, min(len_total, min(26, number_answers)))
     min_correct = min(len_correct, min(number_answers, max(0, max(number_answers - len_incorrect, min_correct))))
@@ -53,7 +53,7 @@ def prepare(element_html, element_index, data):
     sampled_answers = sampled_correct + sampled_incorrect
     random.shuffle(sampled_answers)
 
-    fixed_order = pl.get_boolean_attrib(element, 'fixed_order', False)
+    fixed_order = pl.get_boolean_attrib(element, 'fixed-order', False)
     if fixed_order:
         # we can't simply skip the shuffle because we already broke the original
         # order by separating into correct/incorrect lists
@@ -77,7 +77,7 @@ def prepare(element_html, element_index, data):
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
 
     display_answers = data['params'].get(name, [])
 
@@ -132,11 +132,11 @@ def render(element_html, element_index, data):
         # Adds decorative help text per bootstrap formatting guidelines:
         # http://getbootstrap.com/docs/4.0/components/forms/#help-text
         # Determine whether we should add a choice selection requirement
-        if not pl.get_boolean_attrib(element, 'hide_help_text', False):
+        if not pl.get_boolean_attrib(element, 'hide-help-text', False):
             # Should we reveal the depth of the choice?
-            if pl.get_boolean_attrib(element, 'detailed_help_text', False):
-                min_correct = pl.get_integer_attrib(element, 'min_correct', 0)
-                max_correct = pl.get_integer_attrib(element, 'max_correct', len(correct_answer_list))
+            if pl.get_boolean_attrib(element, 'detailed-help-text', False):
+                min_correct = pl.get_integer_attrib(element, 'min-correct', 0)
+                max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
                 if min_correct != max_correct:
                     html = html + '<small class="form-text text-muted">Select between <b>%d</b> and <b>%d</b> options.</small>' % (min_correct, max_correct)
                 else:
@@ -213,7 +213,7 @@ def parse(element_html, element_index, data):
 
 def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
 
     submitted_keys = data['submitted_answers'].get(name, [])
@@ -229,7 +229,7 @@ def grade(element_html, element_index, data):
 
 def test(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
 
     correct_answer_list = data['correct_answers'].get(name, [])
