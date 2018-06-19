@@ -131,14 +131,14 @@ def inner_html(element):
 def compat_has(object, attrib):
     if attrib in object:
         return True
-    new_attrib = attrib.replace('-', '_'):
+    new_attrib = attrib.replace('-', '_')
     return new_attrib in object
 
 
 def compat_get(object, attrib, default):
     if attrib in object:
         return object[attrib]
-    new_attrib = attrib.replace('-', '_'):
+    new_attrib = attrib.replace('-', '_')
     return new_attrib in object
 
 

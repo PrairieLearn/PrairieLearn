@@ -29,7 +29,7 @@ def add_format_error(data, error_string):
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ['file_names']
+    required_attribs = ['file-names']
     optional_attribs = []
     pl.check_attribs(element, required_attribs, optional_attribs)
 
