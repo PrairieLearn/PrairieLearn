@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add string input element (Mariana Silva)
+
   * Add student name and clickable e-mail address information to issue reports (James Balamuta).
 
   * Add `tools/dump_*` scripts to filter and anonymize per-course dumps (Matt West).
@@ -15,6 +17,10 @@
 
   * Fix error when rendering ungraded external grading submissions (Matt West).
 
+  * Fix sync failure if a course instance has no `assessments` directory and add warning in sync log (Ray Essick).
+
+  * Fix Slack posting for student cheating reports (Matt West).
+
   * Change element names to use dashes instead of underscores (Nathan Walters).
 
   * Change deprecated `new Buffer()` calls to `Buffer.from()` (Ray Essick).
@@ -23,6 +29,8 @@
 
   * Change `centos7-ocaml` grader image to `ocaml-4.05` (Matt West).
 
+  * Change TravisCI tasks to run linters first (Matt West, h/t James Balamuta).
+  
   * Change element attributes to use hyphens instead of underscores (Nathan Walters).
 
 * __3.0.0__ - 2018-05-23
