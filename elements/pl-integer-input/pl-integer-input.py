@@ -9,7 +9,7 @@ import random
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ['answers_name']
+    required_attribs = ['answers-name']
     optional_attribs = ['weight', 'correct-answer', 'label', 'suffix', 'display']
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
@@ -135,7 +135,7 @@ def render(element_html, element_index, data):
 
 def parse(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)

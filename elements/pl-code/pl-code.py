@@ -41,7 +41,7 @@ allowed_languages = [
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
-    optional_attribs = ['language', 'no_highlight']
+    optional_attribs = ['language', 'no-highlight']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     language = pl.get_string_attrib(element, 'language', None)

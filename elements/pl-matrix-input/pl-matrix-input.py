@@ -10,7 +10,7 @@ import chevron
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow_complex']
+    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
@@ -50,7 +50,7 @@ def render(element_html, element_index, data):
             info_params = {'format': True, 'decdig': True, 'digits': '{:d}'.format(digits), 'comparison_eps': 0.51 * (10**-(digits - 0))}
         else:
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
-        info_params['allow_complex'] = pl.get_boolean_attrib(element, 'allow_complex', False)
+        info_params['allow_complex'] = pl.get_boolean_attrib(element, 'allow-complex', False)
         with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
             info = chevron.render(f, info_params).strip()
         with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
@@ -186,7 +186,7 @@ def parse(element_html, element_index, data):
 
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    allow_complex = pl.get_boolean_attrib(element, 'allow_complex', False)
+    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)

@@ -118,7 +118,7 @@ def get_objects(element, data):
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    answer_name = pl.get_string_attrib(element, 'answer_name')
+    answer_name = pl.get_string_attrib(element, 'answer-name')
 
     uuid = pl.get_uuid()
 
@@ -177,8 +177,8 @@ def render(element_html, element_index, data):
             'show_reset': body_cantranslate or body_canrotate or camera_canmove,
             'show_pose': show_pose,
             'show_instructions': will_be_graded,
-            'tol_translation': '{:.2f}'.format(pl.get_float_attrib(element, 'tol_translation', 0.5)),
-            'tol_rotation': '{:.1f}'.format(pl.get_float_attrib(element, 'tol_rotation', 5)),
+            'tol_translation': '{:.2f}'.format(pl.get_float_attrib(element, 'tol-translation', 0.5)),
+            'tol_rotation': '{:.1f}'.format(pl.get_float_attrib(element, 'tol-rotation', 5)),
             'default_is_python': True,
             'options': json.dumps(options, allow_nan=False)
         }
