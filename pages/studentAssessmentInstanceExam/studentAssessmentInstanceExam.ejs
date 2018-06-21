@@ -153,9 +153,13 @@
         Look at <strong>Best submission</strong> to confirm that each question has been graded.
 
         <% if (authz_result.mode == 'SEB' || 'password' in authz_result) { %>
-            <p>When are you done:
-            <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Click here to finish your assessment.</button>
-
+        <hr>
+        <p class="text-right">
+          After you have answered all the questions completely, click here:
+        </p>
+        <p class="text-right">
+          <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
+        </p>
         <% } else { %>
             When you are done, please logout and close your browser; there is no need to do anything else.
         <% } %>
