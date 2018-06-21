@@ -152,6 +152,7 @@ app.use('/pl/login', require('./pages/authLogin/authLogin'));
 // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
+app.use('/pl/password', require('./pages/authPassword/authPassword'));
 app.use(require('./middlewares/logRequest'));
 
 // load accounting for authenticated accesses

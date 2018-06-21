@@ -31,6 +31,8 @@
 
   * Change TravisCI tasks to run linters first (Matt West, h/t James Balamuta).
 
+  * Change assessment password protection method (Dave Mussulman).
+
 * __3.0.0__ - 2018-05-23
 
   * Add improved support for very large file downloads (Nathan Walters).

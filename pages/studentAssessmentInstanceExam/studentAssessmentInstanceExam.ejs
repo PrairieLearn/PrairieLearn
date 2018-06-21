@@ -14,15 +14,15 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
+          <h4 class="modal-title">All done?</h4>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <h4 class="modal-title">Finish assessment</h4>
         </div>
         <div class="modal-body">
           <% if (assessment_instance.all_questions_answered) { %>
           <div class="alert alert-warning">There are still unanswered questions.</div>
           <% } %>
           <p><strong>Warning</strong>: You will not be able to answer any more questions after finishing the assessment.</p>
-          <p>Are you sure you want to finish the assessment?</p>
+          <p>Are you sure you want to finish, complete, and close out the assessment?</p>
         </div>
         <div class="modal-footer">
           <form name="finish-form" method="POST">
@@ -152,13 +152,14 @@
         Submit your answer to each question with the <strong>Grade</strong> button on the question page.
         Look at <strong>Best submission</strong> to confirm that each question has been graded.
 
-        <% if (authz_result.mode == 'SEB') { %>
-            <form method="POST" class="form-inline">
-            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-            <input type="hidden" name="__action" value="finish">
-            When you are done:
-            <button type="submit" class="btn btn-success">Click here to finish your exam and close the Safe Exam Browser.</button>
-            </form>
+        <% if (authz_result.mode == 'SEB' || 'password' in authz_result) { %>
+        <hr>
+        <p class="text-right">
+          After you have answered all the questions completely, click here:
+        </p>
+        <p class="text-right">
+          <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Finish assessment</button>
+        </p>
         <% } else { %>
             When you are done, please logout and close your browser; there is no need to do anything else.
         <% } %>
