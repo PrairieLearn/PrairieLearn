@@ -10,7 +10,7 @@ var config = require('../lib/config');
 
 var timeout = 24; // hours
 
-router.get('/', function(req, res, next) {
+router.all('/', function(req, res, next) {
 
     // SEB: check user-agent
     if ('user-agent' in req.headers) {
@@ -66,7 +66,7 @@ module.exports = router;
 
 function badPassword(res, req) {
 
-    logger.info(`invalid password attempt for ${res.locals.user.uid}`);
+    logger.verbose(`invalid password attempt for ${res.locals.user.uid}`);
     res.cookie('pl_pw_origUrl', req.originalUrl);
     res.redirect('/pl/password');
 }
