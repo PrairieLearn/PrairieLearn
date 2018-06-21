@@ -4,14 +4,20 @@ import random, math
 import numpy as np
 import prairielearn as pl
 import scipy.linalg as sla
+import to_precision
 
 def generate(data):
 
+
     A =  np.random.rand(2,2)
+
     dig = 3
-    B = np.round(A,dig)
     sf = 1
-    C = np.round(B,sf)
+    B = np.round(A,dig)
+    C = B.copy()
+
+    for ix,iy in np.ndindex(B.shape):
+        C[ix,iy]=to_precision.to_precision(C[ix,iy],sf)
 
     x =  np.array([[1,2,3,4]])
 

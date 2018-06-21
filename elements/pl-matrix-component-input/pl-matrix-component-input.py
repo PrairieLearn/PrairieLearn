@@ -140,7 +140,24 @@ def render(element_html, element_index, data):
             'uuid': pl.get_uuid()
         }
 
-        if parse_error is None:
+        # Create error message for each matrix entry
+        # when at least one of them has invalid format
+        if parse_error is not None:
+            sub_output = ''
+            a_tru = pl.from_json(data['correct_answers'].get(name, None))
+            m, n = np.shape(a_tru)
+            for i in range(m):
+                for j in range(n):
+                    each_entry_name = name + str(n * i + j + 1)
+                    a_sub = data['raw_submitted_answers'].get(each_entry_name, None)
+                    sub_output += '<p> entry (' + str(i + 1) + ', ' + str(j + 1) + ') = "' + str(a_sub) + '" '
+                    entry_parse_error = data['format_errors'].get(each_entry_name, None)
+                    if entry_parse_error is not None:
+                        sub_output += entry_parse_error
+                    sub_output += '</p>'
+            html_params['entries_feedback'] = sub_output
+
+        else:
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data['submitted_answers'].get(name, None)
             if a_sub is None:
@@ -149,17 +166,11 @@ def render(element_html, element_index, data):
             a_sub = pl.from_json(a_sub)
             # Wrap answer in an ndarray (if it's already one, this does nothing)
             a_sub = np.array(a_sub)
-
             # Format answer as a string
             if format_type == 'python':
                 html_params['a_sub'] = pl.string_from_2darray(a_sub, language='python', digits=12, presentation_type='g')
             else:
                 html_params['a_sub'] = '$' + pl.latex_array_from_numpy_array(a_sub, presentation_type='g', digits=12) + '$'
-
-        else:
-            raw_submitted_answer = data['raw_submitted_answers'].get(name, None)
-            if raw_submitted_answer is not None:
-                html_params['raw_submitted_answer'] = escape(raw_submitted_answer)
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
@@ -235,6 +246,8 @@ def render(element_html, element_index, data):
     return html
 
 
+
+
 def parse(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
@@ -252,36 +265,39 @@ def parse(element_html, element_index, data):
 
     # Create an array for the submitted answer to be stored in data['submitted_answer'][name]
     # used for display in the answer and submission panels
+    # Also creates invalid error messages
+    invalid_format = False
     for i in range(m):
         for j in range(n):
             each_entry_name = name + str(n * i + j + 1)
             a_sub = data['submitted_answers'].get(each_entry_name, None)
-
             if a_sub is None:
-                data['format_errors'][name] = 'No submitted answer.'
-                data['submitted_answers'][name] = None
-                return
-            # check if one of the entries was left blank
-            if not a_sub:
-                data['format_errors'][name] = 'At least one of the matrix entries was left blank.  Make sure you are entering all matrix components.'
-                data['submitted_answers'][name] = None
-                return
-
-            # Convert to float
-            try:
+                data['submitted_answers'][each_entry_name] = None
+                data['format_errors'][each_entry_name] = '(No submitted answer)'
+                invalid_format = True
+            elif not a_sub:
+                data['submitted_answers'][each_entry_name] = None
+                data['format_errors'][each_entry_name] = '(Invalid blank entry)'
+                invalid_format = True
+            else:
                 a_sub_parsed = pl.string_to_number(a_sub)
                 if a_sub_parsed is None:
-                    raise ValueError('invalid submitted answer (wrong type)')
-                if not np.isfinite(a_sub_parsed):
-                    raise ValueError('invalid submitted answer (not finite)')
-                data['submitted_answers'][each_entry_name] = pl.to_json(a_sub_parsed)
-                A[i, j] = a_sub_parsed
+                    data['submitted_answers'][each_entry_name] = None
+                    data['format_errors'][each_entry_name] = '(Invalid format)'
+                    invalid_format = True
+                elif not np.isfinite(a_sub_parsed):
+                    data['submitted_answers'][each_entry_name] = None
+                    data['format_errors'][each_entry_name] = '(Invalid format - not finite)'
+                    invalid_format = True
+                else:
+                    data['submitted_answers'][each_entry_name] = pl.to_json(a_sub_parsed)
+                    A[i, j] = a_sub_parsed
 
-            except Exception:
-                data['format_errors'][name] = 'Invalid format. At least one of the submitted answers could not be interpreted as a double-precision floating-point number.'
-                data['submitted_answers'][name] = None
-
-    data['submitted_answers'][name] = pl.to_json(A)
+    if invalid_format:
+        data['format_errors'][name] = 'At least one of the entries has invalid format (empty entries or not a double precision floating point number)'
+        data['submitted_answers'][name] = None
+    else:
+        data['submitted_answers'][name] = pl.to_json(A)
 
 
 def grade(element_html, element_index, data):
@@ -342,7 +358,7 @@ def grade(element_html, element_index, data):
             if correct:
                 number_of_correct += 1
             else:
-                feedback += ' (' + str(i + 1) + ', ' + str(j + 1) + '), '
+                feedback += ' (' + str(i + 1) + ', ' + str(j + 1) + ')  '
 
     if number_of_correct == m * n:
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
@@ -376,11 +392,10 @@ def test(element_html, element_index, data):
     else:
         m, n = np.shape(a_tru)
 
-    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    result = random.choices(['correct', 'incorrect', 'incorrect'], [5, 5, 1])[0]
 
     number_of_correct = 0
     feedback = ''
-    format_errors_feedback = ''
     for i in range(m):
         for j in range(n):
             each_entry_name = name + str(n * i + j + 1)
@@ -389,16 +404,19 @@ def test(element_html, element_index, data):
                 number_of_correct += 1
             elif result == 'incorrect':
                 data['raw_submitted_answers'][each_entry_name] = str(a_tru[i, j] + (random.uniform(1, 10) * random.choice([-1, 1])))
-                feedback += ' (' + str(i + 1) + ', ' + str(j + 1) + '), '
+                feedback += ' (' + str(i + 1) + ', ' + str(j + 1) + ')  '
             elif result == 'invalid':
                 if random.choice([True, False]):
-                    data['raw_submitted_answers'][each_entry_name] = '1 + 2'
-                    format_errors_feedback += 'Found one invalid submitted answer. '
+                    data['raw_submitted_answers'][each_entry_name] = '1,2'
+                    data['format_errors'][each_entry_name] = '(Invalid format)'
                 else:
                     data['raw_submitted_answers'][name] = ''
-                    format_errors_feedback += 'Found a blank answer. '
+                    data['format_errors'][each_entry_name] = '(Invalid blank entry)'
             else:
                 raise Exception('invalid result: %s' % result)
+
+    if result == 'invalid':
+        data['format_errors'][name] = 'At least one of the entries has invalid format (empty entries or not a double precision floating point number)'
 
     if number_of_correct == m * n:
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
@@ -407,6 +425,4 @@ def test(element_html, element_index, data):
             score_value = 0
         else:
             score_value = number_of_correct / (m * n)
-            data['partial_scores'][name] = {'score': score_value, 'weight': weight, 'feedback': feedback}
-    if format_errors_feedback:
-        data['format_errors'][name] = format_errors_feedback
+        data['partial_scores'][name] = {'score': score_value, 'weight': weight, 'feedback': feedback}
