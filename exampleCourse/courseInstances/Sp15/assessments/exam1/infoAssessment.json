@@ -12,7 +12,8 @@
             "credit": 100
         },
         {
-            "mode": "Exam",
+            "password": "pw",
+            "timeLimitMin": 10,
             "credit": 100,
             "startDate": "1900-07-07T23:59:59",
             "endDate": "2300-07-10T23:59:59"
