@@ -14,15 +14,15 @@
     <div class="modal-dialog">
       <div class="modal-content">
         <div class="modal-header">
+          <h4 class="modal-title">All done?</h4>
           <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
-          <h4 class="modal-title">Finish assessment</h4>
         </div>
         <div class="modal-body">
           <% if (assessment_instance.all_questions_answered) { %>
           <div class="alert alert-warning">There are still unanswered questions.</div>
           <% } %>
           <p><strong>Warning</strong>: You will not be able to answer any more questions after finishing the assessment.</p>
-          <p>Are you sure you want to finish the assessment?</p>
+          <p>Are you sure you want to finish, complete, and close out the assessment?</p>
         </div>
         <div class="modal-footer">
           <form name="finish-form" method="POST">
@@ -153,12 +153,9 @@
         Look at <strong>Best submission</strong> to confirm that each question has been graded.
 
         <% if (authz_result.mode == 'SEB' || 'password' in authz_result) { %>
-            <form method="POST" class="form-inline">
-            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-            <input type="hidden" name="__action" value="finish">
-            When you are done:
-            <button type="submit" class="btn btn-danger" onClick="return confirm('Finishing the exam means you can no longer work on it. Only click OK if that is what you want. Otherwise, press Cancel.');">Click here to finish your exam.</button>
-            </form>
+            <p>When are you done:
+            <button class="btn btn-danger" data-toggle="modal" data-target="#confirmFinishModal">Click here to finish your assessment.</button>
+
         <% } else { %>
             When you are done, please logout and close your browser; there is no need to do anything else.
         <% } %>
