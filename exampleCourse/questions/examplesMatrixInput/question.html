@@ -3,7 +3,7 @@
 Suppose ${\bf A}$ is a random 2D array given in either matlab or python format:
 
 <p>
-<pl-matrix-output digits="{{params.dig}}">
+<pl-matrix-output digits="{{params.sf}}">
     <variable params_name="in">A</variable>
 </pl-matrix-output>
 </p>
@@ -11,24 +11,23 @@ Suppose ${\bf A}$ is a random 2D array given in either matlab or python format:
 
 <p> 1.
 <pl-question-panel>
-Enter the components of the matrix ${\bf A}$ using ${{params.sf}}$ significant figure.
-   To get the answer correct, all entries need to be correct.</p>
+Enter the components of the matrix ${\bf A}$. To get the answer correct, all entries need to be correct.</p>
 </pl-question-panel>
 <p>
-<pl-matrix-component-input answers-name="out1" label="${\bf A} = $" comparison="sigfig" digits="1">
+<pl-matrix-component-input answers-name="out1" label="${\bf A} = $" comparison="sigfig" digits="{{params.sf}}">
 </pl-matrix-component-input>
 </p>
 
 
 <p> 2.
 <pl-question-panel>
- Enter the components of the matrix ${\bf A}$ using ${{params.sf}}$ significant figure.
+ Enter the components of the matrix ${\bf A}$.
   The attribute <code>allow-partial-credit="true"</code> is used, so each correct entry receives a partial score.
 </pl-question-panel>
 </p>
 
 <p>
-<pl-matrix-component-input answers-name="out2" label="${\bf A} = $" comparison="sigfig" digits="1" allow-partial-credit="true">
+<pl-matrix-component-input answers-name="out2" label="${\bf A} = $" comparison="sigfig" digits="{{params.sf}}" allow-partial-credit="true">
 </pl-matrix-component-input>
 </p>
 
