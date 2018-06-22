@@ -80,6 +80,7 @@
   * Fix restart of Python `codeCallers` with no active child (Matt West).
 
   * Change `pl-code` to display code from a source file OR inline text (Mariana Silva).
+  * Fix emulating uid in devMode (Dave Mussulman).
 
   * Change element names to use dashes instead of underscores (Nathan Walters).
 
@@ -294,7 +295,6 @@
   * Fix slow query for file downloads (Matt West).
 
   * Fix external grading documentation to describe the current code (Nathan Walters).
-  * Fix emulating uid in devMode (Dave Mussulman).
 
   * Change to Bootstrap 4 (Nathan Walters).
 
