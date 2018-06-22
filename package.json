@@ -45,6 +45,7 @@
         "mustache": "^2.3.0",
         "nodemon": "^1.17.5",
         "numeric": "^1.2.6",
+        "oauth-signature": "^1.5.0",
         "on-finished": "^2.3.0",
         "parse5": "^5.0.0",
         "passport": "^0.4.0",

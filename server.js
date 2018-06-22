@@ -164,6 +164,7 @@ app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOA
 app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
 app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
 app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
+app.use('/pl/lti', require('./pages/authCallbackLTI/authCallbackLTI'));
 app.use('/pl/login', require('./pages/authLogin/authLogin'));
 // disable SEB until we can fix the mcrypt issues
 // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
