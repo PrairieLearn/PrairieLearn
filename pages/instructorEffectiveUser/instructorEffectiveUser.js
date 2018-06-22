@@ -39,14 +39,15 @@ router.post('/', function(req, res, next) {
                 uid: req.body.pl_requested_uid,
                 course_instance_id: res.locals.course_instance.id,
             };
-            return sqldb.query(sql.add_and_enroll, params, function(err) {
+            sqldb.query(sql.add_and_enroll, params, function(err) {
                 if (ERR(err, next)) return;
                 res.cookie('pl_requested_uid', req.body.pl_requested_uid, {maxAge: 60 * 60 * 1000});
                 res.redirect(req.originalUrl);
             });
+        } else {
+            res.cookie('pl_requested_uid', req.body.pl_requested_uid, {maxAge: 60 * 60 * 1000});
+            res.redirect(req.originalUrl);
         }
-        res.cookie('pl_requested_uid', req.body.pl_requested_uid, {maxAge: 60 * 60 * 1000});
-        res.redirect(req.originalUrl);
     } else if (req.body.__action == 'changeRole') {
         res.cookie('pl_requested_role', req.body.pl_requested_role, {maxAge: 60 * 60 * 1000});
         res.redirect(req.originalUrl);
