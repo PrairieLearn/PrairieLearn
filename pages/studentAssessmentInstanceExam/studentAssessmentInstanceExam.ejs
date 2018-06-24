@@ -83,14 +83,8 @@
           </div>
         </div>
 
-        <% if (assessment_text_templated) { %>
-        <div class="alert alert-secondary mb-0 mt-4">
-          <%- assessment_text_templated %>
-        </div>
-        <% } %>
-
         <% if (assessment_instance.open && assessment_instance_remaining_ms) { %>
-        <div class="well well-sm">
+        <div class="alert alert-secondary mt-4" role="alert">
           <div class="row">
             <div class="col-md-2 col-sm-12 col-xs-12">
               <div id="countdownProgress"></div>
@@ -107,6 +101,13 @@
           }) %>
         </div>
         <% } %>
+
+        <% if (assessment_text_templated) { %>
+        <div class="alert alert-secondary mb-0 mt-4">
+          <%- assessment_text_templated %>
+        </div>
+        <% } %>
+
       </div>
 
       <table class="table table-sm table-hover">
