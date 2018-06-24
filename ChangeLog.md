@@ -21,6 +21,8 @@
 
   * Fix Slack posting for student cheating reports (Matt West).
 
+  * Fix assessment instance page to only show 'Finish assessment' button for password and SEB exams (Dave Mussulman).
+
   * Fix assessment time limits (Matt West).
 
   * Change element names to use dashes instead of underscores (Nathan Walters).

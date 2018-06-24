@@ -153,7 +153,7 @@
         Submit your answer to each question with the <strong>Grade</strong> button on the question page.
         Look at <strong>Best submission</strong> to confirm that each question has been graded.
 
-        <% if (authz_result.mode == 'SEB' || 'password' in authz_result) { %>
+        <% if (authz_result.mode == 'SEB' || authz_result.password != null) { %>
         <hr>
         <p class="text-right">
           After you have answered all the questions completely, click here:
