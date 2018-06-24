@@ -21,6 +21,8 @@
 
   * Fix Slack posting for student cheating reports (Matt West).
 
+  * Fix assessment time limits (Matt West).
+
   * Change element names to use dashes instead of underscores (Nathan Walters).
 
   * Change deprecated `new Buffer()` calls to `Buffer.from()` (Ray Essick).
