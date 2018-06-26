@@ -27,7 +27,7 @@ router.all('/', function(req, res, next) {
     // https://github.com/expressjs/express/issues/3264#issuecomment-290482333
     //Object.setPrototypeOf(parameters, {});
 
-    var genSignature = oauthSignature.generate('POST', url, parameters, 'secret', null, { encodeSignature: false});
+    var genSignature = oauthSignature.generate('POST', url, parameters, 'secret', null, {encodeSignature: false});
 
     if (genSignature != signature) {
         return next(error.make(500, 'Invalid signature'));
@@ -37,8 +37,17 @@ router.all('/', function(req, res, next) {
         return next(error.make(500, 'Unsupported lti_message_type'));
     }
 
+    // Check oauth_timestamp within N seconds of now (3000 suggested)
+
+    // Check nonce hasn't been used by that consumer_key in that timeframe
+
+    res.redirect(parameters.launch_presentation_return_url + "?lti_errorlog=Foobar");
+    return;
+
+
     var tokenData = {
         user_id: 5,
+        auth_source: 'LTI',
     };
 
     var pl_authn = csrf.generateToken(tokenData, config.secretKey);
