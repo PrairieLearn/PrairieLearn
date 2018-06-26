@@ -14,9 +14,9 @@ before_install:
 script:
   - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then sh ./tools/verify-changelog.sh; fi'
   - docker run -itd --name=npm_test_container pltest /bin/bash
-  - docker exec -it npm_test_container /PrairieLearn/docker/npm_test.sh
   - docker exec -it npm_test_container /PrairieLearn/docker/lint_js.sh
   - docker exec -it npm_test_container /PrairieLearn/docker/lint_python.sh
+  - docker exec -it npm_test_container /PrairieLearn/docker/npm_test.sh
 after_success:
   - > 
     docker exec

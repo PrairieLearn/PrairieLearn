@@ -3,11 +3,14 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Add string input element (Mariana Silva)
+
   * Add student name and clickable e-mail address information to issue reports (James Balamuta).
 
   * Add new code + instructions for running with `docker-compose` (Nathan Walters).
 
   * Upgrade to Node.js 10 and PostgreSQL 10 (Matt West).
+  * Add `tools/dump_*` scripts to filter and anonymize per-course dumps (Matt West).
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
 
@@ -15,7 +18,27 @@
 
   * Fix several issues with various elements (Nathan Walters).
 
+  * Fix error when rendering ungraded external grading submissions (Matt West).
+
+  * Fix sync failure if a course instance has no `assessments` directory and add warning in sync log (Ray Essick).
+
+  * Fix Slack posting for student cheating reports (Matt West).
+
+  * Fix assessment instance page to only show 'Finish assessment' button for password and SEB exams (Dave Mussulman).
+
+  * Fix assessment time limits (Matt West).
+
   * Change element names to use dashes instead of underscores (Nathan Walters).
+
+  * Change deprecated `new Buffer()` calls to `Buffer.from()` (Ray Essick).
+
+  * Change to Node.js 10 and PostgreSQL 10 (Matt West).
+
+  * Change `centos7-ocaml` grader image to `ocaml-4.05` (Matt West).
+
+  * Change TravisCI tasks to run linters first (Matt West, h/t James Balamuta).
+
+  * Change assessment password protection method (Dave Mussulman).
 
 * __3.0.0__ - 2018-05-23
 

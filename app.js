@@ -24,7 +24,7 @@ module.exports = function(config) {
     app.use(function(req, res, next) {res.locals.devMode = config.devMode; next();});
     app.use(function(req, res, next) {res.locals.is_administrator = false; next();});
 
-    if (!config.devMode) {
+    if (config.hasAzure) {
         var OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
         const azureConfig = {
             identityMetadata: config.azureIdentityMetadata,
@@ -89,7 +89,7 @@ module.exports = function(config) {
     app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
     app.use('/pl/login', require('./pages/authLogin/authLogin'));
     // disable SEB until we can fix the mcrypt issues
-    //app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
+    // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
     app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
     app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
     app.use(require('./middlewares/logRequest'));
@@ -117,6 +117,7 @@ module.exports = function(config) {
     app.use('/pl', require('./pages/home/home'));
     app.use('/pl/enroll', require('./pages/enroll/enroll'));
     app.use('/pl/logout', require('./pages/authLogout/authLogout'));
+    app.use('/pl/password', require('./pages/authPassword/authPassword'));
 
     // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
     if (config.devMode) {
