@@ -128,18 +128,11 @@ def inner_html(element):
     return html
 
 
-def compat_has(object, attrib):
-    if attrib in object:
-        return True
-    new_attrib = attrib.replace('-', '_')
-    return new_attrib in object
-
-
 def compat_get(object, attrib, default):
     if attrib in object:
         return object[attrib]
-    new_attrib = attrib.replace('-', '_')
-    return new_attrib in object
+    old_attrib = attrib.replace('-', '_')
+    return old_attrib in object
 
 
 def compat_array(arr):
@@ -152,7 +145,7 @@ def compat_array(arr):
 
 def check_attribs(element, required_attribs, optional_attribs):
     for name in required_attribs:
-        if not compat_has(element.attrib, name):
+        if not has_attrib(element, name):
             raise Exception('Required attribute "%s" missing' % name)
     extra_attribs = list(set(element.attrib) - set(compat_array(required_attribs)) - set(compat_array(optional_attribs)))
     for name in extra_attribs:
