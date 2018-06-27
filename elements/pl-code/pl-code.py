@@ -41,7 +41,7 @@ allowed_languages = [
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
-    optional_attribs = ['language', 'no_highlight']
+    optional_attribs = ['language', 'no-highlight']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     language = pl.get_string_attrib(element, 'language', None)
@@ -53,7 +53,7 @@ def prepare(element_html, element_index, data):
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     language = pl.get_string_attrib(element, 'language', None)
-    no_highlight = pl.get_boolean_attrib(element, 'no_highlight', False)
+    no_highlight = pl.get_boolean_attrib(element, 'no-highlight', False)
     specify_language = (language is not None) and (not no_highlight)
 
     # Strip a single leading newline from the code, if present. This

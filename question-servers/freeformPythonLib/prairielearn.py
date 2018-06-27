@@ -128,11 +128,26 @@ def inner_html(element):
     return html
 
 
+def compat_get(object, attrib, default):
+    if attrib in object:
+        return object[attrib]
+    old_attrib = attrib.replace('-', '_')
+    return old_attrib in object
+
+
+def compat_array(arr):
+    new_arr = []
+    for i in arr:
+        new_arr.append(i)
+        new_arr.append(i.replace('-', '_'))
+    return new_arr
+
+
 def check_attribs(element, required_attribs, optional_attribs):
     for name in required_attribs:
-        if name not in element.attrib:
+        if not has_attrib(element, name):
             raise Exception('Required attribute "%s" missing' % name)
-    extra_attribs = list(set(element.attrib) - set(required_attribs) - set(optional_attribs))
+    extra_attribs = list(set(element.attrib) - set(compat_array(required_attribs)) - set(compat_array(optional_attribs)))
     for name in extra_attribs:
         raise Exception('Unknown attribute "%s"' % name)
 
@@ -155,12 +170,20 @@ def _get_attrib(element, name, *args):
     # which means we need to explicitly handle the optional argument
     if len(args) > 1:
         raise Exception('Only one additional argument is allowed')
-    if name not in element.attrib:
-        if len(args) == 1:
-            return (args[0], True)
-        else:
-            raise Exception('Attribute "%s" missing and no default is available' % name)
-    return (element.attrib[name], False)
+
+    if name in element.attrib:
+        return (element.attrib[name], False)
+
+    # We need to check for the legacy _ version
+    old_name = name.replace('-', '_')
+    if old_name in element.attrib:
+        return (element.attrib[old_name], False)
+
+    # Provide a default if we can
+    if len(args) == 1:
+        return (args[0], True)
+
+    raise Exception('Attribute "%s" missing and no default is available' % name)
 
 
 def has_attrib(element, name):
@@ -169,7 +192,8 @@ def has_attrib(element, name):
     Returns true if the element has an attribute of that name,
     false otherwise.
     """
-    return name in element.attrib
+    old_name = name.replace('-', '_')
+    return name in element.attrib or old_name in element.attrib
 
 
 def get_string_attrib(element, name, *args):

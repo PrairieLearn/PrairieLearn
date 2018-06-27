@@ -29,13 +29,13 @@ def add_format_error(data, error_string):
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ['file_names']
+    required_attribs = ['file-names']
     optional_attribs = []
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     if '_required_file_names' not in data['params']:
         data['params']['_required_file_names'] = []
-    file_names = get_file_names_as_array(pl.get_string_attrib(element, 'file_names'))
+    file_names = get_file_names_as_array(pl.get_string_attrib(element, 'file-names'))
     data['params']['_required_file_names'].extend(file_names)
 
 
@@ -45,7 +45,7 @@ def render(element_html, element_index, data):
 
     element = lxml.html.fragment_fromstring(element_html)
     uuid = pl.get_uuid()
-    raw_file_names = pl.get_string_attrib(element, 'file_names', '')
+    raw_file_names = pl.get_string_attrib(element, 'file-names', '')
     file_names = get_file_names_as_array(raw_file_names)
     file_names_json = json.dumps(file_names, allow_nan=False)
     answer_name = get_answer_name(raw_file_names)
@@ -69,7 +69,7 @@ def render(element_html, element_index, data):
 
 def parse(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    raw_file_names = pl.get_string_attrib(element, 'file_names', '')
+    raw_file_names = pl.get_string_attrib(element, 'file-names', '')
     required_file_names = get_file_names_as_array(raw_file_names)
     answer_name = get_answer_name(raw_file_names)
 

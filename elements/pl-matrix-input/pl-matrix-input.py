@@ -9,14 +9,14 @@ import chevron
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ['answers_name']
-    optional_attribs = ['weight', 'correct_answer', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow_complex']
+    required_attribs = ['answers-name']
+    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-complex']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
     label = pl.get_string_attrib(element, 'label', None)
 
     if '_pl_matrix_input_format' in data['submitted_answers']:
@@ -50,7 +50,7 @@ def render(element_html, element_index, data):
             info_params = {'format': True, 'decdig': True, 'digits': '{:d}'.format(digits), 'comparison_eps': 0.51 * (10**-(digits - 0))}
         else:
             raise ValueError('method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")' % comparison)
-        info_params['allow_complex'] = pl.get_boolean_attrib(element, 'allow_complex', False)
+        info_params['allow_complex'] = pl.get_boolean_attrib(element, 'allow-complex', False)
         with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
             info = chevron.render(f, info_params).strip()
         with open('pl-matrix-input.mustache', 'r', encoding='utf-8') as f:
@@ -185,8 +185,8 @@ def parse(element_html, element_index, data):
     # By convention, this function returns at the first error found
 
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
-    allow_complex = pl.get_boolean_attrib(element, 'allow_complex', False)
+    name = pl.get_string_attrib(element, 'answers-name')
+    allow_complex = pl.get_boolean_attrib(element, 'allow-complex', False)
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
@@ -213,7 +213,7 @@ def parse(element_html, element_index, data):
 
 def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
 
     # Get weight
     weight = pl.get_integer_attrib(element, 'weight', 1)
@@ -270,7 +270,7 @@ def grade(element_html, element_index, data):
 
 def test(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
 
     # Get correct answer
