@@ -31,6 +31,7 @@
       height: auto;
       transform: scale(1.1, 1.1);
       opacity: 0;
+      margin: 20px;
     }
     body.animation .login-container {
       animation: scale-in 500ms;
@@ -78,6 +79,16 @@
     }
   }
   </style>
+  <noscript>
+    <style>
+    @media (min-width: 576px) {
+      .login-container {
+        transform: scale(1, 1);
+        opacity: 1;
+      }
+    }
+    </style>
+  </noscript>
 </head>
 <body class="d-flex bg-dark">
   <div class="login-container-wrapper">
