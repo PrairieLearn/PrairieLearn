@@ -1,53 +1,123 @@
 <!DOCTYPE html>
-<html>
-  <head>
-    <%- include('../partials/head'); %>
-    <style>
-td {
-    vertical-align: top;
-    padding-right: 1em;
-}
-
-.googlebutton { background: url(/images/btn_google_signin_light_normal_web.png) }
-.googlebutton:hover { background: url(/images/btn_google_signin_light_focus_web.png) }
-
-    </style>
-  </head>
-  <body>
-      <div class="container">
-          <div class="jumbotron">
-              <div class="text-center">
-                  <h1>PrairieLearn</h1>
-                  <p class="lead">An online system for problem-driven learning.</p>
-                  <hr>
-              </div>
-              <p>Select a login:
-
-                  <table><tr>
-                      <% if (devMode) { %>
-                          <td><a class="btn btn-success btn-lg" href="/pl" role="button">DevMode by-pass</a></td>
-                          <% } %>
-                          <% if (config.hasShib || showAll) { %>
-                              <td><a class="btn btn-primary" href="/pl/shibcallback" role="button">
-                              <img src="/images/Illinois-Wordmark-Horizontal-Full-Color-RGB.png" height="50">
-                              </a></td>
-                          <% } %>
-                          <% if (config.hasOauth || showAll) { %>
-                              <td><a class="" href="/pl/oauth2login" role="button">
-                              <img src="/images/btn_google_signin_light_normal_web.png">
-                              </a></td>
-                          <% } %>
-                          <% if (config.hasAzure || showAll) { %>
-                              <td class="text-left"><a class="" href="/pl/azure_login" role="button">
-                              <img src="/images/sign-in-with-microsoft-light.png"></a>
-                              <ul><li>Work or school accounts</li>
-                              <li>INTL ID</li>
-                              </ul>
-                              </td>
-                          <% } %>
-                  </tr></table>
-              </div>
-              <%- include('../partials/advertisement'); %>
-         </div>
-  </body>
+<html class="bg-dark">
+<head>
+  <%- include('../partials/head'); %>
+  <style>
+  html, body {
+    height: 100%;
+    background-color: #e9ecef;
+  }
+  .login-container-wrapper {
+    width: 100%;
+    height: 100%;
+  }
+  .login-container {
+    background-color: white;
+    padding: 20px;
+    height: 100%;
+  }
+  @media (min-width: 576px) {
+    .login-container-wrapper {
+      max-width: 500px;
+      margin: auto;
+      height: auto;
+    }
+    .login-container {
+      border-radius: 5px;
+      box-shadow: 0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22);
+      height: auto;
+      transform: scale(1.1, 1.1);
+      opacity: 0;
+    }
+    body.animation .login-container {
+      animation: scale-in 500ms;
+      animation-delay: 300ms;
+      animation-fill-mode: forwards;
+    }
+    body.no-animation .login-container {
+      transform: scale(1, 1);
+      opacity: 1;
+    }
+  }
+  .subheader {
+    font-weight: 300;
+    font-size: 1.2rem;
+  }
+  .btn .social-icon {
+    position: absolute;
+    left: 7px;
+    height: 24px;
+    top: 0;
+    bottom: 0;
+    margin: auto;
+  }
+  .btn-illinois {
+    background-color: #E84A27;
+    border-color: #E84A27;
+    color: white;
+  }
+  .btn-illinois:hover {
+    background-color: #D04223;
+    border-color: #D04223;
+    color: white;
+  }
+  .btn-illinois:focus {
+    box-shadow: 0 0 0 0.2rem rgba(255, 83, 0, 0.35);
+  }
+  .btn-illinois:active {
+    background-color: #B93B1F;
+    border-color: #B93B1F;
+  }
+  @keyframes scale-in {
+    100% {
+      transform: scale(1,1);
+      opacity: 1;
+    }
+  }
+  </style>
+</head>
+<body class="d-flex bg-dark">
+  <div class="login-container-wrapper">
+    <div class="login-container">
+      <div>
+        <h1 class="text-center">PrairieLearn</h1>
+        <h2 class="text-center subheader">An online system for problem-driven learning</h2>
+        <hr>
+        <% if (devMode) { %>
+          <a class="btn btn-success mb-2 w-100" href="/pl" role="button">
+            <span class="font-weight-bold">DevMode by-pass</span>
+          </a>
+        <% } %>
+        <% if (config.hasShib || showAll) { %>
+          <a class="btn btn-illinois mb-2 w-100 position-relative" href="/pl/shibcallback" role="button">
+            <img src="/images/illinois_logo.svg" class="social-icon"/>
+            <span class="font-weight-bold">Sign in with Illinois</span>
+          </a>
+        <% } %>
+        <% if (config.hasOauth || showAll) { %>
+          <a class="btn btn-primary mb-2 w-100 position-relative" href="/pl/oauth2login" role="button">
+            <img src="/images/google_logo.svg" class="social-icon"/>
+            <span class="font-weight-bold">Sign in with Google
+          </a>
+        <% } %>
+        <% if (config.hasAzure || showAll) { %>
+          <a class="btn btn-dark w-100 position-relative" href="/pl/azure_login" role="button">
+            <img src="/images/ms_logo.svg" class="social-icon"/>
+            <span class="font-weight-bold">Sign in with Microsoft</span>
+          </a>
+        <% } %>
+      </div>
+      <%- include('../partials/advertisement'); %>
+    </div>
+  </div>
+  <script>
+    if (document.createElement('div').style.animationName !== undefined) {
+      // Nice, we have animation support
+      document.body.classList.add('animation');
+    } else {
+      // Why do people use old browsers...
+      document.body.classList.add('no-animation');
+    }
+  </script>
+</body>
 </html>
