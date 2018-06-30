@@ -9,6 +9,8 @@
 
   * Add `tools/dump_*` scripts to filter and anonymize per-course dumps (Matt West).
 
+  * Add improved login screen (Nathan Walters).
+
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
 
   * Fix Google auth using new API (Matt West).
