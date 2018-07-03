@@ -215,6 +215,48 @@
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
+      <!-- Question cache -------------------------------------------------------------->
+
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white d-flex align-items-center">
+          Question cache
+        </div>
+        <div class="card-body">
+          <p>
+            Each panel rendered for a question is cached by default.
+            This button will invalidate all entries in the cache.
+            This should only be used if you know what you're doing and you suspect it's necessary.
+          </p>
+          <form name="invalidate-question-cache-form" method="POST">
+            <input type="hidden" name="__action" value="invalidate_question_cache">
+            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+            <button id="invalidate-render-cache" type="button" class="btn btn-danger">Invalidate question render cache</button>
+            <div id="confirm-invalidate-cache-container" class="confirm-invalidate-cache" style="display: none;">
+              <button id="confirm-invalidate-render-cache" type="submit" class="btn btn-danger">Confirm invalidate cache</button>
+              <button id="cancel-invalidate-render-cache" type="button" class="btn btn-secondary">Cancel</button>
+            </div>
+          </form>
+          <script>
+          $(function() {
+            var invalidateButton = $('#invalidate-render-cache');
+            var confirmInvalidateContainer = $('#confirm-invalidate-cache-container');
+            var cancelInvalidateButton = $('#cancel-invalidate-render-cache');
+            invalidateButton.click(function() {
+              confirmInvalidateContainer.show();
+              invalidateButton.hide();
+            });
+            cancelInvalidateButton.click(function() {
+              invalidateButton.show();
+              confirmInvalidateContainer.hide();
+            })
+          });
+          </script>
+        </div>
+      </div>
+
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
+      <!-------------------------------------------------------------------------------->
       <!-------------------------------------------------------------------------------->
 
     </div>
