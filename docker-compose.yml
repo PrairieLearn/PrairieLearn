@@ -24,20 +24,12 @@ services:
   prairiegrader:
     image: 'prairielearn/prairiegrader'
     environment:
-      - USE_DATABASE=true
+      - NODE_ENV=local-docker
       - PG_HOST=postgres
       - PG_PASSWORD=securepassword
       - RABBITMQ_HOST=amqp://rabbitmq
-      - QUEUE_TYPE=rabbitmq
-      - FILE_STORE_TYPE=disk
-      - FILE_STORE_PATH=/jobs
-      # Because we have to use a single volume to move files between this
-      # container and the job container, we can only run one job at a time
-      - MAX_CONCURRENT_JOBS=1
       - JOB_FILES_VOLUME_NAME=prairiegrader_job_files
       - JOB_FILES_VOLUME_PATH=/job_files
-      - GLOBAL_LOGGER_LEVEL=info
-      - JOB_LOGGER_LEVEL=info
     volumes:
       - jobs:/jobs
       - prairiegrader_job_files:/job_files
