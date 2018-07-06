@@ -23,6 +23,9 @@ exampleCourse
 |       `-- ...
 |   +-- ag2
 |       `-- ...
++-- elements            # custom elements available to this course (see other doc)
+|   +-- element1
+|       `-- ...
 +-- environment         # files needed to configure the autograder environment (see other doc)
 |   `-- ...
 |   `-- ...
@@ -35,6 +38,8 @@ exampleCourse
 ```
 
 * See an [example course directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse) in PrairieLearn
+
+* See [HTML element list](elements.md) for a list of elements available to all courses; the [PrarieDraw graphics](PrairieDraw.md) element is a custom element in use by some courses.
 
 * See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourse` and `serverFilesCourse` directories.
 
