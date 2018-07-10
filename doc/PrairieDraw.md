@@ -1,25 +1,9 @@
 
 # PrairieDraw
 
-The PrairieDraw library (`PrairieDraw.js`) is a figure-drawing library which allows dynamic figures to be rendered through the `pl_prairiedraw_figure` custom element.
+The PrairieDraw library (`PrairieDraw.js`) is a figure-drawing library which allows dynamic figures to be rendered through the `pl-prairiedraw-figure` element (see [here](elements.md#pl-prairiedraw-figure).
 
-## PrairieDraw figure element configuration
-
-The `pl_prairiedraw_figure` element is used to place figures within `question.html`. To make this element available for your course, a copy of the `pl_prairiedraw_figure` directory must be placed in the `elements` directory for your course.
-
-## `pl_prairiedraw_figure` element
-
-```html
-<pl_prairiedraw_figure script_name="drawFigure.js" params_names="r1,r2,isHorizontal" width="900" height="400" />
-```
-Attribute | Type | Default | Description
---- | --- | --- | ---
-`script_name` | string | - | Name of PrairieDraw script.
-`params_names` | string | `None` | Comma-separated list of parameters to make available to PrairieDraw.
-`width` | integer | 500 | Width of the drawing element.
-`height` | integer | 500 | Height of the drawing element.
-
-Parameter names are those stored in `data["params"]["m"]` in `server.py` and accessed as `{{params.m}}` in `question.html`.
+Any parameters passed to the script from the `params-names` option in the `pl-prairiedraw-figure` element can be accessed with `this.params.get([parameter])`
 
 ## `Sylvester.js` library and selected methods
 
@@ -92,22 +76,48 @@ Rotate the coordinate system counterclockwise by `angle` radians.
 `transformByPoints(old1, old2, new1, new2)`
 Perform a combination of `scale`, `translate`, and `rotate` such that Vector points `old1` and `old2` are mapped to `new1` and `new2`.
 
+## Drawing object options
+
+Some drawing objects below have the optional `type` argument to specify a physical meaning for the line/arrow. When specified, a corresponding color is chosen for the object based on the TAM 2XX style guide [here](http://dynref.engr.illinois.edu/rvn.html#rvn-sc). 
+
+Type | Color 
+ --- | --- 
+`grid` | `rgb(200,200,200)`
+`position` | `rgb(0,0,255)`
+`angle` | `rgb(0,100,180)`
+`velocity` | `rgb(0,200,0)`
+`angVel` | `rgb(100,180,0)`
+`acceleration` | `rgb(255,0,255)`
+`rotation` | `rgb(150,0,150)`
+`angAcc` | `rgb(100,0,180)`
+`angMom` | `rgb(255,0,0)`
+`force` | `rgb(210,105,30)`
+`moment` | `rbg(255,102,80)`
+
+The optional `filled` argument (default is false) is a boolean to specify if the shape should be shaded.
+
 ## Drawing points and lines
 
 `point(vector)`
 Draw a point at the coordinates given by `vector`.
 
 `line(start, end [, type])`
-Draw a line segment from Vector position `start` to `stop`. The optional line type is "solid" (default), "dotted", or "dashed".
+Draw a line segment from Vector position `start` to `stop`. 
 
 `polyline(points [, closed, filled])`
-Draw a series of line segments connecting the array of `points`. The optional arguments (defaulting to false) determine if the polyLine should be closed or the resulting shape shaded.
+Draw a series of line segments connecting the array of `points`. The optional arguments (defaulting to false) determine if the polyLine should be closed by a line connecting the first and last elements of `points`.
 
-`arc(center, radius, startAngle, endAngle)`
-Draw an arc of a circle centered at `center`, with radius `radius`, from angle `startAngle` to `endAngle` (in radians).
+`arc(center, radius, startAngle, endAngle [, filled, aspect])`
+Draw an arc of a circle centered at `center`, with radius `radius`, from angle `startAngle` to `endAngle` (in radians). When `aspect` is provided, the arc is drawn for an ellipse with major axis `radius` and minor axis `radius / aspect` (i.e., `aspect` is major / minor).
 
-`circle(center, radius)`
+`circle(center, radius [, filled])`
 Draws a circle centered at `center` with radius `radius`.
+
+`rectangle(width, height [, center, angle, filled])`
+Draw a rectangle (aligned to the axes) of the given width and height. When not specified, `center` is assumed to be the origin. An `angle` to rotate can also be given.
+
+`rectangleGeneric(bottomLeft, bottomRight, height)`
+Draw a rectangle with one side connecting `bottomLeft` and `bottomRight` of the given `height`. The rectangle extends perpendicular (counter-clockwise) to this line.
 
 ## Drawing vector arrows
 
@@ -117,19 +127,19 @@ Draw an arrow from `start` to `stop` (with arrowhead at `stop`).
 `arrowFrom(start, offset [, type])`
 Draw an arrow from `start` to `start.add(offset)`.
 
-`arrowTo(end, offset, [, type])`
+`arrowTo(end, offset [, type])`
 Draw an arrow from `end.subtract(offset)` to `end`.
 
-`arrowOutOfPage(vector)`
+`arrowOutOfPage(vector [, type])`
 Draw an arrow out of the screen (circle with center dot) at `vector`.
 
-`arrowIntoPage(vector)`
+`arrowIntoPage(vector [, type])`
 Draw an arrow into the screen (circle with center x) at `vector`.
 
-`circleArrow(center, radius, startAngle, endAngle [, type])`
-Draw an arrow arc centerd at `center`, with radius `radius`, from `startAngle` to `endAngle` (in radians).
+`circleArrow(center, radius, startAngle, endAngle [, type, fixedRad, idealSegmentSize])`
+Draw an arrow arc centerd at `center`, with radius `radius`, from `startAngle` to `endAngle` (in radians). The `fixedRad` option (default false) specifies if a constant radius should be used (as opposed to curling in the beginning/end).
 
-`circleArrowCentered(center, radius, centerAngle, extentAngle [, type])`
+`circleArrowCentered(center, radius, centerAngle, extentAngle [, type, fixedRad])`
 Draw an arrow arc centered at `center`, with radius `radius`, centerd at `centerAngle` and spanning `extentAngle` (in radians).
 
 `triangularDistributedLoad(start, end, startSize, endSize, startLabel, endLabel, arrowToLine, arrowDown)`
@@ -161,8 +171,8 @@ Draws a curved ground element with arguments similar to the `arc` command above.
 
 See [below](PrairieDraw.md#generating-latex-labels-on-figures) for instructions on formatting the `text` argument in these commands.
 
-`text(position, anchor, text)`
-Draws text at the given `position`. `anchor` is a Vector with components from (-1,0,1) specifying alignment; i.e., `$V([-1,-1])` corresponds to "left" and "bottom" alignment for the text; `$V([1,1])` corresponds to "right" and "above".
+`text(position, anchor, text [, boxed, angle])`
+Draws text at the given `position`. `anchor` is a Vector with components from (-1,0,1) specifying alignment; i.e., `$V([-1,-1])` corresponds to "left" and "bottom" alignment for the text; `$V([1,1])` corresponds to "right" and "above". Optional `boxed` frames the text, and `angle` rotates it in place.
 
 `labelLine(start, end, pos, text [, anchor])`
 Places text along the line between `start` and `end`. `pos` takes values in local coordinates from (-1,1) specifying the position along and above/below the line. The optional `anchor` uses the same pattern as above.

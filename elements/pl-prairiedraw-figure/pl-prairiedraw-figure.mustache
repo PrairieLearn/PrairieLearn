@@ -1,0 +1,24 @@
+<canvas id="pl-prairiedraw-figure-{{uuid}}" class="img-responsive center-block" width="{{width}}" height="{{height}}"></canvas>	 
+<script>
+$(function() {
+    var view = {
+        pd: new PrairieDraw("pl-prairiedraw-figure-{{uuid}}"),
+        params: new Backbone.Model({{client_params}}),
+        render: function() {
+            {{{script}}}
+        },
+    };
+
+    _.extend(view.pd, Backbone.Events);
+    view.pd.on("imgLoad", view.render, view);
+
+    view.pd.registerMouseLineDrawCallback(function() {
+        view.trigger("mouseLineDraw", this.mouseLineDrawStart, this.mouseLineDrawEnd);
+    });
+    view.pd.registerRedrawCallback(function() {
+        view.render();
+    });
+
+    view.render();
+});
+</script>
