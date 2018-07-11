@@ -79,6 +79,7 @@
         "accessRule": {
             "description": "An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.",
             "type": "object",
+            "additionalProperties": false,
             "properties": {
                 "mode" : {
                     "description": "The server mode required for access.",
