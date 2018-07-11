@@ -1,6 +1,8 @@
 import prairielearn as pl
 import lxml.html
-import chevron, os
+import chevron
+import os
+
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -14,9 +16,9 @@ def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     script_name = pl.get_string_attrib(element, 'script-name', None)
     if script_name is None:
-        raise Exception("no script-name attribute for pl_prairiedraw_figure")
+        raise Exception('no script-name attribute for pl_prairiedraw_figure')
 
-    with open(os.path.join(data["options"]["question_path"], script_name)) as f:
+    with open(os.path.join(data['options']['question_path'], script_name)) as f:
         script = f.read()
 
     width = pl.get_string_attrib(element, 'width', '500')
