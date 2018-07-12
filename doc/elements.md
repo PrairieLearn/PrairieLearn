@@ -219,13 +219,13 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 ## `pl-prairiedraw-figure` element
 
 ```html
-<pl-prairiedraw-figure script-name="drawFigure.js" params-names="r1,r2,isHorizontal" width="900" height="400" />
+<pl-prairiedraw-figure script-name="drawFigure.js" param-names="r1,r2,isHorizontal" width="900" height="400" />
 ```
 
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `script-name` | string | - | Name of PrairieDraw script.
-`params-names` | string | `None` | Comma-separated list of parameters to make available to PrairieDraw.
+`param-names` | string | `None` | Comma-separated list of parameters to make available to PrairieDraw.
 `width` | integer | 500 | Width of the drawing element.
 `height` | integer | 500 | Height of the drawing element.
 

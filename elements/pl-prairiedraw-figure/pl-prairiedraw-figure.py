@@ -7,7 +7,7 @@ import os
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['script-name']
-    optional_attribs = ['params-names', 'width', 'height']
+    optional_attribs = ['param-names', 'width', 'height']
     pl.check_attribs(element, required_attribs, optional_attribs)
     return data
 
@@ -22,7 +22,7 @@ def render(element_html, element_index, data):
     width = pl.get_string_attrib(element, 'width', '500')
     height = pl.get_string_attrib(element, 'height', '300')
 
-    params_names = pl.get_string_attrib(element, 'params-names', None)
+    params_names = pl.get_string_attrib(element, 'param-names', None)
     if params_names is None:
         client_params = {}
     else:
