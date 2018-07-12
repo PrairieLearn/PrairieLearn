@@ -6,8 +6,8 @@ import os
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    required_attribs = ['script_name']
-    optional_attribs = ['params_names', 'width', 'height']
+    required_attribs = ['script-name']
+    optional_attribs = ['params-names', 'width', 'height']
     pl.check_attribs(element, required_attribs, optional_attribs)
     return data
 
@@ -15,8 +15,6 @@ def prepare(element_html, element_index, data):
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     script_name = pl.get_string_attrib(element, 'script-name', None)
-    if script_name is None:
-        raise Exception('no script-name attribute for pl_prairiedraw_figure')
 
     with open(os.path.join(data['options']['question_path'], script_name)) as f:
         script = f.read()
