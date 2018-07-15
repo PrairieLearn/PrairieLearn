@@ -14,6 +14,7 @@
       <li class="nav-item <% if (navPage == "questions")   { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/questions">Questions</a></li>
       <li class="nav-item <% if (navPage == "issues")      { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/issues">Issues <%- include('issueBadge', {count: navbarOpenIssueCount, suppressLink: true}) %></a></li>
       <li class="nav-item <% if (navPage == "gradebook")   { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/gradebook">Gradebook</a></li>
+      <li class="nav-item <% if (navPage == "lti")         { %>acrive<% } %>"><a class="nav-link" href="<%= urlPrefix %>/lti">LTI</a></li>
 
       <% if (authz_data.has_course_permission_view) { %>
       <li class="nav-item <% if (navPage == "courseOverview") { %>active<% } %>"><a class="nav-link" href="<%= urlPrefix %>/course">Course</a></li>
