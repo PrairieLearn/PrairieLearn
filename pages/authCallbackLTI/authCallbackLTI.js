@@ -74,7 +74,7 @@ router.post('/', function(req, res, next) {
         authUid,
         authName,
         authUin,
-        'LTI-ci' + ltiresult.course_instance_id,
+        'LTI-ci-' + ltiresult.course_instance_id,
         ];
 
         sqldb.call('users_select_or_insert', params, (err, result) => {
@@ -83,27 +83,29 @@ router.post('/', function(req, res, next) {
                 user_id: result.rows[0].user_id,
                 // Something for outcomes here,
                 lti_launch_presentation_return_url: parameters.launch_presentation_return_url,
+                resource_link_id: parameters.resource_link_id,
+                resource_link_title: parameters.resource_link_title,
+                resource_link_description: parameters.resource_link_description,
             };
             var pl_authn = csrf.generateToken(tokenData, config.secretKey);
             res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});
+
+            var role = 'Student';
+            if (parameters.roles.includes('TeachingAssistant')) { role = 'TA'; }
+            if (parameters.roles.includes('Instructor')) { role = 'Instructor'; }
 
             var params = {
                 course_instance_id: ltiresult.course_instance_id,
                 user_id: tokenData.user_id,
                 req_date: res.locals.req_date,
+                role,
             };
 
-            // TODO: Change this to an UPSERT
             sqldb.queryOneRow(sql.enroll, params, function(err, _result) {
                 if (ERR(err, next)) return;
 
-                var redirUrl = res.locals.homeUrl;
-                /*
-                if ('preAuthUrl' in req.cookies) {
-                    redirUrl = req.cookies.preAuthUrl;
-                    res.clearCookie('preAuthUrl');
-                }
-                */
+                // Default them into the course instance
+                var redirUrl = res.locals.urlPrefix + '/course_instance/' + ltiresult.course_instance_id;
                 res.redirect(redirUrl);
             });
         });
