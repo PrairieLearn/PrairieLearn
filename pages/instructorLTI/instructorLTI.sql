@@ -1,63 +1,50 @@
--- BLOCK course_assessments
-SELECT
-    a.id AS assessment_id,a.number AS assessment_number,
-    aset.number AS assessment_set_number,aset.color,
-    (aset.abbreviation || a.number) AS label
-FROM assessments AS a
-JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-WHERE a.deleted_at IS NULL
-AND a.course_instance_id = $course_instance_id
-ORDER BY (aset.number, a.order_by, a.id);
-
--- BLOCK user_scores
+-- BLOCK lti_data
 WITH
 course_assessments AS (
-    SELECT a.id,a.order_by AS assessment_order_by,aset.number AS assessment_set_number
+    SELECT
+    jsonb_agg(jsonb_build_object(
+                'assessment_id', a.id,
+                'label', (aset.abbreviation || a.number),
+                'title', a.title,
+                'tid', a.tid
+            ) ORDER BY (aset.number, a.order_by, a.id)) as assessments
     FROM assessments AS a
     JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
     WHERE a.deleted_at IS NULL
     AND a.course_instance_id = $course_instance_id
 ),
-course_scores AS (
-    SELECT DISTINCT ON (ai.user_id, a.id)
-        ai.user_id, a.id AS assessment_id, ai.score_perc, ai.id AS assessment_instance_id
-    FROM
-        assessment_instances AS ai
-        JOIN assessments AS a ON (a.id = ai.assessment_id)
-    WHERE
-        a.course_instance_id = $course_instance_id
-    ORDER BY
-        ai.user_id, a.id, ai.score_perc DESC, ai.id
+lti_credentials AS (
+    SELECT
+    jsonb_agg(lti_credentials) as lti_credentials
+    FROM lti_credentials WHERE course_instance_id = $course_instance_id
 ),
-user_ids AS (
-    (SELECT DISTINCT user_id FROM course_scores)
-    UNION
-    (SELECT user_id FROM enrollments WHERE course_instance_id = $course_instance_id)
-),
-course_users AS (
-    SELECT u.user_id,u.uid,u.name AS user_name,coalesce(e.role, 'None'::enum_role) AS role
-    FROM
-        user_ids
-        JOIN users AS u ON (u.user_id = user_ids.user_id)
-        LEFT JOIN enrollments AS e ON (e.user_id = u.user_id AND e.course_instance_id = $course_instance_id)
-),
-scores AS (
-    SELECT u.user_id,u.uid,u.user_name,u.role,
-        a.id AS assessment_id,a.assessment_order_by,a.assessment_set_number,
-        s.score_perc, s.assessment_instance_id
-    FROM
-        course_users AS u
-        CROSS JOIN course_assessments AS a
-        LEFT JOIN course_scores AS s ON (s.user_id = u.user_id AND s.assessment_id = a.id)
+lti_links AS (
+    SELECT
+    jsonb_agg(lti_links) AS lti_links
+    FROM lti_links WHERE course_instance_id = $course_instance_id
 )
-SELECT user_id,uid,user_name,role,
-    ARRAY_AGG(
-        json_build_object(
-            'score_perc', score_perc,
-            'assessment_instance_id', assessment_instance_id
-        )
-        ORDER BY (assessment_set_number, assessment_order_by, assessment_id)
-    ) AS scores
-FROM scores
-GROUP BY user_id,uid,user_name,role
-ORDER BY role DESC, uid;
+SELECT
+    course_assessments.assessments,
+    lti_credentials.lti_credentials,
+    lti_links.lti_links
+FROM
+    course_assessments,
+    lti_credentials,
+    lti_links;
+
+-- BLOCK upsert_current_link
+INSERT INTO lti_links
+    (course_instance_id, context_id, resource_link_id, resource_link_title, resource_link_description)
+VALUES
+    ($course_instance_id, $context_id, $resource_link_id, $resource_link_title, $resource_link_description)
+ON CONFLICT (course_instance_id, context_id, resource_link_id) DO UPDATE
+    SET resource_link_title=$resource_link_title, resource_link_description=$resource_link_description
+;
+
+-- BLOCK update_link
+UPDATE lti_links SET assessment_id = $assessment_id WHERE id=$id;
+
+-- BLOCK insert_cred
+INSERT INTO lti_credentials (course_instance_id, consumer_key, secret) VALUES
+                            ($course_instance_id, $key, $secret)
+;

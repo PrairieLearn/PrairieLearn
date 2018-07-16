@@ -16,3 +16,9 @@ INSERT INTO enrollments AS e
 ON CONFLICT ON CONSTRAINT enrollments_user_id_course_instance_id_key
 DO UPDATE SET role = $role
 RETURNING e.id;
+
+-- BLOCK ltilink
+SELECT * FROM lti_links WHERE course_instance_id = $course_instance_id
+AND resource_link_id = $resource_link_id
+AND assessment_id IS NOT NULL
+AND deleted_at IS NULL;

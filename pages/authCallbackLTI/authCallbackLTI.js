@@ -52,6 +52,7 @@ router.post('/', function(req, res, next) {
         if (result.rowCount == 0) return next(error.make(500, 'Unknown consumer_key'));
 
         var ltiresult = result.rows[0];
+        console.log(ltiresult);
 
         var genSignature = oauthSignature.generate('POST', url, parameters, ltiresult.secret, null, {encodeSignature: false});
 
@@ -86,6 +87,7 @@ router.post('/', function(req, res, next) {
                 resource_link_id: parameters.resource_link_id,
                 resource_link_title: parameters.resource_link_title,
                 resource_link_description: parameters.resource_link_description,
+                context_id: parameters.context_id,
             };
             var pl_authn = csrf.generateToken(tokenData, config.secretKey);
             res.cookie('pl_authn', pl_authn, {maxAge: 24 * 60 * 60 * 1000});
@@ -104,9 +106,29 @@ router.post('/', function(req, res, next) {
             sqldb.queryOneRow(sql.enroll, params, function(err, _result) {
                 if (ERR(err, next)) return;
 
-                // Default them into the course instance
-                var redirUrl = res.locals.urlPrefix + '/course_instance/' + ltiresult.course_instance_id;
-                res.redirect(redirUrl);
+                var params = {
+                    resource_link_id: parameters.resource_link_id,
+                    course_instance_id: ltiresult.course_instance_id,
+                };
+
+                sqldb.query(sql.ltilink, params, function(err, result) {
+                    if (ERR(err, next)) return;
+                    console.log(result.rows);
+
+                    var redirUrl;
+                    if (result.rowCount == 1) {
+                        redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/assessment/${result.rows[0].assessment_id}/`;
+                    } else {
+
+                        if (role != 'Student') {
+                            redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/lti`;
+                        } else {
+                            // Default them into the course instance
+                            redirUrl = res.locals.urlPrefix + '/course_instance/' + ltiresult.course_instance_id;
+                        }
+                    }
+                    res.redirect(redirUrl);
+                });
             });
         });
     });

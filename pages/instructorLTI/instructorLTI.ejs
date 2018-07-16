@@ -9,6 +9,87 @@
     <div id="content" class="container">
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">LTI configuration</div>
+            <div class="card-body">
+                <h5 class="card-title">LTI credentials</h5>
+
+                <p>Use these credentials with Coursera to connect into PrairieLearn.</p>
+                <table class="table">
+                    <thead><tr><th>Consumer key</th>
+                            <th>Shared secret</th>
+                            <th>Created</th>
+                            <th>Deleted</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    <% lti_credentials.forEach(function(tc) { %>
+                    <tr><td><code><%= tc.consumer_key %></code></td>
+                        <td><code><%= tc.secret %></code></td>
+                        <td><%= tc.created_at %></td>
+                        <td><button class="btn btn-danger">Delete</button></td>
+                        </tr>
+                        <% }); %>
+
+                    <tr>
+                        <td colspan="99">
+                            <form method="post">
+                                <input type="hidden" name="__action" value="lti_new_cred">
+                                <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                                <input type="submit" class="btn btn-success" value="Create new">
+                            </form>
+                        </td>
+                    </tr>
+                </table>
+
+                <hr>
+                <h5 class="card-title">LTI link targets</h5>
+                <p>Map a link from your LMS directly into a PrairieLearn assessment.</p>
+                <% if (lti_links) { %>
+                <table class="table">
+                    <thead><tr><th>Link title</th>
+                            <th>Link ID</th>
+                            <th>Assessment</th>
+                            <th>Created</th>
+                    </tr></thead>
+                    <tbody>
+                    <% lti_links.forEach(function(l) { %>
+                        <% if (l.resource_link_id == authn_data.resource_link_id) { %>
+                            <tr style="border: 4px solid green">
+                        <% } else { %>
+                            <tr>
+                        <% } %>
+                        <td title="<%= l.resource_link_description %>"><%= l.resource_link_title %></td>
+                        <td><%= l.resource_link_id %></td>
+                        <td>
+                            <form method="post">
+                            <input type="hidden" name="__action" value="lti_link_target">
+                            <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+                            <input type="hidden" name="lti_link_id" value="<%= l.id %>">
+                            <select onChange="this.form.submit();" name="newAssessment">
+                            <option value=""
+                            <% if (!l.assessment_id) { %>selected<% } %>
+                                >-- None</option>
+                            <% assessments.forEach(function(a) { %>
+                                <option value="<%= a.assessment_id %>"
+                                <% if (l.assessment_id == a.assessment_id) { %>selected<% } %>
+                                ><%= a.label %>: <%= a.title %> (<%= a.tid %>)</option>
+                                <% }); %>
+                            </select>
+                            </form>
+                        </td>
+                        <td><%= l.created_at %></td>
+                        </tr>
+                        <% }); %>
+            </tbody>
+                </table>
+                <% } else { %>
+                    <em>No links have been established.</em>
+                    <% } %>
+            </div>
+            <div class="card-footer">
+                If no assessment is provided for a LMS link, students will be directed to the Assessments tab.
+                Instructors and TAs will be directed to this page to configure. If an assessment is linked, all
+                users will be routed there. This config can be updated later by instructors from the LTI tab.
+            </div>
         </div>
     </div>
     </body>
