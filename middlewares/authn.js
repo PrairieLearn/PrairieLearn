@@ -101,7 +101,6 @@ module.exports = function(req, res, next) {
         if (ERR(err, next)) return;
         if (result.rowCount == 0) return next(new Error('user not found with user_id ' + authnData.user_id));
         res.locals.authn_user = result.rows[0].user;
-        res.locals.authn_data = authnData;
         res.locals.is_administrator = result.rows[0].is_administrator;
         next();
     });
