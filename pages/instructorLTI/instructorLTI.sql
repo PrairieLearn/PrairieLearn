@@ -20,8 +20,10 @@ lti_credentials AS (
 ),
 lti_links AS (
     SELECT
-    jsonb_agg(lti_links) AS lti_links
-    FROM lti_links WHERE course_instance_id = $course_instance_id
+        jsonb_agg(lti_links ORDER BY created_at) AS lti_links
+    FROM
+        lti_links
+    WHERE course_instance_id = $course_instance_id
 )
 SELECT
     course_assessments.assessments,
@@ -31,15 +33,6 @@ FROM
     course_assessments,
     lti_credentials,
     lti_links;
-
--- BLOCK upsert_current_link
-INSERT INTO lti_links
-    (course_instance_id, context_id, resource_link_id, resource_link_title, resource_link_description)
-VALUES
-    ($course_instance_id, $context_id, $resource_link_id, $resource_link_title, $resource_link_description)
-ON CONFLICT (course_instance_id, context_id, resource_link_id) DO UPDATE
-    SET resource_link_title=$resource_link_title, resource_link_description=$resource_link_description
-;
 
 -- BLOCK update_link
 UPDATE lti_links SET assessment_id = $assessment_id WHERE id=$id;

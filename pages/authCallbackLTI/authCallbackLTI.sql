@@ -17,8 +17,20 @@ ON CONFLICT ON CONSTRAINT enrollments_user_id_course_instance_id_key
 DO UPDATE SET role = $role
 RETURNING e.id;
 
--- BLOCK ltilink
-SELECT * FROM lti_links WHERE course_instance_id = $course_instance_id
-AND resource_link_id = $resource_link_id
-AND assessment_id IS NOT NULL
-AND deleted_at IS NULL;
+-- BLOCK upsert_current_link
+INSERT INTO lti_links
+    (course_instance_id, context_id, resource_link_id, resource_link_title, resource_link_description)
+VALUES
+    ($course_instance_id, $context_id, $resource_link_id, $resource_link_title, $resource_link_description)
+ON CONFLICT (course_instance_id, context_id, resource_link_id) DO UPDATE
+    SET resource_link_title=$resource_link_title, resource_link_description=$resource_link_description
+RETURNING *
+;
+
+-- BLOCK upsert_outcome
+INSERT INTO lti_outcomes
+    (user_id, assessment_id, lis_result_sourcedid, lis_outcome_service_url) VALUES
+    ($user_id, $assessment_id, $lis_result_sourcedid, $lis_outcome_service_url)
+ON CONFLICT ON CONSTRAINT lti_outcomes_user_assessment
+DO UPDATE SET lis_result_sourcedid=$lis_result_sourcedid, lis_outcome_service_url=$lis_outcome_service_url
+;

@@ -4,6 +4,11 @@
     <%- include('../partials/head'); %>
   </head>
   <body>
+  <script>
+    $(function () {
+        $('[data-toggle="popover"]').popover()
+    });
+  </script>
     <%- include('../partials/navbar', {navPage: 'lti'}); %>
 
     <div id="content" class="container">
@@ -25,7 +30,23 @@
                     <tr><td><code><%= tc.consumer_key %></code></td>
                         <td><code><%= tc.secret %></code></td>
                         <td><%= tc.created_at %></td>
-                        <td><button class="btn btn-danger">Delete</button></td>
+                        <td>
+                            <% if (tc.deleted_at) { %>
+                            <%= tc.deleted_at %>
+                        <% } else { %>
+                            <a tabindex="0" class="btn btn-danger" role="button"
+                                data-toggle="popover" data-trigger="focus" data-container="body"
+                                data-html="true" data-placement="auto" title="Confirm delete"
+                                data-content="
+                            <form method=&quot;post&quot;>
+                                <input type=&quot;hidden&quot; name=&quot;__action&quot; value=&quot;lti_del_cred&quot;>
+                                <input type=&quot;hidden&quot; name=&quot;__csrf_token&quot; value=&quot;<%= __csrf_token %>&quot;>
+                                <input type=&quot;hidden&quot; name=&quot;lti_link_id&quot; value=&quot;<%= tc.id %>&quot;>
+                                <input type=&quot;submit&quot; class=&quot;btn btn-danger&quot; value=&quot;Delete&quot;>
+                                ">Delete</a>
+                            </form>
+                            <% } %>
+                        </td>
                         </tr>
                         <% }); %>
 
@@ -45,20 +66,16 @@
                 <p>Map a link from your LMS directly into a PrairieLearn assessment.</p>
                 <% if (lti_links) { %>
                 <table class="table">
-                    <thead><tr><th>Link title</th>
-                            <th>Link ID</th>
+                    <thead><tr><th>Link info</th>
                             <th>Assessment</th>
-                            <th>Created</th>
+                            <th>Link association created</th>
                     </tr></thead>
                     <tbody>
                     <% lti_links.forEach(function(l) { %>
-                        <% if (l.resource_link_id == authn_data.resource_link_id) { %>
-                            <tr style="border: 4px solid green">
-                        <% } else { %>
-                            <tr>
-                        <% } %>
-                        <td title="<%= l.resource_link_description %>"><%= l.resource_link_title %></td>
-                        <td><%= l.resource_link_id %></td>
+                        <tr>
+                        <td title="<%= l.resource_link_description %>">
+                            <%= l.resource_link_title %>
+                        </td>
                         <td>
                             <form method="post">
                             <input type="hidden" name="__action" value="lti_link_target">
