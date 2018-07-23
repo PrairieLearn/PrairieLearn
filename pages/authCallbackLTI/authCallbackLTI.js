@@ -57,6 +57,7 @@ router.post('/', function(req, res, next) {
         if (result.rowCount == 0) return next(error.make(500, 'Unknown consumer_key'));
 
         var ltiresult = result.rows[0];
+//        console.log(ltiresult);
 
         var genSignature = oauthSignature.generate('POST', url, parameters, ltiresult.secret, null, {encodeSignature: false});
         if (genSignature != signature) {
@@ -77,6 +78,10 @@ router.post('/', function(req, res, next) {
         } else {
             nonceCache.set(nonceKey, true);
         }
+
+        //
+        // OAuth validation succeeded, next look up and store user authn data
+        //
 
         var authUin = parameters.user_id + '@' + parameters.context_id;
         var authName = parameters.lis_person_name_full || '';
@@ -139,6 +144,7 @@ router.post('/', function(req, res, next) {
                             assessment_id: result.rows[0].assessment_id,
                             lis_result_sourcedid: parameters.lis_result_sourcedid,
                             lis_outcome_service_url: parameters.lis_outcome_service_url,
+                            lti_credential_id: ltiresult.id,
                         };
 
                         sqldb.query(sql.upsert_outcome, params, function(err, outcome_result) {

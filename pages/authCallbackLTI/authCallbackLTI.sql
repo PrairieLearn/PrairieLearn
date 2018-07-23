@@ -29,8 +29,8 @@ RETURNING *
 
 -- BLOCK upsert_outcome
 INSERT INTO lti_outcomes
-    (user_id, assessment_id, lis_result_sourcedid, lis_outcome_service_url) VALUES
-    ($user_id, $assessment_id, $lis_result_sourcedid, $lis_outcome_service_url)
+    (user_id, assessment_id, lis_result_sourcedid, lis_outcome_service_url, lti_credential_id) VALUES
+    ($user_id, $assessment_id, $lis_result_sourcedid, $lis_outcome_service_url, $lti_credential_id)
 ON CONFLICT ON CONSTRAINT lti_outcomes_user_assessment
 DO UPDATE SET lis_result_sourcedid=$lis_result_sourcedid, lis_outcome_service_url=$lis_outcome_service_url
 ;

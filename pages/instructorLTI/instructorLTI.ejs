@@ -26,6 +26,7 @@
                         </tr>
                     </thead>
                     <tbody>
+                    <% if (lti_credentials) { %>
                     <% lti_credentials.forEach(function(tc) { %>
                     <tr><td><code><%= tc.consumer_key %></code></td>
                         <td><code><%= tc.secret %></code></td>
@@ -49,7 +50,9 @@
                         </td>
                         </tr>
                         <% }); %>
-
+                        <% } else { %>
+                            <tr><td colspan=99><em>No credentials have been established.</em></td></tr>
+                        <% } %>
                     <tr>
                         <td colspan="99">
                             <form method="post">
