@@ -164,7 +164,7 @@ app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOA
 app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
 app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
 app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
-app.use('/pl/lti', require('./pages/authCallbackLTI/authCallbackLTI'));
+app.use('/pl/lti', require('./pages/authCallbackLti/authCallbackLti'));
 app.use('/pl/login', require('./pages/authLogin/authLogin'));
 // disable SEB until we can fix the mcrypt issues
 // app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
@@ -308,7 +308,7 @@ app.use('/pl/course_instance/:course_instance_id/instructor/jobSequence', requir
 app.use('/pl/course_instance/:course_instance_id/instructor/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
 app.use('/pl/course_instance/:course_instance_id/instructor/course', require('./middlewares/authzCourseInstanceHasCourseView'));
 app.use('/pl/course_instance/:course_instance_id/instructor/course', require('./pages/courseOverview/courseOverview'));
-app.use('/pl/course_instance/:course_instance_id/instructor/lti', require('./pages/instructorLTI/instructorLTI'));
+app.use('/pl/course_instance/:course_instance_id/instructor/lti', require('./pages/instructorLti/instructorLti'));
 
 // clientFiles
 app.use('/pl/course_instance/:course_instance_id/instructor/clientFilesCourse', require('./pages/clientFilesCourse/clientFilesCourse'));

@@ -1,4 +1,4 @@
--- BLOCK update_score
+-- BLOCK get_score
 SELECT
     *
 FROM

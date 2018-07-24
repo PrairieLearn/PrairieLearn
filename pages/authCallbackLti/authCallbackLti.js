@@ -7,9 +7,10 @@ var cacheBase = require('cache-base');
 
 var sqldb = require('@prairielearn/prairielib').sqlDb;
 var sqlLoader = require('@prairielearn/prairielib').sqlLoader;
+var error = require('@prairielearn/prairielib').error;
 var csrf = require('../../lib/csrf');
 var config = require('../../lib/config');
-var error = require('@prairielearn/prairielib').error;
+
 
 var timeTolerance = 3000; // seconds
 
@@ -19,22 +20,11 @@ var redirUrl;
 
 router.post('/', function(req, res, next) {
 
-    //console.log(res);
-
-    //console.log(req.hostname);
-    console.log(req.body);
-
-    // TODO auto-generate this URL, or get from a config variable
-    var url = 'http://endeavour.engr.illinois.edu:8009/pl/lti';
+    //console.log(req.body);
 
     var parameters = _.clone(req.body);
     var signature = req.body.oauth_signature;
     delete parameters.oauth_signature;
-
-    // clone solves this for us
-    // https://github.com/expressjs/express/issues/3264#issuecomment-290482333
-    //Object.setPrototypeOf(parameters, {});
-
 
     if (parameters.lti_message_type != 'basic-lti-launch-request') {
         return next(error.make(500, 'Unsupported lti_message_type'));
@@ -57,9 +47,8 @@ router.post('/', function(req, res, next) {
         if (result.rowCount == 0) return next(error.make(500, 'Unknown consumer_key'));
 
         var ltiresult = result.rows[0];
-//        console.log(ltiresult);
 
-        var genSignature = oauthSignature.generate('POST', url, parameters, ltiresult.secret, null, {encodeSignature: false});
+        var genSignature = oauthSignature.generate('POST', config.ltiRedirectUrl, parameters, ltiresult.secret, null, {encodeSignature: false});
         if (genSignature != signature) {
             return next(error.make(500, 'Invalid signature'));
         }
@@ -159,8 +148,11 @@ router.post('/', function(req, res, next) {
                         if (role != 'Student') {
                             redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/lti`;
                         } else {
+                            // Show an error that the assignment is unavailable
+                            return next(error.make(400, 'Assignment not available yet'));
+
                             // Default them into the course instance
-                            redirUrl = res.locals.urlPrefix + '/course_instance/' + ltiresult.course_instance_id;
+                            //redirUrl = res.locals.urlPrefix + '/course_instance/' + ltiresult.course_instance_id;
                         }
                         res.redirect(redirUrl);
                     }
@@ -172,19 +164,17 @@ router.post('/', function(req, res, next) {
 
 module.exports = router;
 
-function ltiError() {
-
-    //        res.redirect(parameters.launch_presentation_return_url + "?lti_errorlog=Foobar");
-    //        return;
-
-
-}
-
 /*
 TODO: expire out the cached nonce, use redis?
 
 permissions for not being able to add other courses via LTI?
 
+NOTES:
+
+Coursera doesn't support the launch_presentation_return_url feature so we show errors internally.
+
+redirUrl = parameters.launch_presentation_return_url + '?lti_errorlog=AssessmentLinkMissing';
+console.log(redirUrl);
 
 
 */
