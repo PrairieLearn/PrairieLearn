@@ -16,16 +16,13 @@ router.get('/', function(req, res, next) {
         if (ERR(err, next)) return;
 
         _.assign(res.locals, result.rows[0]);
-        console.log(res.locals);
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
 
-
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_edit) return next();
     if (req.body.__action == 'lti_new_cred') {
-
         var params = {
             key: 'K' + randomString(),
             secret: 'S' + randomString(),
@@ -33,24 +30,29 @@ router.post('/', function(req, res, next) {
         }
         sqldb.query(sql.insert_cred, params, function(err, result) {
             if (ERR(err, next)) return;
-
             res.redirect(req.originalUrl);
         });
 
     } else if (req.body.__action == 'lti_del_cred') {
-        console.log(req.body);
-        res.redirect(req.originalUrl);
-    } else if (req.body.__action == 'lti_link_target') {
+        var params = {
+            id: req.body.lti_link_id,
+            ci_id: res.locals.course_instance.id,
+        };
+        sqldb.query(sql.delete_cred, params, function(err, result) {
+            if (ERR(err, next)) return;
+            res.redirect(req.originalUrl);
+        });
 
+    } else if (req.body.__action == 'lti_link_target') {
         var newAssessment = null;
         if (req.body.newAssessment != "") {
             newAssessment = req.body.newAssessment;
         }
 
-        // How do I validate they're only updating their courses?
         var params = {
             assessment_id: newAssessment,
             id: req.body.lti_link_id,
+            ci_id: res.locals.course_instance.id,
         }
         sqldb.query(sql.update_link, params, function(err, result) {
             if (ERR(err, next)) return;
@@ -64,6 +66,6 @@ router.post('/', function(req, res, next) {
 module.exports = router;
 
 function randomString() {
-    var len = 8;
+    var len = 10;
     return Math.random().toString(36).substring(2,len) + Math.random().toString(36).substring(2,len);
 }

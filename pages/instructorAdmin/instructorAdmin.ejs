@@ -8,8 +8,15 @@
     $(function () {
         $('[data-toggle="popover"]').popover()
     });
+    function copyToClipboard(element) {
+        var $temp = $("<input>");
+        $("body").append($temp);
+        $temp.val($(element).text()).select();
+        document.execCommand("copy");
+        $temp.remove();
+    }
   </script>
-    <%- include('../partials/navbar', {navPage: 'lti'}); %>
+    <%- include('../partials/navbar', {navPage: 'admin'}); %>
 
     <div id="content" class="container">
         <div class="card mb-4">
@@ -17,7 +24,13 @@
             <div class="card-body">
                 <h5 class="card-title">LTI credentials</h5>
 
-                <p>Use these credentials with Coursera to connect into PrairieLearn.</p>
+                <p>Use these credentials with your LMS (Coursera) to connect into this course instance.
+                   A single credential can be shared with multiple links.
+                </p>
+                <p><strong>Launch URL: </strong><code><%= config.ltiRedirectUrl %></code>
+                    <i class="far fa-copy" title="Copy to clipboard"
+                        onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"></i>
+                </p>
                 <table class="table">
                     <thead><tr><th>Consumer key</th>
                             <th>Shared secret</th>
@@ -28,12 +41,19 @@
                     <tbody>
                     <% if (lti_credentials) { %>
                     <% lti_credentials.forEach(function(tc) { %>
-                    <tr><td><code><%= tc.consumer_key %></code></td>
-                        <td><code><%= tc.secret %></code></td>
-                        <td><%= tc.created_at %></td>
+                    <tr><td><code><%= tc.consumer_key %></code>
+                        <i class="far fa-copy" title="Copy to clipboard"
+                            onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"></i>
+                        </td>
+                        <td><code><%= tc.secret %></code>
+                            <i class="far fa-copy" title="Copy to clipboard"
+                                onClick="copyToClipboard($(this).prev());$(this).fadeOut({queue: true});$(this).fadeIn({queue:true});"></i>
+
+                        </td>
+                        <td><%= tc.created %></td>
                         <td>
-                            <% if (tc.deleted_at) { %>
-                            <%= tc.deleted_at %>
+                            <% if (tc.deleted) { %>
+                            <%= tc.deleted %>
                         <% } else { %>
                             <a tabindex="0" class="btn btn-danger" role="button"
                                 data-toggle="popover" data-trigger="focus" data-container="body"
@@ -66,7 +86,10 @@
 
                 <hr>
                 <h5 class="card-title">LTI link targets</h5>
-                <p>Map a link from your LMS directly into a PrairieLearn assessment.</p>
+                <p>Map a link from your LMS directly into a PrairieLearn assessment.
+                   This is required for PrairieLearn to update scores in your LMS (if configured).
+                   <br>Create and follow the link in your LMS, then configure it here.
+               </p>
                 <% if (lti_links) { %>
                 <table class="table">
                     <thead><tr><th>Link info</th>
@@ -96,7 +119,7 @@
                             </select>
                             </form>
                         </td>
-                        <td><%= l.created_at %></td>
+                        <td><%= l.created %></td>
                         </tr>
                         <% }); %>
             </tbody>
@@ -106,9 +129,7 @@
                     <% } %>
             </div>
             <div class="card-footer">
-                If no assessment is provided for a LMS link, students will be directed to the Assessments tab.
-                Instructors and TAs will be directed to this page to configure. If an assessment is linked, all
-                users will be routed there. This config can be updated later by instructors from the LTI tab.
+                <a href="http://google.com">Learn more about LTI.</a>
             </div>
         </div>
     </div>
