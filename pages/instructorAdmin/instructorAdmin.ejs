@@ -22,6 +22,7 @@
         <div class="card mb-4">
             <div class="card-header bg-primary text-white">LTI configuration</div>
             <div class="card-body">
+            <% if (config.hasLti) { %>
                 <h5 class="card-title">LTI credentials</h5>
 
                 <p>Use these credentials with your LMS (Coursera) to connect into this course instance.
@@ -94,7 +95,7 @@
                 <table class="table">
                     <thead><tr><th>Link info</th>
                             <th>Assessment</th>
-                            <th>Link association created</th>
+                            <th>Link first seen</th>
                     </tr></thead>
                     <tbody>
                     <% lti_links.forEach(function(l) { %>
@@ -127,6 +128,9 @@
                 <% } else { %>
                     <em>No links have been established.</em>
                     <% } %>
+            <% } else { %>
+                <em>LTI not enabled on this server.</em>
+            <% } %>
             </div>
             <div class="card-footer">
                 <a href="http://google.com">Learn more about LTI.</a>
