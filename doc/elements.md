@@ -216,6 +216,23 @@ def file(data):
 
 If `file()` does not return anything, it will be treated as if `file()` returned the empty string.
 
+## `pl-prairiedraw-figure` element
+
+```html
+<pl-prairiedraw-figure script-name="drawFigure.js" param-names="r1,r2,isHorizontal" width="900" height="600" />
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`script-name` | string | - | Name of PrairieDraw script.
+`param-names` | string | `None` | Comma-separated list of parameters to make available to PrairieDraw.
+`width` | integer | 500 | Width of the drawing element.
+`height` | integer | 300 | Height of the drawing element.
+
+The provided `script-name` corresponds to a file located within the director for the question. Parameter names are keys stored in `data["params"]` in `server.py` (i.e., those available for templating within `question.html`).
+
+See [PrairieDraw graphics](PrairieDraw.md) for documentation on this library.
+
 ## `pl-file-download` element
 
 ```html

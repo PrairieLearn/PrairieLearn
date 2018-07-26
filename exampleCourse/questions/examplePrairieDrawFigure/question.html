@@ -1,0 +1,28 @@
+<pl-question-panel>
+
+<p>This first figure demonstrates several commonly-used drawing commands from the PrairieDraw library, but does not change from variant to variant.</p>
+
+<pl-prairiedraw-figure script-name="PDelementDemo.js" param-names="title" />
+
+<p>The second figure below receives the parameters ("shapeName", {{params.shapeName}}) and ("dimension", {{params.dimension}}) as inputs, used to decide on the size and shape drawn by the script.</p>
+
+<pl-prairiedraw-figure script-name="mysteryShape.js" param-names="shapeName,dimension" />
+
+<p>What shape appears in the second figure above?</p>
+
+</pl-question-panel>
+
+<p>
+<pl-multiple-choice answers-name="shapeAnswer" weight="1">
+  <pl-answer correct="true">
+    {{params.shape_c}}
+  </pl-answer>
+  <pl-answer correct="false">
+    {{params.shape_x1}}
+  </pl-answer>
+  <pl-answer correct="false">
+    {{params.shape_x2}}
+  </pl-answer>
+</pl-multiple-choice>
+<pl-variable-score answers-name="shapeAnswer"></pl-variable-score>
+</p>
