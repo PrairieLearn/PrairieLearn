@@ -27,6 +27,8 @@
 
   * Fix assessment time limits (Matt West).
 
+  * Fix copy button after `clipboard.js` package update (Tim Bretl).
+
   * Change element names to use dashes instead of underscores (Nathan Walters).
 
   * Change deprecated `new Buffer()` calls to `Buffer.from()` (Ray Essick).
@@ -36,7 +38,7 @@
   * Change `centos7-ocaml` grader image to `ocaml-4.05` (Matt West).
 
   * Change TravisCI tasks to run linters first (Matt West, h/t James Balamuta).
-  
+
   * Change element attributes to use hyphens instead of underscores (Nathan Walters).
 
   * Change assessment password protection method (Dave Mussulman).
