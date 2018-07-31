@@ -61,7 +61,7 @@ router.post('/', function(req, res, next) {
 
         // Check nonce hasn't been used by that consumer_key in that timeframe
         // https://oauth.net/core/1.0/#nonce
-        var nonceKey = parameters.oauth_timestamp + ":" + parameters.oauth_nonce;
+        var nonceKey = parameters.oauth_timestamp + ':' + parameters.oauth_nonce;
         if (nonceCache.get(nonceKey)) {
             return next(error.make(500, 'Invalid nonce reuse'));
         } else {
@@ -120,7 +120,7 @@ router.post('/', function(req, res, next) {
                     resource_link_id: parameters.resource_link_id,
                     resource_link_title: parameters.resource_link_title || '',
                     resource_link_description: parameters.resource_link_description || '',
-                }
+                };
                 sqldb.queryOneRow(sql.upsert_current_link, params, function(err, result) {
                     if (ERR(err, next)) return;
 
@@ -136,7 +136,7 @@ router.post('/', function(req, res, next) {
                             lti_credential_id: ltiresult.id,
                         };
 
-                        sqldb.query(sql.upsert_outcome, params, function(err, outcome_result) {
+                        sqldb.query(sql.upsert_outcome, params, function(err, _outcome_result) {
                             if (ERR(err, next)) return;
 
                                 redirUrl = `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/assessment/${result.rows[0].assessment_id}/`;

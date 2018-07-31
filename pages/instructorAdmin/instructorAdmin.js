@@ -1,6 +1,5 @@
 var ERR = require('async-stacktrace');
 var _ = require('lodash');
-var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
@@ -22,39 +21,40 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (!res.locals.authz_data.has_instructor_edit) return next();
+    var params;
     if (req.body.__action == 'lti_new_cred') {
-        var params = {
+        params = {
             key: 'K' + randomString(),
             secret: 'S' + randomString(),
             course_instance_id: res.locals.course_instance.id,
-        }
-        sqldb.query(sql.insert_cred, params, function(err, result) {
+        };
+        sqldb.query(sql.insert_cred, params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
 
     } else if (req.body.__action == 'lti_del_cred') {
-        var params = {
+        params = {
             id: req.body.lti_link_id,
             ci_id: res.locals.course_instance.id,
         };
-        sqldb.query(sql.delete_cred, params, function(err, result) {
+        sqldb.query(sql.delete_cred, params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
 
     } else if (req.body.__action == 'lti_link_target') {
         var newAssessment = null;
-        if (req.body.newAssessment != "") {
+        if (req.body.newAssessment != '') {
             newAssessment = req.body.newAssessment;
         }
 
-        var params = {
+        params = {
             assessment_id: newAssessment,
             id: req.body.lti_link_id,
             ci_id: res.locals.course_instance.id,
-        }
-        sqldb.query(sql.update_link, params, function(err, result) {
+        };
+        sqldb.query(sql.update_link, params, function(err, _result) {
             if (ERR(err, next)) return;
             res.redirect(req.originalUrl);
         });
