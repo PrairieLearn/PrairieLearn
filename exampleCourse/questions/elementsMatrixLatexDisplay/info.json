@@ -1,6 +1,6 @@
 {
     "uuid": "4d2cf71b-869f-40d3-905a-a67cc855e4be",
-    "title": "Showing matrices in latex format with pl-latex-matrix-display",
+    "title": "Display 2D numpy arrays in latex format using pl-matrix-latex",
     "topic": "Test",
     "type": "v3",
     "tags": [
