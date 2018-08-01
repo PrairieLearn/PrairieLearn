@@ -29,18 +29,7 @@
       border-radius: 5px;
       box-shadow: 0 19px 38px rgba(0,0,0,0.30), 0 15px 12px rgba(0,0,0,0.22);
       height: auto;
-      transform: scale(0.9, 0.9);
-      opacity: 0;
       margin: 20px;
-    }
-    body.animation .login-container {
-      animation: scale-in 300ms;
-      animation-delay: 300ms;
-      animation-fill-mode: forwards;
-    }
-    body.no-animation .login-container {
-      transform: scale(1, 1);
-      opacity: 1;
     }
   }
   .subheader {
@@ -72,23 +61,7 @@
     background-color: #B93B1F;
     border-color: #B93B1F;
   }
-  @keyframes scale-in {
-    100% {
-      transform: scale(1,1);
-      opacity: 1;
-    }
-  }
   </style>
-  <noscript>
-    <style>
-    @media (min-width: 576px) {
-      .login-container {
-        transform: scale(1, 1);
-        opacity: 1;
-      }
-    }
-    </style>
-  </noscript>
 </head>
 <body class="d-flex bg-dark">
   <div class="login-container-wrapper">
@@ -123,17 +96,7 @@
           <% } %>
         </div>
       </div>
-      <%- include('../partials/advertisement'); %>
     </div>
   </div>
-  <script>
-    if (document.createElement('div').style.animationName !== undefined) {
-      // Nice, we have animation support
-      document.body.classList.add('animation');
-    } else {
-      // Why do people use old browsers...
-      document.body.classList.add('no-animation');
-    }
-  </script>
 </body>
 </html>
