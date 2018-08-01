@@ -40,36 +40,7 @@ def render(element_html, element_index, data):
         else:
             m, n = np.shape(a_tru)
 
-        # create array of input text boxes in html
-        input_array = '<table cellspacing="0">'
-        for i in range(m):
-            if m == 1:
-                input_array += ' <td class="close-left"></td> </tr> '
-            elif i == 0:
-                input_array += ' <tr> <td class="top-and-left"> </td> '
-            elif i == m - 1:
-                input_array += ' <tr> <td class="bottom-and-left"> </td> '
-            else:
-                input_array += ' <tr> <td class="left"> </td> '
-            for j in range(n):
-                each_entry_name = name + str(n * i + j + 1)
-                raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
-                input_array += ' <td> <input name= "' + each_entry_name + '" type="text" size="8"  '
-                if not editable:
-                    input_array += ' disabled '
-                if raw_submitted_answer is not None:
-                    input_array += '  value= "'
-                    input_array += escape(raw_submitted_answer)
-                input_array += '" /> </td>'
-            if m == 1:
-                input_array += ' <td class="close-right"></td> </tr> '
-            elif i == 0:
-                input_array += ' <td class="top-and-right"></td> </tr> '
-            elif i == m - 1:
-                input_array += ' <td class="bottom-and-right"> </td> </tr>'
-            else:
-                input_array += ' <td class="right"> </td> </tr>'
-        input_array += '</table>'
+        input_array = createTableForHTMLDisplay(m,n,name,data,"input")
 
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
@@ -140,12 +111,16 @@ def render(element_html, element_index, data):
             'uuid': pl.get_uuid()
         }
 
+
         # Create error message for each matrix entry
         # when at least one of them has invalid format
         if parse_error is not None:
             sub_output = ''
             a_tru = pl.from_json(data['correct_answers'].get(name, None))
             m, n = np.shape(a_tru)
+            '''new here '''
+            output_array = createTableForHTMLDisplay(m,n,name,data,"output")
+            ''' end of new '''
             for i in range(m):
                 for j in range(n):
                     each_entry_name = name + str(n * i + j + 1)
@@ -156,6 +131,9 @@ def render(element_html, element_index, data):
                         sub_output += entry_parse_error
                     sub_output += '</p>'
             html_params['entries_feedback'] = sub_output
+            '''new here '''
+            html_params['raw_submitted_answer'] = output_array
+
 
         else:
             # Get submitted answer, raising an exception if it does not exist
@@ -424,3 +402,45 @@ def test(element_html, element_index, data):
         else:
             score_value = number_of_correct / (m * n)
         data['partial_scores'][name] = {'score': score_value, 'weight': weight, 'feedback': feedback}
+
+def createTableForHTMLDisplay(m,n,name,data,format):
+
+    editable = data['editable']
+
+    display_array = '<table cellspacing="0">'
+    for i in range(m):
+        if m == 1:
+            display_array += ' <td class="close-left"></td>  '
+        elif i == 0:
+            display_array += ' <tr> <td class="top-and-left"> </td> '
+        elif i == m - 1:
+            display_array += ' <tr> <td class="bottom-and-left"> </td> '
+        else:
+            display_array += ' <tr> <td class="left"> </td> '
+        for j in range(n):
+            each_entry_name = name + str(n * i + j + 1)
+            raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
+            if format == "input":
+                display_array += ' <td> <input name= "' + each_entry_name + '" type="text" size="8"  '
+                if not editable:
+                    display_array += ' disabled '
+                if raw_submitted_answer is not None:
+                    display_array += '  value= "'
+                    display_array += escape(raw_submitted_answer)
+                display_array += '" /> </td>'
+            elif format == "output":
+                display_array += ' <td> '
+                if raw_submitted_answer is not None:
+                    display_array += escape(raw_submitted_answer)
+                display_array += '</td>'
+        if m == 1:
+            display_array += ' <td class="close-right"></td> </tr> '
+        elif i == 0:
+            display_array += ' <td class="top-and-right"></td> </tr> '
+        elif i == m - 1:
+            display_array += ' <td class="bottom-and-right"> </td> </tr>'
+        else:
+            display_array += ' <td class="right"> </td> </tr>'
+    display_array += '</table>'
+
+    return display_array
