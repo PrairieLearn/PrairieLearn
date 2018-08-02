@@ -80,7 +80,7 @@ def prepare(element_html, element_index, data):
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    partial_credit = pl.get_boolean_attrib(element, 'partial_credit', False)
+    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
 
     editable = data['editable']
     # answer feedback is not displayed when partial credit is True
@@ -235,7 +235,7 @@ def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
-    partial_credit = pl.get_boolean_attrib(element, 'partial_credit', False)
+    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
     number_answers = len(data['params'][name])
 
     submitted_keys = data['submitted_answers'].get(name, [])
@@ -259,7 +259,7 @@ def test(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
-    partial_credit = pl.get_boolean_attrib(element, 'partial_credit', False)
+    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
 
     correct_answer_list = data['correct_answers'].get(name, [])
     correct_keys = [answer['key'] for answer in correct_answer_list]
