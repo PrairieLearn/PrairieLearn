@@ -3,41 +3,24 @@
     max-width: 100%;
 }
 
-.top-and-left {
-  padding: 5px;
-  border-top: thin solid black;
-  border-left: thin solid black;
+.left, .bottom-and-left, .top-and-left, .close-left {
+  border-left: 3px solid black;
 }
-.top-and-right {
-  padding: 5px;
-  border-top: thin solid black;
-  border-right: thin solid black;
+.right, .bottom-and-right, .top-and-right, .close-right {
+  border-right: 3px solid black;
 }
-.bottom-and-left {
-  padding: 5px;
-  border-bottom: thin solid black;
-  border-left: thin solid black;
+.bottom-and-left, .bottom-and-right, .close-left, .close-right  {
+  border-bottom: 3px solid black;
 }
-.bottom-and-right {
-  padding: 5px;
-  border-bottom: thin solid black;
-  border-right: thin solid black;
+.top-and-left, .top-and-right, .close-left, .close-right  {
+  border-top: 3px solid black;
 }
-.close-left {
-  padding: 5px;
-  border-bottom: thin solid black;
-  border-left: thin solid black;
-  border-top: thin solid black;
+
+.bottom-and-left, .top-and-left, .bottom-and-right, .top-and-right, .close-left, .close-right{
+  width: 8px;
 }
-.close-right {
-  padding: 5px;
-  border-bottom: thin solid black;
-  border-right: thin solid black;
-  border-top: thin solid black;
-}
-.left {
-  border-left: thin solid black;
-}
-.right {
-  border-right: thin solid black;
+
+.allborder {
+  border: thin solid #D8D8D8;
+  width:50px;
 }

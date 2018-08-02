@@ -41,7 +41,6 @@
       <span><i class="fa fa-question-circle" aria-hidden="true"></i></span>
     </a>
 </span>
-{{{entries_feedback}}}
 {{/parse_error}}
 {{^parse_error}}
 {{#label}}<span>{{label}}</span>{{/label}}
@@ -57,27 +56,19 @@
     Feedback
   </div>
   <div class="card-body">
-    <p class="card-title">The following entries are incorrect:</p>
-    <p class="card-text">{{feedback_message}}</p>
+    <p class="card-text">{{{feedback_message}}}</p>
   </div>
 </div>
 {{/feedback_message}}
+
 {{/submission}}
 
 {{#answer}}
 <div id="pl-matrix-component-input-answer-{{uuid}}">
-         {{#default_is_python}}
-                <p>
-                    {{#label}}<span>{{label}}</span>{{/label}}
-                    <samp id="python-data-{{element_index}}">{{python_data}}</samp>
-                </p>
-        {{/default_is_python}}
-        {{#default_is_latex}}
-               <p>
-                   {{#label}}<span>{{label}}</span>{{/label}}
-                   <samp id="latex-data-{{element_index}}">{{latex_data}}</samp>
-               </p>
-       {{/default_is_latex}}
+     <p>
+         {{#label}}<span>{{label}}</span>{{/label}}
+         <samp id="latex-data-{{element_index}}">{{latex_data}}</samp>
+     </p>
 </div>
 {{/answer}}
 

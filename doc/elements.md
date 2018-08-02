@@ -234,16 +234,18 @@ Attribute | Type | Default | Description
 `rtol` | number | 1e-2 | Relative tolerance for `comparison="relabs"`.
 `atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
 `digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
-`format-type` | string | 'latex' | format of the answer displayed in the answer and submission panels.
 `allow-partial-credit` | boolean | False | Whether or not to allow credit for each correct matrix component. By default, the variable is graded as correct only when all matrix components are correct.
-`allow-feedback` | boolean | False | Whether or not to allow feedback indicating which matrix components are incorrect.
+`allow-feedback` | boolean | `allow-partial-credit` | Whether or not to allow feedback indicating which matrix components are incorrect. The default value of `allow-feedback` is the value of `allow-partial-credit`.
 
 In the question panel, a `pl-matrix-component-input` element displays a grid of input fields with the same shape of the variable stored in `answers-name` (only 2D arrays of real numbers can be stored in `answers-name`). The question will only be graded when all matrix components are entered.
 
+<<<<<<< HEAD
 In the answer panel, a `pl-matrix-component-input` element displays the correct answer, in either latex or python format, depending on the attribute `format-type`.
 
 In the submission panel, a `pl-matrix-component-input` element displays either the submitted answer (in the same format as the answer panel), or a note that the submitted answer was invalid (with an explanation of why). There is an option to display feedback, indicating which matrix components are incorrect.
 
+=======
+>>>>>>> implemented suggested changes from Tim
 
 ## `pl-figure` element
 

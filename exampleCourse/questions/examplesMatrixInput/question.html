@@ -1,6 +1,32 @@
 
 <pl-question-panel>
-Suppose ${\bf A}$ is a random 2D array given in either matlab or python format:
+ Suppose ${\bf x}$ is an array given in either matlab or python format:
+
+<p>
+<pl-matrix-output digits="0">
+    <variable params_name="x">x</variable>
+</pl-matrix-output>
+</p>
+</pl-question-panel>
+
+<p> 1.
+<pl-question-panel>
+  Enter the components of ${\bf x}$ below.
+  The attribute <code>allow-partial-credit="true"</code> is used, so each correct entry receives a partial score.
+By default, when <code>allow-partial-credit="true"</code>, the attribute <code>allow-feedback</code> is also set to <code>True</code>,
+and hence the submission panel indicates which entries are incorrect.
+</p>
+</pl-question-panel>
+
+<p>
+<pl-matrix-component-input answers-name="out3" label="${\bf x} = $" comparison="sigfig" digits="1" allow-partial-credit="true">
+</pl-matrix-component-input>
+</p>
+</pl-question-panel>
+
+
+<pl-question-panel>
+Now suppose ${\bf A}$ is a random 2D array given in either matlab or python format:
 
 <p>
 <pl-matrix-output digits="{{params.sf}}">
@@ -9,7 +35,7 @@ Suppose ${\bf A}$ is a random 2D array given in either matlab or python format:
 </p>
 </pl-question-panel>
 
-<p> 1.
+<p> 2.
 <pl-question-panel>
 Enter the components of the matrix ${\bf A}$. To get the answer correct, all entries need to be correct.</p>
 </pl-question-panel>
@@ -19,40 +45,15 @@ Enter the components of the matrix ${\bf A}$. To get the answer correct, all ent
 </p>
 
 
-<p> 2.
-<pl-question-panel>
- Enter the components of the matrix ${\bf A}$.
-  The attribute <code>allow-partial-credit="true"</code> is used, so each correct entry receives a partial score.
-</pl-question-panel>
-</p>
-
-<p>
-<pl-matrix-component-input answers-name="out2" label="${\bf A} = $" comparison="sigfig" digits="{{params.sf}}" allow-partial-credit="true">
-</pl-matrix-component-input>
-</p>
-
-
-<pl-question-panel>
- Suppose ${\bf x}$ is another 2D array given in either matlab or python format:
-
-<p>
-<pl-matrix-output digits="0">
-    <variable params_name="x">x</variable>
-</pl-matrix-output>
-</p>
-</pl-question-panel>
-
 <p> 3.
 <pl-question-panel>
-  Enter the components of ${\bf x}$.
-  The attribute <code>allow-partial-credit="true"</code> is used, so each correct entry receives a partial score.
-Moreover, the attribute <code>allow-feedback="true"</code> is used, hence when entering incorrect answers,
-the submission panel indicates which entries are incorrect.
-</p>
+ Enter the components of the matrix ${\bf A}$. Here we use <code>allow-partial-credit="true"</code>
+ and <code>allow-feedback="false"</code>. Hence, each correct entry receives a partial score, but the submission panel
+ does not indicate which entries are incorrect.
 </pl-question-panel>
+</p>
 
 <p>
-<pl-matrix-component-input answers-name="out3" label="${\bf x} = $" comparison="sigfig" digits="1" allow-partial-credit="true" allow-feedback="true">
+<pl-matrix-component-input answers-name="out2" label="${\bf A} = $" comparison="sigfig" digits="{{params.sf}}" allow-partial-credit="true" allow-feedback="false">
 </pl-matrix-component-input>
 </p>
-</pl-question-panel>

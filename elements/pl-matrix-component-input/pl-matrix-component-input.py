@@ -10,7 +10,7 @@ import random
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'format-type', 'allow-partial-credit', 'allow-feedback']
+    optional_attribs = ['weight', 'label', 'comparison', 'rtol', 'atol', 'digits', 'allow-partial-credit', 'allow-feedback']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
@@ -19,8 +19,8 @@ def render(element_html, element_index, data):
     # get the name of the element, in this case, the name of the array
     name = pl.get_string_attrib(element, 'answers-name')
     label = pl.get_string_attrib(element, 'label', None)
-    format_type = pl.get_string_attrib(element, 'format-type', 'latex')
-    allow_feedback = pl.get_boolean_attrib(element, 'allow-feedback', False)
+    allow_partial_credit = pl.get_boolean_attrib(element, 'allow-partial-credit', False)
+    allow_feedback = pl.get_boolean_attrib(element, 'allow-feedback', allow_partial_credit)
 
     if data['panel'] == 'question':
         editable = data['editable']
@@ -111,31 +111,10 @@ def render(element_html, element_index, data):
             'uuid': pl.get_uuid()
         }
 
+        a_tru = pl.from_json(data['correct_answers'].get(name, None))
+        m, n = np.shape(a_tru)
 
-        # Create error message for each matrix entry
-        # when at least one of them has invalid format
-        if parse_error is not None:
-            sub_output = ''
-            a_tru = pl.from_json(data['correct_answers'].get(name, None))
-            m, n = np.shape(a_tru)
-            '''new here '''
-            output_array = createTableForHTMLDisplay(m,n,name,data,"output")
-            ''' end of new '''
-            for i in range(m):
-                for j in range(n):
-                    each_entry_name = name + str(n * i + j + 1)
-                    a_sub = data['raw_submitted_answers'].get(each_entry_name, None)
-                    sub_output += '<p> entry (' + str(i + 1) + ', ' + str(j + 1) + ') = "' + str(a_sub) + '" '
-                    entry_parse_error = data['format_errors'].get(each_entry_name, None)
-                    if entry_parse_error is not None:
-                        sub_output += entry_parse_error
-                    sub_output += '</p>'
-            html_params['entries_feedback'] = sub_output
-            '''new here '''
-            html_params['raw_submitted_answer'] = output_array
-
-
-        else:
+        if parse_error is None:
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data['submitted_answers'].get(name, None)
             if a_sub is None:
@@ -145,10 +124,11 @@ def render(element_html, element_index, data):
             # Wrap answer in an ndarray (if it's already one, this does nothing)
             a_sub = np.array(a_sub)
             # Format answer as a string
-            if format_type == 'python':
-                html_params['a_sub'] = pl.string_from_2darray(a_sub, language='python', digits=12, presentation_type='g')
-            else:
-                html_params['a_sub'] = '$' + pl.latex_array_from_numpy_array(a_sub, presentation_type='g', digits=12) + '$'
+            html_params['a_sub'] = '$' + pl.latex_array_from_numpy_array(a_sub, presentation_type='g', digits=12) + '$'
+        else:
+            # create html table to show submitted answer when there is an invalid format
+            output_array = createTableForHTMLDisplay(m,n,name,data,"output")
+            html_params['raw_submitted_answer'] = output_array
 
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
@@ -168,6 +148,8 @@ def render(element_html, element_index, data):
             partial_score_message = data['partial_scores'].get(name, {'feedback': None})
             feedback_message = partial_score_message.get('feedback', None)
             if feedback_message is not None:
+                #html_params['feedback_message'] = feedback_message
+                feedback_message = createTableForHTMLDisplay(m,n,name,data,"output")
                 html_params['feedback_message'] = feedback_message
 
         with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
@@ -202,16 +184,10 @@ def render(element_html, element_index, data):
             html_params = {
                 'answer': True,
                 'label': label,
-                'python_data': python_data,
                 'latex_data': latex_data,
                 'element_index': element_index,
                 'uuid': pl.get_uuid()
             }
-
-            if format_type == 'python':
-                html_params['default_is_python'] = True
-            else:
-                html_params['default_is_latex'] = True
 
             with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
                 html = chevron.render(f, html_params).strip()
@@ -333,8 +309,10 @@ def grade(element_html, element_index, data):
 
             if correct:
                 number_of_correct += 1
+                data['partial_scores'][each_entry_name] = {'feedback': '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'}
             else:
                 feedback += ' (' + str(i + 1) + ', ' + str(j + 1) + ')  '
+                data['partial_scores'][each_entry_name] = {'feedback': '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'}
 
     if number_of_correct == m * n:
         data['partial_scores'][name] = {'score': 1, 'weight': weight}
@@ -407,20 +385,20 @@ def createTableForHTMLDisplay(m,n,name,data,format):
 
     editable = data['editable']
 
-    display_array = '<table cellspacing="0">'
-    for i in range(m):
-        if m == 1:
-            display_array += ' <td class="close-left"></td>  '
-        elif i == 0:
-            display_array += ' <tr> <td class="top-and-left"> </td> '
-        elif i == m - 1:
-            display_array += ' <tr> <td class="bottom-and-left"> </td> '
-        else:
-            display_array += ' <tr> <td class="left"> </td> '
-        for j in range(n):
-            each_entry_name = name + str(n * i + j + 1)
-            raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
-            if format == "input":
+    if format == "input":
+        display_array = '<table cellspacing="0">'
+        for i in range(m):
+            if m == 1:
+                display_array += ' <td class="close-left"></td>  '
+            elif i == 0:
+                display_array += ' <tr> <td class="top-and-left"> </td> '
+            elif i == m - 1:
+                display_array += ' <tr> <td class="bottom-and-left"> </td> '
+            else:
+                display_array += ' <tr> <td class="left"> </td> '
+            for j in range(n):
+                each_entry_name = name + str(n * i + j + 1)
+                raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
                 display_array += ' <td> <input name= "' + each_entry_name + '" type="text" size="8"  '
                 if not editable:
                     display_array += ' disabled '
@@ -428,19 +406,50 @@ def createTableForHTMLDisplay(m,n,name,data,format):
                     display_array += '  value= "'
                     display_array += escape(raw_submitted_answer)
                 display_array += '" /> </td>'
-            elif format == "output":
-                display_array += ' <td> '
+            if m == 1:
+                display_array += ' <td class="close-right"></td> </tr> '
+            elif i == 0:
+                display_array += ' <td class="top-and-right"></td> </tr> '
+            elif i == m - 1:
+                display_array += ' <td class="bottom-and-right"> </td> </tr>'
+            else:
+                display_array += ' <td class="right"> </td> </tr>'
+        display_array += '</table>'
+
+    else:
+
+        display_array = '<table>'
+        for i in range(m):
+            if m == 1:
+                display_array += ' <td class="close-left"> </td> <td style="width:4%"></td> '
+            elif i == 0:
+                display_array += ' <tr> <td class="top-and-left"> </td> <td style="width:4%"></td>'
+            elif i == m - 1:
+                display_array += ' <tr> <td class="bottom-and-left"> </td> <td style="width:4%"></td>'
+            else:
+                display_array += ' <tr> <td class="left"> </td> <td style="width:4%"></td>'
+            for j in range(n):
+                each_entry_name = name + str(n * i + j + 1)
+                partial_score_message = data['partial_scores'].get(each_entry_name, {'feedback': None})
+                feedback_message = partial_score_message.get('feedback', None)
+                if feedback_message is None:
+                    feedback_message = ''
+                raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
+                display_array += ' <td class="allborder"> '
                 if raw_submitted_answer is not None:
                     display_array += escape(raw_submitted_answer)
-                display_array += '</td>'
-        if m == 1:
-            display_array += ' <td class="close-right"></td> </tr> '
-        elif i == 0:
-            display_array += ' <td class="top-and-right"></td> </tr> '
-        elif i == m - 1:
-            display_array += ' <td class="bottom-and-right"> </td> </tr>'
-        else:
-            display_array += ' <td class="right"> </td> </tr>'
-    display_array += '</table>'
+                else:
+                    display_array += ''
+                display_array += feedback_message + '</td>'
+            if m == 1:
+                display_array += ' <td style="width:4%"></td> <td class="close-right"></td> </tr> '
+            elif i == 0:
+                display_array += ' <td style="width:4%"></td><td class="top-and-right"></td> </tr>'
+            elif i == m - 1:
+                display_array += ' <td style="width:4%"></td><td class="bottom-and-right"> </td> </tr> '
+            else:
+                display_array += ' <td style="width:4%"></td> <td class="right"> </td> </tr> '
+        display_array += '</table>'
+
 
     return display_array
