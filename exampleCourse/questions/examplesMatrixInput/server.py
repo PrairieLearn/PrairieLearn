@@ -17,8 +17,8 @@ def generate(data):
     data["params"]["in"] = pl.to_json(B)
     data["params"]["x"] = pl.to_json(x)
 
-    data["correct_answers"]["out1"] = pl.to_json(B)
-    data["correct_answers"]["out2"] = pl.to_json(B)
+    #data["correct_answers"]["out1"] = pl.to_json(B)
+    #data["correct_answers"]["out2"] = pl.to_json(B)
     data["correct_answers"]["out3"] = pl.to_json(x)
 
     return data
