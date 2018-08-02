@@ -132,7 +132,7 @@ def render(element_html, element_index, data):
                 if score >= 1:
                     html = html + '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
                 elif score > 0:
-                    html = html + '&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
+                    html = html + '&nbsp;<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
                 else:
                     html = html + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
             except Exception:
@@ -153,9 +153,12 @@ def render(element_html, element_index, data):
             # Generic prompt to differentiate from a radio input
             else:
                 html = html + '<small class="form-text text-muted">Select all possible options that apply.</small>'
+
     elif data['panel'] == 'submission':
-        if len(submitted_keys) == 0:
-            html = 'No selected answers'
+
+        parse_error = data['format_errors'].get(name, None)
+        if parse_error is not None:
+            html = 'INVALID: must select at least one answer.'
         else:
             partial_score = data['partial_scores'].get(name, {'score': None})
             score = partial_score.get('score', None)
@@ -187,11 +190,12 @@ def render(element_html, element_index, data):
                     if score >= 1:
                         html = html + '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
                     elif score > 0:
-                        html = html + '&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
+                        html = html + '&nbsp;<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
                     else:
                         html = html + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
                 except Exception:
                     raise ValueError('invalid score' + score)
+
     elif data['panel'] == 'answer':
         correct_answer_list = data['correct_answers'].get(name, [])
         if len(correct_answer_list) == 0:
@@ -216,8 +220,15 @@ def render(element_html, element_index, data):
 
 
 def parse(element_html, element_index, data):
-    # FIXME: check for invalid answers
-    pass
+
+    element = lxml.html.fragment_fromstring(element_html)
+    name = pl.get_string_attrib(element, 'answers_name')
+
+    submitted_key = data['submitted_answers'].get(name, None)
+
+    if submitted_key is None:
+        data['format_errors'][name] = 'No submitted answer.'
+        return
 
 
 def grade(element_html, element_index, data):
@@ -255,7 +266,7 @@ def test(element_html, element_index, data):
     number_answers = len(data['params'][name])
     all_keys = [chr(ord('a') + i) for i in range(number_answers)]
 
-    result = random.choice(['correct', 'incorrect'])
+    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
 
     if result == 'correct':
         if len(correct_keys) == 1:
@@ -279,7 +290,8 @@ def test(element_html, element_index, data):
             score = 0
         data['raw_submitted_answers'][name] = ans
         data['partial_scores'][name] = {'score': score, 'weight': weight}
+    elif result == 'invalid':
+        data['format_errors'][name] = 'No submitted answer.'
 
-        # FIXME: test invalid answers
     else:
         raise Exception('invalid result: %s' % result)
