@@ -1,13 +1,14 @@
 import prairielearn as pl
 import lxml.html
 import numpy as np
-import chevron
+
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['params-name']
     optional_attribs = ['digits', 'presentation-type']
     pl.check_attribs(element, required_attribs, optional_attribs)
+
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
