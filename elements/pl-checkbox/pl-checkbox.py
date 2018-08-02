@@ -222,7 +222,7 @@ def render(element_html, element_index, data):
 def parse(element_html, element_index, data):
 
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
 
     submitted_key = data['submitted_answers'].get(name, None)
 
