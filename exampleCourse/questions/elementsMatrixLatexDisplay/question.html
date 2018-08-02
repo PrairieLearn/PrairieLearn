@@ -9,7 +9,7 @@
  </p>
 
 <p>
-<pl-matrix-latex params-name="U" digits="{{params.sf}}" presentation-type="sigfig" label="${\bf A} = $"></pl-matrix-latex>
+${\bf A} = <pl-matrix-latex params-name="U" digits="{{params.sf}}" presentation-type="sigfig"></pl-matrix-latex>$
 </p>
 
 
@@ -19,10 +19,10 @@
 as a row-vector or <code>c = a.reshape((M, 1))</code> to display as a column vector:</p>
 
 <p>
-<pl-matrix-latex params-name="b" digits="{{params.sf}}" presentation-type="f" label="${\bf b} = $"></pl-matrix-latex>
+${\bf b} =  <pl-matrix-latex params-name="b" digits="{{params.sf}}" presentation-type="f"></pl-matrix-latex>$
 </p>
 <p>
- <pl-matrix-latex params-name="c" digits="4" label="${\bf c} = $"></pl-matrix-latex>
+${\bf c} =  <pl-matrix-latex params-name="c" digits="4"></pl-matrix-latex>$
 </p>
 
 <p>
@@ -31,15 +31,15 @@ To display <code>b</code> we use <code>digits="{{params.sf}}" presentation-type=
 </p>
 
 <p>It is also possible to use the element <code>pl-matrix-latex</code> to display
-  arrays with symbols (i.e. strings). For example, the linear system of equations ${\bf A\,x} = {\bf c}$
+  arrays with symbols (i.e. strings). For example, the linear system of equations ${\bf A}^T{\bf x} = {\bf c}$
   can be
 expressed as:
 </p>
 
 <p>
-    <pl-matrix-latex params-name="U" presentation-type="f" digits="3"> </pl-matrix-latex>
-    <pl-matrix-latex params-name="x"></pl-matrix-latex>
-    <pl-matrix-latex params-name="c" presentation-type="f" digits="4" label="$ = $"></pl-matrix-latex>
+$$ <pl-matrix-latex params-name="U" presentation-type="f" digits="3"> </pl-matrix-latex>^T
+<pl-matrix-latex params-name="x"></pl-matrix-latex> =
+<pl-matrix-latex params-name="c" presentation-type="f" digits="4"></pl-matrix-latex> $$
 </p>
 
 <p> When the element <code>pl-matrix-latex</code> is used to display a scalar,
@@ -47,7 +47,7 @@ expressed as:
  </p>
 
 <p>
-<pl-matrix-latex params-name="myNumber" digits="{{params.sf}}" presentation-type="sigfig" label="$x = $"></pl-matrix-latex>
+$x = <pl-matrix-latex params-name="myNumber" digits="{{params.sf}}" presentation-type="sigfig"></pl-matrix-latex>$
 </p>
 
 </pl-question-panel>

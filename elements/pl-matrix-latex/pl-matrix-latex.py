@@ -3,13 +3,11 @@ import lxml.html
 import numpy as np
 import chevron
 
-
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['params-name']
-    optional_attribs = ['label', 'digits', 'presentation-type']
+    optional_attribs = ['digits', 'presentation-type']
     pl.check_attribs(element, required_attribs, optional_attribs)
-
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -22,6 +20,7 @@ def render(element_html, element_index, data):
     var_name = pl.get_string_attrib(element, 'params-name')
     # Get value of variable, raising exception if variable does not exist
     var_data = data['params'].get(var_name, None)
+
     if var_data is None:
         raise Exception('No value in data["params"] for variable %s in pl-matrix-latex element' % var_name)
 
@@ -29,28 +28,13 @@ def render(element_html, element_index, data):
     # back to a standard type (otherwise, do nothing)
     var_data = pl.from_json(var_data)
 
-    # Get the label. Start with blank string if no label is given
-    label = pl.get_string_attrib(element, 'label', '')
-
-    if np.isscalar(var_data):
-        latex_data = label + '$' + pl.latex_from_2darray(var_data, presentation_type=presentation_type, digits=digits) + '$'
-    else:
-        # Wrap the variable in an ndarray (if it's already one, this does nothing)
+    if not np.isscalar(var_data):
         var_data = np.array(var_data)
         # Check shape of variable
         if var_data.ndim != 2:
             raise Exception('Value in data["params"] for variable %s in pl-matrix-latex element must be 2D array or scalar' % var_name)
 
     # Create string for latex matrix format
-    latex_data = label + '$' + pl.latex_from_2darray(var_data, presentation_type=presentation_type, digits=digits) + '$'
-
-    html_params = {
-        'latex_data': latex_data,
-        'element_index': element_index,
-        'uuid': pl.get_uuid()
-    }
-
-    with open('pl-matrix-latex.mustache', 'r', encoding='utf-8') as f:
-        html = chevron.render(f, html_params).strip()
+    html = pl.latex_from_2darray(var_data, presentation_type=presentation_type, digits=digits)
 
     return html
