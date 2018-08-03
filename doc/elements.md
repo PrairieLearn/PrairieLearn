@@ -51,7 +51,8 @@ Attribute | Type | Default | Description
 `fixed-order` | boolean | false | Disable the randomization of answer order.
 `hide-help-text` | boolean | false | Hide help text stating to pick one or more optinos.
 `detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
-`partial-credit` | boolean | false | Gives partial credit according to how many correct choices a student has made. Correct choices include checking a correct answer and not checking a wrong one.
+`partial-credit` | boolean | false | Enable partial credit scores. By default, the choice of grading method is "all-or-nothing".
+`partial-credit-method` | string | 'EDC' | Two grading methods implemented for partial credit scores: "Every decision counts (EDC)" and "Percent Correct (PC)" - see explanation below.
 
 A `pl-checkbox` element displays a subset of the answers in a random order as checkboxes.
 
@@ -60,6 +61,12 @@ An `pl-answer` element inside a `pl-multiple-choice` element has attributes:
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
+
+Two grading methods are available when using `partial-credit="true"`:
+
+* "EDC" (Every Decision Counts): in this method, the checkbox answers are considered as a list of true/false answers.  If `n` is the total number of answers, each answer is assigned `1/n` points. The total score is the summation of the points for every correct answer selected and every incorrect answer left unselected.
+
+* "PC" (Percent Correct): in this method, 1 point is added for each correct answer selected and 1 point is subtracted for each incorrect answer selected. The final score is the resulting summation of points divided by the total number of correct answers.
 
 ## `pl-number-input` element
 

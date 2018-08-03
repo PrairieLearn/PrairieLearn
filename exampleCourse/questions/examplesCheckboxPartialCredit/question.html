@@ -12,8 +12,9 @@
   </pl-checkbox>
 </p>
 
+
 <p>
-2) <pl-question-panel> Select the "true" answers (with partial credit) </pl-question-panel>
+2) <pl-question-panel> Select the "true" answers (partial credit method = 'EDC') </pl-question-panel>
 </p>
 
 <p>
@@ -25,12 +26,27 @@
   </pl-checkbox>
 </p>
 
+
 <p>
-3) <pl-question-panel> Select the true answers (with partial credit) </pl-question-panel>
+3) <pl-question-panel> Select the "true" answers (partial credit method = 'PC') </pl-question-panel>
 </p>
 
 <p>
-  <pl-checkbox answers-name="ans3" number-answers="5" min-correct="1" max-correct="4" weight="1" partial-credit="true">
+  <pl-checkbox answers-name="ans3" fixed-order="true" weight="1" partial-credit="true" partial-credit-method="PC">
+    <pl-answer correct="true">true1</pl-answer>
+    <pl-answer correct="true">true2</pl-answer>
+    <pl-answer>false1</pl-answer>
+    <pl-answer correct="true">true4</pl-answer>
+  </pl-checkbox>
+</p>
+
+
+<p>
+4) <pl-question-panel> Select the true answers (partial credit method = 'PC') </pl-question-panel>
+</p>
+
+<p>
+  <pl-checkbox answers-name="ans4" number-answers="5" min-correct="1" max-correct="4" weight="1" partial-credit="true" partial-credit-method="PC">
     <pl-answer>Rio de Janeiro is the capital of Brazil</pl-answer>
     <pl-answer correct="true">Rome is the capital of Italy </pl-answer>
     <pl-answer correct="true">Bucharest is the capital of Romania</pl-answer>

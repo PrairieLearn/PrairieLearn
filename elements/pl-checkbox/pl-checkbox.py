@@ -8,10 +8,13 @@ def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-help-text', 'detailed-help-text', 'partial-credit']
+    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method']
 
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
+
+    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'EDC')
 
     correct_answers = []
     incorrect_answers = []
@@ -32,11 +35,17 @@ def prepare(element_html, element_index, data):
     len_incorrect = len(incorrect_answers)
     len_total = len_correct + len_incorrect
 
+    if partial_credit and partial_credit_method == 'EDC':
+        if len_correct == 0:
+            raise Exception('At least one correct answers must be defined when using partial-credit-method="EDC" ')
+
     number_answers = pl.get_integer_attrib(element, 'number-answers', len_total)
     min_correct = pl.get_integer_attrib(element, 'min-correct', 0)
     max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answers))
 
-    number_answers = max(0, min(len_total, min(26, number_answers)))
+    max_answers = 26 # will not display more than 26 checkbox answers
+
+    number_answers = max(0, min(len_total, min(max_answers, number_answers)))
     min_correct = min(len_correct, min(number_answers, max(0, max(number_answers - len_incorrect, min_correct))))
     max_correct = min(len_correct, min(number_answers, max(min_correct, max_correct)))
     if not (0 <= min_correct <= max_correct <= len_correct):
@@ -158,7 +167,7 @@ def render(element_html, element_index, data):
 
         parse_error = data['format_errors'].get(name, None)
         if parse_error is not None:
-            html = 'INVALID: must select at least one answer.'
+            html = 'INVALID: must select at least one answer when using partial credit method "EDC".'
         else:
             partial_score = data['partial_scores'].get(name, {'score': None})
             score = partial_score.get('score', None)
@@ -223,12 +232,15 @@ def parse(element_html, element_index, data):
 
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
+    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'EDC')
 
     submitted_key = data['submitted_answers'].get(name, None)
 
-    if submitted_key is None:
-        data['format_errors'][name] = 'No submitted answer.'
-        return
+    if partial_credit and partial_credit_method == 'EDC':
+        if submitted_key is None:
+            data['format_errors'][name] = 'No submitted answer.'
+            return
 
 
 def grade(element_html, element_index, data):
@@ -237,6 +249,7 @@ def grade(element_html, element_index, data):
     weight = pl.get_integer_attrib(element, 'weight', 1)
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
     number_answers = len(data['params'][name])
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'EDC')
 
     submitted_keys = data['submitted_answers'].get(name, [])
     correct_answer_list = data['correct_answers'].get(name, [])
@@ -249,8 +262,17 @@ def grade(element_html, element_index, data):
     if not partial_credit and submittedSet == correctSet:
         score = 1
     elif partial_credit:
-        number_wrong = len(submittedSet - correctSet) + len(correctSet - submittedSet)
-        score = 1 - 1.0 * number_wrong / number_answers
+        if partial_credit_method == 'PC':
+            if submittedSet == correctSet:
+                score = 1
+            else:
+                score_per_answer = number_answers/len(correctSet)
+                n_correct_answers = len(correctSet) - len(correctSet - submittedSet)
+                points = score_per_answer*n_correct_answers - score_per_answer*len(submittedSet - correctSet)
+                score = max(0,points/number_answers)
+        else: # this is the default EDC method
+            number_wrong = len(submittedSet - correctSet) + len(correctSet - submittedSet)
+            score = 1 - 1.0 * number_wrong / number_answers
 
     data['partial_scores'][name] = {'score': score, 'weight': weight}
 
@@ -260,6 +282,7 @@ def test(element_html, element_index, data):
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'EDC')
 
     correct_answer_list = data['correct_answers'].get(name, [])
     correct_keys = [answer['key'] for answer in correct_answer_list]
@@ -267,6 +290,7 @@ def test(element_html, element_index, data):
     all_keys = [chr(ord('a') + i) for i in range(number_answers)]
 
     result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
+    result = random.choices(['correct', 'incorrect'], [5, 5])[0]
 
     if result == 'correct':
         if len(correct_keys) == 1:
@@ -284,14 +308,24 @@ def test(element_html, element_index, data):
             if set(ans) != set(correct_keys):
                 break
         if partial_credit:
-            number_wrong = len(set(ans) - set(correct_keys)) + len(set(correct_keys) - set(ans))
-            score = 1 - 1.0 * number_wrong / number_answers
+            if partial_credit_method == 'PC':
+                if set(ans) == set(correct_keys):
+                    score = 1
+                else:
+                    score_per_answer = number_answers/len(set(correct_keys))
+                    n_correct_answers = len(set(correct_keys)) - len(set(correct_keys) - set(ans))
+                    points = score_per_answer*n_correct_answers - score_per_answer*len(set(ans) - set(correct_keys))
+                    score = max(0,points/number_answers)
+            else: # this is the default EDC method
+                number_wrong = len(set(ans) - set(correct_keys)) + len(set(correct_keys) - set(ans))
+                score = 1 - 1.0 * number_wrong / number_answers
         else:
             score = 0
         data['raw_submitted_answers'][name] = ans
         data['partial_scores'][name] = {'score': score, 'weight': weight}
     elif result == 'invalid':
-        data['format_errors'][name] = 'No submitted answer.'
-
+        if partial_credit and partial_credit_method == 'EDC':
+            if submitted_key is None:
+                data['format_errors'][name] = 'No submitted answer.'
     else:
         raise Exception('invalid result: %s' % result)
