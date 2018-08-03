@@ -43,7 +43,7 @@ def prepare(element_html, element_index, data):
     min_correct = pl.get_integer_attrib(element, 'min-correct', 0)
     max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answers))
 
-    max_answers = 26 # will not display more than 26 checkbox answers
+    max_answers = 26  # will not display more than 26 checkbox answers
 
     number_answers = max(0, min(len_total, min(max_answers, number_answers)))
     min_correct = min(len_correct, min(number_answers, max(0, max(number_answers - len_incorrect, min_correct))))
@@ -266,11 +266,10 @@ def grade(element_html, element_index, data):
             if submittedSet == correctSet:
                 score = 1
             else:
-                score_per_answer = number_answers/len(correctSet)
                 n_correct_answers = len(correctSet) - len(correctSet - submittedSet)
-                points = score_per_answer*n_correct_answers - score_per_answer*len(submittedSet - correctSet)
-                score = max(0,points/number_answers)
-        else: # this is the default EDC method
+                points = n_correct_answers - len(submittedSet - correctSet)
+                score = max(0, points / len(correctSet))
+        else:  # this is the default EDC method
             number_wrong = len(submittedSet - correctSet) + len(correctSet - submittedSet)
             score = 1 - 1.0 * number_wrong / number_answers
 
@@ -289,7 +288,6 @@ def test(element_html, element_index, data):
     number_answers = len(data['params'][name])
     all_keys = [chr(ord('a') + i) for i in range(number_answers)]
 
-    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
     result = random.choices(['correct', 'incorrect'], [5, 5])[0]
 
     if result == 'correct':
@@ -312,11 +310,10 @@ def test(element_html, element_index, data):
                 if set(ans) == set(correct_keys):
                     score = 1
                 else:
-                    score_per_answer = number_answers/len(set(correct_keys))
                     n_correct_answers = len(set(correct_keys)) - len(set(correct_keys) - set(ans))
-                    points = score_per_answer*n_correct_answers - score_per_answer*len(set(ans) - set(correct_keys))
-                    score = max(0,points/number_answers)
-            else: # this is the default EDC method
+                    points = n_correct_answers - len(set(ans) - set(correct_keys))
+                    score = max(0, points / len(set(correct_keys)))
+            else:  # this is the default EDC method
                 number_wrong = len(set(ans) - set(correct_keys)) + len(set(correct_keys) - set(ans))
                 score = 1 - 1.0 * number_wrong / number_answers
         else:
@@ -325,7 +322,9 @@ def test(element_html, element_index, data):
         data['partial_scores'][name] = {'score': score, 'weight': weight}
     elif result == 'invalid':
         if partial_credit and partial_credit_method == 'EDC':
-            if submitted_key is None:
-                data['format_errors'][name] = 'No submitted answer.'
+            data['raw_submitted_answers'][name] = None
+            data['format_errors'][name] = 'No submitted answer.'
+        else:
+            pass
     else:
         raise Exception('invalid result: %s' % result)
