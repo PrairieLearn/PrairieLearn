@@ -40,7 +40,7 @@ def render(element_html, element_index, data):
         else:
             m, n = np.shape(a_tru)
 
-        input_array = createTableForHTMLDisplay(m, n, name, data, "input")
+        input_array = createTableForHTMLDisplay(m, n, name, data, 'input')
 
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
@@ -140,7 +140,7 @@ def render(element_html, element_index, data):
             # Format submitted answer as a latex string
             sub_latex = '$' + pl.latex_from_2darray(a_sub, presentation_type='g', digits=12) + '$'
             # When allowing feedback, display submitted answers using html table
-            sub_html_table = createTableForHTMLDisplay(m, n, name, data, "output-feedback")
+            sub_html_table = createTableForHTMLDisplay(m, n, name, data, 'output-feedback')
             if allow_feedback and score is not None:
                 if score < 1:
                     html_params['a_sub_feedback'] = sub_html_table
@@ -150,7 +150,7 @@ def render(element_html, element_index, data):
                 html_params['a_sub'] = sub_latex
         else:
             # create html table to show submitted answer when there is an invalid format
-            html_params['raw_submitted_answer'] = createTableForHTMLDisplay(m, n, name, data, "output-invalid")
+            html_params['raw_submitted_answer'] = createTableForHTMLDisplay(m, n, name, data, 'output-invalid')
 
         with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
@@ -382,7 +382,7 @@ def createTableForHTMLDisplay(m, n, name, data, format):
 
     editable = data['editable']
 
-    if format == "input":
+    if format == 'input':
         display_array = '<table cellspacing="0">'
         for i in range(m):
             if m == 1:
@@ -413,7 +413,7 @@ def createTableForHTMLDisplay(m, n, name, data, format):
                 display_array += ' <td class="right"> </td> </tr>'
         display_array += '</table>'
 
-    elif format == "output-invalid":
+    elif format == 'output-invalid':
 
         display_array = '<table>'
         for i in range(m):
@@ -445,7 +445,7 @@ def createTableForHTMLDisplay(m, n, name, data, format):
                 display_array += ' <td style="width:4%"></td> <td class="right"> </td> </tr> '
         display_array += '</table>'
 
-    elif format == "output-feedback":
+    elif format == 'output-feedback':
 
         partial_score_feedback = data['partial_scores'].get(name, {'feedback': None})
         feedback_each_entry = partial_score_feedback.get('feedback', None)
