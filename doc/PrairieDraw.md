@@ -1,7 +1,7 @@
 
 # PrairieDraw
 
-The PrairieDraw library (`PrairieDraw.js`) is a figure-drawing library which allows dynamic figures to be rendered through the `pl-prairiedraw-figure` element (see [here](elements.md#pl-prairiedraw-figure).
+The PrairieDraw library (`PrairieDraw.js`) is a figure-drawing library which allows dynamic figures to be rendered through the `pl-prairiedraw-figure` element (see [here](elements.md#pl-prairiedraw-figure-element)).
 
 Any parameters passed to the script from the `params-names` option in the `pl-prairiedraw-figure` element can be accessed with `this.params.get([parameter])`
 
