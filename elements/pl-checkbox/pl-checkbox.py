@@ -167,7 +167,7 @@ def render(element_html, element_index, data):
 
         parse_error = data['format_errors'].get(name, None)
         if parse_error is not None:
-            html = 'INVALID: must select at least one answer when using partial credit method "EDC".'
+            html = parse_error
         else:
             partial_score = data['partial_scores'].get(name, {'score': None})
             score = partial_score.get('score', None)
@@ -236,10 +236,15 @@ def parse(element_html, element_index, data):
     partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'EDC')
 
     submitted_key = data['submitted_answers'].get(name, None)
+    all_keys = [a['key'] for a in data['params'][name]]
 
-    if partial_credit and partial_credit_method == 'EDC':
-        if submitted_key is None:
+    if submitted_key is None:
+        if partial_credit and partial_credit_method == 'EDC':
             data['format_errors'][name] = 'No submitted answer.'
+            return
+    else:
+        if not set(submitted_key).issubset(set(all_keys)):
+            data['format_errors'][name] = 'INVALID choice'
             return
 
 
@@ -288,7 +293,7 @@ def test(element_html, element_index, data):
     number_answers = len(data['params'][name])
     all_keys = [chr(ord('a') + i) for i in range(number_answers)]
 
-    result = random.choices(['correct', 'incorrect'], [5, 5])[0]
+    result = random.choices(['correct', 'incorrect', 'invalid'], [5, 5, 1])[0]
 
     if result == 'correct':
         if len(correct_keys) == 1:
@@ -325,6 +330,7 @@ def test(element_html, element_index, data):
             data['raw_submitted_answers'][name] = None
             data['format_errors'][name] = 'No submitted answer.'
         else:
-            pass
+            data['raw_submitted_answers'][name] = '0'
+            data['format_errors'][name] = 'INVALID choice'
     else:
         raise Exception('invalid result: %s' % result)
