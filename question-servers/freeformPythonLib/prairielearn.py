@@ -873,7 +873,7 @@ def latex_from_2darray(A, presentation_type='f', digits=2):
         raise ValueError('input should be a 2D numpy array')
     lines = np.array2string(A, formatter=formatter).replace('[', '').replace(']', '').splitlines()
     rv = [r'\begin{bmatrix}']
-    rv += ['  ' + ' & '.join(l.split())+ r'\\' for l in lines]
+    rv += ['  ' + ' & '.join(l.split()) + r'\\' for l in lines]
     rv += [r'\end{bmatrix}']
     return ''.join(rv)
 

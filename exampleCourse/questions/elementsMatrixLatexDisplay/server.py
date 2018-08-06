@@ -31,4 +31,5 @@ def generate(data):
     data['params']['b'] = pl.to_json(br)
     data['params']['c'] = pl.to_json(bc)
 
+
     return data

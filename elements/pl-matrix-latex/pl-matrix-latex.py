@@ -32,12 +32,12 @@ def render(element_html, element_index, data):
     if not np.isscalar(var_data):
         var_data = np.array(var_data)
         # Check if numpy array type is numeric (integer, float or complex)
-        if var_data.dtype.kind in ['i', 'u', 'f', 'c']:
+        if np.issubdtype(var_data.dtype, np.number):
             # Check shape of variable
             if var_data.ndim != 2:
                 raise Exception('Value in data["params"] for variable %s in pl-matrix-latex element must be 2D array or scalar' % var_name)
         else:
-            raise Exception('Value in data["params"] for variable %s in pl-matrix-latex element must be array of numbers (integers, floats or complex)' % var_name)
+            raise Exception('Value in data["params"] for variable %s in pl-matrix-latex element must be numeric' % var_name)
 
     # Create string for latex matrix format
     html = pl.latex_from_2darray(var_data, presentation_type=presentation_type, digits=digits)
