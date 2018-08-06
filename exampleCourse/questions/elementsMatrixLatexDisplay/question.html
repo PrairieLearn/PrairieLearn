@@ -30,16 +30,14 @@ To display <code>b</code> we use <code>digits="{{params.sf}}" presentation-type=
   and to display <code>c</code> we use <code>digits="4"</code>.
 </p>
 
-<p>It is also possible to use the element <code>pl-matrix-latex</code> to display
-  arrays with symbols (i.e. strings). For example, the linear system of equations ${\bf A}^T{\bf x} = {\bf c}$
-  can be
-expressed as:
+<p>We can write systems of linear equations ${\bf A}^T{\bf x} = {\bf c}$
+as such:
 </p>
 
 <p>
 $$ <pl-matrix-latex params-name="U" presentation-type="f" digits="3"> </pl-matrix-latex>^T
-<pl-matrix-latex params-name="x"></pl-matrix-latex> =
-<pl-matrix-latex params-name="c" presentation-type="f" digits="4"></pl-matrix-latex> $$
+\begin{bmatrix} x \\ y \\ z \end{bmatrix}
+<pl-matrix-latex params-name="c" presentation-type="f" digits="4"></pl-matrix-latex>$$
 </p>
 
 <p> When the element <code>pl-matrix-latex</code> is used to display a scalar,
