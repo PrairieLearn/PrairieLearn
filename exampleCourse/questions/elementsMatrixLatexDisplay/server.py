@@ -24,14 +24,11 @@ def generate(data):
     bc = b.reshape((M, 1))
     br = b.reshape(1, M)
 
-    x = np.array([['x'],['y'],['z']])
-
     data['params']['sf'] = sf
     data['params']['M'] = M
     data['params']['U'] = pl.to_json(U)
     data['params']['myNumber'] = pl.to_json(myNumber)
     data['params']['b'] = pl.to_json(br)
     data['params']['c'] = pl.to_json(bc)
-    data['params']['x'] = pl.to_json(x)
 
     return data
