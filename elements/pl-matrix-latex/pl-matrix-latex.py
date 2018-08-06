@@ -39,7 +39,6 @@ def render(element_html, element_index, data):
         else:
             raise Exception('Value in data["params"] for variable %s in pl-matrix-latex element must be array of numbers (integers, floats or complex)' % var_name)
 
-
     # Create string for latex matrix format
     html = pl.latex_from_2darray(var_data, presentation_type=presentation_type, digits=digits)
 
