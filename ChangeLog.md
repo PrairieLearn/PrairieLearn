@@ -6,8 +6,6 @@
   * Add string input element (Mariana Silva).
 
   * Add element to display matrix in latex format (Mariana Silva).
-  * Add string input element (Mariana Silva)
-  * Add element to display matrix in latex format (Mariana Silva)
 
   * Add student name and clickable e-mail address information to issue reports (James Balamuta).
 
