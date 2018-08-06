@@ -186,6 +186,39 @@ A = np.array([[1.23], [4.56]])
 If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data['params'][params-name] = pl.to_json(v)`.
 
 
+## `pl-matrix-latex` element
+
+```html
+<pl-matrix-latex params-name="A"></pl-matrix-latex>
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`params-name` | string | — | Name of variable in `data['params']` to display.
+`presentation-type` | string | `'f'` | Number display format. If `presentation-type` is `'sigfig'`, each number is formatted using the `to_precision` module to `digits` significant figures.  Otherwise, each number is formatted as `'{:.{digits}{presentation-type}}'`.
+`digits` | integer | `"2"` | Number of digits to display according to the choice of `presentation-type`
+
+The variable in `data['params']` must be a scalar or 2D numpy array of numbers.
+
+If the variable is a scalar, `pl-matrix-latex` returns the scalar as a string not wrapped in brackets.
+
+If the variable is a numpy 2D array, `pl-matrix-latex` returns a string with the format:
+    ` \begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}`
+
+
+For example, if we want to display the following matrix operations
+```
+x = [A][b] + [c]
+```
+we write
+
+```html
+${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
+<pl-matrix-latex params-name="b" digits="1"></pl-matrix-latex>
++ <pl-matrix-latex params-name="c" digits="0"></pl-matrix-latex>$
+```
+
+
 ## `pl-figure` element
 
 ```html
