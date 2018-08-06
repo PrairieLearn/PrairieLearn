@@ -198,7 +198,7 @@ Attribute | Type | Default | Description
 `presentation-type` | string | `'f'` | Number display format. If `presentation-type` is `'sigfig'`, each number is formatted using the `to_precision` module to `digits` significant figures.  Otherwise, each number is formatted as `'{:.{digits}{presentation-type}}'`.
 `digits` | integer | `"2"` | Number of digits to display according to the choice of `presentation-type`
 
-The variable in `data['params']` must be a scalar or 2D numpy array.
+The variable in `data['params']` must be a scalar or 2D numpy array of numbers.
 
 If the variable is a scalar, `pl-matrix-latex` returns the scalar as a string not wrapped in brackets.
 
