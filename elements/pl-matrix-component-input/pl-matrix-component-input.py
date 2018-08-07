@@ -453,34 +453,33 @@ def createTableForHTMLDisplay(m, n, name, data, format):
         display_array = '<table style="display:inline">'
         for i in range(m):
             if m == 1:
-                display_array += ' <td class="close-left"> </td> <td style="width:4%"></td> '
+                display_array += ' <td class="close-left"> </td> <td style="width:6px"></td> '
             elif i == 0:
-                display_array += ' <tr> <td class="top-and-left"> </td> <td style="width:4%"></td>'
+                display_array += ' <tr> <td class="top-and-left"> </td> <td style="width:6px"></td>'
             elif i == m - 1:
-                display_array += ' <tr> <td class="bottom-and-left"> </td> <td style="width:4%"></td>'
+                display_array += ' <tr> <td class="bottom-and-left"> </td> <td style="width:6px"></td>'
             else:
-                display_array += ' <tr> <td class="left"> </td> <td style="width:4%"></td>'
+                display_array += ' <tr> <td class="left"> </td> <td style="width:6px"></td>'
             for j in range(n):
                 each_entry_name = name + str(n * i + j + 1)
                 raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
+                display_array += ' <td class="allborder"> '
+                display_array += escape(raw_submitted_answer)
                 if feedback_each_entry is not None:
                     if feedback_each_entry[each_entry_name] == 'correct':
                         feedback_message = '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
                     elif feedback_each_entry[each_entry_name] == 'incorrect':
                         feedback_message = '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
-                display_array += ' <td class="allborder"> '
-                display_array += escape(raw_submitted_answer)
-                if feedback_each_entry is not None:
                     display_array += feedback_message
                 display_array += ' </td> '
             if m == 1:
-                display_array += ' <td style="width:4%"></td> <td class="close-right"></td> </tr> '
+                display_array += ' <td style="width:4px"></td> <td class="close-right"></td> </tr> '
             elif i == 0:
-                display_array += ' <td style="width:4%"></td><td class="top-and-right"></td> </tr>'
+                display_array += ' <td style="width:4px"></td><td class="top-and-right"></td> </tr>'
             elif i == m - 1:
-                display_array += ' <td style="width:4%"></td><td class="bottom-and-right"> </td> </tr> '
+                display_array += ' <td style="width:4px"></td><td class="bottom-and-right"> </td> </tr> '
             else:
-                display_array += ' <td style="width:4%"></td> <td class="right"> </td> </tr> '
+                display_array += ' <td style="width:4px"></td> <td class="right"> </td> </tr> '
         display_array += '</table>'
 
     else:

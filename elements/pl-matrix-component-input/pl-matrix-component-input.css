@@ -22,5 +22,5 @@
 
 .allborder {
   border: thin solid #D8D8D8;
-  width:50px;
+  min-width: 60px
 }
