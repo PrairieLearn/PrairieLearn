@@ -6,7 +6,8 @@ import to_precision
 
 def generate(data):
 
-    A =  np.random.rand(2,2)
+    N = 2
+    A =  np.random.rand(N,N)
     sf = 2
     B = np.round(A,sf)
     x =  np.array([[1,2,3,4]])

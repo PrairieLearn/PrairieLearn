@@ -3,20 +3,16 @@
     max-width: 100%;
 }
 
-.left, .bottom-and-left, .top-and-left, .close-left {
+.close-left {
   border-left: 3px solid black;
+  border-top: 3px solid black;
+  border-bottom: 3px solid black;
+  width: 8px;
 }
 .right, .bottom-and-right, .top-and-right, .close-right {
   border-right: 3px solid black;
-}
-.bottom-and-left, .bottom-and-right, .close-left, .close-right  {
-  border-bottom: 3px solid black;
-}
-.top-and-left, .top-and-right, .close-left, .close-right  {
   border-top: 3px solid black;
-}
-
-.bottom-and-left, .top-and-left, .bottom-and-right, .top-and-right, .close-left, .close-right{
+  border-bottom: 3px solid black;
   width: 8px;
 }
 

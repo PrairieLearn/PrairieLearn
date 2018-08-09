@@ -45,12 +45,14 @@
 {{/parse_error}}
 
 {{^parse_error}}
+{{#a_sub}}
 {{#label}}{{label}}{{/label}}
-{{#a_sub}}{{a_sub}}{{/a_sub}}
-{{#a_sub_feedback}}{{{a_sub_feedback}}}{{/a_sub_feedback}}
+{{a_sub}}
 {{#correct}}<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
 {{#partial}}<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
 {{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+{{/a_sub}}
+{{#a_sub_feedback}}{{{a_sub_feedback}}}{{/a_sub_feedback}}
 {{/parse_error}}
 
 {{/submission}}
@@ -63,7 +65,6 @@
      </p>
 </div>
 {{/answer}}
-
 
 {{#format}}
 <p>

@@ -40,7 +40,7 @@ def render(element_html, element_index, data):
         else:
             m, n = np.shape(a_tru)
 
-        input_array = createTableForHTMLDisplay(m, n, name, data, 'input')
+        input_array = createTableForHTMLDisplay(m, n, name, label, data, 'input')
 
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, 'comparison', 'relabs')
@@ -140,7 +140,7 @@ def render(element_html, element_index, data):
             # Format submitted answer as a latex string
             sub_latex = '$' + pl.latex_from_2darray(a_sub, presentation_type='g', digits=12) + '$'
             # When allowing feedback, display submitted answers using html table
-            sub_html_table = createTableForHTMLDisplay(m, n, name, data, 'output-feedback')
+            sub_html_table = createTableForHTMLDisplay(m, n, name, label, data, 'output-feedback')
             if allow_feedback and score is not None:
                 if score < 1:
                     html_params['a_sub_feedback'] = sub_html_table
@@ -150,7 +150,7 @@ def render(element_html, element_index, data):
                 html_params['a_sub'] = sub_latex
         else:
             # create html table to show submitted answer when there is an invalid format
-            html_params['raw_submitted_answer'] = createTableForHTMLDisplay(m, n, name, data, 'output-invalid')
+            html_params['raw_submitted_answer'] = createTableForHTMLDisplay(m, n, name, label, data, 'output-invalid')
 
         with open('pl-matrix-component-input.mustache', 'r', encoding='utf-8') as f:
             html = chevron.render(f, html_params).strip()
@@ -378,53 +378,32 @@ def test(element_html, element_index, data):
         data['partial_scores'][name] = {'score': score_value, 'weight': weight, 'feedback': feedback}
 
 
-def createTableForHTMLDisplay(m, n, name, data, format):
+def createTableForHTMLDisplay(m, n, name, label, data, format):
 
     editable = data['editable']
 
-    if format == 'input':
-        display_array = '<table cellspacing="0">'
-        for i in range(m):
-            if m == 1:
-                display_array += ' <td class="close-left"></td>  '
-            elif i == 0:
-                display_array += ' <tr> <td class="top-and-left"> </td> '
-            elif i == m - 1:
-                display_array += ' <tr> <td class="bottom-and-left"> </td> '
-            else:
-                display_array += ' <tr> <td class="left"> </td> '
-            for j in range(n):
-                each_entry_name = name + str(n * i + j + 1)
-                raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
-                display_array += ' <td> <input name= "' + each_entry_name + '" type="text" size="8"  '
-                if not editable:
-                    display_array += ' disabled '
-                if raw_submitted_answer is not None:
-                    display_array += '  value= "'
-                    display_array += escape(raw_submitted_answer)
-                display_array += '" /> </td>'
-            if m == 1:
-                display_array += ' <td class="close-right"></td> </tr> '
-            elif i == 0:
-                display_array += ' <td class="top-and-right"></td> </tr> '
-            elif i == m - 1:
-                display_array += ' <td class="bottom-and-right"> </td> </tr>'
-            else:
-                display_array += ' <td class="right"> </td> </tr>'
-        display_array += '</table>'
-
-    elif format == 'output-invalid':
+    if format == 'output-invalid':
 
         display_array = '<table>'
-        for i in range(m):
-            if m == 1:
-                display_array += ' <td class="close-left"> </td> <td style="width:4%"></td> '
-            elif i == 0:
-                display_array += ' <tr> <td class="top-and-left"> </td> <td style="width:4%"></td>'
-            elif i == m - 1:
-                display_array += ' <tr> <td class="bottom-and-left"> </td> <td style="width:4%"></td>'
+        display_array += '<tr>'
+        display_array += '<td class="close-left" rowspan="0"></td>'
+        display_array += '<td style="width:4px" rowspan="0"></td>'
+        # First row of array
+        for j in range(n):
+            each_entry_name = name + str(j + 1)
+            raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
+            format_errors = data['format_errors'].get(each_entry_name, None)
+            if format_errors is None:
+                display_array += ' <td class="allborder"> '
             else:
-                display_array += ' <tr> <td class="left"> </td> <td style="width:4%"></td>'
+                display_array += ' <td class="allborder" bgcolor="#FFFF00"> '
+            display_array += escape(raw_submitted_answer)
+            display_array += ' </td> '
+        display_array += '<td style="width:4px" rowspan="0"></td>'
+        display_array += '<td class="close-right" rowspan="0"></td>'
+        # Add the other rows
+        for i in range(1, m):
+            display_array += ' <tr>'
             for j in range(n):
                 each_entry_name = name + str(n * i + j + 1)
                 raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
@@ -435,31 +414,52 @@ def createTableForHTMLDisplay(m, n, name, data, format):
                     display_array += ' <td class="allborder" bgcolor="#FFFF00"> '
                 display_array += escape(raw_submitted_answer)
                 display_array += ' </td> '
-            if m == 1:
-                display_array += ' <td style="width:4%"></td> <td class="close-right"></td> </tr> '
-            elif i == 0:
-                display_array += ' <td style="width:4%"></td><td class="top-and-right"></td> </tr>'
-            elif i == m - 1:
-                display_array += ' <td style="width:4%"></td><td class="bottom-and-right"> </td> </tr> '
-            else:
-                display_array += ' <td style="width:4%"></td> <td class="right"> </td> </tr> '
+            display_array += '</tr>'
         display_array += '</table>'
 
     elif format == 'output-feedback':
 
         partial_score_feedback = data['partial_scores'].get(name, {'feedback': None})
         feedback_each_entry = partial_score_feedback.get('feedback', None)
+        score = partial_score_feedback.get('score', None)
 
-        display_array = '<table style="display:inline">'
-        for i in range(m):
-            if m == 1:
-                display_array += ' <td class="close-left"> </td> <td style="width:6px"></td> '
-            elif i == 0:
-                display_array += ' <tr> <td class="top-and-left"> </td> <td style="width:6px"></td>'
-            elif i == m - 1:
-                display_array += ' <tr> <td class="bottom-and-left"> </td> <td style="width:6px"></td>'
+        if score is not None:
+            score = float(score)
+            if score >= 1:
+                score_message = '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
+            elif score > 0:
+                score_message = '&nbsp;<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i>' + str(math.floor(score * 100)) + '%</span>'
             else:
-                display_array += ' <tr> <td class="left"> </td> <td style="width:6px"></td>'
+                score_message = '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
+        else:
+            score_message = ''
+
+        display_array = '<table>'
+        display_array += '<tr>'
+        # Add the prefix
+        display_array += '<td rowspan="0">' + label + '&nbsp;</td>'
+        display_array += '<td class="close-left" rowspan="0"></td>'
+        display_array += '<td style="width:4px" rowspan="0"></td>'
+        # First row of array
+        for j in range(n):
+            each_entry_name = name + str(j + 1)
+            raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
+            display_array += '<td class="allborder">'
+            display_array += escape(raw_submitted_answer)
+            if feedback_each_entry is not None:
+                if feedback_each_entry[each_entry_name] == 'correct':
+                    feedback_message = '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
+                elif feedback_each_entry[each_entry_name] == 'incorrect':
+                    feedback_message = '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
+                display_array += feedback_message
+            display_array += '</td> '
+        # Add the suffix
+        display_array += '<td style="width:4px" rowspan="0"></td>'
+        display_array += '<td class="close-right" rowspan="0"></td>'
+        display_array += '<td rowspan="0">&nbsp;' + score_message + '</td> </tr>'
+        # Add the other rows
+        for i in range(1, m):
+            display_array += ' <tr>'
             for j in range(n):
                 each_entry_name = name + str(n * i + j + 1)
                 raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
@@ -472,14 +472,42 @@ def createTableForHTMLDisplay(m, n, name, data, format):
                         feedback_message = '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
                     display_array += feedback_message
                 display_array += ' </td> '
-            if m == 1:
-                display_array += ' <td style="width:4px"></td> <td class="close-right"></td> </tr> '
-            elif i == 0:
-                display_array += ' <td style="width:4px"></td><td class="top-and-right"></td> </tr>'
-            elif i == m - 1:
-                display_array += ' <td style="width:4px"></td><td class="bottom-and-right"> </td> </tr> '
-            else:
-                display_array += ' <td style="width:4px"></td> <td class="right"> </td> </tr> '
+            display_array += '</tr>'
+        display_array += '</table>'
+
+    elif format == 'input':
+        display_array = '<table>'
+        display_array += '<tr>'
+        # Add first row
+        display_array += '<td class="close-left" rowspan="0"></td>'
+        display_array += '<td style="width:4px" rowspan="0"></td>'
+        for j in range(n):
+            each_entry_name = name + str(j + 1)
+            raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
+            display_array += ' <td> <input name= "' + each_entry_name + '" type="text" size="8"  '
+            if not editable:
+                display_array += ' disabled '
+            if raw_submitted_answer is not None:
+                display_array += '  value= "'
+                display_array += escape(raw_submitted_answer)
+            display_array += '" /> </td>'
+        display_array += '<td style="width:4px" rowspan="0"></td>'
+        display_array += '<td class="close-right" rowspan="0"></td>'
+        # Add other rows
+        for i in range(1, m):
+            display_array += ' <tr>'
+            for j in range(n):
+                each_entry_name = name + str(n * i + j + 1)
+                raw_submitted_answer = data['raw_submitted_answers'].get(each_entry_name, None)
+                display_array += ' <td> <input name= "' + each_entry_name + '" type="text" size="8"  '
+                if not editable:
+                    display_array += ' disabled '
+                if raw_submitted_answer is not None:
+                    display_array += '  value= "'
+                    display_array += escape(raw_submitted_answer)
+                display_array += '" /> </td>'
+                display_array += ' </td> '
+            display_array += '</tr>'
         display_array += '</table>'
 
     else:
