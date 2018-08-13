@@ -1,16 +1,16 @@
 <p>
 The product of ${{params.a}}$ and ${{params.b}}$ is
-<pl_number_input answers_name="c" comparison="sigfig" digits="3" display="inline" />
-. <pl_variable_score answers_name="c" />
+<pl-number-input answers-name="c" comparison="sigfig" digits="3" display="inline"></pl-number-input>
+. <pl-variable-score answers-name="c"></pl-variable-score>
 </p>
 
 <hr>
 
-<pl_question_panel>
+<pl-question-panel>
 <p>
 Find the sum of $a={{params.a}}$ and $b={{params.b}}$:
 </p>
-</pl_question_panel>
-<pl_number_input answers_name="d" comparison="relabs" rtol="1e-3" atol="1e-5" display="block" label="$a+b=$" suffix="units"/>
+</pl-question-panel>
+<pl-number-input answers-name="d" comparison="relabs" rtol="1e-3" atol="1e-5" display="block" label="$a+b=$" suffix="units"></pl-number-input>
 
-<pl_variable_score answers_name="d" />
+<pl-variable-score answers-name="d"></pl-variable-score>

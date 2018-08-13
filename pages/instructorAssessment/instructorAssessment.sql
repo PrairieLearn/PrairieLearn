@@ -18,11 +18,27 @@ question_scores AS (
         avg(aq.mean_question_score) AS question_score
     FROM
         assessment_questions AS aq
+    WHERE
+        aq.assessment_id = $assessment_id
     GROUP BY
         aq.question_id
+),
+tags_list AS (
+    SELECT
+        aq.id AS assessment_question_id,
+        string_agg(tags.name, ';' ORDER BY tags.number) AS tags_string
+    FROM
+        assessment_questions AS aq
+        JOIN questions AS q ON (q.id = aq.question_id)
+        JOIN question_tags AS qt ON (qt.question_id = q.id)
+        JOIN tags ON (tags.id = qt.tag_id)
+    WHERE
+        aq.assessment_id = $assessment_id
+    GROUP BY
+        aq.id
 )
 SELECT
-    aq.*,q.qid,q.title,row_to_json(top) AS topic,
+    aq.*,q.qid,q.title,tags_list.tags_string,row_to_json(top) AS topic,
     q.id AS question_id,
     admin_assessment_question_number(aq.id) as number,
     tags_for_question(q.id) AS tags,
@@ -44,6 +60,7 @@ FROM
     JOIN topics AS top ON (top.id = q.topic_id)
     JOIN assessments AS a ON (a.id = aq.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    LEFT JOIN tags_list ON (tags_list.assessment_question_id = aq.id)
     LEFT JOIN issue_count AS ic ON (ic.question_id = q.id)
     LEFT JOIN question_scores ON (question_scores.question_id = q.id)
 WHERE
@@ -85,11 +102,21 @@ SELECT
     CASE
         WHEN aar.password IS NULL THEN '—'
         ELSE aar.password
-    END AS password
+    END AS password,
+    CASE
+        WHEN aar.exam_id IS NULL THEN '—'
+        WHEN e.exam_id IS NULL THEN 'Exam not found: ' || aar.exam_id
+        WHEN NOT $link_exam_id THEN ps_c.rubric || ': ' || e.exam_string
+        ELSE '<a href="https://cbtf.engr.illinois.edu/sched/course/'
+            || ps_c.course_id || '/exam/' || e.exam_id || '">'
+            || ps_c.rubric || ': ' || e.exam_string || '</a>'
+    END AS exam
 FROM
     assessment_access_rules AS aar
     JOIN assessments AS a ON (a.id = aar.assessment_id)
     JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+    LEFT JOIN exams AS e ON (e.exam_id = aar.exam_id)
+    LEFT JOIN courses AS ps_c ON (ps_c.course_id = e.course_id)
 WHERE
     a.id = $assessment_id
 ORDER BY
@@ -204,7 +231,8 @@ SELECT
     format_date_iso8601(iq.created_at, ci.display_timezone) AS date_formatted,
     iq.highest_submission_score,
     iq.last_submission_score,
-    iq.number_attempts
+    iq.number_attempts,
+    extract(epoch FROM iq.duration) AS duration_seconds
 FROM
     instance_questions AS iq
     JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -279,8 +307,9 @@ ORDER BY
 
 
 -- BLOCK assessment_instance_files
-WITH all_file_submissions AS (
+WITH all_submissions_with_files AS (
     SELECT
+        s.id AS submission_id,
         u.uid,
         ai.number AS assessment_instance_number,
         q.qid,
@@ -290,15 +319,7 @@ WITH all_file_submissions AS (
         s.submitted_answer,
         row_number() OVER (PARTITION BY v.id ORDER BY s.date) AS submission_number,
         (row_number() OVER (PARTITION BY v.id ORDER BY s.date DESC, s.id DESC)) = 1 AS final_submission_per_variant,
-        (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC, s.id DESC)) = 1 AS best_submission_per_variant,
-        (CASE
-            WHEN s.submitted_answer ? 'fileData' THEN v.params->>'fileName'
-            WHEN s.submitted_answer ? '_files' THEN f.file->>'name'
-        END) as filename,
-        (CASE
-            WHEN s.submitted_answer ? 'fileData' THEN s.submitted_answer->>'fileData'
-            WHEN s.submitted_answer ? '_files' THEN f.file->>'contents'
-        END) as contents
+        (row_number() OVER (PARTITION BY v.id ORDER BY s.score DESC, s.id DESC)) = 1 AS best_submission_per_variant
     FROM
         assessments AS a
         JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
@@ -308,18 +329,46 @@ WITH all_file_submissions AS (
         JOIN questions AS q ON (q.id = aq.question_id)
         JOIN variants AS v ON (v.instance_question_id = iq.id)
         JOIN submissions AS s ON (s.variant_id = v.id)
-        LEFT JOIN (
-            SELECT
-                id,
-                jsonb_array_elements(submitted_answer->'_files') AS file
-            FROM submissions
-        ) f ON (f.id = s.id)
     WHERE
         a.id = $assessment_id
         AND (
             (v.params ? 'fileName' AND s.submitted_answer ? 'fileData')
             OR (s.submitted_answer ? '_files')
         )
+),
+use_submissions_with_files AS (
+    SELECT *
+    FROM all_submissions_with_files
+    WHERE
+        $include_all
+        OR ($include_final AND final_submission_per_variant)
+        OR ($include_best AND best_submission_per_variant)
+),
+all_files AS (
+    SELECT
+        uid,
+        assessment_instance_number,
+        qid,
+        variant_number,
+        date,
+        submission_number,
+        (CASE
+            WHEN submitted_answer ? 'fileData' THEN params->>'fileName'
+            WHEN submitted_answer ? '_files' THEN f.file->>'name'
+        END) as filename,
+        (CASE
+            WHEN submitted_answer ? 'fileData' THEN submitted_answer->>'fileData'
+            WHEN submitted_answer ? '_files' THEN f.file->>'contents'
+        END) as contents
+    FROM
+        use_submissions_with_files AS s
+        LEFT JOIN (
+            SELECT
+                submission_id AS id,
+                jsonb_array_elements(submitted_answer->'_files') AS file
+            FROM use_submissions_with_files
+            WHERE submitted_answer ? '_files'
+        ) f ON (f.id = submission_id)
 )
 SELECT
     (
@@ -332,13 +381,13 @@ SELECT
     ) AS filename,
     decode(contents, 'base64') AS contents
 FROM
-    all_file_submissions
-WHERE
-    $include_all
-    OR ($include_final AND final_submission_per_variant)
-    OR ($include_best AND best_submission_per_variant)
+    all_files
 ORDER BY
-    uid, assessment_instance_number, qid, variant_number, date;
+    uid, assessment_instance_number, qid, variant_number, date
+LIMIT
+    $limit
+OFFSET
+    $offset;
 
 
 -- BLOCK open

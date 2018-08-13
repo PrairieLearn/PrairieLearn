@@ -5,9 +5,9 @@ var cheerio = require('cheerio');
 var config = require('../lib/config');
 var helperServer = require('./helperServer');
 
-var baseUrl = 'http://localhost:' + config.serverPort + '/pl';
+var baseUrl = 'http://localhost:' + config.serverPort;
 
-describe('GET /pl', function() {
+describe('GET /', function() {
     this.timeout(20000);
 
     before('set up testing server', helperServer.before);
@@ -30,7 +30,7 @@ describe('GET /pl', function() {
     it('should parse', function() {
         $ = cheerio.load(page);
     });
-    it('should contain TPL 101', function() {
-        assert.ok($('td a:contains("TPL 101")').length);
+    it('should contain XC 101', function() {
+        assert.ok($('td a:contains("XC 101")').length);
     });
 });

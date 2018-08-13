@@ -1,9 +1,9 @@
 columns
-    created_at: timestamp with time zone default now()
+    created_at: timestamp with time zone default CURRENT_TIMESTAMP
     id: bigint not null default nextval('config_id_seq'::regclass)
     key: text not null
     value: text
 
 indexes
-    config_pkey: PRIMARY KEY (id)
-    config_key_key: UNIQUE (key)
+    config_pkey: PRIMARY KEY (id) USING btree (id)
+    config_key_key: UNIQUE (key) USING btree (key)

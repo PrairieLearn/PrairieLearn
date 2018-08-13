@@ -1,5 +1,5 @@
 var config = require('../lib/config');
-var error = require('../lib/error');
+var error = require('@prairielearn/prairielib/error');
 var csrf = require('../lib/csrf');
 
 module.exports = function(req, res, next) {

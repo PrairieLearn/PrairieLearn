@@ -1,0 +1,14 @@
+{
+    "controller": "pl-file-editor.py",
+    "dependencies": {
+        "coreScripts": [
+            "ace/ace.js"
+        ],
+        "elementScripts": [
+            "pl-file-editor.js"
+        ],
+        "elementStyles": [
+            "pl-file-editor.css"
+        ]
+    }
+}

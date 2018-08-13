@@ -19,8 +19,11 @@ def to_json(v):
         sympy.Expr (i.e., any scalar sympy expression) -> '_type': 'sympy'
         sympy.Matrix -> '_type': 'sympy_matrix'
 
-    This function does not try to preserve information like the dtype of an
-    ndarray or the assumptions on variables in a sympy expression.
+    If v is an ndarray, this function preserves its dtype (by adding '_dtype' as
+    a third field in the dictionary).
+
+    This function does not try to preserve information like the assumptions on
+    variables in a sympy expression.
 
     If v can be json serialized or does not have a standard type, then it is
     returned without change.
@@ -29,13 +32,13 @@ def to_json(v):
         return {'_type': 'complex', '_value': {'real': v.real, 'imag': v.imag}}
     elif isinstance(v, np.ndarray):
         if np.isrealobj(v):
-            return {'_type': 'ndarray', '_value': v.tolist()}
+            return {'_type': 'ndarray', '_value': v.tolist(), '_dtype': str(v.dtype)}
         elif np.iscomplexobj(v):
-            return {'_type': 'complex_ndarray', '_value': {'real': v.real.tolist(), 'imag': v.imag.tolist()}}
+            return {'_type': 'complex_ndarray', '_value': {'real': v.real.tolist(), 'imag': v.imag.tolist()}, '_dtype': str(v.dtype)}
     elif isinstance(v, sympy.Expr):
         s = [str(a) for a in v.free_symbols]
         return {'_type': 'sympy', '_value': str(v), '_variables': s}
-    elif isinstance(v, sympy.Matrix):
+    elif isinstance(v, sympy.Matrix) or isinstance(v, sympy.ImmutableMatrix):
         s = [str(a) for a in v.free_symbols]
         num_rows, num_cols = v.shape
         M = []
@@ -61,8 +64,11 @@ def from_json(v):
         '_type': 'sympy' -> sympy.Expr
         '_type': 'sympy_matrix' -> sympy.Matrix
 
-    This function does not try to recover information like the dtype of an
-    ndarray or the assumptions on variables in a sympy expression.
+    If v encodes an ndarray and has the field '_dtype', this function recovers
+    its dtype.
+
+    This function does not try to recover information like the assumptions on
+    variables in a sympy expression.
 
     If v does not have the format {'_type':..., '_value':...}, then it is
     returned without change.
@@ -76,12 +82,18 @@ def from_json(v):
                     raise Exception('variable of type complex should have value with real and imaginary pair')
             elif v['_type'] == 'ndarray':
                 if ('_value' in v):
-                    return np.array(v['_value'])
+                    if ('_dtype' in v):
+                        return np.array(v['_value']).astype(v['_dtype'])
+                    else:
+                        return np.array(v['_value'])
                 else:
                     raise Exception('variable of type ndarray should have value')
             elif v['_type'] == 'complex_ndarray':
                 if ('_value' in v) and ('real' in v['_value']) and ('imag' in v['_value']):
-                    return np.array(v['_value']['real']) + np.array(v['_value']['imag']) * 1j
+                    if ('_dtype' in v):
+                        return (np.array(v['_value']['real']) + np.array(v['_value']['imag']) * 1j).astype(v['_dtype'])
+                    else:
+                        return np.array(v['_value']['real']) + np.array(v['_value']['imag']) * 1j
                 else:
                     raise Exception('variable of type complex_ndarray should have value with real and imaginary pair')
             elif v['_type'] == 'sympy':
@@ -116,11 +128,26 @@ def inner_html(element):
     return html
 
 
+def compat_get(object, attrib, default):
+    if attrib in object:
+        return object[attrib]
+    old_attrib = attrib.replace('-', '_')
+    return old_attrib in object
+
+
+def compat_array(arr):
+    new_arr = []
+    for i in arr:
+        new_arr.append(i)
+        new_arr.append(i.replace('-', '_'))
+    return new_arr
+
+
 def check_attribs(element, required_attribs, optional_attribs):
     for name in required_attribs:
-        if name not in element.attrib:
+        if not has_attrib(element, name):
             raise Exception('Required attribute "%s" missing' % name)
-    extra_attribs = list(set(element.attrib) - set(required_attribs) - set(optional_attribs))
+    extra_attribs = list(set(element.attrib) - set(compat_array(required_attribs)) - set(compat_array(optional_attribs)))
     for name in extra_attribs:
         raise Exception('Unknown attribute "%s"' % name)
 
@@ -143,12 +170,20 @@ def _get_attrib(element, name, *args):
     # which means we need to explicitly handle the optional argument
     if len(args) > 1:
         raise Exception('Only one additional argument is allowed')
-    if name not in element.attrib:
-        if len(args) == 1:
-            return (args[0], True)
-        else:
-            raise Exception('Attribute "%s" missing and no default is available' % name)
-    return (element.attrib[name], False)
+
+    if name in element.attrib:
+        return (element.attrib[name], False)
+
+    # We need to check for the legacy _ version
+    old_name = name.replace('-', '_')
+    if old_name in element.attrib:
+        return (element.attrib[old_name], False)
+
+    # Provide a default if we can
+    if len(args) == 1:
+        return (args[0], True)
+
+    raise Exception('Attribute "%s" missing and no default is available' % name)
 
 
 def has_attrib(element, name):
@@ -157,7 +192,8 @@ def has_attrib(element, name):
     Returns true if the element has an attribute of that name,
     false otherwise.
     """
-    return name in element.attrib
+    old_name = name.replace('-', '_')
+    return name in element.attrib or old_name in element.attrib
 
 
 def get_string_attrib(element, name, *args):
@@ -450,6 +486,28 @@ def string_partition_outer_interval(s, left='[', right=']'):
     (s, s_right, s_after_right) = s.rpartition(right)
     # Return results
     return s_before_left, s, s_after_right
+
+
+def string_to_integer(s):
+    """string_to_integer(s)
+
+    Parses a string that is an integer.
+
+    Returns a number with type int, or None on parse error.
+    """
+    # Replace unicode minus with hyphen minus wherever it occurs
+    s = s.replace(u'\u2212', '-').strip()
+    # Check if it is an integer, i.e., if it contains only digits and possibly
+    # hypen minus as the first character
+    if not (s.isdigit() or s[1:].isdigit()):
+        return None
+    # Try to parse as int
+    try:
+        s_int = int(s)
+        return s_int
+    except Exception:
+        # If that didn't work, return None
+        return None
 
 
 def string_to_number(s, allow_complex=True):
@@ -774,6 +832,50 @@ def matlab_to_numpy(a):
         except Exception:
             # Return error if submitted answer could not be converted to float
             return (None, 'Invalid format (missing square brackets and not a real number).')
+
+
+def latex_from_2darray(A, presentation_type='f', digits=2):
+
+    """latex_from_2darray
+    This function assumes that A is one of these things:
+            - a number (float or complex)
+            - a 2D ndarray (float or complex)
+
+    If A is a scalar, the string is a single number, not wrapped in brackets.
+
+    It A is a numpy 2D array, it returns a string with the format:
+        '\begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}'
+
+    If presentation_type is 'sigfig', each number is formatted using the
+    to_precision module to "digits" significant figures.
+
+    Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
+    """
+    # if A is a scalar
+    if np.isscalar(A):
+        if presentation_type == 'sigfig':
+            return string_from_number_sigfig(A, digits=digits)
+        else:
+            return '{:.{digits}{presentation_type}}'.format(A, digits=digits, presentation_type=presentation_type)
+
+    if presentation_type == 'sigfig':
+        formatter = {
+            'float_kind': lambda x: to_precision.to_precision(x, digits),
+            'complex_kind': lambda x: _string_from_complex_sigfig(x, digits)
+        }
+    else:
+        formatter = {
+            'float_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type),
+            'complex_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type)
+        }
+
+    if A.ndim != 2:
+        raise ValueError('input should be a 2D numpy array')
+    lines = np.array2string(A, formatter=formatter).replace('[', '').replace(']', '').splitlines()
+    rv = [r'\begin{bmatrix}']
+    rv += ['  ' + ' & '.join(l.split()) + r'\\' for l in lines]
+    rv += [r'\end{bmatrix}']
+    return ''.join(rv)
 
 
 def is_correct_ndarray2D_dd(a_sub, a_tru, digits=2):

@@ -1,23 +1,24 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var async = require('async');
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+const async = require('async');
 
-var courseDB = require('../lib/course-db');
-var sqldb = require('../lib/sqldb');
+const namedLocks = require('../lib/named-locks');
+const courseDB = require('../lib/course-db');
+const sqldb = require('@prairielearn/prairielib/sql-db');
 
-var syncCourseInfo = require('./fromDisk/courseInfo');
-var syncCourseInstances = require('./fromDisk/courseInstances');
-var syncCourseStaff = require('./fromDisk/courseStaff');
-var syncTopics = require('./fromDisk/topics');
-var syncQuestions = require('./fromDisk/questions');
-var syncTags = require('./fromDisk/tags');
-var syncAssessmentSets = require('./fromDisk/assessmentSets');
-var syncAssessments = require('./fromDisk/assessments');
-var freeformServer = require('../question-servers/freeform');
+const syncCourseInfo = require('./fromDisk/courseInfo');
+const syncCourseInstances = require('./fromDisk/courseInstances');
+const syncCourseStaff = require('./fromDisk/courseStaff');
+const syncTopics = require('./fromDisk/topics');
+const syncQuestions = require('./fromDisk/questions');
+const syncTags = require('./fromDisk/tags');
+const syncAssessmentSets = require('./fromDisk/assessmentSets');
+const syncAssessments = require('./fromDisk/assessments');
+const freeformServer = require('../question-servers/freeform');
 
 module.exports = {};
 
-module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) {
+module.exports._syncDiskToSqlWithLock = function(courseDir, course_id, logger, callback) {
     logger.info("Starting sync of git repository to database for " + courseDir);
     logger.info("Loading info.json files from git repository...");
     courseDB.loadFullCourse(courseDir, logger, function(err, course) {
@@ -65,10 +66,32 @@ module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) 
     });
 };
 
+module.exports.syncDiskToSql = function(courseDir, course_id, logger, callback) {
+    const lockName = 'coursedir:' + courseDir;
+    logger.verbose(`Trying lock ${lockName}`);
+    namedLocks.tryLock(lockName, (err, lock) => {
+        if (ERR(err, callback)) return;
+        if (lock == null) {
+            logger.verbose(`Did not acquire lock ${lockName}`);
+            callback(new Error(`Another user is already syncing or modifying the course: ${courseDir}`));
+        } else {
+            logger.verbose(`Acquired lock ${lockName}`);
+            this._syncDiskToSqlWithLock(courseDir, course_id, logger, (err) => {
+                namedLocks.releaseLock(lock, (lockErr) => {
+                    if (ERR(lockErr, callback)) return;
+                    if (ERR(err, callback)) return;
+                    logger.verbose(`Released lock ${lockName}`);
+                    callback(null);
+                });
+            });
+        }
+    });
+};
+
 module.exports.syncOrCreateDiskToSql = function(courseDir, logger, callback) {
     sqldb.callOneRow('select_or_insert_course_by_path', [courseDir], function(err, result) {
         if (ERR(err, callback)) return;
-        var course_id = result.rows[0].course_id;
+        const course_id = result.rows[0].course_id;
         module.exports.syncDiskToSql(courseDir, course_id, logger, function(err) {
             if (ERR(err, callback)) return;
             callback(null);

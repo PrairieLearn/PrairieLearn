@@ -1,5 +1,5 @@
 columns
-    created_at: timestamp with time zone default now()
+    created_at: timestamp with time zone default CURRENT_TIMESTAMP
     during: tstzrange
     id: bigint not null default nextval('exam_mode_networks_id_seq'::regclass)
     location: text
@@ -7,4 +7,4 @@ columns
     purpose: text
 
 indexes
-    exam_mode_networks_pkey: PRIMARY KEY (id)
+    exam_mode_networks_pkey: PRIMARY KEY (id) USING btree (id)

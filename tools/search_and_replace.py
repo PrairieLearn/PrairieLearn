@@ -40,10 +40,10 @@ for question_dir in question_dirs:
     contents = read_file(question_path, input_filename)
 
     # these are direct string replacements
-    contents.replace('<multipleChoice>', '<pl_multiple_choice>');
-    contents.replace('</multipleChoice>', '</pl_multiple_choice>');
+    contents.replace('<multipleChoice>', '<pl-multiple-choice>');
+    contents.replace('</multipleChoice>', '</pl-multiple-choice>');
 
     # these are regular expression replacements
-    contents = re.sub(r'<(/?)checkbox>', '<\1pl_checkbox>', contents);
+    contents = re.sub(r'<(/?)checkbox>', '<\1pl-checkbox>', contents);
 
     write_file(question_path, input_filename, contents)

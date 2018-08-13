@@ -3,6 +3,7 @@ columns
     course_id: bigint not null
     deleted_at: timestamp with time zone
     directory: text
+    external_grading_enable_networking: boolean
     external_grading_enabled: boolean default false
     external_grading_entrypoint: text
     external_grading_files: text[] default ARRAY[]::text[]
@@ -22,10 +23,10 @@ columns
     uuid: uuid not null
 
 indexes
-    questions_pkey: PRIMARY KEY (id)
-    questions_course_id_number_key: UNIQUE (course_id, number)
-    questions_uuid_key: UNIQUE (uuid)
-    questions_topic_id_idx: null
+    questions_pkey: PRIMARY KEY (id) USING btree (id)
+    questions_course_id_number_key: UNIQUE (course_id, number) USING btree (course_id, number)
+    questions_uuid_key: UNIQUE (uuid) USING btree (uuid)
+    questions_topic_id_idx: USING btree (topic_id)
 
 foreign-key constraints
     questions_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
@@ -33,6 +34,8 @@ foreign-key constraints
 
 referenced by
     assessment_questions: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    current_pages: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     issues: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE SET NULL
+    page_view_logs: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     question_tags: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE

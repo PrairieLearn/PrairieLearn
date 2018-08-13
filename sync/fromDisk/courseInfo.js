@@ -2,10 +2,10 @@ var ERR = require('async-stacktrace');
 var _ = require('lodash');
 var path = require('path');
 
-var error = require('../../lib/error');
+var error = require('@prairielearn/prairielib/error');
 var config = require('../../lib/config');
-var sqldb = require('../../lib/sqldb');
-var sqlLoader = require('../../lib/sql-loader');
+var sqldb = require('@prairielearn/prairielib/sql-db');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 

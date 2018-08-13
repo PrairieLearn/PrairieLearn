@@ -1,12 +1,13 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var express = require('express');
-var router = express.Router();
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+const express = require('express');
+const router = express.Router();
 
-var error = require('../../lib/error');
-var question = require('../../lib/question');
-var assessment = require('../../lib/assessment');
-var sqldb = require('../../lib/sqldb');
+const error = require('@prairielearn/prairielib/error');
+const logPageView = require('../../middlewares/logPageView')('studentInstanceQuestion');
+const question = require('../../lib/question');
+const assessment = require('../../lib/assessment');
+const sqldb = require('@prairielearn/prairielib/sql-db');
 
 function processSubmission(req, res, callback) {
     if (!res.locals.assessment_instance.open) return callback(error.make(400, 'assessment_instance is closed'));
@@ -95,7 +96,7 @@ router.post('/', function(req, res, next) {
             res.redirect(req.originalUrl);
         });
     } else if (req.body.__action == 'timeLimitFinish') {
-        var closeExam = true;
+        const closeExam = true;
         assessment.gradeAssessmentInstance(res.locals.assessment_instance.id, res.locals.authn_user.user_id, closeExam, function(err) {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + res.locals.assessment_instance.id + '?timeLimitExpired=true');
@@ -116,7 +117,10 @@ router.get('/', function(req, res, next) {
     const variant_id = null;
     question.getAndRenderVariant(variant_id, res.locals, function(err) {
         if (ERR(err, next)) return;
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        logPageView(req, res, (err) => {
+            if (ERR(err, next)) return;
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        });
     });
 });
 

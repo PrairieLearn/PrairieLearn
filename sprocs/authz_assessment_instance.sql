@@ -1,5 +1,6 @@
 DROP FUNCTION IF EXISTS authz_assessment_instance(bigint,jsonb);
 DROP FUNCTION IF EXISTS authz_assessment_instance(bigint,jsonb,text);
+DROP FUNCTION IF EXISTS authz_assessment_instance(bigint,jsonb,timestamp with time zone,text);
 
 CREATE OR REPLACE FUNCTION
     authz_assessment_instance (
@@ -13,6 +14,9 @@ CREATE OR REPLACE FUNCTION
         OUT credit_date_string TEXT, -- For display to the user.
         OUT time_limit_min integer,  -- Time limit (if any) for this assessment.
         OUT time_limit_expired boolean, -- Is the time limit expired?
+        OUT password text,           -- Password (if any) for this assessment.
+        OUT mode enum_mode,
+        OUT seb_config JSONB,
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     )
 AS $$
@@ -33,7 +37,10 @@ BEGIN
     credit := assessment_result.credit;
     credit_date_string := assessment_result.credit_date_string;
     time_limit_min := assessment_result.time_limit_min;
+    password := assessment_result.password;
     access_rules := assessment_result.access_rules;
+    mode := assessment_result.mode;
+    seb_config := assessment_result.seb_config;
 
     time_limit_expired := FALSE;
     IF assessment_instance.date_limit IS NOT NULL AND assessment_instance.date_limit < req_date THEN

@@ -9,8 +9,8 @@ columns
     uids: text[]
 
 indexes
-    course_instance_access_rules_pkey: PRIMARY KEY (id)
-    course_instance_access_rules_course_instance_id_number_key: UNIQUE (course_instance_id, number)
+    course_instance_access_rules_pkey: PRIMARY KEY (id) USING btree (id)
+    course_instance_access_rules_course_instance_id_number_key: UNIQUE (course_instance_id, number) USING btree (course_instance_id, number)
 
 foreign-key constraints
     course_instance_access_rules_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

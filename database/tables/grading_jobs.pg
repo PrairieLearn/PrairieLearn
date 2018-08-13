@@ -1,7 +1,7 @@
 columns
     auth_user_id: bigint
     correct: boolean
-    date: timestamp with time zone default now()
+    date: timestamp with time zone default CURRENT_TIMESTAMP
     feedback: jsonb
     graded_at: timestamp with time zone
     graded_by: bigint
@@ -23,9 +23,9 @@ columns
     v2_score: double precision
 
 indexes
-    grading_jobs_pkey: PRIMARY KEY (id)
-    grading_jobs_date_idx: null
-    grading_jobs_submission_id_idx: null
+    grading_jobs_pkey: PRIMARY KEY (id) USING btree (id)
+    grading_jobs_date_idx: USING btree (date)
+    grading_jobs_submission_id_idx: USING btree (submission_id)
 
 foreign-key constraints
     grading_jobs_auth_user_id_fkey: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

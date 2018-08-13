@@ -1,21 +1,23 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var async = require('async');
-var csvStringify = require('csv').stringify;
-var express = require('express');
-var router = express.Router();
-var debug = require('debug')('prairielearn:instructorAssessment');
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+const async = require('async');
+const csvStringify = require('csv').stringify;
+const express = require('express');
+const router = express.Router();
+const debug = require('debug')('prairielearn:instructorAssessment');
+const archiver = require('archiver');
 
-var error = require('../../lib/error');
-var logger = require('../../lib/logger');
-var serverJobs = require('../../lib/server-jobs');
-var csvMaker = require('../../lib/csv-maker');
-var dataFiles = require('../../lib/data-files');
-var assessment = require('../../lib/assessment');
-var sqldb = require('../../lib/sqldb');
-var sqlLoader = require('../../lib/sql-loader');
+const error = require('@prairielearn/prairielib/error');
+const logger = require('../../lib/logger');
+const config = require('../../lib/config');
+const serverJobs = require('../../lib/server-jobs');
+const csvMaker = require('../../lib/csv-maker');
+const { paginateQuery } = require('../../lib/paginate');
+const assessment = require('../../lib/assessment');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 var sanitizeName = function(name) {
     return name.replace(/[^a-zA-Z0-9]/g, '_');
@@ -84,7 +86,10 @@ router.get('/', function(req, res, next) {
         },
         function(callback) {
             debug('query assessment_access_rules');
-            var params = {assessment_id: res.locals.assessment.id};
+            var params = {
+                assessment_id: res.locals.assessment.id,
+                link_exam_id: config.syncExamIdAccessRules,
+            };
             sqldb.query(sql.assessment_access_rules, params, function(err, result) {
                 if (ERR(err, callback)) return;
                 res.locals.access_rules = result.rows;
@@ -333,6 +338,7 @@ router.get('/:filename', function(req, res, next) {
                 ['Highest submission score', 'highest_submission_score'],
                 ['Last submission score', 'last_submission_score'],
                 ['Number attempts', 'number_attempts'],
+                ['Duration seconds', 'duration_seconds'],
             ];
             csvMaker.rowsToCsv(result.rows, columns, function(err, csv) {
                 if (ERR(err, next)) return;
@@ -394,23 +400,29 @@ router.get('/:filename', function(req, res, next) {
     } else if (req.params.filename == res.locals.allFilesZipFilename
                || req.params.filename == res.locals.finalFilesZipFilename
                || req.params.filename == res.locals.bestFilesZipFilename) {
-        let include_all = (req.params.filename == res.locals.allFilesZipFilename);
-        let include_final = (req.params.filename == res.locals.finalFilesZipFilename);
-        let include_best = (req.params.filename == res.locals.bestFilesZipFilename);
-        let params = {
+        const include_all = (req.params.filename == res.locals.allFilesZipFilename);
+        const include_final = (req.params.filename == res.locals.finalFilesZipFilename);
+        const include_best = (req.params.filename == res.locals.bestFilesZipFilename);
+        const params = {
             assessment_id: res.locals.assessment.id,
+            limit: 100,
             include_all,
             include_final,
             include_best,
         };
-        sqldb.query(sql.assessment_instance_files, params, function(err, result) {
+
+        const archive = archiver('zip');
+        const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(' ', '');
+        const prefix = `${dirname}/`;
+        archive.append(null, { name: prefix });
+        res.attachment(req.params.filename);
+        archive.pipe(res);
+        paginateQuery(sql.assessment_instance_files, params, (row, callback) => {
+            archive.append(row.contents, { name: prefix + row.filename });
+            callback(null);
+        }, (err) => {
             if (ERR(err, next)) return;
-            var dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(' ', '');
-            dataFiles.filesToZipBuffer(result.rows, dirname, function(err, zipBuffer) {
-                if (ERR(err, next)) return;
-                res.attachment(req.params.filename);
-                res.send(zipBuffer);
-            });
+            archive.finalize();
         });
     } else if (req.params.filename === res.locals.questionStatsCsvFilename) {
         var params = {
@@ -421,7 +433,7 @@ router.get('/:filename', function(req, res, next) {
             if (ERR(err, next)) return;
             var questionStatsList = result.rows;
             var csvData = [];
-            var csvHeaders = ['Question number', 'Question title'];
+            var csvHeaders = ['Question number', 'Question title', 'Tags'];
             Object.keys(res.locals.stat_descriptions).forEach(key => {
                 csvHeaders.push(res.locals.stat_descriptions[key].non_html_title);
             });
@@ -432,6 +444,7 @@ router.get('/:filename', function(req, res, next) {
                 var questionStatsData = [];
                 questionStatsData.push(questionStats.number);
                 questionStatsData.push(questionStats.title);
+                questionStatsData.push(questionStats.tags_string);
                 questionStatsData.push(questionStats.mean_question_score);
                 questionStatsData.push(questionStats.question_score_variance);
                 questionStatsData.push(questionStats.discrimination);

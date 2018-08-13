@@ -3,8 +3,8 @@ var ERR = require('async-stacktrace');
 var config = require('../lib/config');
 var csrf = require('../lib/csrf');
 var logger = require('../lib/logger');
-var sqldb = require('../lib/sqldb');
-var sqlLoader = require('../lib/sql-loader');
+var sqldb = require('@prairielearn/prairielib/sql-db');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -21,6 +21,35 @@ module.exports = function(req, res, next) {
       // Webhook callbacks should not be authenticated
       next();
       return;
+    }
+
+    // look for load-testing override cookie
+    if (req.cookies.load_test_token) {
+        if (!csrf.checkToken(req.cookies.load_test_token, 'load_test', config.secretKey, {maxAge: 24 * 60 * 60 * 1000})) {
+            return next(new Error('invalid load_test_token'));
+        }
+
+        let params = {
+            uid: 'loadtest@prairielearn.org',
+            name: 'Load Test',
+            uin: '999999999',
+            provider: 'dev',
+        };
+        sqldb.queryOneRow(sql.insert_user, params, (err, result) => {
+            if (ERR(err, next)) return;
+            res.locals.authn_user = result.rows[0].user;
+            res.locals.is_administrator = result.rows[0].is_administrator;
+
+            let params = {
+                uid: 'loadtest@prairielearn.org',
+                course_short_name: 'XC 101',
+            };
+            sqldb.query(sql.enroll_user_as_instructor, params, (err, _result) => {
+                if (ERR(err, next)) return;
+                next();
+            });
+        });
+        return;
     }
 
     // bypass auth for local /pl/ serving
@@ -51,16 +80,17 @@ module.exports = function(req, res, next) {
 
     // otherwise look for auth cookies
     if (req.cookies.pl_authn == null) {
-        logger.error('no authn cookie');
-        res.redirect('/');
+        // if no authn cookie then redirect to the login page
+        res.cookie('preAuthUrl', req.originalUrl);
+        res.redirect('/pl/login');
         return;
     }
     var authnData = csrf.getCheckedData(req.cookies.pl_authn, config.secretKey, {maxAge: 24 * 60 * 60 * 1000});
     if (authnData == null) {
-        // if CSRF checking failed then clear the cookie and redirect to / to prompt re-login
+        // if CSRF checking failed then clear the cookie and redirect to login
         logger.error('authn cookie CSRF failure');
         res.clearCookie('pl_authn');
-        res.redirect('/');
+        res.redirect('/pl/login');
         return;
     }
 

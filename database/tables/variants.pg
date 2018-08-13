@@ -1,7 +1,8 @@
 columns
     authn_user_id: bigint
     broken: boolean default false
-    date: timestamp with time zone default now()
+    course_instance_id: bigint
+    date: timestamp with time zone default CURRENT_TIMESTAMP
     duration: interval default '00:00:00'::interval
     first_duration: interval
     id: bigint not null default nextval('variants_id_seq'::regclass)
@@ -18,17 +19,20 @@ columns
     variant_seed: text
 
 indexes
-    variants_pkey: PRIMARY KEY (id)
-    variants_instance_question_id_number_key: UNIQUE (instance_question_id, number)
-    variants_qiid_key: UNIQUE (qiid)
+    variants_pkey: PRIMARY KEY (id) USING btree (id)
+    variants_instance_question_id_number_key: UNIQUE (instance_question_id, number) USING btree (instance_question_id, number)
+    variants_qiid_key: UNIQUE (qiid) USING btree (qiid)
 
 foreign-key constraints
     variants_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    variants_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_instance_question_id_fkey: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
+    current_pages: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
     issues: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE SET NULL
+    page_view_logs: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
     submissions: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE
     variant_view_logs: FOREIGN KEY (variant_id) REFERENCES variants(id) ON UPDATE CASCADE ON DELETE CASCADE

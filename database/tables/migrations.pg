@@ -5,5 +5,5 @@ columns
     index: integer
 
 indexes
-    migrations_pkey: PRIMARY KEY (id)
-    migrations_index_key: UNIQUE (index)
+    migrations_pkey: PRIMARY KEY (id) USING btree (id)
+    migrations_index_key: UNIQUE (index) USING btree (index)

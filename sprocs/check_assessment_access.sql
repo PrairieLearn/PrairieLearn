@@ -5,7 +5,7 @@ DROP FUNCTION IF EXISTS check_assessment_access(bigint,enum_mode,enum_role,bigin
 CREATE OR REPLACE FUNCTION
     check_assessment_access (
         IN assessment_id bigint,
-        IN mode enum_mode,
+        IN authz_mode enum_mode,
         IN role enum_role,
         IN user_id bigint,
         IN uid text,
@@ -16,6 +16,8 @@ CREATE OR REPLACE FUNCTION
         OUT credit_date_string TEXT, -- For display to the user.
         OUT time_limit_min integer,  -- What is the time limit (if any) for this assessment.
         OUT password text,           -- What is the password (if any) for this assessment.
+        OUT mode enum_mode,          -- Mode of the assessment.
+        OUT seb_config JSONB,         -- SEBKeys (if any) for this assessment.
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     ) AS $$
 DECLARE
@@ -37,6 +39,8 @@ BEGIN
         END AS credit_date_string,
         aar.time_limit_min,
         aar.password,
+        aar.mode,
+        aar.seb_config,
         aar.id
     INTO
         authorized,
@@ -44,10 +48,12 @@ BEGIN
         credit_date_string,
         time_limit_min,
         password,
+        mode,
+        seb_config,
         active_access_rule_id
     FROM
         assessment_access_rules AS aar
-        JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.mode, check_assessment_access.role,
+        JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode, check_assessment_access.role,
             check_assessment_access.user_id, check_assessment_access.uid, check_assessment_access.date, TRUE) AS caar ON TRUE
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id
@@ -64,6 +70,8 @@ BEGIN
         credit_date_string = 'None';
         time_limit_min = NULL;
         password = NULL;
+        mode = NULL;
+        seb_config = NULL;
     END IF;
 
     -- Override if we are an Instructor
@@ -74,6 +82,8 @@ BEGIN
         active_access_rule_id = NULL;
         time_limit_min = NULL;
         password = NULL;
+        mode = NULL;
+        seb_config = NULL;
     END IF;
 
     -- List of all access rules that will grant access to this user/mode/role at some date (past or future),
@@ -84,13 +94,14 @@ BEGIN
             'time_limit_min', CASE WHEN aar.time_limit_min IS NOT NULL THEN aar.time_limit_min::text || ' min' ELSE '—' END,
             'start_date', CASE WHEN start_date IS NOT NULL THEN format_date_full(start_date, display_timezone) ELSE '—' END,
             'end_date', CASE WHEN end_date IS NOT NULL THEN format_date_full(end_date, display_timezone) ELSE '—' END,
+            'mode', aar.mode,
             'active', aar.id = active_access_rule_id
         ) ORDER BY aar.number), '[]'::jsonb)
     INTO
         access_rules
     FROM
         assessment_access_rules AS aar
-        JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.mode, check_assessment_access.role,
+        JOIN LATERAL check_assessment_access_rule(aar, check_assessment_access.authz_mode, check_assessment_access.role,
             check_assessment_access.user_id, check_assessment_access.uid, NULL, FALSE) AS caar ON TRUE
     WHERE
         aar.assessment_id = check_assessment_access.assessment_id

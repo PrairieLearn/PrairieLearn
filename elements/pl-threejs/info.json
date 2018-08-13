@@ -1,0 +1,21 @@
+{
+    "controller": "pl-threejs.py",
+    "dependencies": {
+        "nodeModulesScripts": [
+            "three/build/three.min.js",
+            "three/examples/js/loaders/STLLoader.js",
+            "three/examples/js/controls/OrbitControls.js",
+            "clipboard/dist/clipboard.min.js",
+            "async/dist/async.min.js"
+        ],
+        "nodeModulesStyles": [
+            "three/examples/fonts/helvetiker_regular.typeface.json"
+        ],
+        "elementScripts": [
+            "pl-threejs.js"
+        ],
+        "coreScripts": [
+            "PrairieUtil.js"
+        ]
+    }
+}

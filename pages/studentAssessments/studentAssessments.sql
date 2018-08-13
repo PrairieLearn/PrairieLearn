@@ -20,7 +20,8 @@ WITH
             aa.access_rules,
             NULL::integer AS assessment_instance_id,
             NULL::integer AS assessment_instance_number,
-            NULL::integer AS assessment_instance_score_perc
+            NULL::integer AS assessment_instance_score_perc,
+            NULL::boolean AS assessment_instance_open
         FROM
             assessments AS a
             JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
@@ -52,7 +53,8 @@ WITH
             mia.access_rules,
             ai.id AS assessment_instance_id,
             ai.number AS assessment_instance_number,
-            ai.score_perc AS assessment_instance_score_perc
+            ai.score_perc AS assessment_instance_score_perc,
+            ai.open AS assessment_instance_open
         FROM
             assessment_instances AS ai
             JOIN multiple_instance_assessments AS mia ON (mia.assessment_id = ai.assessment_id)
@@ -80,7 +82,8 @@ WITH
             aa.access_rules,
             ai.id AS assessment_instance_id,
             ai.number AS assessment_instance_number,
-            ai.score_perc AS assessment_instance_score_perc
+            ai.score_perc AS assessment_instance_score_perc,
+            ai.open AS assessment_instance_open
         FROM
             assessments AS a
             JOIN course_instances AS ci ON (ci.id = a.course_instance_id)

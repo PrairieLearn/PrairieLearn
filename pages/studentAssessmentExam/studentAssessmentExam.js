@@ -2,10 +2,10 @@ var ERR = require('async-stacktrace');
 var express = require('express');
 var router = express.Router();
 
-var error = require('../../lib/error');
+var error = require('@prairielearn/prairielib/error');
 var assessment = require('../../lib/assessment');
-var sqldb = require('../../lib/sqldb');
-var sqlLoader = require('../../lib/sql-loader');
+var sqldb = require('@prairielearn/prairielib/sql-db');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -33,13 +33,7 @@ router.post('/', function(req, res, next) {
     if (res.locals.assessment.type !== 'Exam') return next();
     if (!res.locals.authz_result.authorized_edit) return next(error.make(403, 'Not authorized', res.locals));
     if (req.body.__action == 'newInstance') {
-        if (res.locals.authz_result.password != null) {
-            if (req.body.password == null) return next(new Error('Password required for this assessment'));
-            if (req.body.password !== res.locals.authz_result.password) {
-                return next(new Error('Incorrect password'));
-            }
-        }
-        assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.authn_user.user_id, res.locals.authz_data.mode, res.locals.authz_result.time_limit_min, res.locals.authz_data.date, res.locals.course, (err, assessment_instance_id) => {
+        assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.authn_user.user_id, res.locals.authz_data.mode, res.locals.authz_result.time_limit_min, res.locals.req_date, res.locals.course_instance.id, res.locals.course, (err, assessment_instance_id) => {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);
         });

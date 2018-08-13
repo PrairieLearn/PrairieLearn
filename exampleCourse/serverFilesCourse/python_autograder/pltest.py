@@ -86,12 +86,12 @@ if __name__ == '__main__':
         grading_result['tests'] = results
         grading_result['score'] = float(earned_points) / float(max_points)
         grading_result['succeeded'] = True
-        print(json.dumps(grading_result))
+        print(json.dumps(grading_result, allow_nan=False))
 
         with open('results.json', mode='w') as out:
             json.dump(grading_result, out)
     except:
-        # Last-ditch effort to capture meaninful error information
+        # Last-ditch effort to capture meaningful error information
         grading_result = {}
         grading_result['score'] = 0.0
         grading_result['succeeded'] = False

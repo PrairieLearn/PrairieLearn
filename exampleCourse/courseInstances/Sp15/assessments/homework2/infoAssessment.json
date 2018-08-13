@@ -45,6 +45,7 @@
                 {"id": "customElement",              "points": 1, "maxPoints": 1},
                 {"id": "differentiatePolynomial",    "points": 2, "maxPoints": 10},
                 {"id": "functionValueFromPlot",      "points": 2, "maxPoints": 10},
+                {"id": "addIntegers",                 "points": 1, "maxPoints": 5},
                 {"id": "rotateObject",               "points": 2, "maxPoints": 10}
             ]
         }

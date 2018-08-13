@@ -23,6 +23,7 @@ AS $$
         ((filter_is_open::boolean IS NULL) OR (i.open = filter_is_open::boolean))
         AND ((filter_is_closed::boolean IS NULL) OR (i.open != filter_is_closed::boolean))
         AND ((filter_manually_reported::boolean IS NULL) OR (i.manually_reported = filter_manually_reported::boolean))
+        AND ((filter_automatically_reported::boolean IS NULL) OR (i.manually_reported != filter_automatically_reported::boolean))
         AND ((filter_qids::text[] IS NULL) OR (q.qid ILIKE ANY(filter_qids::text[])))
         AND ((filter_not_qids::text[] IS NULL) OR (q.qid NOT ILIKE ANY(filter_not_qids::text[])))
         AND ((filter_users::text[] IS NULL) OR (u.uid ILIKE ANY(filter_users::text[])))

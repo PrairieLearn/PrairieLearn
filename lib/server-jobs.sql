@@ -36,10 +36,10 @@ max_over_jobs_with_same_sequence AS (
 )
 INSERT INTO jobs
     (course_id,  course_instance_id,  assessment_id, number,      job_sequence_id, number_in_sequence,      last_in_sequence,
-     user_id,  authn_user_id,  type,  description,  status,    command,  arguments,          working_directory)
+     user_id,  authn_user_id,  type,  description,  status,    command,  arguments,          working_directory,  env)
 SELECT
     $course_id, $course_instance_id, $assessment_id, new_number, $job_sequence_id, new_number_in_sequence, $last_in_sequence,
-    $user_id, $authn_user_id, $type, $description, 'Running', $command, $arguments::TEXT[], $working_directory
+    $user_id, $authn_user_id, $type, $description, 'Running', $command, $arguments::TEXT[], $working_directory, $env
 FROM
     max_over_jobs_with_same_course,
     max_over_jobs_with_same_sequence

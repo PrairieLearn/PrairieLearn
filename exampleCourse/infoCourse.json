@@ -1,6 +1,6 @@
 {
     "uuid": "fcc5282c-a752-4146-9bd6-ee19aac53fc5",
-    "name": "TPL 101",
+    "name": "XC 101",
     "title": "Example Course",
     "assessmentSets": [
     ],
@@ -13,16 +13,21 @@
         {"name": "Particle kinetics", "color": "red3", "description": "Newton's equation for point masses."},
         {"name": "Coding", "color": "turquoise3", "description": "Writing computer code."},
         {"name": "Center of mass", "color": "green3", "description": "Calculating the center of mass for irregular bodies and systems."},
-        {"name": "Linear algebra", "color": "brown3", "decription": "Matrix math."},
-        {"name": "Test", "color": "gray3", "description": "Feature examples."}
+        {"name": "Linear algebra", "color": "brown3", "description": "Matrix math."},
+        {"name": "Test", "color": "gray3", "description": "Feature examples."},
+        {"name": "Names", "color": "red2", "description": "Questions to help you learn names."}
     ],
     "tags": [
-        {"name": "exampleCourse", "color": "gray1", "description": "Question originally written for exampleCourse"},
         {"name": "mwest", "color": "gray1", "description": "Question originally written by mwest"},
         {"name": "tbretl", "color": "blue1", "description": "Question originally written by tbretl"},
-        {"name": "tpl101", "color": "gray1", "description": "Question originally written for the TPL 101 template course"},
+        {"name": "mfsilva", "color": "blue1", "description": "Question originally written by mfsilva"},
+        {"name": "balamut2", "color": "orange1", "description": "Question originally written by balamut2"},
+        {"name": "mfsilva", "color": "orange1", "description": "Question originally written by mfsilva"},
+        {"name": "ressick2", "color": "gray1", "description": "Question originally written by ressick2"},
+        {"name": "tpl101", "color": "gray1", "description": "Question originally written for the XC 101 example course"},
         {"name": "fa17", "color": "gray1", "description": "Question written in Fall 2017"},
         {"name": "sp18", "color": "gray1", "description": "Question written in Spring 2018"},
+        {"name": "su18", "color": "gray1", "description": "Question written in Summer 2018"},
         {"name": "v2", "color": "red1", "description": "v2 generation question"},
         {"name": "v3", "color": "green1", "description": "v3 generation question (freeform)"}
     ]

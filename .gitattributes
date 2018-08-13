@@ -1,0 +1,6 @@
+# https://help.github.com/articles/dealing-with-line-endings/
+# Set the default behavior, in case people don't have core.autocrlf set
+* text=auto
+
+*.sh text eol=lf
+ChangeLog.md merge=union

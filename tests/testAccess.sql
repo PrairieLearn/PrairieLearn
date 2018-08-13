@@ -36,12 +36,16 @@ WHERE
 WITH
 insert_course_result AS (
     INSERT INTO courses
-            (course_id, pl_course_id)
-    VALUES (1, 1)
+            (course_id, pl_course_id, rubric)
+    VALUES (1, 1, 'TPL 101')
 )
 INSERT INTO exams
-        (exam_id, course_id)
-VALUES (1, 1);
+        (exam_id, course_id, exam_string)
+VALUES (1, 1, 'Exam 1');
+
+-- BLOCK delete_ps_course_link
+UPDATE courses
+SET pl_course_id = NULL;
 
 -- BLOCK insert_ps_reservation
 INSERT INTO reservations
@@ -52,6 +56,16 @@ VALUES (1, $user_id);
 UPDATE reservations
 SET
     access_start = '2000-01-01 00:00:01',
-    access_end = '2200-01-01 00:00:01'
-WHERE
-    reservation_id = 1;
+    access_end = '2200-01-01 00:00:01';
+
+-- BLOCK delete_all_reservations
+DELETE FROM reservations;
+
+-- BLOCK delete_access_rules
+DELETE FROM assessment_access_rules;
+
+-- BLOCK insert_ps_exam_access_rule
+INSERT INTO assessment_access_rules
+    (assessment_id, credit, exam_id, number)
+VALUES
+    ($assessment_id, 100, 1, 100);

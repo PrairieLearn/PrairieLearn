@@ -21,6 +21,7 @@ pages:
   - 'PrairieDraw graphics': 'PrairieDraw.md'
   - 'Externally graded questions': 'externalGrading.md'
   - 'What to tell students': 'whatToTellStudents.md'
+  - 'How to use PL to learn student names': 'howToLearnNames.md'
   - 'FAQ': 'faq.md'
 - Developer Guide:
   - 'Developer guide': 'dev-guide.md'
@@ -28,6 +29,5 @@ pages:
   - 'Installing natively': 'installingNative.md'
   - 'Question element writing': 'devElements.md'
   - 'Docker packaging': 'docker.md'
-  - 'Setting up AWS for external grading': 'externalGradingAws.md'
   - 'Contributing to PL development': 'contributing.md'
   - 'Old v1/v2 question format': 'oldQuestion.md'

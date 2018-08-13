@@ -1,11 +1,12 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var express = require('express');
-var router = express.Router();
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+const express = require('express');
+const router = express.Router();
 
-var error = require('../../lib/error');
-var question = require('../../lib/question');
-var sqldb = require('../../lib/sqldb');
+const error = require('@prairielearn/prairielib/error');
+const logPageView = require('../../middlewares/logPageView')('studentInstanceQuestion');
+const question = require('../../lib/question');
+const sqldb = require('@prairielearn/prairielib/sql-db');
 
 function processSubmission(req, res, callback) {
     let variant_id, submitted_answer;
@@ -105,7 +106,10 @@ router.get('/', function(req, res, next) {
     // req.query.variant_id might be undefined, which will generate a new variant
     question.getAndRenderVariant(req.query.variant_id, res.locals, function(err) {
         if (ERR(err, next)) return;
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        logPageView(req, res, (err) => {
+            if (ERR(err, next)) return;
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        });
     });
 });
 

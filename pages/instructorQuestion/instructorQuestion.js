@@ -5,10 +5,10 @@ var router = express.Router();
 var csvStringify = require('csv').stringify;
 
 var async = require('async');
-var error = require('../../lib/error');
+var error = require('@prairielearn/prairielib/error');
 var question = require('../../lib/question');
-var sqldb = require('../../lib/sqldb');
-var sqlLoader = require('../../lib/sql-loader');
+var sqldb = require('@prairielearn/prairielib/sql-db');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 var debug = require('debug')('prairielearn:instructorQuestion');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
@@ -107,14 +107,14 @@ router.post('/', function(req, res, next) {
     } else if (req.body.__action == 'test_once') {
         const count = 1;
         const showDetails = true;
-        question.startTestQuestion(count, showDetails, res.locals.question, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
+        question.startTestQuestion(count, showDetails, res.locals.question, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });
     } else if (req.body.__action == 'test_100') {
         const count = 100;
         const showDetails = false;
-        question.startTestQuestion(count, showDetails, res.locals.question, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
+        question.startTestQuestion(count, showDetails, res.locals.question, res.locals.course_instance, res.locals.course, res.locals.authn_user.user_id, (err, job_sequence_id) => {
             if (ERR(err, next)) return;
             res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
         });

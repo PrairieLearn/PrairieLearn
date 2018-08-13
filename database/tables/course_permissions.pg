@@ -5,9 +5,9 @@ columns
     user_id: bigint not null
 
 indexes
-    course_permissions_pkey: PRIMARY KEY (id)
-    course_permissions_user_id_course_id_key: UNIQUE (user_id, course_id)
-    course_permissions_course_id_idx: null
+    course_permissions_pkey: PRIMARY KEY (id) USING btree (id)
+    course_permissions_user_id_course_id_key: UNIQUE (user_id, course_id) USING btree (user_id, course_id)
+    course_permissions_course_id_idx: USING btree (course_id)
 
 foreign-key constraints
     course_permissions_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE

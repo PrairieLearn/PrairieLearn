@@ -3,7 +3,7 @@ columns
     broken: boolean default false
     correct: boolean
     credit: integer
-    date: timestamp with time zone default now()
+    date: timestamp with time zone default CURRENT_TIMESTAMP
     duration: interval default '00:00:00'::interval
     feedback: jsonb
     format_errors: jsonb
@@ -25,9 +25,10 @@ columns
     variant_id: bigint not null
 
 indexes
-    submissions_pkey: PRIMARY KEY (id)
-    submissions_sid_key: UNIQUE (sid)
-    submissions_variant_id_idx: null
+    submissions_pkey: PRIMARY KEY (id) USING btree (id)
+    submissions_sid_key: UNIQUE (sid) USING btree (sid)
+    submissions_date_idx: USING btree (date)
+    submissions_variant_id_idx: USING btree (variant_id)
 
 foreign-key constraints
     submissions_auth_user_id_fkey: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

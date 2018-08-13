@@ -112,6 +112,10 @@
                 "timeout": {
                     "description": "The number of seconds after which the grading job will timeout.",
                     "type": "integer"
+                },
+                "enableNetworking": {
+                    "description": "Whether the grading containers should have network access. Access is disabled by default.",
+                    "type": "boolean"
                 }
             }
         }

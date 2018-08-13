@@ -1,0 +1,9 @@
+columns
+    date: timestamp with time zone not null default now()
+    id: bigint not null default nextval('time_series_id_seq'::regclass)
+    name: text not null
+    value: double precision not null
+
+indexes
+    time_series_pkey: PRIMARY KEY (id) USING btree (id)
+    time_series_name_date_idx: USING btree (name, date)

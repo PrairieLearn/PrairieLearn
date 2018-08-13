@@ -58,7 +58,11 @@
                   </tr>
                   <tr>
                     <td><code>is:manually-reported</code></td>
-                    <td>Shows all issues that were manually reported</td>
+                    <td>Shows all issues that were manually reported by a student</td>
+                  </tr>
+                  <tr>
+                    <td><code>is:automatically-reported</code></td>
+                    <td>Shows all issues that were automatically reported by PrairieLearn</td>
                   </tr>
                   <tr>
                     <td><code>qid:<em>QID</em></code></td>
@@ -167,12 +171,20 @@
               <i class="fa fa-check-circle text-success issue-status-icon"></i>
               <% } %>
               <a class="d-block" href="<%= urlPrefix %>/question/<%= row.question_id %>/?variant_id=<%= row.variant_id %>">
-                <%= row.question_qid ? (row.question_qid + ': ') : '' %><%= getFormattedMessage(row) %>
+                <%= row.question_qid %>
               </a>
-              <small class="text-muted mr-2">#<%= row.issue_id %> reported <span title="<%= row.formatted_date %>"><%= row.relative_date %></span> by <%= row.user_uid || '-' %></small>
-
+              <p class="mb-0">
+                <%= getFormattedMessage(row) %>
+              </p>
               <% if (row.manually_reported) { %>
-                <span class="badge badge-info">Manually reported</span>
+              <small class="text-muted mr-2">#<%= row.issue_id %> reported <span title="<%= row.formatted_date %>"><%= row.relative_date %></span> by <%= row.user_name || '-' %> (<a href="mailto:<%= row.user_uid || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=Hello%20<%= row.user_name %>,%0ARegarding%20the%20issue%20of:%0A%0A%22<%= row.student_message || '-' %>%22%0A%0AWe've..."><%= row.user_uid || '-' %></a>)</small>
+              <% } else { %>
+              <small class="text-muted mr-2">#<%= row.issue_id %> reported <span title="<%= row.formatted_date %>"><%= row.relative_date %></span> for <%= row.user_name || '-' %> (<a href="mailto:<%= row.user_uid || '-' %>?subject=Reported%20PrairieLearn%20Issue&body=Hello%20<%= row.user_name %>,%0ARegarding%20the%20issue%20of:%0A%0A%22<%= row.student_message || '-' %>%22%0A%0AWe've..."><%= row.user_uid || '-' %></a>)</small>
+              <% } %>
+              <% if (row.manually_reported) { %>
+              <span class="badge badge-info">Manually reported</span>
+              <% } else { %>
+              <span class="badge badge-warning">Automatically reported</span>
               <% } %>
               <% if (row.assessment) { %>
               <%- include('../partials/assessment', {assessment: row.assessment}) %>

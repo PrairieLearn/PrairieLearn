@@ -1,18 +1,37 @@
-var ERR = require('async-stacktrace');
-var fs = require('fs');
-var path = require('path');
-var async = require('async');
+const ERR = require('async-stacktrace');
+const fs = require('fs');
+const path = require('path');
+const async = require('async');
+const _ = require('lodash');
 
-var error = require('../lib/error');
-var logger = require('../lib/logger');
-var sqldb = require('../lib/sqldb');
-var sqlLoader = require('../lib/sql-loader');
+const namedLocks = require('../lib/named-locks');
+const error = require('@prairielearn/prairielib/error');
+const logger = require('../lib/logger');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
 module.exports = {};
 
 module.exports.init = function(callback) {
+    const lockName = 'migrations';
+    logger.verbose(`Waiting for lock ${lockName}`);
+    namedLocks.waitLock(lockName, (err, lock) => {
+        if (ERR(err, callback)) return;
+        logger.verbose(`Acquired lock ${lockName}`);
+        this._initWithLock((err) => {
+            namedLocks.releaseLock(lock, (lockErr) => {
+                if (ERR(lockErr, callback)) return;
+                if (ERR(err, callback)) return;
+                logger.verbose(`Released lock ${lockName}`);
+                callback(null);
+            });
+        });
+    });
+};
+
+module.exports._initWithLock = function(callback) {
     logger.verbose('Starting DB schema migration');
     let noExistingMigrations = false;
 
@@ -40,7 +59,7 @@ module.exports.init = function(callback) {
             fs.readdir(__dirname, (err, files) => {
                 if (ERR(err, callback)) return;
 
-                const regex = /^([0-9]+).+\.sql$/;
+                const regex = /^([0-9]+)_.+\.sql$/;
                 files = files
                     .filter(file => regex.test(file))
                     .map(file => {
@@ -50,10 +69,21 @@ module.exports.init = function(callback) {
                             filename: file,
                         };
                     })
-                    .filter(file => file.index > last_migration)
                     .sort((a, b) => {
                         return a.index - b.index;
                     });
+
+                // check that we don't have repeated indexes
+                const repeatedIndexes = _(files)
+                    .groupBy(file => file.index)
+                    .pickBy(fileList => (fileList.length > 1))
+                    .map((fileList, index) => `Repeated index ${index}:\n` + _.map(fileList, 'filename').join('\n'))
+                    .value();
+                if (repeatedIndexes.length > 0) {
+                    return callback(new Error(`Repeated migration indexes:\n${repeatedIndexes.join('\n')}`));
+                }
+
+                files = files.filter(file => file.index > last_migration);
                 callback(null, files);
             });
         },

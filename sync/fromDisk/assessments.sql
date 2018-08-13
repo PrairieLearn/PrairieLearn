@@ -71,16 +71,34 @@ WHERE NOT EXISTS (
         AND a.deleted_at IS NULL
 );
 
+-- BLOCK insert_fake_ps_exam_if_needed
+WITH course_result AS (
+    INSERT INTO courses
+        (course_id, rubric)
+    VALUES
+        (1, 'CBTF')
+    ON CONFLICT (course_id) DO NOTHING
+)
+INSERT INTO exams
+    (exam_id, course_id, exam_string)
+VALUES
+    ($exam_id, 1, $exam_string)
+ON CONFLICT (exam_id) DO NOTHING;
+
+-- BLOCK select_exams_by_id
+SELECT * FROM exams
+WHERE exam_id = $exam_id;
+
 -- BLOCK insert_assessment_access_rule
 INSERT INTO assessment_access_rules
         (assessment_id,  number,  mode,  role,  credit,  uids,          time_limit_min,
-        password,
+        password,   seb_config,  exam_id,
         start_date,
         end_date)
 (
     SELECT
         $assessment_id, $number, $mode, $role, $credit, $uids::TEXT[], $time_limit_min,
-        $password,
+        $password, $seb_config, $exam_id,
         input_date($start_date, ci.display_timezone),
         input_date($end_date, ci.display_timezone)
     FROM
@@ -96,7 +114,9 @@ SET
     credit = EXCLUDED.credit,
     time_limit_min = EXCLUDED.time_limit_min,
     password = EXCLUDED.password,
+    exam_id = EXCLUDED.exam_id,
     uids = EXCLUDED.uids,
+    seb_config = EXCLUDED.seb_config,
     start_date = EXCLUDED.start_date,
     end_date = EXCLUDED.end_date;
 

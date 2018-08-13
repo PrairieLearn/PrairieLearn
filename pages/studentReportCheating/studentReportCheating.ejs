@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../partials/head'); %>
+  </head>
+  <body>
+    <%- include('../partials/navbar', {navPage: 'report_cheating'}); %>
+    <div id="content" class="container">
+
+      <% if (showReportForm) { %>
+      <form method="POST">
+        <div class="form-group">
+          <label for="inputReport">Anonymously report cheating or other suspicious behavior:</label>
+          <textarea id="inputReport" class="form-control" rows="5" name="report" aria-describedby="reportHelp" placeholder="Enter report"></textarea>
+          <small id="reportHelp" class="form-text text-muted">
+            This report will be sent anonymously to the proctors in
+            real time and they will investigate further. Please
+            include as much detail as possible, including room
+            location, seat number of the suspicious person,
+            description of the person and their clothing, and what you
+            saw happening.
+          </small>
+        </div>
+        <div class="form-group">
+          <label for="exampleInputEmail1">Optional email address:</label>
+          <input type="email" class="form-control" id="exampleInputEmail1" aria-describedby="emailHelp" name="email" placeholder="Enter your email (optional)">
+          <small id="emailHelp" class="form-text text-muted">If you choose to enter your email then the proctors will try and follow up to let you know what happened.</small>
+        </div>
+        <input type="hidden" name="__action" value="report_cheating">
+        <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
+        <button type="submit" class="btn btn-primary">Submit report</button>
+      </form>
+      <% } %>
+
+      <% if (showSuccess) { %>
+      <p>
+        Report successfully submitted to the proctors:
+      </p>
+      <div class="card bg-light mb-3">
+        <div class="card-body">
+          <pre class="mb-0"><%= message %></pre>
+        </div>
+      </div>
+      <p>
+        You may not see any immediate action because the proctors may
+        choose to investigate using video camera footage or other
+        means.
+      </p>
+      <p>
+        If you entered your email address when submitting the report
+        then the proctors will try and follow up with you later, but
+        this is not guaranteed.
+      </p>
+      <% } %>
+
+    </div>
+  </body>
+</html>

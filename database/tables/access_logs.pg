@@ -15,8 +15,8 @@ columns
     user_uid: text
 
 indexes
-    access_logs_pkey: PRIMARY KEY (id)
-    access_logs_mongo_id_key: UNIQUE (mongo_id)
+    access_logs_pkey: PRIMARY KEY (id) USING btree (id)
+    access_logs_mongo_id_key: UNIQUE (mongo_id) USING btree (mongo_id)
 
 referenced by
     variant_view_logs: FOREIGN KEY (access_log_id) REFERENCES access_logs(id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -1,38 +1,59 @@
-var ERR = require('async-stacktrace');
-var fs = require('fs');
-var path = require('path');
-var favicon = require('serve-favicon');
-var async = require('async');
-var express = require('express');
-var bodyParser = require('body-parser');
-var cookieParser = require('cookie-parser');
-var passport = require('passport');
-var http = require('http');
-var https = require('https');
-var blocked = require('blocked-at');
-var onFinished = require('on-finished');
-var uuidv4 = require('uuid/v4');
+const ERR = require('async-stacktrace');
+const fs = require('fs');
+const path = require('path');
+const favicon = require('serve-favicon');
+const async = require('async');
+const express = require('express');
+const bodyParser = require('body-parser');
+const cookieParser = require('cookie-parser');
+const passport = require('passport');
+const http = require('http');
+const https = require('https');
+const blocked = require('blocked-at');
+const onFinished = require('on-finished');
+const uuidv4 = require('uuid/v4');
+const argv = require('yargs-parser') (process.argv.slice(2));
 
-var logger = require('./lib/logger');
-var config = require('./lib/config');
-var load = require('./lib/load');
-var externalGrader = require('./lib/externalGrader');
-var externalGradingSocket = require('./lib/externalGradingSocket');
-var assessment = require('./lib/assessment');
-var sqldb = require('./lib/sqldb');
-var migrations = require('./migrations');
-var sprocs = require('./sprocs');
-var cron = require('./cron');
-var socketServer = require('./lib/socket-server');
-var serverJobs = require('./lib/server-jobs');
-var freeformServer = require('./question-servers/freeform.js');
+const logger = require('./lib/logger');
+const config = require('./lib/config');
+const load = require('./lib/load');
+const externalGrader = require('./lib/externalGrader');
+const externalGradingSocket = require('./lib/externalGradingSocket');
+const assessment = require('./lib/assessment');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const migrations = require('./migrations');
+const sprocs = require('./sprocs');
+const cron = require('./cron');
+const redis = require('./lib/redis');
+const socketServer = require('./lib/socket-server');
+const serverJobs = require('./lib/server-jobs');
+const freeformServer = require('./question-servers/freeform.js');
+
+// If there is only one argument, legacy it into the config option
+if (argv['_'].length == 1) {
+    argv['config'] = argv['_'][0];
+    argv['_'] = [];
+}
+
+if ('h' in argv || 'help' in argv) {
+    var msg = `PrairieLearn command line options:
+    -h, --help                          Display this help and exit
+    --config <filename>
+    <filename> and no other args        Load an alternative config filename
+    --migrate-and-exit                  Run the DB initialization parts and exit
+    --exit                              Run all the initialization and exit
+`;
+
+    console.log(msg); // eslint-disable-line no-console
+    process.exit(0);
+}
 
 if (config.startServer) {
     logger.info('PrairieLearn server start');
 
     var configFilename = 'config.json';
-    if (process.argv.length > 2) {
-        configFilename = process.argv[2];
+    if ('config' in argv) {
+        configFilename = argv['config'];
     }
 
     config.loadConfig(configFilename);
@@ -57,12 +78,13 @@ app.set('view engine', 'ejs');
 
 config.devMode = (app.get('env') == 'development');
 
-app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPrefix = '/pl'; next();});
+app.use(function(req, res, next) {res.locals.homeUrl = config.homeUrl; next();});
+app.use(function(req, res, next) {res.locals.urlPrefix = res.locals.plainUrlPrefix = config.urlPrefix; next();});
 app.use(function(req, res, next) {res.locals.navbarType = 'plain'; next();});
 app.use(function(req, res, next) {res.locals.devMode = config.devMode; next();});
 app.use(function(req, res, next) {res.locals.is_administrator = false; next();});
 
-if (!config.devMode) {
+if (config.hasAzure) {
     var OIDCStrategy = require('passport-azure-ad').OIDCStrategy;
     const azureConfig = {
         identityMetadata: config.azureIdentityMetadata,
@@ -92,6 +114,11 @@ app.use(bodyParser.urlencoded({extended: false, limit: 200 * 1024}));
 app.use(cookieParser());
 app.use(passport.initialize());
 app.use(favicon(path.join(__dirname, 'public', 'favicon.ico')));
+
+if ('localRootFilesDir' in config) {
+    logger.info(`localRootFilesDir: Mapping ${config.localRootFilesDir} into /`);
+    app.use(express.static(config.localRootFilesDir));
+}
 app.use(express.static(path.join(__dirname, 'public')));
 app.use('/MathJax', express.static(path.join(__dirname, 'node_modules', 'mathjax')));
 app.use('/node_modules', express.static(path.join(__dirname, 'node_modules')));
@@ -120,7 +147,9 @@ app.use('/pl/oauth2callback', require('./pages/authCallbackOAuth2/authCallbackOA
 app.use('/pl/shibcallback', require('./pages/authCallbackShib/authCallbackShib'));
 app.use('/pl/azure_login', require('./pages/authLoginAzure/authLoginAzure'));
 app.use('/pl/azure_callback', require('./pages/authCallbackAzure/authCallbackAzure'));
-app.use('/pl/hackillinois', require('./pages/studentHackIllinois/studentHackIllinois'));
+app.use('/pl/login', require('./pages/authLogin/authLogin'));
+// disable SEB until we can fix the mcrypt issues
+// app.use('/pl/downloadSEBConfig', require('./pages/studentSEBConfig/studentSEBConfig'));
 app.use(require('./middlewares/authn')); // authentication, set res.locals.authn_user
 app.use(require('./middlewares/csrfToken')); // sets and checks res.locals.__csrf_token
 app.use(require('./middlewares/logRequest'));
@@ -140,16 +169,15 @@ if (config.devMode) {
     app.use(require('./middlewares/undefCourseCode'));
 }
 
-// redirect / to /pl
-app.use(/^\/?$/, function(req, res, _next) {res.redirect('/pl');});
-
 // clear cookies on the homepage to reset any stale session state
 app.use(/^\/pl\/?/, require('./middlewares/clearCookies'));
 
 // some pages don't need authorization
+app.use('/', require('./pages/home/home'));
 app.use('/pl', require('./pages/home/home'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
 app.use('/pl/logout', require('./pages/authLogout/authLogout'));
+app.use('/pl/password', require('./pages/authPassword/authPassword'));
 
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
 if (config.devMode) {
@@ -198,8 +226,12 @@ app.use('/pl/course_instance/:course_instance_id/elements', require('./pages/ele
 //////////////////////////////////////////////////////////////////////
 // Instructor pages //////////////////////////////////////////////////
 
-app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
-app.use('/pl/course_instance/:course_instance_id/instructor/assessments', require('./pages/instructorAssessments/instructorAssessments'));
+app.use('/pl/course_instance/:course_instance_id/instructor/effectiveUser', [
+    require('./pages/instructorEffectiveUser/instructorEffectiveUser'),
+]);
+app.use('/pl/course_instance/:course_instance_id/instructor/assessments', [
+    require('./pages/instructorAssessments/instructorAssessments'),
+]);
 app.use('/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
     require('./pages/shared/assessmentStatDescriptions'),
@@ -262,25 +294,36 @@ app.use('/pl/course_instance/:course_instance_id/instructor/question/:question_i
 
 // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
 // which checks the assessment type and calls next() if it's not the right type
-app.use('/pl/course_instance/:course_instance_id/assessments', require('./pages/studentAssessments/studentAssessments'));
+app.use('/pl/course_instance/:course_instance_id/assessments', [
+    require('./middlewares/logPageView')('studentAssessments'),
+    require('./middlewares/studentAssessmentAccess'),
+    require('./pages/studentAssessments/studentAssessments'),
+]);
 app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id', [
     require('./middlewares/selectAndAuthzAssessment'),
+    require('./middlewares/logPageView')('studentAssessment'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessmentHomework/studentAssessmentHomework'),
     require('./pages/studentAssessmentExam/studentAssessmentExam'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/assessment_instance/:assessment_instance_id', [
     require('./middlewares/selectAndAuthzAssessmentInstance'),
+    require('./middlewares/logPageView')('studentAssessmentInstance'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentAssessmentInstanceHomework/studentAssessmentInstanceHomework'),
     require('./pages/studentAssessmentInstanceExam/studentAssessmentInstanceExam'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
+    // don't use logPageView here, we load it inside the page so it can get the variant_id
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentInstanceQuestionHomework/studentInstanceQuestionHomework'),
     require('./pages/studentInstanceQuestionExam/studentInstanceQuestionExam'),
 ]);
+app.use('/pl/course_instance/:course_instance_id/report_cheating', require('./pages/studentReportCheating/studentReportCheating'));
 if (config.devMode) {
     app.use('/pl/course_instance/:course_instance_id/loadFromDisk', require('./pages/instructorLoadFromDisk/instructorLoadFromDisk'));
-    app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./middlewares/authzCourseInstanceHasInstructorView'));
+    app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./middlewares/authzCourseInstanceAuthnHasInstructorView'));
     app.use('/pl/course_instance/:course_instance_id/jobSequence', require('./pages/instructorJobSequence/instructorJobSequence'));
 }
 
@@ -289,30 +332,41 @@ app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./midd
 app.use('/pl/course_instance/:course_instance_id/effectiveUser', require('./pages/instructorEffectiveUser/instructorEffectiveUser'));
 
 // clientFiles
-app.use('/pl/course_instance/:course_instance_id/clientFilesCourse', require('./pages/clientFilesCourse/clientFilesCourse'));
-app.use('/pl/course_instance/:course_instance_id/clientFilesCourseInstance', require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'));
+app.use('/pl/course_instance/:course_instance_id/clientFilesCourse', [
+    require('./middlewares/studentAssessmentAccess'),
+    require('./pages/clientFilesCourse/clientFilesCourse'),
+]);
+app.use('/pl/course_instance/:course_instance_id/clientFilesCourseInstance', [
+    require('./middlewares/studentAssessmentAccess'),
+    require('./pages/clientFilesCourseInstance/clientFilesCourseInstance'),
+]);
 app.use('/pl/course_instance/:course_instance_id/assessment/:assessment_id/clientFilesAssessment', [
     require('./middlewares/selectAndAuthzAssessment'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/clientFilesAssessment/clientFilesAssessment'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/clientFilesQuestion', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/clientFilesQuestion/clientFilesQuestion'),
 ]);
 
 // generatedFiles
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/generatedFilesQuestion', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/studentGeneratedFilesQuestion/studentGeneratedFilesQuestion'),
 ]);
 
 // legacy client file paths
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/file', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/legacyQuestionFile/legacyQuestionFile'),
 ]);
 app.use('/pl/course_instance/:course_instance_id/instance_question/:instance_question_id/text', [
     require('./middlewares/selectAndAuthzInstanceQuestion'),
+    require('./middlewares/studentAssessmentAccess'),
     require('./pages/legacyQuestionText/legacyQuestionText'),
 ]);
 
@@ -446,7 +500,21 @@ if (config.startServer) {
             });
         },
         function(callback) {
+            if ('migrate-and-exit' in argv && argv['migrate-and-exit']) {
+                logger.info('option --migrate-and-exit passed, running DB setup and exiting');
+                process.exit(0);
+            } else {
+                callback(null);
+            }
+        },
+        function(callback) {
             cron.init(function(err) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        },
+        (callback) => {
+            redis.init((err) => {
                 if (ERR(err, callback)) return;
                 callback(null);
             });
@@ -511,6 +579,7 @@ if (config.startServer) {
             if (config.devMode) {
                 logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort + '/pl');
             }
+            if ('exit' in argv) { logger.info('exit option passed, quitting...'); process.exit(0); }
         }
     });
 }

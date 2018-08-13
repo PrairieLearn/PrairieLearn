@@ -7,16 +7,16 @@ columns
     finish_date: timestamp with time zone
     id: bigint not null default nextval('job_sequences_id_seq'::regclass)
     number: integer
-    start_date: timestamp with time zone default now()
+    start_date: timestamp with time zone default CURRENT_TIMESTAMP
     status: enum_job_status default 'Running'::enum_job_status
     type: text
     user_id: bigint
 
 indexes
-    job_sequences_pkey: PRIMARY KEY (id)
-    job_sequences_course_id_number_key: UNIQUE (course_id, number)
-    job_sequences_assessment_id_idx: null
-    job_sequences_course_id_idx: null
+    job_sequences_pkey: PRIMARY KEY (id) USING btree (id)
+    job_sequences_course_id_number_key: UNIQUE (course_id, number) USING btree (course_id, number)
+    job_sequences_assessment_id_idx: USING btree (assessment_id)
+    job_sequences_course_id_idx: USING btree (course_id)
 
 foreign-key constraints
     job_sequences_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

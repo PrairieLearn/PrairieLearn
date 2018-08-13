@@ -4,10 +4,10 @@ var router = express.Router();
 var path = require('path');
 var debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
 
-var error = require('../../lib/error');
+var error = require('@prairielearn/prairielib/error');
 var assessment = require('../../lib/assessment');
-var sqldb = require('../../lib/sqldb');
-var sqlLoader = require('../../lib/sql-loader');
+var sqldb = require('@prairielearn/prairielib/sql-db');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -31,7 +31,7 @@ router.get('/', function(req, res, next) {
             debug('no assessment instance');
 
             const time_limit_min = null;
-            assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, res.locals.course, (err, assessment_instance_id) => {
+            assessment.makeAssessmentInstance(res.locals.assessment.id, res.locals.user.user_id, res.locals.authn_user.user_id, res.locals.authz_data.mode, time_limit_min, res.locals.authz_data.date, res.locals.course_instance.id, res.locals.course, (err, assessment_instance_id) => {
                 if (ERR(err, next)) return;
                 debug('redirecting');
                 res.redirect(res.locals.urlPrefix + '/assessment_instance/' + assessment_instance_id);

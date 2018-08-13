@@ -5,9 +5,9 @@ columns
     tag_id: bigint not null
 
 indexes
-    question_tags_pkey: PRIMARY KEY (id)
-    question_tags_question_id_tag_id_key: UNIQUE (question_id, tag_id)
-    question_tags_tag_id_idx: null
+    question_tags_pkey: PRIMARY KEY (id) USING btree (id)
+    question_tags_question_id_tag_id_key: UNIQUE (question_id, tag_id) USING btree (question_id, tag_id)
+    question_tags_tag_id_idx: USING btree (tag_id)
 
 foreign-key constraints
     question_tags_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE

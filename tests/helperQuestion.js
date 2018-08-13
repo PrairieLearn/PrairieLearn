@@ -4,8 +4,8 @@ var assert = require('chai').assert;
 var request = require('request');
 var cheerio = require('cheerio');
 
-var sqldb = require('../lib/sqldb');
-var sqlLoader = require('../lib/sql-loader');
+var sqldb = require('@prairielearn/prairielib/sql-db');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var page, elemList;
@@ -42,7 +42,7 @@ module.exports = {
             });
             it('base64 data should parse to JSON if Calculation', function() {
                 if (locals.question.type != 'Calculation') return;
-                locals.questionData = JSON.parse(decodeURIComponent(new Buffer(elemList[0].children[0].data, 'base64').toString()));
+                locals.questionData = JSON.parse(decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString()));
             });
             it('should have a variant_id in the questionData if Calculation', function() {
                 if (locals.question.type != 'Calculation') return;

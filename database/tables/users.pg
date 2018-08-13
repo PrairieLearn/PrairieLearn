@@ -6,9 +6,9 @@ columns
     user_id: bigint not null default nextval('users_user_id_seq'::regclass)
 
 indexes
-    users_pkey: PRIMARY KEY (user_id)
-    users_uid_key: UNIQUE (uid)
-    users_uin_key: UNIQUE (uin)
+    users_pkey: PRIMARY KEY (user_id) USING btree (user_id)
+    users_uid_key: UNIQUE (uid) USING btree (uid)
+    users_uin_key: UNIQUE (uin) USING btree (uin)
 
 referenced by
     administrators: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
@@ -17,6 +17,8 @@ referenced by
     assessment_score_logs: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     assessment_state_logs: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     course_permissions: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    current_pages: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    current_pages: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     enrollments: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     grading_jobs: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     grading_jobs: FOREIGN KEY (graded_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
@@ -29,6 +31,8 @@ referenced by
     jobs: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     jobs: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     last_accesses: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    page_view_logs: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    page_view_logs: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     question_score_logs: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     reservations: FOREIGN KEY (user_id) REFERENCES users(user_id)
     submissions: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

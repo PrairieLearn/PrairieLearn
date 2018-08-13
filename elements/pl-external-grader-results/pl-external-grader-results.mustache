@@ -1,0 +1,90 @@
+{{#graded}}
+<div class="pl-external-grader-results">
+  {{^grading_succeeded}}
+    <h3>Grading failed!</h3>
+    {{#message}}
+      <pre class="bg-dark text-white rounded p-3 mb-0"><code>{{message}}</code></pre>
+    {{/message}}
+    {{^message}}
+      <pre class="bg-dark text-white rounded p-3 mb-0"><code>Unknown error; please contact course staff.</code></pre>
+    {{/message}}
+  {{/grading_succeeded}}
+  {{#grading_succeeded}}
+    <h3 class="mt-2">
+      Score:
+      <span style="color: {{results_color}}"
+      {{#points}}
+      <strong>{{points}}/{{max_points}} ({{score}}%)</strong>
+      {{/points}}
+      {{^points}}
+      <strong>{{score}}%</strong>
+      {{/points}}
+      </span>
+    </h3>
+    {{#has_message_or_output}}
+      {{#has_message}}
+        <div class="card mb-4">
+          <div class="card-header">Message</div>
+          <pre class="bg-dark text-white p-3 mb-0"><code>{{message}}</code></pre>
+        </div>
+      {{/has_message}}
+      {{#has_output}}
+        <div class="card mb-4">
+          <div class="card-header">Output</div>
+          <pre class="bg-dark text-white p-3 mb-0"><code>{{output}}</code></pre>
+        </div>
+      {{/has_output}}
+    {{/has_message_or_output}}
+    <h3>Test Results</h3>
+    {{^has_tests}}
+      <p>No detailed test results available.</p>
+    {{/has_tests}}
+    {{#has_tests}}
+      {{#tests_missing_points}}
+        <div class="alert alert-warning">One or more tests were missing <code>points</code> or <code>max_points</code> values, so some detailed feedback and score information has been omitted.</div>
+      {{/tests_missing_points}}
+      {{#tests}}
+        <div class="card mb-1">
+          <div class="card-header d-flex collapsed" data-toggle="collapse" data-target="#card-{{uuid}}-{{index}}" style="cursor: pointer;">
+            <div class="mr-auto">
+              <span class="card-title">
+                {{^tests_missing_points}}
+                  <i class="fa {{results_icon}}" aria-hidden="true" style="color: {{results_color}}"></i>
+                  <span style="color: {{results_color}}; margin-left: 5px;"><strong>[{{points}}/{{max_points}}]</strong></span>
+                {{/tests_missing_points}}
+                <span style="margin-left: 5px;">{{name}}</span>
+              </span>
+            </div>
+            <div>
+              <span class="fa fa-angle-down"></span>
+            </div>
+          </div>
+          <div id="card-{{uuid}}-{{index}}" class="collapse">
+            <ul class="list-group list-group-flush">
+              {{#has_description}}
+                <li class="list-group-item"><strong>Description:</strong> {{description}}</li>
+              {{/has_description}}
+              {{^tests_missing_points}}
+                <li class="list-group-item"><strong>Max points:</strong> {{max_points}}</li>
+                <li class="list-group-item"><strong>Earned points:</strong> {{points}}</li>
+              {{/tests_missing_points}}
+              {{#has_message}}
+                <li class="list-group-item">
+                  <div><strong>Message</strong></div>
+                  <pre class="bg-dark text-white rounded p-3 mb-0" style="max-height: 200px"><code style="color: white; font-family: monospace;">{{message}}</code></pre>
+                </li>
+              {{/has_message}}
+              {{#has_output}}
+                <li class="list-group-item">
+                  <div><strong>Output</strong></div>
+                  <pre class="bg-dark text-white rounded p-3 mb-0" style="max-height: 200px;"><code style="color: white; font-family: monospace;">{{output}}</code></pre>
+                </li>
+              {{/has_output}}
+            </ul>
+          </div>
+        </div>
+      {{/tests}}
+    {{/has_tests}}
+  {{/grading_succeeded}}
+</div>
+{{/graded}}

@@ -1,7 +1,7 @@
 columns
     assessment_instance_id: bigint not null
     auth_user_id: bigint
-    date: timestamp with time zone default now()
+    date: timestamp with time zone default CURRENT_TIMESTAMP
     id: bigint not null default nextval('assessment_score_logs_id_seq'::regclass)
     max_points: double precision
     points: double precision
@@ -10,8 +10,8 @@ columns
     score_perc_in_grading: double precision
 
 indexes
-    assessment_score_logs_pkey: PRIMARY KEY (id)
-    assessment_score_logs_assessment_instance_id_idx: null
+    assessment_score_logs_pkey: PRIMARY KEY (id) USING btree (id)
+    assessment_score_logs_assessment_instance_id_idx: USING btree (assessment_instance_id)
 
 foreign-key constraints
     assessment_score_logs_assessment_instance_id_fkey: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -8,7 +8,8 @@ INSERT INTO questions
     external_grading_image,
     external_grading_files,
     external_grading_entrypoint,
-    external_grading_timeout)
+    external_grading_timeout,
+    external_grading_enable_networking)
 (SELECT
     $uuid, $qid, $qid,     $type::enum_question_type, $title, $options::JSONB, $client_files::TEXT[],
     $partial_credit, $course_id::integer, $grading_method::enum_grading_method, $single_variant,
@@ -18,7 +19,8 @@ INSERT INTO questions
     $external_grading_image,
     $external_grading_files,
     $external_grading_entrypoint,
-    $external_grading_timeout
+    $external_grading_timeout,
+    $external_grading_enable_networking
 )
 ON CONFLICT (uuid) DO UPDATE
 SET
@@ -38,7 +40,8 @@ SET
     external_grading_image = EXCLUDED.external_grading_image,
     external_grading_files = EXCLUDED.external_grading_files,
     external_grading_entrypoint = EXCLUDED.external_grading_entrypoint,
-    external_grading_timeout = EXCLUDED.external_grading_timeout
+    external_grading_timeout = EXCLUDED.external_grading_timeout,
+    external_grading_enable_networking = EXCLUDED.external_grading_enable_networking
 WHERE
     questions.course_id = $course_id
 RETURNING id;

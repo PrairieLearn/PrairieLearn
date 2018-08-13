@@ -1,15 +1,17 @@
-var ERR = require('async-stacktrace');
-var _ = require('lodash');
-var csvStringify = require('csv').stringify;
-var express = require('express');
-var router = express.Router();
+const ERR = require('async-stacktrace');
+const _ = require('lodash');
+const csvStringify = require('csv').stringify;
+const express = require('express');
+const archiver = require('archiver');
+const router = express.Router();
 
-var sqldb = require('../../lib/sqldb');
-var sqlLoader = require('../../lib/sql-loader');
+const { paginateQuery } = require('../../lib/paginate');
+const sqldb = require('@prairielearn/prairielib/sql-db');
+const sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
-var sql = sqlLoader.loadSqlEquiv(__filename);
+const sql = sqlLoader.loadSqlEquiv(__filename);
 
-var csvFilename = function(locals) {
+const csvFilename = (locals) => {
     return locals.course.short_name.replace(/\s+/g, '')
         + '_'
         + locals.course_instance.short_name.replace(/\s+/g, '')
@@ -17,8 +19,19 @@ var csvFilename = function(locals) {
         + 'assessment_stats.csv';
 };
 
+const fileSubmissionsName = (locals) => {
+    return locals.course.short_name.replace(/\s+/g, '')
+        + '_'
+        + locals.course_instance.short_name.replace(/\s+/g, '')
+        + '_'
+        + 'file_submissions';
+};
+
+const fileSubmissionsFilename = locals => `${fileSubmissionsName(locals)}.zip`;
+
 router.get('/', function(req, res, next) {
     res.locals.csvFilename = csvFilename(res.locals);
+    res.locals.fileSubmissionsFilename = fileSubmissionsFilename(res.locals);
     var params = {
         course_instance_id: res.locals.course_instance.id,
         authz_data: res.locals.authz_data,
@@ -77,6 +90,25 @@ router.get('/:filename', function(req, res, next) {
                 res.attachment(req.params.filename);
                 res.send(csv);
             });
+        });
+    } else if (req.params.filename == fileSubmissionsFilename(res.locals)) {
+        const params = {
+            course_instance_id: res.locals.course_instance.id,
+            limit: 100,
+        };
+
+        const archive = archiver('zip');
+        const dirname = fileSubmissionsName(res.locals);
+        const prefix = `${dirname}/`;
+        archive.append(null, { name: prefix });
+        res.attachment(req.params.filename);
+        archive.pipe(res);
+        paginateQuery(sql.course_instance_files, params, (row, callback) => {
+            archive.append(row.contents, { name: prefix + row.filename });
+            callback(null);
+        }, (err) => {
+            if (ERR(err, next)) return;
+            archive.finalize();
         });
     } else {
         next(new Error('Unknown filename: ' + req.params.filename));

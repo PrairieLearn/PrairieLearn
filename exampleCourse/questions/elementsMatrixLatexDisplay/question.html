@@ -1,0 +1,51 @@
+
+<pl-question-panel>
+
+<p>The element <code>pl-matrix-latex</code> can be used to display 2D numpy arrays and scalars. </p>
+
+<p>
+  Display a 2D array of floats with {{params.sf}} significant figures,  by setting
+   <code>presentation-type="sigfig"</code> and <code>digits="{{params.sf}}"</code>
+ </p>
+
+<p>
+${\bf A} = <pl-matrix-latex params-name="U" digits="{{params.sf}}" presentation-type="sigfig"></pl-matrix-latex>$
+</p>
+
+
+<p>Display a 1D array <code>a = np.array({{params.M}})</code>. To use this element, we first need to wrap the
+1D array as a 2D array. For example, we use
+<code>b = a.reshape((1, M))</code> to display
+as a row-vector or <code>c = a.reshape((M, 1))</code> to display as a column vector:</p>
+
+<p>
+${\bf b} =  <pl-matrix-latex params-name="b" digits="{{params.sf}}" presentation-type="f"></pl-matrix-latex>$
+</p>
+<p>
+${\bf c} =  <pl-matrix-latex params-name="c" digits="4"></pl-matrix-latex>$
+</p>
+
+<p>
+To display <code>b</code> we use <code>digits="{{params.sf}}" presentation-type="f"</code>
+  and to display <code>c</code> we use <code>digits="4"</code>.
+</p>
+
+<p>We can write systems of linear equations ${\bf A}^T{\bf x} = {\bf c}$
+as such:
+</p>
+
+<p>
+$$ <pl-matrix-latex params-name="U" presentation-type="f" digits="3"> </pl-matrix-latex>^T
+\begin{bmatrix} x \\ y \\ z \end{bmatrix}
+<pl-matrix-latex params-name="c" presentation-type="f" digits="4"></pl-matrix-latex>$$
+</p>
+
+<p> When the element <code>pl-matrix-latex</code> is used to display a scalar,
+  it results in printing the scalar as a string, without any brackets around it.
+ </p>
+
+<p>
+$x = <pl-matrix-latex params-name="myNumber" digits="{{params.sf}}" presentation-type="sigfig"></pl-matrix-latex>$
+</p>
+
+</pl-question-panel>

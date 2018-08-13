@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <%- include('../pages/partials/head'); %>
+    <% if (prompt == 'SEB') { %>
+    <script>
+        function backOnFocus() {
+            window.addEventListener("focus", function(event) {
+                window.history.back();
+            }, false);
+        }
+    </script>
+    <% } %>
+</head>
+<body>
+    <%- include('../pages/partials/navbar', {navPage: ''}); %>
+    <div id="content" class="container">
+        <div class="card mb-4">
+            <div class="card-header bg-danger text-white">
+                <%= assessment_set.abbreviation %><%= assessment.number %>: <%= assessment.title %>
+            </div>
+
+            <div class="card-body">
+
+                <% if (typeof assessment_instance !== 'undefined' && assessment_instance.open === false) { %>
+
+                    <div class="row align-items-center">
+                      <div class="col-md-3 col-sm-6">
+                        <% include('../pages/partials/pointsFormatter'); %>
+                        Total points: <%= getStringFromFloat(assessment_instance.points) %>/<%= getStringFromFloat(assessment_instance.max_points) %>
+                      </div>
+                      <div class="col-md-3 col-sm-6">
+                        <%- include('../pages/partials/scorebar', {score: assessment_instance.score_perc}) %>
+                      </div>
+                      <div class="col-md-6 col-sm-12 text-right">
+                          Assessment is <strong>closed</strong> and is no longer available
+                      </div>
+                    </div>
+
+                    <% if (authz_data.mode == 'SEB') { %>
+                        <p><a href="/pl/SEBquit">Click here to quit the Safe Exam Browser</a>
+                    <% } %>
+
+                <% } else if (prompt == 'SEB') { %>
+
+                    <p class="lead text-center">
+                        This <%= assessment.type.toLowerCase() %> is only available when running the Safe Exam Browser.
+                    </p>
+
+                    <p><a href="https://safeexambrowser.org/download_en.html">Download instructions for the Safe Exam Browser.</a></p>
+
+                    <a class="btn btn-lg btn-success" href="<%= SEBUrl %>?data=<%= SEBdata %>" onClick="backOnFocus();">
+                        Launch into the Safe Exam Browser
+                    </a>
+
+                <% } %>
+            </div> <!-- panel-body -->
+        </div>
+    </div>
+</body>
+</html>

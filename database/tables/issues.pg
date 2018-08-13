@@ -5,7 +5,7 @@ columns
     course_data: jsonb
     course_id: bigint
     course_instance_id: bigint
-    date: timestamp with time zone default now()
+    date: timestamp with time zone default CURRENT_TIMESTAMP
     id: bigint not null default nextval('issues_id_seq'::regclass)
     instance_question_id: bigint
     instructor_message: text
@@ -18,15 +18,15 @@ columns
     variant_id: bigint
 
 indexes
-    issues_pkey: PRIMARY KEY (id)
-    issues_assessment_id_open_idx: null
-    issues_authn_user_id_idx: null
-    issues_course_id_open_idx: null
-    issues_course_instance_id_idx: null
-    issues_instance_question_id_idx: null
-    issues_question_id_open_idx: null
-    issues_user_id_idx: null
-    issues_variant_id_idx: null
+    issues_pkey: PRIMARY KEY (id) USING btree (id)
+    issues_assessment_id_open_idx: USING btree (assessment_id, course_caused, open)
+    issues_authn_user_id_idx: USING btree (authn_user_id)
+    issues_course_id_open_idx: USING btree (course_id, course_caused, open)
+    issues_course_instance_id_idx: USING btree (course_instance_id)
+    issues_instance_question_id_idx: USING btree (instance_question_id)
+    issues_question_id_open_idx: USING btree (course_id, course_caused, open)
+    issues_user_id_idx: USING btree (user_id)
+    issues_variant_id_idx: USING btree (variant_id)
 
 foreign-key constraints
     issues_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE SET NULL

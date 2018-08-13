@@ -4,7 +4,7 @@ columns
     column_name: text
     course_id: bigint
     course_instance_id: bigint
-    date: timestamp with time zone default now()
+    date: timestamp with time zone default CURRENT_TIMESTAMP
     id: bigint not null default nextval('audit_logs_id_seq'::regclass)
     new_state: jsonb
     old_state: jsonb
@@ -14,4 +14,4 @@ columns
     user_id: bigint
 
 indexes
-    audit_logs_pkey: PRIMARY KEY (id)
+    audit_logs_pkey: PRIMARY KEY (id) USING btree (id)

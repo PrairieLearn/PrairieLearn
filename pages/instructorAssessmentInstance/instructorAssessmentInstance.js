@@ -4,9 +4,9 @@ var csvStringify = require('csv').stringify;
 var express = require('express');
 var router = express.Router();
 
-var error = require('../../lib/error');
-var sqldb = require('../../lib/sqldb');
-var sqlLoader = require('../../lib/sql-loader');
+var error = require('@prairielearn/prairielib/error');
+var sqldb = require('@prairielearn/prairielib/sql-db');
+var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
@@ -59,15 +59,16 @@ router.get('/:filename', function(req, res, next) {
         sqldb.query(sql.select_log, params, function(err, result) {
             if (ERR(err, next)) return;
             var log = result.rows;
-            var csvHeaders = ['Time', 'Auth user', 'Event', 'Question', 'Variant', 'Data'];
+            var csvHeaders = ['Time', 'Auth user', 'Event', 'Instructor question', 'Student question', 'Data'];
             var csvData = _.map(log, function(row) {
                 return [
                     row.date_iso8601,
                     row.auth_user_uid,
                     row.event_name,
-                    row.qid,
-                    row.variant_number,
-                    ((row.data != null) ? JSON.stringify(row.data) : null),
+                    ((row.instructor_question_number == null) ? null : 'I-' + row.instructor_question_number + ' (' + row.qid + ')'),
+                    ((row.student_question_number == null) ? null : 'S-' + row.student_question_number +
+                     ((row.variant_number == null) ? '' : '#' + row.variant_number)),
+                    ((row.data == null) ? null : JSON.stringify(row.data)),
                 ];
             });
             csvData.splice(0, 0, csvHeaders);

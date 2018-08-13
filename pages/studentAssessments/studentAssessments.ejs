@@ -52,7 +52,11 @@
                 <% } %>
               </td>
               <td class="text-center align-middle">
-                <%= row.credit_date_string %>
+                <% if (row.assessment_instance_open !== false) { %>
+                    <%= row.credit_date_string %>
+                <% } else { %>
+                    Assessment closed.
+                <% } %>
                 <%- include('../partials/studentAccessRulesPopover', {
                     accessRules: row.access_rules,
                     assessmentSetName: row.assessment_set_name,

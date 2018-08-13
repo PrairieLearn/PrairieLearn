@@ -17,7 +17,7 @@
             Please wait until instructed to start by a proctor
           </p>
           <p class="lead text-center">
-            This is <strong><%= assessment_set.name %> <%= assessment.number %></strong> for <strong><%= course.short_name %></strong>
+            This is <strong><%= assessment_set.name %> <%= assessment.number %>: <%= assessment.title %></strong> for <strong><%= course.short_name %></strong>
           </p>
           <% if (authz_result.time_limit_min != undefined) { %>
           <p class="lead text-center">
@@ -31,11 +31,6 @@
           <form id="confirm-form" name="confirm-form" method="POST">
             <input type="hidden" name="__action" value="newInstance">
             <input type="hidden" name="__csrf_token" value="<%= __csrf_token %>">
-            <% if (authz_result.password) { %>
-            <p class="lead text-center">
-              Password: <input type="password" name="password">
-            </p>
-            <% } %>
             <div class="d-flex justify-content-center">
               <button id="start-assessment" type="submit" class="btn btn-primary">Start assessment</button>
             </div>

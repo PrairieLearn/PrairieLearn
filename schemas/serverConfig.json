@@ -16,10 +16,6 @@
             "description": "Secret key for authenticating users (should be a long random string).",
             "type": "string"
         },
-        "dbAddress": {
-            "description": "The address for connecting to the database.",
-            "type": "string"
-        },
         "postgresqlUser": {
             "description": "The user for connecting to the PostgreSQL database.",
             "type": "string"
@@ -32,16 +28,8 @@
             "description": "The host for connecting to the PostgreSQL database.",
             "type": "string"
         },
-        "amqpAddress": {
-            "description": "Address of the message queue server, or null to disable",
-            "type": "string"
-        },
-        "amqpGradingQueue": {
-            "description": "Name of the grading message queue",
-            "type": "string"
-        },
-        "amqpResultQueue": {
-            "description": "Name of the grading results message queue",
+        "redisUrl": {
+            "description": "The url for connecting to Redis.",
             "type": "string"
         },
         "logFilename": {
@@ -63,6 +51,10 @@
         "groupName": {
             "description": "The group of servers we belong to, used for load reporting and autoscaling.",
             "type": "string"
+        },
+        "syncExamIdAccessRules": {
+            "description": "If we should sync examIds to PrairieSchedule exams (default false).",
+            "type": "boolean"
         },
         "cronIntervalMS": {
             "description": "Time between cron job runs (milliseconds).",
@@ -99,6 +91,18 @@
         "externalGradingDefaultTimeout": {
             "description": "The default timeout to use for external grading if none is specified by a question.",
             "type": "integer"
+        },
+        "hasShib": {
+            "description": "Enables Shibboleth authentication",
+            "type": "boolean"
+        },
+        "hasAzure": {
+            "description": "Enables Azure authentication",
+            "type": "boolean"
+        },
+        "hasOauth": {
+            "description": "Enables OAuth authentication",
+            "type": "boolean"
         }
     }
 }
