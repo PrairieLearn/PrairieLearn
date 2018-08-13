@@ -43,13 +43,11 @@ Each different `clientFiles` or `serverFiles` directory is accessible under the 
 
 ## Accessing files from HTML templates
 
-From within HTML, `clientFiles` directories can be templated with the patterns:
+From within HTML, `clientFiles` directories can be templated with the following `mustache` patterns:
 
 ```text
-<%= clientFilesCourse %>/filename.ext
-<%= clientFilesCourseInstance %>/filename.ext
-<%= clientFilesAssessment %>/filename.ext
-<%= clientFilesQuestion %>/filename.ext
+{{ options.client_files_course_url }}/filename.ext
+{{ options.client_files_question_url }}/filename.ext
 ```
 
 ## Accessing files from code via RequireJS
