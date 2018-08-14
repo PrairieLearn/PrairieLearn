@@ -437,7 +437,8 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
         display_array = '<table>'
         display_array += '<tr>'
         # Add the prefix
-        display_array += '<td rowspan="0">' + label + '&nbsp;</td>'
+        if label is not None:
+            display_array += '<td rowspan="0">' + label + '&nbsp;</td>'
         display_array += '<td class="close-left" rowspan="0"></td>'
         display_array += '<td style="width:4px" rowspan="0"></td>'
         # First row of array
