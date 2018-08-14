@@ -457,7 +457,9 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
         # Add the suffix
         display_array += '<td style="width:4px" rowspan="0"></td>'
         display_array += '<td class="close-right" rowspan="0"></td>'
-        display_array += '<td rowspan="0">&nbsp;' + score_message + '</td> </tr>'
+        if score_message is not None:
+            display_array += '<td rowspan="0">&nbsp;' + score_message + '</td>'
+        display_array +=  '</tr>'
         # Add the other rows
         for i in range(1, m):
             display_array += ' <tr>'
