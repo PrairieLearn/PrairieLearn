@@ -6,14 +6,14 @@
   * Add string input element (Mariana Silva).
 
   * Add element to display matrix in latex format (Mariana Silva).
-  * Add string input element (Mariana Silva)
-  * Add matrix grid input element (Mariana Silva)
 
   * Add student name and clickable e-mail address information to issue reports (James Balamuta).
 
   * Add `tools/dump_*` scripts to filter and anonymize per-course dumps (Matt West).
 
   * Add `pl-prairiedraw-figure` element and update PrairieDraw graphics documentation. (Ray Essick).
+
+  * Add `pl-matrix-component-input` element (Mariana Silva).
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
 
