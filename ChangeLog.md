@@ -13,6 +13,8 @@
 
   * Add `pl-prairiedraw-figure` element and update PrairieDraw graphics documentation. (Ray Essick).
 
+  * Add `pl-matrix-component-input` element (Mariana Silva).
+
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
 
   * Fix Google auth using new API (Matt West).

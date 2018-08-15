@@ -219,6 +219,27 @@ ${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
 ```
 
 
+## `pl-matrix-component-input` element
+
+```html
+<pl-matrix-component-input answers-name="C" comparison="sigfig" digits="3" label="$AB=$"> </pl-matrix-component-input>
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers-name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`label` | text | — | A prefix to display before the input box (e.g., `label="$F =$"`).
+`comparison` | "relabs", "sigfig", or "decdig" | "relabs" | How to grade. "relabs" uses relative ("rtol") and absolute ("atol") tolerances. "sigfig" and "decdig" use "digits" significant or decimal digits.
+`rtol` | number | 1e-2 | Relative tolerance for `comparison="relabs"`.
+`atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
+`digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
+`allow-partial-credit` | boolean | False | Whether or not to allow credit for each correct matrix component. By default, the variable is graded as correct only when all matrix components are correct.
+`allow-feedback` | boolean | `allow-partial-credit` | Whether or not to allow feedback indicating which matrix components are incorrect. The default value of `allow-feedback` is the value of `allow-partial-credit`.
+
+In the question panel, a `pl-matrix-component-input` element displays a grid of input fields with the same shape of the variable stored in `answers-name` (only 2D arrays of real numbers can be stored in `answers-name`). The question will only be graded when all matrix components are entered.
+
+
 ## `pl-figure` element
 
 ```html
