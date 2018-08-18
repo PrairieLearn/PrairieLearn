@@ -551,15 +551,15 @@ module.exports = {
             }
 
             // Switch based on which renderer is enabled for this course
-            const useLegacyRenderer = false;
+            const useNewQuestionRenderer = _.get(context, 'course.options.useNewQuestionRenderer', false);
             let processFunction;
             let args;
-            if (useLegacyRenderer) {
-                processFunction = module.exports.legacyTraverseQuestionAndExecuteFunctions;
-                args = [phase, pc, data, context, $];
-            } else {
+            if (useNewQuestionRenderer) {
                 processFunction = module.exports.travserseQuestionAndExecuteFunctions;
                 args = [phase, pc, data, context, html];
+            } else {
+                processFunction = module.exports.legacyTraverseQuestionAndExecuteFunctions;
+                args = [phase, pc, data, context, $];
             }
 
             processFunction(...args, (courseIssues, data, questionHtml, fileData, renderedElementNames) => {
