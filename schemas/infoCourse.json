@@ -26,6 +26,18 @@
             "type": "string",
             "default": "America/Chicago"
         },
+        "options": {
+            "description": "Options for this course.",
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+                "useNewQuestionRenderer": {
+                    "description": "Feature flag to enable the new question renderer.",
+                    "type": "boolean",
+                    "default": false
+                }
+            }
+        },
         "assessmentSets": {
             "description": "Assessment sets.",
             "type": "array",
