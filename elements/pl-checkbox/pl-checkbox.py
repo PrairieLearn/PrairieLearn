@@ -35,9 +35,8 @@ def prepare(element_html, element_index, data):
     len_incorrect = len(incorrect_answers)
     len_total = len_correct + len_incorrect
 
-    if partial_credit and partial_credit_method == 'EDC':
-        if len_correct == 0:
-            raise Exception('At least one correct answers must be defined when using partial-credit-method="EDC" ')
+    if len_correct == 0:
+        raise Exception('At least one correct answers must be defined. ')
 
     number_answers = pl.get_integer_attrib(element, 'number-answers', len_total)
     min_correct = pl.get_integer_attrib(element, 'min-correct', 0)
@@ -150,6 +149,7 @@ def render(element_html, element_index, data):
         # Adds decorative help text per bootstrap formatting guidelines:
         # http://getbootstrap.com/docs/4.0/components/forms/#help-text
         # Determine whether we should add a choice selection requirement
+        '''
         if not pl.get_boolean_attrib(element, 'hide-help-text', False):
             # Should we reveal the depth of the choice?
             if pl.get_boolean_attrib(element, 'detailed-help-text', False):
@@ -162,6 +162,11 @@ def render(element_html, element_index, data):
             # Generic prompt to differentiate from a radio input
             else:
                 html = html + '<small class="form-text text-muted">Select all possible options that apply.</small>'
+        '''
+
+        html = html + '<a class="btn btn-sm btn-light" role="button" data-toggle="popover" data-html="true" title="Number" '
+        html = html + 'data-content="bla" data-placement="auto" data-trigger="focus" tabindex="0" >'
+        html = html + ' <i class="fa fa-question-circle" aria-hidden="true"></i></a>'
 
     elif data['panel'] == 'submission':
 
@@ -239,9 +244,8 @@ def parse(element_html, element_index, data):
     all_keys = [a['key'] for a in data['params'][name]]
 
     if submitted_key is None:
-        if partial_credit and partial_credit_method == 'EDC':
-            data['format_errors'][name] = 'No submitted answer.'
-            return
+        data['format_errors'][name] = 'No submitted answer.'
+        return
     else:
         if not set(submitted_key).issubset(set(all_keys)):
             data['format_errors'][name] = 'INVALID choice'
@@ -326,10 +330,11 @@ def test(element_html, element_index, data):
         data['raw_submitted_answers'][name] = ans
         data['partial_scores'][name] = {'score': score, 'weight': weight}
     elif result == 'invalid':
-        if partial_credit and partial_credit_method == 'EDC':
+        invalid_type = random.choice(['blank', 'string'])
+        if invalid_type == 'blank':
             data['raw_submitted_answers'][name] = None
             data['format_errors'][name] = 'No submitted answer.'
-        else:
+        elif invalid_type == 'string':
             data['raw_submitted_answers'][name] = '0'
             data['format_errors'][name] = 'INVALID choice'
     else:

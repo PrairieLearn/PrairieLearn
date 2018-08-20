@@ -1,0 +1,10 @@
+{{#question}}
+<script>
+    $(function() {
+        $('#pl-checkbox-{{uuid}} [data-toggle="popover"]').popover({
+            container: 'body',
+            template: '<div class="popover pl-checkbox-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+        });
+    });
+</script>
+{{html}}
