@@ -14,7 +14,7 @@ def prepare(element_html, element_index, data):
     name = pl.get_string_attrib(element, 'answers-name')
 
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
-    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'EDC')
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'PC')
 
     correct_answers = []
     incorrect_answers = []
