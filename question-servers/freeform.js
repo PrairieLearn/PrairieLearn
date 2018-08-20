@@ -524,7 +524,8 @@ module.exports = {
                 callback(null);
             });
         }, (err) => {
-            if (ERR(err, callback)) return;
+            // Black-hole any errors, they were (should have been) handled by course issues
+            ERR(err, () => {});
             callback(courseIssues, data, $.html(), fileData, renderedElementNames);
         });
     },
