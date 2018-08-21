@@ -9,7 +9,7 @@ def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method']
+    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-answer-panel', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method']
 
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
@@ -139,23 +139,35 @@ def render(element_html, element_index, data):
         hide_help_text = pl.get_boolean_attrib(element, 'hide-help-text', False)
         if not hide_help_text:
             # Should we reveal the depth of the choice?
-            if pl.get_boolean_attrib(element, 'detailed-help-text', False):
-                min_correct = pl.get_integer_attrib(element, 'min-correct', 0)
-                max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
+            detailed_help_text = pl.get_boolean_attrib(element, 'detailed-help-text', False)
+            min_correct = pl.get_integer_attrib(element, 'min-correct', 0)
+            max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
+            if detailed_help_text:
                 if min_correct != max_correct:
-                    helptext = '<small class="form-text text-muted">Select between <b>%d</b> and <b>%d</b> options.</small>' % (min_correct, max_correct)
+                    insert_text = ' between <b>%d</b> and <b>%d</b> options.' % (min_correct, max_correct)
+                    helptext = '<small class="form-text text-muted">Select ' + insert_text + '</small>'
                 else:
-                    helptext = '<small class="form-text text-muted">Select exactly <b>%d</b> options.</small>' % (max_correct)
+                    insert_text = ' exactly <b>%d</b> options.' % (max_correct)
+                    helptext = '<small class="form-text text-muted">Select' + insert_text + '</small>'
             else:
+                insert_text = ' at least one option.'
                 helptext = '<small class="form-text text-muted">Select all possible options that apply.</small>'
 
             if partial_credit:
                 if partial_credit_method == 'PC':
-                    gradingtext = '<p>"Percent Correct": the algorithm gives 1 point for each correct answer that is marked as correct and subtracts 1 point for each incorrect answer that is marked as correct. The final score is the resulting summation of points divided by the total number of correct answers. The minimum final score is set to zero.</p>'
+                    gradingtext = 'You must select ' + insert_text + ' You will receive a score of <code>100% * (t - f) / n</code>, ' \
+                        + 'where <code>t</code> is the number of true options that you select, <code>f</code> ' \
+                        + 'is the number of false options that you select, and <code>n</code> is the total number of true options. ' \
+                        + 'At minimum, you will receive a score of 0%.'
                 else:
-                    gradingtext = '<p>"Every Decision Counts": the given answers are considered as a list of true/false answers.  If "n" is the total number of answers, each answer is assigned "1/n" points. The total score is the summation of the points for every correct answer selected and every incorrect answer left unselected.</p>'
+                    gradingtext = 'You must select ' + insert_text + ' You will receive a score of <code>100% * (t + f) / ' + str(len(display_answers)) + '</code>, ' \
+                        + 'where <code>t</code> is the number of true options that you select and <code>f</code> ' \
+                        + 'is the number of false options that you do not select.'
             else:
-                gradingtext = '<p>"All-or-nothing": to get 100% score, you need to select all answers that are correct, and leave blank all answers that are incorrect.</p>'
+                gradingtext = 'You must select' + insert_text + ' You will receive a score of 100% ' \
+                    + 'if you select all options that are true and no options that are false. ' \
+                    + 'Otherwise, you will receive a score of 0%.'
+
             info_params.update({'gradingtext': gradingtext})
 
         with open('pl-checkbox.mustache', 'r', encoding='utf-8') as f:
@@ -231,22 +243,27 @@ def render(element_html, element_index, data):
                     raise ValueError('invalid score' + score)
 
     elif data['panel'] == 'answer':
-        correct_answer_list = data['correct_answers'].get(name, [])
-        if len(correct_answer_list) == 0:
-            html = 'No selected answers'
-        else:
-            html_list = []
-            for answer in correct_answer_list:
-                item = '(%s) %s' % (answer['key'], answer['html'])
-                if inline:
-                    item = '<span>' + item + '</span>\n'
-                else:
-                    item = '<p>' + item + '</p>\n'
-                html_list.append(item)
-            if inline:
-                html = ', '.join(html_list) + '\n'
+
+        if not pl.get_boolean_attrib(element, 'hide-answer-panel', False):
+            correct_answer_list = data['correct_answers'].get(name, [])
+            if len(correct_answer_list) == 0:
+                html = 'No selected answers'
             else:
-                html = '\n'.join(html_list) + '\n'
+                html_list = []
+                for answer in correct_answer_list:
+                    item = '(%s) %s' % (answer['key'], answer['html'])
+                    if inline:
+                        item = '<span>' + item + '</span>\n'
+                    else:
+                        item = '<p>' + item + '</p>\n'
+                    html_list.append(item)
+                if inline:
+                    html = ', '.join(html_list) + '\n'
+                else:
+                    html = '\n'.join(html_list) + '\n'
+        else:
+            html = ''
+
     else:
         raise Exception('Invalid panel type: %s' % data['panel'])
 
@@ -260,14 +277,24 @@ def parse(element_html, element_index, data):
 
     submitted_key = data['submitted_answers'].get(name, None)
     all_keys = [a['key'] for a in data['params'][name]]
+    correct_answer_list = data['correct_answers'].get(name, [])
 
     if submitted_key is None:
-        data['format_errors'][name] = 'Need to select at least one of the asnwers. Question is not graded.'
+        data['format_errors'][name] = 'You must select at least one option. Question is not graded.'
         return
     else:
         if not set(submitted_key).issubset(set(all_keys)):
             data['format_errors'][name] = 'INVALID choice'
             return
+    # Check if number of submitted answers is within the range when 'detailed_help_text = true'
+    if pl.get_boolean_attrib(element, 'detailed-help-text', False):
+        if submitted_key is not None:
+            min_correct = pl.get_integer_attrib(element, 'min-correct', 0)
+            max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
+            n_submitted = len(submitted_key)
+            if n_submitted > max_correct or n_submitted < min_correct:
+                data['format_errors'][name] = 'You must select between <b>%d</b> and <b>%d</b> options. Question is not graded.' % (min_correct, max_correct)
+                return
 
 
 def grade(element_html, element_index, data):

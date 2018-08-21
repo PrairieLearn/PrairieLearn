@@ -53,6 +53,7 @@ Attribute | Type | Default | Description
 `partial-credit-method` | string | 'PC' | Two grading methods for partial credit: 'EDC' (Every Decision Counts) and 'PC' (Percent Correct). See explanation below.
 `hide-help-text` | boolean | false | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm ('all-or-nothing', 'EDC' or 'PC')
 `detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
+`hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
 
 A `pl-checkbox` element displays a subset of the answers in a random order as checkboxes.
 
