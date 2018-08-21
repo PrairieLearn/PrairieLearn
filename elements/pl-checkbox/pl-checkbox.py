@@ -400,12 +400,8 @@ def test(element_html, element_index, data):
         data['raw_submitted_answers'][name] = ans
         data['partial_scores'][name] = {'score': score, 'weight': weight}
     elif result == 'invalid':
-        invalid_type = random.choice(['blank', 'string'])
-        if invalid_type == 'blank':
-            data['raw_submitted_answers'][name] = None
-            data['format_errors'][name] = 'No submitted answer.'
-        elif invalid_type == 'string':
-            data['raw_submitted_answers'][name] = '0'
-            data['format_errors'][name] = 'INVALID choice'
+        # FIXME: add more invalid examples
+        data['raw_submitted_answers'][name] = None
+        data['format_errors'][name] = 'You must select at least one option.'
     else:
         raise Exception('invalid result: %s' % result)
