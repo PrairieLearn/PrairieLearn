@@ -224,14 +224,14 @@ def render(element_html, element_index, data):
                         else:
                             item = item + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
                 if inline:
-                    item = '<span>' + item + '</span>\n'
+                    item = '<li class="list-inline-item">' + item + '</li>'
                 else:
-                    item = '<p>' + item + '</p>\n'
+                    item = '<li>' + item + '</li>'
                 html_list.append(item)
             if inline:
-                html = ', '.join(html_list) + '\n'
+                html = '<ul class="list-inline mb-0">\n' + '\n'.join(html_list) + '</ul>'
             else:
-                html = '\n'.join(html_list) + '\n'
+                html = '<ul class="list-unstyled mb-0">\n' + '\n'.join(html_list) + '</ul>'
             if score is not None:
                 try:
                     score = float(score)
@@ -243,6 +243,10 @@ def render(element_html, element_index, data):
                         html = html + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
                 except Exception:
                     raise ValueError('invalid score' + score)
+            if inline:
+                html = '<span class="d-inline-block">' + html + '</span>'
+            else:
+                html = '<div class="d-block">' + html + '</div>'
         else:
             html_params = {
                 'submission': True,
@@ -258,20 +262,24 @@ def render(element_html, element_index, data):
         if not pl.get_boolean_attrib(element, 'hide-answer-panel', False):
             correct_answer_list = data['correct_answers'].get(name, [])
             if len(correct_answer_list) == 0:
-                html = 'No selected answers'
+                raise ValueError('At least one option must be true.')
             else:
                 html_list = []
                 for answer in correct_answer_list:
                     item = '(%s) %s' % (answer['key'], answer['html'])
                     if inline:
-                        item = '<span>' + item + '</span>\n'
+                        item = '<li class="list-inline-item">' + item + '</li>'
                     else:
-                        item = '<p>' + item + '</p>\n'
+                        item = '<li>' + item + '</li>'
                     html_list.append(item)
                 if inline:
-                    html = ', '.join(html_list) + '\n'
+                    html = '<ul class="list-inline mb-0">\n' + '\n'.join(html_list) + '</ul>'
                 else:
-                    html = '\n'.join(html_list) + '\n'
+                    html = '<ul class="list-unstyled mb-0">\n' + '\n'.join(html_list) + '</ul>'
+            if inline:
+                html = '<span class="d-inline-block">' + html + '</span>'
+            else:
+                html = '<div class="d-block">' + html + '</div>'
         else:
             html = ''
 
