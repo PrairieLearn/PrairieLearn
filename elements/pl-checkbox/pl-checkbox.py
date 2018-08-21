@@ -35,23 +35,27 @@ def prepare(element_html, element_index, data):
     len_total = len_correct + len_incorrect
 
     if len_correct == 0:
-        raise Exception('At least one correct answers must be defined. ')
+        raise ValueError('At least one option must be true.')
 
     number_answers = pl.get_integer_attrib(element, 'number-answers', len_total)
-    min_correct = pl.get_integer_attrib(element, 'min-correct', 0)
+    min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
     max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answers))
 
+    if min_correct < 1:
+        raise ValueError('The attribute min-correct is {:d} but must be at least 1'.format(min_correct))
+
+    # FIXME: why enforce a maximum number of options?
     max_answers = 26  # will not display more than 26 checkbox answers
 
     number_answers = max(0, min(len_total, min(max_answers, number_answers)))
     min_correct = min(len_correct, min(number_answers, max(0, max(number_answers - len_incorrect, min_correct))))
     max_correct = min(len_correct, min(number_answers, max(min_correct, max_correct)))
     if not (0 <= min_correct <= max_correct <= len_correct):
-        raise Exception('INTERNAL ERROR: correct number: (%d, %d, %d, %d)' % (min_correct, max_correct, len_correct, len_incorrect))
+        raise ValueError('INTERNAL ERROR: correct number: (%d, %d, %d, %d)' % (min_correct, max_correct, len_correct, len_incorrect))
     min_incorrect = number_answers - max_correct
     max_incorrect = number_answers - min_correct
     if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
-        raise Exception('INTERNAL ERROR: incorrect number: (%d, %d, %d, %d)' % (min_incorrect, max_incorrect, len_incorrect, len_correct))
+        raise ValueError('INTERNAL ERROR: incorrect number: (%d, %d, %d, %d)' % (min_incorrect, max_incorrect, len_incorrect, len_correct))
 
     number_correct = random.randint(min_correct, max_correct)
     number_incorrect = number_answers - number_correct
@@ -141,7 +145,7 @@ def render(element_html, element_index, data):
         if not hide_help_text:
             # Should we reveal the depth of the choice?
             detailed_help_text = pl.get_boolean_attrib(element, 'detailed-help-text', False)
-            min_correct = pl.get_integer_attrib(element, 'min-correct', 0)
+            min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
             max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
             if detailed_help_text:
                 if min_correct != max_correct:
@@ -214,7 +218,7 @@ def render(element_html, element_index, data):
                 item = ''
                 submitted_html = next((a['html'] for a in display_answers if a['key'] == submitted_key), None)
                 if submitted_html is None:
-                    raise ValueError('invalid submitted_key: {:s}'.format(submitted_key))
+                    raise ValueError('invalid submitted_key: {:s}'.format(escape(submitted_key)))
                 else:
                     item = '(%s) %s' % (submitted_key, submitted_html)
                     if score is not None and show_answer_feedback:
@@ -291,11 +295,11 @@ def parse(element_html, element_index, data):
             one_bad_key = submitted_key_set.difference(all_keys_set).pop()
             data['format_errors'][name] = 'You selected an invalid option: {:s}'.format(escape(one_bad_key))
             return
-    
+
     # Check if number of submitted answers is within the range when 'detailed_help_text = true'
     if pl.get_boolean_attrib(element, 'detailed-help-text', False):
         if submitted_key is not None:
-            min_correct = pl.get_integer_attrib(element, 'min-correct', 0)
+            min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
             max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
             n_submitted = len(submitted_key)
             if n_submitted > max_correct or n_submitted < min_correct:
