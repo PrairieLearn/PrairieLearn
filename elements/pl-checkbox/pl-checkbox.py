@@ -206,11 +206,8 @@ def render(element_html, element_index, data):
             html = chevron.render(f, html_params).strip()
 
     elif data['panel'] == 'submission':
-
         parse_error = data['format_errors'].get(name, None)
-        if parse_error is not None:
-            html = parse_error
-        else:
+        if parse_error is None:
             partial_score = data['partial_scores'].get(name, {'score': None})
             score = partial_score.get('score', None)
             html_list = []
@@ -246,6 +243,15 @@ def render(element_html, element_index, data):
                         html = html + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
                 except Exception:
                     raise ValueError('invalid score' + score)
+        else:
+            html_params = {
+                'submission': True,
+                'uuid': pl.get_uuid(),
+                'parse_error': parse_error,
+                'inline': inline,
+            }
+            with open('pl-checkbox.mustache', 'r', encoding='utf-8') as f:
+                html = chevron.render(f, html_params).strip()
 
     elif data['panel'] == 'answer':
 
