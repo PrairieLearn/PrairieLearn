@@ -1,8 +1,7 @@
 
 <p>
-1) <pl-question-panel> Select the "true" answers (uses default <code>partial-credit="false"</code>,
- <code>show-grade-help="true"</code> and
-  <code>hide-help-text="false"</code>).
+1) <pl-question-panel> Select the "true" answers (uses default <code>partial-credit="false"</code> and
+ <code>hide-help-text="false"</code>).
 </pl-question-panel>
 </p>
 
@@ -15,29 +14,13 @@
   </pl-checkbox>
 </p>
 
-<p>
-2) <pl-question-panel> Select the "true" answers (uses default <code>partial-credit="false"</code> and
- set <code>show-grade-help="false"</code>).
+2) <pl-question-panel> Select the "true" answers (set <code>partial-credit="true"</code> and
+ <code>hide-help-text="true"</code>).
 </pl-question-panel>
 </p>
 
 <p>
-  <pl-checkbox answers-name="ans12" fixed-order="true" show-grade-help="false">
-    <pl-answer correct="true">true1</pl-answer>
-    <pl-answer correct="true">true2</pl-answer>
-    <pl-answer>false1</pl-answer>
-    <pl-answer correct="true">true4</pl-answer>
-  </pl-checkbox>
-</p>
-
-3) <pl-question-panel> Select the "true" answers (set <code>partial-credit="true"</code> and
- uses default <code>show-grade-help="true"</code> and
-  <code>hide-help-text="false"</code>).
-</pl-question-panel>
-</p>
-
-<p>
-  <pl-checkbox answers-name="ans11" fixed-order="true" partial-credit="true">
+  <pl-checkbox answers-name="ans11" fixed-order="true" partial-credit="true" hide-help-text="true">
     <pl-answer correct="true">true1</pl-answer>
     <pl-answer correct="true">true2</pl-answer>
     <pl-answer>false1</pl-answer>
@@ -46,13 +29,13 @@
 </p>
 
 <p>
-4) <pl-question-panel> Select the "true" answers (set <code>partial-credit="true"</code>,
+3) <pl-question-panel> Select the "true" answers (set <code>partial-credit="true"</code>,
 <code>partial_credit_method="EDC"</code>
-  and  <code>hide-help-text="true"</code>). </pl-question-panel>
+  and uses default <code>hide-help-text="false"</code>). </pl-question-panel>
 </p>
 
 <p>
-  <pl-checkbox answers-name="ans2" fixed-order="true" partial-credit="true" partial_credit_method="EDC" hide-help-text="true">
+  <pl-checkbox answers-name="ans2" fixed-order="true" partial-credit="true" partial_credit_method="EDC">
     <pl-answer correct="true">true1</pl-answer>
     <pl-answer correct="true">true2</pl-answer>
     <pl-answer>false1</pl-answer>
@@ -61,7 +44,7 @@
 </p>
 
 <p>
-5) <pl-question-panel> Select the true answers (set
+4) <pl-question-panel> Select the true answers (set
 <code>partial-credit="true"</code>, <code>number-answers="5"</code>,  <code>min-correct="1"</code>, <code>max-correct="4"</code>
 and <code>detailed-help-text="true"</code>).
 </pl-question-panel>

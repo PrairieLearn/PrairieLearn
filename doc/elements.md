@@ -49,11 +49,10 @@ Attribute | Type | Default | Description
 `min-correct` | integer | special | The minimum number of correct answers to display. Defaults to displaying all correct answers.
 `max-correct` | integer | special | The maximum number of correct answers to display. Defaults to displaying all correct answers.
 `fixed-order` | boolean | false | Disable the randomization of answer order.
-`hide-help-text` | boolean | false | Hide help text stating to pick one or more optinos.
-`detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
 `partial-credit` | boolean | false | Enable partial credit scores. By default, the choice of grading method is "all-or-nothing".
 `partial-credit-method` | string | 'PC' | Two grading methods for partial credit: 'EDC' (Every Decision Counts) and 'PC' (Percent Correct). See explanation below.
-`show-grade-help` | boolean | true | Display a popover button under the answer set with an explanation about the selected grading method ("all-or-nothing", "EDC" or "PC") 
+`hide-help-text` | boolean | false | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm ('all-or-nothing', 'EDC' or 'PC')
+`detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
 
 A `pl-checkbox` element displays a subset of the answers in a random order as checkboxes.
 

@@ -9,7 +9,7 @@ def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method', 'show-grade-help']
+    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method']
 
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
@@ -119,21 +119,20 @@ def render(element_html, element_index, data):
                 + ('' if editable else ' disabled') \
                 + (' checked ' if (answer['key'] in submitted_keys) else '') \
                 + ' />\n' \
-                + '    (' + answer['key'] + ') ' + answer['html'].strip() + '\n' \
-                + '  </label>\n'
+                + '    (' + answer['key'] + ') ' + answer['html'].strip() + '\n'
             if score is not None and show_answer_feedback:
                 if answer['key'] in submitted_keys:
                     if answer['key'] in correct_keys:
-                        item = item + '<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
+                        item = item + '<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
                     else:
-                        item = item + '<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
+                        item = item + '<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
+            item += '  </label>\n'
             item = f'<div class="form-check {"form-check-inline" if inline else ""}">\n' + item + '</div>\n'
             answerset += item
         if inline:
-            answerset = '<p>\n' + answerset + '</p>\n'
+            answerset = '<span>\n' + answerset + '</span>\n'
 
         info_params = {'format': True}
-
         # Adds decorative help text per bootstrap formatting guidelines:
         # http://getbootstrap.com/docs/4.0/components/forms/#help-text
         # Determine whether we should add a choice selection requirement
@@ -147,25 +146,17 @@ def render(element_html, element_index, data):
                     helptext = '<small class="form-text text-muted">Select between <b>%d</b> and <b>%d</b> options.</small>' % (min_correct, max_correct)
                 else:
                     helptext = '<small class="form-text text-muted">Select exactly <b>%d</b> options.</small>' % (max_correct)
-            # Generic prompt to differentiate from a radio input
             else:
                 helptext = '<small class="form-text text-muted">Select all possible options that apply.</small>'
-            info_params.update({'helptext': helptext})
 
-        show_grade_help = pl.get_boolean_attrib(element, 'show-grade-help', True)
-        if show_grade_help:
             if partial_credit:
-                grading_method = 'Partial credit enabled'
                 if partial_credit_method == 'PC':
-                    gradingtext = '<p>Grading method is "Percent Correct". The algorithm gives 1 point for each correct answer that is marked as correct and subtracts 1 point for each incorrect answer that is marked as correct. The final score is the resulting summation of points divided by the total number of correct answers. The minimum final score is set to zero.</p>'
+                    gradingtext = '<p>"Percent Correct": the algorithm gives 1 point for each correct answer that is marked as correct and subtracts 1 point for each incorrect answer that is marked as correct. The final score is the resulting summation of points divided by the total number of correct answers. The minimum final score is set to zero.</p>'
                 else:
-                    gradingtext = '<p>Grading method is "Every Decision Counts". The given answers are considered as a list of true/false answers.  If "n" is the total number of answers, each answer is assigned "1/n" points. The total score is the summation of the points for every correct answer selected and every incorrect answer left unselected.</p>'
+                    gradingtext = '<p>"Every Decision Counts": the given answers are considered as a list of true/false answers.  If "n" is the total number of answers, each answer is assigned "1/n" points. The total score is the summation of the points for every correct answer selected and every incorrect answer left unselected.</p>'
             else:
-                grading_method = 'Partial credit disabled'
-                gradingtext = '<p>Grading method is "all-or-nothing". To get 100% score, you need to select all answers that are correct, and leave blank all answers that are incorrect.</p>'
+                gradingtext = '<p>"All-or-nothing": to get 100% score, you need to select all answers that are correct, and leave blank all answers that are incorrect.</p>'
             info_params.update({'gradingtext': gradingtext})
-        else:
-            grading_method = None
 
         with open('pl-checkbox.mustache', 'r', encoding='utf-8') as f:
             info = chevron.render(f, info_params).strip()
@@ -177,8 +168,10 @@ def render(element_html, element_index, data):
             'uuid': pl.get_uuid(),
             'info': info,
             'answerset': answerset,
-            'grading_method': grading_method,
         }
+
+        if not hide_help_text:
+            html_params['helptext'] = helptext
 
         if score is not None:
             try:
