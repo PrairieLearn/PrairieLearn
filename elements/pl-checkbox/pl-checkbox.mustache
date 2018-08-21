@@ -1,10 +1,36 @@
 {{#question}}
 <script>
-    $(function() {
+    $(function(){
         $('#pl-checkbox-{{uuid}} [data-toggle="popover"]').popover({
             container: 'body',
             template: '<div class="popover pl-checkbox-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
         });
     });
 </script>
-{{html}}
+<span><p>{{{answerset}}}<p></span>
+
+{{#grading_method}}
+<span id="pl-checkbox-{{uuid}}">
+        <span class="btn btn-light border" role="button" data-toggle="popover" data-html="true" title="Grading details" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
+            {{grading_method}}&nbsp;<i class="fa fa-question-circle" aria-hidden="true"></i>
+            {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+            {{#partial}}&nbsp;<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+            {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+        </span>
+</span>
+{{/grading_method}}
+{{^grading_method}}
+<span id="pl-checkbox-{{uuid}}">
+  {{{info}}}
+      {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+      {{#partial}}&nbsp;<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+      {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+</span>
+{{/grading_method}}
+
+{{/question}}
+
+{{#format}}
+{{{gradingtext}}}
+{{{helptext}}}
+{{/format}}

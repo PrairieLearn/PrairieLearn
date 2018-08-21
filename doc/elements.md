@@ -53,6 +53,7 @@ Attribute | Type | Default | Description
 `detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
 `partial-credit` | boolean | false | Enable partial credit scores. By default, the choice of grading method is "all-or-nothing".
 `partial-credit-method` | string | 'PC' | Two grading methods for partial credit: 'EDC' (Every Decision Counts) and 'PC' (Percent Correct). See explanation below.
+`show-grade-help` | boolean | true | Display a popover button under the answer set with an explanation about the selected grading method ("all-or-nothing", "EDC" or "PC") 
 
 A `pl-checkbox` element displays a subset of the answers in a random order as checkboxes.
 

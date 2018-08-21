@@ -2,19 +2,17 @@ import prairielearn as pl
 import lxml.html
 import random
 import math
+import chevron
 
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     required_attribs = ['answers-name']
-    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method']
+    optional_attribs = ['weight', 'number-answers', 'min-correct', 'max-correct', 'fixed-order', 'inline', 'hide-help-text', 'detailed-help-text', 'partial-credit', 'partial-credit-method', 'show-grade-help']
 
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, 'answers-name')
-
-    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
-    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'PC')
 
     correct_answers = []
     incorrect_answers = []
@@ -89,6 +87,7 @@ def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'PC')
 
     editable = data['editable']
     # answer feedback is not displayed when partial credit is True
@@ -98,9 +97,7 @@ def render(element_html, element_index, data):
         show_answer_feedback = False
 
     display_answers = data['params'].get(name, [])
-
     inline = pl.get_boolean_attrib(element, 'inline', False)
-
     submitted_keys = data['submitted_answers'].get(name, [])
     # if there is only one key then it is passed as a string,
     # not as a length-one list, so we fix that next
@@ -114,7 +111,7 @@ def render(element_html, element_index, data):
         partial_score = data['partial_scores'].get(name, {'score': None})
         score = partial_score.get('score', None)
 
-        html = ''
+        answerset = ''
         for answer in display_answers:
             item = '  <label class="form-check-label">\n' \
                 + '    <input type="checkbox" class="form-check-input"' \
@@ -131,42 +128,72 @@ def render(element_html, element_index, data):
                     else:
                         item = item + '<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
             item = f'<div class="form-check {"form-check-inline" if inline else ""}">\n' + item + '</div>\n'
-            html += item
+            answerset += item
         if inline:
-            html = '<p>\n' + html + '</p>\n'
-        if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html = html + '&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
-                elif score > 0:
-                    html = html + '&nbsp;<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {:d}%</span>'.format(math.floor(score * 100))
-                else:
-                    html = html + '&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
-            except Exception:
-                raise ValueError('invalid score' + score)
+            answerset = '<p>\n' + answerset + '</p>\n'
+
+        info_params = {'format': True}
 
         # Adds decorative help text per bootstrap formatting guidelines:
         # http://getbootstrap.com/docs/4.0/components/forms/#help-text
         # Determine whether we should add a choice selection requirement
-        '''
-        if not pl.get_boolean_attrib(element, 'hide-help-text', False):
+        hide_help_text = pl.get_boolean_attrib(element, 'hide-help-text', False)
+        if not hide_help_text:
             # Should we reveal the depth of the choice?
             if pl.get_boolean_attrib(element, 'detailed-help-text', False):
                 min_correct = pl.get_integer_attrib(element, 'min-correct', 0)
                 max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
                 if min_correct != max_correct:
-                    html = html + '<small class="form-text text-muted">Select between <b>%d</b> and <b>%d</b> options.</small>' % (min_correct, max_correct)
+                    helptext = '<small class="form-text text-muted">Select between <b>%d</b> and <b>%d</b> options.</small>' % (min_correct, max_correct)
                 else:
-                    html = html + '<small class="form-text text-muted">Select exactly <b>%d</b> options.</small>' % (max_correct)
+                    helptext = '<small class="form-text text-muted">Select exactly <b>%d</b> options.</small>' % (max_correct)
             # Generic prompt to differentiate from a radio input
             else:
-                html = html + '<small class="form-text text-muted">Select all possible options that apply.</small>'
-        '''
+                helptext = '<small class="form-text text-muted">Select all possible options that apply.</small>'
+            info_params.update({'helptext': helptext})
 
-        html = html + '<a class="btn btn-sm btn-light" role="button" data-toggle="popover" data-html="true" title="Number" '
-        html = html + 'data-content="bla" data-placement="auto" data-trigger="focus" tabindex="0" >'
-        html = html + ' <i class="fa fa-question-circle" aria-hidden="true"></i></a>'
+        show_grade_help = pl.get_boolean_attrib(element, 'show-grade-help', True)
+        if show_grade_help:
+            if partial_credit:
+                grading_method = "Partial credit enabled"
+                if partial_credit_method == 'PC':
+                    gradingtext = '<p>Grading method is "Percent Correct". The algorithm gives 1 point for each correct answer that is marked as correct and subtracts 1 point for each incorrect answer that is marked as correct. The final score is the resulting summation of points divided by the total number of correct answers. The minimum final score is set to zero.</p>'
+                else:
+                    gradingtext = '<p>Grading method is "Every Decision Counts". The given answers are considered as a list of true/false answers.  If "n" is the total number of answers, each answer is assigned "1/n" points. The total score is the summation of the points for every correct answer selected and every incorrect answer left unselected.</p>'
+            else:
+                grading_method = "Partial credit disabled"
+                gradingtext = '<p>Grading method is "all-or-nothing". To get 100% score, you need to select all answers that are correct, and leave blank all answers that are incorrect.</p>'
+            info_params.update({'gradingtext': gradingtext})
+        else:
+            grading_method = None
+
+        with open('pl-checkbox.mustache', 'r', encoding='utf-8') as f:
+            info = chevron.render(f, info_params).strip()
+
+        html_params = {
+            'question': True,
+            'name': name,
+            'editable': editable,
+            'uuid': pl.get_uuid(),
+            'info': info,
+            'answerset': answerset,
+            'grading_method': grading_method,
+        }
+
+        if score is not None:
+            try:
+                score = float(score)
+                if score >= 1:
+                    html_params['correct'] = True
+                elif score > 0:
+                    html_params['partial'] = math.floor(score * 100)
+                else:
+                    html_params['incorrect'] = True
+            except Exception:
+                raise ValueError('invalid score' + score)
+
+        with open('pl-checkbox.mustache', 'r', encoding='utf-8') as f:
+            html = chevron.render(f, html_params).strip()
 
     elif data['panel'] == 'submission':
 
@@ -237,14 +264,12 @@ def parse(element_html, element_index, data):
 
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, 'answers-name')
-    partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
-    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'EDC')
 
     submitted_key = data['submitted_answers'].get(name, None)
     all_keys = [a['key'] for a in data['params'][name]]
 
     if submitted_key is None:
-        data['format_errors'][name] = 'No submitted answer.'
+        data['format_errors'][name] = 'Need to select at least one of the asnwers. Question is not graded.'
         return
     else:
         if not set(submitted_key).issubset(set(all_keys)):
@@ -258,7 +283,7 @@ def grade(element_html, element_index, data):
     weight = pl.get_integer_attrib(element, 'weight', 1)
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
     number_answers = len(data['params'][name])
-    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'EDC')
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'PC')
 
     submitted_keys = data['submitted_answers'].get(name, [])
     correct_answer_list = data['correct_answers'].get(name, [])
@@ -290,7 +315,7 @@ def test(element_html, element_index, data):
     name = pl.get_string_attrib(element, 'answers-name')
     weight = pl.get_integer_attrib(element, 'weight', 1)
     partial_credit = pl.get_boolean_attrib(element, 'partial-credit', False)
-    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'EDC')
+    partial_credit_method = pl.get_string_attrib(element, 'partial-credit-method', 'PC')
 
     correct_answer_list = data['correct_answers'].get(name, [])
     correct_keys = [answer['key'] for answer in correct_answer_list]
