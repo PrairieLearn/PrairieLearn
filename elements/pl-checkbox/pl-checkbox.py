@@ -155,13 +155,13 @@ def render(element_html, element_index, data):
         show_grade_help = pl.get_boolean_attrib(element, 'show-grade-help', True)
         if show_grade_help:
             if partial_credit:
-                grading_method = "Partial credit enabled"
+                grading_method = 'Partial credit enabled'
                 if partial_credit_method == 'PC':
                     gradingtext = '<p>Grading method is "Percent Correct". The algorithm gives 1 point for each correct answer that is marked as correct and subtracts 1 point for each incorrect answer that is marked as correct. The final score is the resulting summation of points divided by the total number of correct answers. The minimum final score is set to zero.</p>'
                 else:
                     gradingtext = '<p>Grading method is "Every Decision Counts". The given answers are considered as a list of true/false answers.  If "n" is the total number of answers, each answer is assigned "1/n" points. The total score is the summation of the points for every correct answer selected and every incorrect answer left unselected.</p>'
             else:
-                grading_method = "Partial credit disabled"
+                grading_method = 'Partial credit disabled'
                 gradingtext = '<p>Grading method is "all-or-nothing". To get 100% score, you need to select all answers that are correct, and leave blank all answers that are incorrect.</p>'
             info_params.update({'gradingtext': gradingtext})
         else:
