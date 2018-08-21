@@ -3,6 +3,7 @@ import lxml.html
 import random
 import math
 import chevron
+from html import escape
 
 
 def prepare(element_html, element_index, data):
@@ -213,7 +214,7 @@ def render(element_html, element_index, data):
                 item = ''
                 submitted_html = next((a['html'] for a in display_answers if a['key'] == submitted_key), None)
                 if submitted_html is None:
-                    item = 'ERROR: Invalid submitted value selected: %s' % submitted_key
+                    raise ValueError('invalid submitted_key: {:s}'.format(submitted_key))
                 else:
                     item = '(%s) %s' % (submitted_key, submitted_html)
                     if score is not None and show_answer_feedback:
@@ -265,7 +266,7 @@ def render(element_html, element_index, data):
             html = ''
 
     else:
-        raise Exception('Invalid panel type: %s' % data['panel'])
+        raise ValueError('Invalid panel type: %s' % data['panel'])
 
     return html
 
@@ -280,12 +281,17 @@ def parse(element_html, element_index, data):
     correct_answer_list = data['correct_answers'].get(name, [])
 
     if submitted_key is None:
-        data['format_errors'][name] = 'You must select at least one option. Question is not graded.'
+        data['format_errors'][name] = 'You must select at least one option.'
         return
     else:
-        if not set(submitted_key).issubset(set(all_keys)):
-            data['format_errors'][name] = 'INVALID choice'
+        # FIXME: raise ValueError instead of treating as parse error?
+        submitted_key_set = set(submitted_key)
+        all_keys_set = set(all_keys)
+        if not submitted_key_set.issubset(all_keys_set):
+            one_bad_key = submitted_key_set.difference(all_keys_set).pop()
+            data['format_errors'][name] = 'You selected an invalid option: {:s}'.format(escape(one_bad_key))
             return
+    
     # Check if number of submitted answers is within the range when 'detailed_help_text = true'
     if pl.get_boolean_attrib(element, 'detailed-help-text', False):
         if submitted_key is not None:
@@ -293,7 +299,7 @@ def parse(element_html, element_index, data):
             max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
             n_submitted = len(submitted_key)
             if n_submitted > max_correct or n_submitted < min_correct:
-                data['format_errors'][name] = 'You must select between <b>%d</b> and <b>%d</b> options. Question is not graded.' % (min_correct, max_correct)
+                data['format_errors'][name] = 'You must select between <b>%d</b> and <b>%d</b> options.' % (min_correct, max_correct)
                 return
 
 
@@ -367,7 +373,7 @@ def test(element_html, element_index, data):
                     n_correct_answers = len(set(correct_keys)) - len(set(correct_keys) - set(ans))
                     points = n_correct_answers - len(set(ans) - set(correct_keys))
                     score = max(0, points / len(set(correct_keys)))
-            else:  # this is the default EDC method
+            else:  # this is the EDC method
                 number_wrong = len(set(ans) - set(correct_keys)) + len(set(correct_keys) - set(ans))
                 score = 1 - 1.0 * number_wrong / number_answers
         else:
