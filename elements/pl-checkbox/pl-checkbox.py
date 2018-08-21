@@ -284,27 +284,28 @@ def parse(element_html, element_index, data):
     all_keys = [a['key'] for a in data['params'][name]]
     correct_answer_list = data['correct_answers'].get(name, [])
 
+    # Check that at least one option was selected
     if submitted_key is None:
         data['format_errors'][name] = 'You must select at least one option.'
         return
-    else:
-        # FIXME: raise ValueError instead of treating as parse error?
-        submitted_key_set = set(submitted_key)
-        all_keys_set = set(all_keys)
-        if not submitted_key_set.issubset(all_keys_set):
-            one_bad_key = submitted_key_set.difference(all_keys_set).pop()
-            data['format_errors'][name] = 'You selected an invalid option: {:s}'.format(escape(one_bad_key))
-            return
 
-    # Check if number of submitted answers is within the range when 'detailed_help_text = true'
+    # Check that the selected options are a subset of the valid options
+    # FIXME: raise ValueError instead of treating as parse error?
+    submitted_key_set = set(submitted_key)
+    all_keys_set = set(all_keys)
+    if not submitted_key_set.issubset(all_keys_set):
+        one_bad_key = submitted_key_set.difference(all_keys_set).pop()
+        data['format_errors'][name] = 'You selected an invalid option: {:s}'.format(escape(one_bad_key))
+        return
+
+    # Check that the number of submitted answers is in range when 'detailed_help_text="true"'
     if pl.get_boolean_attrib(element, 'detailed-help-text', False):
-        if submitted_key is not None:
-            min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
-            max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
-            n_submitted = len(submitted_key)
-            if n_submitted > max_correct or n_submitted < min_correct:
-                data['format_errors'][name] = 'You must select between <b>%d</b> and <b>%d</b> options.' % (min_correct, max_correct)
-                return
+        min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
+        max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
+        n_submitted = len(submitted_key)
+        if n_submitted > max_correct or n_submitted < min_correct:
+            data['format_errors'][name] = 'You must select between <b>%d</b> and <b>%d</b> options.' % (min_correct, max_correct)
+            return
 
 
 def grade(element_html, element_index, data):
