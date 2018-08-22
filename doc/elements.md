@@ -49,8 +49,11 @@ Attribute | Type | Default | Description
 `min-correct` | integer | special | The minimum number of correct answers to display. Defaults to displaying all correct answers.
 `max-correct` | integer | special | The maximum number of correct answers to display. Defaults to displaying all correct answers.
 `fixed-order` | boolean | false | Disable the randomization of answer order.
-`hide-help-text` | boolean | false | Hide help text stating to pick one or more optinos.
+`partial-credit` | boolean | false | Enable partial credit scores. By default, the choice of grading method is "all-or-nothing".
+`partial-credit-method` | string | 'PC' | Two grading methods for partial credit: 'EDC' (Every Decision Counts) and 'PC' (Percent Correct). See explanation below.
+`hide-help-text` | boolean | false | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm ('all-or-nothing', 'EDC' or 'PC')
 `detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
+`hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
 
 A `pl-checkbox` element displays a subset of the answers in a random order as checkboxes.
 
@@ -59,6 +62,12 @@ An `pl-answer` element inside a `pl-multiple-choice` element has attributes:
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
+
+Two grading methods are available when using `partial-credit="true"`:
+
+* 'EDC' (Every Decision Counts): in this method, the checkbox answers are considered as a list of true/false answers.  If `n` is the total number of answers, each answer is assigned `1/n` points. The total score is the summation of the points for every correct answer selected and every incorrect answer left unselected.
+
+* 'PC' (Percent Correct): in this method, 1 point is added for each correct answer that is marked as correct and 1 point is subtracted for each incorrect answer that is marked as correct. The final score is the resulting summation of points divided by the total number of correct answers. The minimum final score is set to zero.
 
 ## `pl-number-input` element
 

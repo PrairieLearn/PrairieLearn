@@ -17,6 +17,8 @@
 
   * Add new question renderer behind feature flag (Nathan Walters).
 
+  * Add partial credit option to `pl-checkbox` element (Mariana Silva).
+
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
 
   * Fix Google auth using new API (Matt West).
