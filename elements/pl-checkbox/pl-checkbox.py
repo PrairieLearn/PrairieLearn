@@ -104,6 +104,7 @@ def render(element_html, element_index, data):
     display_answers = data['params'].get(name, [])
     inline = pl.get_boolean_attrib(element, 'inline', False)
     submitted_keys = data['submitted_answers'].get(name, [])
+
     # if there is only one key then it is passed as a string,
     # not as a length-one list, so we fix that next
     if isinstance(submitted_keys, str):
@@ -382,8 +383,15 @@ def test(element_html, element_index, data):
             # select answer keys at random
             ans = [k for k in all_keys if random.choice([True, False])]
             # break and use this choice if it isn't correct
-            if set(ans) != set(correct_keys):
-                break
+            if (len(ans) >= 1):
+                if set(ans) != set(correct_keys):
+                    if not pl.get_boolean_attrib(element, 'detailed-help-text', False):
+                        break
+                    else:
+                        min_correct = pl.get_integer_attrib(element, 'min-correct', 1)
+                        max_correct = pl.get_integer_attrib(element, 'max-correct', len(correct_answer_list))
+                        if len(ans) <= max_correct and len(ans) >= min_correct:
+                            break
         if partial_credit:
             if partial_credit_method == 'PC':
                 if set(ans) == set(correct_keys):
