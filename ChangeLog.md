@@ -35,6 +35,8 @@
 
   * Fix copy button after `clipboard.js` package update (Tim Bretl).
 
+  * Fix `pl-multiple-choice` so feedback is inside label and so inline option produces valid HTML (Tim Bretl).
+
   * Change element names to use dashes instead of underscores (Nathan Walters).
 
   * Change deprecated `new Buffer()` calls to `Buffer.from()` (Ray Essick).
