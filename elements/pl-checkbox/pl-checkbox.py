@@ -3,7 +3,6 @@ import lxml.html
 import random
 import math
 import chevron
-from html import escape
 
 
 def prepare(element_html, element_index, data):
@@ -215,7 +214,8 @@ def render(element_html, element_index, data):
                 item = ''
                 submitted_html = next((a['html'] for a in display_answers if a['key'] == submitted_key), None)
                 if submitted_html is None:
-                    raise ValueError('invalid submitted_key: {:s}'.format(escape(submitted_key)))
+                    # FIXME: escape submitted_key
+                    raise ValueError('invalid submitted_key: {:s}'.format(str(submitted_key)))
                 else:
                     item = '(%s) %s' % (submitted_key, submitted_html)
                     if score is not None and show_answer_feedback:
@@ -309,7 +309,8 @@ def parse(element_html, element_index, data):
     all_keys_set = set(all_keys)
     if not submitted_key_set.issubset(all_keys_set):
         one_bad_key = submitted_key_set.difference(all_keys_set).pop()
-        data['format_errors'][name] = 'You selected an invalid option: {:s}'.format(escape(one_bad_key))
+        # FIXME: escape one_bad_key
+        data['format_errors'][name] = 'You selected an invalid option: {:s}'.format(str(one_bad_key))
         return
 
     # Check that the number of submitted answers is in range when 'detailed_help_text="true"'
