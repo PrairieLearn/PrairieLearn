@@ -37,11 +37,11 @@ WITH
 insert_course_result AS (
     INSERT INTO courses
             (course_id, pl_course_id, rubric)
-    VALUES (1, 1, 'TPL 101')
+    VALUES (1, 1, 'TPL 101 Old Semester'), (2, 1, 'TPL 101 New Semester')
 )
 INSERT INTO exams
         (exam_id, course_id, exam_string)
-VALUES (1, 1, 'Exam 1');
+VALUES (1, 2, 'Exam 1');
 
 -- BLOCK delete_ps_course_link
 UPDATE courses
