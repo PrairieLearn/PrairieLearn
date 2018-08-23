@@ -77,15 +77,6 @@ BEGIN
             a.id = assessment_access_rule.assessment_id;
         EXIT schedule_access WHEN NOT FOUND; -- no linked PS course, skip this check
 
-        -- do we actually want to enforce PrairieSchedule linking?
---        SELECT ci.ps_linked INTO ps_linked
---        FROM
---            assessments AS a
---            JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
---        WHERE
---            a.id = assessment_access_rule.assessment_id;
---        EXIT schedule_access WHEN NOT ps_linked; -- don't want linking, skip this check
-
         -- is there a current checked-in reservation that links back to this assessment?
         SELECT r.*
         INTO reservation
