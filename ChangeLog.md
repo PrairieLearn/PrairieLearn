@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Modified `pl-code` to display code from a file (Mariana Silva).
+
   * Add string input element (Mariana Silva).
 
   * Add element to display matrix in latex format (Mariana Silva).
