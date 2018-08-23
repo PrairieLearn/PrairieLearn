@@ -43,6 +43,10 @@ INSERT INTO exams
         (exam_id, course_id, exam_string)
 VALUES (1, 2, 'Exam 1');
 
+-- BLOCK update_ci_ps_linked
+UPDATE course_instances
+SET ps_linked = $1;
+
 -- BLOCK delete_ps_course_link
 UPDATE courses
 SET pl_course_id = NULL;
