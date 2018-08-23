@@ -49,11 +49,9 @@ def render(element_html, element_index, data):
         'uuid': uuid
     }
 
-    #html_params['original_file_contents'] = base64.b64encode(str(element.text).encode('UTF-8').strip() or '').decode()
-
     if input_file_name is not None:
         input_file_path = os.path.join(data['options']['question_path'], input_file_name)
-        html_params['original_file_contents'] = base64.b64encode(str(open(input_file_path).read()+str(element.text)).encode('UTF-8').strip()).decode()
+        html_params['original_file_contents'] = base64.b64encode(str(open(input_file_path).read() + str(element.text)).encode('UTF-8').strip()).decode()
     else:
         html_params['original_file_contents'] = base64.b64encode(str(element.text).encode('UTF-8').strip()).decode()
 
