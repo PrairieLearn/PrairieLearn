@@ -1,6 +1,7 @@
 import prairielearn as pl
 import lxml.html
 import chevron
+import os
 
 allowed_languages = [
     'armasm',
@@ -41,7 +42,7 @@ allowed_languages = [
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
-    optional_attribs = ['language', 'no-highlight']
+    optional_attribs = ['language', 'no-highlight', 'input-file-name']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     language = pl.get_string_attrib(element, 'language', None)
@@ -55,6 +56,7 @@ def render(element_html, element_index, data):
     language = pl.get_string_attrib(element, 'language', None)
     no_highlight = pl.get_boolean_attrib(element, 'no-highlight', False)
     specify_language = (language is not None) and (not no_highlight)
+    input_file_name = pl.get_string_attrib(element, 'input-file-name', None)
 
     # Strip a single leading newline from the code, if present. This
     # avoids having spurious newlines because of HTML like:
@@ -70,6 +72,16 @@ def render(element_html, element_index, data):
         code = code[2:]
     elif len(code) > 0 and (code[0] == '\n' or code[0] == '\r'):
         code = code[1:]
+
+    if input_file_name is not None:
+        file_path = os.path.join(data['options']['question_path'], input_file_name)
+        if not os.path.exists(file_path):
+            raise Exception(f'Unknown file path: "{file_path}".')
+        f = open(file_path, 'r')
+        for line in f.readlines():
+            code += line
+        code = code[:-1]
+        f.close()
 
     html_params = {
         'specify_language': specify_language,
