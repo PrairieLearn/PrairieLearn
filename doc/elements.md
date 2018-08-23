@@ -481,6 +481,7 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `language` | string | — | The programming language syntax highlighting to use. See below for options.
 `no-highlight` | boolean | false | Disable highlighting.
+`input-file-name` | string | None | Name of the file with content to be displayed inside the code snippet (instead - or in addition to - writing the text between the open/closing tags).
 
 The `language` can be one of the following values.
 
