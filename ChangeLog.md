@@ -3,6 +3,8 @@
 
 * __next version__ - XXXX-XX-XX
 
+  * Fix bug in `pl-file-editor` and add option to upload text from file (Mariana Silva).
+
   * Add string input element (Mariana Silva).
 
   * Add element to display matrix in latex format (Mariana Silva).
