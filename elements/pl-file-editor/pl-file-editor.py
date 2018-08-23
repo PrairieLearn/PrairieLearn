@@ -3,6 +3,7 @@ import lxml.html
 import chevron
 import base64
 import hashlib
+import os
 
 
 def get_answer_name(file_name):
@@ -18,7 +19,7 @@ def add_format_error(data, error_string):
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['file-name']
-    optional_attribs = ['ace-mode', 'ace-theme', 'editor-config-function']
+    optional_attribs = ['ace-mode', 'ace-theme', 'editor-config-function', 'input-file-name']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     if '_required_file_names' not in data['params']:
@@ -37,6 +38,7 @@ def render(element_html, element_index, data):
     ace_mode = pl.get_string_attrib(element, 'ace-mode', None)
     ace_theme = pl.get_string_attrib(element, 'ace-theme', None)
     uuid = pl.get_uuid()
+    input_file_name = pl.get_string_attrib(element, 'input-file-name', None)
 
     html_params = {
         'name': answer_name,
@@ -47,7 +49,13 @@ def render(element_html, element_index, data):
         'uuid': uuid
     }
 
-    html_params['original_file_contents'] = base64.b64encode(str(element.text).encode('UTF-8').strip() or '').decode()
+    #html_params['original_file_contents'] = base64.b64encode(str(element.text).encode('UTF-8').strip() or '').decode()
+
+    if input_file_name is not None:
+        input_file_path = os.path.join(data['options']['question_path'], input_file_name)
+        html_params['original_file_contents'] = base64.b64encode(str(open(input_file_path).read()+str(element.text)).encode('UTF-8').strip()).decode()
+    else:
+        html_params['original_file_contents'] = base64.b64encode(str(element.text).encode('UTF-8').strip()).decode()
 
     submitted_file_contents = data['submitted_answers'].get(answer_name, None)
     if submitted_file_contents:
