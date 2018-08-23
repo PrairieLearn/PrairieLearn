@@ -358,6 +358,7 @@ Attribute | Type | Default | description
 `file-name` | string | - | The name of this file; will be used to store this file in the `_files` submitted answer
 `ace-mode` | string | None | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).
 `ace-theme` | string | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).
+`input-file-name` | string | None | Name of the file with content to be displayed inside the text editor (instead - or in addition to - writing the text between the open/closing tags).
 
 ## `pl-external-grader-results` element
 
