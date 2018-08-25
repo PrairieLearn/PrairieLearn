@@ -3,8 +3,6 @@
 
 * __next version__ - XXXX-XX-XX
 
-  * Modified `pl-code` to display code from a file (Mariana Silva).
-
   * Add string input element (Mariana Silva).
 
   * Add element to display matrix in latex format (Mariana Silva).
@@ -40,6 +38,8 @@
   * Fix copy button after `clipboard.js` package update (Tim Bretl).
 
   * Fix `pl-multiple-choice` so feedback is inside label and so inline option produces valid HTML (Tim Bretl).
+
+  * Change `pl-code` to display code from a source file (Mariana Silva).
 
   * Change element names to use dashes instead of underscores (Nathan Walters).
 

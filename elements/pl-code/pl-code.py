@@ -42,7 +42,7 @@ allowed_languages = [
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
-    optional_attribs = ['language', 'no-highlight', 'input-file-name']
+    optional_attribs = ['language', 'no-highlight', 'source-file-name', 'source-directory']
     pl.check_attribs(element, required_attribs, optional_attribs)
 
     language = pl.get_string_attrib(element, 'language', None)
@@ -50,13 +50,19 @@ def prepare(element_html, element_index, data):
         if language not in allowed_languages:
             raise Exception(f'Unknown language: "{language}". Must be one of {",".join(allowed_languages)}')
 
+    source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
+    if source_file_name is None:
+        if pl.get_string_attrib(element, 'source-directory', None) is not None:
+            raise Exception('A directory cannot be specified if "source-file-name" is not provided.')
+
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     language = pl.get_string_attrib(element, 'language', None)
     no_highlight = pl.get_boolean_attrib(element, 'no-highlight', False)
     specify_language = (language is not None) and (not no_highlight)
-    input_file_name = pl.get_string_attrib(element, 'input-file-name', None)
+    source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
+    source_directory = pl.get_string_attrib(element, 'source-directory', 'clientFilesQuestion')
 
     # Strip a single leading newline from the code, if present. This
     # avoids having spurious newlines because of HTML like:
@@ -73,8 +79,19 @@ def render(element_html, element_index, data):
     elif len(code) > 0 and (code[0] == '\n' or code[0] == '\r'):
         code = code[1:]
 
-    if input_file_name is not None:
-        file_path = os.path.join(data['options']['question_path'], input_file_name)
+    if source_file_name is not None:
+        '''
+        # Get base url, which depends on the type and directory
+        if source_directory == 'clientFilesQuestion':
+            base_path = data['options']['question_path']
+        elif source_directory == 'clientFilesCourse':
+            base_path = data['options']['question_path']
+        else:
+            raise ValueError('directory "{}" is not valid (must be "clientFilesQuestion" or "clientFilesCourse")'.format(source_directory))
+        '''
+        base_path = data['options']['question_path']
+        file_path = os.path.join(base_path, source_file_name)
+
         if not os.path.exists(file_path):
             raise Exception(f'Unknown file path: "{file_path}".')
         f = open(file_path, 'r')
