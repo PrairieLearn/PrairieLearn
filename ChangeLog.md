@@ -3,8 +3,6 @@
 
 * __next version__ - XXXX-XX-XX
 
-  * Fix bug in `pl-file-editor` and add option to upload text from file (Mariana Silva).
-
   * Add string input element (Mariana Silva).
 
   * Add element to display matrix in latex format (Mariana Silva).
@@ -20,6 +18,8 @@
   * Add new question renderer behind feature flag (Nathan Walters).
 
   * Add partial credit option to `pl-checkbox` element (Mariana Silva).
+
+  * Fix `pl-file-editor` to allow display empty text editor and add option to include text from source file (Mariana Silva).
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
 
