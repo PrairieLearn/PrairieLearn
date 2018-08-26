@@ -481,8 +481,7 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `language` | string | — | The programming language syntax highlighting to use. See below for options.
 `no-highlight` | boolean | false | Disable highlighting.
-`source-file-name` | text | - | Name of the source file with content to be displayed inside the code snippet (instead - or in addition to - writing the text between the open/closing tags).
-`source-directory` | text | 'clientFilesQuestion' | The directory that contains the file, either 'clientFilesQuestion' or 'clientFilesCourse' (see [client and server files](clientServerFiles.md)). A directory cannot be specified if `source-file-name` is not provided.
+`source-file-name` | text | - | Name of the source file with content to be displayed inside the code snippet (instead - or in addition to - writing the text between the open/closing tags). The file should be located in the question folder.
 
 The `language` can be one of the following values.
 
