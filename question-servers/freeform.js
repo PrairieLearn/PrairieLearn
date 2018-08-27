@@ -281,6 +281,21 @@ module.exports = {
                 err = e;
             }
             if (ERR(err, callback)) return;
+            callback(null, html);
+        });
+    },
+
+    legacyExecTemplate: function(htmlFilename, data, callback) {
+        fs.readFile(htmlFilename, { encoding: 'utf8' }, (err, rawFile) => {
+            if (ERR(err, callback)) return;
+            let html;
+            err = null;
+            try {
+                html = mustache.render(rawFile, data);
+            } catch (e) {
+                err = e;
+            }
+            if (ERR(err, callback)) return;
 
             let $;
             try {
@@ -551,8 +566,13 @@ module.exports = {
             return callback(null, courseIssues, data, '', Buffer.from(''));
         }
 
+        // Switch based on which renderer is enabled for this course
+        const useNewQuestionRenderer = _.get(context, 'course.options.useNewQuestionRenderer', false);
+        const templateExecFunction = useNewQuestionRenderer ? module.exports.execTemplate : module.exports.legacyExecTemplate;
+
         const htmlFilename = path.join(context.question_dir, 'question.html');
-        module.exports.execTemplate(htmlFilename, data, (err, html, $) => {
+        // $ in the callback will only be defined for the legacy renderer
+        templateExecFunction(htmlFilename, data, (err, html, $) => {
             if (err) {
                 const courseIssue = new Error(htmlFilename + ': ' + err.toString());
                 courseIssue.fatal = true;
@@ -560,8 +580,6 @@ module.exports = {
                 return callback(null, courseIssues, data, '', Buffer.from(''));
             }
 
-            // Switch based on which renderer is enabled for this course
-            const useNewQuestionRenderer = _.get(context, 'course.options.useNewQuestionRenderer', false);
             let processFunction;
             let args;
             if (useNewQuestionRenderer) {
