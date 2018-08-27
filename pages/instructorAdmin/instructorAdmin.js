@@ -11,11 +11,20 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
 
-    sqldb.query(sql.lti_data, {course_instance_id: res.locals.course_instance.id}, function(err, result) {
-        if (ERR(err, next)) return;
+    var params = {
+        course_instance_id: res.locals.course_instance.id,
+    };
 
+    sqldb.query(sql.lti_data, params, function(err, result) {
+        if (ERR(err, next)) return;
         _.assign(res.locals, result.rows[0]);
-        res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+
+        sqldb.query(sql.course_instance_access_rules, params, function(err, result) {
+            if (ERR(err, next)) return;
+
+            res.locals.access_rules = result.rows;
+            res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
+        });
     });
 });
 
