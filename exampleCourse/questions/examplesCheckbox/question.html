@@ -1,0 +1,179 @@
+<pl-question-panel>
+    <p>
+        Questions below were designed to showcase the different features of
+		<a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl_checkbox-element"><code>pl_checkbox</code></a>.
+		The goal of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl_checkbox-element"><code>pl_checkbox</code></a>
+		is to allow users to select <b>multiple options</b> from a list of choices. To restrict choice to only one option, e.g.
+		what comes from a standard multiple choice, please consider using  <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl_multiple_choice-element"><code>pl_multiple_choice</code></a>.
+    </p>
+</pl-question-panel>
+
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 1
+    </div>
+
+    <div class="card-body">
+
+        <pl-question-panel>
+            <p>Here, you can observe the default behavior of the <code>pl_checkbox</code> element.
+        	   In particular, all options are shown after being randomized with help text at the bottom to remind users to select <b> all possible </b> options. </p>
+            <p> Group work provides which of the following benefits: </p>
+        </pl-question-panel>
+
+        <pl-checkbox answers-name="group_ans_original">
+          <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
+          <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
+          <pl-answer>               The ability to work on a project by yourself.</pl-answer>
+          <pl-answer>               Having only one person make all of the decisions.</pl-answer>
+          <pl-answer correct="true">Constructive dialog and increased internal group motivation.</pl-answer>
+          <pl-answer correct="true">Personal accountability to the team to work on a project.</pl-answer>
+          <pl-answer correct="true">Friendship.</pl-answer>
+          <pl-answer>               The resources to work on a small project instead of a large project. </pl-answer>
+          <pl-answer correct="true">Prepares you for a team-environment in the workplace or a research group.</pl-answer>
+        </pl-checkbox>
+
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 2
+    </div>
+
+    <div class="card-body">
+
+        <pl-question-panel>
+            <p>Here, the <code>pl_checkbox</code> element is restricted to displaying no more than <b>5</b> choices with between <b>2</b> to <b>4</b> correct answers.
+        	   Information regarding the range of correct answers users should select can be displayed by setting <code>detailed_help_text="true"</code></p>
+            <p> Group work provides which of the following benefits: </p>
+        </pl-question-panel>
+
+        <pl-checkbox answers-name="group_ans_restricted" min-correct="2" max-correct="4" number-answers="5" detailed-help-text="true">
+          <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
+          <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
+          <pl-answer>               The ability to work on a project by yourself.</pl-answer>
+          <pl-answer>               Having only one person make all of the decisions.</pl-answer>
+          <pl-answer correct="true">Constructive dialog and increased internal group motivation.</pl-answer>
+          <pl-answer correct="true">Personal accountability to the team to work on a project.</pl-answer>
+          <pl-answer correct="true">Friendship.</pl-answer>
+          <pl-answer>               The resources to work on a small project instead of a large project. </pl-answer>
+          <pl-answer correct="true">Prepares you for a team-environment in the workplace or a research group.</pl-answer>
+        </pl-checkbox>
+
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 3
+    </div>
+
+    <div class="card-body">
+
+        <pl-question-panel>
+            <p>Here, the <code>pl_checkbox</code> element displays options as they were written, e.g. <code>fixed_order="true"</code>, and gives more point weight to this question vs. priors, e.g. <code>weight="3"</code>  </p>
+            <p> Group work provides which of the following benefits: </p>
+        </pl-question-panel>
+
+        <pl-checkbox answers-name="group_ans_fixed" fixed-order="true" weight="3">
+          <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
+          <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
+          <pl-answer>               The ability to work on a project by yourself.</pl-answer>
+          <pl-answer>               Having only one person make all of the decisions.</pl-answer>
+          <pl-answer correct="true">Constructive dialog and increased internal group motivation.</pl-answer>
+          <pl-answer correct="true">Personal accountability to the team to work on a project.</pl-answer>
+          <pl-answer correct="true">Friendship.</pl-answer>
+          <pl-answer>               The resources to work on a small project instead of a large project. </pl-answer>
+          <pl-answer correct="true">Prepares you for a team-environment in the workplace or a research group.</pl-answer>
+        </pl-checkbox>
+
+    </div>
+</div>
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 4
+    </div>
+
+    <div class="card-body">
+
+        <pl-question-panel>
+            <p>Here, options are displayed on the same line with <code>inline="true"</code> and the help text is suppressed with <code>hide_help_text = "true"</code>.
+        		Displaying options inline is only ideal if the choice options are not verbose and the number of choices is low. </p>
+            <p> Group work provides which of the following benefits: </p>
+        </pl-question-panel>
+
+        <pl-checkbox answers-name="group_ans_v3" inline="true" number-answers="3" hide-help-text="true">
+          <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
+          <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
+          <pl-answer>               The ability to work on a project by yourself.</pl-answer>
+          <pl-answer>               Having only one person make all of the decisions.</pl-answer>
+          <pl-answer correct="true">Constructive dialog and increased internal group motivation.</pl-answer>
+          <pl-answer correct="true">Personal accountability to the team to work on a project.</pl-answer>
+          <pl-answer correct="true">Friendship.</pl-answer>
+          <pl-answer>               The resources to work on a small project instead of a large project. </pl-answer>
+          <pl-answer correct="true">Prepares you for a team-environment in the workplace or a research group.</pl-answer>
+        </pl-checkbox>
+
+    </div>
+</div>
+
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 5
+    </div>
+
+    <div class="card-body">
+
+        <pl-question-panel>
+            <p>Here, partial credit is given with <code>partial-credit="true"</code>, using the default grading algorithm (click the question mark to see help text that explains this algorithm). Since partial credit is given, no feedback is provided on the correctness of individual selections until this question variant can no longer be answered (view in student mode to see the result).</p>
+
+            <p> Group work provides which of the following benefits: </p>
+        </pl-question-panel>
+
+        <pl-checkbox answers-name="group_ans_v4" partial-credit="true">
+          <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
+          <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
+          <pl-answer>               The ability to work on a project by yourself.</pl-answer>
+          <pl-answer>               Having only one person make all of the decisions.</pl-answer>
+          <pl-answer correct="true">Constructive dialog and increased internal group motivation.</pl-answer>
+          <pl-answer correct="true">Personal accountability to the team to work on a project.</pl-answer>
+          <pl-answer correct="true">Friendship.</pl-answer>
+          <pl-answer>               The resources to work on a small project instead of a large project. </pl-answer>
+          <pl-answer correct="true">Prepares you for a team-environment in the workplace or a research group.</pl-answer>
+        </pl-checkbox>
+
+    </div>
+</div>
+
+
+<div class="card my-2">
+    <div class="card-header">
+        Part 6
+    </div>
+
+    <div class="card-body">
+
+        <pl-question-panel>
+            <p>Here, partial credit is given with <code>partial-credit="true"</code>, using the "every decision counts (EDC)" grading algorithm with <code>partial-credit-method="EDC"</code> (click the question mark to see help text that explains this algorithm). Since partial credit is given, no feedback is provided on the correctness of individual selections until this question variant can no longer be answered (view in student mode to see the result).</p>
+
+            <p> Group work provides which of the following benefits: </p>
+        </pl-question-panel>
+
+        <pl-checkbox answers-name="group_ans_v5" partial-credit="true" partial-credit-method="EDC">
+          <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
+          <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
+          <pl-answer>               The ability to work on a project by yourself.</pl-answer>
+          <pl-answer>               Having only one person make all of the decisions.</pl-answer>
+          <pl-answer correct="true">Constructive dialog and increased internal group motivation.</pl-answer>
+          <pl-answer correct="true">Personal accountability to the team to work on a project.</pl-answer>
+          <pl-answer correct="true">Friendship.</pl-answer>
+          <pl-answer>               The resources to work on a small project instead of a large project. </pl-answer>
+          <pl-answer correct="true">Prepares you for a team-environment in the workplace or a research group.</pl-answer>
+        </pl-checkbox>
+
+    </div>
+</div>

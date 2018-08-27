@@ -17,7 +17,7 @@
 
         var successMessage = options.success || 'copied to clipboard!';
 
-        var clipboard = new Clipboard(selector);
+        var clipboard = new ClipboardJS(selector);
         var clicked = false;
         clipboard.on('success', function(e) {
             var contents = options.contents || $(e.trigger).text();

@@ -73,7 +73,7 @@ async.series([
             if (ERR(err, callback)) return;
             submission.submitted_answer._files.push({
                 name: 'fib.py',
-                contents: new Buffer(contents).toString('base64'),
+                contents: Buffer.from(contents).toString('base64'),
             });
             callback(null);
         });

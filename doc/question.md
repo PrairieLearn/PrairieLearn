@@ -84,31 +84,124 @@ def generate(data):
 
 ```
 
-
 ## Question `question.html`
 
 The `question.html` is a template used to render the question to the student. A complete `question.html` example looks like:
 
 ```html
-<pl_question_panel>
+<pl-question-panel>
   <p> A particle of mass $m = {{params.m}}\rm\ kg$ is observed to have acceleration $a = {{params.a}}\rm\ m/s^2$.
   <p> What is the total force $F$ currently acting on the particle?
-</pl_question_panel>
+</pl-question-panel>
 
-<p>$F = $ <pl_number_input answers_name="F" comparison="sigfig" digits="2" /> $\rm m/s^2$
+<p>$F = $ <pl-number-input answers_name="F" comparison="sigfig" digits="2" /> $\rm m/s^2$
 ```
 
 The `question.html` is regular HTML, with two special features:
 
 1. Any text in double-curly-braces (like `{{params.m}}`) is substituted with variable values. This is using [Mustache](https://mustache.github.io/mustache.5.html) templating.
 
-2. Special HTML elements (like `<pl_number_input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md).
+2. Special HTML elements (like `<pl-number-input>`) enable input and formatted output. See the [list of PrairieLearn elements](elements.md).
 
 
 ## Rendering panels from `question.html`
 
 When a question is displayed to a student, there are three "panels" that will be shown at different stages: the "question" panel, the "submission" panel, and the "answer" panel. These display the question prompt, the solution provided by the student, and the correct answer.
 
-All three panels display the same `question.html` template, but elements will render differently in each panel. For example, the `<pl_number_input>` element displays an input box in the "question" panel, the submitted answer in the "submissions" panel, and the corretc answer in the "answer" panel.
+All three panels display the same `question.html` template, but elements will render differently in each panel. For example, the `<pl-number-input>` element displays an input box in the "question" panel, the submitted answer in the "submissions" panel, and the correct answer in the "answer" panel.
 
-Text in `question.html` can be set to only display in the "question" panel by wrapping it in the `<pl_question_panel>` element. This is useful for the question prompt, which doesn't need to be repeated in the "submission" and "answer" panels. There are also elements that only render in the other two panels.
+Text in `question.html` can be set to only display in the "question" panel by wrapping it in the `<pl-question-panel>` element. This is useful for the question prompt, which doesn't need to be repeated in the "submission" and "answer" panels. There are also elements that only render in the other two panels.
+
+## How questions are rendered
+
+Questions are rendered in two possible ways: with the "legacy renderer" and the "new renderer". Currently, the legacy renderer is the default, but the new renderer will eventually replace the legacy renderer entirely. The new renderer uses a different HTML parser, which behaves differently than the old one for malformed HTML and could result in breaking changes.
+
+**TL;DR** If you're starting a new course, you should write questions with the new renderer in mind, as it will soon become the default.
+
+> Aside: when we say "renderer", we're really talking about how we traverse the tree of elements in a question to process them. However, the way in which this occurs typically only matters during the "render" phase, so we talk about it as a "renderer".
+
+### The legacy renderer
+
+The legacy renderer uses a naive approach to rendering: it renders elements in order of name. This poses some performance problems: if an element will never actually have its output rendered on screen (for instance, it's inside a `<pl-question-panel>` and the current panel being rendered is the "answer" panel), it's possible that we'll still perform some expensive IPC to try to render a panel that will never be shown! Internally, the architecture provides inconsistent support for nested elements. For instance, if you wanted to use figures in multiple choice answers, they may not be rendered correctly:
+
+```html
+<pl-multiple-choice>
+  <pl-answer correct="true">
+    <pl-figure file-name="fig1.png">
+  </pl-answer>
+  <pl-answer correct="false">
+    <pl-figure file-name="fig2.png">
+  </pl-answer>
+</pl-multiple-choice>
+```
+
+Based on the order that the elements get rendered, the inner `<pl-figure>` elements might not get processed correctly. This is due to behavior in a dependency called [cheerio](https://github.com/cheeriojs/cheerio) that we use to build up the rendered HTML for a question. One benefit of this dependency is that its parser is more forgiving when encountering invalid HTML. However, this also made it more difficult to process the question properly as a tree. Which brings us to...
+
+### The new renderer
+
+The new renderer is rewritten from the ground up to solve the problems inherent in the old renderer. Questions are now properly processed like a tree in a deterministic order. Let's reconsider the example above:
+
+```html
+<pl-multiple-choice answers-name="student">
+  <pl-answer correct="true">
+    <pl-figure file-name="fig1.png"></pl-figure>
+  </pl-answer>
+  <pl-answer correct="false">
+    <pl-figure file-name="fig2.png"></pl-figure>
+  </pl-answer>
+</pl-multiple-choice>
+```
+
+If you imagine this being parsed into an abstract syntax tree, we have a `<pl-multiple-choice>` element with two `<pl-answer>` children elements, each of which has a `<pl-figure>` child element. When rendering this question, we first render the `<pl-multiple-choice>` element, which will produce some hypothetical markup that wraps each answer:
+
+```html
+<div class="foo">
+  <input type="radio" name="student">
+  <pl-figure file-name="fig1.png"></pl-figure>
+</div>
+<div class="foo">
+  <input type="radio" name="student">
+  <pl-figure file-name="fig2.png"></pl-figure>
+</div>
+```
+
+We then re-parse this tree and again begin looking for more elements to render. We'll then come across each `<pl-figure>` in turn and they will be rendered, with their markup re-inserted into the tree:
+
+```html
+<div class="foo">
+  <input type="radio" name="student">
+  <img src="fig1.png">
+</div>
+<div class="foo">
+  <input type="radio" name="student">
+  <img src="fig2.png">
+</div>
+```
+
+And then we're done! This is an obviously more correct way to process questions, and it will soon become the default. However, this change required introducing a new HTML parser that behaves differently in the precense of malformed HTML, such as missing closing tags or self-closing PrairieLearn elements. So, we are making this new renderer opt-in for the time being until we can ensure that everyone's questions have been properly updated.
+
+To opt in to the new renderer, add the following to your `infoCourse.json` file:
+
+```json
+{
+    "options": {
+        "useNewQuestionRenderer": true
+    },
+}
+```
+
+Note that this will apply to all questions, so make sure to check that you've been writing valid HTML.
+
+Example of invalid HTML:
+
+```html
+<p>This is a picture of a bird
+<pl-figure file-name="bird.html"/>
+```
+
+Example of valid HTML:
+
+```html
+<p>This is a picture of a bird</p>
+<pl-figure file-name="bird.html"></pl-figure>
+```

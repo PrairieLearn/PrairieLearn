@@ -3,11 +3,60 @@
 
 * __next version__ - XXXX-XX-XX
 
-  * Upgrade to Node.js 10 and PostgreSQL 10 (Matt West).
+  * Add string input element (Mariana Silva).
+
+  * Add element to display matrix in latex format (Mariana Silva).
+
+  * Add student name and clickable e-mail address information to issue reports (James Balamuta).
+
+  * Add `tools/dump_*` scripts to filter and anonymize per-course dumps (Matt West).
+
+  * Add `pl-prairiedraw-figure` element and update PrairieDraw graphics documentation. (Ray Essick).
+  
+  * Add improved login screen (Nathan Walters).
+
+  * Add `pl-matrix-component-input` element (Mariana Silva).
+
+  * Add new question renderer behind feature flag (Nathan Walters).
+
+  * Add partial credit option to `pl-checkbox` element (Mariana Silva).
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
 
   * Add simple HTML validation for invalid self-closing tags (Nathan Walters).
+  * Fix Google auth using new API (Matt West).
+
+  * Fix several issues with various elements (Nathan Walters).
+
+  * Fix error when rendering ungraded external grading submissions (Matt West).
+
+  * Fix sync failure if a course instance has no `assessments` directory and add warning in sync log (Ray Essick).
+
+  * Fix Slack posting for student cheating reports (Matt West).
+
+  * Fix assessment instance page to only show 'Finish assessment' button for password and SEB exams (Dave Mussulman).
+
+  * Fix assessment time limits (Matt West).
+
+  * Fix copy button after `clipboard.js` package update (Tim Bretl).
+
+  * Fix `pl-multiple-choice` so feedback is inside label and so inline option produces valid HTML (Tim Bretl).
+
+  * Change `pl-code` to display code from a source file (Mariana Silva).
+
+  * Change element names to use dashes instead of underscores (Nathan Walters).
+
+  * Change deprecated `new Buffer()` calls to `Buffer.from()` (Ray Essick).
+
+  * Change to Node.js 10 and PostgreSQL 10 (Matt West).
+
+  * Change `centos7-ocaml` grader image to `ocaml-4.05` (Matt West).
+
+  * Change TravisCI tasks to run linters first (Matt West, h/t James Balamuta).
+
+  * Change element attributes to use hyphens instead of underscores (Nathan Walters).
+
+  * Change assessment password protection method (Dave Mussulman).
 
 * __3.0.0__ - 2018-05-23
 
@@ -123,9 +172,9 @@
 
   * Add developer docs about question rendering (Matt West).
 
-  * Add `load-test` support for v2 questions (Matt West).
-
   * Add submission info modal with external grading stats (Nathan Walters).
+
+  * Add `load-test` support for v2 questions (Matt West).
 
   * Fix broken file upload element (Nathan Walters).
 

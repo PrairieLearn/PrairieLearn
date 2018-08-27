@@ -280,9 +280,11 @@ describe('Access control', function() {
         it('as student in Exam mode after time period should return 500', function(callback) {
             postAssessment(cookiesStudentExamAfterAssessment(), true, 500, callback);
         });
+/*
         it('as student in Exam mode without password should return 500', function(callback) {
             postAssessment(cookiesStudentExam(), false, 500, callback);
         });
+*/
         it('as student in Exam mode should load successfully', function(callback) {
             postAssessment(cookiesStudentExam(), true, 200, callback);
         });
@@ -380,7 +382,7 @@ describe('Access control', function() {
             assert.property(elemList[0].children[0], 'data');
         });
         it('base64 data should parse to JSON', function() {
-            questionData = JSON.parse(decodeURIComponent(new Buffer(elemList[0].children[0].data, 'base64').toString()));
+            questionData = JSON.parse(decodeURIComponent(Buffer.from(elemList[0].children[0].data, 'base64').toString()));
         });
         it('should have a variant_id in the questionData', function() {
             assert.nestedProperty(questionData, 'variant.id');

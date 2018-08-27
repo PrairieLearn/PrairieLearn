@@ -1,0 +1,79 @@
+{{#question}}
+<script>
+    $(function(){
+        $('#pl-integer-input-{{uuid}} [data-toggle="popover"]').popover({
+            container: 'body',
+            template: '<div class="popover pl-integer-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+        });
+    });
+</script>
+
+{{#inline}}<span class="form-inline d-inline-block ml-2">{{/inline}}
+    <span id="pl-integer-input-{{uuid}}" class="input-group pl-integer-input">
+        {{#label}}
+        <span class="input-group-prepend">
+            <span class="input-group-text" id="pl-integer-input-{{uuid}}-label">{{label}}</span>
+        </span>
+        {{/label}}
+        <input name="{{name}}" type="text" class="form-control" size="35" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="pl-integer-input-{{uuid}}-label pl-integer-input-{{uuid}}-suffix" placeholder="{{shortinfo}}" />
+        <span class="input-group-append">
+            {{#suffix}}
+            <span class="input-group-text" id="pl-integer-input-{{uuid}}-suffix">{{suffix}}</span>
+            {{/suffix}}
+            <a class="btn btn-light border" role="button" data-toggle="popover" data-html="true" title="Number" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
+                <i class="fa fa-question-circle" aria-hidden="true"></i>
+                {{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+                {{#partial}}&nbsp;<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+                {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+            </a>
+        </span>
+    </span>
+{{#inline}}</span>{{/inline}}
+{{/question}}
+
+
+{{#submission}}
+{{#inline}}<span class="d-inline-block">{{/inline}}
+{{#parse_error}}
+<script>
+    $(function(){
+        $('#pl-integer-input-submission-{{uuid}} [data-toggle="popover"]').popover({
+            container: 'body',
+            template: '<div class="popover pl-integer-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+        });
+    });
+</script>
+<span id="pl-integer-input-submission-{{uuid}}">
+    {{#label}}<span>{{label}}</span>{{/label}}
+    <a class="btn btn-secondary btn-sm" role="button" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Error" tabindex="0" data-content="{{parse_error}}{{#raw_submitted_answer}}<hr><h5><small class='text-uppercase'>What you submitted</small></h5><pre>{{raw_submitted_answer}}</pre>{{/raw_submitted_answer}}">INVALID <span><i class="fa fa-question-circle" aria-hidden="true"></i></span></a>
+</span>
+{{/parse_error}}
+{{^parse_error}}
+{{#label}}<span>{{label}}</span>{{/label}}
+<samp>{{a_sub}}</samp>
+{{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{#correct}}<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+{{#partial}}<span class="badge badge-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+{{#incorrect}}<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+{{/parse_error}}
+{{#inline}}</span>{{/inline}}
+{{/submission}}
+
+{{#answer}}
+{{#label}}<span>{{label}}</span>{{/label}}
+<samp>{{a_tru}}</samp>
+{{#suffix}}<span>{{suffix}}</span>{{/suffix}}
+{{/answer}}
+
+{{#format}}
+<p>
+Your answer must be an integer.
+It must not contain a decimal.
+No symbolic expressions (those that involve fractions, square roots, variables, etc.) will be accepted.
+Scientific notation is not accepted.
+</p>
+{{/format}}
+
+{{#shortformat}}
+integer
+{{/shortformat}}

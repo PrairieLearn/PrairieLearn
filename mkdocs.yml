@@ -29,6 +29,5 @@ pages:
   - 'Installing natively': 'installingNative.md'
   - 'Question element writing': 'devElements.md'
   - 'Docker packaging': 'docker.md'
-  - 'Setting up AWS for external grading': 'externalGradingAws.md'
   - 'Contributing to PL development': 'contributing.md'
   - 'Old v1/v2 question format': 'oldQuestion.md'

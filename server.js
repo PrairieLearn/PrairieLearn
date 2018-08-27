@@ -177,6 +177,7 @@ app.use('/', require('./pages/home/home'));
 app.use('/pl', require('./pages/home/home'));
 app.use('/pl/enroll', require('./pages/enroll/enroll'));
 app.use('/pl/logout', require('./pages/authLogout/authLogout'));
+app.use('/pl/password', require('./pages/authPassword/authPassword'));
 
 // dev-mode pages are mounted for both out-of-course access (here) and within-course access (see below)
 if (config.devMode) {

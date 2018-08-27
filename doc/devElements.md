@@ -1,7 +1,7 @@
 
 # Element developer guide
 
-See [`elements/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/question-servers/elements) for example elements.
+See [`elements/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/elements) for example elements.
 
 Element code uses the libraries in [`freeformPythonLib/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/question-servers/freeformPythonLib).
 

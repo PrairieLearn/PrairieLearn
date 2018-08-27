@@ -1,9 +1,0 @@
-{
-    "controller": "pl_number_input.py",
-    "dependencies": {
-        "elementStyles": [
-            "pl_number_input.css"
-        ]
-    }
-
-}

@@ -28,6 +28,7 @@ SELECT
     i.question_id,
     q.directory AS question_qid,
     u.uid AS user_uid,
+    u.name AS user_name,
     i.student_message,
     i.variant_id,
     i.open,

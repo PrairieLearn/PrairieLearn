@@ -64,7 +64,7 @@ for (const entry of file.entries) {
     if (entry.response.content.mimeType === targetMimeType) {
         // Get UIN with RegEx search and "capture groups" (https://stackoverflow.com/questions/432493/how-do-you-access-the-matched-groups-in-a-javascript-regular-expression)
         let uin = entry.request.url.match(/uin=(.*)/)[1];
-        fs.writeFileSync(`students/${uin}.png`, new Buffer(entry.response.content.text, 'base64'), 'binary');
+        fs.writeFileSync(`students/${uin}.png`, Buffer.from(entry.response.content.text, 'base64'), 'binary');
         count++;
     }
 }
