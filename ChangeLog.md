@@ -12,6 +12,8 @@
   * Add `tools/dump_*` scripts to filter and anonymize per-course dumps (Matt West).
 
   * Add `pl-prairiedraw-figure` element and update PrairieDraw graphics documentation. (Ray Essick).
+  
+  * Add improved login screen (Nathan Walters).
 
   * Add `pl-matrix-component-input` element (Mariana Silva).
 
