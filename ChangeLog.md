@@ -12,7 +12,7 @@
   * Add `tools/dump_*` scripts to filter and anonymize per-course dumps (Matt West).
 
   * Add `pl-prairiedraw-figure` element and update PrairieDraw graphics documentation. (Ray Essick).
-  
+
   * Add improved login screen (Nathan Walters).
 
   * Add `pl-matrix-component-input` element (Mariana Silva).
@@ -40,6 +40,8 @@
   * Fix copy button after `clipboard.js` package update (Tim Bretl).
 
   * Fix `pl-multiple-choice` so feedback is inside label and so inline option produces valid HTML (Tim Bretl).
+
+  * Fix "Logout" button with Google authentication (Matt West).
 
   * Change `pl-code` to display code from a source file (Mariana Silva).
 
