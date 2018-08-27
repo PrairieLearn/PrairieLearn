@@ -9,6 +9,9 @@ var sqlLoader = require('@prairielearn/prairielib/sql-loader');
 var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
+    if (res.locals.authn_user.provider == 'lti') {
+        return next(error.make(400, 'Enroll not available for LTI users'));
+    }
     var params = {
         user_id: res.locals.authn_user.user_id,
         req_date: res.locals.req_date,
@@ -16,12 +19,14 @@ router.get('/', function(req, res, next) {
     sqldb.query(sql.select_course_instances, params, function(err, result) {
         if (ERR(err, next)) return;
         res.locals.course_instances = result.rows;
-
         res.render(__filename.replace(/\.js$/, '.ejs'), res.locals);
     });
 });
 
 router.post('/', function(req, res, next) {
+    if (res.locals.authn_user.provider == 'lti') {
+        return next(error.make(400, 'Enroll not available for LTI users'));
+    }
     if (req.body.__action == 'enroll') {
         var params = {
             course_instance_id: req.body.course_instance_id,
