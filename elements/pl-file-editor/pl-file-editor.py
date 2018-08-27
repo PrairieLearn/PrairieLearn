@@ -56,9 +56,8 @@ def render(element_html, element_index, data):
 
     if source_file_name is not None:
         file_path = os.path.join(data['options']['question_path'], source_file_name)
-        html_params['original_file_contents'] = base64.b64encode(str(text_display + open(file_path).read()).encode('UTF-8').strip()).decode()
-    else:
-        html_params['original_file_contents'] = base64.b64encode(text_display.encode('UTF-8').strip()).decode()
+        text_display += open(file_path).read()
+    html_params['original_file_contents'] = base64.b64encode(text_display.encode('UTF-8').strip()).decode()
 
     submitted_file_contents = data['submitted_answers'].get(answer_name, None)
     if submitted_file_contents:
