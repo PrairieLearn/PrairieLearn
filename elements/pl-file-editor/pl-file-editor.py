@@ -49,14 +49,15 @@ def render(element_html, element_index, data):
         'uuid': uuid
     }
 
-    if element.text is not None:
-        text_display = str(element.text)
-    else:
-        text_display = ''
-
     if source_file_name is not None:
         file_path = os.path.join(data['options']['question_path'], source_file_name)
-        text_display += open(file_path).read()
+        text_display = open(file_path).read()
+    else:
+        if element.text is not None:
+            text_display = str(element.text)
+        else:
+            text_display = ''
+
     html_params['original_file_contents'] = base64.b64encode(text_display.encode('UTF-8').strip()).decode()
 
     submitted_file_contents = data['submitted_answers'].get(answer_name, None)
