@@ -87,6 +87,7 @@ router.post('/', function(req, res, next) {
             if (ERR(err, next)) return;
             var tokenData = {
                 user_id: result.rows[0].user_id,
+                provider: 'lti',
                 /*
                 lti_launch_presentation_return_url: parameters.launch_presentation_return_url,
                 resource_link_id: parameters.resource_link_id,
