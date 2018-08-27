@@ -39,6 +39,8 @@
 
   * Fix `pl-multiple-choice` so feedback is inside label and so inline option produces valid HTML (Tim Bretl).
 
+  * Change `pl-code` to display code from a source file (Mariana Silva).
+
   * Change element names to use dashes instead of underscores (Nathan Walters).
 
   * Change deprecated `new Buffer()` calls to `Buffer.from()` (Ray Essick).
