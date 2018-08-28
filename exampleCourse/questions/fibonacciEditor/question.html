@@ -11,24 +11,16 @@
     and returns the n<sup>th</sup> Fibonacci number.
   </p>
 
-  <p> <strong> 1. Adding initial code from a source file </strong> </p>
-  <p> Here we use the attribute <code>source-file-name='initial_code.py'</code> to add initial code
-    from a source file inside the
-    text editor. The file <code>initial_code.py</code> is saved in the question folder.</p>
-
   <p>
   <pl-file-editor file-name="fib.py" ace-mode="ace/mode/python" source-file-name="initial_code.py">
   </pl-file-editor>
   </p>
 
-  <p> <strong> 2. Adding initial code inside the element </strong> </p>
-  <p> Here the editor box text is defined inside the html element, between the
+  <p> <strong>Note:</strong> In the above example, the attribute
+    <code>source-file-name='initial_code.py'</code> was used to add existing code
+    to the in-browser file editor from a source file. Another option is omit the <code>source-file-name</code>
+    attribute and instead write the existing code directly inside the html element, between the
   <code>pl-file-editor</code> tags.
-
-  <pl-file-editor file-name="fib_temp.py" ace-mode="ace/mode/python">
-# This text editor is placed here for demonstration purposes only.
-# The code inserted here will not be executed by the python autograder.
-  </pl-file-editor>
 
 </pl-question-panel>
 

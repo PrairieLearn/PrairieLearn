@@ -21,10 +21,15 @@ def prepare(element_html, element_index, data):
     required_attribs = ['file-name']
     optional_attribs = ['ace-mode', 'ace-theme', 'editor-config-function', 'source-file-name']
     pl.check_attribs(element, required_attribs, optional_attribs)
+    source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
 
     if '_required_file_names' not in data['params']:
         data['params']['_required_file_names'] = []
     data['params']['_required_file_names'].append(pl.get_string_attrib(element, 'file-name'))
+
+    if source_file_name is not None:
+        if element.text is not None and not str(element.text).isspace():
+            raise Exception('Existing code cannot be added inside html element when "source-file-name" attribute is used.')
 
 
 def render(element_html, element_index, data):
