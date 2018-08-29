@@ -21,6 +21,8 @@
 
   * Add partial credit option to `pl-checkbox` element (Mariana Silva).
 
+  * Fix `pl-file-editor` to allow display empty text editor and add option to include text from source file (Mariana Silva).
+
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
 
   * Fix Google auth using new API (Matt West).
