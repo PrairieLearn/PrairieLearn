@@ -10,7 +10,7 @@ def prepare(element_html, element_index, data):
         return
 
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, required_attribs=['answers_name'], optional_attribs=[])
+    pl.check_attribs(element, required_attribs=['answers-name'], optional_attribs=[])
 
 
 def render(element_html, element_index, data):
@@ -18,7 +18,7 @@ def render(element_html, element_index, data):
         return ''
 
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answers_name')
+    name = pl.get_string_attrib(element, 'answers-name')
 
     if data['panel'] == 'answer':
         return ''

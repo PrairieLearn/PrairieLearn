@@ -15,20 +15,20 @@ def prepare(element_html, element_index, data):
         'answer_name',          # key for 'submitted_answers' and 'true_answers'
     ]
     optional_attribs = [
-        'body_position',        # [x, y, z]
-        'body_orientation',     # [x, y, z, w] or [roll, pitch, yaw] or rotation matrix (3x3 ndarray) or exponential coordinates [wx, wy, wz]
-        'camera_position',      # [x, y, z] - camera is z up and points at origin of space frame
-        'body_cantranslate',         # true (default) or false
-        'body_canrotate',         # true (default) or false
-        'camera_canmove',       # true (default) or false
-        'body_pose_format',       # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
-        'answer_pose_format',     # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
-        'text_pose_format',    # 'matrix' (default), 'quaternion', 'homogeneous'
-        'show_pose_in_question',            # true (default) or false
-        'show_pose_in_correct_answer',      # true (default) or false
-        'show_pose_in_submitted_answer',    # true (default) or false
-        'tol_translation',      # 0.5 (default : float > 0)
-        'tol_rotation',          # 5 (default : float > 0)
+        'body-position',        # [x, y, z]
+        'body-orientation',     # [x, y, z, w] or [roll, pitch, yaw] or rotation matrix (3x3 ndarray) or exponential coordinates [wx, wy, wz]
+        'camera-position',      # [x, y, z] - camera is z up and points at origin of space frame
+        'body-cantranslate',         # true (default) or false
+        'body-canrotate',         # true (default) or false
+        'camera-canmove',       # true (default) or false
+        'body-pose-format',       # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
+        'answer-pose-format',     # 'rpy' (default), 'quaternion', 'matrix', 'axisangle'
+        'text-pose-format',    # 'matrix' (default), 'quaternion', 'homogeneous'
+        'show-pose-in-question',            # true (default) or false
+        'show-pose-in-correct-answer',      # true (default) or false
+        'show-pose-in-submitted-answer',    # true (default) or false
+        'tol-translation',      # 0.5 (default : float > 0)
+        'tol-rotation',          # 5 (default : float > 0)
         'grade'                 # true (default) or false
     ]
     pl.check_attribs(element, required_attribs=required_attribs, optional_attribs=optional_attribs)
@@ -46,8 +46,8 @@ def get_objects(element, data):
         # Type-specific check and get (stl)
         if is_stl:
             # Attributes
-            pl.check_attribs(child, required_attribs=['file_name'], optional_attribs=['file_directory', 'frame', 'color', 'position', 'orientation', 'format', 'scale', 'opacity'])
-            # - file_name (and file_directory)
+            pl.check_attribs(child, required_attribs=['file-name'], optional_attribs=['file-directory', 'frame', 'color', 'position', 'orientation', 'format', 'scale', 'opacity'])
+            # - file-name (and file-directory)
             file_url = get_file_url(child, data)
             # - type
             object_type = 'stl'
@@ -118,24 +118,24 @@ def get_objects(element, data):
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    answer_name = pl.get_string_attrib(element, 'answer_name')
+    answer_name = pl.get_string_attrib(element, 'answer-name')
 
     uuid = pl.get_uuid()
 
-    body_position = get_position(element, 'body_position', default=[0, 0, 0])
-    body_orientation = get_orientation(element, 'body_orientation', 'body_pose_format')
-    camera_position = get_position(element, 'camera_position', default=[5, 2, 2], must_be_nonzero=True)
-    body_cantranslate = pl.get_boolean_attrib(element, 'body_cantranslate', True)
-    body_canrotate = pl.get_boolean_attrib(element, 'body_canrotate', True)
-    camera_canmove = pl.get_boolean_attrib(element, 'camera_canmove', True)
-    text_pose_format = pl.get_string_attrib(element, 'text_pose_format', 'matrix')
+    body_position = get_position(element, 'body-position', default=[0, 0, 0])
+    body_orientation = get_orientation(element, 'body-orientation', 'body-pose-format')
+    camera_position = get_position(element, 'camera-position', default=[5, 2, 2], must_be_nonzero=True)
+    body_cantranslate = pl.get_boolean_attrib(element, 'body-cantranslate', True)
+    body_canrotate = pl.get_boolean_attrib(element, 'body-canrotate', True)
+    camera_canmove = pl.get_boolean_attrib(element, 'camera-canmove', True)
+    text_pose_format = pl.get_string_attrib(element, 'text-pose-format', 'matrix')
     if text_pose_format not in ['matrix', 'quaternion', 'homogeneous']:
-        raise Exception('attribute "text_pose_format" must be either "matrix", "quaternion", or homogeneous')
+        raise Exception('attribute "text-pose-format" must be either "matrix", "quaternion", or homogeneous')
     objects = get_objects(element, data)
 
     if data['panel'] == 'question':
         will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
-        show_pose = pl.get_boolean_attrib(element, 'show_pose_in_question', True)
+        show_pose = pl.get_boolean_attrib(element, 'show-pose-in-question', True)
 
         # Restore pose of body and camera, if available - otherwise use values
         # from attributes (note that restored pose will also have camera_orientation,
@@ -177,8 +177,8 @@ def render(element_html, element_index, data):
             'show_reset': body_cantranslate or body_canrotate or camera_canmove,
             'show_pose': show_pose,
             'show_instructions': will_be_graded,
-            'tol_translation': '{:.2f}'.format(pl.get_float_attrib(element, 'tol_translation', 0.5)),
-            'tol_rotation': '{:.1f}'.format(pl.get_float_attrib(element, 'tol_rotation', 5)),
+            'tol_translation': '{:.2f}'.format(pl.get_float_attrib(element, 'tol-translation', 0.5)),
+            'tol_rotation': '{:.1f}'.format(pl.get_float_attrib(element, 'tol-rotation', 5)),
             'default_is_python': True,
             'options': json.dumps(options, allow_nan=False)
         }
@@ -190,7 +190,7 @@ def render(element_html, element_index, data):
         if not will_be_graded:
             return ''
 
-        show_pose = pl.get_boolean_attrib(element, 'show_pose_in_submitted_answer', True)
+        show_pose = pl.get_boolean_attrib(element, 'show-pose-in-submitted-answer', True)
 
         # Get submitted answer
         pose = data['submitted_answers'].get(answer_name)
@@ -243,7 +243,7 @@ def render(element_html, element_index, data):
         if not will_be_graded:
             return ''
 
-        show_pose = pl.get_boolean_attrib(element, 'show_pose_in_correct_answer', True)
+        show_pose = pl.get_boolean_attrib(element, 'show-pose-in-correct-answer', True)
 
         # Get submitted answer
         pose = data['submitted_answers'].get(answer_name, None)
@@ -262,7 +262,7 @@ def render(element_html, element_index, data):
             return ''
 
         # Convert correct answer to Quaternion, then to [x, y, z, w]
-        f = pl.get_string_attrib(element, 'answer_pose_format', 'rpy')
+        f = pl.get_string_attrib(element, 'answer-pose-format', 'rpy')
         p, q = parse_correct_answer(f, a)
         p = p.tolist()
         q = np.roll(q.elements, -1).tolist()
@@ -304,7 +304,7 @@ def render(element_html, element_index, data):
 
 def parse(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    name = pl.get_string_attrib(element, 'answer_name')
+    name = pl.get_string_attrib(element, 'answer-name')
 
     # Get submitted answer or return parse_error if it does not exist
     a_sub = data['submitted_answers'].get(name, None)
@@ -328,7 +328,7 @@ def parse(element_html, element_index, data):
 
 def grade(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    answer_name = pl.get_string_attrib(element, 'answer_name')
+    answer_name = pl.get_string_attrib(element, 'answer-name')
 
     # Check if this element is intended to produce a grade
     will_be_graded = pl.get_boolean_attrib(element, 'grade', True)
@@ -358,7 +358,7 @@ def grade(element_html, element_index, data):
     q_sub = pyquaternion.Quaternion(np.roll(state['body_quaternion'], 1))
 
     # Get format of correct answer
-    f = pl.get_string_attrib(element, 'answer_pose_format', 'rpy')
+    f = pl.get_string_attrib(element, 'answer-pose-format', 'rpy')
 
     # Get correct position (as np.array([x, y, z])) and orientation (as Quaternion)
     p_tru, q_tru = parse_correct_answer(f, a)
@@ -370,8 +370,8 @@ def grade(element_html, element_index, data):
     error_in_rotation = np.abs((q_tru.inverse * q_sub).degrees)
 
     # Get tolerances
-    tol_translation = pl.get_float_attrib(element, 'tol_translation', 0.5)
-    tol_rotation = pl.get_float_attrib(element, 'tol_rotation', 5)
+    tol_translation = pl.get_float_attrib(element, 'tol-translation', 0.5)
+    tol_rotation = pl.get_float_attrib(element, 'tol-rotation', 5)
     if (tol_translation <= 0):
         raise Exception('tol_translation must be a positive real number: {:g}'.format(tol_translation))
     if (tol_rotation <= 0):
@@ -442,7 +442,7 @@ def parse_correct_answer(f, a):
         except Exception:
             raise Exception('correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees')
     else:
-        raise Exception('"answer_pose_format" must be "rpy", "quaternion", "matrix", "axisangle", or "homogeneous": {:s}'.format(f))
+        raise Exception('"answer-pose-format" must be "rpy", "quaternion", "matrix", "axisangle", or "homogeneous": {:s}'.format(f))
 
 
 def dict_to_b64(d):
@@ -455,10 +455,10 @@ def b64_to_dict(b64):
 
 def get_file_url(element, data):
     # Get file name or raise exception if one does not exist
-    file_name = pl.get_string_attrib(element, 'file_name')
+    file_name = pl.get_string_attrib(element, 'file-name')
 
     # Get directory (default is clientFilesQuestion)
-    file_directory = pl.get_string_attrib(element, 'file_directory', 'clientFilesQuestion')
+    file_directory = pl.get_string_attrib(element, 'file-directory', 'clientFilesQuestion')
 
     # Get base url, which depends on the directory
     if file_directory == 'clientFilesQuestion':
@@ -466,7 +466,7 @@ def get_file_url(element, data):
     elif file_directory == 'clientFilesCourse':
         base_url = data['options']['client_files_course_url']
     else:
-        raise ValueError('file_directory "{}" is not valid (must be "clientFilesQuestion" or "clientFilesCourse")'.format(file_directory))
+        raise ValueError('file-directory "{}" is not valid (must be "clientFilesQuestion" or "clientFilesCourse")'.format(file_directory))
 
     # Get full url
     file_url = os.path.join(base_url, file_name)

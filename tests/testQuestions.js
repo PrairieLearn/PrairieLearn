@@ -22,6 +22,7 @@ const qids = [
     'codeHighlight',
     'multiplyTwoComplexMatrices',
     'examplesStringInput',
+    'examplesMatrixInput',
     // FIXME: 'rotateObject',
 ];
 

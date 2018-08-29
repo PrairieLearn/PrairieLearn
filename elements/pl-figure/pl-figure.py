@@ -6,14 +6,14 @@ import os
 
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
-    pl.check_attribs(element, required_attribs=['file_name'], optional_attribs=['width', 'type', 'directory'])
+    pl.check_attribs(element, required_attribs=['file-name'], optional_attribs=['width', 'type', 'directory'])
 
 
 def render(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
 
     # Get file name or raise exception if one does not exist
-    file_name = pl.get_string_attrib(element, 'file_name')
+    file_name = pl.get_string_attrib(element, 'file-name')
 
     # Get type (default is static)
     file_type = pl.get_string_attrib(element, 'type', 'static')

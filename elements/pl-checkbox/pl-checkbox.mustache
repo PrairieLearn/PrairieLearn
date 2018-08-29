@@ -1,0 +1,58 @@
+{{#question}}
+<script>
+    $(function(){
+        $('#pl-checkbox-{{uuid}} [data-toggle="popover"]').popover({
+            container: 'body',
+            template: '<div class="popover pl-checkbox-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+        });
+    });
+</script>
+
+{{#inline}}<span class="d-inline-block">{{/inline}}
+{{^inline}}<div class="d-block">{{/inline}}
+
+{{{answerset}}}
+
+{{#helptext}}
+<span class="form-inline">
+    <span id="pl-checkbox-{{uuid}}" class="input-group pl-checkbox">
+        <span> {{{helptext}}} </span>
+        <span class="btn btn-sm " role="button" data-toggle="popover" data-html="true" title="Checkbox" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">
+            <i class="fa fa-question-circle" aria-hidden="true"></i>
+        </span>
+    </span>
+</span>
+{{/helptext}}
+
+{{#correct}}&nbsp;<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+{{#partial}}&nbsp;<span class="badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+{{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+
+{{#inline}}</span>{{/inline}}
+{{^inline}}</div>{{/inline}}
+{{/question}}
+
+{{#format}}
+{{{gradingtext}}}
+{{/format}}
+
+{{#submission}}
+<script>
+    $(function(){
+        $('#pl-checkbox-submission-{{uuid}} [data-toggle="popover"]').popover({
+            container: 'body',
+            template: '<div class="popover pl-checkbox-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
+        });
+    });
+</script>
+{{#parse_error}}
+{{#inline}}<span class="d-inline-block">{{/inline}}
+{{^inline}}<div class="d-block">{{/inline}}
+    <span id="pl-checkbox-submission-{{uuid}}">
+        <a class="btn btn-secondary btn-sm" role="button" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Error" tabindex="0" data-content="{{parse_error}}">INVALID <span><i class="fa fa-question-circle" aria-hidden="true"></i></span></a>
+    </span>
+</div>
+{{#inline}}</span>{{/inline}}
+{{^inline}}</div>{{/inline}}
+{{/parse_error}}
+{{/submission}}
