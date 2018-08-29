@@ -482,7 +482,7 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `language` | string | — | The programming language syntax highlighting to use. See below for options.
 `no-highlight` | boolean | false | Disable highlighting.
-`source-file-name` | text | - | Name of the source file with content to be displayed inside the code snippet (instead - or in addition to - writing the text between the open/closing tags). The file should be located in the question folder.
+`source-file-name` | text | - | Name of the source file with existing code to be displayed as a code block (instead of writing the existing code between the element tags as illustrated in the above code snippet).
 
 The `language` can be one of the following values.
 

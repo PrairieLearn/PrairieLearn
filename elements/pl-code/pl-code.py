@@ -44,11 +44,16 @@ def prepare(element_html, element_index, data):
     required_attribs = []
     optional_attribs = ['language', 'no-highlight', 'source-file-name']
     pl.check_attribs(element, required_attribs, optional_attribs)
+    source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
 
     language = pl.get_string_attrib(element, 'language', None)
     if language is not None:
         if language not in allowed_languages:
             raise Exception(f'Unknown language: "{language}". Must be one of {",".join(allowed_languages)}')
+
+    if source_file_name is not None:
+        if element.text is not None and not str(element.text).isspace():
+            raise Exception('Existing code cannot be added inside html element when "source-file-name" attribute is used.')
 
 
 def render(element_html, element_index, data):
@@ -58,31 +63,32 @@ def render(element_html, element_index, data):
     specify_language = (language is not None) and (not no_highlight)
     source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
 
-    # Strip a single leading newline from the code, if present. This
-    # avoids having spurious newlines because of HTML like:
-    #
-    # <pl-code>
-    # some_code
-    # </pl-code>
-    #
-    # which technically starts with a newline, but we probably
-    # don't want a blank line at the start of the code block.
-    code = pl.inner_html(element)
-    if len(code) > 1 and code[0] == '\r' and code[1] == '\n':
-        code = code[2:]
-    elif len(code) > 0 and (code[0] == '\n' or code[0] == '\r'):
-        code = code[1:]
-
     if source_file_name is not None:
         base_path = data['options']['question_path']
         file_path = os.path.join(base_path, source_file_name)
         if not os.path.exists(file_path):
             raise Exception(f'Unknown file path: "{file_path}".')
         f = open(file_path, 'r')
+        code = ''
         for line in f.readlines():
             code += line
         code = code[:-1]
         f.close()
+    else:
+        # Strip a single leading newline from the code, if present. This
+        # avoids having spurious newlines because of HTML like:
+        #
+        # <pl-code>
+        # some_code
+        # </pl-code>
+        #
+        # which technically starts with a newline, but we probably
+        # don't want a blank line at the start of the code block.
+        code = pl.inner_html(element)
+        if len(code) > 1 and code[0] == '\r' and code[1] == '\n':
+            code = code[2:]
+        elif len(code) > 0 and (code[0] == '\n' or code[0] == '\r'):
+            code = code[1:]
 
     html_params = {
         'specify_language': specify_language,
