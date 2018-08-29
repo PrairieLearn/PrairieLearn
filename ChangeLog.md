@@ -42,6 +42,8 @@
   * Fix copy button after `clipboard.js` package update (Tim Bretl).
 
   * Fix `pl-multiple-choice` so feedback is inside label and so inline option produces valid HTML (Tim Bretl).
+  
+  * Fix PrairieLearn / PrairieSchedule exam access linking (Dave Mussulman).
 
   * Fix "Logout" button with Google authentication (Matt West).
 

@@ -449,6 +449,24 @@ describe('Access control', function() {
         });
     });
 
+    describe('13.1. Set course instance to not enforce ps_link', function(callback) {
+        it ('setting ci.ps_link=false should succeed', function(callback) {
+            sqldb.query(sql.update_ci_ps_linked, [false], function(err, _result) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        });
+        it('should enable access to the assessment instance', function(callback) {
+            getAssessmentInstance(cookiesStudentExam(), 200, callback);
+        });
+        it ('setting ci.ps_link=true should succeed', function(callback) {
+            sqldb.query(sql.update_ci_ps_linked, [true], function(err, _result) {
+                if (ERR(err, callback)) return;
+                callback(null);
+            });
+        });
+    });
+
     describe('14. Insert PrairieSchedule reservation', function() {
         it('should succeed', function(callback) {
             var params = {user_id: user.user_id};

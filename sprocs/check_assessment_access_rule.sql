@@ -64,6 +64,7 @@ BEGIN
         EXIT schedule_access WHEN NOT use_date_check;
 
         -- is there a corresponding PrairieSchedule course?
+        -- that we actually want to enforce? (ci.ps_linked true)
         SELECT ps_c.course_id
         INTO ps_course_id
         FROM
@@ -72,26 +73,21 @@ BEGIN
             JOIN pl_courses AS pl_c ON (pl_c.id = ci.course_id)
             JOIN courses as ps_c ON (ps_c.pl_course_id = pl_c.id)
         WHERE
+            ci.ps_linked IS TRUE AND
             a.id = assessment_access_rule.assessment_id;
         EXIT schedule_access WHEN NOT FOUND; -- no linked PS course, skip this check
 
-        -- do we actually want to enforce PrairieSchedule linking?
-        SELECT ci.ps_linked INTO ps_linked
-        FROM
-            assessments AS a
-            JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-        WHERE
-            a.id = assessment_access_rule.assessment_id;
-        EXIT schedule_access WHEN NOT ps_linked; -- don't want linking, skip this check
-
-        -- is there a current checked-in reservation?
+        -- is there a current checked-in reservation that links back to this assessment?
         SELECT r.*
         INTO reservation
         FROM
-            reservations AS r
-            JOIN exams AS e USING (exam_id)
+            assessments AS a
+            JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+            JOIN courses AS ps_c ON (ps_c.pl_course_id = ci.course_id)
+            JOIN exams AS e ON (e.course_id = ps_c.course_id)
+            JOIN reservations AS r USING(exam_id)
         WHERE
-            e.course_id = ps_course_id
+            a.id = assessment_access_rule.assessment_id
             AND r.user_id = check_assessment_access_rule.user_id
             AND r.delete_date IS NULL
             AND date BETWEEN r.access_start AND r.access_end
