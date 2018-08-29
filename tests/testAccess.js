@@ -10,16 +10,28 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 var helperServer = require('./helperServer');
 
-var siteUrl = 'http://localhost:' + config.serverPort;
-var baseUrl = siteUrl + '/pl';
-var courseInstanceBaseUrl = baseUrl + '/course_instance/1';
-var assessmentsUrl = courseInstanceBaseUrl + '/assessments';
-var assessmentInstanceUrl = courseInstanceBaseUrl + '/assessment_instance/1';
+let siteUrl;
+let baseUrl;
+let courseInstanceBaseUrl;
+let assessmentsUrl;
+let assessmentInstanceUrl;
 
 describe('Access control', function() {
     this.timeout(20000);
 
-    before('set up testing server', helperServer.before);
+    before('set up testing server', function(callback) {
+        // Explicitly call with this so that timeout(...) calls work
+        helperServer.before.call(this, (err) => {
+            if (ERR(err, callback)) return;
+            // It's now safe to read from the config object
+            siteUrl = 'http://localhost:' + config.serverPort;
+            baseUrl = siteUrl + '/pl';
+            courseInstanceBaseUrl = baseUrl + '/course_instance/1';
+            assessmentsUrl = courseInstanceBaseUrl + '/assessments';
+            assessmentInstanceUrl = courseInstanceBaseUrl + '/assessment_instance/1';
+            callback(null);
+        });
+    });
     after('shut down testing server', helperServer.after);
 
     /*

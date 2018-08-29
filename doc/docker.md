@@ -9,7 +9,7 @@ In the base `PrairieLearn` directory run:
 
 ## Running the container
 
-See [the installation page](installing.md).
+See [the Docker instructions](running-docker.md).
 
 ## `docker run` primer
 
@@ -29,7 +29,7 @@ brackets being optional.
 
 ## Useful commands
 
-In all of these commands, `IMAGE` refers to a docker image; if you built the
+In all of these commands, `IMAGE` refers to a Docker image; if you built the
 image manually (with `docker build`), then you should use `prairielearn`. If
 you downloaded it (following the installation guide), use
 `prairielearn/prairielearn`.

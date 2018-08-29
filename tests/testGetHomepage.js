@@ -5,7 +5,6 @@ var cheerio = require('cheerio');
 var config = require('../lib/config');
 var helperServer = require('./helperServer');
 
-var baseUrl = 'http://localhost:' + config.serverPort;
 
 describe('GET /', function() {
     this.timeout(20000);
@@ -16,6 +15,7 @@ describe('GET /', function() {
     var page, $;
 
     it('should load successfully', function(callback) {
+        const baseUrl = 'http://localhost:' + config.serverPort;
         request(baseUrl, function (error, response, body) {
             if (error) {
                 return callback(error);

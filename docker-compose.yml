@@ -1,0 +1,55 @@
+version: '3.4'
+services:
+  prairielearn:
+    build: .
+    environment:
+      - NO_POSTGRES=true
+      - POSTGRESQL_HOST=postgres
+      - POSTGRESQL_PASSWORD=securepassword
+      - RABBITMQ_HOST=amqp://rabbitmq
+      - EXTERNAL_GRADING_ENABLED=true
+      - EXTERNAL_GRADING_FILE_STORE_TYPE=disk
+      - EXTERNAL_GRADING_QUEUE_TYPE=rabbitmq
+      - EXTERNAL_GRADING_FILE_STORE_PATH=/jobs
+      - 'EXTERNAL_GRADING_WEBHOOK_URL=http://prairielearn:3000/pl/webhooks/grading'
+    ports:
+      - '3000:3000'
+    expose:
+      - 3000
+    volumes:
+      - jobs:/jobs
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${COURSE_DIR:-dummy_course}:/course
+
+  prairiegrader:
+    image: 'prairielearn/prairiegrader'
+    environment:
+      - NODE_ENV=local-docker
+      - PG_HOST=postgres
+      - PG_PASSWORD=securepassword
+      - RABBITMQ_HOST=amqp://rabbitmq
+      - JOB_FILES_VOLUME_NAME=prairiegrader_job_files
+      - JOB_FILES_VOLUME_PATH=/job_files
+    volumes:
+      - jobs:/jobs
+      - prairiegrader_job_files:/job_files
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  rabbitmq:
+    image: 'rabbitmq:3'
+    logging:
+      driver: none # Disable logs to keep the focus on PL/PG
+    expose:
+      - 5672
+
+  postgres:
+    image: 'postgres:10.4'
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=securepassword
+
+volumes:
+  jobs:
+  dummy_course:
+  prairiegrader_job_files:
+    name: prairiegrader_job_files

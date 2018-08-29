@@ -4,4 +4,4 @@ SET
     s3_bucket = $s3_bucket,
     s3_root_key = $s3_root_key
 WHERE
-    id = $grading_job_id
+    id = $grading_job_id;

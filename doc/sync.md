@@ -1,7 +1,7 @@
 
 # Syncing course content to the live website
 
-The model that PrairieLearn uses for course content is that it is developed on your own local copy of PrairieLearn (see the [Installing page](installing.md)) and then pushed to the live website via GitHub.
+The model that PrairieLearn uses for course content is that it is developed on your own local copy of PrairieLearn (see the [running instructions](running.md)) and then pushed to the live website via GitHub.
 
 ![High level system structure](high-level.png)
 

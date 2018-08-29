@@ -73,8 +73,6 @@ const siteUrl = serverUrl;
 const baseUrl = siteUrl + '/pl';
 
 const cookies = request.jar();
-const loadTestToken = csrf.generateToken('load_test', config.secretKey);
-cookies.setCookie(request.cookie(`load_test_token=${loadTestToken}`), siteUrl);
 
 /* Takes [1, 2, 3]
  * and returns 6
@@ -164,7 +162,7 @@ async function getQuestionSubmitInfo(questionUrl) {
     const csrf_token = elemList[0].attribs.value;
 
     const questionSubmitInfo = {questionUrl, csrf_token};
-    
+
     if (argv.type == 'v2') {
         const elemList = $('.question-data');
         assert(elemList.length == 1);
@@ -307,4 +305,12 @@ async function main() {
     }
 }
 
-main();
+config.loadConfig(argv.config, (err) => {
+    if (err) {
+        console.log('Error loading config', err);
+        return;
+    }
+    const loadTestToken = csrf.generateToken('load_test', config.secretKey);
+    cookies.setCookie(request.cookie(`load_test_token=${loadTestToken}`), siteUrl);
+    main();
+});

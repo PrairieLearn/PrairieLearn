@@ -14,13 +14,6 @@ var helperQuestion = require('./helperQuestion');
 
 const locals = {};
 
-locals.siteUrl = 'http://localhost:' + config.serverPort;
-locals.baseUrl = locals.siteUrl + '/pl';
-locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1/instructor';
-locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/question';
-locals.questionsUrl = locals.courseInstanceBaseUrl + '/questions';
-locals.isStudentPage = false;
-
 const addNumbers = {qid: 'addNumbers', type: 'Freeform'};
 const addVectors = {qid: 'addVectors', type: 'Calculation'};
 const downloadFile = {qid: 'downloadFile', type: 'Freeform'};
@@ -29,7 +22,20 @@ const differentiatePolynomial = {qid: 'differentiatePolynomial', type: 'Freeform
 describe('Instructor questions', function() {
     this.timeout(60000);
 
-    before('set up testing server', helperServer.before);
+    before('set up testing server', function(callback) {
+        // Explicitly call with this so that timeout(...) calls work
+        helperServer.before.call(this, (err) => {
+            if (ERR(err, callback)) return;
+            // It's now safe to read from the config object
+            locals.siteUrl = 'http://localhost:' + config.serverPort;
+            locals.baseUrl = locals.siteUrl + '/pl';
+            locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1/instructor';
+            locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/question';
+            locals.questionsUrl = locals.courseInstanceBaseUrl + '/questions';
+            locals.isStudentPage = false;
+            callback(null);
+        });
+    });
     after('shut down testing server', helperServer.after);
 
     var page, elemList;

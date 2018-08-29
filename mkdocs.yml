@@ -6,8 +6,11 @@ docs_dir: doc
 
 pages:
 - Main: 'index.md'
+- Getting Started: 'running.md'
 - User Guide:
-  - 'Installing and running PrairieLearn': 'installing.md'
+  - 'Running PrairieLearn with Docker': 'running-docker.md'
+  - 'Running PrairieLearn with Docker Compose': 'running-docker-compose.md'
+  - 'Updating PrairieLearn': 'updating.md'
   - 'Syncing course content': 'sync.md'
   - 'Course configuration': 'course.md'
   - 'Course instance configuration': 'courseInstance.md'
@@ -25,8 +28,8 @@ pages:
   - 'FAQ': 'faq.md'
 - Developer Guide:
   - 'Developer guide': 'dev-guide.md'
-  - 'Installing with local source': 'installingLocal.md'
-  - 'Installing natively': 'installingNative.md'
+  - 'Running with local source': 'running-local.md'
+  - 'Running natively': 'running-native.md'
   - 'Question element writing': 'devElements.md'
   - 'Docker packaging': 'docker.md'
   - 'Contributing to PL development': 'contributing.md'

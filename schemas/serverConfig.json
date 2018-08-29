@@ -30,7 +30,7 @@
         },
         "redisUrl": {
             "description": "The url for connecting to Redis.",
-            "type": "string"
+            "type": ["string", "null"]
         },
         "logFilename": {
             "description": "Filename to use for server logging.",
@@ -46,7 +46,7 @@
         },
         "serverPort": {
             "description": "The TCP port number for the server.",
-            "type": "string"
+            "type": "integer"
         },
         "groupName": {
             "description": "The group of servers we belong to, used for load reporting and autoscaling.",
@@ -86,7 +86,7 @@
         },
         "externalGradingWebhookUrl": {
             "description": "The endpoint that should be hit when a grading result is updated. Should be null when running locally.",
-            "type": "string"
+            "type": ["string", "null"]
         },
         "externalGradingDefaultTimeout": {
             "description": "The default timeout to use for external grading if none is specified by a question.",
