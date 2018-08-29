@@ -10,7 +10,7 @@ var sql = sqlLoader.loadSqlEquiv(__filename);
 
 router.get('/', function(req, res, next) {
     if (res.locals.authn_user.provider == 'lti') {
-        return next(error.make(400, 'Enroll not available for LTI users'));
+        return next(error.make(400, 'Enrollment unavailable, managed via LTI'));
     }
     var params = {
         user_id: res.locals.authn_user.user_id,
@@ -25,7 +25,7 @@ router.get('/', function(req, res, next) {
 
 router.post('/', function(req, res, next) {
     if (res.locals.authn_user.provider == 'lti') {
-        return next(error.make(400, 'Enroll not available for LTI users'));
+        return next(error.make(400, 'Enrollment unavailable, managed via LTI'));
     }
     if (req.body.__action == 'enroll') {
         var params = {
