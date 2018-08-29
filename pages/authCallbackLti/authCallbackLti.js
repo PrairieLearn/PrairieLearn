@@ -72,18 +72,26 @@ router.post('/', function(req, res, next) {
         // OAuth validation succeeded, next look up and store user authn data
         //
 
-        var authUin = parameters.user_id + '@' + parameters.context_id;
+        //console.log(parameters);
+        //console.log(ltiresult);
+
+        var authUid = parameters.user_id + '@' + parameters.context_id;
+        if (parameters.lis_person_contact_email_primary) {
+            authUid = parameters.lis_person_contact_email_primary;
+        } else if (parameters.lis_person_sourcedid) {
+            authUid = parameters.lis_person_sourcedid;
+        }
         var authName = parameters.lis_person_name_full || '';
-        var authUid = parameters.lis_person_contact_email_primary || authUin;
 
         var params = [
         authUid,
         authName,
-        authUin,
-        'lti', //'LTI-ci-' + ltiresult.course_instance_id,
+        ltiresult.course_instance_id,
+        parameters.user_id,
+        parameters.context_id,
         ];
 
-        sqldb.call('users_select_or_insert', params, (err, result) => {
+        sqldb.call('users_select_or_insert_lti', params, (err, result) => {
             if (ERR(err, next)) return;
             var tokenData = {
                 user_id: result.rows[0].user_id,

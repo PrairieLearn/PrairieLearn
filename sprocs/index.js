@@ -116,6 +116,7 @@ module.exports = {
             'ip_to_mode.sql',
             'config_select.sql',
             'users_select_or_insert.sql',
+            'users_select_or_insert_lti.sql',
             'dump_to_csv.sql',
             'grading_jobs_stats_day.sql',
             'issues_insert_for_variant.sql',
