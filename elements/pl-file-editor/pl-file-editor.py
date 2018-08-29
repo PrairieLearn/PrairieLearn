@@ -3,6 +3,7 @@ import lxml.html
 import chevron
 import base64
 import hashlib
+import os
 
 
 def get_answer_name(file_name):
@@ -18,12 +19,17 @@ def add_format_error(data, error_string):
 def prepare(element_html, element_index, data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ['file-name']
-    optional_attribs = ['ace-mode', 'ace-theme', 'editor-config-function']
+    optional_attribs = ['ace-mode', 'ace-theme', 'editor-config-function', 'source-file-name']
     pl.check_attribs(element, required_attribs, optional_attribs)
+    source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
 
     if '_required_file_names' not in data['params']:
         data['params']['_required_file_names'] = []
     data['params']['_required_file_names'].append(pl.get_string_attrib(element, 'file-name'))
+
+    if source_file_name is not None:
+        if element.text is not None and not str(element.text).isspace():
+            raise Exception('Existing code cannot be added inside html element when "source-file-name" attribute is used.')
 
 
 def render(element_html, element_index, data):
@@ -37,6 +43,7 @@ def render(element_html, element_index, data):
     ace_mode = pl.get_string_attrib(element, 'ace-mode', None)
     ace_theme = pl.get_string_attrib(element, 'ace-theme', None)
     uuid = pl.get_uuid()
+    source_file_name = pl.get_string_attrib(element, 'source-file-name', None)
 
     html_params = {
         'name': answer_name,
@@ -47,7 +54,16 @@ def render(element_html, element_index, data):
         'uuid': uuid
     }
 
-    html_params['original_file_contents'] = base64.b64encode(str(element.text).encode('UTF-8').strip() or '').decode()
+    if source_file_name is not None:
+        file_path = os.path.join(data['options']['question_path'], source_file_name)
+        text_display = open(file_path).read()
+    else:
+        if element.text is not None:
+            text_display = str(element.text)
+        else:
+            text_display = ''
+
+    html_params['original_file_contents'] = base64.b64encode(text_display.encode('UTF-8').strip()).decode()
 
     submitted_file_contents = data['submitted_answers'].get(answer_name, None)
     if submitted_file_contents:

@@ -44,6 +44,7 @@
         "nodemon": "^1.17.5",
         "numeric": "^1.2.6",
         "on-finished": "^2.3.0",
+        "parse5": "^5.0.0",
         "passport": "^0.4.0",
         "passport-azure-ad": "^3.0.12",
         "pg": "^7.4.3",

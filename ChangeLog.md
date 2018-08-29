@@ -3,11 +3,25 @@
 
 * __next version__ - XXXX-XX-XX
 
-  * Add string input element (Mariana Silva)
+  * Add string input element (Mariana Silva).
+
+  * Add element to display matrix in latex format (Mariana Silva).
 
   * Add student name and clickable e-mail address information to issue reports (James Balamuta).
 
   * Add `tools/dump_*` scripts to filter and anonymize per-course dumps (Matt West).
+
+  * Add `pl-prairiedraw-figure` element and update PrairieDraw graphics documentation. (Ray Essick).
+
+  * Add improved login screen (Nathan Walters).
+
+  * Add `pl-matrix-component-input` element (Mariana Silva).
+
+  * Add new question renderer behind feature flag (Nathan Walters).
+
+  * Add partial credit option to `pl-checkbox` element (Mariana Silva).
+
+  * Fix `pl-file-editor` to allow display empty text editor and add option to include text from source file (Mariana Silva).
 
   * Fix HTML rendering by reverting `cheerio.js` to `0.22.0` (Matt West).
 
@@ -25,6 +39,14 @@
 
   * Fix assessment time limits (Matt West).
 
+  * Fix copy button after `clipboard.js` package update (Tim Bretl).
+
+  * Fix `pl-multiple-choice` so feedback is inside label and so inline option produces valid HTML (Tim Bretl).
+
+  * Fix "Logout" button with Google authentication (Matt West).
+
+  * Change `pl-code` to display code from a source file (Mariana Silva).
+
   * Change element names to use dashes instead of underscores (Nathan Walters).
 
   * Change deprecated `new Buffer()` calls to `Buffer.from()` (Ray Essick).
@@ -34,7 +56,7 @@
   * Change `centos7-ocaml` grader image to `ocaml-4.05` (Matt West).
 
   * Change TravisCI tasks to run linters first (Matt West, h/t James Balamuta).
-  
+
   * Change element attributes to use hyphens instead of underscores (Nathan Walters).
 
   * Change assessment password protection method (Dave Mussulman).

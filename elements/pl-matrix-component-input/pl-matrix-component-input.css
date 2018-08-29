@@ -1,0 +1,22 @@
+.pl-matrix-component-input-popover {
+    width: 400px;
+    max-width: 100%;
+}
+
+.close-left {
+  border-left: 3px solid black;
+  border-top: 3px solid black;
+  border-bottom: 3px solid black;
+  width: 8px;
+}
+.right, .bottom-and-right, .top-and-right, .close-right {
+  border-right: 3px solid black;
+  border-top: 3px solid black;
+  border-bottom: 3px solid black;
+  width: 8px;
+}
+
+.allborder {
+  border: thin solid #D8D8D8;
+  min-width: 60px
+}
