@@ -61,6 +61,8 @@
 
   * Change assessment password protection method (Dave Mussulman).
 
+  * Change "0 rows" error to be more descriptive (Dave Mussulman).
+
 * __3.0.0__ - 2018-05-23
 
   * Add improved support for very large file downloads (Nathan Walters).
