@@ -12,6 +12,7 @@ const {google} = require('googleapis');
 const OAuth2 = google.auth.OAuth2;
 
 router.get('/', function(req, res, next) {
+    if (!config.hasOauth) return next(new Error('Google login is not enabled'));
     const code = req.query.code;
     if (code == null) {
         return next(new Error('No "code" query parameter for authCallbackOAuth2'));
