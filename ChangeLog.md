@@ -61,6 +61,8 @@
 
   * Change assessment password protection method (Dave Mussulman).
 
+  * Change Exam authentication options to always include Google and Azure (Matt West).
+
 * __3.0.0__ - 2018-05-23
 
   * Add improved support for very large file downloads (Nathan Walters).
