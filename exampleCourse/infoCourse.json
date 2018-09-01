@@ -2,8 +2,10 @@
     "uuid": "fcc5282c-a752-4146-9bd6-ee19aac53fc5",
     "name": "XC 101",
     "title": "Example Course",
-    "assessmentSets": [
-    ],
+    "options": {
+        "useNewQuestionRenderer": true
+    },
+    "assessmentSets": [],
     "topics": [
         {"name": "Algebra", "color": "red3", "description": "Basic algebra."},
         {"name": "Calculus", "color": "yellow3", "description": "Single and multiple variable calculus."},
@@ -20,6 +22,7 @@
     "tags": [
         {"name": "mwest", "color": "gray1", "description": "Question originally written by mwest"},
         {"name": "tbretl", "color": "blue1", "description": "Question originally written by tbretl"},
+        {"name": "mfsilva", "color": "blue1", "description": "Question originally written by mfsilva"},
         {"name": "balamut2", "color": "orange1", "description": "Question originally written by balamut2"},
         {"name": "mfsilva", "color": "orange1", "description": "Question originally written by mfsilva"},
         {"name": "ressick2", "color": "gray1", "description": "Question originally written by ressick2"},
@@ -28,6 +31,7 @@
         {"name": "sp18", "color": "gray1", "description": "Question written in Spring 2018"},
         {"name": "su18", "color": "gray1", "description": "Question written in Summer 2018"},
         {"name": "v2", "color": "red1", "description": "v2 generation question"},
-        {"name": "v3", "color": "green1", "description": "v3 generation question (freeform)"}
+        {"name": "v3", "color": "green1", "description": "v3 generation question (freeform)"},
+        {"name": "pearl", "color": "yellow3", "description": "Question originally written by pearl"}
     ]
 }

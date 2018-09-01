@@ -49,8 +49,11 @@ Attribute | Type | Default | Description
 `min-correct` | integer | special | The minimum number of correct answers to display. Defaults to displaying all correct answers.
 `max-correct` | integer | special | The maximum number of correct answers to display. Defaults to displaying all correct answers.
 `fixed-order` | boolean | false | Disable the randomization of answer order.
-`hide-help-text` | boolean | false | Hide help text stating to pick one or more optinos.
+`partial-credit` | boolean | false | Enable partial credit scores. By default, the choice of grading method is "all-or-nothing".
+`partial-credit-method` | string | 'PC' | Two grading methods for partial credit: 'EDC' (Every Decision Counts) and 'PC' (Percent Correct). See explanation below.
+`hide-help-text` | boolean | false | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm ('all-or-nothing', 'EDC' or 'PC')
 `detailed-help-text` | boolean | false | Display detailed information in help text about the number of options to choose.
+`hide-answer-panel` | boolean | false | Option to not display the correct answer in the correct panel.
 
 A `pl-checkbox` element displays a subset of the answers in a random order as checkboxes.
 
@@ -59,6 +62,12 @@ An `pl-answer` element inside a `pl-multiple-choice` element has attributes:
 Attribute | Type | Default | Description
 --- | --- | --- | ---
 `correct` | boolean | false | Is this a correct answer to the question?
+
+Two grading methods are available when using `partial-credit="true"`:
+
+* 'EDC' (Every Decision Counts): in this method, the checkbox answers are considered as a list of true/false answers.  If `n` is the total number of answers, each answer is assigned `1/n` points. The total score is the summation of the points for every correct answer selected and every incorrect answer left unselected.
+
+* 'PC' (Percent Correct): in this method, 1 point is added for each correct answer that is marked as correct and 1 point is subtracted for each incorrect answer that is marked as correct. The final score is the resulting summation of points divided by the total number of correct answers. The minimum final score is set to zero.
 
 ## `pl-number-input` element
 
@@ -186,6 +195,60 @@ A = np.array([[1.23], [4.56]])
 If a variable `v` is a complex object, you should use `import prairielearn as pl` and `data['params'][params-name] = pl.to_json(v)`.
 
 
+## `pl-matrix-latex` element
+
+```html
+<pl-matrix-latex params-name="A"></pl-matrix-latex>
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`params-name` | string | — | Name of variable in `data['params']` to display.
+`presentation-type` | string | `'f'` | Number display format. If `presentation-type` is `'sigfig'`, each number is formatted using the `to_precision` module to `digits` significant figures.  Otherwise, each number is formatted as `'{:.{digits}{presentation-type}}'`.
+`digits` | integer | `"2"` | Number of digits to display according to the choice of `presentation-type`
+
+The variable in `data['params']` must be a scalar or 2D numpy array of numbers.
+
+If the variable is a scalar, `pl-matrix-latex` returns the scalar as a string not wrapped in brackets.
+
+If the variable is a numpy 2D array, `pl-matrix-latex` returns a string with the format:
+    ` \begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}`
+
+
+For example, if we want to display the following matrix operations
+```
+x = [A][b] + [c]
+```
+we write
+
+```html
+${\bf x} = <pl-matrix-latex params-name="A" digits="1"></pl-matrix-latex>
+<pl-matrix-latex params-name="b" digits="1"></pl-matrix-latex>
++ <pl-matrix-latex params-name="c" digits="0"></pl-matrix-latex>$
+```
+
+
+## `pl-matrix-component-input` element
+
+```html
+<pl-matrix-component-input answers-name="C" comparison="sigfig" digits="3" label="$AB=$"> </pl-matrix-component-input>
+```
+
+Attribute | Type | Default | Description
+--- | --- | --- | ---
+`answers-name` | string | — | Variable name to store data in.
+`weight` | integer | 1 | Weight to use when computing a weighted average score over elements.
+`label` | text | — | A prefix to display before the input box (e.g., `label="$F =$"`).
+`comparison` | "relabs", "sigfig", or "decdig" | "relabs" | How to grade. "relabs" uses relative ("rtol") and absolute ("atol") tolerances. "sigfig" and "decdig" use "digits" significant or decimal digits.
+`rtol` | number | 1e-2 | Relative tolerance for `comparison="relabs"`.
+`atol` | number | 1e-8 | Absolute tolerance for `comparison="relabs"`.
+`digits` | integer | 2 | number of digits that must be correct for `comparison="sigfig"` or `comparison="decdig"`.
+`allow-partial-credit` | boolean | False | Whether or not to allow credit for each correct matrix component. By default, the variable is graded as correct only when all matrix components are correct.
+`allow-feedback` | boolean | `allow-partial-credit` | Whether or not to allow feedback indicating which matrix components are incorrect. The default value of `allow-feedback` is the value of `allow-partial-credit`.
+
+In the question panel, a `pl-matrix-component-input` element displays a grid of input fields with the same shape of the variable stored in `answers-name` (only 2D arrays of real numbers can be stored in `answers-name`). The question will only be graded when all matrix components are entered.
+
+
 ## `pl-figure` element
 
 ```html
@@ -295,6 +358,7 @@ Attribute | Type | Default | description
 `file-name` | string | - | The name of this file; will be used to store this file in the `_files` submitted answer
 `ace-mode` | string | None | Specifies an Ace editor mode to enable things like intelligent code indenting and syntax highlighting; see the full list of modes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/mode).
 `ace-theme` | string | `ace/theme/chrome` | Specifies an Ace editor theme; see the full list of themes [here](https://github.com/ajaxorg/ace/tree/master/lib/ace/theme).
+`source-file-name` | string | None | Name of the source file with existing code to be displayed in the browser text editor (instead of writing the existing code between the element tags as illustrated in the above code snippet).
 
 ## `pl-external-grader-results` element
 
@@ -418,6 +482,7 @@ Attribute | Type | Default | Description
 --- | --- | --- | ---
 `language` | string | — | The programming language syntax highlighting to use. See below for options.
 `no-highlight` | boolean | false | Disable highlighting.
+`source-file-name` | text | - | Name of the source file with content to be displayed inside the code snippet (instead - or in addition to - writing the text between the open/closing tags). The file should be located in the question folder.
 
 The `language` can be one of the following values.
 

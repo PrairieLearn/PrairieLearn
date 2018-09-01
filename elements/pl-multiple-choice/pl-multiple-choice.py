@@ -92,18 +92,18 @@ def render(element_html, element_index, data):
                 + ('' if editable else ' disabled') \
                 + (' checked ' if (submitted_key == answer['key']) else '') \
                 + ' />\n' \
-                + '    (' + answer['key'] + ') ' + answer['html'] + '\n' \
-                + '  </label>\n'
+                + '    (' + answer['key'] + ') ' + answer['html'] + '\n'
             if score is not None:
                 if submitted_key == answer['key']:
                     if correct_key == answer['key']:
-                        item = item + '<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
+                        item = item + '<span class="badge badge-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
                     else:
-                        item = item + '<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>&nbsp;&nbsp;&nbsp;&nbsp;'
+                        item = item + '<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
+            item += '  </label>\n'
             item = f'<div class="form-check {"form-check-inline" if inline else ""}">\n' + item + '</div>\n'
             html += item
         if inline:
-            html = '<p>\n' + html + '</p>\n'
+            html = '<span>\n' + html + '</span>\n'
         if score is not None:
             try:
                 score = float(score)

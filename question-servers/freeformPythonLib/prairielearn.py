@@ -834,6 +834,50 @@ def matlab_to_numpy(a):
             return (None, 'Invalid format (missing square brackets and not a real number).')
 
 
+def latex_from_2darray(A, presentation_type='f', digits=2):
+
+    """latex_from_2darray
+    This function assumes that A is one of these things:
+            - a number (float or complex)
+            - a 2D ndarray (float or complex)
+
+    If A is a scalar, the string is a single number, not wrapped in brackets.
+
+    It A is a numpy 2D array, it returns a string with the format:
+        '\begin{bmatrix} ... & ... \\ ... & ... \end{bmatrix}'
+
+    If presentation_type is 'sigfig', each number is formatted using the
+    to_precision module to "digits" significant figures.
+
+    Otherwise, each number is formatted as '{:.{digits}{presentation_type}}'.
+    """
+    # if A is a scalar
+    if np.isscalar(A):
+        if presentation_type == 'sigfig':
+            return string_from_number_sigfig(A, digits=digits)
+        else:
+            return '{:.{digits}{presentation_type}}'.format(A, digits=digits, presentation_type=presentation_type)
+
+    if presentation_type == 'sigfig':
+        formatter = {
+            'float_kind': lambda x: to_precision.to_precision(x, digits),
+            'complex_kind': lambda x: _string_from_complex_sigfig(x, digits)
+        }
+    else:
+        formatter = {
+            'float_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type),
+            'complex_kind': lambda x: '{:.{digits}{presentation_type}}'.format(x, digits=digits, presentation_type=presentation_type)
+        }
+
+    if A.ndim != 2:
+        raise ValueError('input should be a 2D numpy array')
+    lines = np.array2string(A, formatter=formatter).replace('[', '').replace(']', '').splitlines()
+    rv = [r'\begin{bmatrix}']
+    rv += ['  ' + ' & '.join(l.split()) + r'\\' for l in lines]
+    rv += [r'\end{bmatrix}']
+    return ''.join(rv)
+
+
 def is_correct_ndarray2D_dd(a_sub, a_tru, digits=2):
     # Check if each element is correct
     m = a_sub.shape[0]
